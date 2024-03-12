@@ -155,12 +155,12 @@ site_config = {
      'enclosure_check_period': 3,    # How many minutes between enclosure checks
 
      # Turn on and off various automated calibrations at different times.
-     'auto_eve_bias_dark': True,
+     'auto_eve_bias_dark': False,
      'auto_eve_sky_flat': True,
      'time_to_wait_after_roof_opens_to_take_flats': 2,   #  Units??  Just imposing a minimum in case of a restart.
      'auto_midnight_moonless_bias_dark': False,  # WER 20240303 Afternoon, changed from True
      'auto_morn_sky_flat': True,
-     'auto_morn_bias_dark': True,
+     'auto_morn_bias_dark': False,
 
      # FOCUS OPTIONS
      'periodic_focus_time': 2, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -567,10 +567,28 @@ site_config = {
                 # We can't swip and swap because the biases and darks and flats will change, so we are sticking with 3 until
                 # something bad happens with 3 for some reason
                 #
+
+
+                # THIS IS THE PRE-TESTING SETTINGS FOR NEW MODE 11 Mar 2024
+                # # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
+                # # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
+                # # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
+                # 'direct_qhy_readout_mode' : 3,
+                # 'direct_qhy_gain' : 26,
+                # 'direct_qhy_offset' : 60,
+                # #'direct_qhy_usb_speed' : 50,
+                # 'direct_qhy_usb_traffic' : 45,  #Early 20240103 = 50, not clear earlier but better than before.
+                # #The pattern before came and went. Now consitent at 50.  Changing to 45.
+                # #Which one of these is actually used?
+                # 'set_qhy_usb_speed': True,
+                # 'direct_qhy_usb_speed' : 45,    #20240106 Afternoon WER Was 60
+
+
+
                 # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
-                'direct_qhy_readout_mode' : 3,
+                'direct_qhy_readout_mode' : 0,
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
                 #'direct_qhy_usb_speed' : 50,
@@ -578,7 +596,13 @@ site_config = {
                 #The pattern before came and went. Now consitent at 50.  Changing to 45.
                 #Which one of these is actually used?
                 'set_qhy_usb_speed': True,
-                'direct_qhy_usb_speed' : 45,    #20240106 Afternoon WER Was 60
+
+                #"speed isn't used I think - MTF, it is actually USB Traffic
+                #'direct_qhy_usb_speed' : 45,    #20240106 Afternoon WER Was 60
+
+
+
+
 
                 # These options set whether an OSC gets binned or interpolated for different functions
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)

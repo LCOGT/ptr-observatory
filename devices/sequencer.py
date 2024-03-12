@@ -4442,7 +4442,7 @@ class Sequencer:
         broadband_ss_biasdark_exp_time = float(self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time'])
         narrowband_ss_biasdark_exp_time = float(broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier'])
 
-        sky_exposure_snap_to_grid = [ 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, broadband_ss_biasdark_exp_time, narrowband_ss_biasdark_exp_time]
+        sky_exposure_snap_to_grid = [ 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, broadband_ss_biasdark_exp_time, narrowband_ss_biasdark_exp_time]
 
         # Load up the pickled list of gains or start a new one.
         self.filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].alias + str(g_dev['obs'].name))
@@ -4991,7 +4991,7 @@ class Sequencer:
                             except:
                                 scale = 1.0
 
-                            
+
 
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -5078,7 +5078,7 @@ class Sequencer:
                                 pop_list.pop(0)
                                 scale = 1
                             else:
-                                # Give it a bit of a nudge, not necessary if it is the last shot of the filter. 
+                                # Give it a bit of a nudge, not necessary if it is the last shot of the filter.
                                 # There is no reason to wait for it to finish slewing either.
                                 self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
