@@ -309,7 +309,7 @@ class FilterWheel:
                                     #print ("MTF temp filterwheel report: r0_pr " + str(r0_pr) + " r1_pr " + str(r1_pr))
                                     time.sleep(0.2)
 
-                            print ("MTF temp filterwheel report: r0_pr " + str(r0_pr) + " r1_pr " + str(r1_pr))
+                            #print ("MTF temp filterwheel report: r0_pr " + str(r0_pr) + " r1_pr " + str(r1_pr))
 
                             while True:
                                 r0_t = int(
@@ -562,7 +562,7 @@ class FilterWheel:
 
 
         if self.wait_time_after_filter_change != 0:
-            plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
+            #plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
             time.sleep(self.wait_time_after_filter_change)
 
         # make sure focusser is adjusted every filter change

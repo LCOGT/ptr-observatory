@@ -3818,11 +3818,11 @@ class Camera:
                     #foc_pos1 = g_dev['obs'].fwhmresult['mean_focus']
                     #foc_pos1=focus_position
 
-                    expresult['FWHM']=fwhm_dict['rfr']
+                    expresult['FWHM']=g_dev['obs'].fwhmresult['FWHM'] #fwhm_dict['rfr']
                     expresult["mean_focus"]=focus_position
                     expresult['No_of_sources']=fwhm_dict['sources']
 
-                    plog ("Focus at " + str(focus_position) + " is " + round(float(fwhm_dict['rfr']),2))
+                    plog ("Focus at " + str(focus_position) + " is " + str(round(float(g_dev['obs'].fwhmresult['FWHM']),2)))
 
 
 
@@ -3875,7 +3875,7 @@ class Camera:
 
                     if os.path.exists(im_path + text_name):
                         try:
-                            self.enqueue_for_fastUI(10, im_path, text_name)
+                            g_dev['obs'].enqueue_for_fastUI(10, im_path, text_name)
                         except:
                             plog("Failed to send FOCUS TEXT up for some reason")
                             plog(traceback.format_exc())

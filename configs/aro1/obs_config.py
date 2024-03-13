@@ -134,8 +134,8 @@ site_config = {
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
     'bias_dark interval':  105.,   #minutes
-    'eve_sky_flat_sunset_offset': -55.,  # Before Sunset Minutes  neg means before, + after.
-    'end_eve_sky_flats_offset': -1 ,      # How many minutes after civilDusk to do....
+    'eve_sky_flat_sunset_offset': -45.,  # Was 55 WER 20240313 Before Sunset Minutes  neg means before, + after.
+    'end_eve_sky_flats_offset': -5 ,      # How many minutes after civilDusk to do....
     'clock_and_auto_focus_offset':-10,   #min before start of observing
     'astro_dark_buffer': 15,   #Min before and after AD to extend observing window
     'morn_flat_start_offset': -10,       #min from Sunrise
@@ -722,7 +722,7 @@ site_config = {
                 'min_exposure': 0.0001,
                 'max_exposure': 360.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 0.001,
+                'min_flat_exposure': 0.0005,
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
