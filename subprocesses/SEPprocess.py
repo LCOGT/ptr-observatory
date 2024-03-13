@@ -21,6 +21,7 @@ import time
 import traceback
 import math
 import json
+import copy
 # from scipy import ndimage as nd
 from auto_stretch.stretch import Stretch
 # from astropy.nddata import block_reduce
@@ -388,6 +389,14 @@ else:
         number_of_good_radials_to_get = 50
 
 
+        # Grab the central arcminute out of the image.
+        cx = int(fx/2)
+        cy = int(fy/2)
+        width = 30 / pixscale
+        central_half_arcminute=copy.deepcopy(hdufocusdata[cx-width:cx+width,cy-width:cy+width])
+        imageinspection_json_snippets['central_patch']= re.sub('\s+',' ',str(central_half_arcminute))
+        
+
         print (amount)
 
         good_radials=0
@@ -465,7 +474,7 @@ else:
                             good_radials=good_radials+1
                         else:
                             sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
-                        photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
+                        photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710,popt[0]*popt[2]/0.3989])
 
                         #breakpoint()
                         # If we've got more than 50 for a focus
@@ -503,8 +512,8 @@ else:
         with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
             json.dump(fwhm_file, f)
 
-        pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.sep'),'wb'))
-        print (im_path + text_name.replace('.txt', '.sep'))
+        #pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.sep'),'wb'))
+        #print (im_path + text_name.replace('.txt', '.sep'))
 
 
         #sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
@@ -1100,11 +1109,13 @@ if not frame_type == 'focus':
         starinspection_json_snippets['radialprofiles']=re.sub('\s+',' ',str(sources))
         print ("ASCIIing Radial Profiles: " + str(time.time()-googtime))
         googtime=time.time()
-        with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
-            json.dump(starinspection_json_snippets, f)
-        print ("Writing out star inspection: " + str(time.time()-googtime))
+        
     except:
         pass
+
+    with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
+        json.dump(starinspection_json_snippets, f)
+    print ("Writing out star inspection: " + str(time.time()-googtime))
 
 
 
