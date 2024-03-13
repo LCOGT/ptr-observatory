@@ -18,6 +18,8 @@ import ephem
 import copy
 import json
 import random
+from astropy import log
+log.setLevel('ERROR')
 from astropy.io import fits
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, AltAz
