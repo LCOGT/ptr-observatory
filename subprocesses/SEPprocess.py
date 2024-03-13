@@ -21,6 +21,7 @@ import time
 import traceback
 import math
 import json
+import copy
 # from scipy import ndimage as nd
 from auto_stretch.stretch import Stretch
 # from astropy.nddata import block_reduce
@@ -387,6 +388,14 @@ else:
 
         number_of_good_radials_to_get = 50
 
+
+        # Grab the central arcminute out of the image.
+        cx = int(fx/2)
+        cy = int(fy/2)
+        width = 30 / pixscale
+        central_half_arcminute=copy.deepcopy(hdufocusdata[cx-width:cx+width,cy-width:cy+width])
+        imageinspection_json_snippets['central_patch']= re.sub('\s+',' ',str(central_half_arcminute))
+        
 
         print (amount)
 
@@ -1100,11 +1109,13 @@ if not frame_type == 'focus':
         starinspection_json_snippets['radialprofiles']=re.sub('\s+',' ',str(sources))
         print ("ASCIIing Radial Profiles: " + str(time.time()-googtime))
         googtime=time.time()
-        with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
-            json.dump(starinspection_json_snippets, f)
-        print ("Writing out star inspection: " + str(time.time()-googtime))
+        
     except:
         pass
+
+    with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
+        json.dump(starinspection_json_snippets, f)
+    print ("Writing out star inspection: " + str(time.time()-googtime))
 
 
 
