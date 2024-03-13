@@ -474,7 +474,7 @@ else:
                             good_radials=good_radials+1
                         else:
                             sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
-                        photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
+                        photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710,popt[0]*popt[2]/0.3989])
 
                         #breakpoint()
                         # If we've got more than 50 for a focus
@@ -512,8 +512,8 @@ else:
         with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
             json.dump(fwhm_file, f)
 
-        pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.sep'),'wb'))
-        print (im_path + text_name.replace('.txt', '.sep'))
+        #pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.sep'),'wb'))
+        #print (im_path + text_name.replace('.txt', '.sep'))
 
 
         #sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
