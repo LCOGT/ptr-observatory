@@ -512,7 +512,8 @@ else:
         with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
             json.dump(fwhm_file, f)
 
-        #pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.sep'),'wb'))
+        # This pickled sep file is for internal use - usually used by the smartstack thread to align mono smartstacks.
+        pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.sep'),'wb'))
         #print (im_path + text_name.replace('.txt', '.sep'))
 
 
