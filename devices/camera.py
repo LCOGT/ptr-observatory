@@ -776,6 +776,8 @@ class Camera:
 
             if self.config["camera"][self.name]["settings"]['set_qhy_usb_speed']:
                 success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_SPEED,c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_usb_traffic'])))
+            plog('Set QHY conversion Gain: ', self.config["camera"][self.name]["settings"]['direct_qhy_gain'])
+            plog('Set QHY Offset: ', self.config["camera"][self.name]["settings"]['direct_qhy_offset'])
             plog('Set QHY USB speed to: ', self.config["camera"][self.name]["settings"]['direct_qhy_usb_traffic'])  # NB NB ideally we should read this back to verify.
 
             self._connected = self._qhyccd_connected
@@ -2770,7 +2772,7 @@ class Camera:
                                     self.currently_in_smartstack_loop=False
                                     break
 
-                            
+
                             while g_dev['fil'].filter_changing:
                                 plog ("Waiting for filter_change")
                                 time.sleep(0.05)
@@ -3817,11 +3819,11 @@ class Camera:
                     expresult['FWHM']=fwhm_dict['rfr']
                     expresult["mean_focus"]=focus_position
                     expresult['No_of_sources']=fwhm_dict['sources']
-                    
-                    plog ("Focus at " + str(focus_position) + " is " + round(float(fwhm_dict['rfr'],2)))
-                    
-                    
-                    
+
+                    plog ("Focus at " + str(focus_position) + " is " + round(float(fwhm_dict['rfr']),2))
+
+
+
                     try:
                         #hduheader["SEPSKY"] = str(sepsky)
                         hdusmallheader["SEPSKY"] = str(fwhm_dict['sky'])
@@ -3848,8 +3850,8 @@ class Camera:
                         hdusmallheader["NSTARS"] = ( str(fwhm_dict['sources']), 'Number of star-like sources in image')
                     except:
                         hdusmallheader["NSTARS"] = ( -99, 'Number of star-like sources in image')
-                        
-                        
+
+
                     #breakpoint()
                     try:
                         text = open(
@@ -3860,22 +3862,22 @@ class Camera:
                     except:
                         plog("Failed to write out focus text up for some reason")
                         plog(traceback.format_exc())
-                    
-                    
+
+
                     # Fling the jpeg up
                     try:
                         g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
                     except:
                         plog("Failed to send FOCUS IMAGE up for some reason")
                         plog(traceback.format_exc())
-                        
+
                     if os.path.exists(im_path + text_name):
                         try:
                             self.enqueue_for_fastUI(10, im_path, text_name)
                         except:
                             plog("Failed to send FOCUS TEXT up for some reason")
                             plog(traceback.format_exc())
-                            
+
                     return expresult
 
                 blockended=False
