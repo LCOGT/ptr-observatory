@@ -251,10 +251,10 @@ class Observatory:
         self.local_bias_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases" + '/'
         self.local_flat_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
 
-        # Scratch Drive Folder
-        self.scratch_drive_folder = self.config['scratch_drive_folder']
-        if not os.path.exists(self.scratch_drive_folder):
-            os.makedirs(self.scratch_drive_folder)
+        # # Scratch Drive Folder
+        # self.scratch_drive_folder = self.config['scratch_drive_folder']
+        # if not os.path.exists(self.scratch_drive_folder):
+        #     os.makedirs(self.scratch_drive_folder)
 
 
         # Directories for broken and orphaned upload files

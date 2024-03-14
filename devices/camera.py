@@ -1488,7 +1488,7 @@ class Camera:
                         self.camera_update_wincom.TemperatureSetpoint = float(self.theskyx_set_setpoint_value)
                         self.camera_update_wincom.RegulateTemperature = 1
                         self.current_setpoint = self.theskyx_set_setpoint_value
-                        plog ("theskyx setpoint triggered: " + str(self.theskyx_set_setpoint_value))
+                        #plog ("theskyx setpoint triggered: " + str(self.theskyx_set_setpoint_value))
                         self.theskyx_set_setpoint_trigger=False
 
                     if self.theskyx_abort_exposure_trigger==True:
@@ -2774,10 +2774,10 @@ class Camera:
                                     self.currently_in_smartstack_loop=False
                                     break
 
-
-                            while g_dev['fil'].filter_changing:
-                                plog ("Waiting for filter_change")
-                                time.sleep(0.05)
+                            if g_dev["fil"].null_filterwheel == False:
+                                while g_dev['fil'].filter_changing:
+                                    plog ("Waiting for filter_change")
+                                    time.sleep(0.05)
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)

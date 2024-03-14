@@ -545,7 +545,7 @@ site_config = {
                 'crop_preview_ytop': 2,
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
-                'temp_setpoint': -2,    #Verify we can go colder, this system has a chiller
+                'temp_setpoint': 0,    #Verify we can go colder, this system has a chiller
                 'has_chiller': True,
                 
                 'day_warm': True,
@@ -575,7 +575,7 @@ site_config = {
                 'east_offset': 0.0,
                 'rotation': 0.0,
                 'min_exposure': 0.0001,
-                'min_flat_exposure' : 1.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'min_flat_exposure' : 0.0001, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
 
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'reject_new_flat_by_known_gain' : True,
@@ -602,13 +602,13 @@ site_config = {
 
                 'number_of_bias_to_collect' : 128,
                 'number_of_dark_to_collect' : 128,
-                'number_of_flat_to_collect' : 32,
+                'number_of_flat_to_collect' : 128,
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 128,
 
  
-                'dark_exposure': 20,
+                'dark_exposure': 180,
                 
                 'do_cosmics' : False,
                 
