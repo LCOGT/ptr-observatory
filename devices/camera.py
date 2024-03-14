@@ -4028,9 +4028,33 @@ class Camera:
                             cge_stdev=np.nanstd(camera_gain_estimate_image)
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
+                            
+                            
+                            # We should only check whether the gain is good IF we have a good gain.
+                            commissioning_flats=False
+                            
+                            # Check if we have MOST of the flats we need
+                            if os.path.exists(self.local_flat_folder + g_dev['cam'].current_filter):
+                                files_in_folder=glob.glob(self.local_flat_folder + g_dev['cam'].current_filter + '/' + '*.n*')
+                                files_in_folder= [ x for x in files_in_folder if "tempcali" not in x ]
+                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_flat_to_store']
+                                n_files = len(files_in_folder)
+                                if not ((n_files/max_files) > 0.8):
+                                    commissioning_flats=True                                    
+                            else:
+                                commissioning_flats=True
+                            
+                            # If we don't have a good gain yet, we are commissioning
+                            if g_dev['seq'].current_filter_last_camera_gain > 50:
+                                commissioning_flats=True
+                            
 
                             # low values SHOULD be ok.
-                            if cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 3 *g_dev['seq'].current_filter_last_camera_gain_stdev):
+                            if commissioning_flats:
+                                g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain,2)))
+                                plog('Good flat value:  ' +str(central_median) + ' Not testing gain until flats in commissioned mode.')
+                                
+                            elif cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 3 *g_dev['seq'].current_filter_last_camera_gain_stdev):
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain,2)))
                                 plog('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain))
 
