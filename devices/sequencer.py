@@ -4813,7 +4813,7 @@ class Sequencer:
                                     pixel_area=pow(float(g_dev['cam'].pixscale),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 # snap the exposure time to a discrete grid
-                                if exp_time > 0.0075:
+                                if exp_time > 0.002:
                                     exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
                                 else:
                                     exp_time = 0.5*min_exposure
@@ -4825,14 +4825,14 @@ class Sequencer:
                                 else:
                                     exp_time = min_exposure
                                     # snap the exposure time to a discrete grid
-                                    if exp_time > 0.0075:
+                                    if exp_time > 0.002:
                                         exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
                                     else:
                                         exp_time = 0.5*min_exposure
                         elif in_wait_mode:
                             exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
                             # snap the exposure time to a discrete grid
-                            if exp_time > 0.0075:
+                            if exp_time > 0.002:
                                 exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
                             else:
                                 exp_time = 0.5*min_exposure
@@ -4840,7 +4840,7 @@ class Sequencer:
                         else:
                             exp_time = scale * exp_time
                             # snap the exposure time to a discrete grid
-                            if exp_time > 0.0075:
+                            if exp_time > 0.002:
                                 exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
                             else:
                                 exp_time = 0.5*min_exposure
@@ -4909,7 +4909,7 @@ class Sequencer:
                              self.next_flat_observe = time.time() + 10
                              exp_time = min_exposure
                              # snap the exposure time to a discrete grid
-                             if exp_time > 0.0075:
+                             if exp_time > 0.002:
                                  exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
                              else:
                                  exp_time = 0.5*min_exposure
@@ -4918,7 +4918,7 @@ class Sequencer:
                             in_wait_mode=False
                             exp_time = round(exp_time, 5)
                             # snap the exposure time to a discrete grid
-                            if exp_time > 0.0075:
+                            if exp_time > 0.002:
                                 exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
                             else:
                                 exp_time = 0.5*min_exposure
