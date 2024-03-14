@@ -1784,20 +1784,20 @@ class Sequencer:
 
             g_dev['mnt'].park_command({}, {}) # Get there early
 
-            # Wait a significant fraction of time for darkslides, filters, scopes to settle
-            plog ("Waiting a few minutes for everything to settle down before taking bias and darks.")
-            plog ("To avoid light leaks from slow systems (e.g. darkslides, filter wheels etc.).")
-            dark_wait_time=time.time()
-            while (time.time() - dark_wait_time < 180):
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-                time.sleep(5)
+            # # Wait a significant fraction of time for darkslides, filters, scopes to settle
+            # plog ("Waiting a few minutes for everything to settle down before taking bias and darks.")
+            # plog ("To avoid light leaks from slow systems (e.g. darkslides, filter wheels etc.).")
+            # dark_wait_time=time.time()
+            # while (time.time() - dark_wait_time < 180):
+            #     if self.stop_script_called:
+            #         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+            #         self.bias_dark_latch = False
+            #         return
+            #     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+            #         self.bias_dark_latch = False
+            #         break
+            #     g_dev['obs'].request_scan_requests()
+            #     time.sleep(5)
 
 
             if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:   #ephem is units of a day

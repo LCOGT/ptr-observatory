@@ -2774,10 +2774,10 @@ class Camera:
                                     self.currently_in_smartstack_loop=False
                                     break
 
-
-                            while g_dev['fil'].filter_changing:
-                                plog ("Waiting for filter_change")
-                                time.sleep(0.05)
+                            if g_dev["fil"].null_filterwheel == False:
+                                while g_dev['fil'].filter_changing:
+                                    plog ("Waiting for filter_change")
+                                    time.sleep(0.05)
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
