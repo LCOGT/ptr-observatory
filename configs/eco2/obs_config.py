@@ -458,14 +458,14 @@ site_config = {
                 # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
-                'direct_qhy_readout_mode' : 3,        
+                'direct_qhy_readout_mode' : 0,        
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,  
                 
-                'direct_qhy_usb_traffic' : 50,
+                'direct_qhy_usb_traffic' : 60,
                 
                 'set_qhy_usb_speed': False,
-                'direct_qhy_usb_speed' : 0,
+                'direct_qhy_usb_speed' : 60,
                 
                 
                 
