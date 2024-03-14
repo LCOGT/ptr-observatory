@@ -22,6 +22,7 @@ import numpy as np
 from numpy import inf
 import os
 import gc
+import bottleneck as bn
 #from pyowm import OWM
 #from pyowm.utils import config
 #from scipy import interpolate
@@ -272,7 +273,7 @@ class Sequencer:
         self.master_restack_thread = threading.Thread(target=self.master_restack, args=())
         self.master_restack_thread.daemon = True
         self.master_restack_thread.start()
-        
+
     # Note this is a thread!
     def master_restack(self):
         """
@@ -284,15 +285,15 @@ class Sequencer:
             if (not self.master_restack_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 pri_image = self.master_restack_queue.get(block=False)
-                
-                self.regenerate_local_masters()                
-                
+
+                self.regenerate_local_masters()
+
                 self.master_restack_queue.task_done()
-                
+
                 # EMPTY QUEUE SO THAT ONLY HAPPENS ONCE
                 with self.master_restack_queue.mutex:
                     self.master_restack_queue.queue.clear()
-                
+
                 one_at_a_time = 0
                 time.sleep(0.1)
 
@@ -2019,6 +2020,48 @@ class Sequencer:
                 if time.time() - bias_darks_started > 7200:
                     self.bias_dark_latch = False
                     break
+                
+                # COLLECTING A 0.0045 Second EXPOSURE DARK FRAME
+                plog("Expose " + str(5*stride) +" 1x1 0.0045 second exposure dark frames.")
+                req = {'time': 0.0045,  'script': 'True', 'image_type': 'pointzerozerofourfive_exposure_dark'}
+                opt = {'count':  min_to_do,  \
+                       'filter': 'dark'}
+
+                # Check it is in the park position and not pointing at the sky.
+                # It can be pointing at the sky if cool down open is triggered during the biasdark process
+                g_dev['mnt'].park_command({}, {})
+                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+                    self.bias_dark_latch = False
+                    return
+                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                    self.bias_dark_latch = False
+                    break
+                g_dev['obs'].request_scan_requests()
+
+                # COLLECTING A 0.015 Second EXPOSURE DARK FRAME
+                plog("Expose " + str(5*stride) +" 1x1 0.015 second exposure dark frames.")
+                req = {'time': 0.015,  'script': 'True', 'image_type': 'onepointfivepercent_exposure_dark'}
+                opt = {'count':  min_to_do,  \
+                       'filter': 'dark'}
+
+                # Check it is in the park position and not pointing at the sky.
+                # It can be pointing at the sky if cool down open is triggered during the biasdark process
+                g_dev['mnt'].park_command({}, {})
+                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+                    self.bias_dark_latch = False
+                    return
+                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                    self.bias_dark_latch = False
+                    break
+                g_dev['obs'].request_scan_requests()
 
                 # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
@@ -2487,7 +2530,8 @@ class Sequencer:
 
         # Now time to regenerate the local masters
 
-        self.regenerate_local_masters()
+        #self.regenerate_local_masters()
+        self.master_restack_queue.put( 'g0', block=False)
 
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
@@ -2579,10 +2623,306 @@ class Sequencer:
 
         return
 
+
+    def make_scaled_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder):
+
+
+
+            # CLEAR OUT OLD TEMPFILES
+            darkdeleteList=(glob(input_folder +'/*tempbiasdark.n*'))
+            for file in darkdeleteList:
+                try:
+                    os.remove(file)
+                except:
+                    plog ("Couldnt remove old dark file: " + str(file))
+
+            calibration_timer=time.time()
+
+            # NOW we have the master bias, we can move onto the dark frames
+            inputList=(glob( input_folder +'/*.n*'))
+
+            # Test each flat file actually opens
+            for file in inputList:
+                try:
+                    np.load(file, mmap_mode='r')
+                except:
+                    plog ("corrupt dark skipped: " + str(file))
+                    inputList.remove(file)
+
+            # # Array to hold loaded images
+            # PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
+
+            # # D  frames and stick them in the memmap
+            # i=0
+            # for file in inputList:
+            #     hdu1exp=float(file.split('_')[-2])
+            #     #darkdeexp=(np.load(file)-masterBias)/hdu1exp
+            #     PLDrive[:,:,i] = np.asarray((np.load(file)-masterBias)/hdu1exp,dtype=np.float32)
+            #     #del darkdeexp
+            #     i=i+1
+
+            # # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+            # finalImage=np.zeros(shapeImage,dtype=float)
+
+
+            # # MULTIPROCESSED VERSION
+            # mptask=[]
+            # counter=0
+            # for goog in range(shapeImage[0]):
+            #     mptask.append(PLDrive[counter,:,:])
+            #     counter=counter+1
+
+            # counter=0
+            # with Pool(os.cpu_count()) as pool:
+            #     for result in pool.map(stack_nanmedian_row, mptask):
+            #         finalImage[counter,:]=result
+            #         #lst[counter] = result
+            #         counter=counter+1
+
+
+            # create an empty array to hold each chunk
+            # the size of this array will determine the amount of RAM usage
+
+            finalImage=np.zeros(shapeImage,dtype=float)
+
+            # Store the biases in the memmap file
+            PLDrive= [None] * len(inputList)
+            exposures= [None] * len(inputList)
+            i=0
+            for file in inputList:
+                #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                PLDrive[i] = np.load(file, mmap_mode='r')
+                try:
+                    exposures[i]=float(file.split('_')[-2])
+                except:
+                    plog(traceback.format_exc())
+                    breakpoint()
+
+                i=i+1
+
+            # Get a chunk size that evenly divides the array
+            chunk_size=8
+            while not ( shapeImage[0] % chunk_size ==0):
+                chunk_size=chunk_size+1
+                #print (chunk_size)
+            chunk_size=int(shapeImage[0]/chunk_size)
+
+            holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
+
+            # iterate through the input, replace with ones, and write to output
+            for i in range(shapeImage[0]):
+                if i % chunk_size == 0:
+                    #print (i)
+                    counter=0
+                    for imagefile in range(len(PLDrive)):
+                        #breakpoint() holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
+                        holder[counter][0:chunk_size,:] = (copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)-copy.deepcopy(masterBias[i:i+chunk_size,:]).astype(np.float32))/exposures[counter]
+                        counter=counter+1
+
+                    finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
+
+                    # Wipe and restore files in the memmap file
+                    # To clear RAM usage
+                    PLDrive= [None] * len(inputList)
+                    i=0
+                    for file in inputList:
+                        #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                        PLDrive[i] = np.load(file, mmap_mode='r')
+                        i=i+1
+
+
+
+            masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
+            del finalImage
+
+
+            tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+            try:
+                #fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+
+                # Save and upload master bias
+                g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, tempfrontcalib + filename_start+'_master_bin1.fits' ))
+
+                 # Store a version of the bias for the archive too
+                g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
+
+
+                # fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
+
+                # filepathaws=g_dev['obs'].calib_masters_folder
+                # filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
+                # g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+
+
+                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                    #fits.writeto(pipefolder + '/' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+                    #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+                    #np.save(pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy', masterBias)
+                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterDark)))
+
+            except Exception as e:
+                plog ("Could not save dark frame: ",e)
+
+
+            plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
+
+            g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
+
+            return masterDark
+
+    def make_bias_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder):
+
+
+            # CLEAR OUT OLD TEMPFILES
+            darkdeleteList=(glob(input_folder +'/*tempbiasdark.n*'))
+            for file in darkdeleteList:
+                try:
+                    os.remove(file)
+                except:
+                    plog ("Couldnt remove old dark file: " + str(file))
+
+            calibration_timer=time.time()
+
+
+
+            # NOW we have the master bias, we can move onto the dark frames
+            inputList=(glob( input_folder +'/*.n*'))
+
+            # Test each flat file actually opens
+            for file in inputList:
+                try:
+                    np.load(file, mmap_mode='r')
+                except:
+                    plog ("corrupt dark skipped: " + str(file))
+                    inputList.remove(file)
+
+
+
+
+            # # Array to hold loaded images
+            # PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
+
+            # # D  frames and stick them in the memmap
+            # i=0
+            # for file in inputList:
+            #     hdu1exp=float(file.split('_')[-2])
+            #     #darkdeexp=(np.load(file)-masterBias)/hdu1exp
+            #     PLDrive[:,:,i] = np.asarray((np.load(file))/hdu1exp,dtype=np.float32)
+            #     #del darkdeexp
+            #     i=i+1
+
+            # # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+            # finalImage=np.zeros(shapeImage,dtype=float)
+
+
+            # # MULTIPROCESSED VERSION
+            # mptask=[]
+            # counter=0
+            # for goog in range(shapeImage[0]):
+            #     mptask.append(PLDrive[counter,:,:])
+            #     counter=counter+1
+
+            # counter=0
+            # with Pool(os.cpu_count()) as pool:
+            #     for result in pool.map(stack_nanmedian_row, mptask):
+            #         finalImage[counter,:]=result
+            #         #lst[counter] = result
+            #         counter=counter+1
+
+
+
+            # create an empty array to hold each chunk
+            # the size of this array will determine the amount of RAM usage
+
+            finalImage=np.zeros(shapeImage,dtype=float)
+
+            # Store the biases in the memmap file
+            PLDrive= [None] * len(inputList)
+            exposures= [None] * len(inputList)
+            i=0
+            for file in inputList:
+                #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                PLDrive[i] = np.load(file, mmap_mode='r')
+                exposures[i]=float(file.split('_')[-2])
+                i=i+1
+
+            # Get a chunk size that evenly divides the array
+            chunk_size=8
+            while not ( shapeImage[0] % chunk_size ==0):
+                chunk_size=chunk_size+1
+                #print (chunk_size)
+            chunk_size=int(shapeImage[0]/chunk_size)
+
+            holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
+
+            # iterate through the input, replace with ones, and write to output
+            for i in range(shapeImage[0]):
+                if i % chunk_size == 0:
+                    #print (i)
+                    counter=0
+                    for imagefile in range(len(PLDrive)):
+                        holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
+                        counter=counter+1
+
+
+
+                    finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
+
+                    # Wipe and restore files in the memmap file
+                    # To clear RAM usage
+                    PLDrive= [None] * len(inputList)
+                    i=0
+                    for file in inputList:
+                        #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                        PLDrive[i] = np.load(file, mmap_mode='r')
+                        i=i+1
+
+
+
+            masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
+            del finalImage
+
+
+            tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+            try:
+                #fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+
+                # Save and upload master bias
+                g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, tempfrontcalib +filename_start+'_master_bin1.fits' ))
+
+                 # Store a version of the bias for the archive too
+                g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
+
+
+                # fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
+
+                # filepathaws=g_dev['obs'].calib_masters_folder
+                # filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
+                # g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+
+
+                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                    #fits.writeto(pipefolder + '/' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+                    #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+                    #np.save(pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy', masterBias)
+                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterDark)))
+
+            except Exception as e:
+                plog ("Could not save dark frame: ",e)
+
+
+            plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
+
+            g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
+
+            return masterDark
+
+
+
     def regenerate_local_masters(self):
 
 
-        self.total_sequencer_control = True
+        #self.total_sequencer_control = True
 
 
         plog ("killing local problem programs")
@@ -2594,7 +2934,7 @@ class Sequencer:
             os.system("taskkill /IM Aladin.exe /F")
         except:
             pass
-        g_dev["obs"].send_to_user("Currently regenerating local masters. System may be unresponsive during this period.")
+        g_dev["obs"].send_to_user("Currently regenerating local masters.")
 
         if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
             pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
@@ -2605,87 +2945,79 @@ class Sequencer:
                 os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias)
 
 
-        # for every filter hold onto an estimate of the current camera gain.
-        # Each filter will have a different flat field and variation in the flat.
-        # The 'true' camera gain is very likely to be the filter with the least
-        # variation, so we go with that as the true camera gain...... but ONLY after we have a full set of flats
-        # with which to calculate the gain. This is the shelf to hold this data.
-        # There is no hope for individual owners with a multitude of telescopes to keep up with
-        # this estimate, so we need to automate it with a first best guess given in the config.
-        self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
 
 
-        # Remove the current master calibrations
-        # Not doing this can leave old faulty calibrations
-        # in the directory.
-        tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
-        try:
-            os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
-        except:
-            plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits'))
+        # # Remove the current master calibrations
+        # # Not doing this can leave old faulty calibrations
+        # # in the directory.
+        # tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+        # try:
+        #     os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
+        # except:
+        #     plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits'))
 
-        try:
-            os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits')
-        except:
-            plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits'))
-
-
-        try:
-            os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'halfsecondDARK_master_bin1.fits')
-        except:
-            plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'halfsecondDARK_master_bin1.fits'))
-
-        try:
-            os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + '2secondDARK_master_bin1.fits')
-        except:
-            plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + '2secondDARK_master_bin1.fits'))
-
-        try:
-            os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + '10secondDARK_master_bin1.fits')
-        except:
-            plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + '10secondDARK_master_bin1.fits'))
+        # try:
+        #     os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits')
+        # except:
+        #     plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits'))
 
 
+        # try:
+        #     os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'halfsecondDARK_master_bin1.fits')
+        # except:
+        #     plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'halfsecondDARK_master_bin1.fits'))
 
-        try:
-            os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssDARK_master_bin1.fits')
-        except:
-            plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssDARK_master_bin1.fits'))
+        # try:
+        #     os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + '2secondDARK_master_bin1.fits')
+        # except:
+        #     plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + '2secondDARK_master_bin1.fits'))
 
-        try:
-            os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits')
-        except:
-            plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits'))
-
-        try:
-            os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits')
-        except:
-            plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits'))
-
-        try:
-            os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits')
-        except:
-            plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits'))
+        # try:
+        #     os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + '10secondDARK_master_bin1.fits')
+        # except:
+        #     plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + '10secondDARK_master_bin1.fits'))
 
 
 
-        tempfrontcalib=g_dev['obs'].calib_masters_folder + g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_masterFlat*'
-        deletelist=glob(tempfrontcalib)
-        for item in deletelist:
-            try:
-                os.remove(item)
-            except:
-                plog ("Could not remove " + str(item))
+        # try:
+        #     os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssDARK_master_bin1.fits')
+        # except:
+        #     plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssDARK_master_bin1.fits'))
 
-        tempfrontcalib=g_dev['obs'].calib_masters_folder +'masterFlat*'
+        # try:
+        #     os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits')
+        # except:
+        #     plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits'))
 
-        deletelist=glob(tempfrontcalib)
-        for item in deletelist:
-            try:
-                os.remove(item)
-            except:
-                plog ("Could not remove " + str(item))
+        # try:
+        #     os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits')
+        # except:
+        #     plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits'))
+
+        # try:
+        #     os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits')
+        # except:
+        #     plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits'))
+
+
+
+        # tempfrontcalib=g_dev['obs'].calib_masters_folder + g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_masterFlat*'
+        # deletelist=glob(tempfrontcalib)
+        # for item in deletelist:
+        #     try:
+        #         os.remove(item)
+        #     except:
+        #         plog ("Could not remove " + str(item))
+
+        # tempfrontcalib=g_dev['obs'].calib_masters_folder +'masterFlat*'
+
+        # deletelist=glob(tempfrontcalib)
+        # for item in deletelist:
+        #     try:
+        #         os.remove(item)
+        #     except:
+        #         plog ("Could not remove " + str(item))
 
 
         # also masterflat*.npy
@@ -2700,7 +3032,7 @@ class Sequencer:
         #plog (datetime.datetime.now().strftime("%H:%M:%S"))
         plog ("Regenerating bias")
         calibration_timer=time.time()
-        
+
         darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
         archiveDate=str(datetime.date.today()).replace('-','')
@@ -2717,27 +3049,27 @@ class Sequencer:
 
 
         # have to remove flats from memory to make room for.... flats!
-        try:
-            del g_dev['cam'].flatFiles
-        except:
-            pass
+        # try:
+        #     del g_dev['cam'].flatFiles
+        # except:
+        #     pass
 
         if len(inputList) == 0 or len(darkinputList) == 0 or len(inputList) == 1 or len(darkinputList) == 1:
             plog ("Not reprocessing local masters as there are not enough biases or darks")
         else:
             # Clear held bias and darks and flats to save memory and garbage collect.
-            del g_dev['cam'].biasFiles
-            del g_dev['cam'].darkFiles
-            g_dev['cam'].biasFiles = {}
-            g_dev['cam'].darkFiles = {}
-            g_dev['cam'].flatFiles = {}
-            g_dev['cam'].hotFiles = {}
-            gc.collect()
+            #del g_dev['cam'].biasFiles
+            #del g_dev['cam'].darkFiles
+            #g_dev['cam'].biasFiles = {}
+            #g_dev['cam'].darkFiles = {}
+            #g_dev['cam'].flatFiles = {}
+            #g_dev['cam'].hotFiles = {}
+            #gc.collect()
 
 
-            flat_biasdarks={}
+            #flat_biasdarks={}
 
-
+            # Get the size of the camera
             hdutest=np.load(inputList[0], mmap_mode='r')
             shapeImage=hdutest.shape
             del hdutest
@@ -2745,95 +3077,132 @@ class Sequencer:
             # Make an array for the bad pixel map
             bad_pixel_mapper_array=np.full((shapeImage[0],shapeImage[1]), False)
 
-            # Make a temporary memmap file for the bias
-            PLDrive = np.memmap(g_dev['obs'].local_bias_folder + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+            # Array to hold loaded images
+            #PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
+
             # Store the biases in the memmap file
+            PLDrive= [None] * len(inputList)
             i=0
-            n = len(inputList)
             for file in inputList:
-                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-
-                #starttime=datetime.datetime.now()
-                #plog("Storing in a memmap array: " + str(file))
-
-                #hdu1data = np.load(file, mmap_mode='r')
-                hdu1data = np.load(file)
-                #breakpoint()
-
-                # # Bad pixel accumulator
-                # img_temp_median=np.nanmedian(hdu1data)
-                # img_temp_stdev=np.nanstd(hdu1data)
-                # above_array=(hdu1data > (img_temp_median + (10 * img_temp_stdev)))
-                # below_array=(hdu1data < (img_temp_median - (10 * img_temp_stdev)))
-                # plog ("Bad pixels above: " + str(above_array.sum()))
-                # plog ("Bad pixels below: " + str(below_array.sum()))
-                # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-
-                #timetaken=datetime.datetime.now() -starttime
-                #plog ("Time Taken to load array: " + str(timetaken))
-
-                #starttime=datetime.datetime.now()
-                PLDrive[:,:,i] = hdu1data
-                del hdu1data
-                #timetaken=datetime.datetime.now() -starttime
-                #plog ("Time Taken to put in memmap: " + str(timetaken), "To Go:  ", n - i -1)
+                #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                PLDrive[i] = np.load(file, mmap_mode='r')
                 i=i+1
 
-            #plog ("**********************************")
-            #plog ("Median Stacking each bias row individually")
-            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-            finalImage=np.zeros(shapeImage,dtype=float)
+            #breakpoint()
 
-            mptask=[]
-            counter=0
-            for goog in range(shapeImage[0]):
-                mptask.append((g_dev['obs'].local_bias_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                counter=counter+1
+            #PLDrive_holder = copy.deepcopy(PLDrive)
 
-            counter=0
-            with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                for result in pool.map(stack_nanmedian_row, mptask):
-
-                    finalImage[counter,:]=result
-                    counter=counter+1
+            # finalImage array
+            finalImage=np.zeros(shapeImage, dtype=np.float32)
 
 
-            #plog(datetime.datetime.now().strftime("%H:%M:%S"))
-            #plog ("**********************************")
 
-            
+            try:
+
+                # create an empty array to hold each chunk
+                # the size of this array will determine the amount of RAM usage
+
+                # Get a chunk size that evenly divides the array
+                chunk_size=8
+                while not ( shapeImage[0] % chunk_size ==0):
+                    chunk_size=chunk_size+1
+                    #print (chunk_size)
+                chunk_size=int(shapeImage[0]/chunk_size)
+
+                holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
+
+                # iterate through the input, replace with ones, and write to output
+                for i in range(shapeImage[0]):
+                    if i % chunk_size == 0:
+                        #print (i)
+                        counter=0
+                        for imagefile in range(len(PLDrive)):
+                            holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
+                            counter=counter+1
+
+                        finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
+
+
+                        # # Clear out memory
+                        # del holder
+                        # holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
+
+                        # Wipe and restore files in the memmap file
+                        # To clear RAM usage
+                        PLDrive= [None] * len(inputList)
+                        i=0
+                        for file in inputList:
+                            #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                            PLDrive[i] = np.load(file, mmap_mode='r')
+                            i=i+1
+
+                        #PLDrive=copy.deepcopy(PLDrive_holder)
+
+
+
+            except:
+                plog(traceback.format_exc())
+                breakpoint()
+
+            #plog ("Bias reconstructed: " +str(time.time()-calibration_timer))
+
+            #breakpoint()
+            # counter=0
+            # with Pool(os.cpu_count()) as pool:
+            #     for result in pool.map(stack_nanmedian_row, mptask):
+            #         finalImage[counter,:]=result
+            #         #lst[counter] = result
+            #         counter=counter+1
+
+            # # MULTIPROCESSED VERSION
+            # mptask=[]
+            # counter=0
+            # for goog in range(shapeImage[0]):
+            #     #mptask.append(PLDrive[counter,:,:])
+            #     counter=counter+1
+
+            # counter=0
+            # with Pool(os.cpu_count()) as pool:
+            #     for result in pool.map(stack_nanmedian_row, mptask):
+            #         finalImage[counter,:]=result
+            #         #lst[counter] = result
+            #         counter=counter+1
 
             masterBias=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
             del finalImage
+            del holder
+            #del PLDrive
 
-            # Bad pixel accumulator
+
+            #plog ("Bias File Created: " +str(time.time()-calibration_timer))
+            #calibration_timer=time.time()
+
+
+            # Bad pixel accumulator for the bias frame
             img_temp_median=np.nanmedian(masterBias)
             img_temp_stdev=np.nanstd(masterBias)
             above_array=(masterBias > (img_temp_median + (10 * img_temp_stdev)))
             below_array=(masterBias < (img_temp_median - (10 * img_temp_stdev)))
-            #plog ("Bad pixels above: " + str(above_array.sum()))
-            #plog ("Bad pixels below: " + str(below_array.sum()))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-
-
-
 
             tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
             try:
-                fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
-                filepathaws=g_dev['obs'].calib_masters_folder
-                filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
+                #fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
 
-                # Store a version of the bias for the archive too
-                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
+                # Save and upload master bias
+                g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias), None, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'BIAS_master_bin1.fits' ))
 
-                filepathaws=g_dev['obs'].calib_masters_folder
-                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+                 # Store a version of the bias for the archive too
+                g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits' ))
+
+
+                # fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
+
+                # filepathaws=g_dev['obs'].calib_masters_folder
+                # filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
+                # g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+
+
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     #fits.writeto(pipefolder + '/' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
                     #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
@@ -2842,12 +3211,11 @@ class Sequencer:
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
 
-            PLDrive._mmap.close()
-            del PLDrive
-            gc.collect()
-            os.remove(g_dev['obs'].local_bias_folder  + 'tempfile')
-            
-            
+
+            #plog ("Bias File Pixel Mapped and Saved: " +str(time.time()-calibration_timer))
+            #calibration_timer=time.time()
+
+
 
             # Now that we have the master bias, we can estimate the readnoise actually
             # by comparing the standard deviations between the bias and the masterbias
@@ -2855,9 +3223,17 @@ class Sequencer:
                 readnoise_array=[]
                 post_readnoise_array=[]
                 #plog ("Calculating Readnoise. Please Wait.")
+                #for file in inputList:
+                    #hdu1data = np.load(file, mmap_mode='r')
+                    #hdu1data = np.load(file)
+
+                #counter=0
+                i=0
                 for file in inputList:
-                    hdu1data = np.load(file, mmap_mode='r')
-                    hdu1data=hdu1data-masterBias
+                    #PLDrive[:,:,i] = np.load(file)
+
+
+                    hdu1data=PLDrive[i]-masterBias
                     hdu1data = hdu1data[500:-500,500:-500]
                     stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))
                     #est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
@@ -2865,6 +3241,7 @@ class Sequencer:
                     est_read_noise= (stddiffimage * g_dev['cam'].camera_known_gain) / 1.414
                     readnoise_array.append(est_read_noise)
                     post_readnoise_array.append(stddiffimage)
+                    i=i+1
 
                 readnoise_array=np.array(readnoise_array)
                 #plog ("Raw Readnoise outputs: " +str(readnoise_array))
@@ -2874,9 +3251,11 @@ class Sequencer:
                 #plog ("Skipping readnoise estimation as we don't currently have a reliable camera gain estimate.")
 
             try:
-                g_dev['cam'].biasFiles.update({'1': masterBias})
+                g_dev['cam'].biasFiles.update({'1': masterBias.astype(np.float32)})
             except:
                 plog("Bias frame master re-upload did not work.")
+
+
 
 
             plog ("Bias reconstructed: " +str(time.time()-calibration_timer))
@@ -2884,1809 +3263,112 @@ class Sequencer:
             g_dev["obs"].send_to_user("Bias calibration frame created.")
 
 
-            # NOW we have the master bias, we can move onto the dark frames
-            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            #plog ("Regenerating long exposure dark")
-            inputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
 
-            # Test each flat file actually opens
-            for file in inputList:
+############################################# DARK
+
+
+
+
+
+            scaled_darklist=[
+                [g_dev['obs'].local_dark_folder                 , 'DARK','1'],
+                [g_dev['obs'].local_dark_folder+ 'halfsecdarks/', 'halfsecondDARK', 'halfsec_exposure_dark' ],
+                [g_dev['obs'].local_dark_folder+ 'twosecdarks/', '2secondDARK', 'twosec_exposure_dark' ],
+                [g_dev['obs'].local_dark_folder+ 'tensecdarks/', '10secondDARK', 'tensec_exposure_dark'],
+                [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssDARK', 'broadband_ss_dark' ],
+                [g_dev['obs'].local_dark_folder+ 'narrowbanddarks/', 'narrowbandssDARK','narrowband_ss_dark']
+                ]
+
+            bias_darklist=[
+                
+                [g_dev['obs'].local_dark_folder+ 'pointzerozerofourfivedarks/', 'pointzerozerofourfiveBIASDARK','pointzerozerofourfive' ],
+                [g_dev['obs'].local_dark_folder+ 'onepointfivepercentdarks/', 'onepointfivepercentBIASDARK','onepointfivepercent' ],
+
+                [g_dev['obs'].local_dark_folder+ 'fivepercentdarks/', 'fivepercentBIASDARK','fivepercent' ],
+                [g_dev['obs'].local_dark_folder+ 'tenpercentdarks/','tenpercentBIASDARK','tenpercent'],
+                [g_dev['obs'].local_dark_folder+ 'quartersecdarks/','quartersecBIASDARK', 'quartersec' ],
+                [g_dev['obs'].local_dark_folder+ 'halfsecdarks/','halfsecBIASDARK', 'halfsec'],
+                [g_dev['obs'].local_dark_folder+ 'sevenfivepercentdarks/', 'sevenfivepercentBIASDARK', 'sevenfivepercent'],
+                [g_dev['obs'].local_dark_folder+ 'onesecdarks/', 'onesecBIASDARK', 'onesec'],
+                [g_dev['obs'].local_dark_folder+ 'oneandahalfsecdarks/', 'oneandahalfsecBIASDARK','oneandahalfsec'],
+                [g_dev['obs'].local_dark_folder+ 'twosecdarks/', 'twosecBIASDARK', 'twosec' ],
+                [g_dev['obs'].local_dark_folder+ 'threepointfivesecdarks/', 'threepointfivesecBIASDARK', 'threepointfivesec'],
+                [g_dev['obs'].local_dark_folder+ 'fivesecdarks/', 'fivesecBIASDARK','fivesec' ],
+                [g_dev['obs'].local_dark_folder+ 'sevenpointfivesecdarks/', 'sevenpointfivesecBIASDARK','sevenpointfivesec' ],
+                [g_dev['obs'].local_dark_folder+ 'tensecdarks/','tensecBIASDARK', 'tensec' ],
+                [g_dev['obs'].local_dark_folder+ 'fifteensecdarks/', 'fifteensecBIASDARK','fifteensec' ],
+                [g_dev['obs'].local_dark_folder+ 'twentysecdarks/', 'twentysecBIASDARK', 'twentysec'],
+                [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssBIASDARK', 'broadband_ss_biasdark'],
+                [g_dev['obs'].local_dark_folder+ 'narrowbanddarks/', 'narrowbandssBIASDARK', 'narrowband_ss_biasdark']
+                ]
+
+            # CLEAR OUT OLD TEMPFILES
+            darkdeleteList=(glob(g_dev['obs'].local_dark_folder +'/*tempbiasdark.n*'))
+            for file in darkdeleteList:
                 try:
-                    hdu1data = np.load(file, mmap_mode='r')
+                    os.remove(file)
                 except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-            # D  frames and stick them in the memmap
-            i=0
-            for file in inputList:
-                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                #starttime=datetime.datetime.now()
-                #plog("Storing dark in a memmap array: " + str(file))
-                hdu1data = np.load(file, mmap_mode='r')
-                hdu1exp=float(file.split('_')[-2])
-                darkdeexp=(hdu1data-masterBias)/hdu1exp
-                del hdu1data
-
-                # # Bad pixel accumulator
-                # img_temp_median=np.nanmedian(darkdeexp)
-                # img_temp_stdev=np.nanstd(darkdeexp)
-                # above_array=(darkdeexp > 20)
-                # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                # plog ("Bad pixels above: " + str(above_array.sum()))
-                # #plog ("Bad pixels below: " + str(below_array.sum()))
-                # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-                #timetaken=datetime.datetime.now() -starttime
-                #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                #starttime=datetime.datetime.now()
-                PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
-                del darkdeexp
-                #timetaken=datetime.datetime.now() -starttime
-                #plog ("Time Taken to put in memmap: " + str(timetaken))
-                i=i+1
-
-            #plog ("**********************************")
-            #plog ("Median Stacking each darkframe row individually ")
-            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-            finalImage=np.zeros(shapeImage,dtype=float)
-
-
-            mptask=[]
-            counter=0
-            for goog in range(shapeImage[0]):
-                mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                counter=counter+1
-
-            counter=0
-            with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                for result in pool.map(stack_nanmedian_row, mptask):
-
-                    finalImage[counter,:]=result
-                    counter=counter+1
+                    plog ("Couldnt remove old dark file: " + str(file))
 
 
 
+            for entry in scaled_darklist:
 
-            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            #plog ("**********************************")
+                processedDark = self.make_scaled_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder)
 
-            masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-            del finalImage
-
-            # Bad pixel accumulator
-            img_temp_median=np.nanmedian(masterDark)
-            img_temp_stdev=np.nanstd(masterDark)
-            above_array=(masterDark > 20)
-            #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-            #plog ("Bad pixels above: " + str(above_array.sum()))
-            #plog ("Bad pixels below: " + str(below_array.sum()))
-            bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-            try:
-                fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
-                filepathaws=g_dev['obs'].calib_masters_folder
-                filenameaws=tempfrontcalib + 'DARK_master_bin1.fits'
-                g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-
-                # Store a version of the dark for the archive too
-                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark, overwrite=True)
-
-                filepathaws=g_dev['obs'].calib_masters_folder
-                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits'
-                g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                    #fits.writeto(pipefolder + '/' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
-                    #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
-                    #np.save(pipefolder + '/'  + tempfrontcalib + 'DARK_master_bin1.npy', masterDark)
-                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'DARK_master_bin1.npy', copy.deepcopy(masterDark)))
-            except Exception as e:
-                plog ("Could not save dark frame: ",e)
-
-            PLDrive._mmap.close()
-            del PLDrive
-            gc.collect()
-            os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-
-            try:
-                g_dev['cam'].darkFiles.update({'1': masterDark})
-            except:
-                plog("Dark frame master re-upload did not work.")
-            
-
-            plog ("Long Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
-            calibration_timer=time.time()
-            g_dev["obs"].send_to_user("Long Exposure Dark calibration frame created.")
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-            # NOW for the five percent flat darks and biasdarks
-            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            #plog ("Regenerating five percent biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'fivepercentdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
                 try:
-                    hdu1data = np.load(file, mmap_mode='r')
+                    g_dev['cam'].darkFiles.update({entry[2]: processedDark.astype(np.float32)})
                 except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+                    plog("Dark frame master re-upload did not work.")
 
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
 
-                #plog ("**********************************")
-                #plog ("Median Stacking each darkframe row individually ")
-                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                #plog ("**********************************")
+            for entry in bias_darklist:
 
-                flat_biasdarks['fivepercent']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
+                processedDark = self.make_bias_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder)
 
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'fivepercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'fivepercentBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
 
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                plog ("Five percent bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-                g_dev["obs"].send_to_user("five percent bias-dark calibration frame created.")
+                if entry[2] ==  'broadband_ss_biasdark' or entry[2] == 'narrowband_ss_biasdark':
+                    g_dev['cam'].darkFiles.update({entry[2]: processedDark.astype(np.float32)})
+                else:
 
+                    try:
+                        #flat_biasdarks[entry[2]]=processedDark
+                        np.save(g_dev['obs'].local_dark_folder +'/'+entry[2] +'tempbiasdark.npy', processedDark.astype(np.float32))
+                    except:
+                        plog("Dark frame master re-upload did not work.")
 
 
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
 
-            # NOW for the five percent flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating ten percent biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'tenpercentdarks/' +'*.n*'))
+                #'fivepercent'
 
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
 
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
 
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
 
-                flat_biasdarks['tenpercent']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'tenpercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'tenpercentBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
+            # Bad pixel accumulator from long exposure dark
+            img_temp_median=np.nanmedian(g_dev['cam'].darkFiles['1'])
+            img_temp_stdev=np.nanstd(g_dev['cam'].darkFiles['1'])
+            above_array=(g_dev['cam'].darkFiles['1'] > 20)
+            bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
 
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("ten percent bias-dark calibration frame created.")
-                plog ("Ten percent bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
 
+            # Bad pixel accumulator from broadband exposure dark
+            img_temp_median=np.nanmedian(g_dev['cam'].darkFiles['broadband_ss_dark' ])
+            img_temp_stdev=np.nanstd(g_dev['cam'].darkFiles['broadband_ss_dark' ])
+            above_array=(g_dev['cam'].darkFiles['broadband_ss_dark' ] > 20)
+            bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
 
+            # Bad pixel accumulator from narrowband exposure dark
+            img_temp_median=np.nanmedian(g_dev['cam'].darkFiles['narrowband_ss_dark'])
+            img_temp_stdev=np.nanstd(g_dev['cam'].darkFiles['narrowband_ss_dark'])
+            above_array=(g_dev['cam'].darkFiles['narrowband_ss_dark'] > 20)
+            bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
 
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
 
-            # NOW for the five percent flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating quarter second biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'quartersecdarks/' +'*.n*'))
 
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
 
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                flat_biasdarks['quartersec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'quartersecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'quartersecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("quarter sec bias-dark calibration frame created.")
-                plog ("Quarter0sec bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-            # NOW for the five percent flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating half second biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'halfsecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                flat_biasdarks['halfsec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'halfsecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'  + tempfrontcalib + 'halfsecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("half second bias-dark calibration frame created.")
-                plog ("Half Second bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-            # NOW for the five percent flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating seventyfive percent biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'sevenfivepercentdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                flat_biasdarks['sevenfivepercent']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'sevenfivepercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'sevenfivepercentBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("sevenfivepercent bias-dark calibration frame created.")
-                plog ("Seven Five percent bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-            # NOW for the five percent flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating seventyfive percent biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'onesecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                flat_biasdarks['onesec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'onesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'onesecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("onesec bias-dark calibration frame created.")
-                plog ("One Second bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-            # NOW for the five percent flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating one and a half sec biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'oneandahalfsecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                flat_biasdarks['oneandahalfsec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'oneandahalfsecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'oneandahalfsecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("oneandahalfsec bias-dark calibration frame created.")
-                plog ("One and a half second bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-            # NOW for the five percent flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating two sec biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'twosecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                flat_biasdarks['twosec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'twosecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'twosecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("two second bias-dark calibration frame created.")
-                plog ("Two Second bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-            # NOW for the three point five second flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating 3.five sec biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'threepointfivesecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                flat_biasdarks['threepointfivesec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'threepointfivesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'threepointfivesecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("three point five bias-dark calibration frame created.")
-                plog ("Three point five percent bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-            # NOW for the five second flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating five sec biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'fivesecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                flat_biasdarks['fivesec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'fivesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'fivesecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("five bias-dark calibration frame created.")
-                plog ("Five second bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-            # NOW for the three point five second flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating 7.five sec biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'sevenpointfivesecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                flat_biasdarks['sevenpointfivesec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'sevenpointfivesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'  + tempfrontcalib + 'sevenpointfivesecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("seven point five bias-dark calibration frame created.")
-                plog ("Seven point five ias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-            # NOW for the five percent flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating ten sec biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'tensecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                flat_biasdarks['tensec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("ten second bias-dark calibration frame created.")
-                plog ("Ten second bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-            # NOW for the five percent flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating fifteen sec biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'fifteensecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                flat_biasdarks['fifteensec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'fifteensecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'fifteensecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("fifteen second bias-dark calibration frame created.")
-                plog ("Fifteen second bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-            # NOW for the five percent flat darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating twenty sec biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'twentysecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                # just construct the biasdarks
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                flat_biasdarks['twentysec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-
-                try:
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'twentysecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'twentysecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                del finalImage
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("twenty sec bias-dark calibration frame created.")
-                plog ("Twenty second bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-
-
-            # NOW for the half second darks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating 0.5 second exposure dark")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'halfsecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                    #starttime=datetime.datetime.now()
-                    #plog("Storing dark in a memmap array: " + str(file))
-                    hdu1data = np.load(file, mmap_mode='r')
-                    hdu1exp=float(file.split('_')[-2])
-                    darkdeexp=(hdu1data-masterBias)/hdu1exp
-                    del hdu1data
-
-                    # # Bad pixel accumulator
-                    # img_temp_median=np.nanmedian(darkdeexp)
-                    # img_temp_stdev=np.nanstd(darkdeexp)
-                    # above_array=(darkdeexp > 20)
-                    # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                    # plog ("Bad pixels above: " + str(above_array.sum()))
-                    # #plog ("Bad pixels below: " + str(below_array.sum()))
-                    # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                    #starttime=datetime.datetime.now()
-                    PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
-                    del darkdeexp
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to put in memmap: " + str(timetaken))
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-
-
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-
-                        finalImage[counter,:]=result
-                        counter=counter+1
-
-
-
-
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                halfsecond_masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-                del finalImage
-
-
-                try:
-                    fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws=tempfrontcalib + 'halfsecondDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-
-                    # Store a version of the dark for the archive too
-                    fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark, overwrite=True)
-
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #fits.writeto(pipefolder + '/' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
-                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'halfsecondDARK_master_bin1.npy', halfsecond_masterDark)
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'halfsecondDARK_master_bin1.npy', copy.deepcopy(halfsecond_masterDark)))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-
-                g_dev["obs"].send_to_user("Half Second Dark calibration frame created.")
-                plog ("Half Second bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-
-
-            # NOW for the 2 second darks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating 2 second exposure dark")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'twosecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                    #starttime=datetime.datetime.now()
-                    #plog("Storing dark in a memmap array: " + str(file))
-                    hdu1data = np.load(file, mmap_mode='r')
-                    hdu1exp=float(file.split('_')[-2])
-                    darkdeexp=(hdu1data-masterBias)/hdu1exp
-                    del hdu1data
-
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                    #starttime=datetime.datetime.now()
-                    PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
-                    del darkdeexp
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to put in memmap: " + str(timetaken))
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-
-
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-
-                        finalImage[counter,:]=result
-                        counter=counter+1
-
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                twosecond_masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-                del finalImage
-
-                try:
-                    fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws=tempfrontcalib + '2secondDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-
-                    # Store a version of the dark for the archive too
-                    fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark, overwrite=True)
-
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '2secondDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #fits.writeto(pipefolder + '/' + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
-                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
-                        #np.save(pipefolder + '/'  + tempfrontcalib + '2secondDARK_master_bin1.npy', twosecond_masterDark)
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + '2secondDARK_master_bin1.npy', copy.deepcopy(twosecond_masterDark)))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-
-                g_dev["obs"].send_to_user("Two Second Dark calibration frame created.")
-                plog ("Two Second bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-
-
-            # NOW for the 10 second darks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating 10 second exposure dark")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'tensecdarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                    #starttime=datetime.datetime.now()
-                    #plog("Storing dark in a memmap array: " + str(file))
-                    hdu1data = np.load(file, mmap_mode='r')
-                    hdu1exp=float(file.split('_')[-2])
-                    darkdeexp=(hdu1data-masterBias)/hdu1exp
-                    del hdu1data
-
-                    # # Bad pixel accumulator
-                    # img_temp_median=np.nanmedian(darkdeexp)
-                    # img_temp_stdev=np.nanstd(darkdeexp)
-                    # above_array=(darkdeexp > 20)
-                    # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                    # plog ("Bad pixels above: " + str(above_array.sum()))
-                    # #plog ("Bad pixels below: " + str(below_array.sum()))
-                    # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                    #starttime=datetime.datetime.now()
-                    PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
-                    del darkdeexp
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to put in memmap: " + str(timetaken))
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-
-
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-
-                        finalImage[counter,:]=result
-                        counter=counter+1
-
-
-
-
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                tensecond_masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-                del finalImage
-
-                try:
-                    fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws=tempfrontcalib + '10secondDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-
-                    # Store a version of the dark for the archive too
-                    fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark, overwrite=True)
-
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '10secondDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #fits.writeto(pipefolder + '/' + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
-                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
-                        #np.save(pipefolder + '/'  + tempfrontcalib + '10secondDARK_master_bin1.npy', tensecond_masterDark)
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + '10secondDARK_master_bin1.npy', copy.deepcopy(tensecond_masterDark)))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-
-                g_dev["obs"].send_to_user("Ten Second Dark calibration frame created.")
-                plog ("Ten Second dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-
-
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-
-
-            # NOW for the broadband smartstack darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating smartstack broadband exposure darks and biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'broadbanddarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-                # Begin with just the normal masterdark of this length
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                    #starttime=datetime.datetime.now()
-                    #plog("Storing dark in a memmap array: " + str(file))
-                    hdu1data = np.load(file, mmap_mode='r')
-                    hdu1exp=float(file.split('_')[-2])
-                    darkdeexp=(hdu1data-masterBias)/hdu1exp
-                    del hdu1data
-
-                    # # Bad pixel accumulator
-                    # img_temp_median=np.nanmedian(darkdeexp)
-                    # img_temp_stdev=np.nanstd(darkdeexp)
-                    # above_array=(darkdeexp > 20)
-                    # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                    # plog ("Bad pixels above: " + str(above_array.sum()))
-                    # #plog ("Bad pixels below: " + str(below_array.sum()))
-                    # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                    #starttime=datetime.datetime.now()
-                    PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
-                    del darkdeexp
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to put in memmap: " + str(timetaken))
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                broadbandss_masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-                del finalImage
-
-                # Bad pixel accumulator
-                img_temp_median=np.nanmedian(broadbandss_masterDark)
-                img_temp_stdev=np.nanstd(broadbandss_masterDark)
-                above_array=(broadbandss_masterDark > 20)
-                #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                # plog ("Bad pixels above: " + str(above_array.sum()))
-                #plog ("Bad pixels below: " + str(below_array.sum()))
-                bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-
-                try:
-                    fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws=tempfrontcalib + 'broadbandssDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-
-                    # Store a version of the dark for the archive too
-                    fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark, overwrite=True)
-
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #fits.writeto(pipefolder + '/' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
-                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'broadbandssDARK_master_bin1.npy', broadbandss_masterDark)
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'broadbandssDARK_master_bin1.npy', copy.deepcopy(broadbandss_masterDark)))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-
-                g_dev["obs"].send_to_user("Broadband Smarstack length dark calibration frame created.")
-                plog ("Broadband Smartstack dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-                ######################################## NOW DO BIASDARK
-                # Begin with just the biasdark of this length
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                    #starttime=datetime.datetime.now()
-                    #plog("Storing dark in a memmap array: " + str(file))
-                    darkdeexp = np.load(file, mmap_mode='r')
-                    #hdu1exp=float(file.split('_')[-2])
-                    #darkdeexp=(hdu1data-masterBias)/hdu1exp
-                    #darkdeexp=hdu1data
-                    #del hdu1data
-
-                    # # Bad pixel accumulator
-                    # img_temp_median=np.nanmedian(darkdeexp)
-                    # img_temp_stdev=np.nanstd(darkdeexp)
-                    # above_array=(darkdeexp > 20)
-                    # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                    # plog ("Bad pixels above: " + str(above_array.sum()))
-                    # #plog ("Bad pixels below: " + str(below_array.sum()))
-                    # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                    #starttime=datetime.datetime.now()
-                    PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
-                    del darkdeexp
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to put in memmap: " + str(timetaken))
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                broadbandss_masterBiasDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-                del finalImage
-
-                try:
-                    fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws=tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-
-                    # Store a version of the dark for the archive too
-                    fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark, overwrite=True)
-
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #fits.writeto(pipefolder + '/' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
-                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.npy', broadbandss_masterBiasDark)
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.npy', copy.deepcopy(broadbandss_masterBiasDark)))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-
-                g_dev["obs"].send_to_user("Broadband Smartstack length bias-dark calibration frame created.")
-                plog ("Broadband Smartstack bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-
-
-            # NOW for the narrowband smartstack darks and biasdarks
-            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # plog ("Regenerating smartstack narrowband exposure darks and biasdarks")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'narrowbanddarks/' +'*.n*'))
-
-            # Test each flat file actually opens
-            for file in inputList:
-                try:
-                    hdu1data = np.load(file, mmap_mode='r')
-                except:
-                    plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)
-
-            if len(inputList) > 0:
-
-                # Begin with just the normal masterdark of this length
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                    #starttime=datetime.datetime.now()
-                    #plog("Storing dark in a memmap array: " + str(file))
-                    hdu1data = np.load(file, mmap_mode='r')
-                    hdu1exp=float(file.split('_')[-2])
-                    darkdeexp=(hdu1data-masterBias)/hdu1exp
-                    del hdu1data
-
-                    # # Bad pixel accumulator
-                    # img_temp_median=np.nanmedian(darkdeexp)
-                    # img_temp_stdev=np.nanstd(darkdeexp)
-                    # above_array=(darkdeexp > 20)
-                    # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                    # plog ("Bad pixels above: " + str(above_array.sum()))
-                    # #plog ("Bad pixels below: " + str(below_array.sum()))
-                    # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                    #starttime=datetime.datetime.now()
-                    PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
-                    del darkdeexp
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to put in memmap: " + str(timetaken))
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                narrowbandss_masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-                del finalImage
-
-
-                # Bad pixel accumulator
-                img_temp_median=np.nanmedian(narrowbandss_masterDark)
-                img_temp_stdev=np.nanstd(narrowbandss_masterDark)
-                above_array=(narrowbandss_masterDark > 20)
-                #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                # plog ("Bad pixels above: " + str(above_array.sum()))
-                #plog ("Bad pixels below: " + str(below_array.sum()))
-                bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-
-
-                try:
-                    fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws=tempfrontcalib + 'narrowbandssDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-
-                    # Store a version of the dark for the archive too
-                    fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark, overwrite=True)
-
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #fits.writeto(pipefolder + '/' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
-                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
-                        #np.save(pipefolder + '/'  + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy', narrowbandss_masterDark)
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'  + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy', copy.deepcopy(narrowbandss_masterDark)))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-
-                g_dev["obs"].send_to_user("narrowband Smartstack length dark calibration frame created.")
-                plog ("Narrowband Smartstack dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-                ######################################## NOW DO BIASDARK
-                # Begin with just the biasdark of this length
-                PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                # D  frames and stick them in the memmap
-                i=0
-                for file in inputList:
-                    #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                    #starttime=datetime.datetime.now()
-                    #plog("Storing dark in a memmap array: " + str(file))
-                    darkdeexp = np.load(file, mmap_mode='r')
-                    #hdu1exp=float(file.split('_')[-2])
-                    #darkdeexp=(hdu1data-masterBias)/hdu1exp
-                    #darkdeexp=hdu1data
-                    #del hdu1data
-
-                    # # Bad pixel accumulator
-                    # img_temp_median=np.nanmedian(darkdeexp)
-                    # img_temp_stdev=np.nanstd(darkdeexp)
-                    # above_array=(darkdeexp > 20)
-                    # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                    # plog ("Bad pixels above: " + str(above_array.sum()))
-                    # #plog ("Bad pixels below: " + str(below_array.sum()))
-                    # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                    #starttime=datetime.datetime.now()
-                    PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
-                    del darkdeexp
-                    #timetaken=datetime.datetime.now() -starttime
-                    #plog ("Time Taken to put in memmap: " + str(timetaken))
-                    i=i+1
-
-                # plog ("**********************************")
-                # plog ("Median Stacking each darkframe row individually ")
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                finalImage=np.zeros(shapeImage,dtype=float)
-
-                mptask=[]
-                counter=0
-                for goog in range(shapeImage[0]):
-                    mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                    counter=counter+1
-
-                counter=0
-                with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                    for result in pool.map(stack_nanmedian_row, mptask):
-                        finalImage[counter,:]=result
-                        counter=counter+1
-                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                # plog ("**********************************")
-
-                narrowbandss_masterBiasDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-                del finalImage
-
-                try:
-                    fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws=tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-
-                    # Store a version of the dark for the archive too
-                    fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark, overwrite=True)
-
-                    filepathaws=g_dev['obs'].calib_masters_folder
-                    filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits'
-                    g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        #fits.writeto(pipefolder + '/' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
-                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
-                        #np.save(pipefolder + '/' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.npy', narrowbandss_masterBiasDark)
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.npy', copy.deepcopy(narrowbandss_masterBiasDark)))
-                except Exception as e:
-                    plog ("Could not save dark frame: ",e)
-
-                PLDrive._mmap.close()
-                del PLDrive
-                gc.collect()
-                os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-
-                g_dev["obs"].send_to_user("narrowband Smartstack length bias-dark calibration frame created.")
-                plog ("Narrowband Smartstack bias-dark reconstructed: " +str(time.time()-calibration_timer))
-                calibration_timer=time.time()
-
-
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-            ##############################################################################################
-
-
-
-
-
+            #breakpoint()
 
 
             # NOW that we have a master bias and a master dark, time to step through the flat frames!
@@ -4710,8 +3392,19 @@ class Sequencer:
             else:
                 for filterfolder in tempfilters:
 
-                    # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                    calibration_timer=time.time()
                     filtercode=filterfolder.split('\\')[-2]
+
+                    # DELETE ALL TEMP FILES FROM FLAT DIRECTORY
+                    deleteList= (glob(g_dev['obs'].local_flat_folder + filtercode + '/tempcali_*.n*'))
+                    for file in deleteList:
+                        try:
+                            os.remove(file)
+                        except:
+                            plog ("couldn't remove tempflat: " + str(file))
+
+                    # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+
                     # plog ("Regenerating flat for " + str(filtercode))
                     inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.n*'))
 
@@ -4732,102 +3425,128 @@ class Sequencer:
 
                         while True:
 
-                            PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+                            #PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+                            #PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
+
+                            # DELETE ALL TEMP FILES FROM FLAT DIRECTORY
+                            deleteList= (glob(g_dev['obs'].local_flat_folder + filtercode + '/tempcali_*.n*'))
+                            for file in deleteList:
+                                try:
+                                    os.remove(file)
+                                except:
+                                    plog ("couldn't remove tempflat: " + str(file))
+
+                            PLDrive = [None] * len(inputList)
+
 
                             # Debias and dedark flat frames and stick them in the memmap
                             i=0
+                            temp_flat_file_list=[]
                             for file in inputList:
                                 #plog("Storing flat in a memmap array: " + str(file))
-                                hdu1data = np.load(file, mmap_mode='r')
+                                #hdu1data = np.load(file, mmap_mode='r')
+                                hdu1data = np.load(file)
+                                #PLDrive[i] = np.load(file, mmap_mode='r')
+
                                 hdu1exp=float(file.split('_')[-2])
                                 #plog ("EXP")
                                 #plog (hdu1exp)
                                 fraction_through_range=0
 
 
+
+#g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy'
+
+
                                 # This try/except is here because if there is a missing dark
                                 # we can always just revert to using the long dark.
                                 try:
 
-                                    if hdu1exp == 0.05 and 'fivepercent' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['fivepercent']
+                                    if hdu1exp == 0.0045 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy')
                                         #print("five percent")
-                                    elif hdu1exp == 0.1 and 'tenpercent' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['tenpercent']
+                                    elif hdu1exp == 0.015 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'onepointfivepercent' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'onepointfivepercent' +'tempbiasdark.npy')
+                                        #print("five percent")
+                                    elif hdu1exp == 0.05 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy')
+                                        #print("five percent")
+                                    elif hdu1exp == 0.1 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'tenpercent' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'tenpercent' +'tempbiasdark.npy')
                                         #print("ten percent")
-                                    elif hdu1exp == 0.25 and 'quartersec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['quartersec']
+                                    elif hdu1exp == 0.25 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'quartersec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'quartersec' +'tempbiasdark.npy')
                                         #print("quartersec")
-                                    elif hdu1exp == 0.5 and 'halfsec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['halfsec']
+                                    elif hdu1exp == 0.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'halfsec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'halfsec' +'tempbiasdark.npy')
                                         #plog("halfsec")
-                                    elif hdu1exp == 0.75 and 'sevenfivepercent' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['sevenfivepercent']
+                                    elif hdu1exp == 0.75 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'sevenfivepercent' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'sevenfivepercent' +'tempbiasdark.npy')
                                         #plog("sevenfivepercent")
-                                    elif hdu1exp == 1.0 and 'onesec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['onesec']
+                                    elif hdu1exp == 1.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'onesec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'onesec' +'tempbiasdark.npy')
                                         #plog("onesec")
-                                    elif hdu1exp == 1.5 and 'oneandahalfsec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['oneandahalfsec']
+                                    elif hdu1exp == 1.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'oneandahalfsec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'oneandahalfsec' +'tempbiasdark.npy')
                                         #plog("one and a half sec")
-                                    elif hdu1exp == 2.0 and 'twosec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['twosec']
+                                    elif hdu1exp == 2.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'twosec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'twosec' +'tempbiasdark.npy')
                                         #plog("two sec")
-                                    elif hdu1exp == 3.5 and 'threepointfivesec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['threepointfivesec']
+                                    elif hdu1exp == 3.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'threepointfivesec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'threepointfivesec' +'tempbiasdark.npy')
                                         #plog("threepointfive sec")
-                                    elif hdu1exp == 5.0 and 'fivesec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['fivesec']
+                                    elif hdu1exp == 5.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fivesec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fivesec' +'tempbiasdark.npy')
                                         #plog("five sec")
-                                    elif hdu1exp == 7.5 and 'sevenpointfivesec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['sevenpointfivesec']
+                                    elif hdu1exp == 7.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'sevenpointfivesec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'sevenpointfivesec' +'tempbiasdark.npy')
                                         #plog("sevenpointfive sec")
-                                    elif hdu1exp == 10.0 and 'tensec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['tensec']
+                                    elif hdu1exp == 10.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'tensec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'tensec' +'tempbiasdark.npy')
                                         #plog("ten sec")
-                                    elif hdu1exp == 15.0 and 'fifteensec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['fifteensec']
+                                    elif hdu1exp == 15.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fifteensec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fifteensec' +'tempbiasdark.npy')
                                         #plog("fiveteen sec")
-                                    elif hdu1exp == 20.0 and 'twenty' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['twentysec']
+                                    elif hdu1exp == 20.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'twentysec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'twentysec' +'tempbiasdark.npy')
                                         #plog("twenty sec")
                                     elif hdu1exp == broadband_ss_biasdark_exp_time:
-                                        flatdebiaseddedarked=hdu1data -narrowbandss_masterBiasDark
+                                        flatdebiaseddedarked=hdu1data -g_dev['cam'].darkFiles['broadband_ss_biasdark']
                                         #plog ("broady")
                                     elif hdu1exp == narrowband_ss_biasdark_exp_time:
-                                        flatdebiaseddedarked=hdu1data -broadbandss_masterBiasDark
+                                        flatdebiaseddedarked=hdu1data -g_dev['cam'].darkFiles['narrowband_ss_biasdark']
                                         #plog ("Narrowy")
                                     elif hdu1exp < 0.5:
-                                        flatdebiaseddedarked=(hdu1data-masterBias)-(halfsecond_masterDark*hdu1exp)
+                                        flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['halfsec_exposure_dark']*hdu1exp)
                                     elif hdu1exp <= 2.0:
                                         fraction_through_range=(hdu1exp-0.5)/(2.0-0.5)
-                                        tempmasterDark=(fraction_through_range * twosecond_masterDark) + ((1-fraction_through_range) * halfsecond_masterDark)
+                                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
                                         flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                         del tempmasterDark
                                     elif hdu1exp <= 10.0:
                                         fraction_through_range=(hdu1exp-2)/(10.0-2.0)
-                                        tempmasterDark=(fraction_through_range * tensecond_masterDark) + ((1-fraction_through_range) * twosecond_masterDark)
+                                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
                                         flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                         del tempmasterDark
                                     elif hdu1exp <= broadband_ss_biasdark_exp_time:
                                         fraction_through_range=(hdu1exp-10)/(broadband_ss_biasdark_exp_time-10.0)
-                                        tempmasterDark=(fraction_through_range * broadbandss_masterDark) + ((1-fraction_through_range) * tensecond_masterDark)
+                                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
                                         flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                         del tempmasterDark
                                     elif hdu1exp <= narrowband_ss_biasdark_exp_time:
                                         fraction_through_range=(hdu1exp-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
-                                        tempmasterDark=(fraction_through_range * narrowbandss_masterDark) + ((1-fraction_through_range) * broadbandss_masterDark)
+                                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
                                         flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                         del tempmasterDark
                                     elif dark_exp_time > narrowband_ss_biasdark_exp_time:
                                         fraction_through_range=(hdu1exp-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
-                                        tempmasterDark=(fraction_through_range * masterDark) + ((1-fraction_through_range) * narrowbandss_masterDark)
+                                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['1']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
                                         flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                         del tempmasterDark
                                     else:
-                                        flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)
+                                        flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['narrowband_ss_dark']*hdu1exp)
                                 except:
-                                    flatdebiaseddedarked=(hdu1data-masterBias)-(masterDark*hdu1exp)
+                                    flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['1']*hdu1exp)
 
                                 #plog ("Fraction through range")
                                 #plog (fraction_through_range)
@@ -4874,37 +3593,93 @@ class Sequencer:
                                     # Rescaling median once nan'ed
                                     flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
 
-                                PLDrive[:,:,i] = flatdebiaseddedarked
+                                #PLDrive[:,:,i] = copy.deepcopy(flatdebiaseddedarked)
+
+                                #breakpoint()
+                                # Make new filename
+                                tempfile=file.replace('\\','/').split('/')
+                                tempfile[-1]='tempcali_' + tempfile[-1]
+                                tempfile="/".join(tempfile)
+
+                                np.save(tempfile, flatdebiaseddedarked)
                                 del flatdebiaseddedarked
+                                temp_flat_file_list.append(tempfile)
+                                PLDrive[i] = np.load(tempfile, mmap_mode='r')
+
                                 i=i+1
 
-                            # plog ("**********************************")
-                            # plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
-                            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                            # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                            finalImage=np.zeros(shapeImage,dtype=float)
+                            plog ("Insert flats into megaarray: " +str(time.time()-calibration_timer))
 
-                            mptask=[]
-                            counter=0
-                            for goog in range(shapeImage[0]):
-                                mptask.append((g_dev['obs'].local_flat_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                                counter=counter+1
+                            #
 
-                            counter=0
-                            with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                                for result in pool.map(stack_nanmedian_row, mptask):
-                                    finalImage[counter,:]=result
-                                    counter=counter+1
+                            finalImage=np.zeros(shapeImage, dtype=np.float32)
+
+                            #try:
+
+                            # create an empty array to hold each chunk
+                            # the size of this array will determine the amount of RAM usage
+
+                            # Get a chunk size that evenly divides the array
+                            chunk_size=8
+                            while not ( shapeImage[0] % chunk_size ==0):
+                                chunk_size=chunk_size+1
+                                #print (chunk_size)
+                            chunk_size=int(shapeImage[0]/chunk_size)
+
+                            holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
+
+                            # iterate through the input, replace with ones, and write to output
+                            for i in range(shapeImage[0]):
+                                if i % chunk_size == 0:
+                                    #print (i)
+                                    counter=0
+                                    for imagefile in range(len(PLDrive)):
+                                        holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
+                                        counter=counter+1
+
+                                    finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
+
+                                    # Wipe and restore files in the memmap file
+                                    # To clear RAM usage
+                                    PLDrive= [None] * len(temp_flat_file_list)
+                                    i=0
+                                    for file in temp_flat_file_list:
+                                        #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                                        PLDrive[i] = np.load(file, mmap_mode='r')
+                                        i=i+1
+
+
+                            # # plog ("**********************************")
+                            # # plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
+                            # # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                            # # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+                            # finalImage=np.zeros(shapeImage,dtype=float)
+
+                            # mptask=[]
+                            # counter=0
+                            # for goog in range(shapeImage[0]):
+                            #     #mptask.append((g_dev['obs'].local_flat_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
+                            #     mptask.append(PLDrive[counter,:,:])
+                            #     counter=counter+1
+
+                            # counter=0
+                            # with Pool(math.floor(os.cpu_count()*0.85)) as pool:
+                            #     for result in pool.map(stack_nanmedian_row, mptask):
+                            #         finalImage[counter,:]=result
+                            #         counter=counter+1
 
                             # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                             # #plog ("**********************************")
+                            plog ("Median stack flat: " +str(time.time()-calibration_timer))
 
                             # plog ("Assessing flat components")
                             #nanmedian_collector=[]
                             nanstd_collector=[]
                             for flat_component in range(len(inputList)):
                                 #plog (flat_component)
-                                tempdivide=PLDrive[:,:,flat_component] / finalImage
+                                #tempdivide=PLDrive[:,:,flat_component] / finalImage
+                                tempdivide=PLDrive[flat_component] / finalImage
+
                                 #tempnanmedian=np.nanmedian(tempdivide)
                                 tempstd=np.nanstd(tempdivide)
                                 #plog ("nanmedian: " + str(tempnanmedian ))
@@ -4931,19 +3706,24 @@ class Sequencer:
                                     # plog ("FOUND A REJECTION: " + str(round(nanstd_collector[counterflat],5)) + " > " + str(round(med_std + 3 * std_std,5)))
                                     delete_flat_components.append(counterflat)
 
-                            if len(delete_flat_components) == 0:
+                            if len(delete_flat_components) < math.ceil(0.1*len(nanstd_collector)):
                                 break
 
                             # plog ("REPROCESSING FLAT WITH BAD COMPONENTS REMOVED")
                             # Remove problematic flat images from squishener so we can re-run the flat.
                             for index in sorted(delete_flat_components, reverse=True):
                                 del inputList[index]
-                            PLDrive._mmap.close()
+                            #PLDrive._mmap.close()
                             del PLDrive
-                            gc.collect()
-                            os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
+                            #gc.collect()
+                            #os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
 
+                            plog ("REDOING FLAT. TOO MANY OUTLIERS: " + str(len(delete_flat_components)))
 
+                        plog ("Checked component flats vs stacked flat: " +str(time.time()-calibration_timer))
+
+                        del PLDrive
+                        #del flat_biasdarks
 
                         temporaryFlat=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                         del finalImage
@@ -5047,13 +3827,13 @@ class Sequencer:
                             pre_num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
 
 
-                        plog ("Final Flat Max: " + str(np.nanmax(temporaryFlat)))
-                        plog ("Final Flat Min: " + str(np.nanmin(temporaryFlat)))
-                        plog ("Final Flat Median: " + str(np.nanmedian(temporaryFlat)))
+                        # plog ("Final Flat Max: " + str(np.nanmax(temporaryFlat)))
+                        # plog ("Final Flat Min: " + str(np.nanmin(temporaryFlat)))
+                        # plog ("Final Flat Median: " + str(np.nanmedian(temporaryFlat)))
 
-                        plog ("Final Flat Average: " + str(np.nanmean(temporaryFlat)))  #<<WER changed average to mean
+                        # plog ("Final Flat Average: " + str(np.nanmean(temporaryFlat)))  #<<WER changed average to mean
 
-                        plog ("Final Flat Stdev: " + str(np.nanstd(temporaryFlat)))
+                        # plog ("Final Flat Stdev: " + str(np.nanstd(temporaryFlat)))
 
                         #breakpoint()
 
@@ -5064,130 +3844,152 @@ class Sequencer:
 
 
 
+                        plog ("Interpolated flat: " +str(time.time()-calibration_timer))
 
 
 
 
-                        # plog ('debanding flatfield')
-                        ###### We have to deband the flat to stop banded flats band light images.
-                        # If that makes sense.
+                        # # plog ('debanding flatfield')
+                        # ###### We have to deband the flat to stop banded flats band light images.
+                        # # If that makes sense.
 
-                        # Remove horizontal and vertical banding
-                        # If there isn't banding this should not alter the array really
-                        sigma_clipped_array=copy.deepcopy(temporaryFlat)
+                        # # Remove horizontal and vertical banding
+                        # # If there isn't banding this should not alter the array really
+                        # sigma_clipped_array=copy.deepcopy(temporaryFlat)
 
-                        # REMOVE LOW VALUES
+                        # # REMOVE LOW VALUES
 
-                        #Do some fiddle faddling to figure out the value that goes to zero less
-                        int_array_flattened=sigma_clipped_array.astype(int).ravel()
-                        unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-                        m=counts.argmax()
-                        imageMode=unique[m]
+                        # #Do some fiddle faddling to figure out the value that goes to zero less
+                        # int_array_flattened=sigma_clipped_array.astype(int).ravel()
+                        # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                        # m=counts.argmax()
+                        # imageMode=unique[m]
 
-                        # Collect unique values and counts
-                        histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-                        zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-                        breaker=1
-                        counter=0
-                        while (breaker != 0):
-                            counter=counter+1
-                            if not (imageMode-counter) in zeroValueArray[:,0]:
+                        # # Collect unique values and counts
+                        # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                        # zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+                        # breaker=1
+                        # counter=0
+                        # while (breaker != 0):
+                        #     counter=counter+1
+                        #     if not (imageMode-counter) in zeroValueArray[:,0]:
 
-                                zeroValue=(imageMode-counter)
-                                breaker =0
-                        sigma_clipped_array[sigma_clipped_array < zeroValue] = np.nan
-                        #histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
+                        #         zeroValue=(imageMode-counter)
+                        #         breaker =0
+                        # sigma_clipped_array[sigma_clipped_array < zeroValue] = np.nan
+                        # #histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
 
-                        # REMOVE HIGH VALUES
-                        while True:
-                            tempstd=np.nanstd(sigma_clipped_array)
-                            tempmedian=np.nanmedian(sigma_clipped_array)
-                            clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
-                            if np.sum(clipped_areas) == 0:
-                                break
-                            #plog (np.sum(clipped_areas))
-                            sigma_clipped_array[clipped_areas] = np.nan
-                            #breakpoint()
+                        # # REMOVE HIGH VALUES
+                        # while True:
+                        #     tempstd=np.nanstd(sigma_clipped_array)
+                        #     tempmedian=np.nanmedian(sigma_clipped_array)
+                        #     clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
+                        #     if np.sum(clipped_areas) == 0:
+                        #         break
+                        #     #plog (np.sum(clipped_areas))
+                        #     sigma_clipped_array[clipped_areas] = np.nan
+                        #     #breakpoint()
 
-                        # REMOVE LOW VALUES
-                        while True:
-                            tempstd=np.nanstd(sigma_clipped_array)
-                            tempmedian=np.nanmedian(sigma_clipped_array)
-                            clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
-                            if np.sum(clipped_areas) == 0:
-                                break
-                            #plog (np.sum(clipped_areas))
-                            sigma_clipped_array[clipped_areas] = np.nan
-                            #breakpoint()
-
-
-                        # Do rows
-                        rows_median = np.nanmedian(sigma_clipped_array,axis=1)
-                        #rows_x = np.arange(0,len(rows_median),1.0)
-                        #plt.scatter(columns_median)
-                        rows_median[np.isnan(rows_median)] = np.nanmedian(rows_median) # This should bea more thorough nearest neighbour thing when I get to it
-
-                        row_debanded_image= temporaryFlat-rows_median[:,None]
-                        #debanded_rows_median=np.nanmedian(row_debanded_image,axis=1)
-                        #plt.scatter(columns_x,debanded_columns_medain)
-
-                        # plog ("Done rows. Now columns.")
-
-                        # Then run this on columns
-                        sigma_clipped_array=copy.deepcopy(row_debanded_image)
-                        # REMOVE HIGH VALUES
-                        while True:
-                            tempstd=np.nanstd(sigma_clipped_array)
-                            tempmedian=np.nanmedian(sigma_clipped_array)
-                            clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
-                            if np.sum(clipped_areas) == 0:
-                                break
-                            #plog (np.sum(clipped_areas))
-                            sigma_clipped_array[clipped_areas] = np.nan
-                            #breakpoint()
-
-                        # REMOVE LOW VALUES
-                        while True:
-                            tempstd=np.nanstd(sigma_clipped_array)
-                            tempmedian=np.nanmedian(sigma_clipped_array)
-                            clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
-                            if np.sum(clipped_areas) == 0:
-                                break
-                            #plog (np.sum(clipped_areas))
-                            sigma_clipped_array[clipped_areas] = np.nan
-                            #breakpoint()
+                        # # REMOVE LOW VALUES
+                        # while True:
+                        #     tempstd=np.nanstd(sigma_clipped_array)
+                        #     tempmedian=np.nanmedian(sigma_clipped_array)
+                        #     clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
+                        #     if np.sum(clipped_areas) == 0:
+                        #         break
+                        #     #plog (np.sum(clipped_areas))
+                        #     sigma_clipped_array[clipped_areas] = np.nan
+                        #     #breakpoint()
 
 
-                        columns_median = np.nanmedian(sigma_clipped_array,axis=0)
-                        #columns_x = np.arange(0,len(columns_median),1.0)
-                        columns_median[np.isnan(columns_median)] = np.nanmedian(columns_median)
+                        # # Do rows
+                        # rows_median = np.nanmedian(sigma_clipped_array,axis=1)
+                        # #rows_x = np.arange(0,len(rows_median),1.0)
+                        # #plt.scatter(columns_median)
+                        # rows_median[np.isnan(rows_median)] = np.nanmedian(rows_median) # This should bea more thorough nearest neighbour thing when I get to it
 
-                        both_debanded_image= row_debanded_image-columns_median[None,:]
-                        #debanded_both_median=np.nanmedian(both_debanded_image,axis=0)
+                        # row_debanded_image= temporaryFlat-rows_median[:,None]
+                        # #debanded_rows_median=np.nanmedian(row_debanded_image,axis=1)
+                        # #plt.scatter(columns_x,debanded_columns_medain)
 
-                        # Reinstitute pedestal
-                        both_debanded_image=both_debanded_image+1
+                        # # plog ("Done rows. Now columns.")
 
-                        #both_debanded_image = thresh(both_debanded_image, image_saturation_level)
-                        temporaryFlat=both_debanded_image
+                        # # Then run this on columns
+                        # sigma_clipped_array=copy.deepcopy(row_debanded_image)
+                        # # REMOVE HIGH VALUES
+                        # while True:
+                        #     tempstd=np.nanstd(sigma_clipped_array)
+                        #     tempmedian=np.nanmedian(sigma_clipped_array)
+                        #     clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
+                        #     if np.sum(clipped_areas) == 0:
+                        #         break
+                        #     #plog (np.sum(clipped_areas))
+                        #     sigma_clipped_array[clipped_areas] = np.nan
+                        #     #breakpoint()
+
+                        # # REMOVE LOW VALUES
+                        # while True:
+                        #     tempstd=np.nanstd(sigma_clipped_array)
+                        #     tempmedian=np.nanmedian(sigma_clipped_array)
+                        #     clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
+                        #     if np.sum(clipped_areas) == 0:
+                        #         break
+                        #     #plog (np.sum(clipped_areas))
+                        #     sigma_clipped_array[clipped_areas] = np.nan
+                        #     #breakpoint()
+
+
+                        # columns_median = np.nanmedian(sigma_clipped_array,axis=0)
+                        # #columns_x = np.arange(0,len(columns_median),1.0)
+                        # columns_median[np.isnan(columns_median)] = np.nanmedian(columns_median)
+
+                        # both_debanded_image= row_debanded_image-columns_median[None,:]
+                        # #debanded_both_median=np.nanmedian(both_debanded_image,axis=0)
+
+                        # # Reinstitute pedestal
+                        # both_debanded_image=both_debanded_image+1
+
+                        # #both_debanded_image = thresh(both_debanded_image, image_saturation_level)
+                        # temporaryFlat=both_debanded_image
+
+                        # plog ("Debanded flat: " +str(time.time()-calibration_timer))
+
 
 
                         try:
-                            np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
 
-                            # Write to and upload current master flat
-                            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
 
-                            filepathaws=g_dev['obs'].calib_masters_folder
-                            filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
 
-                            # Store a version of the flat for the archive too
-                            fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
 
-                            filepathaws=g_dev['obs'].calib_masters_folder
-                            filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+                            g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+
+                            #np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
+
+                            # # Write to and upload current master flat
+                            # fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
+
+                            # filepathaws=g_dev['obs'].calib_masters_folder
+                            # filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
+                            # g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
+
+
+                            # Save and upload master bias
+                            g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), None, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
+
+
+                            # # Store a version of the flat for the archive too
+                            # fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
+
+                            # filepathaws=g_dev['obs'].calib_masters_folder
+                            # filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
+                            # g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+
+                            # Store a version of the bias for the archive too
+                            g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
+
+
+
                             if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                                 #fits.writeto(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
                                 #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
@@ -5200,6 +4002,9 @@ class Sequencer:
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
 
+                        plog ("Saved flat: " +str(time.time()-calibration_timer))
+
+
                         # Now to estimate gain from flats
                         for fullflat in inputList:
                             #hdu1data = np.load(fullflat, mmap_mode='r')
@@ -5207,7 +4012,7 @@ class Sequencer:
 
                             hdu1exp=float(file.split('_')[-2])
 
-                            camera_gain_estimate_image=((hdu1data-masterBias)-(masterDark*hdu1exp))
+                            camera_gain_estimate_image=((hdu1data-masterBias)-(g_dev['cam'].darkFiles['1']*hdu1exp))
                             camera_gain_estimate_image[camera_gain_estimate_image == inf] = np.nan
                             camera_gain_estimate_image[camera_gain_estimate_image == -inf] = np.nan
 
@@ -5264,13 +4069,45 @@ class Sequencer:
                         flat_gains[filtercode]=[np.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
 
                         # Chuck camera gain and number of images into the shelf
-                        self.filter_camera_gain_shelf[filtercode]=[np.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
+                        try:
+                            # for every filter hold onto an estimate of the current camera gain.
+                            # Each filter will have a different flat field and variation in the flat.
+                            # The 'true' camera gain is very likely to be the filter with the least
+                            # variation, so we go with that as the true camera gain...... but ONLY after we have a full set of flats
+                            # with which to calculate the gain. This is the shelf to hold this data.
+                            # There is no hope for individual owners with a multitude of telescopes to keep up with
+                            # this estimate, so we need to automate it with a first best guess given in the config.
+                            self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                            self.filter_camera_gain_shelf[filtercode]=[np.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
+                            self.filter_camera_gain_shelf.close()
+                        except:
+                            plog("************* FAILED TO WRITE TO FILTER GAIN SHELF. Usually while flats are being taken at the same time. Follow-up if this becomes relatively frequent.")
 
 
-                        PLDrive._mmap.close()
-                        del PLDrive
-                        gc.collect()
-                        os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
+                        #PLDrive._mmap.close()
+                        #del PLDrive
+                        #gc.collect()
+                        #os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
+
+                        plog (str(filtercode) + " flat camera gains measured : " +str(time.time()-calibration_timer))
+
+
+                    # DELETE ALL TEMP FILES FROM FLAT DIRECTORY
+                    deleteList= (glob(g_dev['obs'].local_flat_folder + filtercode + '/tempcali_*.n*'))
+                    for file in deleteList:
+                        try:
+                            os.remove(file)
+                        except:
+                            plog ("couldn't remove tempflat: " + str(file))
+
+                    #for file in fileList:
+                    if self.config['camera'][g_dev['cam'].name]['settings']['hold_flats_in_memory']:
+                        #tempflatframe=np.load(file)
+                        #
+                        g_dev['cam'].flatFiles.update({filtercode: copy.deepcopy(temporaryFlat)})
+                        #del tempflatframe
+                    else:
+                        g_dev['cam'].flatFiles.update({filtercode: g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy'})
 
                     g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
                     plog (str(filtercode) + " flat calibration frame created: " +str(time.time()-calibration_timer))
@@ -5280,7 +4117,7 @@ class Sequencer:
 
                 # Now finished with the biasdarks specifically for flats,
                 # delete them
-                del flat_biasdarks
+                #del flat_biasdarks
 
 
 
@@ -5289,10 +4126,12 @@ class Sequencer:
                 # Bung in the readnoise estimates and then
                 # Close up the filter camera gain shelf.
                 try:
+                    self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
                     self.filter_camera_gain_shelf['readnoise']=[np.nanmedian(post_readnoise_array) , np.nanstd(post_readnoise_array), len(post_readnoise_array)]
+                    self.filter_camera_gain_shelf.close()
                 except:
                     plog ("cannot write the readnoise array to the shelf. Probs because this is the first time estimating gains")
-                self.filter_camera_gain_shelf.close()
+
 
                 textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.txt'
                 try:
@@ -5350,7 +4189,7 @@ class Sequencer:
                 plog ("Total bad pixels in image: " + str(bad_pixel_mapper_array.sum()))
                 plog ("Writing out bad pixel map npy and fits.")
                 np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
-                
+
                 # pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
                 # g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
@@ -5381,51 +4220,34 @@ class Sequencer:
                 # THEN reload them to use for the next night.
                 # First delete the calibrations out of memory.
 
-                g_dev['cam'].flatFiles = {}
-                g_dev['cam'].hotFiles = {}
-                try:
-                    fileList = glob(g_dev['obs'].calib_masters_folder + '/masterFlat*_bin1.npy')
-                    for file in fileList:
-                        if self.config['camera'][g_dev['cam'].name]['settings']['hold_flats_in_memory']:
-                            tempflatframe=np.load(file)
-                            #
-                            g_dev['cam'].flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
-                            del tempflatframe
-                        else:
-                            g_dev['cam'].flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
-                    # To supress occasional flatfield div errors
-                    np.seterr(divide="ignore")
-                except:
-                    plog(traceback.format_exc())
-                    plog("Flat frames not loaded or available")
+                # g_dev['cam'].flatFiles = {}
+                # g_dev['cam'].hotFiles = {}
+                # try:
+                #     fileList = glob(g_dev['obs'].calib_masters_folder + '/masterFlat*_bin1.npy')
+                #     for file in fileList:
+                #         if self.config['camera'][g_dev['cam'].name]['settings']['hold_flats_in_memory']:
+                #             tempflatframe=np.load(file)
+                #             #
+                #             g_dev['cam'].flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
+                #             del tempflatframe
+                #         else:
+                #             g_dev['cam'].flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+                #     # To supress occasional flatfield div errors
+                #     np.seterr(divide="ignore")
+                # except:
+                #     plog(traceback.format_exc())
+                #     plog("Flat frames not loaded or available")
 
 
                 plog ("Regenerated Flat Masters and Re-loaded them into memory.")
 
             plog ("Re-loading Bias and Dark masters into memory.")
             # Reload the bias and dark frames
-            
+
             #g_dev['cam'].darkFiles = {}
-            
-            
-            try:
-                #g_dev['cam'].darkFiles.update({'1': masterDark})
-                g_dev['cam'].darkFiles.update({'halfsec_exposure_dark': halfsecond_masterDark})
 
-                g_dev['cam'].darkFiles.update({'twosec_exposure_dark': twosecond_masterDark})
 
-                g_dev['cam'].darkFiles.update({'tensec_exposure_dark': tensecond_masterDark})
 
-                g_dev['cam'].darkFiles.update({'broadband_ss_dark': broadbandss_masterDark})
-
-                g_dev['cam'].darkFiles.update({'broadband_ss_biasdark': broadbandss_masterBiasDark})
-
-                g_dev['cam'].darkFiles.update({'narrowband_ss_dark': narrowbandss_masterDark})
-
-                g_dev['cam'].darkFiles.update({'narrowband_ss_biasdark': narrowbandss_masterBiasDark})
-
-            except:
-                plog("Dark frame master re-upload did not work.")
 
             try:
                 g_dev['cam'].bpmFiles = {}
@@ -5436,7 +4258,13 @@ class Sequencer:
 
 
 
-
+            # CLEAR OUT OLD TEMPFILES
+            darkdeleteList=(glob(g_dev['obs'].local_dark_folder +'/*tempbiasdark.n*'))
+            for file in darkdeleteList:
+                try:
+                    os.remove(file)
+                except:
+                    plog ("Couldnt remove old dark file: " + str(file))
 
 
             try:
@@ -5481,12 +4309,12 @@ class Sequencer:
 
         g_dev["obs"].send_to_user("All calibration frames completed.")
 
-        self.total_sequencer_control = False
+        #self.total_sequencer_control = False
 
         return
 
 
-    def check_zenith_and_move_to_flat_spot(self, ending=None):
+    def check_zenith_and_move_to_flat_spot(self, ending=None, dont_wait_after_slew=False):
 
         too_close_to_zenith=True
         while too_close_to_zenith:
@@ -5530,8 +4358,9 @@ class Sequencer:
                             homerotator_time_shelf['lasthome'] = time.time()
                             homerotator_time_shelf.close()
 
-                            self.check_zenith_and_move_to_flat_spot(ending=ending)
-                            self.wait_for_slew()
+                            self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=dont_wait_after_slew)
+                            if not dont_wait_after_slew:
+                                self.wait_for_slew()
                             while g_dev['rot'].rotator.IsMoving:
                                 plog("home rotator wait")
                                 time.sleep(1)
@@ -5563,10 +4392,10 @@ class Sequencer:
                         return 'cancel'
 
                 else:
-                    g_dev['mnt'].go_command(skyflatspot=True)
+                    g_dev['mnt'].go_command(skyflatspot=True, dont_wait_after_slew=dont_wait_after_slew)
                     too_close_to_zenith=False
             else:
-                g_dev['mnt'].go_command(skyflatspot=True)
+                g_dev['mnt'].go_command(skyflatspot=True, dont_wait_after_slew=dont_wait_after_slew)
                 too_close_to_zenith=False
 
     def sky_flat_script(self, req, opt, morn=False, skip_moon_check=False):
@@ -5665,7 +4494,7 @@ class Sequencer:
         broadband_ss_biasdark_exp_time = float(self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time'])
         narrowband_ss_biasdark_exp_time = float(broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier'])
 
-        sky_exposure_snap_to_grid = [ 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, broadband_ss_biasdark_exp_time, narrowband_ss_biasdark_exp_time]
+        sky_exposure_snap_to_grid = [ 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, broadband_ss_biasdark_exp_time, narrowband_ss_biasdark_exp_time]
 
         # Load up the pickled list of gains or start a new one.
         self.filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].alias + str(g_dev['obs'].name))
@@ -5835,16 +4664,17 @@ class Sequencer:
             #g_dev['cam'].darkslide_open = True
             #g_dev['cam'].darkslide_state = 'Open'
 
+        self.check_zenith_and_move_to_flat_spot(ending=ending)
 
         while len(pop_list) > 0  and ephem.now() < ending and g_dev['obs'].open_and_enabled_to_observe:
 
-                # This is just a very occasional slew to keep it pointing in the same general vicinity
-                if time.time() >= self.time_of_next_slew:
-                    if g_dev['mnt'].rapid_park_indicator:
-                        g_dev['mnt'].unpark_command({}, {})
+                # # This is just a very occasional slew to keep it pointing in the same general vicinity
+                # if time.time() >= self.time_of_next_slew:
+                #     if g_dev['mnt'].rapid_park_indicator:
+                #         g_dev['mnt'].unpark_command({}, {})
 
-                    self.check_zenith_and_move_to_flat_spot(ending=ending)
-                    self.time_of_next_slew = time.time() + 45
+                #     self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
+                #     self.time_of_next_slew = time.time() + 45
 
                 #g_dev['obs'].request_scan_requests()
                 #g_dev["obs"].request_full_update()
@@ -5983,7 +4813,10 @@ class Sequencer:
                                     pixel_area=pow(float(g_dev['cam'].pixscale),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 # snap the exposure time to a discrete grid
-                                exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                                if exp_time > 0.0075:
+                                    exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                                else:
+                                    exp_time = 0.5*min_exposure
 
                                 new_throughput_value  =filter_throughput
                             else:
@@ -5992,17 +4825,25 @@ class Sequencer:
                                 else:
                                     exp_time = min_exposure
                                     # snap the exposure time to a discrete grid
-                                    exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
-
+                                    if exp_time > 0.0075:
+                                        exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                                    else:
+                                        exp_time = 0.5*min_exposure
                         elif in_wait_mode:
                             exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
                             # snap the exposure time to a discrete grid
-                            exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                            if exp_time > 0.0075:
+                                exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                            else:
+                                exp_time = 0.5*min_exposure
 
                         else:
                             exp_time = scale * exp_time
                             # snap the exposure time to a discrete grid
-                            exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                            if exp_time > 0.0075:
+                                exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                            else:
+                                exp_time = 0.5*min_exposure
 
 
                         if self.stop_script_called:
@@ -6048,7 +4889,7 @@ class Sequencer:
 
                              #self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
-                                self.check_zenith_and_move_to_flat_spot(ending=ending)
+                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
                                 self.time_of_next_slew = time.time() + 45
                              self.next_flat_observe = time.time() + 10
@@ -6062,25 +4903,31 @@ class Sequencer:
                              #exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
 
                              if time.time() >= self.time_of_next_slew:
-                                self.check_zenith_and_move_to_flat_spot(ending=ending)
+                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
                                 self.time_of_next_slew = time.time() + 45
                              self.next_flat_observe = time.time() + 10
                              exp_time = min_exposure
                              # snap the exposure time to a discrete grid
-                             exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                             if exp_time > 0.0075:
+                                 exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                             else:
+                                 exp_time = 0.5*min_exposure
 
                         else:
                             in_wait_mode=False
                             exp_time = round(exp_time, 5)
                             # snap the exposure time to a discrete grid
-                            exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                            if exp_time > 0.0075:
+                                exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                            else:
+                                exp_time = 0.5*min_exposure
 
 
                             # If scope has gone to bed due to inactivity, wake it up!
                             if g_dev['mnt'].rapid_park_indicator:
                                 g_dev['mnt'].unpark_command({}, {})
-                                self.check_zenith_and_move_to_flat_spot(ending=ending)
+                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
                                 self.time_of_next_slew = time.time() + 45
 
@@ -6213,7 +5060,7 @@ class Sequencer:
                             except:
                                 scale = 1.0
 
-                            self.check_zenith_and_move_to_flat_spot(ending=ending)
+
 
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -6233,7 +5080,7 @@ class Sequencer:
                                 self.morn_sky_flat_latch = False
                                 return
 
-
+                            got_a_flat_this_round=False
                             # If camera has not already rejected taking the image
                             # usually because the temperature isn't cold enough.
                             if not bright == None:
@@ -6269,6 +5116,7 @@ class Sequencer:
                                         >= 0.5 * flat_saturation_level
                                     ):
                                         acquired_count += 1
+                                        got_a_flat_this_round=True
                                         self.filter_throughput_shelf[current_filter]=new_throughput_value
                                         try:
                                             camera_gain_collector.append(fred["camera_gain"])
@@ -6283,6 +5131,7 @@ class Sequencer:
                                         >= 0.25 * flat_saturation_level
                                     ):
                                         acquired_count += 1
+                                        got_a_flat_this_round=True
                                         self.filter_throughput_shelf[current_filter]=new_throughput_value
                                         try:
                                             camera_gain_collector.append(fred["camera_gain"])
@@ -6299,6 +5148,10 @@ class Sequencer:
                             if acquired_count == flat_count or acquired_count > flat_count:
                                 pop_list.pop(0)
                                 scale = 1
+                            elif got_a_flat_this_round: # Only nudge if you got a good flat. No point otherwise.
+                                # Give it a bit of a nudge, not necessary if it is the last shot of the filter.
+                                # There is no reason to wait for it to finish slewing either.
+                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
 
                             continue
@@ -8001,6 +6854,9 @@ class Sequencer:
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                     return
+                if g_dev["obs"].stop_all_activity:
+                    plog('stop_all_activity cancelling out of centering')
+                    return
                 pass
 
         plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
@@ -8084,6 +6940,9 @@ class Sequencer:
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                         return
+                    if g_dev["obs"].stop_all_activity:
+                        plog('stop_all_activity cancelling out of centering')
+                        return
                     pass
             plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
 
@@ -8137,6 +6996,9 @@ class Sequencer:
                             return
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                            return
+                        if g_dev["obs"].stop_all_activity:
+                            plog('stop_all_activity cancelling out of centering')
                             return
                         pass
                 plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
@@ -8195,6 +7057,9 @@ class Sequencer:
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                        return
+                    if g_dev["obs"].stop_all_activity:
+                        plog('stop_all_activity cancelling out of centering')
                         return
                     time.sleep(1)
 
@@ -8304,6 +7169,9 @@ class Sequencer:
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                             return
+                        if g_dev["obs"].stop_all_activity:
+                            plog('stop_all_activity cancelling out of centering')
+                            return
                         pass
 
 
@@ -8331,6 +7199,9 @@ class Sequencer:
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                return
+            if g_dev["obs"].stop_all_activity:
+                plog('stop_all_activity cancelling out of centering')
                 return
 
             g_dev["obs"].send_to_user(
@@ -8427,11 +7298,24 @@ class Sequencer:
             plog ("A glitch found in the blocks reqs post, probably date format")
 
 
-def stack_nanmedian_row(inputinfo):
+def stack_nanmedian_row_memmapped(inputinfo):
     (pldrivetempfiletemp,counter,shape) = inputinfo
     tempPLDrive = np.memmap(pldrivetempfiletemp, dtype='float32', mode= 'r', shape = shape )
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
         return np.nanmedian(tempPLDrive[counter,:,:], axis=1)
 
+
+def stack_nanmedian_row(inputline):
+    # try:
+    #     return bn.nanmedian(inputline, axis=1).astype(np.float32)
+    # except:
+    return bn.nanmedian(inputline, axis=1).astype(np.float32)
+
+
+    # (pldrivetempfiletemp,counter,shape) = inputinfo
+    # tempPLDrive = np.memmap(pldrivetempfiletemp, dtype='float32', mode= 'r', shape = shape )
+    # with warnings.catch_warnings():
+    #     warnings.simplefilter("ignore", category=RuntimeWarning)
+    #     return np.nanmedian(tempPLDrive[counter,:,:], axis=1)
 

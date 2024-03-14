@@ -113,7 +113,7 @@ edgefillvalue=np.nanmean(hdufocusdata)
 #breakpoint()
 # while num_of_nans > 0:
 #     # List the coordinates that are nan in the array
-#     
+#
 nan_coords=np.argwhere(np.isnan(hdufocusdata))
 
 # For each coordinate try and find a non-nan-neighbour and steal its value
@@ -169,7 +169,7 @@ for nancoord in nan_coords:
             if not np.isnan(value_here):
                 hdufocusdata[x_nancoord,y_nancoord]=value_here
                 done=True
-                
+
 hdufocusdata[np.isnan(hdufocusdata)] = edgefillvalue
     #num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
 
@@ -682,7 +682,7 @@ if len(sources) >= 5:
         try:
             wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
                                                     image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=5.0,
-                                                    solve_timeout=300)
+                                                    solve_timeout=60)
             solve={}
             solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
             solve["dec_j2000_degrees"] = wcs_header['CRVAL2']

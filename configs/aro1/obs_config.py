@@ -99,6 +99,9 @@ site_config = {
     'redis_available':  True,
     'redis_ip': "10.0.0.174:6379",
 
+    # Scratch drive folder
+    'scratch_drive_folder' : 'D:/obstemp/',
+
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
@@ -131,8 +134,8 @@ site_config = {
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
     'bias_dark interval':  105.,   #minutes
-    'eve_sky_flat_sunset_offset': -55.,  # Before Sunset Minutes  neg means before, + after.
-    'end_eve_sky_flats_offset': -1 ,      # How many minutes after civilDusk to do....
+    'eve_sky_flat_sunset_offset': -45.,  # Was 55 WER 20240313 Before Sunset Minutes  neg means before, + after.
+    'end_eve_sky_flats_offset': -5 ,      # How many minutes after civilDusk to do....
     'clock_and_auto_focus_offset':-10,   #min before start of observing
     'astro_dark_buffer': 15,   #Min before and after AD to extend observing window
     'morn_flat_start_offset': -10,       #min from Sunrise
@@ -154,7 +157,7 @@ site_config = {
      # Turn on and off various automated calibrations at different times.
      'auto_eve_bias_dark': True,
      'auto_eve_sky_flat': True,
-     'time_to_wait_after_roof_opens_to_take_flats': 2,   #  Units??  Just imposing a minimum in case of a restart.
+     'time_to_wait_after_roof_opens_to_take_flats': 1,   #  Units??  Just imposing a minimum in case of a restart.
      'auto_midnight_moonless_bias_dark': False,  # WER 20240303 Afternoon, changed from True
      'auto_morn_sky_flat': True,
      'auto_morn_bias_dark': True,
@@ -468,15 +471,15 @@ site_config = {
                         ['PG',   [0,  7],   'Photo Green'],     #6
                         ['BB',   [9,  0],   'Bessell B'],     #7
                         ['BV',   [10, 0],   'Bessell V'],     #8
-                        ['BR',   [11, 0],   'Bessell R'],     #9
+                        #['BR',   [11, 0],   'Bessell R'],     #9
                         ['rp',   [3,  0],   "Sloan r'"],     #10
-                        ['NIR',  [0, 10],   'Near IR - redward of PL'],     #11  Value suspect 2023/10/23 WER
+                        #['NIR',  [0, 10],   'Near IR - redward of PL'],     #11  Value suspect 2023/10/23 WER
                         ['ip',   [4,  0],   "Sloan i'"],     #12
-                        ['BI',   [12, 0],   'Bessell I'],     #13
+                        #['BI',   [12, 0],   'Bessell I'],     #13
                         ['up',   [1,  0],   "Sloan u'"],     #14
                         ['O3',   [0,  2],   'Oxygen III'],     #15    #guess
                         ['zs',   [0,  9],   "Sloan z-short"],     #16    # NB ZP is a broader filter than zs.
-                        ['CR',   [0,  5],   'Continuum Red - for Star subtraction'],  #17
+                        #['CR',   [0,  5],   'Continuum Red - for Star subtraction'],  #17
                         ['HA',   [0,  3],   'Hydrogen Alpha - aka II'],     #18
                         ['N2',   [13, 0],   'Nitrogen II'],     #19
                         ['S2',   [0,  4],   'Sulphur II'],     #20
@@ -564,10 +567,28 @@ site_config = {
                 # We can't swip and swap because the biases and darks and flats will change, so we are sticking with 3 until
                 # something bad happens with 3 for some reason
                 #
+
+
+                # THIS IS THE PRE-TESTING SETTINGS FOR NEW MODE 11 Mar 2024
+                # # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
+                # # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
+                # # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
+                # 'direct_qhy_readout_mode' : 3,
+                # 'direct_qhy_gain' : 26,
+                # 'direct_qhy_offset' : 60,
+                # #'direct_qhy_usb_speed' : 50,
+                # 'direct_qhy_usb_traffic' : 45,  #Early 20240103 = 50, not clear earlier but better than before.
+                # #The pattern before came and went. Now consitent at 50.  Changing to 45.
+                # #Which one of these is actually used?
+                # 'set_qhy_usb_speed': True,
+                # 'direct_qhy_usb_speed' : 45,    #20240106 Afternoon WER Was 60
+
+
+
                 # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
-                'direct_qhy_readout_mode' : 3,
+                'direct_qhy_readout_mode' : 0,
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
                 #'direct_qhy_usb_speed' : 50,
@@ -575,7 +596,13 @@ site_config = {
                 #The pattern before came and went. Now consitent at 50.  Changing to 45.
                 #Which one of these is actually used?
                 'set_qhy_usb_speed': True,
-                'direct_qhy_usb_speed' : 45,    #20240106 Afternoon WER Was 60
+
+                #"speed isn't used I think - MTF, it is actually USB Traffic
+                #'direct_qhy_usb_speed' : 45,    #20240106 Afternoon WER Was 60
+
+
+
+
 
                 # These options set whether an OSC gets binned or interpolated for different functions
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
@@ -695,11 +722,11 @@ site_config = {
                 'min_exposure': 0.0001,
                 'max_exposure': 360.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 0.01,
+                'min_flat_exposure': 0.0005,
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
-                'max_daytime_exposure': 0.5,
+                'max_daytime_exposure': 1.0,
 
 
                 # One of the best cloud detections is to estimate the gain of the camera from the image
@@ -715,9 +742,9 @@ site_config = {
                 'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
                 'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.
-                'fullwell_capacity': 80000,  # NB Guess
-                'saturate':   65535,
-                'max_linearity':  60000,   # Guess
+                'fullwell_capacity': 65000,  # NB Guess
+                'saturate':   62500,
+                'max_linearity':  61000,   # Guess
                 # How long does it take to readout an image after exposure
                 'cycle_time':            0.0,
                 # What is the base smartstack exposure time?
@@ -730,10 +757,10 @@ site_config = {
                 # As simple as it states, how many calibration frames to collect and how many to store.
                 'number_of_bias_to_collect': 31,
                 'number_of_dark_to_collect': 13,
-                'number_of_flat_to_collect': 5,   #increased from 5  20231226 WER
-                'number_of_bias_to_store': 32,
+                'number_of_flat_to_collect': 6,   #increased from 5  20231226 WER
+                'number_of_bias_to_store': 33,
                 'number_of_dark_to_store': 27,
-                'number_of_flat_to_store': 20,
+                'number_of_flat_to_store': 21,
                 # Default dark exposure time.
                 'dark_exposure': 360,
 
@@ -743,6 +770,7 @@ site_config = {
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,
                 'darkslide_type' : 'bistable',
+                'darkslide_can_report':  False,
                 'darkslide_com':  'COM10',
                 'shutter_type': "Electronic",
 
@@ -775,6 +803,7 @@ site_config = {
     },
 
     # I am not sure AWS needs this, but my configuration code might make use of it.
+    # This area should be re-purposed to introduce the pipeline and or an additional local mega-NAS.
     'server': {
         'server1': {
             'name': None,

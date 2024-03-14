@@ -48,6 +48,7 @@ class FilterWheel:
                  & homing.")
 
             self.filter_change_requested=False
+            self.filter_changing=False
             self.filterwheel_update_period=0.2
             self.filterwheel_update_timer=time.time() - 2* self.filterwheel_update_period
             self.filterwheel_updates=0
@@ -285,20 +286,31 @@ class FilterWheel:
         # This stopping mechanism allows for threads to close cleanly.
         while True:
             try:
-                # update every so often, but update rapidly if slewing.
-                if (self.filterwheel_update_timer < time.time() - self.filterwheel_update_period) or (self.currently_slewing):
+                # update when a filter change is requested or every so often.
+                if self.filter_change_requested or (self.filterwheel_update_timer < time.time() - self.filterwheel_update_period):
 
                     if self.filter_change_requested:
                         self.filter_change_requested=False
+                        self.filter_changing=True
                         if self.dual and self.custom:
                             r0 = self.r0
                             r1 = self.r1
                             r0["filterwheel"]["position"] = self.filter_selections[0]
                             r1["filterwheel"]["position"] = self.filter_selections[1]
-                            r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0, timeout=5)
-                            r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1, timeout=5)
-                            if str(r0_pr) == str(r1_pr) == "<Response [200]>":
-                                pass
+                            # Values to aim at
+                            value_0 = r0["filterwheel"]["position"]
+                            value_1 = r1["filterwheel"]["position"]
+                            while True:
+                                r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0, timeout=5)
+                                r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1, timeout=5)
+                                if str(r0_pr) == str(r1_pr) == "<Response [200]>":
+                                    break
+                                else:
+                                    #print ("MTF temp filterwheel report: r0_pr " + str(r0_pr) + " r1_pr " + str(r1_pr))
+                                    time.sleep(0.2)
+
+                            #print ("MTF temp filterwheel report: r0_pr " + str(r0_pr) + " r1_pr " + str(r1_pr))
+
                             while True:
                                 r0_t = int(
                                     requests.get(self.ip + "/filterwheel/0/position", timeout=5)
@@ -310,11 +322,23 @@ class FilterWheel:
                                     .text.split('"position":')[1]
                                     .split("}")[0]
                                 )
-                                if r0_t == 808 or r1_t == 808:
-                                    continue
-                                else:
-                                    pass
+
+                                if (value_0 == r0_t) and (value_1 == r1_t):
+                                    #plog ("filter changed")
                                     break
+                                else:
+                                    plog ("filter in motion")
+                                    time.sleep(0.5)
+
+                                # breakpoint()
+                                # if r0_t == 808 or r1_t == 808:
+                                #     continue
+                                # else:
+                                #     pass
+                                #     break
+
+                            #print ("MTF temp filterwheel report: r0_t " + str(r0_t) + " r1_t " + str(r1_t))
+
 
                         elif self.dual and not self.maxim:
                             try:
@@ -356,6 +380,8 @@ class FilterWheel:
                                 pass
 
                             self.filter_offset = float(self.filter_data[self.filt_pointer][2])
+
+                        self.filter_changing=False
 
                     self.filterwheel_updates=self.filterwheel_updates+1
 
@@ -457,13 +483,15 @@ class FilterWheel:
     def set_name_command(self, req: dict, opt: dict):
         """Sets the filter position by filter name."""
 
+        self.filter_changing=True
+
         try:
             filter_name = str(req["filter"]).lower()
         except:
             filter_name = str(req["filter_name"]).lower()
         filter_identified = 0
-        
-        
+
+
 
         for match in range(
             len(self.filter_data)
@@ -476,7 +504,7 @@ class FilterWheel:
 
         # If filter was not identified, find a substitute filter
         if filter_identified == 0:
-            
+
             filter_name = str(self.substitute_filter(filter_name)).lower()
             if filter_name == "none":
                 return "none"
@@ -488,20 +516,21 @@ class FilterWheel:
                     filter_identified = 1
                     break
 
-        
+
 
         if self.previous_filter_name==filter_name:
+            self.filter_changing=False
 
             return self.previous_filter_name, self.previous_filter_match, self.filter_offset
 
-        
-        
+
+
         try:
             plog("Filter name is:  ", self.filter_data[match][0])
             g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
         except:
             pass  # This is usually when it is just booting up and obs doesn't exist yet
-            
+
         try:
             self.filter_number = self.filt_pointer
             self.filter_selected = str(filter_name).lower()
@@ -511,6 +540,7 @@ class FilterWheel:
         except:
             plog("Failed to change filter. Returning.")
             #breakpoint()
+            self.filter_changing=False
             return None, None, None
 
 
@@ -532,7 +562,7 @@ class FilterWheel:
 
 
         if self.wait_time_after_filter_change != 0:
-            plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
+            #plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
             time.sleep(self.wait_time_after_filter_change)
 
         # make sure focusser is adjusted every filter change
@@ -557,40 +587,40 @@ class FilterWheel:
         requested_filter=requested_filter.lower()
 
         filter_default_throughputs = {}
-        
+
         filter_default_throughputs['air'] = 2800.0
         filter_default_throughputs['bb'] = 750.0
         filter_default_throughputs['bi'] = 53.0
         filter_default_throughputs['br'] = 443.0
         filter_default_throughputs['bv'] = 623.0
         filter_default_throughputs['bu'] = 40.0
-        
+
         filter_default_throughputs['clear'] = 2100.0
         filter_default_throughputs['cr'] = 8.0
         filter_default_throughputs['dif'] = 1000.0 #<< Much closer to 2000 WER
         filter_default_throughputs['exo'] = 1570.0
         filter_default_throughputs['gp'] = 1420.0
-        
+
         filter_default_throughputs['ha'] = 8.0
         filter_default_throughputs['ip'] = 230.0
-        
-        filter_default_throughputs['jb'] = 750.0   
+
+        filter_default_throughputs['jb'] = 750.0
         filter_default_throughputs['ji'] = 53.0
         filter_default_throughputs['jr'] = 443.0
         filter_default_throughputs['jv'] = 623.0
         filter_default_throughputs['ju'] = 40.0
         filter_default_throughputs['lum'] = 2100.0
-        
-        filter_default_throughputs['n2'] = 5.0        
+
+        filter_default_throughputs['n2'] = 5.0
         filter_default_throughputs['nir'] = 81.0
         filter_default_throughputs['o3'] = 40.0
         filter_default_throughputs['pb'] = 1040.0
         filter_default_throughputs['pg'] = 575.0
         filter_default_throughputs['pl'] = 2090.0
         filter_default_throughputs['pr'] = 360.0
-        
+
         filter_default_throughputs['rp'] = 460.0
-        
+
         filter_default_throughputs['s2'] = 5.0
         filter_default_throughputs['up'] = 40.0
         filter_default_throughputs['v'] = 623.0
@@ -600,13 +630,13 @@ class FilterWheel:
                                                 #standardize on adding p <rime> on the Sloane's
         filter_default_throughputs['zs'] = 8.6
                                                 # 'y' will eventually be in this list. Neyle has one., but it is defective and low throughput.
-        
+
         try:
             plog ("found default filter throughput value: " + str(filter_default_throughputs[requested_filter] ))
-            return filter_default_throughputs[requested_filter] 
+            return filter_default_throughputs[requested_filter]
         except:
             plog ("did not find a default filter value for that filter, taking a swing with a standard 150.0 throughput value")
-            return 150.0 
+            return 150.0
 
 
 
