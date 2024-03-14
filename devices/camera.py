@@ -1488,7 +1488,7 @@ class Camera:
                         self.camera_update_wincom.TemperatureSetpoint = float(self.theskyx_set_setpoint_value)
                         self.camera_update_wincom.RegulateTemperature = 1
                         self.current_setpoint = self.theskyx_set_setpoint_value
-                        plog ("theskyx setpoint triggered: " + str(self.theskyx_set_setpoint_value))
+                        #plog ("theskyx setpoint triggered: " + str(self.theskyx_set_setpoint_value))
                         self.theskyx_set_setpoint_trigger=False
 
                     if self.theskyx_abort_exposure_trigger==True:
