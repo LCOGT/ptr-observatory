@@ -2943,7 +2943,8 @@ class Sequencer:
 
             if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias):
                 os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias)
-
+        else:
+            pipefolder=''
 
 
 
