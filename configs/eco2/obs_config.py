@@ -608,7 +608,7 @@ site_config = {
                 'number_of_flat_to_store' : 128,
 
  
-                'dark_exposure': 20,
+                'dark_exposure': 180,
                 
                 'do_cosmics' : False,
                 
