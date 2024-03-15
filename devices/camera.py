@@ -1026,8 +1026,8 @@ class Camera:
                 if entry != 'readnoise':
                     singlentry=self.filter_camera_gain_shelf[entry]
                     if singlentry[2] > int(0.8 * self.config['camera'][self.name]['settings']['number_of_flat_to_store']):
-                        gain_collector.append(single_entry[0])
-                        stdev_collector.append(single_entry[1])
+                        gain_collector.append(singlentry[0])
+                        stdev_collector.append(singlentry[1])
                         # if singlentry[0] < self.camera_known_gain:
                         #     self.camera_known_gain=singlentry[0]
                         #     self.camera_known_gain_stdev=singlentry[1]
