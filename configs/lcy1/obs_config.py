@@ -7,7 +7,7 @@ Created on Fri Feb 07,  11:57:41 2020
 @author: wrosing
 '''
 
-obs_id = 'eco2' # THIS IS THE NAME OF THIS OBSERVATORY if it is an obs
+obs_id = 'lcy1' # THIS IS THE NAME OF THIS OBSERVATORY if it is an obs
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
                     #Username: wayne_rosingPW: 29yzpe
@@ -18,22 +18,22 @@ site_config = {
     # Instance type specifies whether this is an obs or a wema
     'instance_type' : 'obs',
     # If this is not a wema, this specifies the wema that this obs is connected to
-    'wema_name' : 'eco',
+    'wema_name' : 'lcy',
     # The unique identifier for this obs
-    'obs_id': 'eco2',
+    'obs_id': 'lcy1',
     
     
     
     
     # Name, local and owner stuff
-    'name': 'Eltham College Observatory, 0m28',
+    'name': 'Luther College Observatory, 10" Newtonian',
     'airport_code':  'MEL: Melbourne Airport',
-    'location': 'Eltham, Victoria, Australia',
+    'location': 'Yarra Valley, Victoria, Australia',
     'telescope_description': 'n.a.',
-    'observatory_url': 'https://elthamcollege.vic.edu.au/',   #  This is meant to be optional
+    'observatory_url': 'https://https://www.luther.vic.edu.au//',   #  This is meant to be optional
     'observatory_logo': None,   # I expect these will ususally end up as .png format icons
     'mpc_code':  'ZZ23',    #This is made up for now.
-    'description':  '''Eltham College is an independent, non-denominational, co-educational day school situated in Research, an outer suburb north east of Melbourne.
+    'description':  '''Luther College is located in the Melbourne suburb of Croydon Hills, just minutes from the picturesque Yarra Valley. 
                     ''',    #  i.e, a multi-line text block supplied and eventually mark-up formatted by the owner.
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
                                                         # some aws handle.
@@ -54,7 +54,7 @@ site_config = {
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
     
-    'temperature_at_which_obs_too_hot_for_camera_cooling' : 35, 
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 23, 
     
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that 
@@ -74,7 +74,7 @@ site_config = {
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # Setup of folders on local and network drives.
-    'client_hostname':  'ECO-0m28-OSC',
+    'client_hostname':  'LCY1',
     'archive_path':  'C:/ptr/',  
     'alt_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path' : 'no',
@@ -196,12 +196,12 @@ site_config = {
     'mount': {
         'mount1': {
             'parent': 'enclosure1',
-            'tel_id': '0m40',
-            'name': 'ecocdkpier',
+            'tel_id': '10inch',
+            'name': 'lcy10inch',
             'hostIP':  '10.0.0.140',     #Can be a name if local DNS recognizes it.
             'hostname':  'ecocdkpier',
-            'desc':  'Paramount MX+',
-            'driver': 'ASCOM.SoftwareBisque.Telescope',
+            'desc':  'IOptron',
+            'driver': 'ASCOM.iOptron2017.Telescope',
             'alignment': 'Equatorial',
             'default_zenith_avoid': 0.0,   #degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
@@ -342,8 +342,10 @@ site_config = {
             'name': 'focuser',
             'desc':  'Planewave Focuser',
             #'driver': 'ASCOM.SeletekFocuser.Focuser',
-            'driver': 'SeletekFocuser.Focuser',
-			'com_port':  'COM9',
+            #'driver': 'SeletekFocuser.Focuser',
+			'driver': 'ASCOM.iOptron2017.Focuser',
+			
+            'com_port':  'COM9',
             'focuser_movement_settle_time': 3,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
@@ -415,7 +417,7 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'ec002cs',      #Important because this points to a server file structure by that name.
+            'name': 'lcy1qhy600c',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600C Pro',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
@@ -458,9 +460,6 @@ site_config = {
                 # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
-                
-                
-                # OFFSET IS OK, BUT NEEDS TO BE A LITTLE BIT HIGHER FOR ECO@... cutting close to the edge!
                 'direct_qhy_readout_mode' : 0,        
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,  
@@ -597,8 +596,8 @@ site_config = {
                 'reference_dark': 0.2,  #  NB  Guess
                 'reference_offset': 611, #  NB Guess  ADU vaules not times in sec.
                 'fullwell_capacity': 80000,   #  NB Guess
-                # 'bin-desc':              ['1x1', '2x2', '3x3', '4x4' ],
-                # 'chan_color':            ['col', 'gry', 'gry', 'gry' ],
+                'bin-desc':              ['1x1', '2x2', '3x3', '4x4' ],
+                'chan_color':            ['col', 'gry', 'gry', 'gry' ],
                 
                 'cycle_time':            0.5,   # Meas 20230219  for a bias
 
