@@ -1013,9 +1013,12 @@ class Camera:
         self.camera_known_readnoise=70000.0
         self.camera_known_readnoise_stdev=70000.0
 
-
+        #breakpoint()
         # if True:
         try:
+
+            gain_collector=[]
+            stdev_collector=[]            
 
             self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
@@ -1023,9 +1026,13 @@ class Camera:
                 if entry != 'readnoise':
                     singlentry=self.filter_camera_gain_shelf[entry]
                     if singlentry[2] > int(0.8 * self.config['camera'][self.name]['settings']['number_of_flat_to_store']):
-                        if singlentry[0] < self.camera_known_gain:
-                            self.camera_known_gain=singlentry[0]
-                            self.camera_known_gain_stdev=singlentry[1]
+                        gain_collector.append(single_entry[0])
+                        stdev_collector.append(single_entry[1])
+                        # if singlentry[0] < self.camera_known_gain:
+                        #     self.camera_known_gain=singlentry[0]
+                        #     self.camera_known_gain_stdev=singlentry[1]
+
+            breakpoint()
 
             singlentry=self.filter_camera_gain_shelf['readnoise']
             self.camera_known_readnoise= (singlentry[0] * self.camera_known_gain) / 1.414
