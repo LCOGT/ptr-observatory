@@ -1033,29 +1033,37 @@ class Camera:
                         #     self.camera_known_gain_stdev=singlentry[1]
 
             
+            if len(gain_collector) > 1:
             
-            while True:
-                print (gain_collector)
-                gainmed=np.nanmedian(gain_collector)
-                print (gainmed)
-                gainstd=np.nanstd(gain_collector)
-                print (gainstd)
-                new_gain_pile=[]
-                new_stdev_pile=[]
-                counter=0
-                for entry in gain_collector:
-                    if entry < gainmed + 3* gainstd:
-                        new_gain_pile.append(entry)
-                        new_stdev_pile.append(stdev_collector[counter])
-                    counter=counter+1
-                if len(new_gain_pile) == len(gain_collector):
-                    break
-                gain_collector=copy.deepcopy(new_gain_pile)
-                stdev_collector=copy.deepcopy(new_stdev_pile)
-            
-            self.camera_known_gain=gainmed
-            self.camera_known_gain_stdev=np.nanstd(gain_collector)
-            
+                while True:
+                    print (gain_collector)
+                    gainmed=np.nanmedian(gain_collector)
+                    print (gainmed)
+                    gainstd=np.nanstd(gain_collector)
+                    print (gainstd)
+                    new_gain_pile=[]
+                    new_stdev_pile=[]
+                    counter=0
+                    for entry in gain_collector:
+                        if entry < gainmed + 3* gainstd:
+                            new_gain_pile.append(entry)
+                            new_stdev_pile.append(stdev_collector[counter])
+                        counter=counter+1
+                    if len(new_gain_pile) == len(gain_collector):
+                        break
+                    if len(new_gain_pile) == 1:
+                        self.camera_known_gain=new_gain_pile[0]
+                        self.camera_known_gain_stdev=new_gain_pile[0]
+                        break
+                        
+                    gain_collector=copy.deepcopy(new_gain_pile)
+                    stdev_collector=copy.deepcopy(new_stdev_pile)
+                
+                self.camera_known_gain=gainmed
+                self.camera_known_gain_stdev=np.nanstd(gain_collector)
+            else:
+                self.camera_known_gain=gain_collector[0]
+                self.camera_known_gain_stdev=stdev_collector[0]
             #breakpoint()
 
             singlentry=self.filter_camera_gain_shelf['readnoise']
