@@ -966,6 +966,28 @@ class Sequencer:
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
                                                 return
+                                            
+                                            # COLLECTING A 0.0045 Second EXPOSURE DARK FRAME
+                                            plog("Expose " + str(5*stride) +" 1x1 0.0045 second exposure dark frames.")
+                                            req = {'time': 0.0045,  'script': 'True', 'image_type': 'pointzerozerofourfive_exposure_dark'}
+                                            opt = {'count':  min_to_do,  \
+                                                   'filter': 'dark'}
+                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                            g_dev['obs'].request_scan_requests()
+                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                return
+                                            
+                                            # COLLECTING A 0.015 Second EXPOSURE DARK FRAME
+                                            plog("Expose " + str(5*stride) +" 1x1 0.015 second exposure dark frames.")
+                                            req = {'time': 0.015,  'script': 'True', 'image_type': 'onepointfivepercent_exposure_dark'}
+                                            opt = {'count':  min_to_do,  \
+                                                   'filter': 'dark'}
+                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                            g_dev['obs'].request_scan_requests()
+                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                return
 
                                             # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
