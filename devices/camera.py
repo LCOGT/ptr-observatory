@@ -4034,8 +4034,8 @@ class Camera:
                             commissioning_flats=False
                             
                             # Check if we have MOST of the flats we need
-                            if os.path.exists(self.local_flat_folder + g_dev['cam'].current_filter):
-                                files_in_folder=glob.glob(self.local_flat_folder + g_dev['cam'].current_filter + '/' + '*.n*')
+                            if os.path.exists(g_dev['obs'].local_flat_folder + g_dev['cam'].current_filter):
+                                files_in_folder=glob.glob(g_dev['obs'].local_flat_folder + g_dev['cam'].current_filter + '/' + '*.n*')
                                 files_in_folder= [ x for x in files_in_folder if "tempcali" not in x ]
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_flat_to_store']
                                 n_files = len(files_in_folder)
