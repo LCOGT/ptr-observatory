@@ -4337,6 +4337,78 @@ class Sequencer:
                 del bad_pixel_mapper_array
             except:
                 pass
+            
+            
+            
+        # Regenerate gain and readnoise
+        g_dev['cam'].camera_known_gain=70000.0
+        g_dev['cam'].camera_known_gain_stdev=70000.0
+        g_dev['cam'].camera_known_readnoise=70000.0
+        g_dev['cam'].camera_known_readnoise_stdev=70000.0
+
+        #breakpoint()
+        # if True:
+        try:
+
+            gain_collector=[]
+            stdev_collector=[]            
+
+            g_dev['cam'].filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
+
+            for entry in g_dev['cam'].filter_camera_gain_shelf:
+                if entry != 'readnoise':
+                    singlentry=g_dev['cam'].filter_camera_gain_shelf[entry]
+                    #if singlentry[2] > int(0.8 * g_dev['cam'].config['camera'][g_dev['cam'].name]['settings']['number_of_flat_to_store']):
+                    gain_collector.append(singlentry[0])
+                    stdev_collector.append(singlentry[1])
+                        # if singlentry[0] < g_dev['cam'].camera_known_gain:
+                        #     g_dev['cam'].camera_known_gain=singlentry[0]
+                        #     g_dev['cam'].camera_known_gain_stdev=singlentry[1]
+
+            
+            
+            while True:
+                print (gain_collector)
+                gainmed=np.nanmedian(gain_collector)
+                print (gainmed)
+                gainstd=np.nanstd(gain_collector)
+                print (gainstd)
+                new_gain_pile=[]
+                new_stdev_pile=[]
+                counter=0
+                for entry in gain_collector:
+                    if entry < gainmed + 3* gainstd:
+                        new_gain_pile.append(entry)
+                        new_stdev_pile.append(stdev_collector[counter])
+                    counter=counter+1
+                if len(new_gain_pile) == len(gain_collector):
+                    break
+                gain_collector=copy.deepcopy(new_gain_pile)
+                stdev_collector=copy.deepcopy(new_stdev_pile)
+            
+            g_dev['cam'].camera_known_gain=gainmed
+            g_dev['cam'].camera_known_gain_stdev=np.nanstd(gain_collector)
+            
+            #breakpoint()
+
+            singlentry=g_dev['cam'].filter_camera_gain_shelf['readnoise']
+            g_dev['cam'].camera_known_readnoise= (singlentry[0] * g_dev['cam'].camera_known_gain) / 1.414
+            g_dev['cam'].camera_known_readnoise_stdev = (singlentry[1] * g_dev['cam'].camera_known_gain) / 1.414
+        except:
+            plog('failed to estimate gain and readnoise from flats and such')
+        #         g_dev['cam'].camera_known_gain=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]
+        #         g_dev['cam'].camera_known_gain_stdev=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['camera_gain_stdev']
+        #         g_dev['cam'].camera_known_readnoise=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise']
+        #         g_dev['cam'].camera_known_readnoise_stdev=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise_stdev']
+
+        # else:
+        #     g_dev['cam'].camera_known_gain=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]
+        #     g_dev['cam'].camera_known_gain_stdev=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['camera_gain_stdev']
+        #     g_dev['cam'].camera_known_readnoise=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise']
+        #     g_dev['cam'].camera_known_readnoise_stdev=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise_stdev']
+
+        plog ("Used Camera Gain: " + str(g_dev['cam'].camera_known_gain))
+        plog ("Used Readnoise  : "+ str(g_dev['cam'].camera_known_readnoise))
 
         g_dev["obs"].send_to_user("All calibration frames completed.")
 

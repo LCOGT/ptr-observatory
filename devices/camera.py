@@ -1025,14 +1025,38 @@ class Camera:
             for entry in self.filter_camera_gain_shelf:
                 if entry != 'readnoise':
                     singlentry=self.filter_camera_gain_shelf[entry]
-                    if singlentry[2] > int(0.8 * self.config['camera'][self.name]['settings']['number_of_flat_to_store']):
-                        gain_collector.append(singlentry[0])
-                        stdev_collector.append(singlentry[1])
+                    #if singlentry[2] > int(0.8 * self.config['camera'][self.name]['settings']['number_of_flat_to_store']):
+                    gain_collector.append(singlentry[0])
+                    stdev_collector.append(singlentry[1])
                         # if singlentry[0] < self.camera_known_gain:
                         #     self.camera_known_gain=singlentry[0]
                         #     self.camera_known_gain_stdev=singlentry[1]
 
-            breakpoint()
+            
+            
+            while True:
+                print (gain_collector)
+                gainmed=np.nanmedian(gain_collector)
+                print (gainmed)
+                gainstd=np.nanstd(gain_collector)
+                print (gainstd)
+                new_gain_pile=[]
+                new_stdev_pile=[]
+                counter=0
+                for entry in gain_collector:
+                    if entry < gainmed + 3* gainstd:
+                        new_gain_pile.append(entry)
+                        new_stdev_pile.append(stdev_collector[counter])
+                    counter=counter+1
+                if len(new_gain_pile) == len(gain_collector):
+                    break
+                gain_collector=copy.deepcopy(new_gain_pile)
+                stdev_collector=copy.deepcopy(new_stdev_pile)
+            
+            self.camera_known_gain=gainmed
+            self.camera_known_gain_stdev=np.nanstd(gain_collector)
+            
+            #breakpoint()
 
             singlentry=self.filter_camera_gain_shelf['readnoise']
             self.camera_known_readnoise= (singlentry[0] * self.camera_known_gain) / 1.414
