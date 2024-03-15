@@ -531,7 +531,9 @@ class Sequencer:
                 opt = {}
 
 
-                self.bias_dark_script(req, opt, morn=False)
+                
+
+                self.bias_dark_script(req, opt, morn=False,ending = g_dev['events']['End Eve Bias Dark'])
                 self.eve_bias_done = True
                 self.bias_dark_latch = False
 
@@ -814,7 +816,7 @@ class Sequencer:
 
                 self.park_and_close()
 
-                self.bias_dark_script(req, opt, morn=True)
+                self.bias_dark_script(req, opt, morn=True, ending = g_dev['events']['End Morn Bias Dark'])
 
                 self.park_and_close()
                 self.morn_bias_dark_latch = False
@@ -1749,15 +1751,15 @@ class Sequencer:
         return block_specification
 
 
-    def bias_dark_script(self, req=None, opt=None, morn=False):
+    def bias_dark_script(self, req=None, opt=None, morn=False, ending=None):
         """
         This functions runs through automatically collecting bias and darks for the local calibrations.
         """
         self.current_script = 'Bias Dark'
-        if morn:
-            ending = g_dev['events']['End Morn Bias Dark']
-        else:
-            ending = g_dev['events']['End Eve Bias Dark']
+        # if morn:
+        #     ending = g_dev['events']['End Morn Bias Dark']
+        # else:
+        #     ending = g_dev['events']['End Eve Bias Dark']
 
         # Set a timer. It is possible to ask for bias darks and it takes until the end of time. So we should put a limit on it for manually
         # requested collection. Auto-collection is limited by the events schedule.
@@ -1771,6 +1773,12 @@ class Sequencer:
             # g_dev['cam'].darkslide_state = 'Closed'
 
         while ephem.now() < ending :   #Do not overrun the window end
+
+            if ending != None:
+                if ephem.now() < ending:
+                    self.bias_dark_latch = False
+                    break
+                    
 
             # If we've been collecting bias darks for TWO HOURS, bail out... someone has asked for too many!
             if time.time() - bias_darks_started > 7200:
