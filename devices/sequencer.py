@@ -899,6 +899,9 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                print (self.stop_script_called)    
+                                                print (g_dev['obs'].open_and_enabled_to_observe)
+                                                print (( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
                                                 return
 
 
