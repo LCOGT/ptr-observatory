@@ -901,7 +901,7 @@ class Sequencer:
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
                                                 print (self.stop_script_called)    
                                                 print (g_dev['obs'].open_and_enabled_to_observe)
-                                                print (( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
+                                                print ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
                                                 return
 
 
