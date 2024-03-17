@@ -54,7 +54,7 @@ site_config = {
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
     
-    'temperature_at_which_obs_too_hot_for_camera_cooling' : 35, 
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 26, 
     
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that 
