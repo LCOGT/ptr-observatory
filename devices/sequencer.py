@@ -5234,11 +5234,11 @@ class Sequencer:
                                             camera_gain_collector.append(fred["camera_gain"])
                                         except:
                                             plog ("camera gain not avails")
-                                    elif morn and (flat_saturation_level > 0.8) and (old_throughput_value/new_throughput_value > 0.95) and (old_throughput_value/new_throughput_value < 1.05):
+                                    elif morn and (bright > (flat_saturation_level * 0.8)) and (old_throughput_value/new_throughput_value > 0.95) and (old_throughput_value/new_throughput_value < 1.05):
                                         plog ("Morning and overexposing at this exposure time: " + str(exp_time) + ". Dropping that out")
                                         sky_exposure_snap_this_filter.remove(exp_time)
                                     
-                                    elif not morn and flat_saturation_level < 0.5 and 0.95 < old_throughput_value/new_throughput_value < 1.05:
+                                    elif not morn and (bright < (flat_saturation_level * 0.5)) and 0.95 < old_throughput_value/new_throughput_value < 1.05:
                                         plog ("Evening and underexposing at this exposure time: " + str(exp_time) + ". Dropping that out")
                                         sky_exposure_snap_this_filter.remove(exp_time)
                                         
@@ -5257,11 +5257,11 @@ class Sequencer:
                                             camera_gain_collector.append(fred["camera_gain"])
                                         except:
                                             plog ("camera gain not avails")
-                                    elif morn and flat_saturation_level > 0.75 and 0.95 < old_throughput_value/new_throughput_value < 1.05:
+                                    elif morn and ( bright > (flat_saturation_level * 0.75)) and 0.95 < old_throughput_value/new_throughput_value < 1.05:
                                         plog ("Morning and overexposing at this exposure time: " + str(exp_time) + ". Dropping that out")
                                         sky_exposure_snap_this_filter.remove(exp_time)
                                     
-                                    elif not morn and flat_saturation_level < 0.25 and 0.95 < old_throughput_value/new_throughput_value < 1.05:
+                                    elif not morn and (bright < (flat_saturation_level * 0.25)) and 0.95 < old_throughput_value/new_throughput_value < 1.05:
                                         plog ("Evening and underexposing at this exposure time: " + str(exp_time) + ". Dropping that out")
                                         sky_exposure_snap_this_filter.remove(exp_time)
 
