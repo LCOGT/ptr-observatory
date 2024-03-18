@@ -521,6 +521,7 @@ class Sequencer:
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
 
+
             if not self.bias_dark_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
                  self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
 
@@ -1778,7 +1779,7 @@ class Sequencer:
         while ephem.now() < ending :   #Do not overrun the window end
 
             if ending != None:
-                if ephem.now() < ending:
+                if ephem.now() > ending:
                     self.bias_dark_latch = False
                     break
                     
