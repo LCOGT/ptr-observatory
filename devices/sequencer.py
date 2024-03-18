@@ -4380,18 +4380,24 @@ class Sequencer:
                 new_gain_pile=[]
                 new_stdev_pile=[]
                 counter=0
-                for entry in gain_collector:
-                    if entry < gainmed + 3* gainstd:
-                        new_gain_pile.append(entry)
-                        new_stdev_pile.append(stdev_collector[counter])
-                    counter=counter+1
-                if len(new_gain_pile) == len(gain_collector):
-                    break
-                gain_collector=copy.deepcopy(new_gain_pile)
-                stdev_collector=copy.deepcopy(new_stdev_pile)
+                if len(gain_collector) > 1:
+                    for entry in gain_collector:
+                        if entry < gainmed + 3* gainstd:
+                            new_gain_pile.append(entry)
+                            new_stdev_pile.append(stdev_collector[counter])
+                        counter=counter+1
+                    if len(new_gain_pile) == len(gain_collector):
+                        break
+                    gain_collector=copy.deepcopy(new_gain_pile)
+                    stdev_collector=copy.deepcopy(new_stdev_pile)
+                    
+            if len(gain_collector) == 1:
+                g_dev['cam'].camera_known_gain=gain_collector[0]
+                g_dev['cam'].camera_known_gain_stdev=stdev_collector[0]
+            else:    
             
-            g_dev['cam'].camera_known_gain=gainmed
-            g_dev['cam'].camera_known_gain_stdev=np.nanstd(gain_collector)
+                g_dev['cam'].camera_known_gain=gainmed
+                g_dev['cam'].camera_known_gain_stdev=np.nanstd(gain_collector)
             
             #breakpoint()
 
