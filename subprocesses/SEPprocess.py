@@ -235,6 +235,8 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfr = np.nan
     rfs = np.nan
     sepsky = np.nan
+    pickle.dump([], open(im_path + text_name.replace('.txt', '.sep'),'wb'))
+    
 else:
 
     # Realistically we can figure out the focus stuff here from first principles.
@@ -757,6 +759,9 @@ else:
         #json_snippets['fwhm']=fwhm_file
         imageinspection_json_snippets['fwhm']=fwhm_file
         starinspection_json_snippets['fwhm']=fwhm_file
+        
+        
+        pickle.dump([], open(im_path + text_name.replace('.txt', '.sep'),'wb'))
 # Value-added header items for the UI
 #breakpoint()
 

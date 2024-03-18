@@ -5007,7 +5007,7 @@ class Sequencer:
                                 self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
                                 self.time_of_next_slew = time.time() + 45
-                             self.next_flat_observe = time.time() + 10
+                             self.next_flat_observe = time.time() + 5
                         elif morn and exp_time > max_exposure :
                              if time.time()-slow_report_timer > 120:
                                  plog("Too dim for " + str(current_filter) + " filter, waiting. Est. Exptime:  " + str(exp_time))
@@ -5021,7 +5021,7 @@ class Sequencer:
                                 self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
                                 self.time_of_next_slew = time.time() + 45
-                             self.next_flat_observe = time.time() + 10
+                             self.next_flat_observe = time.time() + 5
                              exp_time = min_exposure
                              # snap the exposure time to a discrete grid
                              if exp_time > 0.002:
@@ -5290,7 +5290,7 @@ class Sequencer:
 
                             continue
                     else:
-                        time.sleep(5)
+                        time.sleep(1)
 
         if morn:
             self.morn_sky_flat_latch = False
