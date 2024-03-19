@@ -203,7 +203,7 @@ class Observatory:
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/narrowbanddarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/broadbanddarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/broadbanddarks")
-            
+
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/pointzerozerofourfivedarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/pointzerozerofourfivedarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/onepointfivepercentdarks"):
@@ -3140,9 +3140,9 @@ class Observatory:
                                         os.remove(oldest_file)
                                     except:
                                         self.laterdelete_queue.put(oldest_file, block=False)
-                                        
-                                        
-                                       
+
+
+
 
                             elif slow_process[4] == 'pointzerozerofourfive_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
