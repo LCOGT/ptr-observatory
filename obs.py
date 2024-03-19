@@ -3644,14 +3644,14 @@ class Observatory:
                             temphduheader['OSCSEP'] = 'yes'
                             temphduheader['NAXIS1'] = float(temphduheader['NAXIS1'])/2
                             temphduheader['NAXIS2'] = float(temphduheader['NAXIS2'])/2
-                            # temphduheader['CRPIX1'] = float(temphduheader['CRPIX1'])/2
-                            # temphduheader['CRPIX2'] = float(temphduheader['CRPIX2'])/2
+                            temphduheader['CRPIX1'] = float(temphduheader['CRPIX1'])/2
+                            temphduheader['CRPIX2'] = float(temphduheader['CRPIX2'])/2
                             try:
                                 temphduheader['PIXSCALE'] = float(temphduheader['PIXSCALE'])*2
                             except:
                                 pass
-                            # temphduheader['CDELT1'] = float(temphduheader['CDELT1'])*2
-                            # temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
+                            temphduheader['CDELT1'] = float(temphduheader['CDELT1'])*2
+                            temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
                             tempfilter = temphduheader['FILTER']
                             tempfilename = slow_process[1]
 

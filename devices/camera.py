@@ -4961,14 +4961,19 @@ def post_exposure_process(payload):
         hdu.header["RA-hms"] = tempointing[0]
         hdu.header["DEC-dms"] = tempointing[1]
 
-        # hdu.header["CTYPE1"] = 'RA---TAN'
-        # hdu.header["CTYPE2"] = 'DEC--TAN'
-        # hdu.header["CDELT1"] = pixscale / 3600
-        # hdu.header["CDELT2"] = pixscale / 3600
-        # hdu.header["CRVAL1"] = tempRAdeg
-        # hdu.header["CRVAL2"] = tempDECdeg
-        # hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
-        # hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
+        hdu.header["CTYPE1"] = 'RA---TAN'
+        hdu.header["CTYPE2"] = 'DEC--TAN'
+        try:
+            hdu.header["CDELT1"] = pixscale / 3600
+            hdu.header["CDELT2"] = pixscale / 3600
+        except:
+            hdu.header["CDELT1"] = 0.75 / 3600
+            hdu.header["CDELT2"] = 0.75 / 3600
+            
+        hdu.header["CRVAL1"] = tempRAdeg
+        hdu.header["CRVAL2"] = tempDECdeg
+        hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
+        hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
 
         try:  #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
             os.makedirs(
@@ -5118,8 +5123,8 @@ def post_exposure_process(payload):
 
                     hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
                     hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
-                    # hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
-                    # hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
+                    hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
+                    hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
                 # bin to native binning
                 if selfnative_bin != 1:
@@ -5131,10 +5136,10 @@ def post_exposure_process(payload):
                     reduced_pixscale=float(hdu.header['PIXSCALE'])
                     reduced_hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
                     reduced_hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / selfnative_bin
-                    # reduced_hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
-                    # reduced_hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
-                    # reduced_hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
-                    # reduced_hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
+                    reduced_hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
+                    reduced_hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
+                    reduced_hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
+                    reduced_hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
                     reduced_hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * selfnative_bin
                     reduced_hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * selfnative_bin
                     reduced_hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * selfnative_bin
