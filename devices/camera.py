@@ -2867,13 +2867,14 @@ class Camera:
                         self.pre_rot = []
                         self.pre_foc = []
                         self.pre_ocn = []
-
-                        g_dev["foc"].get_quick_status(self.pre_foc)
                         try:
-                            g_dev["rot"].get_quick_status(self.pre_rot)
+                            g_dev["foc"].get_quick_status(self.pre_foc)
+                            try:
+                                g_dev["rot"].get_quick_status(self.pre_rot)
+                            except:
+                                pass
                         except:
-                            pass
-
+                            plog ("couldn't grab quick status focus")
                         g_dev["mnt"].get_rapid_exposure_status(
                             self.pre_mnt
                         )  # Should do this close to the exposure
@@ -3167,7 +3168,10 @@ class Camera:
             g_dev['obs'].request_scan_requests()
             if g_dev['seq'].blockend != None:
                 g_dev['obs'].request_update_calendar_blocks()
-            focus_position=g_dev['foc'].current_focus_position
+            try:
+                focus_position=g_dev['foc'].current_focus_position
+            except:
+                pass
             block_and_focus_check_done=True
 
         pointingfocus_masterdark_done=False
@@ -3372,7 +3376,10 @@ class Camera:
                         g_dev["rot"].get_quick_status(self.post_rot)
                     except:
                         pass
-                    g_dev["foc"].get_quick_status(self.post_foc)
+                    try:
+                        g_dev["foc"].get_quick_status(self.post_foc)
+                    except:
+                        pass
                     try:
                         g_dev["mnt"].get_rapid_exposure_status(
                             self.post_mnt
@@ -3458,7 +3465,10 @@ class Camera:
 
                 # HERE IS WHERE WE SPIT OUT THE FILES INTO A MULTIPROCESSING FUNCTION
                 avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
-                avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
+                try:
+                    avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
+                except:
+                    pass
                 try:
                     avg_rot = g_dev["rot"].get_average_status(
                         self.pre_rot, self.post_rot
@@ -4755,10 +4765,16 @@ def post_exposure_process(payload):
          #   pass
 
 
-        hdu.header["PIXSCALE"] = (
-            float(pixscale),
-            "[arcsec/pixel] Nominal pixel scale on sky",
-        )
+        if pixscale == None:
+            hdu.header["PIXSCALE"] = (
+                'Unknown',
+                "[arcsec/pixel] Nominal pixel scale on sky",
+            )
+        else:
+            hdu.header["PIXSCALE"] = (
+                float(pixscale),
+                "[arcsec/pixel] Nominal pixel scale on sky",
+            )
 
         hdu.header["DRZPIXSC"] = (selfconfig["camera"][selfname]["settings"]['drizzle_value_for_later_stacking'], 'Target pixel scale for drizzling')
 
@@ -4937,14 +4953,14 @@ def post_exposure_process(payload):
         hdu.header["RA-hms"] = tempointing[0]
         hdu.header["DEC-dms"] = tempointing[1]
 
-        hdu.header["CTYPE1"] = 'RA---TAN'
-        hdu.header["CTYPE2"] = 'DEC--TAN'
-        hdu.header["CDELT1"] = pixscale / 3600
-        hdu.header["CDELT2"] = pixscale / 3600
-        hdu.header["CRVAL1"] = tempRAdeg
-        hdu.header["CRVAL2"] = tempDECdeg
-        hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
-        hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
+        # hdu.header["CTYPE1"] = 'RA---TAN'
+        # hdu.header["CTYPE2"] = 'DEC--TAN'
+        # hdu.header["CDELT1"] = pixscale / 3600
+        # hdu.header["CDELT2"] = pixscale / 3600
+        # hdu.header["CRVAL1"] = tempRAdeg
+        # hdu.header["CRVAL2"] = tempDECdeg
+        # hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
+        # hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
 
         try:  #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
             os.makedirs(
@@ -5051,8 +5067,8 @@ def post_exposure_process(payload):
                         hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
                         hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
                     except:
-                        plog ("Something odd in the flash reduction?")
-                        plog(traceback.format_exc())
+                        plog ("Could not bias or dark file.")
+                        #plog(traceback.format_exc())
 
                 #plog ("time taken for flash reduction: " + str(time.time() - timetakenquickdark))
             except Exception as e:
@@ -5094,8 +5110,8 @@ def post_exposure_process(payload):
 
                     hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
                     hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
-                    hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
-                    hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
+                    # hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
+                    # hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
                 # bin to native binning
                 if selfnative_bin != 1:
@@ -5107,10 +5123,10 @@ def post_exposure_process(payload):
                     reduced_pixscale=float(hdu.header['PIXSCALE'])
                     reduced_hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
                     reduced_hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / selfnative_bin
-                    reduced_hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
-                    reduced_hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
-                    reduced_hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
-                    reduced_hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
+                    # reduced_hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
+                    # reduced_hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
+                    # reduced_hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
+                    # reduced_hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
                     reduced_hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * selfnative_bin
                     reduced_hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * selfnative_bin
                     reduced_hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * selfnative_bin

@@ -291,6 +291,9 @@ class Mount:
             self.CanSetDeclinationRate = True
         else:
             self.CanSetDeclinationRate = False
+            
+            
+            
         self.DeclinationRate = self.mount.DeclinationRate
 
         self.EquatorialSystem = self.mount.EquatorialSystem
@@ -555,7 +558,8 @@ class Mount:
                                 #breakpoint()  #Here is a place close to the mount to deal with Model, etc
                                 #self.mount_update_wincom.DeclinationRate = 5 #gets reset on the slew
                                 self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-                                self.mount_update_wincom.DeclinationRate = 0
+                                if self.CanSetDeclinationRate:
+                                    self.mount_update_wincom.DeclinationRate = 0
                                 #plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
                                 #print ("successful slew")
 
@@ -578,7 +582,7 @@ class Mount:
                                 self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
                                 self.RightAscensionRate=self.request_new_RightAscensionRate
 
-                            if self.request_set_DeclinationRate:
+                            if self.request_set_DeclinationRate and self.CanSetDeclinationRate:
                                 self.request_set_DeclinationRate=False
                                 self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
                                 self.DeclinationRate=self.request_new_DeclinationRate

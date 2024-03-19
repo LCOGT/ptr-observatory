@@ -852,7 +852,11 @@ try:
 except:
     hduheader["NSTARS"] = ( -99, 'Number of star-like sources in image')
 
-hduheader['PIXSCALE']=float(input_sep_info[1])
+
+if input_sep_info[1] == None:
+    hduheader['PIXSCALE']='Unknown'
+else:
+    hduheader['PIXSCALE']=float(input_sep_info[1])
 
 
 # parse header to a json-y type thing

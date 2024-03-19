@@ -130,13 +130,15 @@ def send_status(obsy, column, status_to_send):
     """Sends an update to the status endpoint."""
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     payload = {"statusType": str(column), "status": status_to_send}
+    #print (payload)
     try:
         data = json.dumps(payload)
     except Exception as e:
         plog("Failed to create status payload. Usually not fatal:  ", e)
 
     try:
-        reqs.post(uri_status, data=data, timeout=20)
+        responsecode=reqs.post(uri_status, data=data, timeout=20)
+        #print (responsecode)
     except Exception as e:
         plog("Failed to send_status. Usually not fatal:  ", e)
 
@@ -668,15 +670,18 @@ class Observatory:
 
 
         # On bootup, detect the roof status and set the obs to observe or not.
-        g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
-        # If the roof is open, then it is open and enabled to observe
-        if not g_dev['obs'].enc_status == None:
-            if 'Open' in g_dev['obs'].enc_status['shutter_status']:
-                if (not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead) or self.assume_roof_open:
-                    self.open_and_enabled_to_observe = True
-                else:
-                    self.open_and_enabled_to_observe = False
-
+        try:
+            g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+            # If the roof is open, then it is open and enabled to observe
+            if not g_dev['obs'].enc_status == None:
+                if 'Open' in g_dev['obs'].enc_status['shutter_status']:
+                    if (not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead) or self.assume_roof_open:
+                        self.open_and_enabled_to_observe = True
+                    else:
+                        self.open_and_enabled_to_observe = False
+        except:
+            plog ("FAIL ON OPENING ROOF CHECK")
+            self.open_and_enabled_to_observe = False
         # AND one for safety checks
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
         self.safety_check_period = self.config['safety_check_period']
@@ -699,6 +704,8 @@ class Observatory:
         self.update_status_thread=threading.Thread(target=self.update_status_thread)
         self.update_status_thread.daemon = True
         self.update_status_thread.start()
+        
+        #print(g_dev['obs'].enc_status )
 
         #breakpoint()
         # Initialisation complete!
@@ -708,6 +715,8 @@ class Observatory:
         #killing this in favor of triggering by using the "Take Lunar Stack" sequencer script.z
 
         #g_dev['seq'].filter_focus_offset_estimator_script()
+       # breakpoint()
+        #g_dev['seq'].bias_dark_script()
 
 
 
@@ -1172,6 +1181,8 @@ class Observatory:
 
         self.time_last_status = time.time()
         self.status_count += 1
+        
+        #print ("Updated a status")
 
         self.currently_updating_status=False
 
@@ -1631,8 +1642,13 @@ class Observatory:
                     # As nightly reset resets the calendar
                     self.warm_report_timer = time.time()
                     self.too_hot_in_observatory = False
-                    focstatus=g_dev['foc'].get_status()
-                    self.temperature_in_observatory_from_focuser=focstatus["focus_temperature"]
+                    try:
+                        focstatus=g_dev['foc'].get_status()
+                        self.temperature_in_observatory_from_focuser=focstatus["focus_temperature"]
+                    except:
+                        self.temperature_in_observatory_from_focuser=20.0
+                        pass
+                    
 
                     if self.temperature_in_observatory_from_focuser > self.too_hot_temperature:  #This should be a per obsy config item
                         self.too_hot_in_observatory=True
@@ -3628,11 +3644,14 @@ class Observatory:
                             temphduheader['OSCSEP'] = 'yes'
                             temphduheader['NAXIS1'] = float(temphduheader['NAXIS1'])/2
                             temphduheader['NAXIS2'] = float(temphduheader['NAXIS2'])/2
-                            temphduheader['CRPIX1'] = float(temphduheader['CRPIX1'])/2
-                            temphduheader['CRPIX2'] = float(temphduheader['CRPIX2'])/2
-                            temphduheader['PIXSCALE'] = float(temphduheader['PIXSCALE'])*2
-                            temphduheader['CDELT1'] = float(temphduheader['CDELT1'])*2
-                            temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
+                            # temphduheader['CRPIX1'] = float(temphduheader['CRPIX1'])/2
+                            # temphduheader['CRPIX2'] = float(temphduheader['CRPIX2'])/2
+                            try:
+                                temphduheader['PIXSCALE'] = float(temphduheader['PIXSCALE'])*2
+                            except:
+                                pass
+                            # temphduheader['CDELT1'] = float(temphduheader['CDELT1'])*2
+                            # temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
                             tempfilter = temphduheader['FILTER']
                             tempfilename = slow_process[1]
 

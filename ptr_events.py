@@ -49,6 +49,21 @@ class Events:
         try:
             self.wema_config=reqs.get(uri_status, timeout=20).json()['configuration']
         except:
+            self.wema_config={}
+            self.wema_config['latitude']=7.378917
+            
+            self.wema_config['longitude']=-135.257229
+            
+            self.wema_config['elevation']=20
+            self.wema_config['reference_ambient']=20
+            self.wema_config['reference_pressure']=20
+            self.wema_config['time_offset']= -11   #  These two keys may be obsolete given the new TZ stuff
+            self.wema_config['timezone']= 'SST' 
+            self.wema_config['TZ_database_name']='Pacific/Midway'
+            
+            self.wema_config['eve_cool_down_open'] = float(-65.0) # How many minutes after sunrise to open. Default -65 = an hour-ish before sunset. Gives time to cool and get narrowband flats
+            self.wema_config['morn_close_and_park'] = float(32.0) # How many minutes after sunrise to close. Default 32 minutes = enough time for narrowband flats
+
             plog ("Failed to get wema_config")
             plog(traceback.format_exc())
             
@@ -488,6 +503,7 @@ class Events:
         # as this is when the night ends and the schedule gets reconfigured. So anything scheduled AFTER
         # then needs to be pulled back a day. Primarily because it sometimes does weird things.....
         self.endNightTime = ephem.Date(self.sunrise + 120/1440.)
+        #breakpoint()
         self.cool_down_open = self.sunset + self.wema_config['eve_cool_down_open']/1440
         self.close_and_park = self.sunrise + self.wema_config['morn_close_and_park']/1440
         self.eve_skyFlatBegin = self.sunset + self.config['eve_sky_flat_sunset_offset']/1440
