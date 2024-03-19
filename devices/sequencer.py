@@ -4418,6 +4418,8 @@ class Sequencer:
         #     g_dev['cam'].camera_known_readnoise=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise']
         #     g_dev['cam'].camera_known_readnoise_stdev=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise_stdev']
 
+        if np.isnan(g_dev['cam'].camera_known_gain):
+            g_dev['cam'].camera_known_gain = 70000
         plog ("Used Camera Gain: " + str(g_dev['cam'].camera_known_gain))
         plog ("Used Readnoise  : "+ str(g_dev['cam'].camera_known_readnoise))
 

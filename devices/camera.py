@@ -3332,8 +3332,12 @@ class Camera:
 
                 if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing:
                     if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
-                        ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
-                        dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
+                        if self.pixscale == None:
+                            ra_random_dither=(((random.randint(0,50)-25) * 0.75 / 3600 ) / 15)
+                            dec_random_dither=((random.randint(0,50)-25) * 0.75 /3600 )
+                        else:
+                            ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
+                            dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
                         try:
                             self.wait_for_slew()
                             g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
