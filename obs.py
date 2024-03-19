@@ -298,10 +298,26 @@ class Observatory:
 
         except:
             pass
+
         try:
-            os.system("taskkill /IM ASCOM.AltAzDS.exe /F")
+            os.system('taskkill /IM ASCOM.AltAzDS.exe /F')
+
         except:
             pass
+
+
+        try:
+            os.system('taskkill /IM "AstroPhysicsV2 Driver.exe" /F')
+        except:
+            pass
+
+        try:
+            os.system('taskkill /IM "AstroPhysicsCommandCenter.exe" /F')
+        except:
+            pass
+
+
+
         try:
             os.system("taskkill /IM TheSkyX.exe /F")
         except:
