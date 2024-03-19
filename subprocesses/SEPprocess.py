@@ -236,7 +236,7 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfs = np.nan
     sepsky = np.nan
     pickle.dump([], open(im_path + text_name.replace('.txt', '.sep'),'wb'))
-    
+
 else:
 
     # Realistically we can figure out the focus stuff here from first principles.
@@ -367,6 +367,7 @@ else:
         #From...... NOW
         timer_for_bailing=time.time()
 
+        #breakpoint()
 
 
         # radial profile
@@ -394,10 +395,10 @@ else:
         # Grab the central arcminute out of the image.
         cx = int(fx/2)
         cy = int(fy/2)
-        width = 30 / pixscale
+        width = math.ceil(30 / pixscale)
         central_half_arcminute=copy.deepcopy(hdufocusdata[cx-width:cx+width,cy-width:cy+width])
         imageinspection_json_snippets['central_patch']= re.sub('\s+',' ',str(central_half_arcminute))
-        
+
 
         print (amount)
 
@@ -759,8 +760,8 @@ else:
         #json_snippets['fwhm']=fwhm_file
         imageinspection_json_snippets['fwhm']=fwhm_file
         starinspection_json_snippets['fwhm']=fwhm_file
-        
-        
+
+
         pickle.dump([], open(im_path + text_name.replace('.txt', '.sep'),'wb'))
 # Value-added header items for the UI
 #breakpoint()
@@ -1115,7 +1116,7 @@ if not frame_type == 'focus':
         starinspection_json_snippets['radialprofiles']=re.sub('\s+',' ',str(sources))
         print ("ASCIIing Radial Profiles: " + str(time.time()-googtime))
         googtime=time.time()
-        
+
     except:
         pass
 
