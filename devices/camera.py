@@ -1018,7 +1018,7 @@ class Camera:
         try:
 
             gain_collector=[]
-            stdev_collector=[]            
+            stdev_collector=[]
 
             self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
@@ -1032,9 +1032,9 @@ class Camera:
                         #     self.camera_known_gain=singlentry[0]
                         #     self.camera_known_gain_stdev=singlentry[1]
 
-            
+
             if len(gain_collector) > 1:
-            
+
                 while True:
                     print (gain_collector)
                     gainmed=np.nanmedian(gain_collector)
@@ -1055,10 +1055,10 @@ class Camera:
                         self.camera_known_gain=new_gain_pile[0]
                         self.camera_known_gain_stdev=new_gain_pile[0]
                         break
-                        
+
                     gain_collector=copy.deepcopy(new_gain_pile)
                     stdev_collector=copy.deepcopy(new_stdev_pile)
-                
+
                 self.camera_known_gain=gainmed
                 self.camera_known_gain_stdev=np.nanstd(gain_collector)
             else:
@@ -2815,7 +2815,7 @@ class Camera:
 
                             if g_dev["fil"].null_filterwheel == False:
                                 while g_dev['fil'].filter_changing:
-                                    plog ("Waiting for filter_change")
+                                    #plog ("Waiting for filter_change")
                                     time.sleep(0.05)
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
@@ -4067,11 +4067,11 @@ class Camera:
                             cge_stdev=np.nanstd(camera_gain_estimate_image)
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
-                            
-                            
+
+
                             # We should only check whether the gain is good IF we have a good gain.
                             commissioning_flats=False
-                            
+
                             # Check if we have MOST of the flats we need
                             if os.path.exists(g_dev['obs'].local_flat_folder + g_dev['cam'].current_filter):
                                 files_in_folder=glob.glob(g_dev['obs'].local_flat_folder + g_dev['cam'].current_filter + '/' + '*.n*')
@@ -4079,20 +4079,20 @@ class Camera:
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_flat_to_store']
                                 n_files = len(files_in_folder)
                                 if not ((n_files/max_files) > 0.8):
-                                    commissioning_flats=True                                    
+                                    commissioning_flats=True
                             else:
                                 commissioning_flats=True
-                            
+
                             # If we don't have a good gain yet, we are commissioning
                             if g_dev['seq'].current_filter_last_camera_gain > 50:
                                 commissioning_flats=True
-                            
+
 
                             # low values SHOULD be ok.
                             if commissioning_flats:
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain,2)))
                                 plog('Good flat value:  ' +str(central_median) + ' Not testing gain until flats in commissioned mode.')
-                                
+
                             elif cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 3 *g_dev['seq'].current_filter_last_camera_gain_stdev):
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain,2)))
                                 plog('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain))
@@ -4194,7 +4194,7 @@ class Camera:
 
                         # Similarly to the above. This saves the RAW file to disk
                         if self.config['save_raw_to_disk']:
-                           
+
                            g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
 
