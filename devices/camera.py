@@ -3336,7 +3336,8 @@ class Camera:
 
                 if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing:
                     if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
-                        if self.pixscale == None:
+                        #breakpoint()
+                        if (self.pixscale == None):
                             ra_random_dither=(((random.randint(0,50)-25) * 0.75 / 3600 ) / 15)
                             dec_random_dither=((random.randint(0,50)-25) * 0.75 /3600 )
                         else:
