@@ -2069,7 +2069,11 @@ class Camera:
 
             if self.exposure_busy:
                 plog("Cannot expose, camera is currently busy, waiting for exposure to clear")
+                dont_wait_forever=time.time()
                 while True:
+                    if (dont_wait_forever-time.time()) > 5:
+                        plog ("Exposure too busy for too long, returning")
+                        return
                     if self.exposure_busy:
                         time.sleep(0.1)
                     else:
