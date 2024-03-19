@@ -4390,6 +4390,8 @@ class Sequencer:
                         break
                     gain_collector=copy.deepcopy(new_gain_pile)
                     stdev_collector=copy.deepcopy(new_stdev_pile)
+                else:
+                    break
                     
             if len(gain_collector) == 1:
                 g_dev['cam'].camera_known_gain=gain_collector[0]
