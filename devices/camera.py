@@ -2069,7 +2069,11 @@ class Camera:
 
             if self.exposure_busy:
                 plog("Cannot expose, camera is currently busy, waiting for exposure to clear")
+                dont_wait_forever=time.time()
                 while True:
+                    if (dont_wait_forever-time.time()) > 5:
+                        plog ("Exposure too busy for too long, returning")
+                        return
                     if self.exposure_busy:
                         time.sleep(0.1)
                     else:
@@ -2867,13 +2871,14 @@ class Camera:
                         self.pre_rot = []
                         self.pre_foc = []
                         self.pre_ocn = []
-
-                        g_dev["foc"].get_quick_status(self.pre_foc)
                         try:
-                            g_dev["rot"].get_quick_status(self.pre_rot)
+                            g_dev["foc"].get_quick_status(self.pre_foc)
+                            try:
+                                g_dev["rot"].get_quick_status(self.pre_rot)
+                            except:
+                                pass
                         except:
-                            pass
-
+                            plog ("couldn't grab quick status focus")
                         g_dev["mnt"].get_rapid_exposure_status(
                             self.pre_mnt
                         )  # Should do this close to the exposure
@@ -3167,7 +3172,10 @@ class Camera:
             g_dev['obs'].request_scan_requests()
             if g_dev['seq'].blockend != None:
                 g_dev['obs'].request_update_calendar_blocks()
-            focus_position=g_dev['foc'].current_focus_position
+            try:
+                focus_position=g_dev['foc'].current_focus_position
+            except:
+                pass
             block_and_focus_check_done=True
 
         pointingfocus_masterdark_done=False
@@ -3328,8 +3336,13 @@ class Camera:
 
                 if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing:
                     if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
-                        ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
-                        dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
+                        #breakpoint()
+                        if (self.pixscale == None):
+                            ra_random_dither=(((random.randint(0,50)-25) * 0.75 / 3600 ) / 15)
+                            dec_random_dither=((random.randint(0,50)-25) * 0.75 /3600 )
+                        else:
+                            ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
+                            dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
                         try:
                             self.wait_for_slew()
                             g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
@@ -3372,7 +3385,10 @@ class Camera:
                         g_dev["rot"].get_quick_status(self.post_rot)
                     except:
                         pass
-                    g_dev["foc"].get_quick_status(self.post_foc)
+                    try:
+                        g_dev["foc"].get_quick_status(self.post_foc)
+                    except:
+                        pass
                     try:
                         g_dev["mnt"].get_rapid_exposure_status(
                             self.post_mnt
@@ -3458,7 +3474,10 @@ class Camera:
 
                 # HERE IS WHERE WE SPIT OUT THE FILES INTO A MULTIPROCESSING FUNCTION
                 avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
-                avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
+                try:
+                    avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
+                except:
+                    pass
                 try:
                     avg_rot = g_dev["rot"].get_average_status(
                         self.pre_rot, self.post_rot
@@ -4755,10 +4774,16 @@ def post_exposure_process(payload):
          #   pass
 
 
-        hdu.header["PIXSCALE"] = (
-            float(pixscale),
-            "[arcsec/pixel] Nominal pixel scale on sky",
-        )
+        if pixscale == None:
+            hdu.header["PIXSCALE"] = (
+                'Unknown',
+                "[arcsec/pixel] Nominal pixel scale on sky",
+            )
+        else:
+            hdu.header["PIXSCALE"] = (
+                float(pixscale),
+                "[arcsec/pixel] Nominal pixel scale on sky",
+            )
 
         hdu.header["DRZPIXSC"] = (selfconfig["camera"][selfname]["settings"]['drizzle_value_for_later_stacking'], 'Target pixel scale for drizzling')
 
@@ -4939,8 +4964,13 @@ def post_exposure_process(payload):
 
         hdu.header["CTYPE1"] = 'RA---TAN'
         hdu.header["CTYPE2"] = 'DEC--TAN'
-        hdu.header["CDELT1"] = pixscale / 3600
-        hdu.header["CDELT2"] = pixscale / 3600
+        try:
+            hdu.header["CDELT1"] = pixscale / 3600
+            hdu.header["CDELT2"] = pixscale / 3600
+        except:
+            hdu.header["CDELT1"] = 0.75 / 3600
+            hdu.header["CDELT2"] = 0.75 / 3600
+            
         hdu.header["CRVAL1"] = tempRAdeg
         hdu.header["CRVAL2"] = tempDECdeg
         hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
@@ -5051,8 +5081,8 @@ def post_exposure_process(payload):
                         hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
                         hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
                     except:
-                        plog ("Something odd in the flash reduction?")
-                        plog(traceback.format_exc())
+                        plog ("Could not bias or dark file.")
+                        #plog(traceback.format_exc())
 
                 #plog ("time taken for flash reduction: " + str(time.time() - timetakenquickdark))
             except Exception as e:

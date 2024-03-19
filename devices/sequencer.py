@@ -1769,14 +1769,16 @@ class Sequencer:
         # requested collection. Auto-collection is limited by the events schedule.
         bias_darks_started=time.time()
 
+        #breakpoint()
 
-
-        if g_dev['cam'].has_darkslide and ephem.now() < ending:
-            g_dev['cam'].closeDarkslide()
+        ending = ephem.now() + 100000000000000000000000
             # g_dev['cam'].darkslide_open = False
             # g_dev['cam'].darkslide_state = 'Closed'
 
         while ephem.now() < ending :   #Do not overrun the window end
+        
+            if g_dev['cam'].has_darkslide:
+                g_dev['cam'].closeDarkslide()
 
             if ending != None:
                 if ephem.now() > ending:
@@ -1840,7 +1842,7 @@ class Sequencer:
 
 
 
-            b_d_to_do = bias_count + dark_count
+            b_d_to_do = dark_count
             try:
                 stride = bias_count//dark_count
                 plog("Tobor will interleave a long exposure dark every  " + str(stride) + "  biasdarks, short darks and biases.")
@@ -1852,8 +1854,8 @@ class Sequencer:
 
             while b_d_to_do > 0:
                 g_dev['obs'].request_scan_requests()
-                min_to_do = min(b_d_to_do, stride)
-                b_d_to_do -= min_to_do
+                min_to_do = 1
+                b_d_to_do -= 1
 
                 # COLLECTING A TWO SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 2s exposure dark frames.")
@@ -2288,7 +2290,7 @@ class Sequencer:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
                         return
-                    b_d_to_do -= 1
+                    #b_d_to_do -= 1
                     #g_dev["obs"].request_full_update()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                         self.bias_dark_latch = False
@@ -2304,7 +2306,7 @@ class Sequencer:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
                         return
-                    b_d_to_do -= 1
+                    #b_d_to_do -= 1
                     #g_dev["obs"].request_full_update()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                         self.bias_dark_latch = False
@@ -3771,7 +3773,7 @@ class Sequencer:
                         #below_array=(temporaryFlat < (img_temp_median - (10 * img_temp_stdev)))
                         # plog ("Bad pixels above: " + str(above_array.sum()))
                         #plog ("Bad pixels below: " + str(below_array.sum()))
-                        bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+                        bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
 
 
                         temporaryFlat[temporaryFlat == inf] = np.nan
@@ -4219,38 +4221,7 @@ class Sequencer:
                     #
 
 
-                # Create the bad pixel map fits and npy
-                # Save the local boolean array
-                plog ("Total bad pixels in image: " + str(bad_pixel_mapper_array.sum()))
-                plog ("Writing out bad pixel map npy and fits.")
-                np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
-
-                # pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
-                # g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
-
-                # convert the boolean
-
-                #breakpoint()
-                fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-
-                filepathaws=g_dev['obs'].calib_masters_folder
-                filenameaws=tempfrontcalib + 'badpixelmask_bin1.fits'
-                g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-
-                # Store a version of the flat for the archive too
-                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1, overwrite=True)
-
-                filepathaws=g_dev['obs'].calib_masters_folder
-                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
-                g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                    #fits.writeto(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-                    #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-                    #np.save(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
-                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', copy.deepcopy( bad_pixel_mapper_array)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
-
+                
 
                 # THEN reload them to use for the next night.
                 # First delete the calibrations out of memory.
@@ -4281,9 +4252,37 @@ class Sequencer:
 
             #g_dev['cam'].darkFiles = {}
 
+            # Create the bad pixel map fits and npy
+            # Save the local boolean array
+            plog ("Total bad pixels in image: " + str(bad_pixel_mapper_array.sum()))
+            plog ("Writing out bad pixel map npy and fits.")
+            np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
+
+            # pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
+            # g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
 
+            # convert the boolean
 
+            #breakpoint()
+            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+
+            filepathaws=g_dev['obs'].calib_masters_folder
+            filenameaws=tempfrontcalib + 'badpixelmask_bin1.fits'
+            g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
+
+            # Store a version of the flat for the archive too
+            fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1, overwrite=True)
+
+            filepathaws=g_dev['obs'].calib_masters_folder
+            filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
+            g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+            if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                #fits.writeto(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+                #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+                #np.save(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
+                g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', copy.deepcopy( bad_pixel_mapper_array)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+            
             try:
                 g_dev['cam'].bpmFiles = {}
                 g_dev['cam'].bpmFiles.update({'1': bad_pixel_mapper_array})
@@ -4419,6 +4418,8 @@ class Sequencer:
         #     g_dev['cam'].camera_known_readnoise=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise']
         #     g_dev['cam'].camera_known_readnoise_stdev=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise_stdev']
 
+        if np.isnan(g_dev['cam'].camera_known_gain):
+            g_dev['cam'].camera_known_gain = 70000
         plog ("Used Camera Gain: " + str(g_dev['cam'].camera_known_gain))
         plog ("Used Readnoise  : "+ str(g_dev['cam'].camera_known_readnoise))
 
