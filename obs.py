@@ -291,28 +291,25 @@ class Observatory:
         # There are some software that really benefits from being restarted from
         # scratch on Windows, so on bootup of obs.py, the system closes them down
         # Reconnecting the devices reboots the softwares later on.
+
+        try:
+            os.system('taskkill /IM "Gemini Software.exe" /F')
+        except:
+            pass
         try:
             os.system("taskkill /IM AltAzDSConfig.exe /F")
         except:
             pass
-        try:
-            os.system('taskkill /IM "Gemini Software.exe" /F')
-
-        except:
-            pass
-
         try:
             os.system('taskkill /IM ASCOM.AltAzDS.exe /F')
 
         except:
             pass
 
-
         try:
             os.system('taskkill /IM "AstroPhysicsV2 Driver.exe" /F')
         except:
             pass
-
         try:
             os.system('taskkill /IM "AstroPhysicsCommandCenter.exe" /F')
         except:
@@ -333,7 +330,6 @@ class Observatory:
             os.system("taskkill /IM PWI4.exe /F")
         except:
             pass
-
         try:
             os.system("taskkill /IM PWI3.exe /F")
         except:
@@ -704,7 +700,7 @@ class Observatory:
         self.update_status_thread=threading.Thread(target=self.update_status_thread)
         self.update_status_thread.daemon = True
         self.update_status_thread.start()
-        
+
         #print(g_dev['obs'].enc_status )
 
         #breakpoint()
@@ -1181,7 +1177,7 @@ class Observatory:
 
         self.time_last_status = time.time()
         self.status_count += 1
-        
+
         #print ("Updated a status")
 
         self.currently_updating_status=False
@@ -1650,7 +1646,7 @@ class Observatory:
                     except:
                         self.temperature_in_observatory_from_focuser=20.0
                         pass
-                    
+
 
                     if self.temperature_in_observatory_from_focuser > self.too_hot_temperature:  #This should be a per obsy config item
                         self.too_hot_in_observatory=True
