@@ -5918,10 +5918,12 @@ class Sequencer:
                 g_dev['foc'].guarded_move(pos)
 
                 g_dev['foc'].last_known_focus = d1
-                try:
-                    g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
-                except:
-                    g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
+                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
+                 
+                # try:
+                #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+                # except:
+                #     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
                 g_dev['foc'].last_source = "auto_focus_script"
 
                 if not sim:
@@ -6048,6 +6050,8 @@ class Sequencer:
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
 
                     g_dev['foc'].last_known_focus=(extensive_focus)
+                    #g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
+                     
 
                     self.af_guard = False
                     if not dont_return_scope:
@@ -6068,10 +6072,12 @@ class Sequencer:
                 g_dev['foc'].guarded_move(pos)
 
                 g_dev['foc'].last_known_focus = d1
-                try:
-                    g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
-                except:
-                    g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
+                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
+                 
+                # try:
+                #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+                # except:
+                #     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
                 g_dev['foc'].last_source = "auto_focus_script"
 
                 if not sim:
@@ -6189,10 +6195,13 @@ class Sequencer:
                 pos = int(d1*g_dev['foc'].micron_to_steps)
                 g_dev['foc'].guarded_move(pos)
                 g_dev['foc'].last_known_focus = d1
-                try:
-                    g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
-                except:
-                    g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
+                
+                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
+                 
+                # try:
+                #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+                # except:
+                #     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
                 g_dev['foc'].last_source = "auto_focus_script"
 
                 if not sim:
@@ -6570,6 +6579,8 @@ class Sequencer:
                 plog (minimumFWHM)
                 g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
                 g_dev['foc'].last_known_focus=(solved_pos)
+                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
+                 
             except:
                 plog ("extensive focus failed :(")
             if not no_auto_after_solve:

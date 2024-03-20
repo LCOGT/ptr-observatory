@@ -121,6 +121,7 @@ class Focuser:
         self.focus_temp_slope = None
         self.focus_temp_intercept = None
         self.best_previous_focus_point = None
+        
 
         #self.update_focuser_temperature()
         
@@ -130,6 +131,8 @@ class Focuser:
             self.current_focus_temperature=self.focuser.focTemperature
         else:
             self.current_focus_temperature=self.focuser.Temperature
+        
+        self.previous_focus_temperature = copy.deepcopy(self.current_focus_temperature)
 
         self.set_initial_best_guess_for_focus()
         try:
@@ -590,9 +593,11 @@ class Focuser:
 
         # try:
         if self.theskyx:
-            temp_delta = self.focuser.focTemperature - self.current_focus_temperature
+            temp_delta = self.current_focus_temperature - self.previous_focus_temperature  
         else:
-            temp_delta = self.focuser.Temperature - self.current_focus_temperature
+            temp_delta = self.current_focus_temperature - self.previous_focus_temperature 
+        print (self.current_focus_temperature)
+        print (self.previous_focus_temperature)
         print ("Current temp_delta between solved focus and current time: " + str(temp_delta))
         # except:
         #     print ("")
