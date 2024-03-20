@@ -414,7 +414,7 @@ site_config = {
             'service_date': '20210716',
 
 
-            "filter_settle_time": 2, #sec  WER 20240303 continuing test.  how long to wait for the filter to settle after a filter change(seconds)
+            "filter_settle_time": 1, #sec  WER 20240303 continuing test.  how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
 
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
