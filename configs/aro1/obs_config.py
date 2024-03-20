@@ -220,7 +220,7 @@ site_config = {
             'alignment': 'Equatorial',
             'default_zenith_avoid': 0.0,   # degrees floating, 0.0 means do not apply this constraint.
             'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
-            
+
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'has_ascom_altaz': False,
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
@@ -369,13 +369,15 @@ site_config = {
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
             'focuser_movement_settle_time': 3,
-            # # F4.9 setup
-            # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
-            # 'ref_temp':  5.1,    # Update when pinning reference
-            #F9 setup
-            'reference': 5524, #5743,    #  Meas   Nominal at 10C Primary temperature
+                # # F4.9 setup
+                # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
+                # 'ref_temp':  5.1,    # Update when pinning reference
+            #F4.9 setup
+            'reference': 5462.94, #5743,
+            'temp_coeff': -20.4541,  #  Meas   -12 c to 4C so nominal -4C
+                                    #  microns per degree of tube temperature
             'z_compression': 0.0, #  microns per degree of zenith distance
-            'z_coef_date':  '20221002',
+            'z_coef_date':  '20240320',
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,

@@ -610,6 +610,7 @@ class Focuser:
             print ("current focus position " + str(self.current_focus_position))
             # adjust for temperature if we have the correct information.
             if abs(temp_delta) > 0.1 and self.current_focus_temperature is not None and self.focus_temp_slope is not None and self.focus_temp_intercept is not None:
+
                 adjust = round(temp_delta * float(self.focus_temp_slope), 1)
                 print ("focus adjust value due to temperature: " + str(adjust))
 

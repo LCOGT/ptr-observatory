@@ -377,10 +377,10 @@ class Sequencer:
             self.master_restack_queue.put( 'g0', block=False)
             #self.regenerate_local_masters()
         elif action == "run" and script in ['pointingRun']:
-            #breakpoint()
-            self.equatorial_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
-        elif action == "run" and script.lower() in ['equatorial_sweep']:
-            #breakpoint()
+
+            self.sky_grid_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
+        elif action == "run" and script.lower() in ['equatorialSweep']:
+
             self.equatorial_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
         elif action == "run" and script in ("collectBiasesAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
@@ -5839,8 +5839,8 @@ class Sequencer:
         plog('Autofocus Overtaveling Out.\n\n')
         g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
         plog('Autofocus Moving back in half-way.\n\n')
-
-        g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
+        #this is to overcoma any gravity induced backlash
+        g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
 
         if not sim:
             g_dev['obs'].request_scan_requests()
@@ -5921,8 +5921,8 @@ class Sequencer:
                 g_dev['foc'].guarded_move(pos)
 
                 g_dev['foc'].last_known_focus = d1
-                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
-                 
+                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+
                 # try:
                 #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
                 # except:
@@ -6053,8 +6053,8 @@ class Sequencer:
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
 
                     g_dev['foc'].last_known_focus=(extensive_focus)
-                    #g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
-                     
+                    #g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+
 
                     self.af_guard = False
                     if not dont_return_scope:
@@ -6075,8 +6075,8 @@ class Sequencer:
                 g_dev['foc'].guarded_move(pos)
 
                 g_dev['foc'].last_known_focus = d1
-                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
-                 
+                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+
                 # try:
                 #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
                 # except:
@@ -6198,9 +6198,9 @@ class Sequencer:
                 pos = int(d1*g_dev['foc'].micron_to_steps)
                 g_dev['foc'].guarded_move(pos)
                 g_dev['foc'].last_known_focus = d1
-                
-                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
-                 
+
+                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+
                 # try:
                 #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
                 # except:
@@ -6582,8 +6582,8 @@ class Sequencer:
                 plog (minimumFWHM)
                 g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
                 g_dev['foc'].last_known_focus=(solved_pos)
-                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
-                 
+                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+
             except:
                 plog ("extensive focus failed :(")
             if not no_auto_after_solve:
