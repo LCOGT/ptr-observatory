@@ -3482,7 +3482,7 @@ class Observatory:
                             time.sleep(10)
                             saverretries = saverretries + 1
 
-                if slow_process[0] == 'raw' or slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
+                if slow_process[0] == 'raw' or slow_process[0] == 'raw_alt_path':# or slow_process[0] == 'reduced_alt_path':
 
                     # Make sure normal paths exist
                     os.makedirs(
@@ -3822,10 +3822,31 @@ class Observatory:
                         else:
                             plog("this bayer grid not implemented yet")
 
-                if slow_process[0] == 'reduced':
+                if slow_process[0] == 'reduced' or slow_process[0] == 'reduced_alt_path':
                     saver = 0
                     saverretries = 0
                     while saver == 0 and saverretries < 10:
+                        
+                        
+                        # Make  sure the alt paths exist
+                        if self.config["save_to_alt_path"] == "yes":
+                            if slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
+                                os.makedirs(
+                                    self.alt_path + g_dev["day"], exist_ok=True
+                                )
+                                os.makedirs(
+                                    self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
+                                )
+                                os.makedirs(
+                                    self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
+                                )
+                                os.makedirs(
+                                    self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
+
+                            altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
+                            if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
+                                os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
+                        
                         try:
                             hdureduced = fits.PrimaryHDU()
                             hdureduced.data = slow_process[2]
@@ -3839,9 +3860,88 @@ class Observatory:
                                 "Date FITS file was written",
                             )
                             hdureduced.data = hdureduced.data.astype("float32")
-                            hdureduced.writeto(
-                                slow_process[1], overwrite=True, output_verify='silentfix'
-                            )  # Save flash reduced file locally
+                            
+                            
+                            int_array_flattened=hdureduced.data.astype(int).ravel()
+                            unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                            m=counts.argmax()
+                            imageMode=unique[m]
+                            
+                            # Remove nans
+                            x_size=hdureduced.data.shape[0]
+                            y_size=hdureduced.data.shape[1]
+                            # this is actually faster than np.nanmean
+                            edgefillvalue=imageMode
+                            # List the coordinates that are nan in the array
+                            nan_coords=np.argwhere(np.isnan(hdureduced.data))
+
+                            # For each coordinate try and find a non-nan-neighbour and steal its value
+                            for nancoord in nan_coords:
+                                x_nancoord=nancoord[0]
+                                y_nancoord=nancoord[1]
+                                done=False
+
+                                # Because edge pixels can tend to form in big clumps
+                                # Masking the array just with the mean at the edges
+                                # makes this MUCH faster to no visible effect for humans.
+                                # Also removes overscan
+                                if x_nancoord < 100:
+                                    hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+                                    done=True
+                                elif x_nancoord > (x_size-100):
+                                    hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+
+                                    done=True
+                                elif y_nancoord < 100:
+                                    hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+
+                                    done=True
+                                elif y_nancoord > (y_size-100):
+                                    hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+                                    done=True
+
+                                # left
+                                if not done:
+                                    if x_nancoord != 0:
+                                        value_here=hdureduced.data[x_nancoord-1,y_nancoord]
+                                        if not np.isnan(value_here):
+                                            hdureduced.data[x_nancoord,y_nancoord]=value_here
+                                            done=True
+                                # right
+                                if not done:
+                                    if x_nancoord != (x_size-1):
+                                        value_here=hdureduced.data[x_nancoord+1,y_nancoord]
+                                        if not np.isnan(value_here):
+                                            hdureduced.data[x_nancoord,y_nancoord]=value_here
+                                            done=True
+                                # below
+                                if not done:
+                                    if y_nancoord != 0:
+                                        value_here=hdureduced.data[x_nancoord,y_nancoord-1]
+                                        if not np.isnan(value_here):
+                                            hdureduced.data[x_nancoord,y_nancoord]=value_here
+                                            done=True
+                                # above
+                                if not done:
+                                    if y_nancoord != (y_size-1):
+                                        value_here=hdureduced.data[x_nancoord,y_nancoord+1]
+                                        if not np.isnan(value_here):
+                                            hdureduced.data[x_nancoord,y_nancoord]=value_here
+                                            done=True
+
+                            # Mop up any remaining nans
+                            hdureduced.data[np.isnan(hdureduced.data)] =edgefillvalue
+                            
+                            
+                            if slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
+                                #breakpoint()
+                                hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                                )  # Save full raw file locally
+                                self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1])), block=False)
+                            else:                            
+                                hdureduced.writeto(
+                                    slow_process[1], overwrite=True, output_verify='silentfix'
+                                )  # Save flash reduced file locally
                             saver = 1
                         except Exception as e:
                             plog("Failed to write raw file: ", e)
