@@ -588,13 +588,15 @@ class Focuser:
             #plog ("skipping focussing check... DEBUG MTF")
 
 
-        try:
-            if self.theskyx:
-                temp_delta = self.focuser.focTemperature - self.current_focus_temperature
-            else:
-                temp_delta = self.focuser.Temperature - self.current_focus_temperature
-        except:
-            temp_delta = 0.0
+        # try:
+        if self.theskyx:
+            temp_delta = self.focuser.focTemperature - self.current_focus_temperature
+        else:
+            temp_delta = self.focuser.Temperature - self.current_focus_temperature
+        print ("Current temp_delta between solved focus and current time: " + str(temp_delta))
+        # except:
+        #     print ("")
+        #     temp_delta = 0.0
 
 
         try:
