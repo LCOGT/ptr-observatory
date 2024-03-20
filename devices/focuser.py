@@ -74,7 +74,7 @@ class Focuser:
             time.sleep(4)
 
         if not self.theskyx:
-            self.current_focus_position=self.focuser.Position * self.steps_to_micron            
+            self.current_focus_position=self.focuser.Position * self.steps_to_micron
         else:
             self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
 
@@ -84,14 +84,14 @@ class Focuser:
         self.focuser_updates=0
         self.guarded_move_requested=False
         self.guarded_move_to_focus=20000
-        
+
         self.focuser_update_timer=time.time() - 2* self.focuser_update_period
         #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
         self.focuser_update_thread=threading.Thread(target=self.focuser_update_thread)
         self.focuser_update_thread.start()
-        
-        
-        
+
+
+
         self.focuser_message = "-"
 
         if self.theskyx:
@@ -115,23 +115,23 @@ class Focuser:
             10000  # Set images since last focus as sillyvalue
         )
         self.last_focus_fwhm = None
-        self.focus_tracker = [np.nan] * 10
+        self.focus_tracker = [np.nan] * 1000
         self.focus_needed = False # A variable that if the code detects that the focus has worsened it can trigger an autofocus
 
         self.focus_temp_slope = None
         self.focus_temp_intercept = None
         self.best_previous_focus_point = None
-        
+
 
         #self.update_focuser_temperature()
-        
+
         #breakpoint()
 
         if self.theskyx:
             self.current_focus_temperature=self.focuser.focTemperature
         else:
             self.current_focus_temperature=self.focuser.Temperature
-        
+
         self.previous_focus_temperature = copy.deepcopy(self.current_focus_temperature)
 
         self.set_initial_best_guess_for_focus()
@@ -142,10 +142,10 @@ class Focuser:
             self.last_filter_offset= 0
 
 
-        
 
 
-        
+
+
 
 
     # Note this is a thread!
@@ -198,8 +198,8 @@ class Focuser:
                         else:
                             self.focuser_update_wincom.focMoveIn(absdifference_in_position)
                         print (self.focuser_update_wincom.focPosition())
-                        
-                        #self.last_known_focus= 
+
+                        #self.last_known_focus=
                         time.sleep(self.config['focuser_movement_settle_time'])
                         self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
 
@@ -217,11 +217,11 @@ class Focuser:
                                 movement_report=1
                             self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
                             #g_dev['obs'].request_update_status()#, dont_wait=True)
-                            
+
                             time.sleep(0.3)
-                        
+
                         time.sleep(self.config['focuser_movement_settle_time'])
-                        
+
                         self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
                         #self.current_focus_position=self.get_position()
 
@@ -235,7 +235,7 @@ class Focuser:
 
 
             elif self.focuser_update_timer < time.time() - self.focuser_update_period:
-                
+
                 try:
                     if self.theskyx:
                         self.current_focus_temperature=self.focuser_update_wincom.focTemperature
@@ -252,7 +252,7 @@ class Focuser:
                     plog (traceback.format_exc())
                     # plog ("glitch in getting focus temperature")
                     # plog (traceback.format_exc())
-                    
+
                 if not self.theskyx:
                     self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
 
@@ -593,9 +593,9 @@ class Focuser:
 
         # try:
         if self.theskyx:
-            temp_delta = self.current_focus_temperature - self.previous_focus_temperature  
+            temp_delta = self.current_focus_temperature - self.previous_focus_temperature
         else:
-            temp_delta = self.current_focus_temperature - self.previous_focus_temperature 
+            temp_delta = self.current_focus_temperature - self.previous_focus_temperature
         print (self.current_focus_temperature)
         print (self.previous_focus_temperature)
         print ("Current temp_delta between solved focus and current time: " + str(temp_delta))
@@ -793,7 +793,7 @@ class Focuser:
             while self.focuser.IsMoving:
                 time.sleep(0.3)
             self.current_focus_position=self.get_position()
-        
+
         self.last_known_focus=self.current_focus_position
 
 

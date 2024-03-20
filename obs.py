@@ -1373,7 +1373,7 @@ class Observatory:
                 print ("preadj")
                 if not g_dev["cam"].exposure_busy and not g_dev["seq"].focussing and self.open_and_enabled_to_observe and not g_dev['mnt'].currently_slewing:
                     g_dev['foc'].adjust_focus()
-                    
+
 
                 # Check nightly_reset is all good
                 if ((g_dev['events']['Cool Down, Open']  <= ephem.now() < g_dev['events']['Observing Ends'])):
@@ -2570,6 +2570,10 @@ class Observatory:
                     rfr=float(fwhm_info['rfr'])
                     self.fwhmresult["mean_focus"] = avg_foc
                     self.fwhmresult['No_of_sources'] =float(fwhm_info['sources'])
+                    self.fwhmresult["exp_time"] = hduheader['EXPTIME']
+
+                    self.fwhmresult["filter"] = hduheader['FILTER']
+                    self.fwhmresult["airmass"] = hduheader['AIRMASS']
 
                 # try:
                 #     self.enqueue_for_mediumUI(200, im_path, text_name.replace('.txt', '.sep'))
@@ -2661,13 +2665,20 @@ class Observatory:
                     self.fwhmresult["mean_focus"] = np.nan
                     self.fwhmresult['No_of_sources'] = np.nan
 
+                    self.fwhmresult["exp_time"] = np.nan
+                    self.fwhmresult["filter"] = np.nan
+                    self.fwhmresult["airmass"] = np.nan
+
+
                 if focus_image != True and not np.isnan(self.fwhmresult['FWHM']):
                     # Focus tracker code. This keeps track of the focus and if it drifts
                     # Then it triggers an autofocus.
 
                     g_dev["foc"].focus_tracker.pop(0)
-                    g_dev["foc"].focus_tracker.append((self.fwhmresult["mean_focus"],round(rfr, 3)))
-                    plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+                    g_dev["foc"].focus_tracker.append((self.fwhmresult["mean_focus"],self.fwhmresult["exp_time"],self.fwhmresult["filter"], self.fwhmresult["airmass"] ,round(rfr, 3)))
+                    plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker))# + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+
+                    #self.mega_tracker.append((self.fwhmresult["mean_focus"],self.fwhmresult["exp_time"] ,round(rfr, 3)))
 
                     # If there hasn't been a focus yet, then it can't check it,
                     # so make this image the last solved focus.
@@ -2675,19 +2686,20 @@ class Observatory:
                         g_dev["foc"].last_focus_fwhm = rfr
                     else:
                         # Very dumb focus slip deteector
-                        if (
-                            np.nanmedian(g_dev["foc"].focus_tracker)
-                            > g_dev["foc"].last_focus_fwhm
-                            + self.config["focus_trigger"]
-                        ):
-                            g_dev["foc"].focus_needed = True
-                            g_dev["obs"].send_to_user(
-                                "FWHM has drifted to:  "
-                                + str(round(np.nanmedian(g_dev["foc"].focus_tracker),2))
-                                + " from "
-                                + str(g_dev["foc"].last_focus_fwhm)
-                                + ".",
-                                p_level="INFO")
+                        # if (
+                        #     np.nanmedian(g_dev["foc"].focus_tracker)
+                        #     > g_dev["foc"].last_focus_fwhm
+                        #     + self.config["focus_trigger"]
+                        # ):
+                        #     g_dev["foc"].focus_needed = True
+                        #     g_dev["obs"].send_to_user(
+                        #         "FWHM has drifted to:  "
+                        #         + str(round(np.nanmedian(g_dev["foc"].focus_tracker),2))
+                        #         + " from "
+                        #         + str(g_dev["foc"].last_focus_fwhm)
+                        #         + ".",
+                        #         p_level="INFO")
+                        print ("TEMPORARILY DISABLED 1234")
 
 
                 # if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
