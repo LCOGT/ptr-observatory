@@ -20,6 +20,7 @@ from PIL import Image, ImageEnhance
 import subprocess
 from math import sqrt
 import traceback
+
 input_sstk_info=pickle.load(sys.stdin.buffer)
 #input_sstk_info=pickle.load(open('testsmartstackpickle','rb'))
 
@@ -180,7 +181,8 @@ smartStackFilename = (
 # For OSC, we need to smartstack individual frames.
 if not is_osc:   #This is the monochrome camera processing path.
     #breakpoint()
-    while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')):
+    eternal_loop_break=time.time()    
+    while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')) and (time.time()-eternal_loop_break < 2* float(ssexptime)):
         time.sleep(1)
 
     #plog("Now to figure out how to get sep into a csv.")

@@ -204,6 +204,7 @@ site_config = {
             'driver': 'ASCOM.SoftwareBisque.Telescope',
             'alignment': 'Equatorial',
             'default_zenith_avoid': 0.0,   #degrees floating, 0.0 means do not apply this constraint.
+            'wait_after_slew_time': 1.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.            
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'has_ascom_altaz': False,
             'pointing_tel': 'tel1',     #This can be changed to 'tel2'... by user.  This establishes a default.

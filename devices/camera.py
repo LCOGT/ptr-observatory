@@ -1018,7 +1018,7 @@ class Camera:
         try:
 
             gain_collector=[]
-            stdev_collector=[]            
+            stdev_collector=[]
 
             self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
@@ -1032,9 +1032,9 @@ class Camera:
                         #     self.camera_known_gain=singlentry[0]
                         #     self.camera_known_gain_stdev=singlentry[1]
 
-            
+
             if len(gain_collector) > 1:
-            
+
                 while True:
                     print (gain_collector)
                     gainmed=np.nanmedian(gain_collector)
@@ -1055,10 +1055,10 @@ class Camera:
                         self.camera_known_gain=new_gain_pile[0]
                         self.camera_known_gain_stdev=new_gain_pile[0]
                         break
-                        
+
                     gain_collector=copy.deepcopy(new_gain_pile)
                     stdev_collector=copy.deepcopy(new_stdev_pile)
-                
+
                 self.camera_known_gain=gainmed
                 self.camera_known_gain_stdev=np.nanstd(gain_collector)
             else:
@@ -1965,16 +1965,19 @@ class Camera:
         """
         try:
             if not g_dev['mnt'].rapid_park_indicator:
-                movement_reporting_timer=time.time()
-                while g_dev['mnt'].return_slewing(): #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
-                #while g_dev['mnt'].mount.Slewing():
-                    if time.time() - movement_reporting_timer > 2.0:
-                        plog( 'm>')
-                        movement_reporting_timer=time.time()
-                    if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                        g_dev['mnt'].get_mount_coordinates()
-                        #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
-                        g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                movement_reporting_timer = time.time()
+                while g_dev['mnt'].return_slewing():
+                    #g_dev['mnt'].currently_slewing= True
+                    if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
+                        plog('m>')
+                        movement_reporting_timer = time.time()
+                        if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                            g_dev['mnt'].get_mount_coordinates()
+                            g_dev['obs'].request_update_status(mount_only=True)#, dont_wait=True)
+                        #g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                #g_dev['mnt'].currently_slewing= False
+                # Then wait for slew_time to settle
+                time.sleep(g_dev['mnt'].wait_after_slew_time)
 
         except Exception as e:
             plog("Motion check faulted.")
@@ -2069,7 +2072,11 @@ class Camera:
 
             if self.exposure_busy:
                 plog("Cannot expose, camera is currently busy, waiting for exposure to clear")
+                dont_wait_forever=time.time()
                 while True:
+                    if (dont_wait_forever-time.time()) > 5:
+                        plog ("Exposure too busy for too long, returning")
+                        return
                     if self.exposure_busy:
                         time.sleep(0.1)
                     else:
@@ -2815,7 +2822,7 @@ class Camera:
 
                             if g_dev["fil"].null_filterwheel == False:
                                 while g_dev['fil'].filter_changing:
-                                    plog ("Waiting for filter_change")
+                                    #plog ("Waiting for filter_change")
                                     time.sleep(0.05)
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
@@ -2867,13 +2874,14 @@ class Camera:
                         self.pre_rot = []
                         self.pre_foc = []
                         self.pre_ocn = []
-
-                        g_dev["foc"].get_quick_status(self.pre_foc)
                         try:
-                            g_dev["rot"].get_quick_status(self.pre_rot)
+                            g_dev["foc"].get_quick_status(self.pre_foc)
+                            try:
+                                g_dev["rot"].get_quick_status(self.pre_rot)
+                            except:
+                                pass
                         except:
-                            pass
-
+                            plog ("couldn't grab quick status focus")
                         g_dev["mnt"].get_rapid_exposure_status(
                             self.pre_mnt
                         )  # Should do this close to the exposure
@@ -3167,7 +3175,10 @@ class Camera:
             g_dev['obs'].request_scan_requests()
             if g_dev['seq'].blockend != None:
                 g_dev['obs'].request_update_calendar_blocks()
-            focus_position=g_dev['foc'].current_focus_position
+            try:
+                focus_position=g_dev['foc'].current_focus_position
+            except:
+                pass
             block_and_focus_check_done=True
 
         pointingfocus_masterdark_done=False
@@ -3328,8 +3339,13 @@ class Camera:
 
                 if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing:
                     if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
-                        ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
-                        dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
+                        #breakpoint()
+                        if (self.pixscale == None):
+                            ra_random_dither=(((random.randint(0,50)-25) * 0.75 / 3600 ) / 15)
+                            dec_random_dither=((random.randint(0,50)-25) * 0.75 /3600 )
+                        else:
+                            ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
+                            dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
                         try:
                             self.wait_for_slew()
                             g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
@@ -3372,7 +3388,10 @@ class Camera:
                         g_dev["rot"].get_quick_status(self.post_rot)
                     except:
                         pass
-                    g_dev["foc"].get_quick_status(self.post_foc)
+                    try:
+                        g_dev["foc"].get_quick_status(self.post_foc)
+                    except:
+                        pass
                     try:
                         g_dev["mnt"].get_rapid_exposure_status(
                             self.post_mnt
@@ -3458,7 +3477,10 @@ class Camera:
 
                 # HERE IS WHERE WE SPIT OUT THE FILES INTO A MULTIPROCESSING FUNCTION
                 avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
-                avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
+                try:
+                    avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
+                except:
+                    pass
                 try:
                     avg_rot = g_dev["rot"].get_average_status(
                         self.pre_rot, self.post_rot
@@ -3929,12 +3951,12 @@ class Camera:
                     endOfExposure = datetime.datetime.utcnow() + datetime.timedelta(seconds=exposure_time)
                     now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
 
-                    plog (now_date_timeZ)
-                    plog (g_dev['seq'].blockend)
+                    #plog (now_date_timeZ)
+                    #plog (g_dev['seq'].blockend)
 
                     blockended = now_date_timeZ  >= g_dev['seq'].blockend
 
-                    plog (blockended)
+                    #plog (blockended)
 
                     if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= \
                         g_dev['events']['End Morn Bias Dark']:
@@ -4067,11 +4089,11 @@ class Camera:
                             cge_stdev=np.nanstd(camera_gain_estimate_image)
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
-                            
-                            
+
+
                             # We should only check whether the gain is good IF we have a good gain.
                             commissioning_flats=False
-                            
+
                             # Check if we have MOST of the flats we need
                             if os.path.exists(g_dev['obs'].local_flat_folder + g_dev['cam'].current_filter):
                                 files_in_folder=glob.glob(g_dev['obs'].local_flat_folder + g_dev['cam'].current_filter + '/' + '*.n*')
@@ -4079,20 +4101,20 @@ class Camera:
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_flat_to_store']
                                 n_files = len(files_in_folder)
                                 if not ((n_files/max_files) > 0.8):
-                                    commissioning_flats=True                                    
+                                    commissioning_flats=True
                             else:
                                 commissioning_flats=True
-                            
+
                             # If we don't have a good gain yet, we are commissioning
                             if g_dev['seq'].current_filter_last_camera_gain > 50:
                                 commissioning_flats=True
-                            
+
 
                             # low values SHOULD be ok.
                             if commissioning_flats:
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain,2)))
                                 plog('Good flat value:  ' +str(central_median) + ' Not testing gain until flats in commissioned mode.')
-                                
+
                             elif cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 3 *g_dev['seq'].current_filter_last_camera_gain_stdev):
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain,2)))
                                 plog('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain))
@@ -4194,6 +4216,7 @@ class Camera:
 
                         # Similarly to the above. This saves the RAW file to disk
                         if self.config['save_raw_to_disk']:
+
                            g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
 
@@ -4754,10 +4777,16 @@ def post_exposure_process(payload):
          #   pass
 
 
-        hdu.header["PIXSCALE"] = (
-            float(pixscale),
-            "[arcsec/pixel] Nominal pixel scale on sky",
-        )
+        if pixscale == None:
+            hdu.header["PIXSCALE"] = (
+                'Unknown',
+                "[arcsec/pixel] Nominal pixel scale on sky",
+            )
+        else:
+            hdu.header["PIXSCALE"] = (
+                float(pixscale),
+                "[arcsec/pixel] Nominal pixel scale on sky",
+            )
 
         hdu.header["DRZPIXSC"] = (selfconfig["camera"][selfname]["settings"]['drizzle_value_for_later_stacking'], 'Target pixel scale for drizzling')
 
@@ -4938,8 +4967,13 @@ def post_exposure_process(payload):
 
         hdu.header["CTYPE1"] = 'RA---TAN'
         hdu.header["CTYPE2"] = 'DEC--TAN'
-        hdu.header["CDELT1"] = pixscale / 3600
-        hdu.header["CDELT2"] = pixscale / 3600
+        try:
+            hdu.header["CDELT1"] = pixscale / 3600
+            hdu.header["CDELT2"] = pixscale / 3600
+        except:
+            hdu.header["CDELT1"] = 0.75 / 3600
+            hdu.header["CDELT2"] = 0.75 / 3600
+            
         hdu.header["CRVAL1"] = tempRAdeg
         hdu.header["CRVAL2"] = tempDECdeg
         hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
@@ -5050,8 +5084,8 @@ def post_exposure_process(payload):
                         hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
                         hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
                     except:
-                        plog ("Something odd in the flash reduction?")
-                        plog(traceback.format_exc())
+                        plog ("Could not bias or dark file.")
+                        #plog(traceback.format_exc())
 
                 #plog ("time taken for flash reduction: " + str(time.time() - timetakenquickdark))
             except Exception as e:

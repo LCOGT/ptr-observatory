@@ -307,16 +307,19 @@ class Sequencer:
         """
         try:
             if not g_dev['mnt'].rapid_park_indicator:
-                movement_reporting_timer=time.time()
+                movement_reporting_timer = time.time()
                 while g_dev['mnt'].return_slewing():
-                    if time.time() - movement_reporting_timer > 2.0:
-                        plog( 'm>')
-                        movement_reporting_timer=time.time()
-
-                    if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                        g_dev['mnt'].get_mount_coordinates()
-                        #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
-                        g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                    #g_dev['mnt'].currently_slewing= True
+                    if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
+                        plog('m>')
+                        movement_reporting_timer = time.time()
+                        if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                            g_dev['mnt'].get_mount_coordinates()
+                            g_dev['obs'].request_update_status(mount_only=True)#, dont_wait=True)
+                        #g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                #g_dev['mnt'].currently_slewing= False
+                # Then wait for slew_time to settle
+                time.sleep(g_dev['mnt'].wait_after_slew_time)
 
 
         except Exception:
@@ -375,7 +378,10 @@ class Sequencer:
             #self.regenerate_local_masters()
         elif action == "run" and script in ['pointingRun']:
             #breakpoint()
-            self.sky_grid_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
+            self.equatorial_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
+        elif action == "run" and script.lower() in ['equatorial_sweep']:
+            #breakpoint()
+            self.equatorial_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
         elif action == "run" and script in ("collectBiasesAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
         elif action == "run" and script == 'takeLRGBStack':
@@ -521,6 +527,7 @@ class Sequencer:
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
 
+
             if not self.bias_dark_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
                  self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
 
@@ -531,7 +538,7 @@ class Sequencer:
                 opt = {}
 
 
-                
+
 
                 self.bias_dark_script(req, opt, morn=False,ending = g_dev['events']['End Eve Bias Dark'])
                 self.eve_bias_done = True
@@ -899,7 +906,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                print (self.stop_script_called)    
+                                                print (self.stop_script_called)
                                                 print (g_dev['obs'].open_and_enabled_to_observe)
                                                 print ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
                                                 return
@@ -971,7 +978,7 @@ class Sequencer:
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
                                                 return
-                                            
+
                                             # COLLECTING A 0.0045 Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 0.0045 second exposure dark frames.")
                                             req = {'time': 0.0045,  'script': 'True', 'image_type': 'pointzerozerofourfive_exposure_dark'}
@@ -982,7 +989,7 @@ class Sequencer:
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
                                                 return
-                                            
+
                                             # COLLECTING A 0.015 Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 0.015 second exposure dark frames.")
                                             req = {'time': 0.015,  'script': 'True', 'image_type': 'onepointfivepercent_exposure_dark'}
@@ -1768,20 +1775,22 @@ class Sequencer:
         # requested collection. Auto-collection is limited by the events schedule.
         bias_darks_started=time.time()
 
+        #breakpoint()
 
-
-        if g_dev['cam'].has_darkslide and ephem.now() < ending:
-            g_dev['cam'].closeDarkslide()
+        ending = ephem.now() + 100000000000000000000000
             # g_dev['cam'].darkslide_open = False
             # g_dev['cam'].darkslide_state = 'Closed'
 
         while ephem.now() < ending :   #Do not overrun the window end
 
+            if g_dev['cam'].has_darkslide:
+                g_dev['cam'].closeDarkslide()
+
             if ending != None:
-                if ephem.now() < ending:
+                if ephem.now() > ending:
                     self.bias_dark_latch = False
                     break
-                    
+
 
             # If we've been collecting bias darks for TWO HOURS, bail out... someone has asked for too many!
             if time.time() - bias_darks_started > 7200:
@@ -1839,7 +1848,7 @@ class Sequencer:
 
 
 
-            b_d_to_do = bias_count + dark_count
+            b_d_to_do = dark_count
             try:
                 stride = bias_count//dark_count
                 plog("Tobor will interleave a long exposure dark every  " + str(stride) + "  biasdarks, short darks and biases.")
@@ -1851,8 +1860,8 @@ class Sequencer:
 
             while b_d_to_do > 0:
                 g_dev['obs'].request_scan_requests()
-                min_to_do = min(b_d_to_do, stride)
-                b_d_to_do -= min_to_do
+                min_to_do = 1
+                b_d_to_do -= 1
 
                 # COLLECTING A TWO SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 2s exposure dark frames.")
@@ -2053,7 +2062,7 @@ class Sequencer:
                 if time.time() - bias_darks_started > 7200:
                     self.bias_dark_latch = False
                     break
-                
+
                 # COLLECTING A 0.0045 Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 0.0045 second exposure dark frames.")
                 req = {'time': 0.0045,  'script': 'True', 'image_type': 'pointzerozerofourfive_exposure_dark'}
@@ -2287,7 +2296,7 @@ class Sequencer:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
                         return
-                    b_d_to_do -= 1
+                    #b_d_to_do -= 1
                     #g_dev["obs"].request_full_update()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                         self.bias_dark_latch = False
@@ -2303,7 +2312,7 @@ class Sequencer:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
                         return
-                    b_d_to_do -= 1
+                    #b_d_to_do -= 1
                     #g_dev["obs"].request_full_update()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                         self.bias_dark_latch = False
@@ -3314,7 +3323,7 @@ class Sequencer:
                 ]
 
             bias_darklist=[
-                
+
                 [g_dev['obs'].local_dark_folder+ 'pointzerozerofourfivedarks/', 'pointzerozerofourfiveBIASDARK','pointzerozerofourfive' ],
                 [g_dev['obs'].local_dark_folder+ 'onepointfivepercentdarks/', 'onepointfivepercentBIASDARK','onepointfivepercent' ],
 
@@ -3770,7 +3779,7 @@ class Sequencer:
                         #below_array=(temporaryFlat < (img_temp_median - (10 * img_temp_stdev)))
                         # plog ("Bad pixels above: " + str(above_array.sum()))
                         #plog ("Bad pixels below: " + str(below_array.sum()))
-                        bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+                        bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
 
 
                         temporaryFlat[temporaryFlat == inf] = np.nan
@@ -4218,37 +4227,6 @@ class Sequencer:
                     #
 
 
-                # Create the bad pixel map fits and npy
-                # Save the local boolean array
-                plog ("Total bad pixels in image: " + str(bad_pixel_mapper_array.sum()))
-                plog ("Writing out bad pixel map npy and fits.")
-                np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
-
-                # pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
-                # g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
-
-                # convert the boolean
-
-                #breakpoint()
-                fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-
-                filepathaws=g_dev['obs'].calib_masters_folder
-                filenameaws=tempfrontcalib + 'badpixelmask_bin1.fits'
-                g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-
-                # Store a version of the flat for the archive too
-                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1, overwrite=True)
-
-                filepathaws=g_dev['obs'].calib_masters_folder
-                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
-                g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                    #fits.writeto(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-                    #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-                    #np.save(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
-                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', copy.deepcopy( bad_pixel_mapper_array)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
 
 
                 # THEN reload them to use for the next night.
@@ -4280,8 +4258,36 @@ class Sequencer:
 
             #g_dev['cam'].darkFiles = {}
 
+            # Create the bad pixel map fits and npy
+            # Save the local boolean array
+            plog ("Total bad pixels in image: " + str(bad_pixel_mapper_array.sum()))
+            plog ("Writing out bad pixel map npy and fits.")
+            np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
+
+            # pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
+            # g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
 
+            # convert the boolean
+
+            #breakpoint()
+            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+
+            filepathaws=g_dev['obs'].calib_masters_folder
+            filenameaws=tempfrontcalib + 'badpixelmask_bin1.fits'
+            g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
+
+            # Store a version of the flat for the archive too
+            fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1, overwrite=True)
+
+            filepathaws=g_dev['obs'].calib_masters_folder
+            filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
+            g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+            if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                #fits.writeto(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+                #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+                #np.save(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
+                g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', copy.deepcopy( bad_pixel_mapper_array)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
             try:
                 g_dev['cam'].bpmFiles = {}
@@ -4340,9 +4346,9 @@ class Sequencer:
                 del bad_pixel_mapper_array
             except:
                 pass
-            
-            
-            
+
+
+
         # Regenerate gain and readnoise
         g_dev['cam'].camera_known_gain=70000.0
         g_dev['cam'].camera_known_gain_stdev=70000.0
@@ -4354,7 +4360,7 @@ class Sequencer:
         try:
 
             gain_collector=[]
-            stdev_collector=[]            
+            stdev_collector=[]
 
             g_dev['cam'].filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
@@ -4368,8 +4374,8 @@ class Sequencer:
                         #     g_dev['cam'].camera_known_gain=singlentry[0]
                         #     g_dev['cam'].camera_known_gain_stdev=singlentry[1]
 
-            
-            
+
+
             while True:
                 print (gain_collector)
                 gainmed=np.nanmedian(gain_collector)
@@ -4379,19 +4385,27 @@ class Sequencer:
                 new_gain_pile=[]
                 new_stdev_pile=[]
                 counter=0
-                for entry in gain_collector:
-                    if entry < gainmed + 3* gainstd:
-                        new_gain_pile.append(entry)
-                        new_stdev_pile.append(stdev_collector[counter])
-                    counter=counter+1
-                if len(new_gain_pile) == len(gain_collector):
+                if len(gain_collector) > 1:
+                    for entry in gain_collector:
+                        if entry < gainmed + 3* gainstd:
+                            new_gain_pile.append(entry)
+                            new_stdev_pile.append(stdev_collector[counter])
+                        counter=counter+1
+                    if len(new_gain_pile) == len(gain_collector):
+                        break
+                    gain_collector=copy.deepcopy(new_gain_pile)
+                    stdev_collector=copy.deepcopy(new_stdev_pile)
+                else:
                     break
-                gain_collector=copy.deepcopy(new_gain_pile)
-                stdev_collector=copy.deepcopy(new_stdev_pile)
-            
-            g_dev['cam'].camera_known_gain=gainmed
-            g_dev['cam'].camera_known_gain_stdev=np.nanstd(gain_collector)
-            
+
+            if len(gain_collector) == 1:
+                g_dev['cam'].camera_known_gain=gain_collector[0]
+                g_dev['cam'].camera_known_gain_stdev=stdev_collector[0]
+            else:
+
+                g_dev['cam'].camera_known_gain=gainmed
+                g_dev['cam'].camera_known_gain_stdev=np.nanstd(gain_collector)
+
             #breakpoint()
 
             singlentry=g_dev['cam'].filter_camera_gain_shelf['readnoise']
@@ -4410,6 +4424,8 @@ class Sequencer:
         #     g_dev['cam'].camera_known_readnoise=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise']
         #     g_dev['cam'].camera_known_readnoise_stdev=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise_stdev']
 
+        if np.isnan(g_dev['cam'].camera_known_gain):
+            g_dev['cam'].camera_known_gain = 70000
         plog ("Used Camera Gain: " + str(g_dev['cam'].camera_known_gain))
         plog ("Used Readnoise  : "+ str(g_dev['cam'].camera_known_readnoise))
 
@@ -4793,7 +4809,7 @@ class Sequencer:
                     plog("Beginning flat run for filterless observation")
 
                 sky_exposure_snap_this_filter=copy.deepcopy(sky_exposure_snap_to_grid)
-                    
+
 
                 min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
                 max_exposure = float(self.config['camera']['camera_1_1']['settings']['max_flat_exposure'])
@@ -5000,7 +5016,7 @@ class Sequencer:
                                 self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
                                 self.time_of_next_slew = time.time() + 45
-                             self.next_flat_observe = time.time() + 10
+                             self.next_flat_observe = time.time() + 5
                         elif morn and exp_time > max_exposure :
                              if time.time()-slow_report_timer > 120:
                                  plog("Too dim for " + str(current_filter) + " filter, waiting. Est. Exptime:  " + str(exp_time))
@@ -5014,7 +5030,7 @@ class Sequencer:
                                 self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
                                 self.time_of_next_slew = time.time() + 45
-                             self.next_flat_observe = time.time() + 10
+                             self.next_flat_observe = time.time() + 5
                              exp_time = min_exposure
                              # snap the exposure time to a discrete grid
                              if exp_time > 0.002:
@@ -5237,11 +5253,11 @@ class Sequencer:
                                     elif morn and (bright > (flat_saturation_level * 0.8)) and (old_throughput_value/new_throughput_value > 0.95) and (old_throughput_value/new_throughput_value < 1.05):
                                         plog ("Morning and overexposing at this exposure time: " + str(exp_time) + ". Dropping that out")
                                         sky_exposure_snap_this_filter.remove(exp_time)
-                                    
+
                                     elif not morn and (bright < (flat_saturation_level * 0.5)) and 0.95 < old_throughput_value/new_throughput_value < 1.05:
                                         plog ("Evening and underexposing at this exposure time: " + str(exp_time) + ". Dropping that out")
                                         sky_exposure_snap_this_filter.remove(exp_time)
-                                        
+
                                 else:
                                     if (
                                         bright
@@ -5260,7 +5276,7 @@ class Sequencer:
                                     elif morn and ( bright > (flat_saturation_level * 0.75)) and 0.95 < old_throughput_value/new_throughput_value < 1.05:
                                         plog ("Morning and overexposing at this exposure time: " + str(exp_time) + ". Dropping that out")
                                         sky_exposure_snap_this_filter.remove(exp_time)
-                                    
+
                                     elif not morn and (bright < (flat_saturation_level * 0.25)) and 0.95 < old_throughput_value/new_throughput_value < 1.05:
                                         plog ("Evening and underexposing at this exposure time: " + str(exp_time) + ". Dropping that out")
                                         sky_exposure_snap_this_filter.remove(exp_time)
@@ -5283,7 +5299,7 @@ class Sequencer:
 
                             continue
                     else:
-                        time.sleep(5)
+                        time.sleep(1)
 
         if morn:
             self.morn_sky_flat_latch = False
@@ -5905,10 +5921,12 @@ class Sequencer:
                 g_dev['foc'].guarded_move(pos)
 
                 g_dev['foc'].last_known_focus = d1
-                try:
-                    g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
-                except:
-                    g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
+                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
+                 
+                # try:
+                #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+                # except:
+                #     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
                 g_dev['foc'].last_source = "auto_focus_script"
 
                 if not sim:
@@ -6013,7 +6031,7 @@ class Sequencer:
 
                 if extensive_focus == None:
 
-                    plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+                    plog('Autofocus quadratic equation did not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
                     g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus routine')
 
@@ -6029,12 +6047,14 @@ class Sequencer:
                     self.focussing=False
                     return np.nan, np.nan
                 else:
-                    plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
+                    plog('Autofocus quadratic equation did not converge. Moving back to extensive focus:  ', extensive_focus)
                     g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ' + str(extensive_focus))
 
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
 
                     g_dev['foc'].last_known_focus=(extensive_focus)
+                    #g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
+                     
 
                     self.af_guard = False
                     if not dont_return_scope:
@@ -6055,10 +6075,12 @@ class Sequencer:
                 g_dev['foc'].guarded_move(pos)
 
                 g_dev['foc'].last_known_focus = d1
-                try:
-                    g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
-                except:
-                    g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
+                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
+                 
+                # try:
+                #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+                # except:
+                #     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
                 g_dev['foc'].last_source = "auto_focus_script"
 
                 if not sim:
@@ -6176,10 +6198,13 @@ class Sequencer:
                 pos = int(d1*g_dev['foc'].micron_to_steps)
                 g_dev['foc'].guarded_move(pos)
                 g_dev['foc'].last_known_focus = d1
-                try:
-                    g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
-                except:
-                    g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
+                
+                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
+                 
+                # try:
+                #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+                # except:
+                #     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
                 g_dev['foc'].last_source = "auto_focus_script"
 
                 if not sim:
@@ -6557,6 +6582,8 @@ class Sequencer:
                 plog (minimumFWHM)
                 g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
                 g_dev['foc'].last_known_focus=(solved_pos)
+                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature) 
+                 
             except:
                 plog ("extensive focus failed :(")
             if not no_auto_after_solve:
@@ -6588,6 +6615,238 @@ class Sequencer:
         self.af_guard = False
         self.focussing = False
 
+    def equatorial_pointing_run(self, max_pointings=15, alt_minimum=30):
+
+        #breakpoint()
+        g_dev['obs'].get_enclosure_status_from_aws()
+        if not g_dev['obs'].assume_roof_open and 'Closed' in g_dev['obs'].enc_status['shutter_status']:
+            plog('Roof is shut, so cannot do requested pointing run.')
+            g_dev["obs"].send_to_user('Roof is shut, so cannot do requested pointing run.')
+            return
+
+
+
+        self.total_sequencer_control = True
+        g_dev['obs'].stop_processing_command_requests = True
+
+        prev_auto_centering = g_dev['obs'].auto_centering_off
+        g_dev['obs'].auto_centering_off = True
+        plog ("Note that mount references and auto-centering are automatically turned off for a tpoint run.")
+        plog("Starting pointing run. ")
+        time.sleep(0.1)
+
+        g_dev['mnt'].unpark_command({}, {})
+
+        g_dev["obs"].request_update_status()
+
+        step = (180.0 - 2*alt_minimum)/max_pointings
+        ra = 0
+        catalogue = []
+        while ra < 360:
+            catalogue.append([round(ra, 3), 0.0, 19])
+            ra += step
+
+
+       # catalogue=self.pointing_catalogue
+
+        g_dev["obs"].send_to_user("Starting pointing run. Constructing altitude catalogue. This can take a while.")
+        plog("Constructing sweep catalogue above altitude " + str(alt_minimum))
+
+        sweep_catalogue=[]
+        #First remove all entries below given altitude
+        for ctr in range(len(catalogue)):
+            teststar = SkyCoord(ra = catalogue[ctr][0]*u.deg, dec = catalogue[ctr][1]*u.deg)
+
+            temppointingaltaz=teststar.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
+            alt = temppointingaltaz.alt.degree
+            if alt > alt_minimum:
+                sweep_catalogue.append([catalogue[ctr][0],catalogue[ctr][1],catalogue[ctr][2],temppointingaltaz.alt.degree, temppointingaltaz.az.degree  ])
+
+        sweep_catalogue = sorted(sweep_catalogue, key= lambda az: az[4])
+        plog (len(sweep_catalogue), sweep_catalogue)
+
+        del catalogue
+
+
+
+
+        length = len(sweep_catalogue)
+        g_dev["obs"].send_to_user(str(length) + " Targets chosen for sweep.")
+        plog(str(length) + " Targets chosen for sweep.")
+
+        count = 0
+
+        deviation_catalogue_for_tpoint=[]
+
+        plog ("Note that mount references and auto-centering are automatically turned off for a tpoint run.")
+
+        for grid_star in sweep_catalogue:
+
+
+            teststar = SkyCoord(ra = grid_star[0]*u.deg, dec = grid_star[1]*u.deg)
+
+            temppointingaltaz=teststar.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
+            alt = temppointingaltaz.alt.degree
+            az = temppointingaltaz.az.degree
+
+            g_dev["obs"].send_to_user(str(("Slewing to near grid field, RA: " + str(round(grid_star[0] / 15, 2)) + " DEC: " + str(round(grid_star[1], 2))+ " AZ: " + str(round(az, 2))+ " ALT: " + str(round(alt,2)))))
+
+            plog("Slewing to near grid field " + str(grid_star) )
+
+            # Use the mount RA and Dec to go directly there
+            try:
+                g_dev['obs'].time_of_last_slew=time.time()
+                g_dev["mnt"].last_ra_requested = grid_star[0] / 15
+                g_dev["mnt"].last_dec_requested = grid_star[1]
+                g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
+                #g_dev['mnt'].mount.SlewToCoordinatesAsync(grid_star[0] / 15 , grid_star[1])
+            except:
+                plog ("Difficulty in directly slewing to object")
+                plog(traceback.format_exc())
+                if g_dev['mnt'].theskyx:
+                    self.kill_and_reboot_theskyx(grid_star[0] / 15, grid_star[1])
+                else:
+                    plog(traceback.format_exc())
+                    #
+
+            self.wait_for_slew()
+
+
+            #g_dev["obs"].request_update_status()
+            g_dev["obs"].update_status()
+
+
+            g_dev["mnt"].last_ra_requested=grid_star[0] / 15
+            g_dev["mnt"].last_dec_requested=grid_star[1]
+
+            req = { 'time': self.config['pointing_exposure_time'], 'smartstack': False, 'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}
+            opt = { 'count': 1,  'filter': 'pointing'}
+            result = g_dev['cam'].expose_command(req, opt)
+
+            #NB should we check for a valid result from the exposure? WER 2240319
+
+            g_dev["obs"].send_to_user("Platesolving image.")
+            # Wait for platesolve
+            reported=0
+            #temptimer=time.time()
+            #g_dev['obs'].platesolve_is_processing = True
+            while True:
+                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                    break
+                else:
+                    if reported ==0:
+                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                        reported=1
+                    # if (time.time() - temptimer) > 20:
+                    #     #g_dev["obs"].request_full_update()
+                    #     temptimer=time.time()
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of script as stop script has been called.")
+                        self.total_sequencer_control = False
+                        g_dev['obs'].stop_processing_command_requests = False
+                        return
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                        self.total_sequencer_control = False
+                        g_dev['obs'].stop_processing_command_requests = False
+                        return
+                    pass
+
+
+
+            g_dev["obs"].send_to_user("Finished platesolving")
+            plog ("Finished platesolving")
+
+            sid = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+
+            # Get RA, DEC, ra deviation, dec deviation and add to the list
+            try:
+                g_dev['mnt'].pier_side = g_dev[
+                    "mnt"
+                ].return_side_of_pier()  # 0 == Tel Looking West, is flipped.
+
+            except Exception:
+                plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
+            ra_mount=g_dev['mnt'].return_right_ascension()
+            dec_mount = g_dev['mnt'].return_declination()
+            result=[ra_mount, dec_mount, g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
+            deviation_catalogue_for_tpoint.append (result)
+            plog(result)
+
+            g_dev["obs"].request_update_status()
+            count += 1
+            plog('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
+
+        g_dev["obs"].send_to_user("Tpoint collection completed. Happy reducing.")
+        plog("Tpoint collection completed. Happy reducing.")
+
+        deviation_catalogue_for_tpoint = np.asarray(deviation_catalogue_for_tpoint, dtype=float)
+        np.savetxt(self.config['archive_path'] +'/'+'tpointmodel' + str(time.time()).replace('.','d') + '.csv', deviation_catalogue_for_tpoint, delimiter=',')
+
+
+        tpointnamefile=self.config['archive_path'] +'/'+'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT'
+
+        with open(tpointnamefile, "a+") as f:
+            	f.write(self.config["name"] +"\n")
+        with open(tpointnamefile, "a+") as f:
+            f.write(":NODA\n")
+            f.write(":EQUAT\n")
+            latitude = float(g_dev['evnt'].wema_config['latitude'])
+            f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
+        for entry in deviation_catalogue_for_tpoint:
+            if not np.isnan(entry[2]):
+                ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
+                dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
+                ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
+
+
+                if entry[7] == 0:
+                    pierstring='0  1'
+                    entry[2] += 12.
+                    while entry[2] >= 24:
+                        entry[2] -= 24.
+                    ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
+
+                    if latitude >= 0:
+                        dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
+                    else:
+                        dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ')
+                else:
+                    pierstring='0  0'
+                    ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
+                    dec_got=Angle(entry[3],u.degree).to_string(sep=' ')
+
+
+                sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]
+                writeline = ra_wanted + " " + dec_wanted + " " + ra_got + " " + dec_got + " "+ sid_str + " "+ pierstring
+
+
+                with open(tpointnamefile, "a+") as f:
+                    	f.write(writeline+"\n")
+
+                plog(writeline)
+
+        try:
+            os.path.expanduser('~')
+            print (os.path.expanduser('~'))
+            print (os.path.expanduser('~')+ "/Desktop/TPOINT/")
+
+            if not os.path.exists(os.path.expanduser('~')+ "/Desktop/TPOINT"):
+                os.makedirs(os.path.expanduser('~')+ "/Desktop/TPOINT")
+
+            shutil.copy (tpointnamefile, os.path.expanduser('~') + "/Desktop/TPOINT/" + 'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT')
+        except:
+            plog('Could not copy file to tpoint directory... you will have to do it yourself!')
+
+        plog ("Final devation catalogue for Tpoint")
+        plog (deviation_catalogue_for_tpoint)
+
+
+        g_dev['obs'].auto_centering_off = prev_auto_centering
+
+        self.total_sequencer_control = False
+        g_dev['obs'].stop_processing_command_requests = False
+        return
 
 
 

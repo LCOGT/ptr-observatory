@@ -104,7 +104,7 @@ site_config = {
     'sun_checks_on': True,
     'moon_checks_on': True,
     'altitude_checks_on': True,    
-    'daytime_exposure_time_safety_on': True,
+    'daytime_exposure_time_safety_on': False,
     
     
     
@@ -166,7 +166,7 @@ site_config = {
     
     'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
     #'morn_flat_start_offset': -10,       #min from Sunrise
-    'morn_flat_start_offset': -40,       #min from Sunrise
+    'morn_flat_start_offset': -15,       #min from Sunrise
     'morn_flat_end_offset':  +45,        #min from Sunrise
     'end_night_processing_time':  90,   #  A guess
     'observing_begins_offset': 18,    
@@ -183,16 +183,16 @@ site_config = {
     'enclosure_check_period': 1,    # How many minutes between enclosure checks
 
     # Turn on and off various automated calibrations at different times.
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     
     'time_to_wait_after_roof_opens_to_take_flats': 30,   #sec Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': False,
+    'auto_morn_bias_dark': True,
     
     # FOCUS OPTIONS
-    'periodic_focus_time': 3, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+    'periodic_focus_time': 2, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_trigger': 0.75,  # What FWHM increase is needed to trigger an autofocus
     
@@ -252,6 +252,8 @@ site_config = {
             'shutdown_script':  None,
             'alignment': 'Alt-Az',
             'default_zenith_avoid': 5.0,   #degrees floating
+            'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
+            
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             #'has_ascom_altaz': False,
             'pointing_tel': 'tel1',  
@@ -699,15 +701,15 @@ site_config = {
                 # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
-                'direct_qhy_readout_mode' : 3,        
+                'direct_qhy_readout_mode' : 0,        
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
                 
-                'direct_qhy_usb_traffic' : 55,
+                'direct_qhy_usb_traffic' : 45,
                 
                 'set_qhy_usb_speed': True,
 
-                'direct_qhy_usb_speed' : 55,
+                'direct_qhy_usb_speed' : 45,
 
                 
                 # These options set whether an OSC gets binned or interpolated for different functions

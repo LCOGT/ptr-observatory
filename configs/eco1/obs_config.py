@@ -205,6 +205,7 @@ site_config = {
             'desc':  'Paramount ME II',
             'driver': 'ASCOM.SoftwareBisque.Telescope',
             'alignment': 'Equatorial',
+            'wait_after_slew_time': 3.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
             'default_zenith_avoid': 0.0,   #degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'has_ascom_altaz': False,
@@ -625,7 +626,7 @@ site_config = {
                 'do_cosmics' : False,
                 'number_of_bias_to_collect' : 64,
                 'number_of_dark_to_collect' : 64,
-                'number_of_flat_to_collect' : 3,
+                'number_of_flat_to_collect' : 6,
                 'number_of_bias_to_store' : 64,
                 'number_of_dark_to_store' : 64,
                 'number_of_flat_to_store' : 64,

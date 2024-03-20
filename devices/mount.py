@@ -216,6 +216,7 @@ class Mount:
         self.seek_commanded = False
         self.home_after_unpark = config['mount']['mount1']['home_after_unpark']
         self.home_before_park = config['mount']['mount1']['home_before_park']
+        self.wait_after_slew_time= config['mount']['mount1']['wait_after_slew_time']
         if abs(self.east_flip_ra_correction) > 0 or abs(self.east_flip_dec_correction) > 0:
             self.flip_correction_needed = True
             plog("Flip correction may be needed.")
@@ -291,6 +292,9 @@ class Mount:
             self.CanSetDeclinationRate = True
         else:
             self.CanSetDeclinationRate = False
+            
+            
+            
         self.DeclinationRate = self.mount.DeclinationRate
 
         self.EquatorialSystem = self.mount.EquatorialSystem
@@ -555,7 +559,8 @@ class Mount:
                                 #breakpoint()  #Here is a place close to the mount to deal with Model, etc
                                 #self.mount_update_wincom.DeclinationRate = 5 #gets reset on the slew
                                 self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-                                self.mount_update_wincom.DeclinationRate = 0
+                                if self.CanSetDeclinationRate:
+                                    self.mount_update_wincom.DeclinationRate = 0
                                 #plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
                                 #print ("successful slew")
 
@@ -578,7 +583,7 @@ class Mount:
                                 self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
                                 self.RightAscensionRate=self.request_new_RightAscensionRate
 
-                            if self.request_set_DeclinationRate:
+                            if self.request_set_DeclinationRate and self.CanSetDeclinationRate:
                                 self.request_set_DeclinationRate=False
                                 self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
                                 self.DeclinationRate=self.request_new_DeclinationRate
@@ -647,6 +652,8 @@ class Mount:
                         self.get_mount_coordinates()
                         #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
                         g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                # Then wait for slew_time to settle
+                time.sleep(self.wait_after_slew_time)
 
 
 

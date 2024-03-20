@@ -327,7 +327,7 @@ class FilterWheel:
                                     #plog ("filter changed")
                                     break
                                 else:
-                                    plog ("filter in motion")
+                                    #plog ("filter in motion")
                                     time.sleep(0.5)
 
                                 # breakpoint()

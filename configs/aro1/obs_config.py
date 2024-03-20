@@ -219,6 +219,8 @@ site_config = {
             'driver': 'AstroPhysicsV2.Telescope',
             'alignment': 'Equatorial',
             'default_zenith_avoid': 0.0,   # degrees floating, 0.0 means do not apply this constraint.
+            'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
+            
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'has_ascom_altaz': False,
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
@@ -414,7 +416,7 @@ site_config = {
             'service_date': '20210716',
 
 
-            "filter_settle_time": 2, #sec  WER 20240303 continuing test.  how long to wait for the filter to settle after a filter change(seconds)
+            "filter_settle_time": 1, #sec  WER 20240303 continuing test.  how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
 
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',

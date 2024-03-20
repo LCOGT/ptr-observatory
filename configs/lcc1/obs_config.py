@@ -7,7 +7,15 @@ Created on Fri Feb 07,  11:57:41 2020
 @author: wrosing
 '''
 
-obs_id = 'lcy1' # THIS IS THE NAME OF THIS OBSERVATORY if it is an obs
+
+# site_name = 'lcc1'    #NB These must be unique across all of PTR.  
+
+# site_config = {
+#     'site': site_name.lower(), #TIM this may no longer be needed.
+#     'site_id': 'mrc2',
+
+
+obs_id = 'lcc1' # THIS IS THE NAME OF THIS OBSERVATORY if it is an obs
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
                     #Username: wayne_rosingPW: 29yzpe
@@ -18,11 +26,9 @@ site_config = {
     # Instance type specifies whether this is an obs or a wema
     'instance_type' : 'obs',
     # If this is not a wema, this specifies the wema that this obs is connected to
-    'wema_name' : 'lcy',
+    'wema_name' : 'lcc',
     # The unique identifier for this obs
-    'obs_id': 'lcy1',
-    
-    
+    'obs_id': 'lcc1',
     
     
     # Name, local and owner stuff
@@ -74,7 +80,7 @@ site_config = {
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # Setup of folders on local and network drives.
-    'client_hostname':  'LCY1',
+    'client_hostname':  'LCC1',
     'archive_path':  'C:/ptr/',  
     'alt_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path' : 'no',
@@ -204,6 +210,8 @@ site_config = {
             'driver': 'ASCOM.iOptron2017.Telescope',
             'alignment': 'Equatorial',
             'default_zenith_avoid': 0.0,   #degrees floating, 0.0 means do not apply this constraint.
+            'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
+            
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'has_ascom_altaz': False,
             'pointing_tel': 'tel1',     #This can be changed to 'tel2'... by user.  This establishes a default.
@@ -340,19 +348,19 @@ site_config = {
         'focuser1': {
             'parent': 'telescope1',
             'name': 'focuser',
-            'desc':  'Planewave Focuser',
+            'desc':  'ZWO EAF Focuser',
             #'driver': 'ASCOM.SeletekFocuser.Focuser',
             #'driver': 'SeletekFocuser.Focuser',
-			'driver': 'ASCOM.iOptron2017.Focuser',
+			'driver': 'ASCOM.EAF.Focuser',
 			
             'com_port':  'COM9',
             'focuser_movement_settle_time': 3,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
-            'reference':23819,    #  20210313  Nominal at 10C Primary temperature            
+            'reference': 3620,    #  20210313  Nominal at 10C Primary temperature            
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
-            'maximum': 30000,   #12672 actually
+            'maximum': 10000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
             'throw' : 200,
@@ -602,12 +610,12 @@ site_config = {
                 'cycle_time':            0.5,   # Meas 20230219  for a bias
 
 
-                'number_of_bias_to_collect' : 128,
-                'number_of_dark_to_collect' : 128,
-                'number_of_flat_to_collect' : 128,
-                'number_of_bias_to_store' : 128,
-                'number_of_dark_to_store' : 128,
-                'number_of_flat_to_store' : 128,
+                'number_of_bias_to_collect' : 32,
+                'number_of_dark_to_collect' : 32,
+                'number_of_flat_to_collect' : 32,
+                'number_of_bias_to_store' : 32,
+                'number_of_dark_to_store' : 32,
+                'number_of_flat_to_store' : 32 ,
 
  
                 'dark_exposure': 180,

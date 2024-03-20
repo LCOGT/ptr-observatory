@@ -130,13 +130,15 @@ def send_status(obsy, column, status_to_send):
     """Sends an update to the status endpoint."""
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     payload = {"statusType": str(column), "status": status_to_send}
+    #print (payload)
     try:
         data = json.dumps(payload)
     except Exception as e:
         plog("Failed to create status payload. Usually not fatal:  ", e)
 
     try:
-        reqs.post(uri_status, data=data, timeout=20)
+        responsecode=reqs.post(uri_status, data=data, timeout=20)
+        #print (responsecode)
     except Exception as e:
         plog("Failed to send_status. Usually not fatal:  ", e)
 
@@ -203,7 +205,7 @@ class Observatory:
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/narrowbanddarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/broadbanddarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/broadbanddarks")
-            
+
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/pointzerozerofourfivedarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/pointzerozerofourfivedarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/onepointfivepercentdarks"):
@@ -289,19 +291,32 @@ class Observatory:
         # There are some software that really benefits from being restarted from
         # scratch on Windows, so on bootup of obs.py, the system closes them down
         # Reconnecting the devices reboots the softwares later on.
+
+        try:
+            os.system('taskkill /IM "Gemini Software.exe" /F')
+        except:
+            pass
         try:
             os.system("taskkill /IM AltAzDSConfig.exe /F")
         except:
             pass
         try:
-            os.system('taskkill /IM "Gemini Software.exe" /F')
+            os.system('taskkill /IM ASCOM.AltAzDS.exe /F')
 
         except:
             pass
+
         try:
-            os.system("taskkill /IM ASCOM.AltAzDS.exe /F")
+            os.system('taskkill /IM "AstroPhysicsV2 Driver.exe" /F')
         except:
             pass
+        try:
+            os.system('taskkill /IM "AstroPhysicsCommandCenter.exe" /F')
+        except:
+            pass
+
+
+
         try:
             os.system("taskkill /IM TheSkyX.exe /F")
         except:
@@ -315,7 +330,6 @@ class Observatory:
             os.system("taskkill /IM PWI4.exe /F")
         except:
             pass
-
         try:
             os.system("taskkill /IM PWI3.exe /F")
         except:
@@ -652,15 +666,18 @@ class Observatory:
 
 
         # On bootup, detect the roof status and set the obs to observe or not.
-        g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
-        # If the roof is open, then it is open and enabled to observe
-        if not g_dev['obs'].enc_status == None:
-            if 'Open' in g_dev['obs'].enc_status['shutter_status']:
-                if (not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead) or self.assume_roof_open:
-                    self.open_and_enabled_to_observe = True
-                else:
-                    self.open_and_enabled_to_observe = False
-
+        try:
+            g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+            # If the roof is open, then it is open and enabled to observe
+            if not g_dev['obs'].enc_status == None:
+                if 'Open' in g_dev['obs'].enc_status['shutter_status']:
+                    if (not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead) or self.assume_roof_open:
+                        self.open_and_enabled_to_observe = True
+                    else:
+                        self.open_and_enabled_to_observe = False
+        except:
+            plog ("FAIL ON OPENING ROOF CHECK")
+            self.open_and_enabled_to_observe = False
         # AND one for safety checks
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
         self.safety_check_period = self.config['safety_check_period']
@@ -684,6 +701,8 @@ class Observatory:
         self.update_status_thread.daemon = True
         self.update_status_thread.start()
 
+        #print(g_dev['obs'].enc_status )
+
         #breakpoint()
         # Initialisation complete!
 
@@ -692,6 +711,8 @@ class Observatory:
         #killing this in favor of triggering by using the "Take Lunar Stack" sequencer script.z
 
         #g_dev['seq'].filter_focus_offset_estimator_script()
+       # breakpoint()
+        #g_dev['seq'].bias_dark_script()
 
 
 
@@ -1157,6 +1178,8 @@ class Observatory:
         self.time_last_status = time.time()
         self.status_count += 1
 
+        #print ("Updated a status")
+
         self.currently_updating_status=False
 
 
@@ -1347,8 +1370,10 @@ class Observatory:
                 #self.time_since_safety_checks = time.time()
 
                 # Adjust focus on a not-too-frequent period for temperature
+                print ("preadj")
                 if not g_dev["cam"].exposure_busy and not g_dev["seq"].focussing and self.open_and_enabled_to_observe and not g_dev['mnt'].currently_slewing:
                     g_dev['foc'].adjust_focus()
+
 
                 # Check nightly_reset is all good
                 if ((g_dev['events']['Cool Down, Open']  <= ephem.now() < g_dev['events']['Observing Ends'])):
@@ -1615,8 +1640,13 @@ class Observatory:
                     # As nightly reset resets the calendar
                     self.warm_report_timer = time.time()
                     self.too_hot_in_observatory = False
-                    focstatus=g_dev['foc'].get_status()
-                    self.temperature_in_observatory_from_focuser=focstatus["focus_temperature"]
+                    try:
+                        focstatus=g_dev['foc'].get_status()
+                        self.temperature_in_observatory_from_focuser=focstatus["focus_temperature"]
+                    except:
+                        self.temperature_in_observatory_from_focuser=20.0
+                        pass
+
 
                     if self.temperature_in_observatory_from_focuser > self.too_hot_temperature:  #This should be a per obsy config item
                         self.too_hot_in_observatory=True
@@ -2223,7 +2253,8 @@ class Observatory:
                     self.update_status()
                 self.update_status_queue.task_done()
                 one_at_a_time = 0
-                time.sleep(2)
+                if not request == 'mountonly':
+                    time.sleep(2)
 
             # Update status on at lest a 30s period if not requested
             elif (time.time() - self.time_last_status) > 30:
@@ -2235,7 +2266,7 @@ class Observatory:
 
             else:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                time.sleep(2)
+                time.sleep(0.2)
 
 
     # Note this is a thread!
@@ -2540,6 +2571,10 @@ class Observatory:
                     rfr=float(fwhm_info['rfr'])
                     self.fwhmresult["mean_focus"] = avg_foc
                     self.fwhmresult['No_of_sources'] =float(fwhm_info['sources'])
+                    self.fwhmresult["exp_time"] = hduheader['EXPTIME']
+
+                    self.fwhmresult["filter"] = hduheader['FILTER']
+                    self.fwhmresult["airmass"] = hduheader['AIRMASS']
 
                 # try:
                 #     self.enqueue_for_mediumUI(200, im_path, text_name.replace('.txt', '.sep'))
@@ -2631,13 +2666,20 @@ class Observatory:
                     self.fwhmresult["mean_focus"] = np.nan
                     self.fwhmresult['No_of_sources'] = np.nan
 
+                    self.fwhmresult["exp_time"] = np.nan
+                    self.fwhmresult["filter"] = np.nan
+                    self.fwhmresult["airmass"] = np.nan
+
+
                 if focus_image != True and not np.isnan(self.fwhmresult['FWHM']):
                     # Focus tracker code. This keeps track of the focus and if it drifts
                     # Then it triggers an autofocus.
 
                     g_dev["foc"].focus_tracker.pop(0)
-                    g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                    plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+                    g_dev["foc"].focus_tracker.append((self.fwhmresult["mean_focus"],self.fwhmresult["exp_time"],self.fwhmresult["filter"], self.fwhmresult["airmass"] ,round(rfr, 3)))
+                    plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker))# + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+
+                    #self.mega_tracker.append((self.fwhmresult["mean_focus"],self.fwhmresult["exp_time"] ,round(rfr, 3)))
 
                     # If there hasn't been a focus yet, then it can't check it,
                     # so make this image the last solved focus.
@@ -2645,19 +2687,20 @@ class Observatory:
                         g_dev["foc"].last_focus_fwhm = rfr
                     else:
                         # Very dumb focus slip deteector
-                        if (
-                            np.nanmedian(g_dev["foc"].focus_tracker)
-                            > g_dev["foc"].last_focus_fwhm
-                            + self.config["focus_trigger"]
-                        ):
-                            g_dev["foc"].focus_needed = True
-                            g_dev["obs"].send_to_user(
-                                "FWHM has drifted to:  "
-                                + str(round(np.nanmedian(g_dev["foc"].focus_tracker),2))
-                                + " from "
-                                + str(g_dev["foc"].last_focus_fwhm)
-                                + ".",
-                                p_level="INFO")
+                        # if (
+                        #     np.nanmedian(g_dev["foc"].focus_tracker)
+                        #     > g_dev["foc"].last_focus_fwhm
+                        #     + self.config["focus_trigger"]
+                        # ):
+                        #     g_dev["foc"].focus_needed = True
+                        #     g_dev["obs"].send_to_user(
+                        #         "FWHM has drifted to:  "
+                        #         + str(round(np.nanmedian(g_dev["foc"].focus_tracker),2))
+                        #         + " from "
+                        #         + str(g_dev["foc"].last_focus_fwhm)
+                        #         + ".",
+                        #         p_level="INFO")
+                        print ("TEMPORARILY DISABLED 1234")
 
 
                 # if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
@@ -3140,9 +3183,9 @@ class Observatory:
                                         os.remove(oldest_file)
                                     except:
                                         self.laterdelete_queue.put(oldest_file, block=False)
-                                        
-                                        
-                                       
+
+
+
 
                             elif slow_process[4] == 'pointzerozerofourfive_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3614,7 +3657,10 @@ class Observatory:
                             temphduheader['NAXIS2'] = float(temphduheader['NAXIS2'])/2
                             temphduheader['CRPIX1'] = float(temphduheader['CRPIX1'])/2
                             temphduheader['CRPIX2'] = float(temphduheader['CRPIX2'])/2
-                            temphduheader['PIXSCALE'] = float(temphduheader['PIXSCALE'])*2
+                            try:
+                                temphduheader['PIXSCALE'] = float(temphduheader['PIXSCALE'])*2
+                            except:
+                                pass
                             temphduheader['CDELT1'] = float(temphduheader['CDELT1'])*2
                             temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
                             tempfilter = temphduheader['FILTER']
@@ -4262,7 +4308,7 @@ class Observatory:
 
 
                      # Another pickle debugger
-                    if False:
+                    if True:
                         pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
                     #breakpoint()
@@ -4601,14 +4647,16 @@ def wait_for_slew():
             movement_reporting_timer = time.time()
             while g_dev['mnt'].return_slewing():
                 #g_dev['mnt'].currently_slewing= True
-                if time.time() - movement_reporting_timer > 2.0:
+                if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
                     plog('m>')
                     movement_reporting_timer = time.time()
-                if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                    g_dev['mnt'].get_mount_coordinates()
-                    g_dev['obs'].request_update_status(mount_only=True)#, dont_wait=True)
+                    if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                        g_dev['mnt'].get_mount_coordinates()
+                        g_dev['obs'].request_update_status(mount_only=True)#, dont_wait=True)
                     #g_dev['obs'].update_status(mount_only=True, dont_wait=True)
             #g_dev['mnt'].currently_slewing= False
+            # Then wait for slew_time to settle
+            time.sleep(g_dev['mnt'].wait_after_slew_time)
 
     except Exception as e:
         plog("Motion check faulted.")
