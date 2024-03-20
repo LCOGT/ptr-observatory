@@ -1374,8 +1374,10 @@ class Observatory:
                 #self.time_since_safety_checks = time.time()
 
                 # Adjust focus on a not-too-frequent period for temperature
+                print ("preadj")
                 if not g_dev["cam"].exposure_busy and not g_dev["seq"].focussing and self.open_and_enabled_to_observe and not g_dev['mnt'].currently_slewing:
                     g_dev['foc'].adjust_focus()
+                    
 
                 # Check nightly_reset is all good
                 if ((g_dev['events']['Cool Down, Open']  <= ephem.now() < g_dev['events']['Observing Ends'])):

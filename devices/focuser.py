@@ -600,15 +600,18 @@ class Focuser:
         try:
             adjust = 0.0
 
-
+            print ("current focus position " + str(self.current_focus_position))
             # adjust for temperature if we have the correct information.
             if abs(temp_delta) > 0.1 and self.current_focus_temperature is not None and self.focus_temp_slope is not None and self.focus_temp_intercept is not None:
                 adjust = round(temp_delta * float(self.focus_temp_slope), 1)
+                print ("focus adjust value due to temperature: " + str(adjust))
 
             # adjust for filter offset
             # it is try/excepted because some telescopes don't have filters
             try:
                 adjust += (g_dev["fil"].filter_offset)
+                print ("focus adjust value due to filter_offset: " + str(g_dev["fil"].filter_offset))
+                print ("New focus position would be: " + str(self.last_known_focus + adjust))
             except:
                 pass
 
