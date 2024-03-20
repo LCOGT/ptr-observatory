@@ -216,6 +216,7 @@ class Mount:
         self.seek_commanded = False
         self.home_after_unpark = config['mount']['mount1']['home_after_unpark']
         self.home_before_park = config['mount']['mount1']['home_before_park']
+        self.wait_after_slew_time= config['mount']['mount1']['wait_after_slew_time']
         if abs(self.east_flip_ra_correction) > 0 or abs(self.east_flip_dec_correction) > 0:
             self.flip_correction_needed = True
             plog("Flip correction may be needed.")
@@ -651,6 +652,8 @@ class Mount:
                         self.get_mount_coordinates()
                         #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
                         g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                # Then wait for slew_time to settle
+                time.sleep(self.wait_after_slew_time)
 
 
 

@@ -193,6 +193,10 @@ site_config = {
             'has_paddle': False,            
             'pointing_tel': 'tel1',
             
+            'default_zenith_avoid': 5.0,   #degrees floating
+            'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
+            
+            
             # Standard offsets to pointings
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,

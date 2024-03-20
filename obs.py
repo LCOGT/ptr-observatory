@@ -2253,7 +2253,8 @@ class Observatory:
                     self.update_status()
                 self.update_status_queue.task_done()
                 one_at_a_time = 0
-                time.sleep(2)
+                if not request == 'mountonly':
+                    time.sleep(2)
 
             # Update status on at lest a 30s period if not requested
             elif (time.time() - self.time_last_status) > 30:
@@ -2265,7 +2266,7 @@ class Observatory:
 
             else:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                time.sleep(2)
+                time.sleep(0.2)
 
 
     # Note this is a thread!
@@ -4546,14 +4547,16 @@ def wait_for_slew():
             movement_reporting_timer = time.time()
             while g_dev['mnt'].return_slewing():
                 #g_dev['mnt'].currently_slewing= True
-                if time.time() - movement_reporting_timer > 2.0:
+                if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
                     plog('m>')
                     movement_reporting_timer = time.time()
-                if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                    g_dev['mnt'].get_mount_coordinates()
-                    g_dev['obs'].request_update_status(mount_only=True)#, dont_wait=True)
+                    if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                        g_dev['mnt'].get_mount_coordinates()
+                        g_dev['obs'].request_update_status(mount_only=True)#, dont_wait=True)
                     #g_dev['obs'].update_status(mount_only=True, dont_wait=True)
             #g_dev['mnt'].currently_slewing= False
+            # Then wait for slew_time to settle
+            time.sleep(g_dev['mnt'].wait_after_slew_time)
 
     except Exception as e:
         plog("Motion check faulted.")

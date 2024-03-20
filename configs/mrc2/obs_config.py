@@ -252,6 +252,8 @@ site_config = {
             'shutdown_script':  None,
             'alignment': 'Alt-Az',
             'default_zenith_avoid': 5.0,   #degrees floating
+            'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
+            
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             #'has_ascom_altaz': False,
             'pointing_tel': 'tel1',  

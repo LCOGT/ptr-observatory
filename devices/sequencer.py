@@ -307,16 +307,19 @@ class Sequencer:
         """
         try:
             if not g_dev['mnt'].rapid_park_indicator:
-                movement_reporting_timer=time.time()
+                movement_reporting_timer = time.time()
                 while g_dev['mnt'].return_slewing():
-                    if time.time() - movement_reporting_timer > 2.0:
-                        plog( 'm>')
-                        movement_reporting_timer=time.time()
-
-                    if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                        g_dev['mnt'].get_mount_coordinates()
-                        #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
-                        g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                    #g_dev['mnt'].currently_slewing= True
+                    if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
+                        plog('m>')
+                        movement_reporting_timer = time.time()
+                        if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                            g_dev['mnt'].get_mount_coordinates()
+                            g_dev['obs'].request_update_status(mount_only=True)#, dont_wait=True)
+                        #g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                #g_dev['mnt'].currently_slewing= False
+                # Then wait for slew_time to settle
+                time.sleep(g_dev['mnt'].wait_after_slew_time)
 
 
         except Exception:
