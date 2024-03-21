@@ -2055,6 +2055,7 @@ class Observatory:
             try:
                 shutil.copy(fromfile,tofile)
             except:
+                plog(traceback.format_exc())
                 plog ("Couldn't copy " + str(fromfile) + ". Broken.")
                 broken =1
 
@@ -2068,6 +2069,7 @@ class Observatory:
                 try:
                     shutil.move(fromfile, self.broken_path + fromfile.split('/')[-1])
                 except:
+                    plog(traceback.format_exc())
                     plog ("Couldn't move " + str(fromfile) + " to broken folder.")
 
                     self.laterdelete_queue.put(fromfile, block=False)
@@ -3826,8 +3828,8 @@ class Observatory:
                     saver = 0
                     saverretries = 0
                     while saver == 0 and saverretries < 10:
-                        
-                        
+
+
                         # Make  sure the alt paths exist
                         if self.config["save_to_alt_path"] == "yes":
                             if slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
@@ -3846,7 +3848,7 @@ class Observatory:
                             altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
                             if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
                                 os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
-                        
+
                         try:
                             hdureduced = fits.PrimaryHDU()
                             hdureduced.data = slow_process[2]
@@ -3860,13 +3862,13 @@ class Observatory:
                                 "Date FITS file was written",
                             )
                             hdureduced.data = hdureduced.data.astype("float32")
-                            
-                            
+
+
                             int_array_flattened=hdureduced.data.astype(int).ravel()
                             unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
                             m=counts.argmax()
                             imageMode=unique[m]
-                            
+
                             # Remove nans
                             x_size=hdureduced.data.shape[0]
                             y_size=hdureduced.data.shape[1]
@@ -3931,14 +3933,14 @@ class Observatory:
 
                             # Mop up any remaining nans
                             hdureduced.data[np.isnan(hdureduced.data)] =edgefillvalue
-                            
-                            
+
+
                             if slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
                                 #breakpoint()
                                 hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
                                 )  # Save full raw file locally
                                 self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1])), block=False)
-                            else:                            
+                            else:
                                 hdureduced.writeto(
                                     slow_process[1], overwrite=True, output_verify='silentfix'
                                 )  # Save flash reduced file locally

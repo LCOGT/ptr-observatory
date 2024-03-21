@@ -3793,6 +3793,7 @@ class Camera:
 
                     # Quick flat flat frame
                     try:
+                        #plog ("FLATTERY")
                         if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
                             outputimg = np.divide(outputimg, g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
                         else:
@@ -5258,6 +5259,7 @@ def post_exposure_process(payload):
 
             # Quick flat flat frame
             try:
+                #plog ("FLATTERY")
                 if selfconfig['camera'][selfname]['settings']['hold_flats_in_memory']:
                     hdusmalldata = np.divide(hdusmalldata, g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
                 else:
