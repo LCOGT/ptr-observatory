@@ -547,7 +547,7 @@ class Camera:
             del tempdarkframe
         except:
             plog("10.0s Dark frame for Binning 1 not available")
-            
+
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib +  "10secondDARK_master_bin1.fits")
@@ -1892,7 +1892,7 @@ class Camera:
     def _qhyccd_connect(self, p_connect):
         #self.camera.Connected = p_connect
         #print ("QHY doesn't have an obvious - IS CONNECTED - function")
-        
+
         return True
 
     def _qhyccd_temperature(self):
@@ -1932,55 +1932,76 @@ class Camera:
             print ("failed at getting the CCD temperature")
             temptemp=999.9
         return temptemp
-    
+
     # def _qhyccd_special_subthread_expose(self, exposure_time, bias_dark_or_light_type_frame):
     #     success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
     #     qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
-        
+
     # def _qhyccd_special_subthread_prepandalign(self, reference_image, alignment_image):
-        
-        
+
+
     #     print ()
-        
+
 
     def _qhyccd_expose(self, exposure_time, bias_dark_or_light_type_frame):
 
-        
+
         #
         self.substacker_available=False
-        
-            
+
+
         if not self.substacker:
             success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
             qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
         else:
-            
+
             #N_of_substacks = 10
-            exp_of_substacks = 10            
-            
+            exp_of_substacks = 10
+
             N_of_substacks = int(exposure_time / exp_of_substacks)
-            
-            sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,len(N_of_substacks)), dtype=np.float32)
-            for subexposure in range(len(N_of_substacks)):
+
+            sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
+            print ("subexposing")
+            for subexposure in range(N_of_substacks+1):
                 print (subexposure)
+                exposure_timer=time.time()
                 # If it is the first exposure, then just take the exposure. Same with the second as the first one is the reference.
                 if subexposure == 0 or subexposure == 1:
-                    success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
+                    print ("Collecting subexposure " + str(subexposure+1))
+                    success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                     qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
-                    sub_stacker_array[:,:,subexposure] = _qhyccd_getImageArray()
+                    if subexposure == 1:
+                        print ("Flat,DarkBiasing reference frame")
+                        # De-biasdark sub_stack array
+                        sub_stacker_array[:,:,0]=sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
+                        # Flat field sub stack array
+                        if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                            sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
+                        else:
+                            sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+                        # Bad pixel map sub stack array
+                        sub_stacker_array[:,:,0][g_dev['cam'].bpmFiles[str(1)]] = np.nan
+
+                        de_nanned_reference_frame=copy.deepcopy(sub_stacker_array[:,:,0])
+
+                        imageMode=np.nanmedian(de_nanned_reference_frame)
+                        #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
+                        de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
+
                 # For each further exposure, align the previous subexposure while exposing the next exposure
                 # Do this through separate threads. The alignment should be faster than the exposure
                 # So we don't need to get too funky, just two threads that wait for each other.
                 else:
-                    exposure_timer=time.time()
-                
-                    if not subexposure == (N_of_substacks -1):
+
+
+                    if not subexposure == (N_of_substacks):
                         # Fire off an exposure.
-                        success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
+                        print ("Collecting subexposure " + str(subexposure+1))
+                        success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                         qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
                     # While the exposure is happening prep align and stack the previous exposure.
-                    
-                    # De-biasdark sub_stack array 
+                    print ("Processing " +str(subexposure))
+                    # De-biasdark sub_stack array
                     sub_stacker_array[:,:,subexposure-1]=sub_stacker_array[:,:,subexposure-1] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
                     # Flat field sub stack array
                     if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
@@ -1989,45 +2010,69 @@ class Camera:
                         sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
                     # Bad pixel map sub stack array
                     sub_stacker_array[:,:,subexposure-1][g_dev['cam'].bpmFiles[str(1)]] = np.nan
-                    
+
                     # Make a tempfile that has nan's medianed out
                     imageMode=np.nanmedian(sub_stacker_array[:,:,subexposure-1])
                     tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
                     tempnan[np.isnan(tempnan)] =imageMode
-                    
+
                     # Using the nan'ed file, calculate the shift
-                    shift, error, diffphase = phase_cross_correlation(sub_stacker_array[:,:,0], tempnan)
+                    shift, error, diffphase = phase_cross_correlation(de_nanned_reference_frame, tempnan)
                     del tempnan
-                    
+                    print (shift)
+
                     # roll the original array around by the shift
                     if abs(shift[0]) > 0:
                         print ("X shifter")
                         print (int(shift[0]))
-                        sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(shift[0]), axis=0)                       
-                    
+                        sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(shift[0]), axis=0)
+
                     if abs(shift[1]) > 0:
                         print ("Y shifter")
                         print (int(shift[1]))
                         sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(shift[1]), axis=1)
-                  
-                print ("Time taken for stacking: " + str(time.time()-exposure_timer))
-                
-                while (time.time() - exposure_timer) < 12:
-                    print ("Watiing for exposure to finish")
+
+                    print ("Time taken for aligning: " + str(time.time()-exposure_timer))
+
+                while (time.time() - exposure_timer) < 12.5:
+                    #print ("Watiing for exposure to finish")
                     time.sleep(0.5)
-                    
-            
+
+                if not subexposure == (N_of_substacks):
+                    # READOUT FROM THE QHY
+
+                    image_width_byref = c_uint32()
+                    image_height_byref = c_uint32()
+                    bits_per_pixel_byref = c_uint32()
+                    success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
+                                                          byref(image_width_byref),
+                                                          byref(image_height_byref),
+                                                          byref(bits_per_pixel_byref),
+                                                          byref(qhycam.camera_params[qhycam_id]['channels']),
+                                                          byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
+
+                    image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
+
+                    sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+                    print ("Collected " +str(subexposure+1))
+
+
+
+
+                #sub_stacker_array[:,:,subexposure] = self._getImageArray()
+
+
             # Once collected and done, nanmedian the array into the single image
-            sub_stacker_array=np.nanmedian(sub_stacker_array, axis=2) * len(N_of_substacks)            
+            sub_stacker_array=np.nanmedian(sub_stacker_array, axis=2) * N_of_substacks
             self.sub_stack_hold = copy.deepcopy(sub_stacker_array)
             del sub_stacker_array
             self.substacker_available=True
-            
-                                        
-                
+
+
+
                     #sub_stacker_array[:,:,subexposure-1]=_qhyccd_special_subthread_align(sub_stacker_array[:,:,0], sub_stacker_array[:,:,subexposure-1])
-                    
-                
+
+
 
     def _qhyccd_stop_expose(self):
         expresult = {}
@@ -2047,7 +2092,7 @@ class Camera:
             image_width_byref = c_uint32()
             image_height_byref = c_uint32()
             bits_per_pixel_byref = c_uint32()
-    
+
             #qhycommand=time.time()
             success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
                                                   byref(image_width_byref),
@@ -2056,12 +2101,12 @@ class Camera:
                                                   byref(qhycam.camera_params[qhycam_id]['channels']),
                                                   byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
             #print (time.time() - qhycommand)
-    
+
             image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
-    
+
             #npreshaprecommand=time.time()
             #image = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-    
+
             return np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
             #return np.asarray(image)
             #return image
@@ -2931,13 +2976,13 @@ class Camera:
                                 while g_dev['fil'].filter_changing:
                                     #plog ("Waiting for filter_change")
                                     time.sleep(0.05)
-                            
+
                             # Sort out if it is a substack
                             self.substacker=False
                             if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat":
-                                if exposure_time % 10 == 0:
+                                if exposure_time % 10 == 0 or exposure_time >= 30:
                                     self.substacker=True
-                                    
+
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
@@ -3346,7 +3391,7 @@ class Camera:
                 # THE EXPOSURE IS RUNNING
                 if frame_type=='pointing' or focus_image == True and not pointingfocus_masterdark_done and  smartstackid == 'no':
 
-                    if not self.substacker: 
+                    if not self.substacker:
                         try:
                             # Sort out an intermediate dark
                             fraction_through_range=0
@@ -3355,19 +3400,19 @@ class Camera:
                             elif exposure_time < 2.0:
                                 fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
                                 intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
-    
+
                             elif exposure_time < 10.0:
                                 fraction_through_range=(exposure_time-2)/(10.0-2.0)
                                 intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
-    
+
                             elif exposure_time < broadband_ss_biasdark_exp_time:
                                 fraction_through_range=(exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
                                 intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
-    
+
                             elif exposure_time < narrowband_ss_biasdark_exp_time:
                                 fraction_through_range=(exposure_time-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
                                 intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
-    
+
                             elif dark_exp_time > narrowband_ss_biasdark_exp_time:
                                 fraction_through_range=(exposure_time-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
                                 intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles[str(1)]) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
@@ -4920,7 +4965,7 @@ def post_exposure_process(payload):
         hdu.header['SSTKLEN'] = Nsmartstack
         hdu.header["LONGSTK"] = longstackid # Is this a member of a longer stack - to be replaced by
                                             #   longstack code soon
-        
+
         hdu.header["SUBSTACK"] = substack
         hdu.header["PEDESTAL"] = (0.0, "This value has been added to the data")
         # hdu.header[
@@ -5093,7 +5138,7 @@ def post_exposure_process(payload):
         except:
             hdu.header["CDELT1"] = 0.75 / 3600
             hdu.header["CDELT2"] = 0.75 / 3600
-            
+
         hdu.header["CRVAL1"] = tempRAdeg
         hdu.header["CRVAL2"] = tempDECdeg
         hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
