@@ -1975,6 +1975,7 @@ class Camera:
                         # De-biasdark sub_stack array
                         sub_stacker_array[:,:,0]=sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
                         # Flat field sub stack array
+                        plog ("Flatting 0")
                         if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
                             sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
                         else:
@@ -2004,6 +2005,7 @@ class Camera:
                     # De-biasdark sub_stack array
                     sub_stacker_array[:,:,subexposure-1]=sub_stacker_array[:,:,subexposure-1] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
                     # Flat field sub stack array
+                    plog ("Flatting " + str(subexposure-1))
                     if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
                         sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
                     else:
