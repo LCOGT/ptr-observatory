@@ -1917,12 +1917,44 @@ class Camera:
             print ("failed at getting the CCD temperature")
             temptemp=999.9
         return temptemp
+    
+    def _qhyccd_special_subthread_expose(self, exposure_time, bias_dark_or_light_type_frame):
+        success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
+        qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+        
+    def _qhyccd_special_subthread_align(self, reference_image, alignment_image):
+        
+        
+        print ()
+        
 
     def _qhyccd_expose(self, exposure_time, bias_dark_or_light_type_frame):
 
-
-        success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
-        qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+        
+        substacker=False
+        if not substacker:
+            success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
+            qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+        else:
+            N_of_substacks = 10
+            exp_of_substacks = 10            
+            sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,len(N_of_substacks)), dtype=np.float32)
+            for subexposure in range(len(N_of_substacks)):
+                print (subexposure)
+                # If it is the first exposure, then just take the exposure. Same with the second as the first one is the reference.
+                if subexposure == 0 or subexposure == 1:
+                    success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
+                    qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+                    sub_stacker_array[:,:,subexposure] = _qhyccd_getImageArray()
+                # For each further exposure, align the previous subexposure while exposing the next exposure
+                # Do this through separate threads. The alignment should be faster than the exposure
+                # So we don't need to get too funky, just two threads that wait for each other.
+                else:
+                    
+                
+                    _qhyccd_special_subthread_align(sub_stacker_array[:,:,0], sub_stacker_array[:,:,subexposure-1])
+                    
+                
 
     def _qhyccd_stop_expose(self):
         expresult = {}
