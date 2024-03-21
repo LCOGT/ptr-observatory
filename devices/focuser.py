@@ -758,7 +758,7 @@ class Focuser:
                 plog("Supplied relative move is lacking a sign; ignoring.")
             self.current_focus_position=self.get_position()
 
-        self.last_known_focus=self.current_focus_position
+        #self.last_known_focus=self.current_focus_position
 
 
     def move_absolute_command(self, req: dict, opt: dict):
@@ -795,7 +795,7 @@ class Focuser:
                 time.sleep(0.3)
             self.current_focus_position=self.get_position()
 
-        self.last_known_focus=self.current_focus_position
+        #self.last_known_focus=self.current_focus_position
 
 
     def stop_command(self, req: dict, opt: dict):
