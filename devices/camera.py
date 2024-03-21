@@ -550,7 +550,7 @@ class Camera:
 
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
-                                      + "/" + tempfrontcalib +  "10secondDARK_master_bin1.fits")
+                                      + "/" + tempfrontcalib +  "10secondBIASDARK_master_bin1.fits")
 
             tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
             self.darkFiles.update({'tensec_exposure_biasdark': tempdarkframe})
