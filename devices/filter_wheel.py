@@ -693,7 +693,7 @@ class FilterWheel:
             (["U", "JU", "BU", "up"], ["up", "U", "BU","JU"]),  # U broadband
             (["Blue", "B", "JB", "BB", "PB"], ["JB", "BB","PB"]),  # B broadband
             (["Green", "JV", "BV", "PG"], ["JV", "BV","PG", "V"]),  # G broadband
-            (["Red", "R", "BR", "r", "PR", "Rc", "rp"], ["rp", "Rc", "BR", "PR"]),  # R broadband
+            (["Red", "R", "BR", "r", "PR", "Rc", "rp"], ["rp", "Rc", "BR", "PR", "ip"]),  # R broadband
             (["i", "Ic", "ip", "BI"], ["ip", "Ic", "BI"]),  # infrared broadband
             (["z", "zs", "zp"], ["zp", "zs", "z"]),  # NB z broadband  z and zs are different.  Y?  WER
             (["gp", "g"], ["gp"]),  # generic sdss-g
