@@ -661,6 +661,19 @@ class Observatory:
         filter_throughput_shelf.close()
 
 
+
+        # Boot up filter offsets
+        filteroffset_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filteroffsets_' + g_dev['cam'].alias + str(g_dev['obs'].name))
+        plog ("Filter Offsets")
+        for filtername in filteroffset_shelf:
+            plog (str(filtername) + " " + str(filteroffset_shelf[filtername]))
+            g_dev['fil'].filter_offsets[filtername.lower()]=filteroffset_shelf[filtername]
+            #breakpoint()
+
+        #filteroffset_shelf[chosen_filter]=focus_filter_focus_point-foc_pos
+        filteroffset_shelf.close()
+
+
         # Temporary toggle to turn auto-centering off
         #self.auto_centering_off = True
 

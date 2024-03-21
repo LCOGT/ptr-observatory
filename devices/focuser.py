@@ -640,7 +640,7 @@ class Focuser:
                 opt = {}
                 self.move_absolute_command(req, opt)
 
-
+                plog ("Position now: " + str(self.current_focus_position))
                 # try:
                 #     if self.theskyx:
                 #         self.last_temperature = self.focuser.focTemperature

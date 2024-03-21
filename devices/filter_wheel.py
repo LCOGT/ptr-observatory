@@ -21,6 +21,7 @@ import traceback
 import ptr_config
 from global_yard import g_dev
 from ptr_utility import plog
+import shelve
 
 class FilterWheel:
     """A filter wheel instrument."""
@@ -32,6 +33,12 @@ class FilterWheel:
         self.previous_filter_name='none'
 
         self.driver = driver
+
+
+        # Load filter offset shelf if avaiable
+        self.filter_offsets={}
+
+
 
         if driver is not None:
             self.null_filterwheel = False
@@ -536,7 +543,13 @@ class FilterWheel:
             self.filter_selected = str(filter_name).lower()
             self.filter_selections = self.filter_data[self.filt_pointer][1]
             #self.filter_offset = float(self.filter_data[self.filt_pointer][2])
-            self.filter_offset = 0
+
+            #breakpoint()
+            if filter_name in self.filter_offsets:
+                self.filter_offset=self.filter_offsets[filter_name]
+                g_dev['foc'].adjust_focus()
+            else:
+                self.filter_offset = 0
         except:
             plog("Failed to change filter. Returning.")
             #breakpoint()

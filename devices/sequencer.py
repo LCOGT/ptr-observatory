@@ -5532,6 +5532,7 @@ class Sequencer:
                 filter_offset_collector[chosen_filter]=focus_filter_focus_point-foc_pos
                 filteroffset_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filteroffsets_' + g_dev['cam'].alias + str(g_dev['obs'].name))
                 filteroffset_shelf[chosen_filter]=focus_filter_focus_point-foc_pos
+                g_dev['fil'].filter_offsets[chosen_filter]=focus_filter_focus_point-foc_pos
                 filteroffset_shelf.close()
 
         plog ("Final determined offsets this run")
