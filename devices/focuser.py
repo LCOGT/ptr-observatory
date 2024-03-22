@@ -184,7 +184,8 @@ class Focuser:
         while True:
 
             if self.guarded_move_requested:
-
+                
+                self.focuser_is_moving=True
 
                 try:
                      if self.theskyx:
@@ -231,6 +232,7 @@ class Focuser:
                     plog("AF Guarded move failed.")
                     plog (traceback.format_exc())
 
+                self.focuser_is_moving=False
                 self.guarded_move_requested=False
 
 
@@ -663,6 +665,7 @@ class Focuser:
     def guarded_move(self, to_focus):
 
         self.guarded_move_requested=True
+        self.focuser_is_moving=True
         self.guarded_move_to_focus=to_focus
         self.wait_for_focuser_update()
 
@@ -713,6 +716,7 @@ class Focuser:
         """Sets the focus position by moving relative to current position."""
         # The string must start with a + or a - sign, otherwise treated as zero and no action.
 
+        self.focuser_is_moving=True
         position_string = req["position"]
 
         if self.theskyx:
@@ -764,6 +768,7 @@ class Focuser:
     def move_absolute_command(self, req: dict, opt: dict):
         """Sets the focus position by moving to an absolute position."""
 
+        self.focuser_is_moving=True
         position = int(float(req["position"]))
 
 

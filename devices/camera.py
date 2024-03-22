@@ -3000,16 +3000,25 @@ class Camera:
                                     self.currently_in_smartstack_loop=False
                                     break
 
+                            
+
+                            # Sort out if it is a substack
+                            self.substacker=False
+                            broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
+                            narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
+                            
+                            if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat":
+                                if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
+                                    self.substacker=True
+                            
                             if g_dev["fil"].null_filterwheel == False:
                                 while g_dev['fil'].filter_changing:
                                     #plog ("Waiting for filter_change")
                                     time.sleep(0.05)
-
-                            # Sort out if it is a substack
-                            self.substacker=False
-                            if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat":
-                                if exposure_time % 10 == 0 or exposure_time >= 30:
-                                    self.substacker=True
+                                    
+                            while g_dev['foc'].focuser_is_moving:
+                                plog ("Waiting for focuser to finish moving")
+                                time.sleep(0.05)
 
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
