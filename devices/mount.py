@@ -477,7 +477,7 @@ class Mount:
                 # print ((self.mount_update_timer > time.time() - self.mount_update_period))
                 # print ("&")
                 # print (self.mount_update_paused)
-                if ((self.mount_update_timer < time.time() - self.mount_update_period) and not self.mount_update_paused):# or (no(self.currently_slewing) and not self.mount_update_paused):
+                if self.currently_slewing or (((self.mount_update_timer < time.time() - self.mount_update_period) and not self.mount_update_paused)):# or (no(self.currently_slewing) and not self.mount_update_paused):
                     #print ("Mu")
 
                     self.currently_slewing= self.mount_update_wincom.Slewing
