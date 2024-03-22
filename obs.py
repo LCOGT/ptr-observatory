@@ -2983,7 +2983,8 @@ class Observatory:
                                     #g_dev['obs'].drift_tracker_timer=0
 
                                 # Only recenter if out by more than 1%
-                                elif (abs(err_ha * 15 * 3600) > 0.01 * ra_field_asec) or (abs(err_dec * 3600) > 0.01 * dec_field_asec):
+                                #elif (abs(err_ha * 15 * 3600) > 0.01 * ra_field_asec) or (abs(err_dec * 3600) > 0.01 * dec_field_asec):
+                                else:
 
                                      self.pointing_correction_requested_by_platesolve_thread = True
                                      self.pointing_correction_request_time = time.time()
@@ -3036,9 +3037,9 @@ class Observatory:
                                              except:
                                                  plog("This mount doesn't report pierside")
                                                  plog(traceback.format_exc())
-                                else:
-                                    self.pointing_correction_requested_by_platesolve_thread = False
-                                    plog ("pointing too good to recenter")
+                                # else:
+                                #     self.pointing_correction_requested_by_platesolve_thread = False
+                                #     plog ("pointing too good to recenter")
 
                             self.platesolve_is_processing = False
                     except:
