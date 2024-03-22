@@ -559,6 +559,7 @@ class Mount:
                                 #breakpoint()  #Here is a place close to the mount to deal with Model, etc
                                 #self.mount_update_wincom.DeclinationRate = 5 #gets reset on the slew
                                 self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
+                                self.currently_slewing=True
                                 if self.CanSetDeclinationRate:
                                     self.mount_update_wincom.DeclinationRate = 0
                                 #plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
