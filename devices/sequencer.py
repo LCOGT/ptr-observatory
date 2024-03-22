@@ -5543,7 +5543,7 @@ class Sequencer:
         filteroffset_shelf.close()
 
         #breakpoint()
-        self.auto_focus_script(skip_pointing=True)
+        self.auto_focus_script(req2, opt,skip_pointing=True)
 
 
 
