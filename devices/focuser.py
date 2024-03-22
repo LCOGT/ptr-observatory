@@ -184,14 +184,14 @@ class Focuser:
         while True:
 
             if self.guarded_move_requested:
-                
+
                 try:
-                    while self.exposure_busy:
+                    while g_dev['cam'].exposure_busy:
                         print ("Focuser waiting for Exposure to finish.")
                         time.sleep(0.5)
                 except:
                     print ("Exposure focuser wait failed. ")
-                
+
                 self.focuser_is_moving=True
 
                 try:
