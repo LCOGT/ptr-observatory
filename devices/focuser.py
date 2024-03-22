@@ -182,7 +182,7 @@ class Focuser:
 
         # This stopping mechanism allows for threads to close cleanly.
         while True:
-
+            self.focuser_is_moving=False
             if self.guarded_move_requested:
 
                 try:
@@ -626,7 +626,7 @@ class Focuser:
             # adjust for filter offset
             # it is try/excepted because some telescopes don't have filters
             try:
-                adjust -= (g_dev["fil"].filter_offset)
+                adjust += (g_dev["fil"].filter_offset)
                 print ("focus adjust value due to filter_offset: " + str(g_dev["fil"].filter_offset))
                 print ("New focus position would be: " + str(self.last_known_focus + adjust))
             except:

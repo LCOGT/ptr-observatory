@@ -457,7 +457,7 @@ else:
 
                 try:
                     #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-                    popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]), xtol=0.05, ftol=0.05)
+                    popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
 
 
                     # Amplitude has to be a substantial fraction of the peak value

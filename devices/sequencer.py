@@ -2545,7 +2545,7 @@ class Sequencer:
             10000  # Set images since last focus as sillyvalue
         )
         g_dev["foc"].last_focus_fwhm = None
-        g_dev["foc"].focus_tracker = [np.nan] * 10
+        g_dev["foc"].focus_tracker = [np.nan] * 1000
 
 
         # Reopening config and resetting all the things.
@@ -5616,7 +5616,7 @@ class Sequencer:
         g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow()
 
         # Reset focus tracker
-        g_dev['foc'].focus_tracker = [np.nan] * 10
+        g_dev['foc'].focus_tracker = [np.nan] * 1000
 
         throw = g_dev['foc'].throw
 
