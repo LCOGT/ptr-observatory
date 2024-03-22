@@ -468,7 +468,9 @@ for i in range(min(len(pointvalues),200)):
     if abs(brightest_pixel_rdist) < 4:
 
         try:
-            popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+            #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+            popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]), xtol=0.05, ftol=0.05)
+
 
             # Amplitude has to be a substantial fraction of the peak value
             # and the center of the gaussian needs to be near the center
