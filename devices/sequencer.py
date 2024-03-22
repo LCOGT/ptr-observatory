@@ -379,9 +379,9 @@ class Sequencer:
         elif action == "run" and script in ['pointingRun']:
 
             self.sky_grid_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
-        elif action == "run" and script.lower() in ['equatorialSweep']:
+        elif action == "run" and script in ['equatorialSweep']:
 
-            self.equatorial_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
+            self.equatorial_pointing_run(max_pointings=req['points'], alt_minimum=req['minAltitude'])
         elif action == "run" and script in ("collectBiasesAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
         elif action == "run" and script == 'takeLRGBStack':
