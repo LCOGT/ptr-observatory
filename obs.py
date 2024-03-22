@@ -1300,7 +1300,7 @@ class Observatory:
 
                 # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
 
-                if not g_dev["cam"].exposure_busy and not g_dev['seq'].block_guard:
+                if not g_dev["cam"].exposure_busy and not g_dev['seq'].block_guard and not g_dev['seq'].total_sequencer_control:
                     self.check_platesolve_and_nudge()
 
 
@@ -1327,6 +1327,7 @@ class Observatory:
                                     #g_dev['obs'].time_of_last_slew=time.time()
                                     #g_dev['mnt'].mount.SlewToCoordinatesAsync(meridianra, meridiandec)
                                     g_dev['mnt'].slew_async_directly(ra=meridianra, dec=meridiandec)
+                                    print ("Meridian Pulse")
                                     wait_for_slew()
                                     self.time_of_last_pulse=time.time()
 
@@ -1361,6 +1362,10 @@ class Observatory:
                     status['obs_settings']['admin_owner_commands_only']=self.admin_owner_commands_only
                     status['obs_settings']['simulating_open_roof']=self.assume_roof_open
                     status['obs_settings']['pointing_reference_on']= (not self.mount_reference_model_off)
+
+                    
+                    status['obs_settings']['morning_flats_done']=g_dev['seq'].morn_flats_done
+
 
                     lane = "obs_settings"
                     try:
