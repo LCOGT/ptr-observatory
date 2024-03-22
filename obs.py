@@ -1365,6 +1365,7 @@ class Observatory:
 
                     
                     status['obs_settings']['morning_flats_done']=g_dev['seq'].morn_flats_done
+                    status['obs_settings']['timedottime_of_last_upload']=time.time()
 
 
                     lane = "obs_settings"
