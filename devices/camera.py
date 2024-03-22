@@ -1244,7 +1244,7 @@ class Camera:
         threshold=max(3* np.std(hdufocusdata[hdufocusdata < (5*tempstd)]),(200*self.pixscale)) # Don't bother with stars with peaks smaller than 100 counts per arcsecond
         googtime=time.time()
         list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
-        print ("Finding Local Maxima: " + str(time.time()-googtime))
+        #print ("Finding Local Maxima: " + str(time.time()-googtime))
 
         # Assess each point
         pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
@@ -1274,7 +1274,7 @@ class Camera:
                 else:
                     pointvalues[counter][2]=np.nan
             counter=counter+1
-        print ("Sorting out bad pixels from the mix: " + str(time.time()-googtime))
+        #print ("Sorting out bad pixels from the mix: " + str(time.time()-googtime))
 
 
         # Trim list to remove things that have too many other things close to them.
@@ -1313,7 +1313,7 @@ class Camera:
             cvalue=hdufocusdata[int(cx)][int(cy)]
 
 
-            print (cvalue)
+            #print (cvalue)
 
             try:
                 #temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
@@ -1362,13 +1362,13 @@ class Camera:
             # then attempt a fit
             if abs(brightest_pixel_rdist) < 4:
                 try:
-                    temptimer=time.time()
+                    #temptimer=time.time()
 
                     #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
                     popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/self.pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]), xtol=0.05, ftol=0.05)
 
-                    print ("Curve optimize")
-                    print (time.time() -temptimer)
+                    #print ("Curve optimize")
+                    #print (time.time() -temptimer)
                     #breakpoint()
 
                     # Amplitude has to be a substantial fraction of the peak value
@@ -2444,7 +2444,7 @@ class Camera:
                 plog("Refusing exposure request as the observatory is currently taking flats.")
                 return
 
-        self.exposure_busy = True # This really needs to be here from the start
+        #self.exposure_busy = True # This really needs to be here from the start
         # We've had multiple cases of multiple camera exposures trying to go at once
         # And it is likely because it takes a non-zero time to get to Phase II
         # So even in the setup phase the "exposure" is "busy"
@@ -2868,7 +2868,7 @@ class Camera:
 
 
                     try:
-                        self.exposure_busy = True
+                        #self.exposure_busy = True
 
                         if self.maxim or self.ascom or self.theskyx or self.qhydirect:
 
@@ -3040,6 +3040,8 @@ class Camera:
                             while g_dev['foc'].focuser_is_moving:
                                 plog ("Waiting for focuser to finish moving")
                                 time.sleep(0.05)
+
+                            self.exposure_busy = True
 
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
