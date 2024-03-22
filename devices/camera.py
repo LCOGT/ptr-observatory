@@ -1311,6 +1311,10 @@ class Camera:
             cx= int(pointvalues[i][0])
             cy= int(pointvalues[i][1])
             cvalue=hdufocusdata[int(cx)][int(cy)]
+
+
+            print (cvalue)
+
             try:
                 #temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
                 temp_array=hdufocusdata[cx-halfradius_of_radialprofile:cx+halfradius_of_radialprofile,cy-halfradius_of_radialprofile:cy+halfradius_of_radialprofile]
@@ -1321,6 +1325,8 @@ class Camera:
                 breakpoint()
             #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
 
+
+            temptimer=time.time()
             #construct radial profile
             cut_x,cut_y=temp_array.shape
             cut_x_center=(cut_x/2)-1
@@ -1344,12 +1350,27 @@ class Camera:
                         brightest_pixel_rdist=r_dist
                         brightest_pixel_value=temp_array[q][t]
                     counter=counter+1
+            # print ("radial dosn't take so long after all....")
+            # print (time.time()-temptimer)
+
+
+
+
+            #breakpoint()
 
             # If the brightest pixel is in the center-ish
             # then attempt a fit
             if abs(brightest_pixel_rdist) < 4:
                 try:
-                    popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+                    temptimer=time.time()
+
+                    #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+                    popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/self.pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]), xtol=0.05, ftol=0.05)
+
+                    print ("Curve optimize")
+                    print (time.time() -temptimer)
+                    #breakpoint()
+
                     # Amplitude has to be a substantial fraction of the peak value
                     # and the center of the gaussian needs to be near the center
                     if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
@@ -3000,22 +3021,22 @@ class Camera:
                                     self.currently_in_smartstack_loop=False
                                     break
 
-                            
+
 
                             # Sort out if it is a substack
                             self.substacker=False
                             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
                             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
-                            
+
                             if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat":
                                 if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
                                     self.substacker=True
-                            
+
                             if g_dev["fil"].null_filterwheel == False:
                                 while g_dev['fil'].filter_changing:
                                     #plog ("Waiting for filter_change")
                                     time.sleep(0.05)
-                                    
+
                             while g_dev['foc'].focuser_is_moving:
                                 plog ("Waiting for focuser to finish moving")
                                 time.sleep(0.05)
