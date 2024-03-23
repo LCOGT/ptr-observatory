@@ -605,9 +605,9 @@ class Focuser:
             temp_delta = self.current_focus_temperature - self.previous_focus_temperature
         else:
             temp_delta = self.current_focus_temperature - self.previous_focus_temperature
-        print (self.current_focus_temperature)
-        print (self.previous_focus_temperature)
-        print ("Current temp_delta between solved focus and current time: " + str(temp_delta))
+        #print (self.current_focus_temperature)
+        #print (self.previous_focus_temperature)
+        #print ("Current temp_delta between solved focus and current time: " + str(temp_delta))
         # except:
         #     print ("")
         #     temp_delta = 0.0
@@ -616,19 +616,19 @@ class Focuser:
         try:
             adjust = 0.0
 
-            print ("current focus position " + str(self.current_focus_position))
+            #print ("current focus position " + str(self.current_focus_position))
             # adjust for temperature if we have the correct information.
             if abs(temp_delta) > 0.1 and self.current_focus_temperature is not None and self.focus_temp_slope is not None and self.focus_temp_intercept is not None:
 
                 adjust = round(temp_delta * float(self.focus_temp_slope), 1)
-                print ("focus adjust value due to temperature: " + str(adjust))
+                #print ("focus adjust value due to temperature: " + str(adjust))
 
             # adjust for filter offset
             # it is try/excepted because some telescopes don't have filters
             try:
                 adjust += (g_dev["fil"].filter_offset)
-                print ("focus adjust value due to filter_offset: " + str(g_dev["fil"].filter_offset))
-                print ("New focus position would be: " + str(self.last_known_focus + adjust))
+                #print ("focus adjust value due to filter_offset: " + str(g_dev["fil"].filter_offset))
+                #print ("New focus position would be: " + str(self.last_known_focus + adjust))
             except:
                 pass
 
@@ -641,15 +641,15 @@ class Focuser:
 
 
             if abs((self.last_known_focus + adjust) - self.current_focus_position) > 10:
-                plog ('adjusting focus by ' + str(adjust))
+                #plog ('adjusting focus by ' + str(adjust))
                 #self.last_filter_offset = g_dev["fil"].filter_offset
 
-
+                plog ("Focus different by: " + str((self.last_known_focus + adjust) - self.current_focus_position) +'. Sending adjust command.')
                 req = {"position": str(self.last_known_focus + adjust)}
                 opt = {}
                 self.move_absolute_command(req, opt)
 
-                plog ("Position now: " + str(self.current_focus_position))
+                #plog ("Position now: " + str(self.current_focus_position))
                 # try:
                 #     if self.theskyx:
                 #         self.last_temperature = self.focuser.focTemperature

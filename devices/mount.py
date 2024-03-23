@@ -216,6 +216,7 @@ class Mount:
         self.seek_commanded = False
         self.home_after_unpark = config['mount']['mount1']['home_after_unpark']
         self.home_before_park = config['mount']['mount1']['home_before_park']
+        self.parking_or_homing=False
         self.wait_after_slew_time= config['mount']['mount1']['wait_after_slew_time']
         if abs(self.east_flip_ra_correction) > 0 or abs(self.east_flip_dec_correction) > 0:
             self.flip_correction_needed = True
@@ -2245,6 +2246,7 @@ class Mount:
     def home_command(self, req=None, opt=None):
         ''' slew to the home position '''
         plog("mount cmd: homing mount")
+        self.parking_or_homing=True
         if self.CanFindHome:
             self.find_home_requested=True
             self.wait_for_mount_update()
@@ -2265,6 +2267,7 @@ class Mount:
 
             self.wait_for_slew()
         self.wait_for_slew()
+        self.parking_or_homing=False
 
     def flat_panel_command(self, req, opt):
         ''' slew to the flat panel if it exists '''
@@ -2279,6 +2282,7 @@ class Mount:
     def park_command(self, req=None, opt=None):
         ''' park the telescope mount '''
         if self.can_park:
+            self.parking_or_homing=True
             # # mount command #
             # while self.mount_busy:
             #     time.sleep(0.05)
@@ -2328,13 +2332,15 @@ class Mount:
                 )
             except:
                 pass
-
+            self.parking_or_homing=False
+            
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''
 
 
 
         if self.can_park:
+            self.parking_or_homing=True
             # # mount command #
             # while self.mount_busy:
             #     time.sleep(0.05)
@@ -2442,7 +2448,7 @@ class Mount:
                             else:
                                 plog (traceback.format_exc())
                     self.wait_for_slew()
-
+            self.parking_or_homing=False
 
     def paddle(self):
         return
