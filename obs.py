@@ -2854,6 +2854,20 @@ class Observatory:
                                 plog (solve)
                             target_ra = g_dev["mnt"].last_ra_requested
                             target_dec = g_dev["mnt"].last_dec_requested
+                            
+                            print("Last RA requested: " + str(g_dev["mnt"].last_ra_requested))
+                            print("Last DEC requested: " + str(g_dev["mnt"].last_dec_requested))
+                            
+                            # g_dev['mnt'].block_ra=False
+                            # g_dev['mnt'].block_dec=False
+                            if g_dev['seq'].block_guard:
+                                print ("Block RA: " +str(g_dev['seq'].block_ra))
+                                print ("Block DEC: " + str(g_dev['seq'].block_dec))
+                                target_ra = g_dev['seq'].block_ra
+                                target_dec = g_dev['seq'].block_dec
+                            
+                            
+                            
                             solved_ra = solve["ra_j2000_hours"]
                             solved_dec = solve["dec_j2000_degrees"]
                             solved_arcsecperpixel = solve["arcsec_per_pixel"]

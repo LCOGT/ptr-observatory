@@ -201,6 +201,10 @@ class Sequencer:
         # quite important
         self.total_sequencer_control = False
 
+        # Centering RA and Dec for a project
+        self.block_ra=False
+        self.block_dec=False
+
         # Time of next slew is a variable that helps keep the scope positioned on the solar flat spot during flats
         self.time_of_next_slew = time.time()
 
@@ -1231,6 +1235,10 @@ class Sequencer:
             #    g_dev['mnt'].get_mount_coordinates()
             #except:
             #    pass
+
+            # Store this ra as the "block" ra for centering purposes
+            self.block_ra=copy.deepcopy(dest_dec)
+            self.block_dec=copy.deepcopy(dest_dec)
 
             g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
             g_dev['mnt'].set_tracking_on()
