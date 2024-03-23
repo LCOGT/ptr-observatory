@@ -3636,7 +3636,7 @@ class Camera:
 
             elif self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
 
-
+                self.exposure_busy=False
                 # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
 
                 if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing:
