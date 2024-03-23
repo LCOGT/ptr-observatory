@@ -13,15 +13,15 @@ import json
 
 obs_id = 'mrc1'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
-site_config = {      
-    
+site_config = {
+
     # Instance type specifies whether this is an obs or a wema
     'instance_type' : 'obs',
     # If this is not a wema, this specifies the wema that this obs is connected to
     'wema_name' : 'mrc',
     # The unique identifier for this obs
     'obs_id': 'mrc1',
-    
+
     # Name, local and owner stuff
     'name': 'Mountain Ranch Camp Observatory 0m35 f7.2',
     'airport_code': 'SBA',
@@ -34,33 +34,33 @@ site_config = {
                     Now is the time for all good persons
                     to get out and vote early and often lest
                     we lose charge of our democracy.
-                    ''',  # i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.    
+                    ''',  # i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
     'owner_alias': ['WER', 'TELOPS'],
-    'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],    
-    
-    
+    'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
+
+
     # Default safety settings
     'safety_check_period': 45,  # MF's original setting.
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 45,
     'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
-    'degrees_to_avoid_zenith_area_for_calibrations': 5, 
+    'degrees_to_avoid_zenith_area_for_calibrations': 5,
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
-    'temperature_at_which_obs_too_hot_for_camera_cooling' : 23,  
-    
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 23,
+
     # These are the default values that will be set for the obs
-    # on a reboot of obs.py. They are safety checks that 
+    # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
     'scope_in_manual_mode': False,
     'mount_reference_model_off': True,
     'sun_checks_on': True,
     'moon_checks_on': True,
-    'altitude_checks_on': True,    
+    'altitude_checks_on': True,
     'daytime_exposure_time_safety_on': True,
-        
+
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': True,
     # LINKS TO PIPE FOLDER
@@ -70,31 +70,31 @@ site_config = {
     'temporary_local_alt_archive_to_hold_files_while_copying' : 'D:/tempfolderforaltpath',
 
     # Setup of folders on local and network drives.
-    'client_hostname':  'mrc-0m35',  # This is also the long-name  Client is confusing!    
+    'client_hostname':  'mrc-0m35',  # This is also the long-name  Client is confusing!
     'archive_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
     'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/mrc1/',  # place where night logs can be found.
-    'save_to_alt_path': 'yes',    
+    'save_to_alt_path': 'yes',
     'archive_age': 7,  # Number of days to keep files in the local archive before deletion. Negative means never delete
-    
+
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
     # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
     'save_raw_to_disk': True,
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': True,
-    'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.   
+    'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.
     # A certain type of naming that sorts filenames by numberid first
-    'save_reduced_file_numberid_first' : False,   
+    'save_reduced_file_numberid_first' : False,
     # Number of files to send up to the ptrarchive simultaneously.
     'number_of_simultaneous_ptrarchive_streams' : 4,
     # Number of files to send over to the pipearchive simultaneously.
     'number_of_simultaneous_pipearchive_streams' : 4,
     # Number of files to send over to the altarchive simultaneously.
     'number_of_simultaneous_altarchive_streams' : 4,
-    
-    
+
+
     # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
     # So this is False for Bisques and true for everyone else.
     'run_main_update_in_a_thread': True,
@@ -107,25 +107,25 @@ site_config = {
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
-    
+
     'bias_dark interval':  105.,   #minutes
     'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     #'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
-    'end_eve_sky_flats_offset': 5 , 
+    'end_eve_sky_flats_offset': 5 ,
     'clock_and_auto_focus_offset': 8,
-    
+
     'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
     #'morn_flat_start_offset': -5,       #min from Sunrise
     'morn_flat_start_offset': -10,       #min from Sunrise
     'morn_flat_end_offset':  +45,        #min from Sunrise
     'end_night_processing_time':  90,   #  A guess
-    'observing_begins_offset': 18,    
+    'observing_begins_offset': 18,
     # How many minutes before Nautical Dawn to observe ....
-    'observing_ends_offset': 18,   
+    'observing_ends_offset': 18,
 
 
-    
+
     # Exposure times for standard system exposures
     'focus_exposure_time': 5,  # Exposure time in seconds for exposure image
     'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
@@ -137,23 +137,23 @@ site_config = {
     # Turn on and off various automated calibrations at different times.
     'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': True,
-    
+
      'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
-    
+
     # FOCUS OPTIONS
     'periodic_focus_time': 12.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_trigger': 0.75,  # What FWHM increase is needed to trigger an autofocus
-    
+
     # PLATESOLVE options
     'solve_nth_image': 1,  # Only solve every nth image
     'solve_timer': 0.05,  # Only solve every X minutes
     'threshold_mount_update': 45,  # only update mount when X arcseconds away
 
-    'defaults': {       
+    'defaults': {
         'mount': 'mount1',
         #'telescope': 'telescope1',
         'focuser': 'focuser1',
@@ -179,7 +179,7 @@ site_config = {
 
     'mount': {
         'mount1': {       # NB There can only be one mount with our new model.  >>>>
-            
+
             'tel_id': '0m35',
             'name': 'eastpier',
             'hostIP':  '10.15.0.30',
@@ -190,44 +190,44 @@ site_config = {
             'recover_script':  None,
             'shutdown_script':  None,
             'alignment': 'Alt-Az',
-            'has_paddle': False,            
+            'has_paddle': False,
             'pointing_tel': 'tel1',
-            
+
             'default_zenith_avoid': 5.0,   #degrees floating
             'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
-            
-            
+
+
             # Standard offsets to pointings
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,  #
-            
+
             # Activity before and after parking
             'home_after_unpark': True,
-            'home_before_park': True,            
+            'home_before_park': True,
             'settle_time_after_unpark' : 0,
             'settle_time_after_park' : 0,
             'time_inactive_until_park': 3600.0,  # How many seconds of inactivity until it will park the telescope
-            
+
             # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'
             'permissive_mount_reset': 'yes',
-            
+
             'settings': {
                 # Decimal degrees, North is Positive. These *could* be slightly different than site.
                 'latitude_offset': 0.0,
                 'longitude_offset': 0.0,  # Decimal degrees, West is negative
                 'elevation_offset': 0.0,    # meters above sea level
-                
+
                 # For scopes that don't have a home postion in ASCOM,
                 # These values are where to point on a home command.
-                'home_altitude': 60, 
+                'home_altitude': 60,
                 'home_azimuth': 359,
-                
+
                 # If there is a screen, where do I point at it?
                 'fixed_screen_azimuth': 167.25,
                 'fixed_screen _altitude': 0.54,
-                
+
                 # Information about the horizon around the scope.
                 'horizon':  20,
                 'horizon_detail': {  #In principle there can be slightly different Horizons for a multiple OTA obsp. >>>>
@@ -258,7 +258,7 @@ site_config = {
                     '315': 32,
                     '360': 32,
                 },
-                
+
                 # What is the TPOINT model for those scopes where
                 # the mount software does not integrate these values.
                 'model': {          #In principle different OTA's could have offsets.
@@ -397,18 +397,18 @@ site_config = {
             'driver': 'ASCOM.OptecGemini.Focuser',
 
             'focuser_movement_settle_time': 3,
-            
+
             # Override the estimated best focus and start at the provided config value
             'start_at_config_reference': False,
             # Use previous best focus information to correct focuser for temperature change
-            'correct_focus_for_temperature' : True,            
+            'correct_focus_for_temperature' : True,
             # highest value to consider as being in "good focus". Used to select last good focus value
-            'maximum_good_focus_in_arcsecond': 2.5, 
-            
+            'maximum_good_focus_in_arcsecond': 2.5,
+
             # When the focusser has no previous best focus values
             # start from this reference position
-            'reference': 7250,  
-            
+            'reference': 7250,
+
             # Limits and steps for the focuser.
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
@@ -446,7 +446,7 @@ site_config = {
 #             'unit_conversion':  9.09090909091,  # Taken from Gemini at mid-range.
 #             'has_dial_indicator': False
 #         },
-# 
+#
 # =============================================================================
     },
     'selector': {
@@ -477,18 +477,18 @@ site_config = {
             "driver": "Maxim.CCDCamera",
             # "driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  Found in Kepler ASCOM section
             "dual_wheel": True,
-            
+
             #how long to wait for the filter to settle after a filter change(seconds)
             "filter_settle_time": 5, #20240104 Upped from 1 to 5 per MF recommandatin. WER
-            
-            # This ignores the automatically estimated filter gains and starts with the values from the config file             
-            'override_automatic_filter_throughputs': False, 
+
+            # This ignores the automatically estimated filter gains and starts with the values from the config file
+            'override_automatic_filter_throughputs': False,
             # WER - if there is no filter wheel, then these two are used, otherwise they are harmless
             "name": "RGGB",
 
             'ip_string': "",
             'settings': {
-               
+
                 'default_filter':  'PL',
 
                 'auto_color_options': ['OSC'],  # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
@@ -498,7 +498,7 @@ site_config = {
                 # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
                 'mono_Narrowband_colour_filters': ['ha', 'o3', 's2'],
                 'mono_Narrowband_relative_weights': [1.0, 2, 2.5],
-               
+
 
                 # 'filter_data': [['air',     [0, 0], -1000,  2960,    [2, 17], 'ai'],  # 0 Surface ws 1400Lux at end of night run  Sun Akt 0,97 degrees
                 #                 # 1  330NB NB NB If this in series should change focus about 1mm more.
@@ -518,10 +518,10 @@ site_config = {
                 #                 ['N2',      [3, 0],     0,  17,      [2, 17], 'N2'],  # 14
                 #                 ['HA',      [6, 0],     0,  15.5,    [2, 17], 'HA'],  # 15
                 #                 ['S2',      [8, 0],     0,  15,      [2, 17], 'S2'],  # 16 20240109 eve  Clear bright sky perfect evening
-                                
+
                 #                 ['dark',    [8, 5],     0,  0.0,     [2, 17], 'dk']],  # 17
-                
-                
+
+
                 'filter_data': [['air',     [0, 0],  'ai'],  # 0 Surface ws 1400Lux at end of night run  Sun Akt 0,97 degrees
                                 # 1  330NB NB NB If this in series should change focus about 1mm more.
                                 ['dif',     [4, 0],   'df'],
@@ -540,9 +540,9 @@ site_config = {
                                 ['N2',      [3, 0],   'N2'],  # 14
                                 ['HA',      [6, 0],    'HA'],  # 15
                                 ['S2',      [8, 0],     'S2'],  # 16 20240109 eve  Clear bright sky perfect evening
-                                
+
                                 ['dark',    [8, 5],     'dk']],  # 17
-                
+
                 'focus_filter' : 'w',
 
                 # # Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
@@ -550,7 +550,7 @@ site_config = {
                 # # so screen brightens, skipping u and zs which really need sky.
 
                 # 'filter_sky_sort':     ['S2', 'HA', 'n2', 'up', 'CR', 'O3', 'z', 'ip', 'PR', 'rp', 'PG', 'PB', 'gp', 'PL', 'w', 'air'],
-                 
+
             },
         },
 # =============================================================================
@@ -604,7 +604,7 @@ site_config = {
                 # These are the offsets in degrees of the actual telescope from the latitude and longitude of the WEMA settings
                 'north_offset': 0.0,  # These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,
-                                
+
 
                 # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
                 'hold_flats_in_memory': True,
@@ -640,16 +640,16 @@ site_config = {
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
                 #
-                # QHY410C is gain 0, offset 9, mode 1              
+                # QHY410C is gain 0, offset 9, mode 1
                 'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712
-                               
+
                 'direct_qhy_gain': 0,
                 'direct_qhy_offset': 9,
                 'set_qhy_usb_speed': True,
                 'direct_qhy_usb_traffic' : 60,     #NB NB Why two keys/
                 'direct_qhy_usb_speed' : 60,      #NB used in saving the image header.
 
-                
+
 
 
 
@@ -667,7 +667,7 @@ site_config = {
                 # This setting will bin the image for platesolving rather than interpolating.
                 'bin_for_platesolve': False,
                 'platesolve_bin_value' : 1,
-  
+
                 # Colour image tweaks.
                 'osc_brightness_enhance': 1.0,
                 'osc_contrast_enhance': 1.2,
@@ -675,7 +675,7 @@ site_config = {
                 'osc_colour_enhance': 1.2,
                 'osc_sharpness_enhance': 1.2,
                 'osc_background_cut': 15.0,
-                
+
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                 # A DATA-BASED REASON TO DO SO.....
                 # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
@@ -687,7 +687,7 @@ site_config = {
                 'rotate90_fits': False,
                 'rotate270_fits': False,
                 'squash_on_x_axis': True,
-                
+
                 # What number of pixels to crop around the edges of a REDUCED image
                 # This is primarily to get rid of overscan areas and also all images
                 # Do tend to be a bit dodgy around the edges, so perhaps a standard
@@ -705,7 +705,7 @@ site_config = {
                 'rotate90_jpeg': False,
                 'rotate270_jpeg': False,
 
-                # This is purely to crop the preview jpeg for the UI                
+                # This is purely to crop the preview jpeg for the UI
                 'crop_preview': False,
                 'crop_preview_ybottom': 2,  # 2 needed if Bayer array
                 'crop_preview_ytop': 2,
@@ -720,12 +720,12 @@ site_config = {
                 # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless
                 # you clearly need to.
                 'focus_image_crop_width': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full width
-                'focus_image_crop_height': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full height                
+                'focus_image_crop_height': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full height
                 'focus_jpeg_size': 750, # How many pixels square to crop the focus image for the UI Jpeg
 
                 # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE
                 'platesolve_image_crop': 0.0,  # Platesolve crops have to be symmetrical
-                
+
                 # Really, the SEP image should not be cropped unless your field of view and number of sources
                 # Are taking chunks out of the processing time.
                 # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width
@@ -735,7 +735,7 @@ site_config = {
 
 
 
-                
+
                 # This is the area for cooling related settings
                 'cooler_on': True,
                 'temp_setpoint': -2,  # Verify we can go colder
@@ -745,8 +745,8 @@ site_config = {
                 'day_warm': False,
                 'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
-                                
-                
+
+
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
@@ -754,38 +754,38 @@ site_config = {
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  5.94, # pixel size in microns
                 'y_pixel':  5.94, # pixel size in microns
-                
+
                 #Please do not remove the following:  9576*6388
                 # WAYNE - x field and y field are already calculated within camera.py on bootup and send up in the config
-                # we don't neeed these values. Carolina is also calculating it already at the UI.              
+                # we don't neeed these values. Carolina is also calculating it already at the UI.
                 # I made it calculate it directly PRECISELY because of incorrect values in the config file.
-                
+
                 #As long as the numbers below are here, even commented out, that if fine.
                 #'x_field':  46.8, # amin  0.30259*9276/60   NB subtractedd 100 pix for trim
                 #'y_field':  31.7, # amin  0k.30259*6288/60   NB subtractedd 100 pix for trim
-                
-                
+
+
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
                 # Unless you are at a very poor quality site.
                 # If you have a higher resolution pixelscale it will use that instead.
                 # Generally leave this at 0.5 - the optimal value for ground based
-                # observatories.... unless you have a large field of view.                
+                # observatories.... unless you have a large field of view.
                 'drizzle_value_for_later_stacking': 0.5,
                 'dither_enabled':  True,      #Set this way for tracking testing
 
-                
+
                 # This is the absolute minimum and maximum exposure for the camera
                 'min_exposure': 0.0001,
                 'max_exposure': 360.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 0.0001,                
+                'min_flat_exposure': 0.0001,
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
                 'max_daytime_exposure': 0.001,
-                
+
                 # One of the best cloud detections is to estimate the gain of the camera from the image
                 # If the variation, and hence gain, is too high according to gain + stdev, the flat can be easily rejected.
                 # Should be off for new observatories coming online until a real gain is known.
@@ -795,7 +795,7 @@ site_config = {
                 'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning. 
+                'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.
                 'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
                 'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.
@@ -803,16 +803,16 @@ site_config = {
                 'saturate':   65535,
                 'max_linearity':  60000,   # Guess
                 # How long does it take to readout an image after exposure
-                'cycle_time':            0.0,
+                'cycle_time':            2.0,
                 # What is the base smartstack exposure time?
                 # It will vary from scope to scope and computer to computer.
                 # 30s is a good default.
                 'smart_stack_exposure_time': 30,
-                
+
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
-                
-                
-                # As simple as it states, how many calibration frames to collect and how many to store.                
+
+
+                # As simple as it states, how many calibration frames to collect and how many to store.
                 'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 17,
                 'number_of_flat_to_collect': 15,
@@ -821,8 +821,8 @@ site_config = {
                 'number_of_flat_to_store': 31,
                 # Default dark exposure time.
                 'dark_exposure': 180,
-               
-                
+
+
                 # In the EVA Pipeline, whether to run cosmic ray detection on individual images
                 'do_cosmics': False,
 
@@ -831,7 +831,7 @@ site_config = {
                 'darkslide_com':  'COM15',
                 'shutter_type': "Electronic",
                 'darkslide_type': "bistable",
-                
+
                 # 'has_screen': True,
                 # 'screen_settings':  {
                 #     'screen_saturation':  157.0,
@@ -848,8 +848,8 @@ site_config = {
 
     },
 
-    'sequencer': {        
-        'sequencer1': {       
+    'sequencer': {
+        'sequencer1': {
             'parent': 'site',
             'name': 'Sequencer',
             'desc':  'Automation Control',
@@ -860,7 +860,7 @@ site_config = {
         },
     },
     'telops': {        #>>>>
-        'sequencer1': {       
+        'sequencer1': {
             'parent': 'site',
             'name': 'Telops Scripts',
             'desc':  'Engineering Control',
@@ -874,7 +874,7 @@ site_config = {
 
 
 
-    # # AWS does not need this, but my configuration code might make use of it. 
+    # # AWS does not need this, but my configuration code might make use of it.
     # 'server': {
     #     'server1': {
     #         'name': 'QNAP',

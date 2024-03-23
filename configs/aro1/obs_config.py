@@ -758,7 +758,7 @@ site_config = {
                 'saturate':   62500,
                 'max_linearity':  61000,   # Guess
                 # How long does it take to readout an image after exposure
-                'cycle_time':            0.0,
+                'cycle_time':            2.0,
                 # What is the base smartstack exposure time?
                 # It will vary from scope to scope and computer to computer.
                 # 30s is a good default.
@@ -769,7 +769,7 @@ site_config = {
                 # As simple as it states, how many calibration frames to collect and how many to store.
                 'number_of_bias_to_collect': 31,
                 'number_of_dark_to_collect': 13,
-                'number_of_flat_to_collect': 6,   #increased from 5  20231226 WER
+                'number_of_flat_to_collect': 7,   #increased from 5  20231226 WER
                 'number_of_bias_to_store': 33,
                 'number_of_dark_to_store': 27,
                 'number_of_flat_to_store': 21,
