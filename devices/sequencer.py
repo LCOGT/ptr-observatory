@@ -1237,7 +1237,7 @@ class Sequencer:
             #    pass
 
             # Store this ra as the "block" ra for centering purposes
-            self.block_ra=copy.deepcopy(dest_dec)
+            self.block_ra=copy.deepcopy(dest_ra)
             self.block_dec=copy.deepcopy(dest_dec)
 
             g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)

@@ -222,7 +222,7 @@ site_config = {
             'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
 
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
-            'has_ascom_altaz': False,
+            'has_ascom_altaz': False,  #Presumably this is the AltAzDServer from Optec.
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
 
             'home_after_unpark' : False,
@@ -605,7 +605,15 @@ site_config = {
                 #'direct_qhy_usb_speed' : 45,    #20240106 Afternoon WER Was 60
 
 
-
+                # #HERE IS THE POTENTIAL MODE 1 SETTINGS
+                # 'direct_qhy_readout_mode' : 1,
+                # 'direct_qhy_gain' : 56,
+                # 'direct_qhy_offset' : 60,
+                # #'direct_qhy_usb_speed' : 50,
+                # 'direct_qhy_usb_traffic' : 45,  #Early 20240103 = 50, not clear earlier but better than before.
+                # #The pattern before came and went. Now consitent at 50.  Changing to 45.
+                # #Which one of these is actually used?
+                # 'set_qhy_usb_speed': True,
 
 
                 # These options set whether an OSC gets binned or interpolated for different functions

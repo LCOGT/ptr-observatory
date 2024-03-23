@@ -292,9 +292,9 @@ class Mount:
             self.CanSetDeclinationRate = True
         else:
             self.CanSetDeclinationRate = False
-            
-            
-            
+
+
+
         self.DeclinationRate = self.mount.DeclinationRate
 
         self.EquatorialSystem = self.mount.EquatorialSystem
@@ -408,7 +408,7 @@ class Mount:
         self.slewtoAsyncRequested=False
         self.request_find_home=False
 
-        self.mount_update_period=0.2
+        self.mount_update_period=0.5
         self.mount_update_timer=time.time() - 2* self.mount_update_period
         self.mount_updates=0
         self.mount_update_paused=False
@@ -421,13 +421,6 @@ class Mount:
     def mount_update_thread(self):   # NB is this the best name for this? Update vs Command
 
 
-        #one_at_a_time = 0
-
-        #Hooking up connection to win32 com focuser
-        #win32com.client.pythoncom.CoInitialize()
-    #     fl = win32com.client.Dispatch(
-    #         win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['foc'].focuser_id, win32com.client.pythoncom.IID_IDispatch)
-    # )
         #breakpoint()
         win32com.client.pythoncom.CoInitialize()
 
@@ -437,18 +430,12 @@ class Mount:
         except:
             # perhaps the AP mount doesn't like this.
             pass
-        # try:
-        #     self.pier_side = g_dev[
-        #         "mnt"
-        #     ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
-        #     self.can_report_pierside = True
-        # except:
-        #     self.can_report_pierside = False
 
         # This stopping mechanism allows for threads to close cleanly.
         while True:
             try:
                 # update every so often, but update rapidly if slewing.
+                #plog("mount update thread (line 452) called:  ", round(time.time(), 3), self.mount_updates)
                 if self.mount_update_reboot:
                     win32com.client.pythoncom.CoInitialize()
                     self.mount_update_wincom = win32com.client.Dispatch(self.driver)
@@ -465,7 +452,7 @@ class Mount:
                     self.currently_slewing=False
                     #print (self.rapid_park_indicator)
 
-                    self.mount_updates=self.mount_updates + 1
+                    self.mount_updates=self.mount_updates + 1  #A monotonic increasing integer counter
                     #self.mount_update_timer=time.time()
 
                 #plog ((self.mount_update_timer < time.time() - self.mount_update_period) )
@@ -742,6 +729,7 @@ class Mount:
 
 
     def wait_for_mount_update(self):
+        #plog("wait for mount update (line 744) called:  ", round(time.time(), 3))
         sleep_period= self.mount_update_period / 4
         current_updates=copy.deepcopy(self.mount_updates)
         while current_updates==self.mount_updates:
@@ -849,6 +837,7 @@ class Mount:
         '''
 
         # mount command #
+        #plog("get mount coordinates (line 851) called:  ", round(time.time, 3))
         while self.mount_busy:
             time.sleep(0.05)
         self.mount_busy=True
@@ -874,11 +863,12 @@ class Mount:
         #     time.sleep(0.05)
         # self.mount_busy=True
         # self.mount_busy=False
+        #plog("get mount rates (line 877) called:  ", round(time.time, 3))
         self.current_rate_ra = self.right_ascension_rate_directly_from_mount
         self.current_rate_dec = self.declination_rate_directly_from_mount
         return self.current_rate_ra, self.current_rate_dec
 
-    #Never Called  20240101 WER - THAT ISN'T TRUE! It is called directly from the obs code etc. Hence "directly"
+    # This is called directly from the obs code to probe for flips, recenter, etc. Hence "directly"
     def slew_async_directly(self, ra, dec):
         self.wait_for_slew()
         # mount command #
@@ -1016,7 +1006,8 @@ class Mount:
             return copy.deepcopy(self.previous_status)
 
         self.currently_creating_status = True
-
+        #plog("mount get_status (line 1020) called:  ", round(time.time(), 3))
+        #breakpoint()
         # try:
         #     self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
         #     self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
@@ -1795,7 +1786,7 @@ class Mount:
                 self.slewtoDEC = dec
                 self.slewtoAsyncRequested=True
                 self.wait_for_mount_update()
-                
+
                 if not dont_wait_after_slew:
                     self.wait_for_slew()
                 ###################################
