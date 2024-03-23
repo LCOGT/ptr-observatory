@@ -589,31 +589,31 @@ site_config = {
 
 
 
-                # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
-                # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
-                # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
-                'direct_qhy_readout_mode' : 0,
-                'direct_qhy_gain' : 26,
-                'direct_qhy_offset' : 60,
-                #'direct_qhy_usb_speed' : 50,
-                'direct_qhy_usb_traffic' : 45,  #Early 20240103 = 50, not clear earlier but better than before.
-                #The pattern before came and went. Now consitent at 50.  Changing to 45.
-                #Which one of these is actually used?
-                'set_qhy_usb_speed': True,
-
-                #"speed isn't used I think - MTF, it is actually USB Traffic
-                #'direct_qhy_usb_speed' : 45,    #20240106 Afternoon WER Was 60
-
-
-                # #HERE IS THE POTENTIAL MODE 1 SETTINGS
-                # 'direct_qhy_readout_mode' : 1,
-                # 'direct_qhy_gain' : 56,
+                # # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
+                # # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
+                # # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
+                # 'direct_qhy_readout_mode' : 0,
+                # 'direct_qhy_gain' : 26,
                 # 'direct_qhy_offset' : 60,
                 # #'direct_qhy_usb_speed' : 50,
                 # 'direct_qhy_usb_traffic' : 45,  #Early 20240103 = 50, not clear earlier but better than before.
                 # #The pattern before came and went. Now consitent at 50.  Changing to 45.
                 # #Which one of these is actually used?
                 # 'set_qhy_usb_speed': True,
+
+                # #"speed isn't used I think - MTF, it is actually USB Traffic
+                # #'direct_qhy_usb_speed' : 45,    #20240106 Afternoon WER Was 60
+
+
+                #HERE IS THE POTENTIAL MODE 1 SETTINGS
+                'direct_qhy_readout_mode' : 1,
+                'direct_qhy_gain' : 56,
+                'direct_qhy_offset' : 60,
+                #'direct_qhy_usb_speed' : 50,
+                'direct_qhy_usb_traffic' : 45,  #Early 20240103 = 50, not clear earlier but better than before.
+                #The pattern before came and went. Now consitent at 50.  Changing to 45.
+                #Which one of these is actually used?
+                'set_qhy_usb_speed': True,
 
 
                 # These options set whether an OSC gets binned or interpolated for different functions

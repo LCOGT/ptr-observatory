@@ -2000,17 +2000,24 @@ class Camera:
                         # hdufocus.data = sub_stacker_array[:,:,0]
                         # #hdufocus.header = googimage[0].header
                         # hdufocus.writeto('referenceframe.fits', overwrite=True, output_verify='silentfix')
-
-                        sub_stacker_array[:,:,0]=sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
+                        try:
+                            sub_stacker_array[:,:,0]=sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
+                        except:
+                            plog ("Couldn't biasdark substack")
                         # Flat field sub stack array
                         plog ("Flatting 0")
-                        if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                            sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
-                        else:
-                            sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+                        try:
+                            if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                                sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
+                            else:
+                                sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+                        except:
+                            plog ("couldn't flat field substack")
                         # Bad pixel map sub stack array
-                        sub_stacker_array[:,:,0][g_dev['cam'].bpmFiles[str(1)]] = np.nan
-
+                        try:
+                            sub_stacker_array[:,:,0][g_dev['cam'].bpmFiles[str(1)]] = np.nan
+                        except:
+                            plog ("Couldn't badpixel substack")
 
                         # hdufocus = fits.PrimaryHDU()
                         # hdufocus.data = sub_stacker_array[:,:,0]
@@ -2046,22 +2053,34 @@ class Camera:
                     # hdufocus.writeto(str(subexposure-1) + 'frame.fits', overwrite=True, output_verify='silentfix')
 
                     rolltimer=time.time()
-                    # De-biasdark sub_stack array
-                    sub_stacker_array[:,:,subexposure-1]=sub_stacker_array[:,:,subexposure-1] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
+                    try:
+                        # De-biasdark sub_stack array
+                        sub_stacker_array[:,:,subexposure-1]=sub_stacker_array[:,:,subexposure-1] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
+                    except:
+                        plog ("couldn't biasdark substack")
+
+
                     # Flat field sub stack array
                     plog ("Flatting " + str(subexposure-1))
-                    if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                        sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
-                    else:
-                        sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
-                    # Bad pixel map sub stack array
-                    sub_stacker_array[:,:,subexposure-1][g_dev['cam'].bpmFiles[str(1)]] = np.nan
-                    print ("Calibrating: " + str(time.time()-rolltimer))
+                    try:
+                        if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                            sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
+                        else:
+                            sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+                    except:
+                        plog ("couldn't flat field substack")
 
+                    # Bad pixel map sub stack array
+                    try:
+                        sub_stacker_array[:,:,subexposure-1][g_dev['cam'].bpmFiles[str(1)]] = np.nan
+
+                    except:
+                        plog ("couldn't badpixel field substack")
                     # hdufocus = fits.PrimaryHDU()
                     # hdufocus.data = sub_stacker_array[:,:,subexposure-1]
                     # #hdufocus.header = googimage[0].header
                     # hdufocus.writeto(str(subexposure-1) + 'framecalibrated.fits', overwrite=True, output_verify='silentfix')
+                    print ("Calibrating: " + str(time.time()-rolltimer))
 
                     # Make a tempfile that has nan's medianed out
                     imageMode=np.nanmedian(sub_stacker_array[:,:,subexposure-1])
@@ -2095,12 +2114,12 @@ class Camera:
                     print ("Roll: " + str(time.time()-rolltimer))
 
                     # from scipy.ndimage import shift
-                    
+
                     # rolltimer=time.time()
                     # if abs(imageshift[0]) > 0 or abs(imageshift[1]) > 0:
                     #     scipyroll=shift(sub_stacker_array[:,:,subexposure-1])
-                    
-                    
+
+
 
                     print ("Time taken for aligning: " + str(time.time()-exposure_timer))
 
