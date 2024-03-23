@@ -1991,6 +1991,7 @@ class Camera:
                     print ("Collecting subexposure " + str(subexposure+1))
                     success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                     qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+                    exposure_timer=time.time()
                     if subexposure == 1:
                         print ("Flat,DarkBiasing reference frame")
                         # De-biasdark sub_stack array
@@ -2034,6 +2035,7 @@ class Camera:
                         print ("Collecting subexposure " + str(subexposure+1))
                         success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                         qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+                        exposure_timer=time.time()
                     # While the exposure is happening prep align and stack the previous exposure.
                     print ("Processing " +str(subexposure))
 
@@ -2043,6 +2045,7 @@ class Camera:
                     # #hdufocus.header = googimage[0].header
                     # hdufocus.writeto(str(subexposure-1) + 'frame.fits', overwrite=True, output_verify='silentfix')
 
+                    rolltimer=time.time()
                     # De-biasdark sub_stack array
                     sub_stacker_array[:,:,subexposure-1]=sub_stacker_array[:,:,subexposure-1] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
                     # Flat field sub stack array
@@ -2053,7 +2056,7 @@ class Camera:
                         sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
                     # Bad pixel map sub stack array
                     sub_stacker_array[:,:,subexposure-1][g_dev['cam'].bpmFiles[str(1)]] = np.nan
-
+                    print ("Calibrating: " + str(time.time()-rolltimer))
 
                     # hdufocus = fits.PrimaryHDU()
                     # hdufocus.data = sub_stacker_array[:,:,subexposure-1]
@@ -2065,27 +2068,45 @@ class Camera:
                     tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
                     tempnan[np.isnan(tempnan)] =imageMode
 
+
+                    # from scipy.ndimage import shift
+                    # shift(=[])
+
                     # Using the nan'ed file, calculate the shift
-                    shift, error, diffphase = phase_cross_correlation(de_nanned_reference_frame, tempnan)
+                    rolltimer=time.time()
+                    imageshift, error, diffphase = phase_cross_correlation(de_nanned_reference_frame, tempnan)
+                    print ("Shift: " + str(time.time()-rolltimer))
                     del tempnan
-                    print (shift)
+                    print (imageshift)
 
+                    rolltimer=time.time()
                     # roll the original array around by the shift
-                    if abs(shift[0]) > 0:
+                    if abs(imageshift[0]) > 0:
                         print ("X shifter")
-                        print (int(shift[0]))
-                        sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(shift[0]), axis=0)
+                        print (int(imageshift[0]))
+                        sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(imageshift[0]), axis=0)
+                    print ("Roll: " + str(time.time()-rolltimer))
 
-                    if abs(shift[1]) > 0:
+                    rolltimer=time.time()
+                    if abs(imageshift[1]) > 0:
                         print ("Y shifter")
-                        print (int(shift[1]))
-                        sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(shift[1]), axis=1)
+                        print (int(imageshift[1]))
+                        sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(imageshift[1]), axis=1)
+                    print ("Roll: " + str(time.time()-rolltimer))
+
+                    # from scipy.ndimage import shift
+                    
+                    # rolltimer=time.time()
+                    # if abs(imageshift[0]) > 0 or abs(imageshift[1]) > 0:
+                    #     scipyroll=shift(sub_stacker_array[:,:,subexposure-1])
+                    
+                    
 
                     print ("Time taken for aligning: " + str(time.time()-exposure_timer))
 
-                while (time.time() - exposure_timer) < 12.5:
+                while (time.time() - exposure_timer) < exp_of_substacks:
                     #print ("Watiing for exposure to finish")
-                    time.sleep(0.5)
+                    time.sleep(0.05)
 
                 if not subexposure == (N_of_substacks):
                     # READOUT FROM THE QHY
