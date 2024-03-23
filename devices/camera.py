@@ -2024,9 +2024,15 @@ class Camera:
                         # #hdufocus.header = googimage[0].header
                         # hdufocus.writeto('referenceframecalibrated.fits', overwrite=True, output_verify='silentfix')
 
+                        
+                        
 
                         de_nanned_reference_frame=copy.deepcopy(sub_stacker_array[:,:,0])
-
+                        # Cut down image to central thousand by thousand patch to align       
+                        fx, fy = de_nanned_reference_frame.shape                        
+                        crop_x= int(0.5*fx) -500
+                        crop_y= int(0.5*fy) -500                        
+                        de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]                                                    
                         imageMode=np.nanmedian(de_nanned_reference_frame)
                         #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
                         de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
@@ -2082,17 +2088,22 @@ class Camera:
                     # hdufocus.writeto(str(subexposure-1) + 'framecalibrated.fits', overwrite=True, output_verify='silentfix')
                     print ("Calibrating: " + str(time.time()-rolltimer))
 
-                    # Make a tempfile that has nan's medianed out
-                    imageMode=np.nanmedian(sub_stacker_array[:,:,subexposure-1])
-                    tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
-                    tempnan[np.isnan(tempnan)] =imageMode
-
-
-                    # from scipy.ndimage import shift
-                    # shift(=[])
+                    # Make a tempfile that has nan's medianed out                    
+                    
 
                     # Using the nan'ed file, calculate the shift
-                    rolltimer=time.time()
+                    rolltimer=time.time()                      
+                    tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
+                    # Cut down image to central thousand by thousand patch to align       
+                    tempnan= tempnan[crop_x:-crop_x, crop_y:-crop_y]
+                    imageMode=np.nanmedian(tempnan)
+                    tempnan[np.isnan(tempnan)] =imageMode
+                    
+                                                    
+                    
+
+                    
+                    
                     imageshift, error, diffphase = phase_cross_correlation(de_nanned_reference_frame, tempnan)
                     print ("Shift: " + str(time.time()-rolltimer))
                     del tempnan
