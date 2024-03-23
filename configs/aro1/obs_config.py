@@ -38,11 +38,11 @@ site_config = {
 
 
     # Name, local and owner stuff
-    'name': 'Apache Ridge Observatory 0m3f4.9/9',
+    'name': 'Apache Ridge Observatory 0m3 f4.9/9',
 
     'location': 'Santa Fe, New Mexico,  USA',
-    'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
-    'observatory_logo': None,   # I expect
+    'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be an optional informatinal website associated with the observatory.
+    'observatory_logo': None,   #
     'mpc_code':  'ZZ23',    #This is made up for now.
     'dedication':   '''
                     Now is the time for all good persons
@@ -52,7 +52,7 @@ site_config = {
     'owner':  ['google-oauth2|102124071738955888216', \
                'google-oauth2|112401903840371673242'],  # Neyle,
     'owner_alias': ['ANS', 'WER'],
-    'admin_aliases': ["ANS", "WER", 'KVH', "TELOPS", "TB", "DH", "KVH", 'KC'],
+    'admin_aliases': ["ANS", "WER", "TELOPS"],
 
 
 
@@ -62,7 +62,7 @@ site_config = {
     'closest_distance_to_the_sun': 30,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 5,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 30,
-    'lowest_requestable_altitude': -2,  # Degrees. For normal pointing requests don't allow requests to go this low.
+    'lowest_requestable_altitude': 15,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
@@ -133,13 +133,13 @@ site_config = {
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
-    'bias_dark interval':  105.,   #minutes
+    'bias_dark interval':  135.,   #minutes
     'eve_sky_flat_sunset_offset': -45.,  # Was 55 WER 20240313 Before Sunset Minutes  neg means before, + after.
     'end_eve_sky_flats_offset': -5 ,      # How many minutes after civilDusk to do....
     'clock_and_auto_focus_offset':-10,   #min before start of observing
     'astro_dark_buffer': 15,   #Min before and after AD to extend observing window
-    'morn_flat_start_offset': -10,       #min from Sunrise
-    'morn_flat_end_offset':  +45,        #min from Sunrise
+    'morn_flat_start_offset': -45,       #min from Sunrise
+    'morn_flat_end_offset':  +50,        #min from Sunrise
     'end_night_processing_time':  90,   #  A guess
     #'observing_begins_offset': -1,       #min from AstroDark
     # How many minutes before civilDawn to do ....
@@ -467,28 +467,28 @@ site_config = {
 
                 'filter_data': [
                         ['Air',  [0,  0],   'AIR'],    #0  Gains est and some from 20240106 listing
-                        ['PL',   [7,  0],   'Photo Luminance - does not pass NIR'],     #1
-                        ['Exo',  [8,  0],   'Exoplanet - yellow, no UV or far NIR'], #2
-                        ['PB',   [0,  6],   'Photo Blue'],     #3
-                        ['gp',   [2,  0],   "Sloan g'"],       #4
+                        ['PL',   [7,  0],   'Photo Luminance'],     #1
+                        ['Exo',  [8,  0],   'Exoplanet']      #2
+                        ['PB',   [0,  6],   'Photo Blue'],    #3
+                        ['gp',   [2,  0],   "Sloan g"],       #4
                         ['PR',   [0,  8],   'Photo Red'],     #5
-                        ['PG',   [0,  7],   'Photo Green'],     #6
+                        ['PG',   [0,  7],   'Photo Green'],   #6
                         ['BB',   [9,  0],   'Bessell B'],     #7
                         ['BV',   [10, 0],   'Bessell V'],     #8
-                        #['BR',   [11, 0],   'Bessell R'],     #9
-                        ['rp',   [3,  0],   "Sloan r'"],     #10
-                        #['NIR',  [0, 10],   'Near IR - redward of PL'],     #11  Value suspect 2023/10/23 WER
-                        ['ip',   [4,  0],   "Sloan i'"],     #12
-                        #['BI',   [12, 0],   'Bessell I'],     #13
-                        ['up',   [1,  0],   "Sloan u'"],     #14
-                        ['O3',   [0,  2],   'Oxygen III'],     #15    #guess
-                        ['zs',   [0,  9],   "Sloan z-short"],     #16    # NB ZP is a broader filter than zs.
+                        #['BR',   [11, 0],   'Bessell R'],    #9
+                        ['rp',   [3,  0],   "Sloan r"],      #10
+                        #['NIR',  [0, 10],   'Near IR'],      #11  Value suspect 2023/10/23 WER
+                        ['ip',   [4,  0],   "Sloan i"],      #12
+                        #['BI',   [12, 0],   'Bessell I'],    #13
+                        ['up',   [1,  0],   "Sloan u"],      #14
+                        ['O3',   [0,  2],   'Oxygen III'],    #15    #guess
+                        ['zs',   [0,  9],   "Sloan z-short"], #16    # NB ZP is a broader filter than zs.
                         #['CR',   [0,  5],   'Continuum Red - for Star subtraction'],  #17
-                        ['HA',   [0,  3],   'Hydrogen Alpha - aka II'],     #18
-                        ['N2',   [13, 0],   'Nitrogen II'],     #19
-                        ['S2',   [0,  4],   'Sulphur II'],     #20
+                        ['HA',   [0,  3],   'Hydrogen Alpha'],#18
+                        ['N2',   [13, 0],   'Nitrogen II'],   #19
+                        ['S2',   [0,  4],   'Sulphur II'],    #20
 
-                        #['Y',    [6,  0],   "Rubin Y"],     #21
+                        #['Y',    [6,  0],   "Rubin Y"],      #21
 
 
                         ['dark', [1,  3],   'dk']],    #22     #Not a real filter.  Total 23
@@ -704,7 +704,7 @@ site_config = {
                 'has_chiller': True,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C
-                'day_warm': False,   #This is converted to a 0 or 1 depending ont he Boolean value
+                'day_warm': False,   #This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 0,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating' : False,
 
@@ -732,7 +732,7 @@ site_config = {
 
                 # This is the absolute minimum and maximum exposure for the camera
                 'min_exposure': 0.0001,
-                'max_exposure': 360.,
+                'max_exposure': 180.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'min_flat_exposure': 0.0005,
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
@@ -774,7 +774,7 @@ site_config = {
                 'number_of_dark_to_store': 27,
                 'number_of_flat_to_store': 21,
                 # Default dark exposure time.
-                'dark_exposure': 360,
+                'dark_exposure': 180,
 
                 # In the EVA Pipeline, whether to run cosmic ray detection on individual images
                 'do_cosmics': False,
