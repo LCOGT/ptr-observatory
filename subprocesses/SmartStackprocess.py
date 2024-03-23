@@ -9,6 +9,7 @@ import pickle
 import sys
 from astropy.io import fits
 import numpy as np
+import bottleneck as bn
 import os
 import time
 from astropy.table import Table
@@ -85,7 +86,7 @@ num_of_nans=np.count_nonzero(np.isnan(imgdata))
 x_size=imgdata.shape[0]
 y_size=imgdata.shape[1]
 # this is actually faster than np.nanmean
-edgefillvalue=np.divide(np.nansum(imgdata),(x_size*y_size)-num_of_nans)
+edgefillvalue=np.divide(bn.nansum(imgdata),(x_size*y_size)-num_of_nans)
 #breakpoint()
 #while num_of_nans > 0:
 # List the coordinates that are nan in the array

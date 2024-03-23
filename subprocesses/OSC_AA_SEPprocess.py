@@ -13,6 +13,7 @@ import numpy as np
 import sys
 import pickle
 import time
+import bottleneck as bn
 import sep
 import traceback
 from astropy.table import Table
@@ -46,7 +47,7 @@ num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
 x_size=hdufocusdata.shape[0]
 y_size=hdufocusdata.shape[1]
 # this is actually faster than np.nanmean
-edgefillvalue=np.divide(np.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
+edgefillvalue=np.divide(bn.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
 #breakpoint()
 while num_of_nans > 0:
     # List the coordinates that are nan in the array
@@ -143,7 +144,7 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
 
 fx, fy = hdufocusdata.shape
 #hdufocusdata[np.isnan(hdufocusdata)] = imageMode
-hdufocusdata=hdufocusdata-np.nanmedian(hdufocusdata)
+hdufocusdata=hdufocusdata-bn.nanmedian(hdufocusdata)
 tempstd=np.std(hdufocusdata)
 threshold=3* np.std(hdufocusdata[hdufocusdata < (5*tempstd)])
 list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)

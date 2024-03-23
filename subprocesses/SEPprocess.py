@@ -6,6 +6,7 @@ Created on Sun Apr 23 04:37:30 2023
 """
 
 import numpy as np
+import bottleneck as bn
 # Need this line to output the full array to text for the json
 np.set_printoptions(threshold=np.inf)
 
@@ -145,7 +146,7 @@ if not frame_type == 'focus' and float(hduheader['EXPTIME']) > minimum_exposure_
     print ("Calculating Mode: " +str(time.time()-googtime))
     real_mode=True
 else:
-    imageMode=np.nanmedian(hdufocusdata)
+    imageMode=bn.nanmedian(hdufocusdata)
     real_mode=False
 
 
@@ -499,9 +500,9 @@ else:
         #breakpoint()
 
 
-        rfp = abs(np.nanmedian(fwhmlist)) * 4.710
+        rfp = abs(bn.nanmedian(fwhmlist)) * 4.710
         rfr = rfp * pixscale
-        rfs = np.nanstd(fwhmlist) * pixscale
+        rfs = bn.nanstd(fwhmlist) * pixscale
         if rfr < 1.0 or rfr > 6:
             rfr= np.nan
             rfp= np.nan
@@ -568,7 +569,7 @@ else:
     #         bkg = sep.Background(focusimg, bw=32, bh=32, fw=3, fh=3)
     #         bkg.subfrom(focusimg)
 
-    #         sepsky = (np.nanmedian(bkg), "Sky background estimated by SEP")
+    #         sepsky = (bn.nanmedian(bkg), "Sky background estimated by SEP")
 
     #         ix, iy = focusimg.shape
     #         border_x = int(ix * 0.05)
