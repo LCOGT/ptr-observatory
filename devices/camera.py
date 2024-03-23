@@ -3115,7 +3115,9 @@ class Camera:
                                 while g_dev['fil'].filter_changing:
                                     #plog ("Waiting for filter_change")
                                     time.sleep(0.05)
-
+                                    
+                            g_dev['foc'].adjust_focus()
+                            
                             while g_dev['foc'].focuser_is_moving:
                                 plog ("Waiting for focuser to finish moving")
                                 time.sleep(0.05)
@@ -4285,10 +4287,10 @@ class Camera:
                 g_dev['obs'].check_platesolve_and_nudge()
 
 
-                if not g_dev["cam"].exposure_busy:
-                    expresult = {"stopped": True}
-                    plog ("exposure busy cancelling out of camera")
-                    return copy.deepcopy(expresult)
+                # if not g_dev["cam"].exposure_busy:
+                #     expresult = {"stopped": True}
+                #     plog ("exposure busy cancelling out of camera")
+                #     return copy.deepcopy(expresult)
 
 
                 if frame_type[-4:] == "flat":

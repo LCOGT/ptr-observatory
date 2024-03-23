@@ -591,7 +591,7 @@ class Focuser:
         to focus. Functionally dependent of temp, coef_c, and filter thickness."""
 
         try:
-            if g_dev['seq'].focussing:
+            if g_dev['seq'].focussing or self.focuser_is_moving:
                 return
         except:
             # On initialisation there is no g_dev
@@ -599,7 +599,7 @@ class Focuser:
             pass
             #plog ("skipping focussing check... DEBUG MTF")
 
-
+        
         # try:
         if self.theskyx:
             temp_delta = self.current_focus_temperature - self.previous_focus_temperature
@@ -647,6 +647,7 @@ class Focuser:
                 plog ("Focus different by: " + str((self.last_known_focus + adjust) - self.current_focus_position) +'. Sending adjust command.')
                 req = {"position": str(self.last_known_focus + adjust)}
                 opt = {}
+                self.focuser_is_moving=True
                 self.move_absolute_command(req, opt)
 
                 #plog ("Position now: " + str(self.current_focus_position))
