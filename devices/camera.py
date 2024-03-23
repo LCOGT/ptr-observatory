@@ -2133,12 +2133,12 @@ class Camera:
                 #print ("Time taken for aligning: " + str(time.time()-exposure_timer))
 
 
-            print ("too many readouts?")
-            print (subexposure)
-            print (N_of_substacks)
+            #print ("too many readouts?")
+            #print (subexposure)
+            #print (N_of_substacks)
             if not subexposure == (N_of_substacks):
-                readout=readouts+1
-                print ("readouts " +str(readouts))
+                #readouts=readouts+1
+                #print ("readouts " +str(readouts))
                 while (time.time() - exposure_timer) < exp_of_substacks:
                     #print ("Watiing for exposure to finish")
                     time.sleep(0.05)
@@ -3115,7 +3115,9 @@ class Camera:
                                 while g_dev['fil'].filter_changing:
                                     #plog ("Waiting for filter_change")
                                     time.sleep(0.05)
-
+                                    
+                            g_dev['foc'].adjust_focus()
+                            
                             while g_dev['foc'].focuser_is_moving:
                                 plog ("Waiting for focuser to finish moving")
                                 time.sleep(0.05)
@@ -3456,7 +3458,10 @@ class Camera:
         )
 
         if substack:
-            cycle_time=exposure_time + (exposure_time / 10)*cycle_time + 1
+            # It takes time to do the median stack... add in a bit of an empirical overhead
+            stacking_overhead= 0.0005*pow(exposure_time,2) + 0.0334*exposure_time
+            print ("Expected stacking overhead: " + str(stacking_overhead))
+            cycle_time=exposure_time + (exposure_time / 10)*cycle_time + stacking_overhead
             self.completion_time = start_time_of_observation + cycle_time
             #breakpoint()
         else:
@@ -4285,10 +4290,10 @@ class Camera:
                 g_dev['obs'].check_platesolve_and_nudge()
 
 
-                if not g_dev["cam"].exposure_busy:
-                    expresult = {"stopped": True}
-                    plog ("exposure busy cancelling out of camera")
-                    return copy.deepcopy(expresult)
+                # if not g_dev["cam"].exposure_busy:
+                #     expresult = {"stopped": True}
+                #     plog ("exposure busy cancelling out of camera")
+                #     return copy.deepcopy(expresult)
 
 
                 if frame_type[-4:] == "flat":
