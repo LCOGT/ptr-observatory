@@ -545,6 +545,14 @@ class Mount:
                                 #print ("attempting to slew")
                                 #breakpoint()  #Here is a place close to the mount to deal with Model, etc
                                 #self.mount_update_wincom.DeclinationRate = 5 #gets reset on the slew
+                                
+                                # Don't slew while exposing!
+                                try:
+                                    while g_dev['cam'].exposure_busy:
+                                        print ("mount thread waiting for camera")
+                                        time.sleep(0.2)
+                                except:
+                                    print ("mount thread camera wait failed.")
                                 self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                                 self.currently_slewing=True
                                 if self.CanSetDeclinationRate:
