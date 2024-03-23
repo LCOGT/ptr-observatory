@@ -5,6 +5,7 @@ The subprocess for jpeg construction to be sent up to the UI
 """
 
 import numpy as np
+import bottleneck as bn
 from auto_stretch.stretch import Stretch
 from PIL import Image, ImageEnhance
 import sys
@@ -70,7 +71,7 @@ num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
 x_size=hdusmalldata.shape[0]
 y_size=hdusmalldata.shape[1]
 # this is actually faster than np.nanmean
-edgefillvalue=np.divide(np.nansum(hdusmalldata),(x_size*y_size)-num_of_nans)
+edgefillvalue=np.divide(bn.nansum(hdusmalldata),(x_size*y_size)-num_of_nans)
 #breakpoint()
 while num_of_nans > 0:
     # List the coordinates that are nan in the array

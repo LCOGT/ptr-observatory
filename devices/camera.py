@@ -922,7 +922,7 @@ class Camera:
         self.pixelscale_shelf.close()
 
         if len(pixelscale_list) > 5:
-            self.pixscale = np.nanmedian(pixelscale_list)
+            self.pixscale = bn.nanmedian(pixelscale_list)
         else:
             self.pixscale = None
             #self.pixscale = 0.198
@@ -1049,7 +1049,7 @@ class Camera:
 
                 while True:
                     print (gain_collector)
-                    gainmed=np.nanmedian(gain_collector)
+                    gainmed=bn.nanmedian(gain_collector)
                     print (gainmed)
                     gainstd=np.nanstd(gain_collector)
                     print (gainstd)
@@ -1166,7 +1166,7 @@ class Camera:
         #x_size=hdufocusdata.shape[0]
         #y_size=hdufocusdata.shape[1]
         # this is actually faster than np.nanmean
-        imageMedian=np.nanmedian(hdufocusdata)
+        imageMedian=bn.nanmedian(hdufocusdata)
         # Mop up any remaining nans
         hdufocusdata[np.isnan(hdufocusdata)] =imageMedian
 
@@ -1411,7 +1411,7 @@ class Camera:
                 #breakpoint()
         #breakpoint()
 
-        rfp = abs(np.nanmedian(fwhmlist)) * 4.710
+        rfp = abs(bn.nanmedian(fwhmlist)) * 4.710
         rfr = rfp * self.pixscale
         rfs = np.nanstd(fwhmlist) * self.pixscale
         if rfr < 1.0 or rfr > 8:
@@ -2024,9 +2024,11 @@ class Camera:
                     # Cut down image to central thousand by thousand patch to align
                     fx, fy = de_nanned_reference_frame.shape
                     crop_x= int(0.5*fx) -500
-                    crop_y= int(0.5*fy) -500
-                    de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
-                    imageMode=np.nanmedian(de_nanned_reference_frame)
+
+                    crop_y= int(0.5*fy) -500                        
+                    de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]                                                    
+                    imageMode=bn.nanmedian(de_nanned_reference_frame)
+
                     #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
                     de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
 
@@ -2092,7 +2094,7 @@ class Camera:
                 tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
                 # Cut down image to central thousand by thousand patch to align
                 tempnan= tempnan[crop_x:-crop_x, crop_y:-crop_y]
-                imageMode=np.nanmedian(tempnan)
+                imageMode=bn.nanmedian(tempnan)
                 tempnan[np.isnan(tempnan)] =imageMode
 
 
@@ -2166,10 +2168,12 @@ class Camera:
 
 
         # Once collected and done, nanmedian the array into the single image
+
         temptimer=time.time()
         sub_stacker_array=bn.nanmedian(sub_stacker_array, axis=2) * N_of_substacks
         print ("Stacktime: " + str(time.time()-temptimer))
         self.sub_stack_hold = sub_stacker_array
+
         del sub_stacker_array
         self.substacker_available=True
 
@@ -3753,7 +3757,7 @@ class Camera:
                     if frame_type in ["dark"]  or a_dark_exposure :
                         dark_limit_adu =   self.config["camera"][self.name]["settings"]['dark_lim_adu']
                         if len(self.biasFiles) > 0:
-                            debiaseddarkmedian= np.nanmedian(outputimg - self.biasFiles[str(1)]) / exposure_time
+                            debiaseddarkmedian= bn.nanmedian(outputimg - self.biasFiles[str(1)]) / exposure_time
                             plog ("Debiased 1s Dark Median is " + str(debiaseddarkmedian))
 
                             #Short exposures are inherently much more variable, so their limit is set much higher.
@@ -4307,7 +4311,7 @@ class Camera:
                             cropx = int( (oscimage.shape[0] -500)/2)
                             cropy = int((oscimage.shape[1] -500) /2)
                             oscimage=oscimage[cropx:-cropx, cropy:-cropy]
-                            oscmedian=np.nanmedian(oscimage)
+                            oscmedian=bn.nanmedian(oscimage)
                             if oscmedian > max_median:
                                 max_median=copy.deepcopy(oscmedian)
                                 brightest_bayer=copy.deepcopy(oscounter)
@@ -4324,7 +4328,7 @@ class Camera:
                         cropx = int( (osc_fits.shape[0] -500)/2)
                         cropy = int((osc_fits.shape[1] -500) /2)
                         osc_fits=osc_fits[cropx:-cropx, cropy:-cropy]
-                        central_median=np.nanmedian(osc_fits)
+                        central_median=bn.nanmedian(osc_fits)
                         del osc_fits
 
                     if (
@@ -4390,7 +4394,7 @@ class Camera:
                             camera_gain_estimate_image=camera_gain_estimate_image[cropx:-cropx, cropy:-cropy]
                             camera_gain_estimate_image = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
 
-                            cge_median=np.nanmedian(camera_gain_estimate_image)
+                            cge_median=bn.nanmedian(camera_gain_estimate_image)
                             cge_stdev=np.nanstd(camera_gain_estimate_image)
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
