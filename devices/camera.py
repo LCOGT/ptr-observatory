@@ -4574,7 +4574,7 @@ class Camera:
                 # Need to have a time sleep to release the GIL to run the other threads
                 time.sleep(min(0.5, max(self.completion_time - time.time() - 0.05,0.01) ))
 
-                if remaining < -5:
+                if remaining < -15:
                     #breakpoint()
                     plog ("Camera overtime: " + str(remaining))
                     # plog(
