@@ -1089,6 +1089,10 @@ class Observatory:
                                 plog("Request rejected as bias and darks can only be commanded by admin user.")
                                 g_dev['obs'].send_to_user(
                                     "Request rejected as bias and darks can only be commanded by admin user.")
+                            elif action == "run" and script in ('estimateFocusOffset') and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                plog("Request rejected as focus offset estimation can only be commanded by admin user.")
+                                g_dev['obs'].send_to_user(
+                                    "Request rejected as focus offset estimation can only be commanded by admin user.")
 
                             # Check here for irrelevant commands
                             elif cmd['deviceType'] == 'screen' and self.config['screen']['screen1']['driver'] == None:
