@@ -388,10 +388,10 @@ class Sequencer:
             self.equatorial_pointing_run(max_pointings=req['points'], alt_minimum=req['minAltitude'])
         elif action == "run" and script in ("collectBiasesAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
-        elif action == "run" and script == 'takeLRGBStack':
-            self.take_lrgb_stack(req, opt)
-        elif action == "run" and script == "takeO3HaS2N2Stack":
-            self.take_lrgb_stack(req, opt)
+        # elif action == "run" and script == 'takeLRGBStack':
+        #     self.take_lrgb_stack(req, opt)
+        # elif action == "run" and script == "takeO3HaS2N2Stack":
+        #     self.take_lrgb_stack(req, opt)
         elif action.lower() in ["stop", "cancel"] or ( action == "run" and script == "stopScript"):
 
             #A stop script command flags to the running scripts that it is time to stop
@@ -5547,7 +5547,9 @@ class Sequencer:
         plog (filter_offset_collector)
         plog ("Current filter offset shelf")
         filteroffset_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filteroffsets_' + g_dev['cam'].alias + str(g_dev['obs'].name))
-        plog (filteroffset_shelf)
+        #plog (filteroffset_shelf)
+        for filtername in filteroffset_shelf:
+            plog (str(filtername) + " " + str(filteroffset_shelf[filtername]))
         filteroffset_shelf.close()
 
         #breakpoint()

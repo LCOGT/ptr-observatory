@@ -3106,10 +3106,10 @@ class Camera:
                             self.substacker=False
                             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
                             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
-
-                            if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat":
-                                if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
-                                    self.substacker=True
+                            if self.config['camera']['camera_1_1']['settings']['substack']:
+                                if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat":
+                                    if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
+                                        self.substacker=True
 
                             if g_dev["fil"].null_filterwheel == False:
                                 while g_dev['fil'].filter_changing:
@@ -3118,8 +3118,11 @@ class Camera:
                                     
                             g_dev['foc'].adjust_focus()
                             
+                            reporty=0
                             while g_dev['foc'].focuser_is_moving:
-                                plog ("Waiting for focuser to finish moving")
+                                if reporty==0:
+                                    plog ("Waiting for focuser to finish moving")
+                                    reporty=1
                                 time.sleep(0.05)
 
                             self.exposure_busy = True
