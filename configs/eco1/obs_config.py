@@ -600,6 +600,7 @@ site_config = {
                 'readout_speed': 0.08,
                 'readout_seconds': 12.5,
                 'smart_stack_exposure_time' : 45,
+                'substack': False, # Substack with this camera
                 
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
