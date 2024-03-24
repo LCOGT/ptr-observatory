@@ -130,7 +130,7 @@ def send_status(obsy, column, status_to_send):
     """Sends an update to the status endpoint."""
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     payload = {"statusType": str(column), "status": status_to_send}
-    #print (payload)
+    #print ('\n\n', payload, '\n]n')
     try:
         data = json.dumps(payload)
     except Exception as e:
@@ -604,6 +604,7 @@ class Observatory:
         self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
         #self.update_status(dont_wait=True)
         #self.request_update_status()
+        self.alt_warn_kill_flag = False
 
 
         # A dictionary that holds focus results for the SEP queue.
@@ -1363,7 +1364,7 @@ class Observatory:
                     status['obs_settings']['simulating_open_roof']=self.assume_roof_open
                     status['obs_settings']['pointing_reference_on']= (not self.mount_reference_model_off)
 
-                    
+
                     status['obs_settings']['morning_flats_done']=g_dev['seq'].morn_flats_done
                     status['obs_settings']['timedottime_of_last_upload']=time.time()
 
@@ -1529,6 +1530,7 @@ class Observatory:
                 # if got here, mount is connected. NB Plumb in PW startup code
 
                 # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
+
                 if self.altitude_checks_on and not g_dev['mnt'].currently_slewing:
                     try:
 
@@ -1536,13 +1538,16 @@ class Observatory:
 
                         lowest_acceptable_altitude = self.config['lowest_requestable_altitude']
                         if mount_altitude < lowest_acceptable_altitude:
-                            plog("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
+                            if not self.alt_warn_kill_flag:
+                                plog("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
                             if not g_dev['mnt'].rapid_park_indicator:
                                 if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
                                     self.cancel_all_activity()
                                 if g_dev['mnt'].home_before_park:
                                     g_dev['mnt'].home_command()
                                 g_dev['mnt'].park_command()
+                                self.alt_warn_kill_flag = True
+
                     except Exception as e:
                         plog(traceback.format_exc())
                         plog(e)
@@ -2854,10 +2859,10 @@ class Observatory:
                                 plog (solve)
                             target_ra = g_dev["mnt"].last_ra_requested
                             target_dec = g_dev["mnt"].last_dec_requested
-                            
+
                             print("Last RA requested: " + str(g_dev["mnt"].last_ra_requested))
                             print("Last DEC requested: " + str(g_dev["mnt"].last_dec_requested))
-                            
+
                             # g_dev['mnt'].block_ra=False
                             # g_dev['mnt'].block_dec=False
                             if g_dev['seq'].block_guard:
@@ -2865,9 +2870,9 @@ class Observatory:
                                 print ("Block DEC: " + str(g_dev['seq'].block_dec))
                                 target_ra = g_dev['seq'].block_ra
                                 target_dec = g_dev['seq'].block_dec
-                            
-                            
-                            
+
+
+
                             solved_ra = solve["ra_j2000_hours"]
                             solved_dec = solve["dec_j2000_degrees"]
                             solved_arcsecperpixel = solve["arcsec_per_pixel"]

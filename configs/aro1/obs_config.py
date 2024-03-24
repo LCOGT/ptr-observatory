@@ -468,7 +468,7 @@ site_config = {
                 'filter_data': [
                         ['Air',  [0,  0],   'AIR'],    #0  Gains est and some from 20240106 listing
                         ['PL',   [7,  0],   'Photo Luminance'],     #1
-                        ['Exo',  [8,  0],   'Exoplanet']      #2
+                        ['Exo',  [8,  0],   'Exoplanet'],      #2
                         ['PB',   [0,  6],   'Photo Blue'],    #3
                         ['gp',   [2,  0],   "Sloan g"],       #4
                         ['PR',   [0,  8],   'Photo Red'],     #5

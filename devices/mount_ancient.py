@@ -991,7 +991,7 @@ class Mount:
         self.target_az = az*RTOD
 
 
-        if self.site == 'sro':   #NB NB NB why this bypass?
+        if self.site == 'sro':   #NB NB NB why this bypass?   The sky has its own model.
             self.mount.SlewToCoordinatesAsync(ra_app_h, dec_app_d)
         else:
             self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?

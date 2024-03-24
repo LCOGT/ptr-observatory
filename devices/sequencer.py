@@ -1241,7 +1241,7 @@ class Sequencer:
             self.block_dec=copy.deepcopy(dest_dec)
 
             g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
-            g_dev['mnt'].set_tracking_on()
+            g_dev['mnt'].set_tracking_on()   #NB NB why is this necessary?
             plog("tracking on")
 
             # Check it hasn't actually been homed this evening from the rotatorhome shelf
