@@ -2697,7 +2697,7 @@ class Observatory:
                     # Then it triggers an autofocus.
 
                     g_dev["foc"].focus_tracker.pop(0)
-                    g_dev["foc"].focus_tracker.append((self.fwhmresult["mean_focus"],self.fwhmresult["exp_time"],self.fwhmresult["filter"], self.fwhmresult["airmass"] ,round(rfr, 3)))
+                    g_dev["foc"].focus_tracker.append((self.fwhmresult["mean_focus"],g_dev["foc"].current_focus_temperature,self.fwhmresult["exp_time"],self.fwhmresult["filter"], self.fwhmresult["airmass"] ,round(rfr, 3)))
                     plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker))# + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
 
                     #self.mega_tracker.append((self.fwhmresult["mean_focus"],self.fwhmresult["exp_time"] ,round(rfr, 3)))
