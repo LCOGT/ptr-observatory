@@ -2864,7 +2864,7 @@ class Observatory:
                             
                             # g_dev['mnt'].block_ra=False
                             # g_dev['mnt'].block_dec=False
-                            if g_dev['seq'].block_guard:
+                            if g_dev['seq'].block_guard and not g_dev["seq"].focussing:
                                 print ("Block RA: " +str(g_dev['seq'].block_ra))
                                 print ("Block DEC: " + str(g_dev['seq'].block_dec))
                                 target_ra = g_dev['seq'].block_ra
