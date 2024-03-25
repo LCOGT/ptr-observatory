@@ -2552,6 +2552,7 @@ class Camera:
 
                 g_dev['obs'].send_to_user("Refusing exposure request as the observatory is currently undertaking flats.")
                 plog("Refusing exposure request as the observatory is currently taking flats.")
+                self.exposure_busy = False 
                 return
 
         #self.exposure_busy = True # This really needs to be here from the start
@@ -2696,6 +2697,7 @@ class Camera:
                         ##a breakpoint to catch this path next time.  WER
                         plog(traceback.format_exc())
                         #breakpoint()
+                        self.exposure_busy = False 
                         return
 
 
@@ -2736,6 +2738,7 @@ class Camera:
                             Nsmartstack=1
                             sskcounter=2
                             plog('stop_all_activity cancelling camera exposure')
+                            self.exposure_busy = False 
                             return
 
 
@@ -2951,6 +2954,7 @@ class Camera:
                             sskcounter=2
                             self.currently_in_smartstack_loop=False
                             self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+                            self.exposure_busy = False 
                             return 'calendarend'
 
                     # # Check that the roof hasn't shut
@@ -2974,6 +2978,7 @@ class Camera:
                         sskcounter=2
                         self.currently_in_smartstack_loop=False
                         self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+                        self.exposure_busy = False 
                         return 'roofshut'
 
 
@@ -3058,6 +3063,7 @@ class Camera:
                                              plog ("stop_all_activity cancelling out of camera exposure")
                                              self.currently_in_smartstack_loop=False
                                              self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+                                             self.exposure_busy = False 
                                              return
 
                             if (bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type or a_dark_exposure) and not manually_requested_calibration:
@@ -3092,6 +3098,7 @@ class Camera:
                                 sskcounter=2
                                 self.currently_in_smartstack_loop=False
                                 self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+                                self.exposure_busy = False 
                                 return 'cancelled'
 
                             #plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
@@ -3316,7 +3323,7 @@ class Camera:
         # trap missing expresult (e.g. cancelled exposures etc.)
         if not 'expresult' in locals():
             expresult = 'error'
-
+        self.exposure_busy = False 
         return expresult
 
     def write_out_realtimefiles_token_to_disk(self,token_name,real_time_files):
@@ -3558,6 +3565,7 @@ class Camera:
                         expresult["stopped"] = True
                         g_dev["obs"].exposure_halted_indicator =False
                         self.currently_in_smartstack_loop=False
+                        self.exposure_busy = False 
                         return expresult
 
                     if g_dev["obs"].exposure_halted_indicator:
@@ -3565,6 +3573,7 @@ class Camera:
                         expresult["stopped"] = True
                         g_dev["obs"].exposure_halted_indicator =False
                         plog ("Exposure Halted Indicator On. Cancelling Exposure.")
+                        self.exposure_busy = False 
                         return expresult
 
                 remaining = round(self.completion_time - time.time(), 1)
@@ -3755,6 +3764,7 @@ class Camera:
                     if retrycounter == 8:
                         expresult = {"error": True}
                         plog("Retried 8 times and didn't get an image, giving up.")
+                        self.exposure_busy = False 
                         return expresult
                     try:
                         outputimg = self._getImageArray().astype(np.float32)
@@ -3934,7 +3944,7 @@ class Camera:
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                     del hdu
-
+                    self.exposure_busy = False 
                     return copy.deepcopy(expresult)
 
 
@@ -4288,7 +4298,7 @@ class Camera:
                         except:
                             plog("Failed to send FOCUS TEXT up for some reason")
                             plog(traceback.format_exc())
-
+                    self.exposure_busy = False 
                     return expresult
 
                 blockended=False
@@ -4382,6 +4392,7 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
+                        self.exposure_busy = False 
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
 
                     elif (
@@ -4396,6 +4407,7 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
+                        self.exposure_busy = False 
                         return copy.deepcopy(expresult)  # signals to flat routine image was rejected, prompt return
                     elif (
                         central_median
@@ -4409,6 +4421,7 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
+                        self.exposure_busy = False 
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
                     else:
                         expresult={}
@@ -4478,6 +4491,7 @@ class Camera:
                                 expresult["error"] = True
                                 expresult["patch"] = central_median
                                 expresult["camera_gain"] = np.nan
+                                self.exposure_busy = False 
                                 return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
 
                             expresult["camera_gain"] = cge_gain
@@ -4582,7 +4596,8 @@ class Camera:
                             #                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                         del hdu
-
+                        
+                        self.exposure_busy = False 
                         return copy.deepcopy(expresult)
 
 
@@ -4604,7 +4619,7 @@ class Camera:
 
                 plog("Exposure Complete")
                 g_dev["obs"].send_to_user("Exposure Complete")
-
+                self.exposure_busy = False 
                 return copy.deepcopy(expresult)
 
             else:
