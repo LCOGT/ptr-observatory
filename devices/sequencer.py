@@ -5847,7 +5847,7 @@ class Sequencer:
             # If you have the starting of a v-curve then now you can decide what to do.
             if position_counter >=5:
                 
-                # If the minimum is at one side of the v curve take another point beyond that point, otherwise try to fit a parabola
+                # If the minimum is at one of the two points on the side of the v curve take another point beyond that point, otherwise try to fit a parabola
                 
                 print ("blah")
                 # Start off by sorting in order of focus positions
