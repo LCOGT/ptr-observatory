@@ -44,6 +44,7 @@ from global_yard import g_dev
 from ptr_utility import plog
 from ctypes import *
 from skimage.registration import phase_cross_correlation
+from multiprocessing.pool import Pool,ThreadPool
 
 
 def mid_stretch_jpeg(data):
@@ -386,6 +387,59 @@ def reset_sequence(pCamera):
         return None
 
 
+
+
+
+def multiprocess_fast_gaussian_photometry(package):           
+    try:
+        #temptimer=time.time()
+        (cvalue, cx, cy, radprofile, temp_array,pixscale) = package
+        #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+        popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+        
+        #print ("Curve optimize")
+        #print (time.time() -temptimer)
+        #breakpoint()
+        
+        # Amplitude has to be a substantial fraction of the peak value
+        # and the center of the gaussian needs to be near the center
+        if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
+            # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
+            # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
+            # plt.scatter(radprofile[:,0],radprofile[:,1])
+            # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
+            # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+            # plt.show()
+        
+            # FWHM is 2.355 * std for a gaussian
+            #fwhmlist.append(popt[2])
+            return popt[2]
+        else:
+            return np.nan
+        # Area under a gaussian is (amplitude * Stdev / 0.3989)
+        #breakpoint()
+        # if good_radials < number_of_good_radials_to_get:
+        #     sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
+        #     good_radials=good_radials+1
+        # else:
+        #     sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
+        # photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
+    
+        #breakpoint()
+        # If we've got more than 50 for a focus
+        # We only need some good ones.
+    
+        # if len(fwhmlist) > 10:
+        #     bailout=True
+        #     break
+        # #If we've got more than ten and we are getting dim, bail out.
+        # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
+        #     bailout=True
+        #     break
+    except:
+        return np.nan
+            
+    # Then multiprocess
 
 class Camera:
     """A camera instrument.
@@ -1301,8 +1355,12 @@ class Camera:
         googtime=time.time()
 
         #amount=min(len(pointvalues),50)
-
-        for i in range(len(pointvalues)):
+        
+        setup_timer=time.time()
+        # Don't do them individually, set them up for multiprocessing
+        focus_multiprocess=[]
+        #for i in range(len(pointvalues)):
+        for i in range(len(200)):
 
             # # Don't take too long!
             # if ((time.time() - timer_for_bailing) > time_limit):# and good_radials > 20:
@@ -1338,8 +1396,8 @@ class Camera:
             brightest_pixel_value=0
             bailout=False
             for q in range(cut_x):
-                if bailout==True:
-                    break
+                # if bailout==True:
+                #     break
                 for t in range(cut_y):
                     #breakpoint()
                     r_dist=pow(pow((q-cut_x_center),2) + pow((t-cut_y_center),2),0.5)
@@ -1360,60 +1418,33 @@ class Camera:
             #breakpoint()
 
             # If the brightest pixel is in the center-ish
-            # then attempt a fit
+            # then put it in contention
             if abs(brightest_pixel_rdist) < 4:
-                try:
-                    #temptimer=time.time()
+                focus_multiprocess.append((cvalue, cx, cy, radprofile, temp_array,self.pixscale))
+        print ("Setup for multiprocess focus: " + str(time.time()-setup_timer))
+        
+            
+        mptimer=time.time()
+        fwhm_results=[]
+        number_to_collect=max(8,os.cpu_count())
+        with Pool(os.cpu_count()) as pool:
+            for result in pool.map(multiprocess_fast_gaussian_photometry, focus_multiprocess):
+                if not np.isnan(result):
+                    fwhm_results.append(result)
+                    if len(fwhm_results) >= number_to_collect:
+                        break
+        print (fwhm_results)        
 
-                    #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-                    popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/self.pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-
-                    #print ("Curve optimize")
-                    #print (time.time() -temptimer)
-                    #breakpoint()
-
-                    # Amplitude has to be a substantial fraction of the peak value
-                    # and the center of the gaussian needs to be near the center
-                    if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
-                        # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-                        # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-                        # plt.scatter(radprofile[:,0],radprofile[:,1])
-                        # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
-                        # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                        # plt.show()
-
-                        # FWHM is 2.355 * std for a gaussian
-                        fwhmlist.append(popt[2])
-                        # Area under a gaussian is (amplitude * Stdev / 0.3989)
-                        #breakpoint()
-                        # if good_radials < number_of_good_radials_to_get:
-                        #     sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
-                        #     good_radials=good_radials+1
-                        # else:
-                        #     sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
-                        # photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
-
-                        #breakpoint()
-                        # If we've got more than 50 for a focus
-                        # We only need some good ones.
-
-                        if len(fwhmlist) > 10:
-                            bailout=True
-                            break
-                        # #If we've got more than ten and we are getting dim, bail out.
-                        # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
-                        #     bailout=True
-                        #     break
-                except:
-                    pass
+        print ("multiprocess timer: " + str(time.time() - mptimer))
+                
 
         print ("Extracting and Gaussianingx: " + str(time.time()-googtime))
                 #breakpoint()
         #breakpoint()
 
-        rfp = abs(bn.nanmedian(fwhmlist)) * 4.710
+        rfp = abs(bn.nanmedian(fwhm_results)) * 4.710
         rfr = rfp * self.pixscale
-        rfs = np.nanstd(fwhmlist) * self.pixscale
+        rfs = np.nanstd(fwhm_results) * self.pixscale
         if rfr < 1.0 or rfr > 8:
             rfr= np.nan
             rfp= np.nan
@@ -1425,7 +1456,7 @@ class Camera:
         fwhm_file['rfr']=str(rfr)
         fwhm_file['rfs']=str(rfs)
         fwhm_file['sky']=str(imageMedian)
-        fwhm_file['sources']=str(len(fwhmlist))
+        fwhm_file['sources']=str(len(fwhm_results))
 
 
         # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
