@@ -27,7 +27,7 @@ import bottleneck as bn
 #from pyowm.utils import config
 #from scipy import interpolate
 import warnings
-
+import matplotlib.pyplot as plt
 import queue
 import threading
 
@@ -5556,30 +5556,8 @@ class Sequencer:
         self.auto_focus_script(req2, opt,skip_pointing=True)
 
 
-
-
-
-
     def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, dont_return_scope=False, dont_log_focus=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
-        '''
-        V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
-        It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
-        a verify.
-        Auto focus consists of three points plus a verify.
-        Fine focus consists of five points plus a verify.
-        Optionally individual images can be multiples of one to average out seeing.
-        NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
-        # Result format:
-        #                 result['mean_focus'] = avg_foc[1]
-        #                 result['mean_rotation'] = avg_rot[1]
-        #                 result['FWHM'] = spot   What is returned is a close proxy to real fitted FWHM.
-        #                 result['half_FD'] = None
-        #                 result['patch'] = cal_result
-        #                 result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
-
-        returns foc_pos - the focus position and foc_fwhm - the estimated fwhm
-        '''
-
+     
         self.focussing=True
 
 
@@ -5759,14 +5737,6 @@ class Sequencer:
 
 
 
-        # rot_report=0
-        # while g_dev['foc'].is_moving():
-        #     if rot_report == 0:
-        #         plog('Waiting for Focuser to shift.\n')
-        #         rot_report =1
-        #     time.sleep(0.2)
-
-
         g_dev['obs'].request_scan_requests()
         #g_dev["obs"].request_full_update()
 
@@ -5777,269 +5747,45 @@ class Sequencer:
 
         g_dev['foc'].guarded_move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
 
-        retry = 0
-        while retry < 3:
-            if not sim:
-                g_dev['obs'].request_scan_requests()
-                #g_dev["obs"].request_full_update()
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
-                if self.stop_script_called:
+
+        # THE LOOP
+        position_counter=0 # At various stages of the algorithm we attempt different things, this allows us to make that happen.
+        central_starting_focus=copy.deepcopy(foc_pos0)
+        
+        
+        focus_spots=[]
+        #focus_fwhms=[]
+        new_focus_position_to_attempt = central_starting_focus # Initialise this variable
+        while True:
+            position_counter=position_counter+1
+            # General command bailout section
+            g_dev['obs'].request_scan_requests()
+            if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                     self.focussing=False
                     return np.nan, np.nan
-                if not g_dev['obs'].open_and_enabled_to_observe:
-                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                    self.focussing=False
-                    return np.nan, np.nan
-
-            else:
-
-                g_dev['obs'].fwhmresult['FWHM'] = 3
-                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
-
-            try:
-                spot1 = g_dev['obs'].fwhmresult['FWHM']
-                #foc_pos1 = g_dev['obs'].fwhmresult['mean_focus']
-                foc_pos1=g_dev['foc'].current_focus_position
-            except:
-                spot1 = False
-                foc_pos1 = False
-                plog ("spot1 failed in autofocus script")
-                #plog(traceback.format_exc())
-                #breakpoint()
-            #breakpoint()
-            plog (spot1)
-            g_dev['obs'].send_to_user("Central focus FWHM: " + str(spot1), p_level='INFO')
-
-            if math.isnan(spot1) or spot1 ==False:
-
-                retry += 1
-                plog("Retry of central focus star)")
-                #breakpoint()
-                continue
-            else:
-                break
-        plog('Autofocus Moving In.\n\n')
-
-        g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
-
-        if not sim:
-            g_dev['obs'].request_scan_requests()
-            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
-            if self.stop_script_called:
-                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                self.focussing=False
-                return np.nan, np.nan
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                 self.focussing=False
                 return np.nan, np.nan
-        else:
-            g_dev['obs'].fwhmresult['FWHM'] = 4
-            g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
-        try:
-            spot2 = g_dev['obs'].fwhmresult['FWHM']
-            foc_pos2 = g_dev['foc'].current_focus_position
-        except:
-            spot2 = False
-            foc_pos2 = False
-            plog ("spot2 failed on autofocus moving in")
 
-        g_dev['obs'].send_to_user("Inward focus FWHM: " + str(spot2), p_level='INFO')
-
-        plog('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
-        plog('Autofocus Moving back in half-way.\n\n')
-        #this is to overcoma any gravity induced backlash
-        g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
-
-        if not sim:
-            g_dev['obs'].request_scan_requests()
-            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
-            if self.stop_script_called:
-                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                self.focussing=False
-                return np.nan, np.nan
-            if not g_dev['obs'].open_and_enabled_to_observe:
-                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                self.focussing=False
-                return np.nan, np.nan
-        else:
-            g_dev['obs'].fwhmresult['FWHM'] = 4.5
-            g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
-        try:
-            spot3 = g_dev['obs'].fwhmresult['FWHM']
-            foc_pos3 = g_dev['foc'].current_focus_position
-        except:
-            spot3 = False
-            foc_pos3 = False
-            plog ("spot3 failed on autofocus moving in")
-
-        g_dev['obs'].send_to_user("Outward focus FWHM: " + str(spot3), p_level='INFO')
-
-        x = [foc_pos2, foc_pos1, foc_pos3]
-        y = [spot2, spot1, spot3]
-        plog('X, Y:  ', x, y, 'Desire center to be smallest.')
-
-
-
-        if spot1 is None or spot2 is None or spot3 is None or spot1 == False or spot2 == False or spot3 == False:  #New additon to stop crash when no spots
-            plog("Autofocus was not successful. Returning to original focus setting and pointing.")
-            g_dev['obs'].send_to_user("Autofocus was not successful. Returning to original focus setting and pointing.")
-
-            g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
-
-            if not dont_return_scope:
-
-                g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                #g_dev["obs"].request_full_update()
-                self.wait_for_slew()
-
-            self.af_guard = False
-            self.focussing=False
-            return np.nan, np.nan
-        elif spot1 < spot2 and spot1 < spot3:
-            try:
-                #Digits are to help out pdb commands!
-                a1, b1, c1, d1 = fit_quadratic(x, y)
-                new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
-
-            except:
-
-                plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
-
-                g_dev['obs'].send_to_user("Autofocus was not successful. Returning to original focus setting and pointing.")
-
-                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-
-                self.af_guard = False
-                if not dont_return_scope:
-
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
-                    self.wait_for_slew()
-
-                self.af_guard = False
-                self.focussing=False
-                return np.nan, np.nan
-
-            if min(x) <= d1 <= max(x):
-                plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
-                g_dev['obs'].send_to_user('Moving to Solved focus:  ' +str(round(d1, 2)), p_level='INFO')
-                pos = int(d1*g_dev['foc'].micron_to_steps)
-
-
-
-                g_dev['foc'].guarded_move(pos)
-
-                g_dev['foc'].last_known_focus = d1
-                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
-
-                # try:
-                #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
-                # except:
-                #     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
-                g_dev['foc'].last_source = "auto_focus_script"
-
-                if not sim:
-                    g_dev['obs'].request_scan_requests()
-                    result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                        self.focussing=False
-                        return np.nan, np.nan
-                    if not g_dev['obs'].open_and_enabled_to_observe:
-                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                        self.focussing=False
-                        return np.nan, np.nan
-                else:
-                    g_dev['obs'].fwhmresult['FWHM'] = new_spot
-                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
-                try:
-                    spot4 = g_dev['obs'].fwhmresult['FWHM']
-                    foc_pos4 = g_dev['foc'].current_focus_position
-                except:
-                    spot4 = False
-                    foc_pos4 = False
-                    plog ("spot4 failed ")
-                plog('\nFound best focus at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
-                g_dev['obs'].send_to_user('Successful focus complete at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
-                if not dont_log_focus:
-                    g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
-                try:
-                    g_dev['foc'].last_focus_fwhm = round(spot4, 2)
-                except:
-                    plog("MTF hunting this bug")
-                    plog(traceback.format_exc())
-                #g_dev["obs"].request_full_update()
-                if not dont_return_scope:
-
-                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                    self.wait_for_slew()
-            else:
-                plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
-
-                g_dev['obs'].send_to_user("Autofocus was not successful. Returning to original focus setting and pointing.")
-
-                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-
-                self.af_guard = False
-                if not dont_return_scope:
-
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
-                    self.wait_for_slew()
-
-                self.af_guard = False
-                self.focussing=False
-                return np.nan, np.nan
-
-
-            # if sim:
-            #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-
-            self.af_guard = False
-
-                    #
-            self.focussing=False
-            return foc_pos4, spot4
-
-        elif spot2  <= spot1 < spot3:      #Add to the inside
-            pass
-            plog('Autofocus Moving In 2nd time.\n\n')
-            g_dev['foc'].guarded_move((foc_pos0 - 2.5*throw)*g_dev['foc'].micron_to_steps)
-            if not sim:
-                g_dev['obs'].request_scan_requests()
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                    self.focussing=False
-                    return np.nan, np.nan
-                if not g_dev['obs'].open_and_enabled_to_observe:
-                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                    self.focussing=False
-                    return np.nan, np.nan
-            else:
-                g_dev['obs'].fwhmresult['FWHM'] = 6
-                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
-            try:
-                spot4 = g_dev['obs'].fwhmresult['FWHM']
-                foc_pos4 = g_dev['foc'].current_focus_position
-            except:
-                spot4 = False
-                foc_pos4 = False
-                plog ("spot4 failed on autofocus moving in 2nd time.")
-            x = [foc_pos4, foc_pos2, foc_pos1, foc_pos3]
-            y = [spot4, spot2, spot1, spot3]
-            plog('X, Y:  ', x, y, 'Desire center to be smallest.')
-            g_dev['obs'].send_to_user('X, Y:  '+ str(x) + " " + str(y)+ ' Desire center to be smallest.', p_level='INFO')
-            if foc_pos4 != False and foc_pos2 != False and foc_pos1 != False and foc_pos3 != False:
-                #Digits are to help out pdb commands!
-                a1, b1, c1, d1 = fit_quadratic(x, y)
-                new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
-
-            else:
-
+            # What focus position should i be using?
+            if position_counter==1:
+                focus_position_this_loop=central_starting_focus
+            elif position_counter==2:
+                focus_position_this_loop=central_starting_focus - throw
+            elif position_counter==3:
+                focus_position_this_loop=central_starting_focus - 2* throw
+            elif position_counter==4:
+                focus_position_this_loop=central_starting_focus + throw
+            elif position_counter==5:
+                focus_position_this_loop=central_starting_focus + 2* throw
+            elif position_counter>5:
+                focus_position_this_loop=new_focus_position_to_attempt
+            
+            #  If more than 10 attempts, fail and bail out.
+            if position_counter > 10:
+                
                 if extensive_focus == None:
 
                     plog('Autofocus quadratic equation did not converge. Moving back to starting focus:  ', focus_start)
@@ -6078,274 +5824,1047 @@ class Sequencer:
                     self.af_guard = False
                     self.focussing=False
                     return np.nan, np.nan
-
-            if min(x) <= d1 <= max(x):
-                plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
-
-                pos = int(d1*g_dev['foc'].micron_to_steps)
-                g_dev['foc'].guarded_move(pos)
-
-                g_dev['foc'].last_known_focus = d1
-                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
-
-                # try:
-                #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
-                # except:
-                #     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
-                g_dev['foc'].last_source = "auto_focus_script"
-
-                if not sim:
-                    g_dev['obs'].request_scan_requests()
-                    result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                        self.focussing=False
-                        return np.nan, np.nan
-                    if not g_dev['obs'].open_and_enabled_to_observe:
-                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                        self.focussing=False
-                        return np.nan, np.nan
+            
+            
+            spot=np.nan
+            
+            while np.isnan(spot):
+                # Move the focuser
+                g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
+    
+                # Take the shot
+                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+                
+                spot = g_dev['obs'].fwhmresult['FWHM']
+                foc_pos=g_dev['foc'].current_focus_position
+                
+                g_dev['obs'].send_to_user("Focus position: " + str(focus_position_this_loop) + " FWHM: " + str(round(spot,2)), p_level='INFO')
+                
+                if not np.isnan(spot):
+                    focus_spots.append((foc_pos,spot))
+                    #focus_fwhms.append(spot)
+                    
+            # If you have the starting of a v-curve then now you can decide what to do.
+            if position_counter >=5:
+                
+                
+                print ("blah")
+                # Start off by sorting in order of focus positions
+                focus_spots=sorted(focus_spots)
+                lowerbound=min(focus_spots)[0]
+                upperbound=max(focus_spots)[0]
+                bounds=[lowerbound,upperbound]
+                x = list()
+                y = list()
+                for i in focus_spots:
+                    x.append(i[0])
+                    y.append(i[1])
+                    
+                # If the minimum is at one of the two points on the side of the v curve take another point beyond that point, otherwise try to fit a parabola
+                minimumfind=[]
+                for entry in focus_spots:
+                    minimumfind.append(entry[1])
+                minimum_index=minimumfind.index(min(minimumfind))
+                if minimum_index == 0 or minimum_index == 1:
+                    plog ("Minimum too close to the sampling edge, getting another dot")
+                    new_focus_position_to_attempt=min(minimumfind) - throw
+                    plt.scatter(x,y)
+                    plt.show()
+                elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:   
+                    plog ("Minimum too close to the sampling edge, getting another dot")
+                    new_focus_position_to_attempt=max(minimumfind) + throw
+                    plt.scatter(x,y)
+                    plt.show()
                 else:
-                    g_dev['obs'].fwhmresult['FWHM'] = new_spot
-                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
-                try:
-                    spot4 = g_dev['obs'].fwhmresult['FWHM']
-                    foc_pos4 = g_dev['foc'].current_focus_position
-                except:
-                    spot4 = False
-                    foc_pos4 = False
-                    plog ("spot4 failed ")
-                plog('\nFound best focus position at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
-                g_dev['obs'].send_to_user('Successfully focussed at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
-                if not dont_log_focus:
-                    g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
-                if not dont_return_scope:
-
-                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec) #Return to pre-focus pointing.
-                    self.wait_for_slew()
-            # if sim:
-
-            #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-
-            self.af_guard = False
-            g_dev['foc'].last_focus_fwhm = round(spot4, 2)
-            self.focussing=False
-            return foc_pos4, spot4
-
-        elif spot2 > spot1 >= spot3:       #Add to the outside
-            pass
-            plog('Autofocus Moving back in half-way.\n\n')
-
-            g_dev['foc'].guarded_move((foc_pos0 + 2.5*throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
-            if not sim:
-                g_dev['obs'].request_scan_requests()
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                    self.focussing=False
-                    return np.nan, np.nan
-                if not g_dev['obs'].open_and_enabled_to_observe:
-                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                    self.focussing=False
-                    return np.nan, np.nan
-            else:
-                g_dev['obs'].fwhmresult['FWHM'] = 5.5
-                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
-            try:
-                spot4 = g_dev['obs'].fwhmresult['FWHM']
-                foc_pos4 = g_dev['foc'].current_focus_position
-            except:
-                spot4 = False
-                foc_pos4 = False
-                plog ("spot4 failed on autofocus moving out 2nd time.")
-            x = [foc_pos2, foc_pos1, foc_pos3, foc_pos4]
-            y = [spot2, spot1, spot3, spot4]
-            plog('X, Y:  ', x, y, 'Desire center to be smallest.')
-            g_dev['obs'].send_to_user('X, Y:  '+ str(x) + " " + str(y)+ ' Desire center to be smallest.', p_level='INFO')
-            try:
-                #Digits are to help out pdb commands!
-                a1, b1, c1, d1 = fit_quadratic(x, y)
-                new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
-
-            except:
-
-                if extensive_focus == None:
-                    plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
-                    plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
-                    g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
-                    req2 = {'target': 'near_tycho_star'}
-                    opt = {}
-                    g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
+                
+                    
+                    
+                    # If you can fit a parabola, then you've got the focus
+                    # If fit, then break
+                    
+                    
+                    try:
+                        fit = np.polyfit(x, y, 2)
+                        f = np.poly1d(fit)
+                    except:
+                        print ("focus fit didn't work dunno y yet.")
+                        plog(traceback.format_exc())
+                        breakpoint()
+                    plt.scatter(x,y)
+                    plt.plot(x,f(x), color = 'green')
+                    #plt.xlim(0.16888549099999922 - 0.000000001,0.1688855399999992 + 0.000000001)
+                    #print (crit_points)
+                    crit_points = bounds + [x for x in f.deriv().r if x.imag == 0 and bounds[0] < x.real < bounds[1]]
+                    fitted_focus_position=crit_points[2]
+                    print (crit_points)
+                    print (len(crit_points))
+                    print ("focus pos: " + str(fitted_focus_position))
+                    fitted_focus_fwhm=f(fitted_focus_position)
+                    plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
+                    
+                    plt.show()
+                    
+                    
+                    #breakpoint()
+                
+                
+                    # If successful, then move to focus and live long and prosper                    
+                    plog ('Moving to Solved focus:  ', round(fitted_focus_position, 2), ' calculated:  ', fitted_focus_fwhm)
+    
+                    pos = int(fitted_focus_position*g_dev['foc'].micron_to_steps)
+                    g_dev['foc'].guarded_move(pos)
+    
+                    g_dev['foc'].last_known_focus = fitted_focus_position
+                    g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+                    
+                    
+    
+                        
+                    #g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
+        
+                    # Take the confirming shot
+                    result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+                    
+                    spot = g_dev['obs'].fwhmresult['FWHM']
+                    foc_pos=g_dev['foc'].current_focus_position
+                    
+                    g_dev['obs'].send_to_user("Solved Focus Check position: " + str(focus_position_this_loop) + " FWHM: " + str(round(spot,2)), p_level='INFO')
+                    
+    
+    
                     if not dont_return_scope:
-
-                        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
-                        self.wait_for_slew()
-                    self.focussing=False
-                    return np.nan, np.nan
-                else:
-                    plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
-                    g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
-                    g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus:', extensive_focus)
-
-                    #self.sequencer_hold = False   #Allow comand checks.
-                    self.af_guard = False
-                    if not dont_return_scope:
-
-                        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
-                        self.wait_for_slew()
-
-                    self.af_guard = False
-                    self.focussing=False
-                    return np.nan, np.nan
-
-            if min(x) <= d1 <= max(x):
-                plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
-                pos = int(d1*g_dev['foc'].micron_to_steps)
-                g_dev['foc'].guarded_move(pos)
-                g_dev['foc'].last_known_focus = d1
-
-                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
-
-                # try:
-                #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
-                # except:
-                #     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
-                g_dev['foc'].last_source = "auto_focus_script"
-
-                if not sim:
-                    g_dev['obs'].request_scan_requests()
-                    result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                        self.focussing=False
-                        return np.nan, np.nan
-                    if not g_dev['obs'].open_and_enabled_to_observe:
-                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                        self.focussing=False
-                        return np.nan, np.nan
-                else:
-                    g_dev['obs'].fwhmresult['FWHM'] = new_spot
-                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
-                try:
-                    spot4 = g_dev['obs'].fwhmresult['FWHM']
-                    foc_pos4 = g_dev['foc'].current_focus_position
-                except:
-                    spot4 = False
-                    foc_pos4 = False
-                    plog ("spot4 failed ")
-                plog('\nFound best focus position at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
-                g_dev['obs'].send_to_user('Successfully found focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
-                if not dont_log_focus:
-                    g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
-                if not dont_return_scope:
-
-                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
-                    self.wait_for_slew()
-            else:
-                if extensive_focus == None:
-
-                    plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
-                    plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
-                    g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
-
-                    req2 = {'target': 'near_tycho_star'}
-                    opt = {}
-                    g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
-
-                    if not dont_return_scope:
-
-                        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
-                        self.wait_for_slew()
-                    self.focussing=False
-                    return np.nan, np.nan
-                else:
-                    plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
-                    g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
-                    g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ', extensive_focus)
-
-                    self.af_guard = False
-                    if not dont_return_scope:
-
                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                         self.wait_for_slew()
-
+    
                     self.af_guard = False
                     self.focussing=False
-                    return np.nan, np.nan
+                    if not dont_log_focus:
+                        g_dev['foc'].af_log(fitted_focus_position, fitted_focus_fwhm, spot)
+                    return fitted_focus_position,fitted_focus_fwhm
+                
+
+                
 
 
-            # if sim:
 
-            #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-
-            self.af_guard = False
-
-            g_dev['foc'].last_focus_fwhm = round(spot4, 2)
-            self.focussing=False
-            return foc_pos4, spot4
-
-        else:
-
-            if extensive_focus == None:
-
-                plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
-                plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
-                g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
-                req2 = {'target': 'near_tycho_star'}
-                opt = {}
-                g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
-                if not dont_return_scope:
-
-                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                self.wait_for_slew()
-                self.focussing=False
-                return np.nan, np.nan
-            else:
-                plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
-                g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
-                g_dev['obs'].send_to_user('V-curve focus failed, moving back to extensive focus: ', extensive_focus)
-                self.af_guard = False
-                if not dont_return_scope:
-
-                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
-                    self.wait_for_slew()
-                self.af_guard = False
-                self.focussing=False
-                return np.nan, np.nan
-
-       #breakpoint()
-
-        if not dont_return_scope:
-            plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-            g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-            g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-            self.wait_for_slew()
-
-       #breakpoint()
-
-        # if sim:
-        #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+                # # If not, where are you? and which way do you go?
+                # if True:
+                #     # If both ends are > 5 arcseconds out, then start hunting around the minimum value
+                    
+                #     new_focus_position_to_attempt=1
+                
+                #     # Else add a point to the "lowest end" as long as it is not larger than 5 arcseconds out.
+                    
+                #     new_focus_position_to_attempt=1
+                    
+                    
+                    
+                
+                
+                
+    
+                
 
 
-        self.af_guard = False
-        self.focussing=False
-        return np.nan, np.nan
+
+
+
+
+        # rot_report=0
+        # while g_dev['foc'].is_moving():
+        # #     if rot_report == 0:
+        # #         plog('Waiting for Focuser to shift.\n')
+        # #         rot_report =1
+        # #     time.sleep(0.2)
+
+
+
+        
+        # retry = 0
+        # while retry < 3:
+        #     if not sim:
+        #         g_dev['obs'].request_scan_requests()
+        #         #g_dev["obs"].request_full_update()
+        #         result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+                
+        #     else:
+
+        #         g_dev['obs'].fwhmresult['FWHM'] = 3
+        #         g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+
+        #     try:
+        #         spot1 = g_dev['obs'].fwhmresult['FWHM']
+        #         #foc_pos1 = g_dev['obs'].fwhmresult['mean_focus']
+        #         foc_pos1=g_dev['foc'].current_focus_position
+        #     except:
+        #         spot1 = False
+        #         foc_pos1 = False
+        #         plog ("spot1 failed in autofocus script")
+        #         #plog(traceback.format_exc())
+        #         #breakpoint()
+        #     #breakpoint()
+        #     plog (spot1)
+        #     g_dev['obs'].send_to_user("Central focus FWHM: " + str(spot1), p_level='INFO')
+
+        #     if math.isnan(spot1) or spot1 ==False:
+
+        #         retry += 1
+        #         plog("Retry of central focus star)")
+        #         #breakpoint()
+        #         continue
+        #     else:
+        #         break
+        # plog('Autofocus Moving In.\n\n')
+
+        # g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
+
+        # if not sim:
+        #     g_dev['obs'].request_scan_requests()
+        #     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
+        #     if self.stop_script_called:
+        #         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+        #         self.focussing=False
+        #         return np.nan, np.nan
+        #     if not g_dev['obs'].open_and_enabled_to_observe:
+        #         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+        #         self.focussing=False
+        #         return np.nan, np.nan
+        # else:
+        #     g_dev['obs'].fwhmresult['FWHM'] = 4
+        #     g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+        # try:
+        #     spot2 = g_dev['obs'].fwhmresult['FWHM']
+        #     foc_pos2 = g_dev['foc'].current_focus_position
+        # except:
+        #     spot2 = False
+        #     foc_pos2 = False
+        #     plog ("spot2 failed on autofocus moving in")
+
+        # g_dev['obs'].send_to_user("Inward focus FWHM: " + str(spot2), p_level='INFO')
+
+        # plog('Autofocus Overtaveling Out.\n\n')
+        # g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
+        # plog('Autofocus Moving back in half-way.\n\n')
+        # #this is to overcoma any gravity induced backlash
+        # g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
+
+        # if not sim:
+        #     g_dev['obs'].request_scan_requests()
+        #     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
+        #     if self.stop_script_called:
+        #         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+        #         self.focussing=False
+        #         return np.nan, np.nan
+        #     if not g_dev['obs'].open_and_enabled_to_observe:
+        #         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+        #         self.focussing=False
+        #         return np.nan, np.nan
+        # else:
+        #     g_dev['obs'].fwhmresult['FWHM'] = 4.5
+        #     g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+        # try:
+        #     spot3 = g_dev['obs'].fwhmresult['FWHM']
+        #     foc_pos3 = g_dev['foc'].current_focus_position
+        # except:
+        #     spot3 = False
+        #     foc_pos3 = False
+        #     plog ("spot3 failed on autofocus moving in")
+
+        # g_dev['obs'].send_to_user("Outward focus FWHM: " + str(spot3), p_level='INFO')
+
+        # x = [foc_pos2, foc_pos1, foc_pos3]
+        # y = [spot2, spot1, spot3]
+        # plog('X, Y:  ', x, y, 'Desire center to be smallest.')
+
+
+#     def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, dont_return_scope=False, dont_log_focus=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
+#         '''
+#         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
+#         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
+#         a verify.
+#         Auto focus consists of three points plus a verify.
+#         Fine focus consists of five points plus a verify.
+#         Optionally individual images can be multiples of one to average out seeing.
+#         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
+#         # Result format:
+#         #                 result['mean_focus'] = avg_foc[1]
+#         #                 result['mean_rotation'] = avg_rot[1]
+#         #                 result['FWHM'] = spot   What is returned is a close proxy to real fitted FWHM.
+#         #                 result['half_FD'] = None
+#         #                 result['patch'] = cal_result
+#         #                 result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
+
+#         returns foc_pos - the focus position and foc_fwhm - the estimated fwhm
+#         '''
+
+#         self.focussing=True
+
+
+#         if throw==None:
+#             throw= self.config['focuser']['focuser1']['throw']
+
+#         if (ephem.now() < g_dev['events']['End Eve Bias Dark'] ) or \
+#             (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
+#             plog ("NOT DOING AUTO FOCUS -- IT IS THE DAYTIME!!")
+#             g_dev["obs"].send_to_user("An auto focus was rejected as it is during the daytime.")
+#             self.focussing=False
+#             return np.nan, np.nan
+
+#         # First check how long it has been since the last focus
+#         plog ("Time of last focus")
+#         plog (g_dev['foc'].time_of_last_focus)
+#         plog ("Time since last focus")
+#         plog (datetime.datetime.now() - g_dev['foc'].time_of_last_focus)
+
+
+#         if self.stop_script_called:
+#             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+#             self.focussing=False
+#             return np.nan, np.nan
+#         if not g_dev['obs'].open_and_enabled_to_observe:
+#             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+#             self.focussing=False
+#             return np.nan, np.nan
+
+
+#         plog ("Threshold time between auto focus routines (hours)")
+#         plog (self.config['periodic_focus_time'])
+
+#         if skip_timer_check == False:
+#             if ((datetime.datetime.utcnow() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
+#                 plog ("Sufficient time has passed since last focus to do auto_focus")
+
+#             else:
+#                 plog ("too soon since last autofocus")
+#                 self.focussing=False
+#                 return np.nan, np.nan
+
+
+#         g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow()
+
+#         # Reset focus tracker
+#         g_dev['foc'].focus_tracker = [np.nan] * 1000
+
+#         throw = g_dev['foc'].throw
+
+#         self.af_guard = True
+
+#         req2 = copy.deepcopy(req)
+
+#         #unpark before anything else.
+#         position_after_unpark=False
+#         if g_dev['mnt'].rapid_park_indicator:
+#             position_after_unpark=True
+#         g_dev['mnt'].unpark_command({}, {})
+#         if position_after_unpark:
+#             g_dev['mnt'].go_command(alt=70,az= 70)
+#             g_dev['mnt'].set_tracking_on()
+
+
+
+#         sim = False
+#         start_ra = g_dev['mnt'].return_right_ascension()   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
+#         start_dec = g_dev['mnt'].return_declination()
+#         #focus_start = g_dev['foc'].current_focus_position
+
+#         if not begin_at is None:
+#             focus_start = begin_at  #In this case we start at a place close to a 3 point minimum.
+#         elif not extensive_focus == None:
+#             focus_start=extensive_focus
+#         else:
+#             focus_start=g_dev['foc'].current_focus_position
+#         foc_pos0 = focus_start
+
+#         #breakpoint()
+#         #
+# # =============================================================================
+# # =============================================================================
+# # =============================================================================
+#         plog("Saved  *mounting* ra, dec, focus:  ", start_ra, start_dec, focus_start)
+
+#         if not skip_pointing:
+#             # Trim catalogue so that only fields 45 degrees altitude are in there.
+#             self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
+#             aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+#             self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)
+#             above_altitude_patches=[]
+
+#             for ctr in range(len(self.focus_catalogue_altitudes)):
+#                 if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
+#                     above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
+#             above_altitude_patches=np.asarray(above_altitude_patches)
+#             self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)
+
+#             # d2d of the closest field.
+#             teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
+#             idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
+
+#             focus_patch_ra=above_altitude_patches[idx,0] /15
+#             focus_patch_dec=above_altitude_patches[idx,1]
+#             focus_patch_n=above_altitude_patches[idx,2]
+
+#             g_dev['obs'].request_scan_requests()
+#             g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
+#             try:
+#                 plog("\nGoing to near focus patch of " + str(int(focus_patch_n)) + " 9th to 12th mag stars " + str(d2d.deg[0]) + "  degrees away.\n")
+#                 g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
+#             except Exception as e:
+#                 plog ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
+#                 plog(traceback.format_exc())
+#             #g_dev["obs"].request_full_update()
+#             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+
+#             opt = { 'count': 1, 'filter': 'focus'}
+
+
+#             result = {}
+
+
+#             if self.stop_script_called:
+#                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+#                 self.focussing=False
+#                 return np.nan, np.nan
+
+#             if not g_dev['obs'].open_and_enabled_to_observe:
+#                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+#                 self.focussing=False
+#                 return np.nan, np.nan
+
+
+#             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+
+
+#             # If no extensive_focus has been done, centre the focus field.
+#             if extensive_focus == None:
+#                 g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
+
+#                 result = self.centering_exposure(no_confirmation=True, try_hard=True)#), try_forever=True)
+#                 # Wait for platesolve
+#                 reported=0
+#                 temptimer=time.time()
+#                 while True:
+#                     if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+#                         break
+#                     else:
+#                         if reported ==0:
+#                             plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+#                             reported=1
+#                         if (time.time() - temptimer) > 20:
+#                             #g_dev["obs"].request_full_update()
+#                             temptimer=time.time()
+#                         if self.stop_script_called:
+#                             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+#                             self.focussing=False
+#                             return np.nan, np.nan
+#                         if not g_dev['obs'].open_and_enabled_to_observe:
+#                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+#                             self.focussing=False
+#                             return np.nan, np.nan
+#                         pass
+
+#                 g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+
+
+#         if self.stop_script_called:
+#             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+#             self.focussing=False
+#             return np.nan, np.nan
+#         if not g_dev['obs'].open_and_enabled_to_observe:
+#             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+#             self.focussing=False
+#             return np.nan, np.nan
+
+
+
+#         # rot_report=0
+#         # while g_dev['foc'].is_moving():
+#         #     if rot_report == 0:
+#         #         plog('Waiting for Focuser to shift.\n')
+#         #         rot_report =1
+#         #     time.sleep(0.2)
+
+
+#         g_dev['obs'].request_scan_requests()
+#         #g_dev["obs"].request_full_update()
+
+#         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
+#         req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+
+#         opt = { 'count': 1, 'filter': filter_choice}
+
+#         g_dev['foc'].guarded_move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
+
+#         retry = 0
+#         while retry < 3:
+#             if not sim:
+#                 g_dev['obs'].request_scan_requests()
+#                 #g_dev["obs"].request_full_update()
+#                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+#                 if self.stop_script_called:
+#                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+#                     self.focussing=False
+#                     return np.nan, np.nan
+#                 if not g_dev['obs'].open_and_enabled_to_observe:
+#                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+#                     self.focussing=False
+#                     return np.nan, np.nan
+
+#             else:
+
+#                 g_dev['obs'].fwhmresult['FWHM'] = 3
+#                 g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+
+#             try:
+#                 spot1 = g_dev['obs'].fwhmresult['FWHM']
+#                 #foc_pos1 = g_dev['obs'].fwhmresult['mean_focus']
+#                 foc_pos1=g_dev['foc'].current_focus_position
+#             except:
+#                 spot1 = False
+#                 foc_pos1 = False
+#                 plog ("spot1 failed in autofocus script")
+#                 #plog(traceback.format_exc())
+#                 #breakpoint()
+#             #breakpoint()
+#             plog (spot1)
+#             g_dev['obs'].send_to_user("Central focus FWHM: " + str(spot1), p_level='INFO')
+
+#             if math.isnan(spot1) or spot1 ==False:
+
+#                 retry += 1
+#                 plog("Retry of central focus star)")
+#                 #breakpoint()
+#                 continue
+#             else:
+#                 break
+#         plog('Autofocus Moving In.\n\n')
+
+#         g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
+
+#         if not sim:
+#             g_dev['obs'].request_scan_requests()
+#             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
+#             if self.stop_script_called:
+#                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+#                 self.focussing=False
+#                 return np.nan, np.nan
+#             if not g_dev['obs'].open_and_enabled_to_observe:
+#                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+#                 self.focussing=False
+#                 return np.nan, np.nan
+#         else:
+#             g_dev['obs'].fwhmresult['FWHM'] = 4
+#             g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+#         try:
+#             spot2 = g_dev['obs'].fwhmresult['FWHM']
+#             foc_pos2 = g_dev['foc'].current_focus_position
+#         except:
+#             spot2 = False
+#             foc_pos2 = False
+#             plog ("spot2 failed on autofocus moving in")
+
+#         g_dev['obs'].send_to_user("Inward focus FWHM: " + str(spot2), p_level='INFO')
+
+#         plog('Autofocus Overtaveling Out.\n\n')
+#         g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
+#         plog('Autofocus Moving back in half-way.\n\n')
+#         #this is to overcoma any gravity induced backlash
+#         g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
+
+#         if not sim:
+#             g_dev['obs'].request_scan_requests()
+#             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
+#             if self.stop_script_called:
+#                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+#                 self.focussing=False
+#                 return np.nan, np.nan
+#             if not g_dev['obs'].open_and_enabled_to_observe:
+#                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+#                 self.focussing=False
+#                 return np.nan, np.nan
+#         else:
+#             g_dev['obs'].fwhmresult['FWHM'] = 4.5
+#             g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+#         try:
+#             spot3 = g_dev['obs'].fwhmresult['FWHM']
+#             foc_pos3 = g_dev['foc'].current_focus_position
+#         except:
+#             spot3 = False
+#             foc_pos3 = False
+#             plog ("spot3 failed on autofocus moving in")
+
+#         g_dev['obs'].send_to_user("Outward focus FWHM: " + str(spot3), p_level='INFO')
+
+#         x = [foc_pos2, foc_pos1, foc_pos3]
+#         y = [spot2, spot1, spot3]
+#         plog('X, Y:  ', x, y, 'Desire center to be smallest.')
+
+
+
+#         if spot1 is None or spot2 is None or spot3 is None or spot1 == False or spot2 == False or spot3 == False:  #New additon to stop crash when no spots
+#             plog("Autofocus was not successful. Returning to original focus setting and pointing.")
+#             g_dev['obs'].send_to_user("Autofocus was not successful. Returning to original focus setting and pointing.")
+
+#             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
+
+#             if not dont_return_scope:
+
+#                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+#                 #g_dev["obs"].request_full_update()
+#                 self.wait_for_slew()
+
+#             self.af_guard = False
+#             self.focussing=False
+#             return np.nan, np.nan
+#         elif spot1 < spot2 and spot1 < spot3:
+#             try:
+#                 #Digits are to help out pdb commands!
+#                 a1, b1, c1, d1 = fit_quadratic(x, y)
+#                 new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+
+#             except:
+
+#                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+
+#                 g_dev['obs'].send_to_user("Autofocus was not successful. Returning to original focus setting and pointing.")
+
+#                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+
+#                 self.af_guard = False
+#                 if not dont_return_scope:
+
+#                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
+#                     self.wait_for_slew()
+
+#                 self.af_guard = False
+#                 self.focussing=False
+#                 return np.nan, np.nan
+
+#             if min(x) <= d1 <= max(x):
+#                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+#                 g_dev['obs'].send_to_user('Moving to Solved focus:  ' +str(round(d1, 2)), p_level='INFO')
+#                 pos = int(d1*g_dev['foc'].micron_to_steps)
+
+
+
+#                 g_dev['foc'].guarded_move(pos)
+
+#                 g_dev['foc'].last_known_focus = d1
+#                 g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+
+#                 # try:
+#                 #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+#                 # except:
+#                 #     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
+#                 g_dev['foc'].last_source = "auto_focus_script"
+
+#                 if not sim:
+#                     g_dev['obs'].request_scan_requests()
+#                     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
+#                     if self.stop_script_called:
+#                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+#                         self.focussing=False
+#                         return np.nan, np.nan
+#                     if not g_dev['obs'].open_and_enabled_to_observe:
+#                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+#                         self.focussing=False
+#                         return np.nan, np.nan
+#                 else:
+#                     g_dev['obs'].fwhmresult['FWHM'] = new_spot
+#                     g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+#                 try:
+#                     spot4 = g_dev['obs'].fwhmresult['FWHM']
+#                     foc_pos4 = g_dev['foc'].current_focus_position
+#                 except:
+#                     spot4 = False
+#                     foc_pos4 = False
+#                     plog ("spot4 failed ")
+#                 plog('\nFound best focus at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
+#                 g_dev['obs'].send_to_user('Successful focus complete at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
+#                 if not dont_log_focus:
+#                     g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+#                 try:
+#                     g_dev['foc'].last_focus_fwhm = round(spot4, 2)
+#                 except:
+#                     plog("MTF hunting this bug")
+#                     plog(traceback.format_exc())
+#                 #g_dev["obs"].request_full_update()
+#                 if not dont_return_scope:
+
+#                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+#                     self.wait_for_slew()
+#             else:
+#                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+
+#                 g_dev['obs'].send_to_user("Autofocus was not successful. Returning to original focus setting and pointing.")
+
+#                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+
+#                 self.af_guard = False
+#                 if not dont_return_scope:
+
+#                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
+#                     self.wait_for_slew()
+
+#                 self.af_guard = False
+#                 self.focussing=False
+#                 return np.nan, np.nan
+
+
+#             # if sim:
+#             #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+
+#             self.af_guard = False
+
+#                     #
+#             self.focussing=False
+#             return foc_pos4, spot4
+
+#         elif spot2  <= spot1 < spot3:      #Add to the inside
+#             pass
+#             plog('Autofocus Moving In 2nd time.\n\n')
+#             g_dev['foc'].guarded_move((foc_pos0 - 2.5*throw)*g_dev['foc'].micron_to_steps)
+#             if not sim:
+#                 g_dev['obs'].request_scan_requests()
+#                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
+#                 if self.stop_script_called:
+#                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+#                     self.focussing=False
+#                     return np.nan, np.nan
+#                 if not g_dev['obs'].open_and_enabled_to_observe:
+#                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+#                     self.focussing=False
+#                     return np.nan, np.nan
+#             else:
+#                 g_dev['obs'].fwhmresult['FWHM'] = 6
+#                 g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+#             try:
+#                 spot4 = g_dev['obs'].fwhmresult['FWHM']
+#                 foc_pos4 = g_dev['foc'].current_focus_position
+#             except:
+#                 spot4 = False
+#                 foc_pos4 = False
+#                 plog ("spot4 failed on autofocus moving in 2nd time.")
+#             x = [foc_pos4, foc_pos2, foc_pos1, foc_pos3]
+#             y = [spot4, spot2, spot1, spot3]
+#             plog('X, Y:  ', x, y, 'Desire center to be smallest.')
+#             g_dev['obs'].send_to_user('X, Y:  '+ str(x) + " " + str(y)+ ' Desire center to be smallest.', p_level='INFO')
+#             if foc_pos4 != False and foc_pos2 != False and foc_pos1 != False and foc_pos3 != False:
+#                 #Digits are to help out pdb commands!
+#                 a1, b1, c1, d1 = fit_quadratic(x, y)
+#                 new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+
+#             else:
+
+#                 if extensive_focus == None:
+
+#                     plog('Autofocus quadratic equation did not converge. Moving back to starting focus:  ', focus_start)
+#                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+#                     g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus routine')
+
+#                     req2 = {'target': 'near_tycho_star', 'image_type': 'focus'}
+#                     opt = {'filter': filter_choice}
+#                     g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope, begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
+#                     if not dont_return_scope:
+
+#                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+#                         self.wait_for_slew()
+#                     self.focussing=False
+#                     return np.nan, np.nan
+#                 else:
+#                     plog('Autofocus quadratic equation did not converge. Moving back to extensive focus:  ', extensive_focus)
+#                     g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ' + str(extensive_focus))
+
+#                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
+
+#                     g_dev['foc'].last_known_focus=(extensive_focus)
+#                     #g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+
+
+#                     self.af_guard = False
+#                     if not dont_return_scope:
+
+#                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)   #NB NB Does this really take us back to starting point?
+#                         self.wait_for_slew()
+
+#                     self.af_guard = False
+#                     self.focussing=False
+#                     return np.nan, np.nan
+
+#             if min(x) <= d1 <= max(x):
+#                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+
+#                 pos = int(d1*g_dev['foc'].micron_to_steps)
+#                 g_dev['foc'].guarded_move(pos)
+
+#                 g_dev['foc'].last_known_focus = d1
+#                 g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+
+#                 # try:
+#                 #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+#                 # except:
+#                 #     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
+#                 g_dev['foc'].last_source = "auto_focus_script"
+
+#                 if not sim:
+#                     g_dev['obs'].request_scan_requests()
+#                     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
+#                     if self.stop_script_called:
+#                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+#                         self.focussing=False
+#                         return np.nan, np.nan
+#                     if not g_dev['obs'].open_and_enabled_to_observe:
+#                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+#                         self.focussing=False
+#                         return np.nan, np.nan
+#                 else:
+#                     g_dev['obs'].fwhmresult['FWHM'] = new_spot
+#                     g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+#                 try:
+#                     spot4 = g_dev['obs'].fwhmresult['FWHM']
+#                     foc_pos4 = g_dev['foc'].current_focus_position
+#                 except:
+#                     spot4 = False
+#                     foc_pos4 = False
+#                     plog ("spot4 failed ")
+#                 plog('\nFound best focus position at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
+#                 g_dev['obs'].send_to_user('Successfully focussed at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
+#                 if not dont_log_focus:
+#                     g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+#                 if not dont_return_scope:
+
+#                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec) #Return to pre-focus pointing.
+#                     self.wait_for_slew()
+#             # if sim:
+
+#             #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+
+#             self.af_guard = False
+#             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
+#             self.focussing=False
+#             return foc_pos4, spot4
+
+#         elif spot2 > spot1 >= spot3:       #Add to the outside
+#             pass
+#             plog('Autofocus Moving back in half-way.\n\n')
+
+#             g_dev['foc'].guarded_move((foc_pos0 + 2.5*throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
+#             if not sim:
+#                 g_dev['obs'].request_scan_requests()
+#                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
+#                 if self.stop_script_called:
+#                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+#                     self.focussing=False
+#                     return np.nan, np.nan
+#                 if not g_dev['obs'].open_and_enabled_to_observe:
+#                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+#                     self.focussing=False
+#                     return np.nan, np.nan
+#             else:
+#                 g_dev['obs'].fwhmresult['FWHM'] = 5.5
+#                 g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+#             try:
+#                 spot4 = g_dev['obs'].fwhmresult['FWHM']
+#                 foc_pos4 = g_dev['foc'].current_focus_position
+#             except:
+#                 spot4 = False
+#                 foc_pos4 = False
+#                 plog ("spot4 failed on autofocus moving out 2nd time.")
+#             x = [foc_pos2, foc_pos1, foc_pos3, foc_pos4]
+#             y = [spot2, spot1, spot3, spot4]
+#             plog('X, Y:  ', x, y, 'Desire center to be smallest.')
+#             g_dev['obs'].send_to_user('X, Y:  '+ str(x) + " " + str(y)+ ' Desire center to be smallest.', p_level='INFO')
+#             try:
+#                 #Digits are to help out pdb commands!
+#                 a1, b1, c1, d1 = fit_quadratic(x, y)
+#                 new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+
+#             except:
+
+#                 if extensive_focus == None:
+#                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+#                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+#                     g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
+#                     req2 = {'target': 'near_tycho_star'}
+#                     opt = {}
+#                     g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
+#                     if not dont_return_scope:
+
+#                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
+#                         self.wait_for_slew()
+#                     self.focussing=False
+#                     return np.nan, np.nan
+#                 else:
+#                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
+#                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
+#                     g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus:', extensive_focus)
+
+#                     #self.sequencer_hold = False   #Allow comand checks.
+#                     self.af_guard = False
+#                     if not dont_return_scope:
+
+#                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
+#                         self.wait_for_slew()
+
+#                     self.af_guard = False
+#                     self.focussing=False
+#                     return np.nan, np.nan
+
+#             if min(x) <= d1 <= max(x):
+#                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+#                 pos = int(d1*g_dev['foc'].micron_to_steps)
+#                 g_dev['foc'].guarded_move(pos)
+#                 g_dev['foc'].last_known_focus = d1
+
+#                 g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+
+#                 # try:
+#                 #     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+#                 # except:
+#                 #     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
+#                 g_dev['foc'].last_source = "auto_focus_script"
+
+#                 if not sim:
+#                     g_dev['obs'].request_scan_requests()
+#                     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
+#                     if self.stop_script_called:
+#                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+#                         self.focussing=False
+#                         return np.nan, np.nan
+#                     if not g_dev['obs'].open_and_enabled_to_observe:
+#                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+#                         self.focussing=False
+#                         return np.nan, np.nan
+#                 else:
+#                     g_dev['obs'].fwhmresult['FWHM'] = new_spot
+#                     g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+#                 try:
+#                     spot4 = g_dev['obs'].fwhmresult['FWHM']
+#                     foc_pos4 = g_dev['foc'].current_focus_position
+#                 except:
+#                     spot4 = False
+#                     foc_pos4 = False
+#                     plog ("spot4 failed ")
+#                 plog('\nFound best focus position at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
+#                 g_dev['obs'].send_to_user('Successfully found focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
+#                 if not dont_log_focus:
+#                     g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+#                 if not dont_return_scope:
+
+#                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
+#                     self.wait_for_slew()
+#             else:
+#                 if extensive_focus == None:
+
+#                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+#                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+#                     g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
+
+#                     req2 = {'target': 'near_tycho_star'}
+#                     opt = {}
+#                     g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
+
+#                     if not dont_return_scope:
+
+#                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
+#                         self.wait_for_slew()
+#                     self.focussing=False
+#                     return np.nan, np.nan
+#                 else:
+#                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
+#                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
+#                     g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ', extensive_focus)
+
+#                     self.af_guard = False
+#                     if not dont_return_scope:
+
+#                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+#                         self.wait_for_slew()
+
+#                     self.af_guard = False
+#                     self.focussing=False
+#                     return np.nan, np.nan
+
+
+#             # if sim:
+
+#             #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+
+#             self.af_guard = False
+
+#             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
+#             self.focussing=False
+#             return foc_pos4, spot4
+
+#         else:
+
+#             if extensive_focus == None:
+
+#                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+#                 plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+#                 g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
+#                 req2 = {'target': 'near_tycho_star'}
+#                 opt = {}
+#                 g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
+#                 if not dont_return_scope:
+
+#                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+#                 self.wait_for_slew()
+#                 self.focussing=False
+#                 return np.nan, np.nan
+#             else:
+#                 plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
+#                 g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
+#                 g_dev['obs'].send_to_user('V-curve focus failed, moving back to extensive focus: ', extensive_focus)
+#                 self.af_guard = False
+#                 if not dont_return_scope:
+
+#                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
+#                     self.wait_for_slew()
+#                 self.af_guard = False
+#                 self.focussing=False
+#                 return np.nan, np.nan
+
+#        #breakpoint()
+
+#         if not dont_return_scope:
+#             plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#             g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+#             g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+#             self.wait_for_slew()
+
+#        #breakpoint()
+
+#         # if sim:
+#         #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+
+
+#         self.af_guard = False
+#         self.focussing=False
+#         return np.nan, np.nan
 
 
     def extensive_focus_script(self, req, opt, throw=None, begin_at=None, no_auto_after_solve=False, dont_return_scope=False, skip_timer_check=False, dont_log_focus=False, skip_pointing=False,  filter_choice='focus'):

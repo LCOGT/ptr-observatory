@@ -44,6 +44,7 @@ from global_yard import g_dev
 from ptr_utility import plog
 from ctypes import *
 from skimage.registration import phase_cross_correlation
+from multiprocessing.pool import Pool,ThreadPool
 
 
 def mid_stretch_jpeg(data):
@@ -386,6 +387,59 @@ def reset_sequence(pCamera):
         return None
 
 
+
+
+
+def multiprocess_fast_gaussian_photometry(package):           
+    try:
+        #temptimer=time.time()
+        (cvalue, cx, cy, radprofile, temp_array,pixscale) = package
+        #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+        popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+        
+        #print ("Curve optimize")
+        #print (time.time() -temptimer)
+        #breakpoint()
+        
+        # Amplitude has to be a substantial fraction of the peak value
+        # and the center of the gaussian needs to be near the center
+        if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
+            # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
+            # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
+            # plt.scatter(radprofile[:,0],radprofile[:,1])
+            # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
+            # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+            # plt.show()
+        
+            # FWHM is 2.355 * std for a gaussian
+            #fwhmlist.append(popt[2])
+            return popt[2]
+        else:
+            return np.nan
+        # Area under a gaussian is (amplitude * Stdev / 0.3989)
+        #breakpoint()
+        # if good_radials < number_of_good_radials_to_get:
+        #     sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
+        #     good_radials=good_radials+1
+        # else:
+        #     sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
+        # photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
+    
+        #breakpoint()
+        # If we've got more than 50 for a focus
+        # We only need some good ones.
+    
+        # if len(fwhmlist) > 10:
+        #     bailout=True
+        #     break
+        # #If we've got more than ten and we are getting dim, bail out.
+        # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
+        #     bailout=True
+        #     break
+    except:
+        return np.nan
+            
+    # Then multiprocess
 
 class Camera:
     """A camera instrument.
@@ -1301,8 +1355,13 @@ class Camera:
         googtime=time.time()
 
         #amount=min(len(pointvalues),50)
-
-        for i in range(len(pointvalues)):
+        
+        setup_timer=time.time()
+        # Don't do them individually, set them up for multiprocessing
+        focus_multiprocess=[]
+        #for i in range(len(pointvalues)):
+        #for i in range(min(len(pointvalues),200)):
+        for i in range(min(len(pointvalues),1000)):
 
             # # Don't take too long!
             # if ((time.time() - timer_for_bailing) > time_limit):# and good_radials > 20:
@@ -1338,8 +1397,8 @@ class Camera:
             brightest_pixel_value=0
             bailout=False
             for q in range(cut_x):
-                if bailout==True:
-                    break
+                # if bailout==True:
+                #     break
                 for t in range(cut_y):
                     #breakpoint()
                     r_dist=pow(pow((q-cut_x_center),2) + pow((t-cut_y_center),2),0.5)
@@ -1360,60 +1419,33 @@ class Camera:
             #breakpoint()
 
             # If the brightest pixel is in the center-ish
-            # then attempt a fit
+            # then put it in contention
             if abs(brightest_pixel_rdist) < 4:
-                try:
-                    #temptimer=time.time()
+                focus_multiprocess.append((cvalue, cx, cy, radprofile, temp_array,self.pixscale))
+        print ("Setup for multiprocess focus: " + str(time.time()-setup_timer))
+        
+            
+        mptimer=time.time()
+        fwhm_results=[]
+        number_to_collect=max(8,os.cpu_count())
+        with Pool(os.cpu_count()) as pool:
+            for result in pool.map(multiprocess_fast_gaussian_photometry, focus_multiprocess):
+                if not np.isnan(result):
+                    fwhm_results.append(result)
+                    if len(fwhm_results) >= number_to_collect:
+                        break
+        #print (fwhm_results)        
 
-                    #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-                    popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/self.pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-
-                    #print ("Curve optimize")
-                    #print (time.time() -temptimer)
-                    #breakpoint()
-
-                    # Amplitude has to be a substantial fraction of the peak value
-                    # and the center of the gaussian needs to be near the center
-                    if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
-                        # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-                        # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-                        # plt.scatter(radprofile[:,0],radprofile[:,1])
-                        # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
-                        # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                        # plt.show()
-
-                        # FWHM is 2.355 * std for a gaussian
-                        fwhmlist.append(popt[2])
-                        # Area under a gaussian is (amplitude * Stdev / 0.3989)
-                        #breakpoint()
-                        # if good_radials < number_of_good_radials_to_get:
-                        #     sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
-                        #     good_radials=good_radials+1
-                        # else:
-                        #     sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
-                        # photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
-
-                        #breakpoint()
-                        # If we've got more than 50 for a focus
-                        # We only need some good ones.
-
-                        if len(fwhmlist) > 10:
-                            bailout=True
-                            break
-                        # #If we've got more than ten and we are getting dim, bail out.
-                        # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
-                        #     bailout=True
-                        #     break
-                except:
-                    pass
+        print ("multiprocess timer: " + str(time.time() - mptimer))
+                
 
         print ("Extracting and Gaussianingx: " + str(time.time()-googtime))
                 #breakpoint()
         #breakpoint()
 
-        rfp = abs(bn.nanmedian(fwhmlist)) * 4.710
+        rfp = abs(bn.nanmedian(fwhm_results)) * 4.710
         rfr = rfp * self.pixscale
-        rfs = np.nanstd(fwhmlist) * self.pixscale
+        rfs = np.nanstd(fwhm_results) * self.pixscale
         if rfr < 1.0 or rfr > 8:
             rfr= np.nan
             rfp= np.nan
@@ -1425,7 +1457,7 @@ class Camera:
         fwhm_file['rfr']=str(rfr)
         fwhm_file['rfs']=str(rfs)
         fwhm_file['sky']=str(imageMedian)
-        fwhm_file['sources']=str(len(fwhmlist))
+        fwhm_file['sources']=str(len(fwhm_results))
 
 
         # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
@@ -2521,6 +2553,7 @@ class Camera:
 
                 g_dev['obs'].send_to_user("Refusing exposure request as the observatory is currently undertaking flats.")
                 plog("Refusing exposure request as the observatory is currently taking flats.")
+                self.exposure_busy = False 
                 return
 
         #self.exposure_busy = True # This really needs to be here from the start
@@ -2665,6 +2698,7 @@ class Camera:
                         ##a breakpoint to catch this path next time.  WER
                         plog(traceback.format_exc())
                         #breakpoint()
+                        self.exposure_busy = False 
                         return
 
 
@@ -2705,6 +2739,7 @@ class Camera:
                             Nsmartstack=1
                             sskcounter=2
                             plog('stop_all_activity cancelling camera exposure')
+                            self.exposure_busy = False 
                             return
 
 
@@ -2920,6 +2955,7 @@ class Camera:
                             sskcounter=2
                             self.currently_in_smartstack_loop=False
                             self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+                            self.exposure_busy = False 
                             return 'calendarend'
 
                     # # Check that the roof hasn't shut
@@ -2943,6 +2979,7 @@ class Camera:
                         sskcounter=2
                         self.currently_in_smartstack_loop=False
                         self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+                        self.exposure_busy = False 
                         return 'roofshut'
 
 
@@ -3027,6 +3064,7 @@ class Camera:
                                              plog ("stop_all_activity cancelling out of camera exposure")
                                              self.currently_in_smartstack_loop=False
                                              self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+                                             self.exposure_busy = False 
                                              return
 
                             if (bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type or a_dark_exposure) and not manually_requested_calibration:
@@ -3061,6 +3099,7 @@ class Camera:
                                 sskcounter=2
                                 self.currently_in_smartstack_loop=False
                                 self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+                                self.exposure_busy = False 
                                 return 'cancelled'
 
                             #plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
@@ -3285,7 +3324,7 @@ class Camera:
         # trap missing expresult (e.g. cancelled exposures etc.)
         if not 'expresult' in locals():
             expresult = 'error'
-
+        self.exposure_busy = False 
         return expresult
 
     def write_out_realtimefiles_token_to_disk(self,token_name,real_time_files):
@@ -3527,6 +3566,7 @@ class Camera:
                         expresult["stopped"] = True
                         g_dev["obs"].exposure_halted_indicator =False
                         self.currently_in_smartstack_loop=False
+                        self.exposure_busy = False 
                         return expresult
 
                     if g_dev["obs"].exposure_halted_indicator:
@@ -3534,6 +3574,7 @@ class Camera:
                         expresult["stopped"] = True
                         g_dev["obs"].exposure_halted_indicator =False
                         plog ("Exposure Halted Indicator On. Cancelling Exposure.")
+                        self.exposure_busy = False 
                         return expresult
 
                 remaining = round(self.completion_time - time.time(), 1)
@@ -3724,6 +3765,7 @@ class Camera:
                     if retrycounter == 8:
                         expresult = {"error": True}
                         plog("Retried 8 times and didn't get an image, giving up.")
+                        self.exposure_busy = False 
                         return expresult
                     try:
                         outputimg = self._getImageArray().astype(np.float32)
@@ -3903,7 +3945,7 @@ class Camera:
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                     del hdu
-
+                    self.exposure_busy = False 
                     return copy.deepcopy(expresult)
 
 
@@ -4257,7 +4299,7 @@ class Camera:
                         except:
                             plog("Failed to send FOCUS TEXT up for some reason")
                             plog(traceback.format_exc())
-
+                    self.exposure_busy = False 
                     return expresult
 
                 blockended=False
@@ -4351,6 +4393,7 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
+                        self.exposure_busy = False 
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
 
                     elif (
@@ -4365,6 +4408,7 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
+                        self.exposure_busy = False 
                         return copy.deepcopy(expresult)  # signals to flat routine image was rejected, prompt return
                     elif (
                         central_median
@@ -4378,6 +4422,7 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
+                        self.exposure_busy = False 
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
                     else:
                         expresult={}
@@ -4447,6 +4492,7 @@ class Camera:
                                 expresult["error"] = True
                                 expresult["patch"] = central_median
                                 expresult["camera_gain"] = np.nan
+                                self.exposure_busy = False 
                                 return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
 
                             expresult["camera_gain"] = cge_gain
@@ -4551,7 +4597,8 @@ class Camera:
                             #                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                         del hdu
-
+                        
+                        self.exposure_busy = False 
                         return copy.deepcopy(expresult)
 
 
@@ -4573,7 +4620,7 @@ class Camera:
 
                 plog("Exposure Complete")
                 g_dev["obs"].send_to_user("Exposure Complete")
-
+                self.exposure_busy = False 
                 return copy.deepcopy(expresult)
 
             else:
