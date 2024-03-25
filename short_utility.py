@@ -9,7 +9,7 @@ Created on Thu Dec 21 23:03:06 2023
 """
 Created on Fri Nov 17 04:25:54 2023
 
-@author: wrosi
+@author: wrosing
 """
 from collections import namedtuple
 from datetime import datetime#, date
@@ -70,22 +70,22 @@ ALTAZ = False
 GEM = True
 FORK = False
 
-#These should be class variables ??
+
 lat = 35
 sin_lat = sin(radians(lat))
 cos_lat = cos(radians(lat))
 
 model = {}
 
-model["IH"] = 0  # -2456.2107   #From ARO 20231122
-model["ID"] = 0# +559.0443
+model["IH"] = 0
+model["ID"] = 0
 model["EDH"] = 0
 model["EDD"] = 0
-model["MA"] = 1800 #+117.2244
-model["ME"] = 0 #-397.5761
-model["CH"] = 0 #-438.0139
+model["MA"] = 0
+model["ME"] = 0
+model["CH"] = 0
 
-model["NP"] = 0# +188.9130
+model["NP"] = 0
 model["TF"] = 0
 model["TX"] = 0
 model["HCES"] = 0
@@ -238,6 +238,67 @@ def centration_d(theta, a, b):
 def centration_r(theta, a, b):
     return math.atan2(math.sin(theta) - STOR * b, math.cos(theta) - STOR * a)
 
+# def appToObsRaHa(appRa, appDec, pSidTime):
+#     global raRefr, decRefr, refAsec
+#     try:
+#         g_dev["ocn"].get_proxy_temp_press()
+#     except:
+#         pass
+#     appHa, appDec = transform_raDec_to_haDec_r(appRa, appDec, pSidTime)
+#     appAz, appAlt = transform_haDec_to_azAlt_r(
+#         appHa, appDec, site_config["latitude"] * DTOR
+#     )
+#     try:
+#         obsAlt, refAsec = apply_refraction_inEl_r(
+#             appAlt, g_dev["ocn"].temperature, g_dev["ocn"].pressure
+#         )
+#         obsHa, obsDec = transform_azAlt_to_haDec_r(
+#             appAz, obsAlt, site_config["latitude"] * DTOR
+#         )
+#     except:
+#         pass
+
+#     raRefr = reduce_ha_r(appHa - obsHa) * HTOS
+#     decRefr = -reduce_dec_r(appDec - obsDec) * DTOS
+#     return reduce_ha_r(obsHa), reduce_dec_r(obsDec), refAsec
+
+
+# def obsToAppHaRa(obsHa, obsDec, pSidTime):
+#     global raRefr, decRefr
+#     try:
+#         g_dev["ocn"].get_proxy_temp_press()
+#     except:
+#         pass
+#     obsAz, obsAlt = transform_haDec_to_azAlt_r(
+#         obsHa, obsDec, site_config["latitude"] * DTOR
+#     )
+#     refr = 0.0
+#     try:
+#         appAlt, refr = correct_refraction_inEl_r(
+#             obsAlt, g_dev["ocn"].temperature, g_dev["ocn"].pressure
+#         )
+#     except:
+#         appAlt = 0
+#         pass
+#     appHa, appDec = transform_azAlt_to_haDec_r(
+#         obsAz, appAlt, site_config["latitude"] * DTOR
+#     )
+#     appRa, appDec = transform_haDec_to_raDec_r(appHa, appDec, pSidTime)
+#     raRefr = reduce_ha_r(-appHa + obsHa) * HTOS
+#     decRefr = -reduce_dec_r(-appDec + obsDec) * DTOS
+#     return reduce_ra_r(appRa), reduce_dec_r(appDec), refr
+
+
+# def appToObsRaDec(appRa, appDec, pSidTime):
+#     obsHa, obsDec, refR = appToObsRaHa(appRa, appDec, pSidTime)
+#     obsRa, obsDec = transform_haDec_to_raDec_r(obsHa, obsDec, pSidTime)
+#     return reduce_ra_r(obsRa), reduce_dec_r(obsDec), refR
+
+
+# def obsToAppRaDec(obsRa, obsDec, pSidTime):
+#     obsHa, obsDec = transform_raDec_to_haDec_r(obsRa, obsDec, pSidTime.value)
+#     appRa, appDec, refr = obsToAppHaRa(obsHa, obsDec, pSidTime.value)
+#     return reduce_ra_r(appRa), reduce_dec_r(appDec), refr
 
 
 
@@ -565,7 +626,7 @@ def apply_refraction_inEl_r(pAppEl, pSiteRefTemp, pSiteRefPress):  # Deg, C. , m
     global RefrOn
     # From Astronomical Algorithms.  Max error 0.89" at 0 elev.
     # 20210328 This code does not the right thing if star is below the Pole and is refracted above it.
-    breakpoint()
+
     if not RefrOn:
         return pAppEl, 0.0
     elif pAppEl > 0:

@@ -155,8 +155,8 @@ site_config = {
      'enclosure_check_period': 3,    # How many minutes between enclosure checks
 
      # Turn on and off various automated calibrations at different times.
-     'auto_eve_bias_dark': True,
-     'auto_eve_sky_flat': True,
+     'auto_eve_bias_dark': False,
+     'auto_eve_sky_flat': False,
      'time_to_wait_after_roof_opens_to_take_flats': 1,   #  Units??  Just imposing a minimum in case of a restart.
      'auto_midnight_moonless_bias_dark': False,  # WER 20240303 Afternoon, changed from True
      'auto_morn_sky_flat': True,

@@ -53,10 +53,11 @@ from astropy.time import Time
 from astropy import units as u
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun, \
                                 get_moon, FK5, FK4, ICRS, Distance
-import ptr_utility
+from ptr_utility import plog
+import short_utility
 import math
 import ephem
-from ptr_utility import plog
+
 
 
 
@@ -148,6 +149,15 @@ class Mount:
         self.config = config
         self.device_name = name
         self.settings = settings
+        #Pick up early from Config, but note some drivers turn these to False
+        try:
+            self.refr_on = config["mount"]["mount1"]["settings"]["refraction_on"]
+            self.model_on = config["mount"]["mount1"]["settings"]["model_on"]
+            self.rates_on = config["mount"]["mount1"]["settings"]["rates_on"]
+        except:
+            self.refr_on = False
+            self.model_on = False
+            self.rates_on = False
 
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
@@ -164,9 +174,19 @@ class Mount:
 
         if "ASCOM.SoftwareBisque.Telescope" in driver:
             self.theskyx = True
+            self.refr_on = False    #Presumably handled in SB code.
+            self.model_on = False
+            self.rates_on = False
         else:
             self.theskyx = False
 
+        if "PWI4" in driver:
+            self.is_pwi4 = True
+            self.refr_on = False    #Presumably handled in PWI4 code.
+            self.model_on = False
+            self.rates_on = False
+        else:
+            self.is_pwi4 = False
 
 
         self.site_coordinates = EarthLocation(lat=float(g_dev['evnt'].wema_config['latitude'])*u.deg, \
@@ -186,14 +206,7 @@ class Mount:
             plog ("Failed to get the current sidereal time from the mount.")
         self.current_icrs_ra = self.mount.RightAscension
         self.current_icrs_dec = self.mount.Declination
-        try:
-            self.refr_on = config["mount"]["mount1"]["settings"]["refraction_on"]
-            self.model_on = config["mount"]["mount1"]["settings"]["model_on"]
-            self.rates_on = config["mount"]["mount1"]["settings"]["rates_on"]
-        except:
-            self.refr_on = False
-            self.model_on = False
-            self.rates_on = False
+
 
         self.delta_t_s = HTOSec/12   #5 minutes
         self.prior_roll_rate = 0
@@ -557,10 +570,87 @@ class Mount:
                                         time.sleep(0.2)
                                 except:
                                     print ("mount thread camera wait failed.")
-                                    
+
 # =============================================================================
 #                                 Here is where all external goto calls end up trigering a slew -- except home and park.
 # =============================================================================
+
+
+                                if self.model_on or self.refr_on or self.rates_on:
+
+
+                                    self.get_current_times()
+                                    breakpoint()
+                                    icrs_coord = SkyCoord(self.slewtoRA*u.hour, self.slewtoDEC*u.degree, frame='icrs')
+                                    jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
+                                        # ra = jnow_coord.ra.hour
+                                        # dec = jnow_coord.dec.degree
+                                        # if self.offset_received:
+                                        #     ra += self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
+                                        #     dec += self.dec_offset
+                                    # Just to be conservative
+                                    ra_app_h, dec_app_d = ra_dec_fix_h(jnow_coord.ra.hour, jnow_coord.dec.degree)
+                                    #'This is the "Forward" calculation of pointing.
+                                    #Here we add in refraction and the TPOINT compatible mount model
+                                    #self.sid_now_r = self.mount.SiderealTime*HTOR   #NB NB ADDED THIS FOR SRO, WHY IS THIS NEEDED?
+                                    #self.ha_obs_r, self.dec_obs_r, self.refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
+                                    #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)
+                                    #Here we would convert to model and calculate tracking rate correction.
+                                    #pier_east = 1
+                                    #self.ha_mech, self.dec_mech = ptr_utility.transform_observed_to_mount_r(self.ha_obs_r, self.dec_obs_r, pier_east, loud=False, enable=True)
+                                    #self.ra_mech, self.dec_mech = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech, self.dec_mech, self.sid_now_r)
+                                    #self.ha_corr = ptr_utility.reduce_ha_r(self.ha_mech -self. ha_obs_r)*RTOS
+                                    #self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
+
+                                    self.mount_update_wincom.Tracking = True
+                                    self.move_time = time.time()
+                                    #az, alt = ptr_utility.transform_haDec_to_azAlt_r(self.ha_mech, self.dec_mech, self.latitude_r)
+                                    #print('MODEL HA, DEC, AZ, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, az*RTOD, self.refr_asec)
+                                    #self.target_az = az*RTOD
+
+
+
+                                    self.mount_update_wincom.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                                    ###  figure out velocity  Apparent place is unchanged.
+                                    self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
+                                    #self.ha_obs_adv, self.dec_obs_adv, self.refr_adv = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_next_r)   #% minute advance
+                                    #self.ha_mech_adv, self.dec_mech_adv = ptr_utility.transform_observed_to_mount_update_wincom_r(self.ha_obs_adv, self.dec_obs_adv, pier_east, loud=False)
+                                    #self.ra_adv, self.dec_adv = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech_adv, self.dec_mech_adv, self.sid_next_r)
+                                    #self.adv_ha_corr = ptr_utility.reduce_ha_r(self.ha_mech_adv - self.ha_obs_adv)*RTOS     #These are mechanical values, not j.anything
+                                    #self.adv_dec_corr = ptr_utility.reduce_dec_r(self.dec_mech_adv - self.dec_obs_adv)*RTOS
+                                    self.prior_seek_ha_h = self.ha_mech
+                                    self.prior_seek_dec_d = self.dec_mech
+                                    self.prior_seek_time = time.time()
+                                    self.prior_sid_time =  self.sid_now_r
+                                    '''
+                                    The units of this property are arcseconds per SI (atomic) second.
+                                    Please note that for historic reasons the units of the
+                                    RightAscensionRate property are seconds of RA per sidereal second.
+                                    '''
+                                    if self.mount_update_wincom.CanSetRightAscensionRate:
+                                        self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
+                                        self.mount_update_wincom.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
+                                    else:
+                                        self.prior_roll_rate = 0.0
+                                    if self.mount_update_wincom.CanSetDeclinationRate:
+                                       self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
+                                       self.mount_update_wincom.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
+                                       #print("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
+                                    else:
+                                        self.prior_pitch_rate = 0.0
+                                     #print(self.prior_roll_rate, self.prior_pitch_rate, refr_asec)
+                                    # time.sleep(.5)
+                                    # self.mount_update_wincom.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
+                                    time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
+                                    if self.mount_update_wincom.CanSetRightAscensionRate:
+                                        self.mount_update_wincom.RightAscensionRate = 0.0 #self.prior_roll_rate
+
+                                    if self.mount_update_wincom_update_wincom.CanSetDeclinationRate:
+                                        self.mount_update_wincom_update_wincom.DeclinationRate = self.prior_pitch_rate
+
+                                        print("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
+                                        self.seek_commanded = True
+                                        #I think to reliable establish rates, set them before the slew.
 
                                 self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                                 self.currently_slewing=True
@@ -1395,7 +1485,7 @@ class Mount:
 
         iso_day = datetime.date.today().isocalendar()
         self.day = ((iso_day[1]-1)*7 + (iso_day[2] ))
-        self.equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2))
+        self.equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365.), 3))
         return
 
     def flat_spot_now(self):
@@ -1445,6 +1535,7 @@ class Mount:
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle.
         # WER Not going to worry about minor coordinate frame issues for these tests.
+        breakpoint()
         try:
             sun_coords=get_sun(Time.now())
             if skyflatspot != None:
@@ -1496,7 +1587,8 @@ class Mount:
             elif ha != None:
                 ha = float(ha)
                 dec = float(dec)
-                az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])
+                breakpoint()
+                #az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])  #NB The reference to latitude does not work.
                 temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
                 altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
                 ra = altazskycoord.icrs.ra.deg /15
@@ -1701,12 +1793,14 @@ class Mount:
 
                 self.slewtoRA = ra
                 self.slewtoDEC = dec
-                #NB THIS command starts a GOTO
+# =============================================================================
+#                 #NB THIS command starts a GOTO
+# =============================================================================
                 self.slewtoAsyncRequested=True
                 self.wait_for_mount_update()
                 if not dont_wait_after_slew:
                     self.wait_for_slew()
-                
+
 
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
@@ -1893,361 +1987,7 @@ class Mount:
         # self.mount_busy=False
         # end mount command #
 
-# =============================================================================
-#     def go_w_model_and_velocity(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
-#         '''
-#         NB NB NB THis is new-old code having to do with supporting velocity and pointing
-#         correction for refraction and the installed mount model.  IF Model_on and
-#         refr_on are False this code defaults to use the go-command routine above.
-# 
-#         Slew to the given ra/dec coordinates, supplied in ICRS
-#         Note no dependency on current position.
-#         unpark the telescope mount
-#         '''  #  NB can we check if unparked and save time?
-#         self.last_ra = ra
-#         self.last_dec = dec
-#         self.last_tracking_rate_ra = tracking_rate_ra
-#         self.last_tracking_rate_dec = tracking_rate_dec
-#         self.last_seek_time = time.time()
-# 
-#         self.unpark_command()
-#         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
-#         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
-#         #result in a flip.  So first figure out if there will be a flip:
-# 
-#         try:
-# 
-#             try:                          #  NB NB Might be good to log is flipping on a re-seek.
-#                 # mount command #
-#                 # while self.mount_busy:
-#                 #     time.sleep(0.05)
-#                 # self.mount_busy=True
-#                 # new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-#                 # self.mount_busy=False
-# 
-# 
-#                 self.request_new_pierside=True
-#                 self.request_new_pierside_ra=ra
-#                 self.request_new_pierside_dec=dec
-# 
-#                 self.wait_for_mount_update()
-# 
-#                 # end mount command #
-#                 if len(self.new_pierside) > 1:
-#                     if self.new_pierside[0] == 0:
-#                         delta_ra, delta_dec = self.get_mount_reference()
-#                         pier_east = 1
-#                     else:
-#                         delta_ra, delta_dec = self.get_flip_reference()
-#                         pier_east = 0
-#             except:
-#                 try:
-#                     # mount command #
-#                     # while self.mount_busy:
-#                     #     time.sleep(0.05)
-#                     # self.mount_busy=True
-#                     # new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-#                     # self.mount_busy=False
-# 
-#                     self.request_new_pierside=True
-#                     self.request_new_pierside_ra=ra
-#                     self.request_new_pierside_dec=dec
-# 
-#                     self.wait_for_mount_update()
-# 
-#                     # end mount command #
-#                     if self.new_pierside == 0:
-#                         delta_ra, delta_dec = self.get_mount_reference()
-#                         pier_east = 1
-#                     else:
-#                         delta_ra, delta_dec = self.get_flip_reference()
-#                         pier_east = 0
-#                 except:
-#                     self.mount_busy=False
-#                     delta_ra, delta_dec = self.get_mount_reference()
-#                     pier_east = 1
-#         except Exception as e:
-#             self.mount_busy=False
-#             print ("mount really doesn't like pierside calls ", e)
-#             pier_east = 1
-#          #Update incoming ra and dec with mounting offsets.
-#         print ("delta")
-#         print (delta_ra)
-#         ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
-#         dec += delta_dec
-#         ra, dec = ra_dec_fix_h(ra,dec)
-#         #if self.mount.EquatorialSystem == 1:    #equTopocentric
-#         if self.EquatorialSystem == 1:
-#             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
-#             #  Input is meant to be IRCS, so change to that Astropy type;
-#             icrs_coord = SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
-#             jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
-#             ra = jnow_coord.ra.hour
-#             dec = jnow_coord.dec.degree
-# 
-#             if self.offset_received:
-#                 ra += self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
-#                 dec += self.dec_offset
-#         ra_app_h, dec_app_d = ra_dec_fix_h(ra, dec)
-#         #'This is the "Forward" calculation of pointing.
-#         #Here we add in refraction and the TPOINT compatible mount model
-# 
-#         self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
-# 
-#         self.sid_now_r = self.current_sidereal*HTOR   #NB NB ADDED THIS FOR SRO, WHY IS THIS NEEDED?
-# 
-#         self.ha_obs_r, self.dec_obs_r, self.refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
-#         #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)
-#         #Here we would convert to model and calculate tracking rate correction.
-#         self.ha_mech, self.dec_mech = ptr_utility.transform_observed_to_mount_r(self.ha_obs_r, self.dec_obs_r, pier_east, loud=False, enable=True)
-#         self.ra_mech, self.dec_mech = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech, self.dec_mech, self.sid_now_r)
-#         self.ha_corr = ptr_utility.reduce_ha_r(self.ha_mech -self. ha_obs_r)*RTOS
-#         self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
-# 
-# 
-#         if not self.current_tracking_state:
-#             try:
-#                 self.wait_for_slew()
-#                 self.set_tracking_on()
-#             except Exception as e:
-#                 self.mount_busy=False
-#                 # Yes, this is an awfully non-elegant way to force a mount to start
-#                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
-#                 # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
-#                 if ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues < 5:
-#                     self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
-#                     self.home_command()
-#                     self.park_command()
-#                     self.wait_for_slew()
-#                     self.unpark_command()
-#                     self.wait_for_slew()
-#                     # mount command #
-#                     # while self.mount_busy:
-#                     #     time.sleep(0.05)
-#                     # self.mount_busy=True
-#                     # self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-#                     #### Slew to CoordinatesAsync block
-#                     self.slewtoRA = self.ra_mech*RTOH
-#                     self.slewtoDEC = self.dec_mech*RTOD
-#                     self.slewtoAsyncRequested=True
-#                     self.wait_for_mount_update()
-#                     self.wait_for_slew()
-#                     ###################################
-#                     #self.mount_busy=False
-#                     g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-#                     # end mount command #
-#                     self.wait_for_slew()
-#                     self.get_mount_coordinates()
-#                     print ("this mount may not accept tracking commands")
-#                 elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
-#                     print ("theskyx has been rescued one too many times. Just sending it to park.")
-#                     self.park_command()
-#                     self.wait_for_slew()
-#                     return
-#                 else:
-#                     print ("problem with setting tracking: ", e)
-# 
-# 
-#         self.move_time = time.time()
-#         az, alt = ptr_utility.transform_haDec_to_azAlt_r(self.ha_mech, self.dec_mech, self.latitude_r)
-#         plog('MODEL HA, DEC, AZ, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, az*RTOD, self.refr_asec)
-#         self.target_az = az*RTOD
-# 
-#         self.wait_for_slew()
-#         try:
-#             # mount command #
-#             # while self.mount_busy:
-#             #     time.sleep(0.05)
-#             # self.mount_busy=True
-#             # self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-#             #### Slew to CoordinatesAsync block
-#             self.slewtoRA = self.ra_mech*RTOH
-#             self.slewtoDEC = self.dec_mech*RTOD
-#             self.slewtoAsyncRequested=True
-#             self.wait_for_mount_update()
-#             self.wait_for_slew()
-#             ###################################
-#             #self.mount_busy=False
-#             g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-#             # end mount command #
-#             self.wait_for_slew()
-#             self.get_mount_coordinates()
-#         except Exception as e:
-#             self.mount_busy=False
-#             # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
-#             # And back on tracking.
-#             if ('Object reference not set to an instance of an object.' in str(e)):
-#                 self.home_command()
-#                 self.park_command()
-#                 self.wait_for_slew()
-#                 self.unpark_command()
-#                 self.wait_for_slew()
-#                 # mount command #
-#                 # while self.mount_busy:
-#                 #     time.sleep(0.05)
-#                 # self.mount_busy=True
-#                 # self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-#                 #### Slew to CoordinatesAsync block
-#                 self.slewtoRA = self.ra_mech*RTOH
-#                 self.slewtoDEC = self.dec_mech*RTOD
-#                 self.slewtoAsyncRequested=True
-#                 self.wait_for_mount_update()
-#                 self.wait_for_slew()
-#                 ###################################
-#                 #self.mount_busy=False
-#                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-#                 # end mount command #
-#                 self.wait_for_slew()
-#                 self.get_mount_coordinates()
-# 
-#         if not self.current_tracking_state:
-#             try:
-#                 self.wait_for_slew()
-#                 self.set_tracking_on()
-#             except Exception as e:
-#                 self.mount_busy=False
-#                 # Yes, this is an awfully non-elegant way to force a mount to start
-#                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
-#                 # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
-#                 if ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues < 5:
-#                     self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
-#                     self.park_command()
-#                     self.wait_for_slew()
-#                     self.unpark_command()
-#                     self.wait_for_slew()
-#                     # # mount command #
-#                     # while self.mount_busy:
-#                     #     time.sleep(0.05)
-#                     # self.mount_busy=True
-#                     # self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-#                     #### Slew to CoordinatesAsync block
-#                     self.slewtoRA = self.ra_mech*RTOH
-#                     self.slewtoDEC = self.dec_mech*RTOD
-#                     self.slewtoAsyncRequested=True
-#                     self.wait_for_mount_update()
-#                     self.wait_for_slew()
-#                     ###################################
-#                     #self.mount_busy=False
-#                     g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-#                     # end mount command #
-#                     self.wait_for_slew()
-#                     self.get_mount_coordinates()
-# 
-#                     print ("this mount may not accept tracking commands")
-#                 elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
-#                     print ("theskyx has been rescued one too many times. Just sending it to park.")
-#                     self.park_command()
-#                     self.wait_for_slew()
-#                     return
-#                 else:
-#                     print ("problem with setting tracking: ", e)
-# 
-#         g_dev['obs'].time_since_last_slew_or_exposure = time.time()
-#         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
-#         g_dev['obs'].images_since_last_solve = 10000
-#         self.wait_for_slew()
-# 
-# 
-#         ###  figure out velocity  Apparent place is unchanged.
-#         self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
-#         self.ha_obs_adv, self.dec_obs_adv, self.refr_adv = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_next_r)   #% minute advance
-#         self.ha_mech_adv, self.dec_mech_adv = ptr_utility.transform_observed_to_mount_r(self.ha_obs_adv, self.dec_obs_adv, pier_east, loud=False)
-#         self.ra_adv, self.dec_adv = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech_adv, self.dec_mech_adv, self.sid_next_r)
-#         self.adv_ha_corr = ptr_utility.reduce_ha_r(self.ha_mech_adv - self.ha_obs_adv)*RTOS     #These are mechanical values, not j.anything
-#         self.adv_dec_corr = ptr_utility.reduce_dec_r(self.dec_mech_adv - self.dec_obs_adv)*RTOS
-#         self.prior_seek_ha_h = self.ha_mech
-#         self.prior_seek_dec_d = self.dec_mech
-#         self.prior_seek_time = time.time()
-#         self.prior_sid_time =  self.sid_now_r
-#         '''
-#         The units of this property are arcseconds per SI (atomic) second.
-#         Please note that for historic reasons the units of the
-#         RightAscensionRate property are seconds of RA per sidereal second.
-#         '''
-#         if self.CanSetRightAscensionRate:
-#             self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
-#             # mount command #
-#             # while self.mount_busy:
-#             #     time.sleep(0.05)
-#             # self.mount_busy=True
-# 
-# 
-# 
-# 
-#             #self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
-# 
-#             self.request_set_RightAscensionRate=True
-#             self.request_new_RightAscensionRate=0.0
-#             self.wait_for_mount_update()
-# 
-# 
-#             #self.mount_busy=False
-#             # end mount command #
-# 
-#         else:
-#             self.prior_roll_rate = 0.0
-# 
-#         if self.CanSetDeclinationRate:
-#            self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
-#            # mount command #
-#            # while self.mount_busy:
-#            #     time.sleep(0.05)
-#            # self.mount_busy=True
-#            #self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
-# 
-#            self.request_set_DeclinationRate=True
-#            self.request_new_DeclinationRate=self.prior_pitch_rate
-#            self.wait_for_mount_update()
-# 
-# 
-#            # self.mount_busy=False
-#            # end mount command #
-#            #plog("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
-#         else:
-#             self.prior_pitch_rate = 0.0
-#         #plog(self.prior_roll_rate, self.prior_pitch_rate, refr_asec)
-#         # time.sleep(.5)
-#         # self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
-#         #time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
-#         if self.CanSetRightAscensionRate:
-#             # # mount command #
-#             # while self.mount_busy:
-#             #     time.sleep(0.05)
-#             # self.mount_busy=True
-#             #self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
-#             self.request_set_RightAscensionRate=True
-#             self.request_new_RightAscensionRate=0.0
-#             self.wait_for_mount_update()
-# 
-#             #self.mount_busy=False
-#             # end mount command #
-# 
-#         if self.CanSetDeclinationRate:
-#             # mount command #
-#             # while self.mount_busy:
-#             #     time.sleep(0.05)
-#             # self.mount_busy=True
-#             self.request_set_DeclinationRate=True
-#             self.request_new_DeclinationRate=self.prior_pitch_rate
-#             self.wait_for_mount_update()
-#             #self.mount.DeclinationRate = self.prior_pitch_rate
-#             # self.mount_busy=False
-#             # end mount command #
-# 
-#         plog("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
-#         #self.seek_commanded = True
-#         #I think to reliable establish rates, set them before the slew.
-#         #self.mount.Tracking = True
-#         #self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
-#         #self.current_icrs_ra = icrs_coord.ra.hour   #NB this assignment is incorrect
-#         #self.current_icrs_dec = icrs_coord.dec.degree
-# 
-#         # On successful movement of telescope reset the solving timer
-#         if reset_solve == True:
-#             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
-#             g_dev['obs'].images_since_last_solve = 10000
-#         self.wait_for_slew()
-# =============================================================================
+
 
     def stop_command(self, req, opt):
         plog("mount cmd: stopping mount")

@@ -991,54 +991,52 @@ class Mount:
         self.target_az = az*RTOD
 
 
-        if self.site == 'sro':   #NB NB NB why this bypass?   The sky has its own model.
-            self.mount.SlewToCoordinatesAsync(ra_app_h, dec_app_d)
-        else:
-            self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-            ###  figure out velocity  Apparent place is unchanged.
-            self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
-            self.ha_obs_adv, self.dec_obs_adv, self.refr_adv = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_next_r)   #% minute advance
-            self.ha_mech_adv, self.dec_mech_adv = ptr_utility.transform_observed_to_mount_r(self.ha_obs_adv, self.dec_obs_adv, pier_east, loud=False)
-            self.ra_adv, self.dec_adv = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech_adv, self.dec_mech_adv, self.sid_next_r)
-            self.adv_ha_corr = ptr_utility.reduce_ha_r(self.ha_mech_adv - self.ha_obs_adv)*RTOS     #These are mechanical values, not j.anything
-            self.adv_dec_corr = ptr_utility.reduce_dec_r(self.dec_mech_adv - self.dec_obs_adv)*RTOS
-            self.prior_seek_ha_h = self.ha_mech
-            self.prior_seek_dec_d = self.dec_mech
-            self.prior_seek_time = time.time()
-            self.prior_sid_time =  self.sid_now_r
-            '''
-            The units of this property are arcseconds per SI (atomic) second.
-            Please note that for historic reasons the units of the
-            RightAscensionRate property are seconds of RA per sidereal second.
-            '''
-            if self.mount.CanSetRightAscensionRate:
-                self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
-                self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
-            else:
-                self.prior_roll_rate = 0.0
-            if self.mount.CanSetDeclinationRate:
-               self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
-               self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
-               #print("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
-            else:
-                self.prior_pitch_rate = 0.0
-            #print(self.prior_roll_rate, self.prior_pitch_rate, refr_asec)
-           # time.sleep(.5)
-           # self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
-            time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
-            if self.mount.CanSetRightAscensionRate:
-                self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
 
-            if self.mount.CanSetDeclinationRate:
-                self.mount.DeclinationRate = self.prior_pitch_rate
+        self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+        ###  figure out velocity  Apparent place is unchanged.
+        self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
+        self.ha_obs_adv, self.dec_obs_adv, self.refr_adv = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_next_r)   #% minute advance
+        self.ha_mech_adv, self.dec_mech_adv = ptr_utility.transform_observed_to_mount_r(self.ha_obs_adv, self.dec_obs_adv, pier_east, loud=False)
+        self.ra_adv, self.dec_adv = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech_adv, self.dec_mech_adv, self.sid_next_r)
+        self.adv_ha_corr = ptr_utility.reduce_ha_r(self.ha_mech_adv - self.ha_obs_adv)*RTOS     #These are mechanical values, not j.anything
+        self.adv_dec_corr = ptr_utility.reduce_dec_r(self.dec_mech_adv - self.dec_obs_adv)*RTOS
+        self.prior_seek_ha_h = self.ha_mech
+        self.prior_seek_dec_d = self.dec_mech
+        self.prior_seek_time = time.time()
+        self.prior_sid_time =  self.sid_now_r
+        '''
+        The units of this property are arcseconds per SI (atomic) second.
+        Please note that for historic reasons the units of the
+        RightAscensionRate property are seconds of RA per sidereal second.
+        '''
+        if self.mount.CanSetRightAscensionRate:
+            self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
+            self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
+        else:
+            self.prior_roll_rate = 0.0
+        if self.mount.CanSetDeclinationRate:
+           self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
+           self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
+           #print("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
+        else:
+            self.prior_pitch_rate = 0.0
+         #print(self.prior_roll_rate, self.prior_pitch_rate, refr_asec)
+        # time.sleep(.5)
+        # self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
+        time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
+        if self.mount.CanSetRightAscensionRate:
+            self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
+
+        if self.mount.CanSetDeclinationRate:
+            self.mount.DeclinationRate = self.prior_pitch_rate
 
             print("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
-        self.seek_commanded = True
-        #I think to reliable establish rates, set them before the slew.
-        #self.mount.Tracking = True
-        #self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
-        #self.current_icrs_ra = icrs_coord.ra.hour   #NB this assignment is incorrect
-        #self.current_icrs_dec = icrs_coord.dec.degree
+            self.seek_commanded = True
+            #I think to reliable establish rates, set them before the slew.
+            #self.mount.Tracking = True
+            #self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
+            #self.current_icrs_ra = icrs_coord.ra.hour   #NB this assignment is incorrect
+            #self.current_icrs_dec = icrs_coord.dec.degree
 
     def slewToSkyFlatAsync(self):
         az, alt = self.astro_events.flat_spot_now()
