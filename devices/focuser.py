@@ -592,21 +592,31 @@ class Focuser:
         #     self.current_focus_position=self.get_position()
         #     #breakpoint()
 
-    def adjust_focus(self):
+    def adjust_focus(self, force_change=False):
         """Adjusts the focus relative to the last formal focus procedure.
 
         This uses te most recent focus procedure that used self.current_focus_temperature
         to focus. Functionally dependent of temp, coef_c, and filter thickness."""
 
-        try:
-            if g_dev['seq'].focussing or self.focuser_is_moving:
-                return
-        except:
-            # On initialisation there is no g_dev
-            # so this just skips early checks.
-            pass
-            #plog ("skipping focussing check... DEBUG MTF")
-
+        if not force_change: # If the filter is changed, then a force change is necessary.
+            try:
+                if g_dev['seq'].focussing or self.focuser_is_moving:
+                    return
+            except:
+                # On initialisation there is no g_dev
+                # so this just skips early checks.
+                pass
+        else:
+            # if we have to force a change but the focuser is currently moving
+            # realistically we need to wait for it to stop.
+            if self.focuser_is_moving:
+                reporty=0
+                while g_dev['foc'].focuser_is_moving:
+                    if reporty==0:
+                        plog ("Waiting for focuser to finish moving before adjusting focus")
+                        reporty=1
+                    time.sleep(0.05)
+            
         
         # try:
         if self.theskyx:
