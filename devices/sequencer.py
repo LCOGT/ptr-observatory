@@ -5750,12 +5750,12 @@ class Sequencer:
 
         # THE LOOP
         position_counter=0 # At various stages of the algorithm we attempt different things, this allows us to make that happen.
-        central_starting_focus=copy.deep_copy(foc_pos0)
+        central_starting_focus=copy.deepcopy(foc_pos0)
         
         
         focus_spots=[]
         #focus_fwhms=[]
-        
+        new_focus_position_to_attempt = central_starting_focus # Initialise this variable
         while True:
             position_counter=position_counter+1
             # General command bailout section
@@ -5847,67 +5847,101 @@ class Sequencer:
             # If you have the starting of a v-curve then now you can decide what to do.
             if position_counter >=5:
                 
-                # If the minimum is at one of the two points on the side of the v curve take another point beyond that point, otherwise try to fit a parabola
                 
                 print ("blah")
                 # Start off by sorting in order of focus positions
-                
-                # If you can fit a parabola, then you've got the focus
-                # If fit, then break
-                
+                focus_spots=sorted(focus_spots)
+                lowerbound=min(focus_spots)[0]
+                upperbound=max(focus_spots)[0]
+                bounds=[lowerbound,upperbound]
                 x = list()
                 y = list()
                 for i in focus_spots:
                     x.append(i[0])
                     y.append(i[1])
-                
-                fit = np.polyfit(x, y, 2)
-                f = np.poly1d(fit)
-                
-                plt.scatter(x,y)
-                plt.plot(x,f(x))
-                #plt.xlim(0.16888549099999922 - 0.000000001,0.1688855399999992 + 0.000000001)
-                plt.show()
-                
-                breakpoint()
-            
-            
-                # If successful, then move to focus and live long and prosper
-                solved_focus_position=1
-                solved_focus_fwhm=1
-                plog ('Moving to Solved focus:  ', round(solved_focus_position, 2), ' calculated:  ',  solved_focus_fwhm)
-
-                pos = int(solved_focus_position*g_dev['foc'].micron_to_steps)
-                g_dev['foc'].guarded_move(pos)
-
-                g_dev['foc'].last_known_focus = solved_focus_position
-                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
-                
-                if not dont_return_scope:
-                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                    self.wait_for_slew()
-
-            
-                self.af_guard = False
-                self.focussing=False
-                return solved_focus_position, solved_focus_fwhm
-            
-
-                
-
-
-
-                # If not, where are you? and which way do you go?
-                if True:
-                    # If both ends are > 5 arcseconds out, then start hunting around the minimum value
                     
-                    new_focus_position_to_attempt=1
+                # If the minimum is at one of the two points on the side of the v curve take another point beyond that point, otherwise try to fit a parabola
+                minimumfind=[]
+                for entry in focus_spots:
+                    minimumfind.append(entry[1])
+                minimum_index=minimumfind.index(min(minimumfind))
+                if minimum_index == 0 or minimum_index == 1:
+                    plog ("Minimum too close to the sampling edge, getting another dot")
+                    new_focus_position_to_attempt=min(minimumfind) - throw
+                    plt.scatter(x,y)
+                    plt.show()
+                elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:   
+                    plog ("Minimum too close to the sampling edge, getting another dot")
+                    new_focus_position_to_attempt=max(minimumfind) + throw
+                    plt.scatter(x,y)
+                    plt.show()
+                else:
                 
-                    # Else add a point to the "lowest end" as long as it is not larger than 5 arcseconds out.
                     
-                    new_focus_position_to_attempt=1
+                    
+                    # If you can fit a parabola, then you've got the focus
+                    # If fit, then break
+                    
+                    
+                    try:
+                        fit = np.polyfit(x, y, 2)
+                        f = np.poly1d(fit)
+                    except:
+                        print ("focus fit didn't work dunno y yet.")
+                        plog(traceback.format_exc())
+                        breakpoint()
+                    plt.scatter(x,y)
+                    plt.plot(x,f(x), color = 'green')
+                    #plt.xlim(0.16888549099999922 - 0.000000001,0.1688855399999992 + 0.000000001)
+                    #print (crit_points)
+                    crit_points = bounds + [x for x in f.deriv().r if x.imag == 0 and bounds[0] < x.real < bounds[1]]
+                    fitted_focus_position=crit_points[2]
+                    print (crit_points)
+                    print (len(crit_points))
+                    print ("focus pos:" + str(fitted_focus_position))
+                    fitted_focus_fwhm=f(fitted_focus_position)
+                    plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
+                    
+                    plt.show()
+                    
+                    
+                    #breakpoint()
+                
+                
+                    # If successful, then move to focus and live long and prosper                    
+                    plog ('Moving to Solved focus:  ', round(fitted_focus_position, 2), ' calculated:  ', fitted_focus_fwhm)
+    
+                    pos = int(fitted_focus_position*g_dev['foc'].micron_to_steps)
+                    g_dev['foc'].guarded_move(pos)
+    
+                    g_dev['foc'].last_known_focus = fitted_focus_position
+                    g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+                    
+                    if not dont_return_scope:
+                        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+                        self.wait_for_slew()
+    
+                
+                    self.af_guard = False
+                    self.focussing=False
+                    return fitted_focus_position,fitted_focus_fwhm
+                
+
+                
+
+
+
+                # # If not, where are you? and which way do you go?
+                # if True:
+                #     # If both ends are > 5 arcseconds out, then start hunting around the minimum value
+                    
+                #     new_focus_position_to_attempt=1
+                
+                #     # Else add a point to the "lowest end" as long as it is not larger than 5 arcseconds out.
+                    
+                #     new_focus_position_to_attempt=1
                     
                     
                     

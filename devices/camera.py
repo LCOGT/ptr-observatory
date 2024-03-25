@@ -1360,7 +1360,8 @@ class Camera:
         # Don't do them individually, set them up for multiprocessing
         focus_multiprocess=[]
         #for i in range(len(pointvalues)):
-        for i in range(len(200)):
+        #for i in range(min(len(pointvalues),200)):
+        for i in range(min(len(pointvalues),1000)):
 
             # # Don't take too long!
             # if ((time.time() - timer_for_bailing) > time_limit):# and good_radials > 20:
