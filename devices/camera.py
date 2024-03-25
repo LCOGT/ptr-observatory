@@ -1434,7 +1434,7 @@ class Camera:
                     fwhm_results.append(result)
                     if len(fwhm_results) >= number_to_collect:
                         break
-        print (fwhm_results)        
+        #print (fwhm_results)        
 
         print ("multiprocess timer: " + str(time.time() - mptimer))
                 

@@ -654,7 +654,7 @@ class Focuser:
                 plog ("Current focus: " +str(self.current_focus_position))
                 plog ("Focus different by: " + str((self.last_known_focus + adjust) - self.current_focus_position) +'. Sending adjust command.')
                 plog ("Filter offset: " + str(g_dev["fil"].filter_offset))
-                plog ("Temperature: " + str(temp_delta))
+                plog ("Temperature difference: " + str(temp_delta))
                 plog ("Temperature focus difference: " + str(round(temp_delta * float(self.focus_temp_slope), 1)))
                 #req = {"position": self.last_known_focus + adjust}
                 #opt = {}

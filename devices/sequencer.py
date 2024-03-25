@@ -5838,7 +5838,7 @@ class Sequencer:
                 spot = g_dev['obs'].fwhmresult['FWHM']
                 foc_pos=g_dev['foc'].current_focus_position
                 
-                g_dev['obs'].send_to_user("Focus position:" + str(focus_position_this_loop) + " FWHM: " + str(spot), p_level='INFO')
+                g_dev['obs'].send_to_user("Focus position: " + str(focus_position_this_loop) + " FWHM: " + str(round(spot,2)), p_level='INFO')
                 
                 if not np.isnan(spot):
                     focus_spots.append((foc_pos,spot))
@@ -5898,7 +5898,7 @@ class Sequencer:
                     fitted_focus_position=crit_points[2]
                     print (crit_points)
                     print (len(crit_points))
-                    print ("focus pos:" + str(fitted_focus_position))
+                    print ("focus pos: " + str(fitted_focus_position))
                     fitted_focus_fwhm=f(fitted_focus_position)
                     plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
                     
@@ -5917,15 +5917,31 @@ class Sequencer:
                     g_dev['foc'].last_known_focus = fitted_focus_position
                     g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
                     
+                    
+    
+                        
+                    #g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
+        
+                    # Take the confirming shot
+                    result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+                    
+                    spot = g_dev['obs'].fwhmresult['FWHM']
+                    foc_pos=g_dev['foc'].current_focus_position
+                    
+                    g_dev['obs'].send_to_user("Solved Focus Check position: " + str(focus_position_this_loop) + " FWHM: " + str(round(spot,2)), p_level='INFO')
+                    
+    
+    
                     if not dont_return_scope:
                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                         self.wait_for_slew()
     
-                
                     self.af_guard = False
                     self.focussing=False
+                    if not dont_log_focus:
+                        g_dev['foc'].af_log(fitted_focus_position, fitted_focus_fwhm, spot)
                     return fitted_focus_position,fitted_focus_fwhm
                 
 
