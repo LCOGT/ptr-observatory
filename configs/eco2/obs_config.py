@@ -169,7 +169,7 @@ site_config = {
         'sequencer': 'sequencer1'
         },
     'device_types': [
-            'mount',
+            #'mount',
             #'telescope',
             #'screen',
             #'rotator',
@@ -181,7 +181,7 @@ site_config = {
             ],
 
     'short_status_devices': [
-            'mount',
+            #'mount',
             #'telescope',
             'screen',
             'rotator',
@@ -461,18 +461,26 @@ site_config = {
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
 
 
-                # OFFSET IS OK, BUT NEEDS TO BE A LITTLE BIT HIGHER FOR ECO@... cutting close to the edge!
-                'direct_qhy_readout_mode' : 0,
-                'direct_qhy_gain' : 26,
+                # # OFFSET IS OK, BUT NEEDS TO BE A LITTLE BIT HIGHER FOR ECO@... cutting close to the edge!
+                # 'direct_qhy_readout_mode' : 0,
+                # 'direct_qhy_gain' : 26,
+                # 'direct_qhy_offset' : 60,
+
+                # 'direct_qhy_usb_traffic' : 60,
+
+                # 'set_qhy_usb_speed': False,
+                # 'direct_qhy_usb_speed' : 60,
+
+
+                #HERE IS THE POTENTIAL MODE 1 SETTINGS
+                'direct_qhy_readout_mode' : 1,
+                'direct_qhy_gain' : 56,
                 'direct_qhy_offset' : 60,
-
-                'direct_qhy_usb_traffic' : 60,
-
-                'set_qhy_usb_speed': False,
-                'direct_qhy_usb_speed' : 60,
-
-
-
+                #'direct_qhy_usb_speed' : 50,
+                'direct_qhy_usb_traffic' : 60,  #Early 20240103 = 50, not clear earlier but better than before.
+                #The pattern before came and went. Now consitent at 50.  Changing to 45.
+                #Which one of these is actually used?
+                'set_qhy_usb_speed': True,
 
 
                 'is_osc' : True,
@@ -630,7 +638,7 @@ site_config = {
                 'readout_mode': 'Normal',
                 'readout_speed':  0.4,
                 'readout_seconds': 2.4,
-                'smart_stack_exposure_time': 15,
+                'smart_stack_exposure_time': 30,
 
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 'square_detector': False,

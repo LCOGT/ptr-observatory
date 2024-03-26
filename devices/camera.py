@@ -2850,31 +2850,33 @@ class Camera:
 
                 # If the pier just flipped, trigger a recentering exposure.
                 #if not g_dev['mnt'].rapid_park_indicator:# and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-                if not g_dev['mnt'].rapid_park_indicator:# and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-                    #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
-                    self.wait_for_slew()
-                    if g_dev['mnt'].pier_flip_detected==True:
-                        plog ("PIERFLIP DETECTED, RECENTERING.")
-                        g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
-                        g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
-                        g_dev['obs'].pointing_correction_request_time = time.time()
-                        g_dev['obs'].pointing_correction_request_ra = g_dev["mnt"].last_ra_requested
-                        g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
-                        g_dev['obs'].pointing_correction_request_ra_err = 0
-                        g_dev['obs'].pointing_correction_request_dec_err = 0
-                        g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)
-                        Nsmartstack=1
-                        sskcounter=2
-                        self.currently_in_smartstack_loop=False
-                        break
-                    else:
-                        #plog ("MTF temp reporting. No pierflip.")
-                        pass
-                #g_dev['mnt'].previous_pier_side=g_dev['mnt'].rapid_pier_indicator
-
-                if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread:
-                    plog ("Major shift detected, recentering.")
-                    g_dev['obs'].check_platesolve_and_nudge()
+                if not g_dev['obs'].mountless_operation:           
+                
+                    if not g_dev['mnt'].rapid_park_indicator:# and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                        #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
+                        self.wait_for_slew()
+                        if g_dev['mnt'].pier_flip_detected==True:
+                            plog ("PIERFLIP DETECTED, RECENTERING.")
+                            g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
+                            g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
+                            g_dev['obs'].pointing_correction_request_time = time.time()
+                            g_dev['obs'].pointing_correction_request_ra = g_dev["mnt"].last_ra_requested
+                            g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
+                            g_dev['obs'].pointing_correction_request_ra_err = 0
+                            g_dev['obs'].pointing_correction_request_dec_err = 0
+                            g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)
+                            Nsmartstack=1
+                            sskcounter=2
+                            self.currently_in_smartstack_loop=False
+                            break
+                        else:
+                            #plog ("MTF temp reporting. No pierflip.")
+                            pass
+                    #g_dev['mnt'].previous_pier_side=g_dev['mnt'].rapid_pier_indicator
+    
+                    if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread:
+                        plog ("Major shift detected, recentering.")
+                        g_dev['obs'].check_platesolve_and_nudge()
 
                 self.tempStartupExposureTime=time.time()
 
@@ -3013,6 +3015,7 @@ class Camera:
 
 
                             # Good spot to check if we need to nudge the telescope
+                            
                             g_dev['obs'].check_platesolve_and_nudge()
                             g_dev['obs'].time_of_last_exposure = time.time()
 
@@ -3025,8 +3028,13 @@ class Camera:
                             # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
                             # This is now done in async update_status thread
                             #g_dev["mnt"].get_mount_coordinates()
-                            ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
-                            dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
+                            if not g_dev['obs'].mountless_operation:
+                                ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
+                                dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
+                            else:
+                                ra_at_time_of_exposure = 99.9
+                                dec_at_time_of_exposure = 99.9
+                                
                             observer_user_name = user_name
 
                             try:
@@ -3045,27 +3053,28 @@ class Camera:
 
 
                             # Always check rotator just before exposure  The Rot jitters wehn parked so
-                            # this give rot moving report during bia darks
-                            rot_report=0
-                            if g_dev['rot']!=None:
-                                if not g_dev['mnt'].rapid_park_indicator and not g_dev['obs'].rotator_has_been_checked_since_last_slew:
-                                    g_dev['obs'].rotator_has_been_checked_since_last_slew = True
-                                    while g_dev['rot'].rotator.IsMoving:    #This signal fibrulates!
-                                        #if g_dev['rot'].rotator.IsMoving:
-                                         if rot_report == 0 :
-                                             plog("Waiting for camera rotator to catch up. ")
-                                             g_dev["obs"].send_to_user("Waiting for instrument rotator to catch up before exposing.")
+        
+                            if not g_dev['obs'].mountless_operation:
+                                rot_report=0
+                                if g_dev['rot']!=None:
+                                    if not g_dev['mnt'].rapid_park_indicator and not g_dev['obs'].rotator_has_been_checked_since_last_slew:
+                                        g_dev['obs'].rotator_has_been_checked_since_last_slew = True
+                                        while g_dev['rot'].rotator.IsMoving:    #This signal fibrulates!
+                                            #if g_dev['rot'].rotator.IsMoving:
+                                             if rot_report == 0 :
+                                                 plog("Waiting for camera rotator to catch up. ")
+                                                 g_dev["obs"].send_to_user("Waiting for instrument rotator to catch up before exposing.")
+    
+                                                 rot_report=1
+                                             time.sleep(0.2)
+                                             if g_dev["obs"].stop_all_activity:
+                                                 Nsmartstack=1
+                                                 sskcounter=2
+                                                 plog ("stop_all_activity cancelling out of camera exposure")
+                                                 self.currently_in_smartstack_loop=False
+                                                 self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+                                                 return
 
-                                             rot_report=1
-                                         time.sleep(0.2)
-                                         if g_dev["obs"].stop_all_activity:
-                                             Nsmartstack=1
-                                             sskcounter=2
-                                             plog ("stop_all_activity cancelling out of camera exposure")
-                                             self.currently_in_smartstack_loop=False
-                                             self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
-                                             self.exposure_busy = False 
-                                             return
 
                             if (bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type or a_dark_exposure) and not manually_requested_calibration:
 
@@ -3103,21 +3112,23 @@ class Camera:
                                 return 'cancelled'
 
                             #plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
-                            self.wait_for_slew()
-                            if g_dev['mnt'].pier_flip_detected==True:
-                                plog("Detected a pier flip just before exposure!")
-                                g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
-                                g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
-                                g_dev['obs'].pointing_correction_request_time = time.time()
-                                g_dev['obs'].pointing_correction_request_ra = g_dev["mnt"].last_ra_requested
-                                g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
-                                g_dev['obs'].pointing_correction_request_ra_err = 0
-                                g_dev['obs'].pointing_correction_request_dec_err = 0
-                                g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)
-                                Nsmartstack=1
-                                sskcounter=2
-                                self.currently_in_smartstack_loop=False
-                                break
+                            
+                            if not g_dev['obs'].mountless_operation:
+                                self.wait_for_slew()
+                                if g_dev['mnt'].pier_flip_detected==True:
+                                    plog("Detected a pier flip just before exposure!")
+                                    g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
+                                    g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
+                                    g_dev['obs'].pointing_correction_request_time = time.time()
+                                    g_dev['obs'].pointing_correction_request_ra = g_dev["mnt"].last_ra_requested
+                                    g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
+                                    g_dev['obs'].pointing_correction_request_ra_err = 0
+                                    g_dev['obs'].pointing_correction_request_dec_err = 0
+                                    g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)
+                                    Nsmartstack=1
+                                    sskcounter=2
+                                    self.currently_in_smartstack_loop=False
+                                    break
 
                             if imtype in ['bias','dark'] or a_dark_exposure:
                                 # Artifical wait time for bias and dark
@@ -3192,14 +3203,20 @@ class Camera:
                             # airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
                             # if airmass > 10: airmass = 10
 
-
-                            airmass = round(g_dev['mnt'].airmass, 4)
-
-                            airmass_of_observation = airmass
-                            g_dev["airmass"] = float(airmass_of_observation)
-
-                            azimuth_of_observation = g_dev['mnt'].az
-                            altitude_of_observation = g_dev['mnt'].alt
+                            
+                            if not g_dev['obs'].mountless_operation:
+                                airmass = round(g_dev['mnt'].airmass, 4)
+    
+                                airmass_of_observation = airmass
+                                g_dev["airmass"] = float(airmass_of_observation)
+    
+                                azimuth_of_observation = g_dev['mnt'].az
+                                altitude_of_observation = g_dev['mnt'].alt
+                            else:
+                                airmass_of_observation = 99.9
+    
+                                azimuth_of_observation = 99.9
+                                altitude_of_observation = 99.9
 
 
 
@@ -3224,9 +3241,11 @@ class Camera:
                                 pass
                         except:
                             plog ("couldn't grab quick status focus")
-                        g_dev["mnt"].get_rapid_exposure_status(
-                            self.pre_mnt
-                        )  # Should do this close to the exposure
+                        
+                        if not g_dev['obs'].mountless_operation:
+                            g_dev["mnt"].get_rapid_exposure_status(
+                                self.pre_mnt
+                            )  # Should do this close to the exposure
 
 
                         # We call below to keep this subroutine a reasonable length, Basically still in Phase 2
@@ -3296,23 +3315,25 @@ class Camera:
         # This is here because a single exposure may have a flip in it, hence
         # we check here.
         #if not g_dev['mnt'].rapid_park_indicator:# and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-        if not g_dev['mnt'].rapid_park_indicator: # and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-            self.wait_for_slew()
-            #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
-            if g_dev['mnt'].pier_flip_detected==True:
-                plog ("PIERFLIP DETECTED, RECENTERING.")
-                g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
-                g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
-                g_dev['obs'].pointing_correction_request_time = time.time()
-                g_dev['obs'].pointing_correction_request_ra = g_dev["mnt"].last_ra_requested
-                g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
-                g_dev['obs'].pointing_correction_request_ra_err = 0
-                g_dev['obs'].pointing_correction_request_dec_err = 0
-                g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)
+        if not g_dev['obs'].mountless_operation:
 
-            else:
-                #plog ("MTF temp reporting. No pierflip.")
-                pass
+            if not g_dev['mnt'].rapid_park_indicator: # and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                self.wait_for_slew()
+                #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
+                if g_dev['mnt'].pier_flip_detected==True:
+                    plog ("PIERFLIP DETECTED, RECENTERING.")
+                    g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
+                    g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
+                    g_dev['obs'].pointing_correction_request_time = time.time()
+                    g_dev['obs'].pointing_correction_request_ra = g_dev["mnt"].last_ra_requested
+                    g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
+                    g_dev['obs'].pointing_correction_request_ra_err = 0
+                    g_dev['obs'].pointing_correction_request_dec_err = 0
+                    g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)
+    
+                else:
+                    #plog ("MTF temp reporting. No pierflip.")
+                    pass
 
         self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
 
@@ -3691,47 +3712,48 @@ class Camera:
 
                 self.exposure_busy=False
                 # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
+                if not g_dev['obs'].mountless_operation:
 
-                if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing:
-                    if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
-                        #breakpoint()
-                        if (self.pixscale == None):
-                            ra_random_dither=(((random.randint(0,50)-25) * 0.75 / 3600 ) / 15)
-                            dec_random_dither=((random.randint(0,50)-25) * 0.75 /3600 )
-                        else:
-                            ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
-                            dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
-                        try:
-                            self.wait_for_slew()
-                            g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
-                            # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-
-                        except Exception as e:
-                            plog (traceback.format_exc())
-                            if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-
-                                plog("The SkyX had an error.")
-                                plog("Usually this is because of a broken connection.")
-                                plog("Killing then waiting 60 seconds then reconnecting")
-                                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-
-                    # Otherwise immediately nudge scope back to initial pointing in smartstack after the last frame of the smartstack
-                    # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
-                    elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
-                        try:
-                            self.wait_for_slew()
-                            g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra, dec=initial_smartstack_dec)
-                            # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-
-                        except Exception as e:
-                            plog (traceback.format_exc())
-                            if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-
-                                plog("The SkyX had an error.")
-                                plog("Usually this is because of a broken connection.")
-                                plog("Killing then waiting 60 seconds then reconnecting")
-                                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-
+                    if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing:
+                        if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
+                            #breakpoint()
+                            if (self.pixscale == None):
+                                ra_random_dither=(((random.randint(0,50)-25) * 0.75 / 3600 ) / 15)
+                                dec_random_dither=((random.randint(0,50)-25) * 0.75 /3600 )
+                            else:
+                                ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
+                                dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
+                            try:
+                                self.wait_for_slew()
+                                g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
+                                # no wait for slew here as we start downloading the image. the wait_for_slew is after that
+    
+                            except Exception as e:
+                                plog (traceback.format_exc())
+                                if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+    
+                                    plog("The SkyX had an error.")
+                                    plog("Usually this is because of a broken connection.")
+                                    plog("Killing then waiting 60 seconds then reconnecting")
+                                    g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+    
+                        # Otherwise immediately nudge scope back to initial pointing in smartstack after the last frame of the smartstack
+                        # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
+                        elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
+                            try:
+                                self.wait_for_slew()
+                                g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra, dec=initial_smartstack_dec)
+                                # no wait for slew here as we start downloading the image. the wait_for_slew is after that
+    
+                            except Exception as e:
+                                plog (traceback.format_exc())
+                                if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+    
+                                    plog("The SkyX had an error.")
+                                    plog("Usually this is because of a broken connection.")
+                                    plog("Killing then waiting 60 seconds then reconnecting")
+                                    g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+    
 
 
                 # If you are shooting for short exposure times, the overhead
