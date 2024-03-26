@@ -602,7 +602,7 @@ site_config = {
                 'smart_stack_exposure_time' : 45,
                 'substack': False, # Substack with this camera
                 
-                'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
+                'smart_stack_exposure_NB_multiplier':  1,   #Michael's setting
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
                 'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
