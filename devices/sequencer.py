@@ -1832,7 +1832,8 @@ class Sequencer:
             if g_dev["fil"].null_filterwheel == False:
                 self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command({"filter": 'dark'}, {})
 
-            g_dev['mnt'].park_command({}, {}) # Get there early
+            if not g_dev['obs'].mountless_operation:
+                g_dev['mnt'].park_command({}, {}) # Get there early
 
             # # Wait a significant fraction of time for darkslides, filters, scopes to settle
             # plog ("Waiting a few minutes for everything to settle down before taking bias and darks.")
@@ -1879,7 +1880,8 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -1901,7 +1903,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -1923,7 +1927,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -1945,7 +1951,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -1966,7 +1974,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -1988,7 +1998,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2010,7 +2022,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2031,7 +2045,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2052,7 +2068,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2079,7 +2097,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2100,7 +2120,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2121,7 +2143,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2142,7 +2166,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2164,7 +2190,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2187,7 +2215,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2209,7 +2239,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2234,7 +2266,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2255,7 +2289,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2279,7 +2315,9 @@ class Sequencer:
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
@@ -2333,9 +2371,10 @@ class Sequencer:
                     break
 
             plog(" Bias/Dark acquisition is finished normally.")
+            if not g_dev['obs'].mountless_operation:
+                g_dev['mnt'].park_command({}, {})
 
-            g_dev['mnt'].park_command({}, {}) # Get there early
-            plog("Bias/Dark Phase has passed.")
+            #plog("Bias/Dark Phase has passed.")
             self.bias_dark_latch = False
             break
         self.bias_dark_latch = False
