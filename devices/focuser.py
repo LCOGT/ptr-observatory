@@ -600,7 +600,7 @@ class Focuser:
 
         if not force_change: # If the filter is changed, then a force change is necessary.
             try:
-                if g_dev['seq'].focussing or self.focuser_is_moving:
+                if g_dev['seq'].focussing or self.focuser_is_moving or g_dev['seq'].measuring_focus_offsets:
                     return
             except:
                 # On initialisation there is no g_dev

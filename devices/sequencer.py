@@ -262,6 +262,8 @@ class Sequencer:
         # can know when to cancel out of the block
         self.blockend = None
 
+        # Initialise
+        self.measuring_focus_offsets=False
 
         # We keep track on when we poll for projects
         # It doesn't have to be quite as swift as real-time.
@@ -5481,6 +5483,8 @@ class Sequencer:
 
     def filter_focus_offset_estimator_script(self):
 
+        self.measuring_focus_offsets=True        
+
         plog ("Determining offsets between filters")
 
         plog ("First doing a normal run on the 'focus' filter first")
@@ -5554,6 +5558,8 @@ class Sequencer:
 
         #breakpoint()
         self.auto_focus_script(req2, opt,skip_pointing=True)
+        
+        self.measuring_focus_offsets=False
 
 
     def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, dont_return_scope=False, dont_log_focus=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
