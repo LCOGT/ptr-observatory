@@ -1304,73 +1304,77 @@ class Mount:
         elif action == "unpark":
             self.unpark_command(req, opt)
         elif action == 'center_on_pixels':
-            plog (command)
-            try:
-
-                # Need to convert image fraction into offset
-                image_y = req['image_x']
-                image_x = req['image_y']
-                # And the current pixel scale
-                pixscale=float(req['header_pixscale'])
-                pixscale_hours=(pixscale/60/60) / 15
-                pixscale_degrees=(pixscale/60/60)
-                # Calculate the RA and Dec of the pointing
-                center_image_ra=float(req['header_rahrs'])
-                center_image_dec=float(req['header_decdeg'])
-
-                # y pixel seems to be RA
-                # x pixel seems to be DEC
-                # negative for dec
-
-                x_center= int(g_dev['cam'].imagesize_x/2)
-                y_center= int(g_dev['cam'].imagesize_y/2)
-
-                #x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
-                #y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
-                x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
-                y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
-                plog ("X pixel shift: " + str(x_pixel_shift))
-                plog ("Y pixel shift: " + str(y_pixel_shift))
-
-                gora=center_image_ra + (y_pixel_shift * pixscale_hours)
-                godec=center_image_dec - (x_pixel_shift * pixscale_degrees)
-
-                plog ("X centre shift (asec): " + str((x_pixel_shift * pixscale)))
-                plog ("Y centre shift (asec): " + str(((y_pixel_shift * pixscale))))
-
-                plog ("X centre shift (hours): " + str((x_pixel_shift * pixscale_hours)))
-                plog ("Y centre shift (degrees): " + str(((y_pixel_shift * pixscale_degrees))))
-                #plog ("New RA: " + str(req['ra']))
-                #plog ("New DEC: " + str(req['dec']))
-
-                #plog ("New RA - Old RA = "+ str(float(req['ra'])-center_image_ra))
-                #plog ("New dec - Old dec = "+ str(float(req['dec'])-center_image_dec))
-
-                self.wait_for_slew()
-                # mount command #
-                # while self.mount_busy:
-                #     time.sleep(0.05)
-                # self.mount_busy=True
-                #self.mount.SlewToCoordinatesAsync(gora, godec)
-                #### Slew to CoordinatesAsync block
-                self.slewtoRA = gora
-                self.slewtoDEC = godec
-                self.slewtoAsyncRequested=True
-                self.wait_for_mount_update()
-                self.wait_for_slew()
-                ###################################
-                g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-                # self.mount_busy=False
-                # end mount command #
-                self.wait_for_slew()
-                self.get_mount_coordinates()
-
-                #breakpoint()
-                #self.go_command(ra=gora, dec=godec)#, offset=True, calibrate=False)
-            except:
-                plog (traceback.format_exc())
-                self.mount_busy=False
-                plog ("seems the image header hasn't arrived at the UI yet, wait a moment")
+            if g_dev['obs'].open_and_enabled_to_observe:
+                plog (command)
+                try:
+    
+                    # Need to convert image fraction into offset
+                    image_y = req['image_x']
+                    image_x = req['image_y']
+                    # And the current pixel scale
+                    pixscale=float(req['header_pixscale'])
+                    pixscale_hours=(pixscale/60/60) / 15
+                    pixscale_degrees=(pixscale/60/60)
+                    # Calculate the RA and Dec of the pointing
+                    center_image_ra=float(req['header_rahrs'])
+                    center_image_dec=float(req['header_decdeg'])
+    
+                    # y pixel seems to be RA
+                    # x pixel seems to be DEC
+                    # negative for dec
+    
+                    x_center= int(g_dev['cam'].imagesize_x/2)
+                    y_center= int(g_dev['cam'].imagesize_y/2)
+    
+                    #x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
+                    #y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
+                    x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
+                    y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
+                    plog ("X pixel shift: " + str(x_pixel_shift))
+                    plog ("Y pixel shift: " + str(y_pixel_shift))
+    
+                    gora=center_image_ra + (y_pixel_shift * pixscale_hours)
+                    godec=center_image_dec - (x_pixel_shift * pixscale_degrees)
+    
+                    plog ("X centre shift (asec): " + str((x_pixel_shift * pixscale)))
+                    plog ("Y centre shift (asec): " + str(((y_pixel_shift * pixscale))))
+    
+                    plog ("X centre shift (hours): " + str((x_pixel_shift * pixscale_hours)))
+                    plog ("Y centre shift (degrees): " + str(((y_pixel_shift * pixscale_degrees))))
+                    #plog ("New RA: " + str(req['ra']))
+                    #plog ("New DEC: " + str(req['dec']))
+    
+                    #plog ("New RA - Old RA = "+ str(float(req['ra'])-center_image_ra))
+                    #plog ("New dec - Old dec = "+ str(float(req['dec'])-center_image_dec))
+    
+                    self.wait_for_slew()
+                    # mount command #
+                    # while self.mount_busy:
+                    #     time.sleep(0.05)
+                    # self.mount_busy=True
+                    #self.mount.SlewToCoordinatesAsync(gora, godec)
+                    #### Slew to CoordinatesAsync block
+                    self.slewtoRA = gora
+                    self.slewtoDEC = godec
+                    self.slewtoAsyncRequested=True
+                    self.wait_for_mount_update()
+                    self.wait_for_slew()
+                    ###################################
+                    g_dev['obs'].rotator_has_been_checked_since_last_slew=False
+                    # self.mount_busy=False
+                    # end mount command #
+                    self.wait_for_slew()
+                    self.get_mount_coordinates()
+    
+                    #breakpoint()
+                    #self.go_command(ra=gora, dec=godec)#, offset=True, calibrate=False)
+                except:
+                    plog (traceback.format_exc())
+                    #self.mount_busy=False
+                    plog ("seems the image header hasn't arrived at the UI yet, wait a moment")
+            else:
+                g_dev['obs'].send_to_user("Observatory not open. Center on pixels not done.")
+                plog("Observatory not open. Center on pixels not done.")
 
         elif action == 'sky_flat_position':
             g_dev['mnt'].go_command(skyflatspot=True)

@@ -940,176 +940,180 @@ class Observatory:
                 for cmd in unread_commands:
                     if (self.admin_owner_commands_only and (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']))) or (not self.admin_owner_commands_only):
 
-
-                        if cmd["action"] in ["cancel_all_commands", "stop"] or cmd["action"].lower() in ["stop", "cancel"] or (cmd["action"] == "run" and cmd["required_params"]["script"] == "stopScript"):
-                            #breakpoint()
-                            # A stop script command flags to the running scripts that it is time to stop
-                            # activity and return. This period runs for about 30 seconds.
-                            g_dev["obs"].send_to_user(
-                                "A Cancel/Stop has been called. Cancelling out of running scripts over 30 seconds.")
-                            g_dev['seq'].stop_script_called = True
-                            g_dev['seq'].stop_script_called_time = time.time()
-                            # Cancel out of all running exposures.
-                            g_dev['obs'].cancel_all_activity()
-                        else:
-                            try:
-                                action = cmd['action']
-                            except:
-                                action = None
-
-                            try:
-                                script = cmd['required_params']['script']
-                            except:
-                                script = None
-
-                            if cmd["deviceType"]=='obs':
-                                plog ('OBS COMMAND: received a system wide command')
-
-                                if cmd['action']=='configure_pointing_reference_off':
-                                    self.mount_reference_model_off = True
-                                    plog ('mount_reference_model_off')
-                                    g_dev["obs"].send_to_user("mount_reference_model_off.")
-
-                                elif cmd['action']=='configure_pointing_reference_on':
-                                    self.mount_reference_model_off = False
-                                    plog ('mount_reference_model_on')
-                                    g_dev["obs"].send_to_user("mount_reference_model_on.")
-
-                                elif cmd['action']=='configure_telescope_mode':
-
-                                    if cmd['required_params']['mode'] == 'manual':
-                                        self.scope_in_manual_mode = True
-                                        plog ('Manual Mode Engaged.')
-                                        g_dev["obs"].send_to_user('Manual Mode Engaged.')
-                                    else:
-                                        self.scope_in_manual_mode = False
-                                        plog ('Manual Mode Turned Off.')
-                                        g_dev["obs"].send_to_user('Manual Mode Turned Off.')
-
-                                elif cmd['action']=='configure_moon_safety':
-
-                                    if cmd['required_params']['mode'] == 'on':
-                                        self.moon_checks_on = True
-                                        plog ('Moon Safety On')
-                                        g_dev["obs"].send_to_user('Moon Safety On')
-                                    else:
-                                        self.moon_checks_on = False
-                                        plog ('Moon Safety Off')
-                                        g_dev["obs"].send_to_user('Moon Safety Off')
-
-                                elif cmd['action']=='configure_sun_safety':
-
-                                    if cmd['required_params']['mode'] =='on':
-                                        self.sun_checks_on = True
-                                        plog ('Sun Safety On')
-                                        g_dev["obs"].send_to_user('Sun Safety On')
-                                    else:
-                                        self.sun_checks_on = False
-                                        plog ('Sun Safety Off')
-                                        g_dev["obs"].send_to_user('Sun Safety Off')
-
-                                elif cmd['action']=='configure_altitude_safety':
-
-                                    if cmd['required_params']['mode'] == 'on':
-                                        self.altitude_checks_on = True
-                                        plog ('Altitude Safety On')
-                                        g_dev["obs"].send_to_user('Altitude Safety On')
-                                    else:
-                                        self.altitude_checks_on = False
-                                        plog ('Altitude Safety Off')
-                                        g_dev["obs"].send_to_user('Altitude Safety Off')
-
-                                elif cmd['action']=='configure_daytime_exposure_safety':
-
-                                    if cmd['required_params']['mode'] == 'on':
-                                        self.daytime_exposure_time_safety_on = True
-                                        plog ('Daytime Exposure Safety On')
-                                        g_dev["obs"].send_to_user('Daytime Exposure Safety On')
-                                    else:
-                                        self.daytime_exposure_time_safety_on = False
-                                        plog ('Daytime Exposure Safety Off')
-                                        g_dev["obs"].send_to_user('Daytime Exposure Safety Off')
-
-                                elif cmd['action']=='start_simulating_open_roof':
-                                    self.assume_roof_open = True
-                                    self.open_and_enabled_to_observe=True
-                                    g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
-                                    self.enclosure_status_timer = datetime.datetime.now()
-                                    plog ('Roof is now assumed to be open. WEMA shutter status is ignored.')
-                                    g_dev["obs"].send_to_user('Roof is now assumed to be open. WEMA shutter status is ignored.')
-
-                                elif cmd['action']=='stop_simulating_open_roof':
-                                    self.assume_roof_open = False
-                                    g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
-                                    self.enclosure_status_timer = datetime.datetime.now()
-                                    plog ('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
-                                    g_dev["obs"].send_to_user('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
-
-
-                                elif cmd['action']=='configure_who_can_send_commands':
-                                    if cmd['required_params']['only_accept_admin_or_owner_commands'] == True:
-                                        self.admin_owner_commands_only = True
-                                        plog ('Scope set to only accept admin or owner commands')
-                                        g_dev["obs"].send_to_user('Scope set to only accept admin or owner commands')
-                                    else:
-                                        self.admin_owner_commands_only = False
-                                        plog ('Scope now open to all user commands, not just admin or owner.')
-                                        g_dev["obs"].send_to_user('Scope now open to all user commands, not just admin or owner.')
-                                elif cmd['action']=='obs_configure_auto_center_on':
-                                    self.auto_centering_off = False
-                                    plog ('Scope set to automatically center.')
-                                    g_dev["obs"].send_to_user('Scope set to automatically center.')
-                                elif cmd['action']=='obs_configure_auto_center_off':
-                                    self.auto_centering_off = True
-                                    plog ('Scope set to not automatically center.')
-                                    g_dev["obs"].send_to_user('Scope set to not automatically center.')
-                                else:
-                                    plog ("Unknown command: " + str(cmd))
-
-
-                                self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
-
-                                self.request_update_status() #self.update_status(dont_wait=True)
-
-                            # Check here for admin/owner only functions
-                            elif action == "run" and script == 'collectScreenFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                plog("Request rejected as flats can only be commanded by admin user.")
-                                g_dev['obs'].send_to_user(
-                                    "Request rejected as flats can only be commanded by admin user.")
-                            elif action == "run" and script == 'collectSkyFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                plog("Request rejected as flats can only be commanded by admin user.")
-                                g_dev['obs'].send_to_user(
-                                    "Request rejected as flats can only be commanded by admin user.")
-
-                            elif action == "run" and script in ['pointingRun'] and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                plog("Request rejected as pointing runs can only be commanded by admin user.")
-                                g_dev['obs'].send_to_user(
-                                    "Request rejected as pointing runs can only be commanded by admin user.")
-                            elif action == "run" and script in ("collectBiasesAndDarks") and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                plog("Request rejected as bias and darks can only be commanded by admin user.")
-                                g_dev['obs'].send_to_user(
-                                    "Request rejected as bias and darks can only be commanded by admin user.")
-                            elif action == "run" and script in ('estimateFocusOffset') and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                plog("Request rejected as focus offset estimation can only be commanded by admin user.")
-                                g_dev['obs'].send_to_user(
-                                    "Request rejected as focus offset estimation can only be commanded by admin user.")
-
-                            # Check here for irrelevant commands
-                            elif cmd['deviceType'] == 'screen' and self.config['screen']['screen1']['driver'] == None:
-                                plog("Refusing command as there is no screen")
-                                g_dev['obs'].send_to_user("Request rejected as site has no flat screen.")
-                            elif cmd['deviceType'] == 'rotator' and self.config['rotator']['rotator1']['driver'] == None:
-                                plog("Refusing command as there is no rotator")
-                                g_dev['obs'].send_to_user("Request rejected as site has no rotator.")
-
-                            # If not irrelevant, queue the command
+                        if "anonymous" in cmd['user_name']:
+                            if cmd["action"] in ["cancel_all_commands", "stop"] or cmd["action"].lower() in ["stop", "cancel"] or (cmd["action"] == "run" and cmd["required_params"]["script"] == "stopScript"):
+                                #breakpoint()
+                                # A stop script command flags to the running scripts that it is time to stop
+                                # activity and return. This period runs for about 30 seconds.
+                                g_dev["obs"].send_to_user(
+                                    "A Cancel/Stop has been called. Cancelling out of running scripts over 30 seconds.")
+                                g_dev['seq'].stop_script_called = True
+                                g_dev['seq'].stop_script_called_time = time.time()
+                                # Cancel out of all running exposures.
+                                g_dev['obs'].cancel_all_activity()
                             else:
-                                g_dev["obs"].stop_all_activity = False
-                                self.cmd_queue.put(cmd)
-
-
-                        if cancel_check:
-                            return  # Note we do not process any commands.
+                                try:
+                                    action = cmd['action']
+                                except:
+                                    action = None
+    
+                                try:
+                                    script = cmd['required_params']['script']
+                                except:
+                                    script = None
+    
+                                if cmd["deviceType"]=='obs':
+                                    plog ('OBS COMMAND: received a system wide command')
+    
+                                    if cmd['action']=='configure_pointing_reference_off':
+                                        self.mount_reference_model_off = True
+                                        plog ('mount_reference_model_off')
+                                        g_dev["obs"].send_to_user("mount_reference_model_off.")
+    
+                                    elif cmd['action']=='configure_pointing_reference_on':
+                                        self.mount_reference_model_off = False
+                                        plog ('mount_reference_model_on')
+                                        g_dev["obs"].send_to_user("mount_reference_model_on.")
+    
+                                    elif cmd['action']=='configure_telescope_mode':
+    
+                                        if cmd['required_params']['mode'] == 'manual':
+                                            self.scope_in_manual_mode = True
+                                            plog ('Manual Mode Engaged.')
+                                            g_dev["obs"].send_to_user('Manual Mode Engaged.')
+                                        else:
+                                            self.scope_in_manual_mode = False
+                                            plog ('Manual Mode Turned Off.')
+                                            g_dev["obs"].send_to_user('Manual Mode Turned Off.')
+    
+                                    elif cmd['action']=='configure_moon_safety':
+    
+                                        if cmd['required_params']['mode'] == 'on':
+                                            self.moon_checks_on = True
+                                            plog ('Moon Safety On')
+                                            g_dev["obs"].send_to_user('Moon Safety On')
+                                        else:
+                                            self.moon_checks_on = False
+                                            plog ('Moon Safety Off')
+                                            g_dev["obs"].send_to_user('Moon Safety Off')
+    
+                                    elif cmd['action']=='configure_sun_safety':
+    
+                                        if cmd['required_params']['mode'] =='on':
+                                            self.sun_checks_on = True
+                                            plog ('Sun Safety On')
+                                            g_dev["obs"].send_to_user('Sun Safety On')
+                                        else:
+                                            self.sun_checks_on = False
+                                            plog ('Sun Safety Off')
+                                            g_dev["obs"].send_to_user('Sun Safety Off')
+    
+                                    elif cmd['action']=='configure_altitude_safety':
+    
+                                        if cmd['required_params']['mode'] == 'on':
+                                            self.altitude_checks_on = True
+                                            plog ('Altitude Safety On')
+                                            g_dev["obs"].send_to_user('Altitude Safety On')
+                                        else:
+                                            self.altitude_checks_on = False
+                                            plog ('Altitude Safety Off')
+                                            g_dev["obs"].send_to_user('Altitude Safety Off')
+    
+                                    elif cmd['action']=='configure_daytime_exposure_safety':
+    
+                                        if cmd['required_params']['mode'] == 'on':
+                                            self.daytime_exposure_time_safety_on = True
+                                            plog ('Daytime Exposure Safety On')
+                                            g_dev["obs"].send_to_user('Daytime Exposure Safety On')
+                                        else:
+                                            self.daytime_exposure_time_safety_on = False
+                                            plog ('Daytime Exposure Safety Off')
+                                            g_dev["obs"].send_to_user('Daytime Exposure Safety Off')
+    
+                                    elif cmd['action']=='start_simulating_open_roof':
+                                        self.assume_roof_open = True
+                                        self.open_and_enabled_to_observe=True
+                                        g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+                                        self.enclosure_status_timer = datetime.datetime.now()
+                                        plog ('Roof is now assumed to be open. WEMA shutter status is ignored.')
+                                        g_dev["obs"].send_to_user('Roof is now assumed to be open. WEMA shutter status is ignored.')
+    
+                                    elif cmd['action']=='stop_simulating_open_roof':
+                                        self.assume_roof_open = False
+                                        g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+                                        self.enclosure_status_timer = datetime.datetime.now()
+                                        plog ('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
+                                        g_dev["obs"].send_to_user('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
+    
+    
+                                    elif cmd['action']=='configure_who_can_send_commands':
+                                        if cmd['required_params']['only_accept_admin_or_owner_commands'] == True:
+                                            self.admin_owner_commands_only = True
+                                            plog ('Scope set to only accept admin or owner commands')
+                                            g_dev["obs"].send_to_user('Scope set to only accept admin or owner commands')
+                                        else:
+                                            self.admin_owner_commands_only = False
+                                            plog ('Scope now open to all user commands, not just admin or owner.')
+                                            g_dev["obs"].send_to_user('Scope now open to all user commands, not just admin or owner.')
+                                    elif cmd['action']=='obs_configure_auto_center_on':
+                                        self.auto_centering_off = False
+                                        plog ('Scope set to automatically center.')
+                                        g_dev["obs"].send_to_user('Scope set to automatically center.')
+                                    elif cmd['action']=='obs_configure_auto_center_off':
+                                        self.auto_centering_off = True
+                                        plog ('Scope set to not automatically center.')
+                                        g_dev["obs"].send_to_user('Scope set to not automatically center.')
+                                    else:
+                                        plog ("Unknown command: " + str(cmd))
+    
+    
+                                    self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
+    
+                                    self.request_update_status() #self.update_status(dont_wait=True)
+    
+                                # Check here for admin/owner only functions
+                                elif action == "run" and script == 'collectScreenFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                    plog("Request rejected as flats can only be commanded by admin user.")
+                                    g_dev['obs'].send_to_user(
+                                        "Request rejected as flats can only be commanded by admin user.")
+                                elif action == "run" and script == 'collectSkyFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                    plog("Request rejected as flats can only be commanded by admin user.")
+                                    g_dev['obs'].send_to_user(
+                                        "Request rejected as flats can only be commanded by admin user.")
+    
+                                elif action == "run" and script in ['pointingRun'] and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                    plog("Request rejected as pointing runs can only be commanded by admin user.")
+                                    g_dev['obs'].send_to_user(
+                                        "Request rejected as pointing runs can only be commanded by admin user.")
+                                elif action == "run" and script in ("collectBiasesAndDarks") and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                    plog("Request rejected as bias and darks can only be commanded by admin user.")
+                                    g_dev['obs'].send_to_user(
+                                        "Request rejected as bias and darks can only be commanded by admin user.")
+                                elif action == "run" and script in ('estimateFocusOffset') and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                    plog("Request rejected as focus offset estimation can only be commanded by admin user.")
+                                    g_dev['obs'].send_to_user(
+                                        "Request rejected as focus offset estimation can only be commanded by admin user.")
+    
+                                # Check here for irrelevant commands
+                                elif cmd['deviceType'] == 'screen' and self.config['screen']['screen1']['driver'] == None:
+                                    plog("Refusing command as there is no screen")
+                                    g_dev['obs'].send_to_user("Request rejected as site has no flat screen.")
+                                elif cmd['deviceType'] == 'rotator' and self.config['rotator']['rotator1']['driver'] == None:
+                                    plog("Refusing command as there is no rotator")
+                                    g_dev['obs'].send_to_user("Request rejected as site has no rotator.")
+    
+                                # If not irrelevant, queue the command
+                                else:
+                                    g_dev["obs"].stop_all_activity = False
+                                    self.cmd_queue.put(cmd)
+    
+    
+                            if cancel_check:
+                                return  # Note we do not process any commands.
+                        else:
+                            plog("Request rejected as user name is anonymour.")
+                            g_dev['obs'].send_to_user("Request rejected as anonymous commands are not accepted. Are you logged in?")
+                            
                     else:
                         plog("Request rejected as obs in admin or owner mode.")
                         g_dev['obs'].send_to_user("Request rejected as obs in admin or owner mode.")
