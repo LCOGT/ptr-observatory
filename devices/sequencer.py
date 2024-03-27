@@ -538,6 +538,8 @@ class Sequencer:
             if not self.bias_dark_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
                  self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
 
+    
+
                 self.bias_dark_latch = True   #Maybe long dark is a dark light leak check?
                 req = {'numOfBias': 31, \
                        'numOfDark': 7, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 540, \
@@ -605,6 +607,7 @@ class Sequencer:
 
                 self.nightly_reset_complete = False
                 self.clock_focus_latch = True
+                self.total_sequencer_control=True
 
                 g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
 
@@ -670,7 +673,12 @@ class Sequencer:
                 self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
                 g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
+                
+                
+                g_dev['obs'].flush_command_queue()
 
+                self.total_sequencer_control=False
+                
                 self.night_focus_ready=False
                 self.clock_focus_latch = False
 
@@ -1184,7 +1192,7 @@ class Sequencer:
         """
 
         self.block_guard = True
-
+        self.total_sequencer_control=True
         if (ephem.now() < g_dev['events']['Civil Dusk'] ) or \
             (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
@@ -1769,6 +1777,9 @@ class Sequencer:
         self.currently_mosaicing = False
         plog("Project block has finished!")
         self.blockend = None
+        
+        g_dev['obs'].flush_command_queue()
+        self.total_sequencer_control=False
         return block_specification
 
 
@@ -1777,6 +1788,8 @@ class Sequencer:
         This functions runs through automatically collecting bias and darks for the local calibrations.
         """
         self.current_script = 'Bias Dark'
+        
+        self.total_sequencer_control=True
         # if morn:
         #     ending = g_dev['events']['End Morn Bias Dark']
         # else:
@@ -1804,9 +1817,9 @@ class Sequencer:
 
 
             # If we've been collecting bias darks for TWO HOURS, bail out... someone has asked for too many!
-            if time.time() - bias_darks_started > 7200:
-                self.bias_dark_latch = False
-                break
+            # if time.time() - bias_darks_started > 7200:
+            #     self.bias_dark_latch = False
+            #     break
 
             bias_count = self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']
             dark_count = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']
@@ -2381,6 +2394,9 @@ class Sequencer:
             self.bias_dark_latch = False
             break
         self.bias_dark_latch = False
+        
+        g_dev['obs'].flush_command_queue()
+        self.total_sequencer_control=False
         return
 
     def collect_and_queue_neglected_fits(self):
@@ -4577,6 +4593,7 @@ class Sequencer:
         self.flats_being_collected = True
         self.eve_sky_flat_latch = True
         self.morn_sky_flat_latch = True
+        self.total_sequencer_control=True
 
         #morn=True
         #skip_moon_check=True
@@ -5399,9 +5416,10 @@ class Sequencer:
         self.flats_being_collected = False
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
-
-
-
+        
+        g_dev['obs'].flush_command_queue()
+        self.total_sequencer_control = False
+        
 
     def screen_flat_script(self, req, opt):
 
@@ -7318,13 +7336,19 @@ class Sequencer:
                     #     temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of script as stop script has been called.")
+                        
+                        g_dev['obs'].flush_command_queue()
                         self.total_sequencer_control = False
                         g_dev['obs'].stop_processing_command_requests = False
+                        
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                        
+                        g_dev['obs'].flush_command_queue()
                         self.total_sequencer_control = False
                         g_dev['obs'].stop_processing_command_requests = False
+                        
                         return
                     pass
 
@@ -7419,9 +7443,12 @@ class Sequencer:
 
 
         g_dev['obs'].auto_centering_off = prev_auto_centering
+        
+        g_dev['obs'].flush_command_queue()
 
         self.total_sequencer_control = False
         g_dev['obs'].stop_processing_command_requests = False
+        
         return
 
 
@@ -7500,12 +7527,17 @@ class Sequencer:
 
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of script as stop script has been called.")
+                
+                g_dev['obs'].flush_command_queue()
                 self.total_sequencer_control = False
                 g_dev['obs'].stop_processing_command_requests = False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                
+                g_dev['obs'].flush_command_queue()
                 self.total_sequencer_control = False
+                
                 g_dev['obs'].stop_processing_command_requests = False
                 return
 
@@ -7592,12 +7624,18 @@ class Sequencer:
                     #     temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of script as stop script has been called.")
+                        
+                        g_dev['obs'].flush_command_queue()
                         self.total_sequencer_control = False
+                        
                         g_dev['obs'].stop_processing_command_requests = False
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                        
+                        g_dev['obs'].flush_command_queue()
                         self.total_sequencer_control = False
+                        
                         g_dev['obs'].stop_processing_command_requests = False
                         return
                     pass
@@ -7693,8 +7731,11 @@ class Sequencer:
 
 
         g_dev['obs'].auto_centering_off = prev_auto_centering
+        
+        g_dev['obs'].flush_command_queue()
 
         self.total_sequencer_control = False
+        
         g_dev['obs'].stop_processing_command_requests = False
         return
 

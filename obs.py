@@ -4688,6 +4688,18 @@ class Observatory:
     def request_update_calendar_blocks(self):
         if not self.currently_updating_calendar_blocks:
             self.calendar_block_queue.put( 'normal', block=False)
+            
+            
+    def flush_command_queue(self):
+        # So this command reads the commands waiting and just ... ignores them
+        # essentially wiping the command queue coming from AWS.
+        # This prevents commands from previous nights/runs suddenly running
+        # when obs.py is booted (has happened a bit in the past!)
+        # Also the sequencer can call this at the end of long sequences to make sure backed up
+        # jobs don't send the scope go wildly.
+        reqs.request(
+            "POST", "https://jobs.photonranch.org/jobs/getnewjobs", data=json.dumps({"site": self.name}), timeout=30
+        ).json()
 
 
     # def request_full_update(self):
