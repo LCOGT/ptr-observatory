@@ -2381,12 +2381,14 @@ class Camera:
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose":# and not self.exposure_busy:
+            
+            
 
             if self.exposure_busy:
                 plog("Cannot expose, camera is currently busy, waiting for exposure to clear")
                 dont_wait_forever=time.time()
                 while True:
-                    if (dont_wait_forever-time.time()) > 5:
+                    if (time.time()-dont_wait_forever) > 5:
                         plog ("Exposure too busy for too long, returning")
                         return
                     if self.exposure_busy:

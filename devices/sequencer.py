@@ -1971,7 +1971,7 @@ class Sequencer:
                 # COLLECTING A TEN SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(2*stride) +" 1x1 ten second exposure dark frames.")
                 req = {'time': 10,  'script': 'True', 'image_type': 'tensec_exposure_dark'}
-                opt = {'count': min_to_do,  \
+                opt = {'count': 2*min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
