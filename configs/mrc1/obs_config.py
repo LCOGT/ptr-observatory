@@ -810,6 +810,8 @@ site_config = {
                 'smart_stack_exposure_time': 30,
 
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
+                
+                'substack': True, # Substack with this camera
 
 
                 # As simple as it states, how many calibration frames to collect and how many to store.

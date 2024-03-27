@@ -880,6 +880,8 @@ site_config = {
                 # 30s is a good default.
                 'smart_stack_exposure_time': 30,
                 
+                'substack': True, # Substack with this camera
+                
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 
 

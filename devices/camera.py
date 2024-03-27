@@ -2275,32 +2275,33 @@ class Camera:
         """
         A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
         """
-        try:
-            if not g_dev['mnt'].rapid_park_indicator:
-                movement_reporting_timer = time.time()
-                while g_dev['mnt'].return_slewing():
-                    #g_dev['mnt'].currently_slewing= True
-                    if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
-                        plog('m>')
-                        movement_reporting_timer = time.time()
-                        if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                            g_dev['mnt'].get_mount_coordinates()
-                            g_dev['obs'].request_update_status(mount_only=True)#, dont_wait=True)
-                        #g_dev['obs'].update_status(mount_only=True, dont_wait=True)
-                #g_dev['mnt'].currently_slewing= False
-                # Then wait for slew_time to settle
-                time.sleep(g_dev['mnt'].wait_after_slew_time)
-
-        except Exception as e:
-            plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            if 'pywintypes.com_error' in str(e):
-                plog ("Mount disconnected. Recovering.....")
-                time.sleep(5)
-                g_dev['mnt'].reboot_mount()
-            else:
-                pass
-        return
+        if not g_dev['obs'].mountless_operation:   
+            try:
+                if not g_dev['mnt'].rapid_park_indicator:
+                    movement_reporting_timer = time.time()
+                    while g_dev['mnt'].return_slewing():
+                        #g_dev['mnt'].currently_slewing= True
+                        if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
+                            plog('m>')
+                            movement_reporting_timer = time.time()
+                            if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                                g_dev['mnt'].get_mount_coordinates()
+                                g_dev['obs'].request_update_status(mount_only=True)#, dont_wait=True)
+                            #g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                    #g_dev['mnt'].currently_slewing= False
+                    # Then wait for slew_time to settle
+                    time.sleep(g_dev['mnt'].wait_after_slew_time)
+    
+            except Exception as e:
+                plog("Motion check faulted.")
+                plog(traceback.format_exc())
+                if 'pywintypes.com_error' in str(e):
+                    plog ("Mount disconnected. Recovering.....")
+                    time.sleep(5)
+                    g_dev['mnt'].reboot_mount()
+                else:
+                    pass
+            return
 
 
     def create_simple_autosave(
@@ -3856,7 +3857,10 @@ class Camera:
 
 
                 # HERE IS WHERE WE SPIT OUT THE FILES INTO A MULTIPROCESSING FUNCTION
-                avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
+                if not g_dev['obs'].mountless_operation:   
+                    avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
+                else:
+                    avg_mnt = None
                 try:
                     avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
                 except:
@@ -3950,7 +3954,10 @@ class Camera:
 
                     # If the files are local calibrations, save them out to the local calibration directory
                     if not manually_requested_calibration:
-                        g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                        if not g_dev['obs'].mountless_operation:   
+                            g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                        else:
+                            g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, None, None))
 
 
                     # Similarly to the above. This saves the RAW file to disk
@@ -5714,31 +5721,32 @@ def wait_for_slew():
     """
     A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
     """
-    try:
-        if not g_dev['mnt'].rapid_park_indicator:
-            movement_reporting_timer=time.time()
-            while g_dev['mnt'].return_slewing(): #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
-            #while g_dev['mnt'].mount.Slewing():
-                #g_dev['mnt'].currently_slewing= True
-                if time.time() - movement_reporting_timer > 2.0:
-                    plog( 'm>')
-                    movement_reporting_timer=time.time()
-                if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                    g_dev['mnt'].get_mount_coordinates()
-                    #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
-                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
-            #g_dev['mnt'].currently_slewing= False
-
-    except Exception as e:
-        plog("Motion check faulted.")
-        plog(traceback.format_exc())
-        if 'pywintypes.com_error' in str(e):
-            plog ("Mount disconnected. Recovering.....")
-            time.sleep(5)
-            g_dev['mnt'].reboot_mount()
-        else:
-            pass
-    return
+    if not g_dev['obs'].mountless_operation:   
+        try:
+            if not g_dev['mnt'].rapid_park_indicator:
+                movement_reporting_timer=time.time()
+                while g_dev['mnt'].return_slewing(): #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                #while g_dev['mnt'].mount.Slewing():
+                    #g_dev['mnt'].currently_slewing= True
+                    if time.time() - movement_reporting_timer > 2.0:
+                        plog( 'm>')
+                        movement_reporting_timer=time.time()
+                    if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                        g_dev['mnt'].get_mount_coordinates()
+                        #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
+                        g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                #g_dev['mnt'].currently_slewing= False
+    
+        except Exception as e:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            if 'pywintypes.com_error' in str(e):
+                plog ("Mount disconnected. Recovering.....")
+                time.sleep(5)
+                g_dev['mnt'].reboot_mount()
+            else:
+                pass
+        return
 
 
 
