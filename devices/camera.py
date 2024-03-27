@@ -45,7 +45,7 @@ from ptr_utility import plog
 from ctypes import *
 from skimage.registration import phase_cross_correlation
 from multiprocessing.pool import Pool,ThreadPool
-
+from scipy._lib._util import getfullargspec_no_self as _getfullargspec
 
 def mid_stretch_jpeg(data):
     """
@@ -387,6 +387,186 @@ def reset_sequence(pCamera):
         return None
 
 
+def nonscipy_gaussian_curve_fit(f, xdata, ydata, p0=None, sigma=None, absolute_sigma=False,
+              check_finite=None, bounds=(-np.inf, np.inf), method=None,
+              jac=None, *, full_output=False, nan_policy=None,
+              **kwargs):
+    """
+    THIS IS MTF STRIPPING THE SCIPY CURVE_FIT FUNCTION TO BARE BONES.
+
+    Use non-linear least squares to fit a function, f, to data.
+
+    Assumes ``ydata = f(xdata, *params) + eps``.
+
+    
+    """
+    # if p0 is None:
+    #     # determine number of parameters by inspecting the function
+    #     sig = _getfullargspec(f)
+    #     args = sig.args
+    #     if len(args) < 2:
+    #         raise ValueError("Unable to determine number of fit parameters.")
+    #     n = len(args) - 1
+    # else:
+    p0 = np.atleast_1d(p0)
+    n = p0.size
+        
+    print ("p0 is " + str(p0))
+    print ("n is " + str(n))
+
+    #if isinstance(bounds, Bounds):
+    #lb, ub = bounds.lb, bounds.ub
+    lb, ub = bounds
+    # else:
+    #     lb, ub = prepare_bounds(bounds, n)
+    # if p0 is None:
+    #     p0 = _initialize_feasible(lb, ub)
+
+    # bounded_problem = np.any((lb > -np.inf) | (ub < np.inf))
+    # if method is None:
+    #     if bounded_problem:
+    method = 'trf'
+        # else:
+        #     method = 'lm'
+
+    # if method == 'lm' and bounded_problem:
+    #     raise ValueError("Method 'lm' only works for unconstrained problems. "
+    #                      "Use 'trf' or 'dogbox' instead.")
+
+    # if check_finite is None:
+    #     check_finite = True if nan_policy is None else False
+
+    # # optimization may produce garbage for float32 inputs, cast them to float64
+    # if check_finite:
+    #     ydata = np.asarray_chkfinite(ydata, float)
+    # else:
+    #     ydata = np.asarray(ydata, float)
+
+    # if isinstance(xdata, (list, tuple, np.ndarray)):
+    #     # `xdata` is passed straight to the user-defined `f`, so allow
+    #     # non-array_like `xdata`.
+    #     if check_finite:
+    #         xdata = np.asarray_chkfinite(xdata, float)
+    #     else:
+    #         xdata = np.asarray(xdata, float)
+
+    # if ydata.size == 0:
+    #     raise ValueError("`ydata` must not be empty!")
+
+    # nan handling is needed only if check_finite is False because if True,
+    # the x-y data are already checked, and they don't contain nans.
+    if not check_finite and nan_policy is not None:
+        if nan_policy == "propagate":
+            raise ValueError("`nan_policy='propagate'` is not supported "
+                             "by this function.")
+
+        policies = [None, 'raise', 'omit']
+        x_contains_nan, nan_policy = _contains_nan(xdata, nan_policy,
+                                                   policies=policies)
+        y_contains_nan, nan_policy = _contains_nan(ydata, nan_policy,
+                                                   policies=policies)
+
+        if (x_contains_nan or y_contains_nan) and nan_policy == 'omit':
+            # ignore NaNs for N dimensional arrays
+            has_nan = np.isnan(xdata)
+            has_nan = has_nan.any(axis=tuple(range(has_nan.ndim-1)))
+            has_nan |= np.isnan(ydata)
+
+            xdata = xdata[..., ~has_nan]
+            ydata = ydata[~has_nan]
+
+    # Determine type of sigma
+    if sigma is not None:
+        sigma = np.asarray(sigma)
+
+        # if 1-D or a scalar, sigma are errors, define transform = 1/sigma
+        if sigma.size == 1 or sigma.shape == (ydata.size, ):
+            transform = 1.0 / sigma
+        # if 2-D, sigma is the covariance matrix,
+        # define transform = L such that L L^T = C
+        elif sigma.shape == (ydata.size, ydata.size):
+            try:
+                # scipy.linalg.cholesky requires lower=True to return L L^T = A
+                transform = cholesky(sigma, lower=True)
+            except LinAlgError as e:
+                raise ValueError("`sigma` must be positive definite.") from e
+        else:
+            raise ValueError("`sigma` has incorrect shape.")
+    else:
+        transform = None
+
+    func = _lightweight_memoizer(_wrap_func(f, xdata, ydata, transform))
+
+    if callable(jac):
+        jac = _lightweight_memoizer(_wrap_jac(jac, xdata, transform))
+    elif jac is None and method != 'lm':
+        jac = '2-point'
+
+    if 'args' in kwargs:
+        # The specification for the model function `f` does not support
+        # additional arguments. Refer to the `curve_fit` docstring for
+        # acceptable call signatures of `f`.
+        raise ValueError("'args' is not a supported keyword argument.")
+
+    if method == 'lm':
+        # if ydata.size == 1, this might be used for broadcast.
+        if ydata.size != 1 and n > ydata.size:
+            raise TypeError(f"The number of func parameters={n} must not"
+                            f" exceed the number of data points={ydata.size}")
+        res = leastsq(func, p0, Dfun=jac, full_output=1, **kwargs)
+        popt, pcov, infodict, errmsg, ier = res
+        ysize = len(infodict['fvec'])
+        cost = np.sum(infodict['fvec'] ** 2)
+        if ier not in [1, 2, 3, 4]:
+            raise RuntimeError("Optimal parameters not found: " + errmsg)
+    else:
+        # Rename maxfev (leastsq) to max_nfev (least_squares), if specified.
+        if 'max_nfev' not in kwargs:
+            kwargs['max_nfev'] = kwargs.pop('maxfev', None)
+
+        res = least_squares(func, p0, jac=jac, bounds=bounds, method=method,
+                            **kwargs)
+
+        if not res.success:
+            raise RuntimeError("Optimal parameters not found: " + res.message)
+
+        infodict = dict(nfev=res.nfev, fvec=res.fun)
+        ier = res.status
+        errmsg = res.message
+
+        ysize = len(res.fun)
+        cost = 2 * res.cost  # res.cost is half sum of squares!
+        popt = res.x
+
+        # Do Moore-Penrose inverse discarding zero singular values.
+        _, s, VT = svd(res.jac, full_matrices=False)
+        threshold = np.finfo(float).eps * max(res.jac.shape) * s[0]
+        s = s[s > threshold]
+        VT = VT[:s.size]
+        pcov = np.dot(VT.T / s**2, VT)
+
+    warn_cov = False
+    if pcov is None or np.isnan(pcov).any():
+        # indeterminate covariance
+        pcov = zeros((len(popt), len(popt)), dtype=float)
+        pcov.fill(inf)
+        warn_cov = True
+    elif not absolute_sigma:
+        if ysize > p0.size:
+            s_sq = cost / (ysize - p0.size)
+            pcov = pcov * s_sq
+        else:
+            pcov.fill(inf)
+            warn_cov = True
+
+    if warn_cov:
+        warnings.warn('Covariance of the parameters could not be estimated',
+                      category=OptimizeWarning, stacklevel=2)
+
+    if full_output:
+        return popt, pcov, infodict, errmsg, ier
+    else:
+        return popt, pcov
 
 
 

@@ -5847,6 +5847,8 @@ class Sequencer:
             elif position_counter>5:
                 focus_position_this_loop=new_focus_position_to_attempt
             
+            print (focus_position_this_loop)
+            
             #  If more than 10 attempts, fail and bail out.
             if position_counter > 10:
                 
@@ -5894,6 +5896,7 @@ class Sequencer:
             
             while np.isnan(spot):
                 # Move the focuser
+                print ("Changing to " + str((focus_position_this_loop)))
                 g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
     
                 # Take the shot
@@ -5932,11 +5935,15 @@ class Sequencer:
                 if minimum_index == 0 or minimum_index == 1:
                     plog ("Minimum too close to the sampling edge, getting another dot")
                     new_focus_position_to_attempt=min(minimumfind) - throw
+                    breakpoint()
+                    print ("Attempting: " + str(new_focus_position_to_attempt))
                     plt.scatter(x,y)
                     plt.show()
                 elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:   
                     plog ("Minimum too close to the sampling edge, getting another dot")
                     new_focus_position_to_attempt=max(minimumfind) + throw
+                    breakpoint()
+                    print ("Attempting: " + str(new_focus_position_to_attempt))
                     plt.scatter(x,y)
                     plt.show()
                 else:
