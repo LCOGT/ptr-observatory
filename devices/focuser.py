@@ -214,13 +214,14 @@ class Focuser:
                         #self.current_focus_position=self.get_position()
 
                      else:
-                        print ("prefoc: " + str(self.current_focus_position))
-                        self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))
+                        print ("prefoc: " + str(self.current_focus_position))# * self.micron_to_steps))
+                        #breakpoint()
+                        self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))# * self.steps_to_micron))
                         time.sleep(0.1)
                         movement_report=0
 
                         while self.focuser_update_wincom.IsMoving:
-                            if movement_report==0:                                
+                            if movement_report==0:
                                 plog("Focuser is moving.....")
                                 movement_report=1
                             self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
@@ -232,7 +233,7 @@ class Focuser:
 
                         self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
                         #self.current_focus_position=self.get_position()
-                        print ("postfoc "+ str(self.current_focus_position))
+                        print ("postfoc "+ str(self.current_focus_position))# * self.micron_to_steps))
 
                             #plog(">f")
                 except:
@@ -268,7 +269,7 @@ class Focuser:
 
                 else:
                     self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
-                
+
                 #print ("thread focus: " + str(self.current_focus_position))
                 self.focuser_update_timer = time.time()
 
@@ -460,9 +461,9 @@ class Focuser:
         elif action == "go_to_reference":
             #self.update_job_status(command["ulid"], "STARTED", 5)
             reference = self.get_focal_ref()
-            
+
             self.guarded_move(int(float(reference))) #* self.micron_to_steps))
-            
+
             # self.focuser.Move(reference * self.micron_to_steps)
             # time.sleep(0.1)
             # while self.focuser.IsMoving:
@@ -477,7 +478,7 @@ class Focuser:
         #         time.sleep(0.5)
         #         plog(">")
         elif action == "save_as_reference":
-            
+
             #self.current_focus_position
             self.set_focal_ref(
                 self.current_focus_position# * self.steps_to_micron
@@ -568,7 +569,7 @@ class Focuser:
                 self.reference = int(self.config["reference"])
             self.last_known_focus = self.reference
             plog("Focus reference updated from best recent focus from Night Shelf:  ", self.reference)
-            
+
         self.guarded_move(int(float(self.reference) * self.micron_to_steps))
 
         # #breakpoint()
@@ -616,8 +617,8 @@ class Focuser:
                         plog ("Waiting for focuser to finish moving before adjusting focus")
                         reporty=1
                     time.sleep(0.05)
-            
-        
+
+
         # try:
         if self.theskyx:
             temp_delta = self.current_focus_temperature - self.previous_focus_temperature
@@ -671,6 +672,7 @@ class Focuser:
                 self.focuser_is_moving=True
                 plog ("sending to " + str(self.last_known_focus + adjust))
                 #self.move_absolute_command(req, opt)
+                #breakpoint()
                 self.guarded_move(self.last_known_focus + adjust)
 
                 #plog ("Position now: " + str(self.current_focus_position))
@@ -750,11 +752,11 @@ class Focuser:
 
         self.focuser_is_moving=True
         position_string = req["position"]
-        
+
         difference_in_position=int(position_string) * self.micron_to_steps
-        
+
         self.guarded_move(self.current_focus_position + difference_in_position)
-        
+
 
     #     if self.theskyx:
     #         position = self.focuser.focPosition() * self.steps_to_micron
@@ -804,7 +806,7 @@ class Focuser:
 
     def move_absolute_command(self, req: dict, opt: dict):
         """Sets the focus position by moving to an absolute position."""
-    
+
         self.focuser_is_moving=True
         position = int(float(req["position"])) * self.micron_to_steps
         self.guarded_move(position)

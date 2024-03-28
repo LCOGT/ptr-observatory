@@ -63,6 +63,7 @@ site_config = {
     'closest_distance_to_the_moon': 5,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 30,
     'lowest_requestable_altitude': 15,  # Degrees. For normal pointing requests don't allow requests to go this low.
+    'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
@@ -233,6 +234,7 @@ site_config = {
   #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
+
             'west_clutch_ra_correction': 0.0,  #final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction':   0.0, # Initially -0.039505313212952586,
@@ -468,7 +470,7 @@ site_config = {
                 'filter_data': [
                         ['Air',  [0,  0],   'AIR'],    #0  Gains est and some from 20240106 listing
                         ['PL',   [7,  0],   'Photo Luminance'],     #1
-                        ['Exo',  [8,  0],   'Exoplanet']      #2
+                        ['Exo',  [8,  0],   'Exoplanet'],      #2
                         ['PB',   [0,  6],   'Photo Blue'],    #3
                         ['gp',   [2,  0],   "Sloan g"],       #4
                         ['PR',   [0,  8],   'Photo Red'],     #5
@@ -764,7 +766,7 @@ site_config = {
                 # 30s is a good default.
                 'smart_stack_exposure_time': 30,
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
-
+                'substack': True,
 
                 # As simple as it states, how many calibration frames to collect and how many to store.
                 'number_of_bias_to_collect': 31,
