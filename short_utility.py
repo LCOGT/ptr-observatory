@@ -26,7 +26,9 @@ from astropy.coordinates import SkyCoord, ICRS, EarthLocation
 import ephem
 #from ptr_events import compute_day_directory
 #from ptr_config import site_config
-#from global_yard import g_dev
+from global_yard import g_dev
+from obs_config import site_config
+from ptr_utility import plog
 
 from datetime import timezone, timedelta #datetime,
 #from dateutil import tz
@@ -71,38 +73,45 @@ GEM = True
 FORK = False
 
 
-lat = 35
+lat = 35.55*DTOR
 sin_lat = sin(radians(lat))
 cos_lat = cos(radians(lat))
 
+
 model = {}
 
-model["IH"] = 0
-model["ID"] = 0
-model["EDH"] = 0
-model["EDD"] = 0
-model["MA"] = 0
-model["ME"] = 0
-model["CH"] = 0
+model["IH"] = site_config['mount']['mount1']['settings']['model']['IH']
+model["ID"] = site_config['mount']['mount1']['settings']['model']['ID']
+model["EDH"] = site_config['mount']['mount1']['settings']['model']['WIH']
+model["EDD"] = site_config['mount']['mount1']['settings']['model']['WID']
+model["MA"] = site_config['mount']['mount1']['settings']['model']['ME']
+model["ME"] = site_config['mount']['mount1']['settings']['model']['ME']
+model["CH"] = site_config['mount']['mount1']['settings']['model']['CH']
 
-model["NP"] = 0
-model["TF"] = 0
-model["TX"] = 0
-model["HCES"] = 0
-model["HCEC"] = 0
-model["DCES"] = 0
-model["DCEC"] = 0
+model["NP"] = site_config['mount']['mount1']['settings']['model']['NP']
+model["TF"] = site_config['mount']['mount1']['settings']['model']['TF']
+model["TX"] = site_config['mount']['mount1']['settings']['model']['TX']
+model["HCES"] = site_config['mount']['mount1']['settings']['model']['HCES']
+model["HCEC"] = site_config['mount']['mount1']['settings']['model']['HCEC']
+model["DCES"] = site_config['mount']['mount1']['settings']['model']['DCES']
+model["DCEC"] = site_config['mount']['mount1']['settings']['model']['DCEC']
 
 
 
 # NB NB  These functions may not work for mechanical coordinates.
+def reduce_ha_d(pHa):
+    while pHa <= -180:
+        pHa += 360.
+    while pHa > 180:
+        pHa -= 360.
+    return pHa
+
 def reduce_ha_h(pHa):
     while pHa <= -12:
         pHa += 24.0
     while pHa > 12:
         pHa -= 24.0
     return pHa
-
 
 def reduce_ra_h(pRa):
     while pRa < 0:
@@ -143,6 +152,12 @@ def reduce_ha_r(pHa):
         pHa -= TWOPI
     return pHa
 
+def reduce_ra_d(pRa):
+    while pRa < 0:
+        pRa += 360
+    while pRa >= 360:
+        pRa -= 360
+    return pRa
 
 def reduce_ra_r(pRa):
     while pRa < 0:
@@ -318,8 +333,23 @@ def transform_haDec_to_az_alt(pLocal_hour_angle, pDec):
     # altitude = reduceAlt(altitude)
     return (azimuth, altitude)  # , local_hour_angle)
 
+def transform_deg_haDec_to_az_alt(pLocal_hour_angle, pDec):
+    #global sin_lat, cos_lat     #### Check to see if these can be eliminated
 
-def transform_azAlt_to_haDec(pAz, pAlt):
+    decr = radians(pDec)
+    sinDec = sin(decr)
+    cosDec = cos(decr)
+    mHar = radians(pLocal_hour_angle)
+    sinHa = sin(mHar)
+    cosHa = cos(mHar)
+    altitude = degrees(asin(sin_lat * sinDec + cos_lat * cosDec * cosHa))
+    x = cosHa * sin_lat - tan(decr) * cos_lat
+    azimuth = degrees(atan2(sinHa, x)) + 180
+    # azimuth = reduceAz(azimuth)
+    # altitude = reduceAlt(altitude)
+    return (azimuth, altitude)  # , local_hour_angle)
+
+def transform_deg_azAlt_to_haDec(pAz, pAlt):
     #global sin_lat, cos_lat, lat
     alt = radians(pAlt)
     sinAlt = sin(alt)
@@ -328,13 +358,10 @@ def transform_azAlt_to_haDec(pAz, pAlt):
     sinAz = sin(az)
     cosAz = cos(az)
     if abs(abs(alt) - PIOVER2) < 1.0 * STOR:
-        return (
-            0.0,
-            lat
-        )  # by convention azimuth points South at local zenith
+        return (0.0, lat)  # by convention azimuth points South at local zenith
     else:
         dec = degrees(asin(sinAlt * sin_lat - cosAlt * cosAz * cos_lat))
-        ha = degrees(atan2(sinAz, (cosAz * sin_lat + tan(alt) * cos_lat)))/15.
+        ha = degrees(atan2(sinAz, (cosAz * sin_lat + tan(alt) * cos_lat)))#/15.
         return (reduce_ha_h(ha), reduce_dec_d(dec))
 
 def apply_refraction_in_alt(pApp_alt, pSiteRefTemp, pSiteRefPress):  # Deg, C. , mmHg     #note change to mbar
@@ -349,7 +376,7 @@ def apply_refraction_in_alt(pApp_alt, pSiteRefTemp, pSiteRefPress):  # Deg, C. ,
         ref *= 283 / (273 + pSiteRefTemp)
         ref *= pSiteRefPress / 1010.0
         obs_alt = pApp_alt + ref / 60.0
-        return reduce_alt_d(obs_alt), ref * 60.0    #note the Observed _altevation is > apparent.
+        return reduce_alt_d(obs_alt), ref * 60.0    #note the Observed _altitude is > apparent.
     else:
         #Just return refr for elev = 0
         ref = 1 / tan(DTOR * (7.31 / (pApp_alt + 4.4))) + 0.001351521673756295
@@ -429,31 +456,31 @@ def transform_observed_to_mount(pRoll, pPitch, pPierSide, loud=False, enable=Fal
         # pRoll  in Hours
         # pPitch in degrees
         # Apply IJ and ID to incoming coordinates, and if needed GEM correction.
-        rRoll = math.radians(pRoll * 15 - ih / 3600.0)
+        rRoll = math.radians(pRoll  - ih / 3600.0)
         rPitch = math.radians(pPitch - idec / 3600.0)
         siteLatitude = lat
 
         if FORK or GEM:
-            #"Pier_side" is now "Look East" or "Look West" For a GEM. Given ARO Telescope starts Looking West
-            if pPierSide == 'Look West':
-                rRoll = math.radians(pRoll * 15 - ih / 3600.0)
+            #"Pier_side" is now "Look East" = 1 or "Look West" = 0 For a GEM. Given ARO Telescope starts Looking West
+            if pPierSide == 0:  # 'Look West'
+                rRoll = math.radians(pRoll  - ih / 3600.0)
                 rPitch = math.radians(pPitch - idec / 3600.0)
-                ch /= 3600
-                np /= 3600
-            elif pPierSide == 'Look East':    #Apply differential correction and flip CH, NP terms.
+                ch /= 3600.0
+                np /= 3600.0
+            elif pPierSide == 1:  # 'Look East':    #Apply differential correction and flip CH, NP terms.
                 ch = -ch / 3600.0
                 np = -np / 3600.0
                 rRoll += math.radians(edh / 3600.0)
                 rPitch += math.radians(edd / 3600.0)  # NB Adjust signs to normal EWNS view
             else:
-                breakpoint()
+                plog("pPierSide is not == 0 or 1!  Line 4674 in short_utility.")
                 pass
             if loud:
                 print(ih, idec, edh, edd, ma, me, ch, np, tf, tx, hces, hcec, dces, dcec, pPierSide)
 
             # This is exact trigonometrically:
             if loud:
-                print("Pre CN; roll, pitch:  ", rRoll * RTOH, rPitch * RTOD)
+                print("Pre CN; roll, pitch:  ", rRoll * RTOD, rPitch * RTOD)
             cnRoll = rRoll + math.atan2(
                 math.cos(math.radians(np)) * math.tan(math.radians(ch))
                 + math.sin(math.radians(np)) * math.sin(rPitch),
@@ -466,7 +493,7 @@ def transform_observed_to_mount(pRoll, pPitch, pPierSide, loud=False, enable=Fal
                 - math.sin(math.radians(np)) * math.sin(math.radians(ch))
             )
             if loud:
-                print("Post CN; roll, pitch:  ", cnRoll * RTOH, cnPitch * RTOD)
+                print("Post ChNp; roll, pitch:  ", cnRoll * RTOD, cnPitch * RTOD)
             x, y, z = sph_rect_r(cnRoll, cnPitch)
             if loud:
                 print("To spherical:  ", x, y, z, x * x + y * y + z * z)
@@ -484,7 +511,7 @@ def transform_observed_to_mount(pRoll, pPitch, pPierSide, loud=False, enable=Fal
             az, alt = rect_sph_d(x, y, z)  # math.pi/2. -
             if loud:
                 print("Az Alt:  ", az + 180.0, alt)
-            # flexure causes mount to sag so a shift in el, apply then
+            # flexure causes mount to sag so a shift in alt, apply then
             # move back to other coordinate system
             zen = 90 - alt
             if zen >= 89:
@@ -518,16 +545,16 @@ def transform_observed_to_mount(pRoll, pPitch, pPierSide, loud=False, enable=Fal
                 print("Back-Sph:  ", fRoll * RTOH, fPitch * RTOD)
                 print("f,c Roll: ", fRoll, cRoll)
                 print("f, c Pitch: ", fPitch, cPitch)
-            corrRoll = reduce_ha_h(cRoll / 15.0)
+            corrRoll = reduce_ha_d(cRoll )
             corrPitch = reduce_dec_d(cPitch)
             if loud:
                 print("Final:   ", fRoll * RTOH, fPitch * RTOD)
-            raCorr = reduce_ha_h(corrRoll - pRoll) * 15 * 3600
+            raCorr = reduce_ha_d(corrRoll - pRoll)  * 3600
             decCorr = reduce_dec_d(corrPitch - pPitch) * 3600
             # 20210328  Note this may not work at Pole.
             #if enable:
             #    print("Corrections in asec:  ", raCorr, decCorr)
-            return (corrRoll * HTOR, corrPitch * DTOR)
+            return (corrRoll , corrPitch)# * DTOR)
         elif ALTAZ:
             if loud:
                 print(

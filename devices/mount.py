@@ -82,7 +82,7 @@ MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
 
 
-#tzOffset = -7
+
 loop_count = 0
 
 mountOne = "PW_L600"
@@ -128,6 +128,8 @@ def ra_fix_h(ra):
     if ra < 0:
         ra = 24
     return ra
+
+
 
 
 
@@ -192,7 +194,12 @@ class Mount:
         self.site_coordinates = EarthLocation(lat=float(g_dev['evnt'].wema_config['latitude'])*u.deg, \
                                 lon=float(g_dev['evnt'].wema_config['longitude'])*u.deg,
                                 height=float(g_dev['evnt'].wema_config['elevation'])*u.m)
-        self.latitude_r = g_dev['evnt'].wema_config['latitude']*DTOR
+        self.latitude_d = g_dev['evnt'].wema_config['latitude']
+        self.latitude_r = self.latitude_d *DTOR
+        short_utility.lat = self.latitude_r
+        short_utility.sin_lat = math.sin(self.latitude_r)
+        short_utility.cos_lat = math.cos(self.latitude_r)
+
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
@@ -208,7 +215,7 @@ class Mount:
         self.current_icrs_dec = self.mount.Declination
 
 
-        self.delta_t_s = HTOSec/12   #5 minutes
+        self.delta_t_s = HTOSec/30   #2 minutes
         self.prior_roll_rate = 0
         self.prior_pitch_rate = 0
         self.offset_received = False
@@ -348,7 +355,10 @@ class Mount:
         self.az = 160
         self.zen = 45
 
+        self.mount.Tracking = False
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
+        self.recent_ra_command = 0
+        self.recent_dec_command = 0
 
         self.request_tracking_on = False
         self.request_tracking_off = False
@@ -484,13 +494,17 @@ class Mount:
                 if self.currently_slewing or (((self.mount_update_timer < time.time() - self.mount_update_period) and not self.mount_update_paused)):# or (no(self.currently_slewing) and not self.mount_update_paused):
                     #print ("Mu")
 
-                    self.currently_slewing= self.mount_update_wincom.Slewing
+                    self.currently_slewing= copy.deepcopy(self.mount_update_wincom.Slewing)
 
                     if self.currently_slewing:
                         try:
                             self.pier_flip_detected=False
-                            self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
-                            self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
+                            self.axis_right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
+                            self.axis_declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
+
+                            self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
+                            self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
+
 
                         except:
                             plog ("Issue in slewing mount thread")
@@ -500,7 +514,7 @@ class Mount:
                         self.mount_update_timer=time.time()
                     else:
                         #print ("MU")
-                        #  Starting here ae tha varius mount commands and reads...
+                        #  Starting here are the varius mount commands and reads...
 
                         try:
 
@@ -579,8 +593,11 @@ class Mount:
                                 if self.model_on or self.refr_on or self.rates_on:
 
 
+
                                     self.get_current_times()
-                                    breakpoint()
+                                    self.recent_ra_command = self.slewtoRA    #For status we report the last RA & DEC in J2000.0
+                                    self.recent_dec_command = self.slewtoDEC
+
                                     icrs_coord = SkyCoord(self.slewtoRA*u.hour, self.slewtoDEC*u.degree, frame='icrs')
                                     jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
                                         # ra = jnow_coord.ra.hour
@@ -588,76 +605,92 @@ class Mount:
                                         # if self.offset_received:
                                         #     ra += self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
                                         #     dec += self.dec_offset
-                                    # Just to be conservative
-                                    ra_app_h, dec_app_d = ra_dec_fix_h(jnow_coord.ra.hour, jnow_coord.dec.degree)
-                                    #'This is the "Forward" calculation of pointing.
-                                    #Here we add in refraction and the TPOINT compatible mount model
-                                    #self.sid_now_r = self.mount.SiderealTime*HTOR   #NB NB ADDED THIS FOR SRO, WHY IS THIS NEEDED?
-                                    #self.ha_obs_r, self.dec_obs_r, self.refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
-                                    #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)
-                                    #Here we would convert to model and calculate tracking rate correction.
-                                    #pier_east = 1
-                                    #self.ha_mech, self.dec_mech = ptr_utility.transform_observed_to_mount_r(self.ha_obs_r, self.dec_obs_r, pier_east, loud=False, enable=True)
-                                    #self.ra_mech, self.dec_mech = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech, self.dec_mech, self.sid_now_r)
-                                    #self.ha_corr = ptr_utility.reduce_ha_r(self.ha_mech -self. ha_obs_r)*RTOS
-                                    #self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
+                                    # Just to be conservative:
+                                    #ra_app_h, dec_app_d = ra_dec_fix_h(jnow_coord.ra.hour, jnow_coord.dec.degree)
+                                    self.recent_ra_command = self.slewtoRA =jnow_coord.ra.degree
+                                    self.recent_dec_command = jnow_coord.dec.degree
+                                    app_ha = short_utility.reduce_ha_d(self.sid_now_d - self.recent_ra_command )
+                                    app_az, app_alt = short_utility.transform_deg_haDec_to_az_alt(app_ha, self.recent_dec_command )
+                                    refr_alt, refr_asec = short_utility.apply_refraction_in_alt(app_alt, 10, 762)   #NB This needs to be updated
+                                    obs_ha, obs_dec = short_utility.transform_deg_azAlt_to_haDec(app_az, refr_alt)
+                                    #breakpoint()
+                                    ha_mech, dec_mech = short_utility.transform_observed_to_mount(obs_ha, obs_dec,0, loud=True, enable=False)                                       #'This is the "Forward" calculation of pointing.
+                                    ra_mech = short_utility.reduce_ra_d(self.sid_now_d - ha_mech)
+                                    #Now compute the axis rates 2 minutes later:
+                                    adv_app_ha = short_utility.reduce_ha_d(self.sid_adv_d - jnow_coord.ra.degree)
+                                    adv_app_az, adv_app_alt = short_utility.transform_deg_haDec_to_az_alt(adv_app_ha, jnow_coord.dec.degree)
+                                    adv_refr_alt, adv_refr_asec = short_utility.apply_refraction_in_alt(adv_app_alt, 10, 762)
+                                    adv_obs_ha, adv_obs_dec = short_utility.transform_deg_azAlt_to_haDec(adv_app_az, adv_refr_alt)
+                                    adv_ha_mech, adv_dec_mech = short_utility.transform_observed_to_mount(adv_obs_ha, adv_obs_dec,0, loud=True, enable=False)
+                                    ha_advance_persidsec = short_utility.reduce_ha_d(adv_ha_mech - ha_mech - 360*APPTOSID/720.)*3600/120/APPTOSID
+                                    dec_advance_persec = short_utility.reduce_dec_d(adv_dec_mech - dec_mech)*3600/120
 
                                     self.mount_update_wincom.Tracking = True
                                     self.move_time = time.time()
-                                    #az, alt = ptr_utility.transform_haDec_to_azAlt_r(self.ha_mech, self.dec_mech, self.latitude_r)
-                                    #print('MODEL HA, DEC, AZ, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, az*RTOD, self.refr_asec)
-                                    #self.target_az = az*RTOD
 
-
-
-                                    self.mount_update_wincom.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                                    ###  figure out velocity  Apparent place is unchanged.
-                                    self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
-                                    #self.ha_obs_adv, self.dec_obs_adv, self.refr_adv = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_next_r)   #% minute advance
-                                    #self.ha_mech_adv, self.dec_mech_adv = ptr_utility.transform_observed_to_mount_update_wincom_r(self.ha_obs_adv, self.dec_obs_adv, pier_east, loud=False)
-                                    #self.ra_adv, self.dec_adv = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech_adv, self.dec_mech_adv, self.sid_next_r)
-                                    #self.adv_ha_corr = ptr_utility.reduce_ha_r(self.ha_mech_adv - self.ha_obs_adv)*RTOS     #These are mechanical values, not j.anything
-                                    #self.adv_dec_corr = ptr_utility.reduce_dec_r(self.dec_mech_adv - self.dec_obs_adv)*RTOS
-                                    self.prior_seek_ha_h = self.ha_mech
-                                    self.prior_seek_dec_d = self.dec_mech
-                                    self.prior_seek_time = time.time()
-                                    self.prior_sid_time =  self.sid_now_r
                                     '''
                                     The units of this property are arcseconds per SI (atomic) second.
                                     Please note that for historic reasons the units of the
                                     RightAscensionRate property are seconds of RA per sidereal second.
                                     '''
                                     if self.mount_update_wincom.CanSetRightAscensionRate:
-                                        self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
-                                        self.mount_update_wincom.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
+                                        self.prior_roll_rate = -ha_advance_persidsec
+                                        self.mount_update_wincom.RightAscensionRate = self.prior_roll_rate  #Neg number makes RA decrease
                                     else:
                                         self.prior_roll_rate = 0.0
                                     if self.mount_update_wincom.CanSetDeclinationRate:
-                                       self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
+                                       self.prior_pitch_rate = dec_advance_persec    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
                                        self.mount_update_wincom.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
                                        #print("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
                                     else:
                                         self.prior_pitch_rate = 0.0
-                                     #print(self.prior_roll_rate, self.prior_pitch_rate, refr_asec)
-                                    # time.sleep(.5)
-                                    # self.mount_update_wincom.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
-                                    time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
-                                    if self.mount_update_wincom.CanSetRightAscensionRate:
-                                        self.mount_update_wincom.RightAscensionRate = 0.0 #self.prior_roll_rate
 
-                                    if self.mount_update_wincom_update_wincom.CanSetDeclinationRate:
-                                        self.mount_update_wincom_update_wincom.DeclinationRate = self.prior_pitch_rate
 
-                                        print("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
-                                        self.seek_commanded = True
-                                        #I think to reliable establish rates, set them before the slew.
 
-                                self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-                                self.currently_slewing=True
-                                if self.CanSetDeclinationRate:
-                                    self.mount_update_wincom.DeclinationRate = 0
-                                #plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
-                                #print ("successful slew")
+                                    self.mount_update_wincom.SlewToCoordinatesAsync(ra_mech/15, dec_mech)
+                                    ###  figure out velocity  Apparent place is unchanged.
+                                    self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
+                                    self.prior_seek_ha_mech_h = ha_mech/15
+                                    self.prior_seek_dec_mech_d = dec_mech
+                                    self.prior_seek_time = time.time()
+                                    self.prior_sid_time = self.sid_now_r
+
+                                #     '''
+                                #     The units of this property are arcseconds per SI (atomic) second.
+                                #     Please note that for historic reasons the units of the
+                                #     RightAscensionRate property are seconds of RA per sidereal second.
+                                #     '''
+                                #     if self.mount_update_wincom.CanSetRightAscensionRate:
+                                #         self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
+                                #         self.mount_update_wincom.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
+                                #     else:
+                                #         self.prior_roll_rate = 0.0
+                                #     if self.mount_update_wincom.CanSetDeclinationRate:
+                                #        self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
+                                #        self.mount_update_wincom.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
+                                #        #print("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
+                                #     else:
+                                #         self.prior_pitch_rate = 0.0
+                                #      #print(self.prior_roll_rate, self.prior_pitch_rate, refr_asec)
+                                #     # time.sleep(.5)
+                                #     # self.mount_update_wincom.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
+                                #     time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
+                                #     if self.mount_update_wincom.CanSetRightAscensionRate:
+                                #         self.mount_update_wincom.RightAscensionRate = 0.0 #self.prior_roll_rate
+
+                                #     if self.mount_update_wincom_update_wincom.CanSetDeclinationRate:
+                                #         self.mount_update_wincom_update_wincom.DeclinationRate = self.prior_pitch_rate
+
+                                #         print("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
+                                #         self.seek_commanded = True
+                                #         #I think to reliable establish rates, set them before the slew.
+
+                                # self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
+                                # self.currently_slewing=True
+                                # if self.CanSetDeclinationRate:
+                                #     self.mount_update_wincom.DeclinationRate = 0
+                                # #plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
+                                # #print ("successful slew")
 
                             if self.request_tracking_on:
 
@@ -709,10 +742,47 @@ class Mount:
 
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
+                            self.sid_directly_from_mount = copy.deepcopy(self.mount_update_wincom.SiderealTime)
+                            self.ha_directly_from_mount= short_utility.reduce_ha_d(self.sid_directly_from_mount - self.right_ascension_directly_from_mount)
 
+                            self.pierside_directly_from_mount = copy.deepcopy(self.mount_update_wincom.SideOfPier)
+                            self.azimuth_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Azimuth)
+                            self.altidude_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Altitude)
                             self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
                             self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
+                            plog("status read mount & update rates. Pier: Az: Alt:", self.pierside_directly_from_mount, round(self.azimuth_directly_from_mount, 2), round(self.altidude_directly_from_mount,2))
+                            #Here we need to recompute and update:
+                            if self.current_tracking_state and not copy.deepcopy(self.mount_update_wincom.Slewing):
+                                self.start = time.time()
+                                self.get_current_times()
+                                app_ha = short_utility.reduce_ha_d(self.sid_now_d - self.recent_ra_command )
+                                app_az, app_alt = short_utility.transform_deg_haDec_to_az_alt(app_ha, self.recent_dec_command )
+                                refr_alt, refr_asec = short_utility.apply_refraction_in_alt(app_alt, 10, 762)   #NB This needs to be updated
+                                obs_ha, obs_dec = short_utility.transform_deg_azAlt_to_haDec(app_az, refr_alt)
 
+                                ha_mech, dec_mech = short_utility.transform_observed_to_mount(obs_ha, obs_dec,0, loud=True, enable=False)                                       #'This is the "Forward" calculation of pointing.
+                                ra_mech = short_utility.reduce_ra_d(self.sid_now_d - ha_mech)
+                                #Now compute the axis rates 2 minutes later:
+                                adv_app_ha = short_utility.reduce_ha_d(self.sid_adv_d - jnow_coord.ra.degree)
+                                adv_app_az, adv_app_alt = short_utility.transform_deg_haDec_to_az_alt(adv_app_ha, jnow_coord.dec.degree)
+                                adv_refr_alt, adv_refr_asec = short_utility.apply_refraction_in_alt(adv_app_alt, 10, 762)
+                                adv_obs_ha, adv_obs_dec = short_utility.transform_deg_azAlt_to_haDec(adv_app_az, adv_refr_alt)
+                                adv_ha_mech, adv_dec_mech = short_utility.transform_observed_to_mount(adv_obs_ha, adv_obs_dec,0, loud=True, enable=False)
+                                ha_advance_persidsec = short_utility.reduce_ha_d(adv_ha_mech - ha_mech - 360*APPTOSID/720.)*3600/120/APPTOSID
+                                dec_advance_persec = short_utility.reduce_dec_d(adv_dec_mech - dec_mech)*3600/120
+                                if self.mount_update_wincom.CanSetRightAscensionRate:
+                                    self.prior_roll_rate = -ha_advance_persidsec
+                                    self.mount_update_wincom.RightAscensionRate = self.prior_roll_rate  #Neg number makes RA decrease
+                                else:
+                                    self.prior_roll_rate = 0.0
+                                if self.mount_update_wincom.CanSetDeclinationRate:
+                                   self.prior_pitch_rate = dec_advance_persec    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
+                                   self.mount_update_wincom.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
+                                   #print("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
+                                else:
+                                    self.prior_pitch_rate = 0.0
+                                #breakpoint()
+                                print("proc_time:  ", time.time() - self.start)
                         except:
                             plog ("Issue in normal mount thread")
                             plog(traceback.format_exc())
@@ -757,7 +827,6 @@ class Mount:
             self.mount_busy=False
             plog("Motion check faulted.")
             plog(traceback.format_exc())
-            # if 'pywintypes.com_error' in str(e):
             #     plog ("Mount disconnected. Recovering.....")
             #     time.sleep(30)
 
@@ -1480,8 +1549,13 @@ class Mount:
 
     def get_current_times(self):
         self.ut_now = Time(datetime.datetime.now(), scale='utc', location=self.site_coordinates)   #From astropy.time
+
         self.sid_now_h = self.ut_now.sidereal_time('apparent').value
+        self.sid_now_d = self.sid_now_h*15.
         self.sid_now_r = self.sid_now_h*HTOR
+        self.sid_adv_h = self.sid_now_h + short_utility.APPTOSID/30.   # 2 minute advance
+        self.sid_adv_d = self.sid_adv_h*15.
+        self.sid_adv_r = self.sid_adv_h*HTOR
 
         iso_day = datetime.date.today().isocalendar()
         self.day = ((iso_day[1]-1)*7 + (iso_day[2] ))
@@ -1535,7 +1609,6 @@ class Mount:
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle.
         # WER Not going to worry about minor coordinate frame issues for these tests.
-        breakpoint()
         try:
             sun_coords=get_sun(Time.now())
             if skyflatspot != None:
@@ -2290,6 +2363,7 @@ class Mount:
         mnt_shelf['flip_dec_cal_offset'] = 0.000
         mnt_shelf.close()
         return
+
 
 # if __name__ == '__main__':
 #     req = {'time': 1,  'alias': 'ea03', 'frame': 'Light', 'filter': 2}

@@ -439,12 +439,12 @@ class Observatory:
         self.last_slew_was_pointing_slew = False
         self.open_and_enabled_to_observe = False
         self.net_connection_dead = False
-
+        self.moon_checks_on = self.config['moon_checks_on']
+        self.sun_checks_on = self.config['sun_checks_on']
 
         # Set default obs safety settings at bootup
         self.scope_in_manual_mode = self.config['scope_in_manual_mode']
-        self.moon_checks_on = self.config['moon_checks_on']
-        self.sun_checks_on = self.config['sun_checks_on']
+
         self.altitude_checks_on = self.config['altitude_checks_on']
         self.daytime_exposure_time_safety_on = self.config['daytime_exposure_time_safety_on']
         self.mount_reference_model_off = self.config['mount_reference_model_off']

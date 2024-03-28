@@ -71,14 +71,19 @@ site_config = {
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': False,
-    'mount_reference_model_off': False,
-    'sun_checks_on': True,
-    'moon_checks_on': True,
-    'altitude_checks_on': True,
-    'daytime_exposure_time_safety_on': True,
+    'scope_in_manual_mode': True,
+    'mount_reference_model_off': True,
+    'sun_checks_on': False,
+    'moon_checks_on': False,
+    'altitude_checks_on': False,
+    'daytime_exposure_time_safety_on': False,
 
-
+    # 'scope_in_manual_mode': False,
+    # 'mount_reference_model_off': False,
+    # 'sun_checks_on': True,
+    # 'moon_checks_on': True,
+    # 'altitude_checks_on': True,
+    # 'daytime_exposure_time_safety_on': True,
 
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': False,

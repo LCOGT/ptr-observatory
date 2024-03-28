@@ -2018,9 +2018,6 @@ def transform_haDec_to_azAlt(pLocal_hour_angle, pDec, lat):
 
 
 # def transform_mount_to_observed_r(pRoll, pPitch, pPierSide, loud=False):
-#     global ModelOn
-#     # I am amazed this works so well even very near the celestrial pole.
-#     # input is Ha in hours and pitch in degrees.
 #     if not ModelOn:
 #         return (pRoll, pPitch)
 #     else:
@@ -2048,7 +2045,10 @@ def transform_haDec_to_azAlt(pLocal_hour_angle, pDec, lat):
 #                 if loud:
 #                     print("transform_mount_to_observed_r() FAILED!")
 #                 return pRoll, pPitch
-#         return reduce_ha_r(rollTrial), reduce_dec_r(pitchTrial)
+#         return reduce_ha_r(rollTrial), reduce_dec_r(pitchTrial)#     global ModelOn
+#     # I am amazed this works so well even very near the celestrial pole.
+#     # input is Ha in hours and pitch in degrees.
+
 
 
 # def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=False):
