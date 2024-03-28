@@ -614,7 +614,7 @@ class Mount:
                                     refr_alt, refr_asec = short_utility.apply_refraction_in_alt(app_alt, 10, 762)   #NB This needs to be updated
                                     obs_ha, obs_dec = short_utility.transform_deg_azAlt_to_haDec(app_az, refr_alt)
                                     #breakpoint()
-                                    ha_mech, dec_mech = short_utility.transform_observed_to_mount(obs_ha, obs_dec,0, loud=True, enable=False)                                       #'This is the "Forward" calculation of pointing.
+                                    ha_mech, dec_mech = short_utility.transform_observed_to_mount(obs_ha, obs_dec,0, loud=False, enable=False)                                       #'This is the "Forward" calculation of pointing.
                                     ra_mech = short_utility.reduce_ra_d(self.sid_now_d - ha_mech)
                                     #Now compute the axis rates 2 minutes later:
                                     adv_app_ha = short_utility.reduce_ha_d(self.sid_adv_d - jnow_coord.ra.degree)
@@ -760,7 +760,7 @@ class Mount:
                                 refr_alt, refr_asec = short_utility.apply_refraction_in_alt(app_alt, 10, 762)   #NB This needs to be updated
                                 obs_ha, obs_dec = short_utility.transform_deg_azAlt_to_haDec(app_az, refr_alt)
 
-                                ha_mech, dec_mech = short_utility.transform_observed_to_mount(obs_ha, obs_dec,0, loud=True, enable=False)                                       #'This is the "Forward" calculation of pointing.
+                                ha_mech, dec_mech = short_utility.transform_observed_to_mount(obs_ha, obs_dec,0, loud=False, enable=False)                                       #'This is the "Forward" calculation of pointing.
                                 ra_mech = short_utility.reduce_ra_d(self.sid_now_d - ha_mech)
                                 #Now compute the axis rates 2 minutes later:
                                 adv_app_ha = short_utility.reduce_ha_d(self.sid_adv_d - jnow_coord.ra.degree)
