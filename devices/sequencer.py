@@ -827,7 +827,24 @@ class Sequencer:
                 self.morn_sky_flat_latch = False
                 self.morn_flats_done = True
 
-            if not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
+            # if not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
+            #           self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
+
+            #     self.morn_bias_dark_latch = True
+            #     req = {'numOfBias': 63, \
+            #             'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
+            #             'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
+            #     opt = {}
+
+            #     self.park_and_close()
+
+            #     self.bias_dark_script(req, opt, morn=True, ending = g_dev['events']['End Morn Bias Dark'])
+
+            #     self.park_and_close()
+            #     self.morn_bias_dark_latch = False
+            #     self.morn_bias_done = True
+
+            if not g_dev['obs'].open_and_enabled_to_observe and not self.morn_bias_dark_latch and (events['Astro Dark'] <= ephem_now < events['End Astro Dark']) and \
                       self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
 
                 self.morn_bias_dark_latch = True
@@ -838,7 +855,7 @@ class Sequencer:
 
                 self.park_and_close()
 
-                self.bias_dark_script(req, opt, morn=True, ending = g_dev['events']['End Morn Bias Dark'])
+                self.bias_dark_script(req, opt, morn=True, ending = events['End Astro Dark'])
 
                 self.park_and_close()
                 self.morn_bias_dark_latch = False
