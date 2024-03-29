@@ -860,6 +860,25 @@ class Sequencer:
                 self.park_and_close()
                 self.morn_bias_dark_latch = False
                 self.morn_bias_done = True
+                
+            # if not g_dev['obs'].open_and_enabled_to_observe and not self.morn_bias_dark_latch and (events['Astro Dark'] <= ephem_now < events['End Astro Dark']) and \
+            #           self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
+
+            #     self.morn_bias_dark_latch = True
+            #     req = {'numOfBias': 63, \
+            #             'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
+            #             'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
+            #     opt = {}
+
+            #     self.park_and_close()
+
+            #     self.bias_dark_script(req, opt, morn=True, ending = events['End Astro Dark'])
+
+            #     self.park_and_close()
+            #     self.morn_bias_dark_latch = False
+            #     self.morn_bias_done = True
+
+            
 
 
             if events['Sun Rise'] <= ephem_now and not self.end_of_night_token_sent:
@@ -5951,15 +5970,15 @@ class Sequencer:
                 minimum_index=minimumfind.index(min(minimumfind))
                 if minimum_index == 0 or minimum_index == 1:
                     plog ("Minimum too close to the sampling edge, getting another dot")
-                    new_focus_position_to_attempt=min(minimumfind) - throw
-                    breakpoint()
+                    new_focus_position_to_attempt=focus_spots[0][0] - throw
+                    #breakpoint()
                     print ("Attempting: " + str(new_focus_position_to_attempt))
                     plt.scatter(x,y)
                     plt.show()
                 elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:   
                     plog ("Minimum too close to the sampling edge, getting another dot")
-                    new_focus_position_to_attempt=max(minimumfind) + throw
-                    breakpoint()
+                    new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
+                    #breakpoint()
                     print ("Attempting: " + str(new_focus_position_to_attempt))
                     plt.scatter(x,y)
                     plt.show()
