@@ -557,16 +557,26 @@ class Sequencer:
 
             if False and (time.time()-self.MTF_temporary_flat_timer > 300):
                 self.MTF_temporary_flat_timer=time.time()
-                plog ("EVESKY FLAG HUNTING")
-                plog ("Roof open time: " + str(time.time() - g_dev['seq'].time_roof_last_opened))
-                plog ("Sky flat latch: " + str(self.eve_sky_flat_latch))
-                plog ("Scope in manual mode: " + str(g_dev['obs'].scope_in_manual_mode))
-                plog ("Eve sky start: " + str(events['Eve Sky Flats']))
-                plog ("Eve sky end: " + str(events['End Eve Sky Flats']))
-                plog ("In between: " + str((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])))
-                plog ("Open and enabled: " + str(g_dev['obs'].open_and_enabled_to_observe))
-                plog ("Eve sky flats done: " + str(self.eve_flats_done))
-                plog ("Camera cooled: " + str(g_dev['obs'].camera_sufficiently_cooled_for_calibrations))
+                # plog ("EVESKY FLAG HUNTING")
+                # plog ("Roof open time: " + str(time.time() - g_dev['seq'].time_roof_last_opened))
+                # plog ("Sky flat latch: " + str(self.eve_sky_flat_latch))
+                # plog ("Scope in manual mode: " + str(g_dev['obs'].scope_in_manual_mode))
+                # plog ("Eve sky start: " + str(events['Eve Sky Flats']))
+                # plog ("Eve sky end: " + str(events['End Eve Sky Flats']))
+                # plog ("In between: " + str((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])))
+                # plog ("Open and enabled: " + str(g_dev['obs'].open_and_enabled_to_observe))
+                # plog ("Eve sky flats done: " + str(self.eve_flats_done))
+                # plog ("Camera cooled: " + str(g_dev['obs'].camera_sufficiently_cooled_for_calibrations))
+                plog("******")
+                plog (events['Observing Begins'] <= ephem_now  < events['Observing Ends'])
+                plog(self.block_guard)
+                plog( g_dev["cam"].exposure_busy)
+                plog(time.time() - self.project_call_timer > 10)
+                plog(g_dev['obs'].scope_in_manual_mode)
+                plog(g_dev['obs'].open_and_enabled_to_observe)
+                plog(self.clock_focus_latch)
+
+                #print ()
 
             if (time.time() - g_dev['seq'].time_roof_last_opened > \
                    self.config['time_to_wait_after_roof_opens_to_take_flats'] ) and \
@@ -696,10 +706,16 @@ class Sequencer:
 
                     self.project_call_timer = time.time()
 
-                    g_dev['obs'].request_update_calendar_blocks()
+                    #g_dev['obs'].request_update_calendar_blocks()
+                    # Mission critical calendar block update
+                    self.update_calendar_blocks()
+                    
+                    plog ("project test in")
+                    
+                    print (self.blocks)
 
                     # only need to bother with the rest if there is more than 0 blocks.
-                    self.block_guard=False
+                    #self.block_guard=False
                     if not len(self.blocks) > 0:
                         self.block_guard=False
                         g_dev['seq'].blockend= None
@@ -724,85 +740,164 @@ class Sequencer:
                                     if project_response.status_code ==200:
                                         self.block_guard = True
                                         block['project']=project_response.json()
+                                        print ("FOUND: " + str(block))
                                         identified_block=copy.deepcopy(block)
                                     else:
                                         plog("Project response status code not 200")
                                         plog (str(project_response))
                                         plog (str(project_response.status_code))
                                         plog ("Project failed to be downloaded from Aws")
+                                        identified_block=None
                                 except:
                                     plog(traceback.format_exc())
                                     #
 
-                        if identified_block == None:
-                            self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                            g_dev['seq'].blockend= None
-                            pointing_good=False   # Do not try to execute an empty block.
-
-                        elif identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
-                            self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                            g_dev['seq'].blockend= None
-                            pointing_good=False   # Do not try to execute an empty block.
-
-
-                        elif identified_block['project'] == None:
-                            plog (identified_block)
-                            plog ("Skipping a block that contains an empty project")
-                            self.block_guard=False
-                            g_dev['seq'].blockend= None
-                            pointing_good=False
-
-                        elif identified_block['project'] != None:
-                            pointing_good=True
-                            # If a block is identified, check it is in the sky and not in a poor location
-                            target=identified_block['project']['project_targets'][0]
-
-                            ra = float(target['ra'])
-                            dec = float(target['dec'])
-                            temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
-                            temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
-                            alt = temppointingaltaz.alt.degree
-                            # Check the moon isn't right in front of the project target
-                            #moon_coords=get_moon(Time.now())
-                            moon_coords=get_body("moon", time=Time.now())
-                            moon_dist = moon_coords.separation(temppointing)
-                            if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
-                                g_dev['obs'].send_to_user("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                                plog("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                                pointing_good=False
-                            if alt < self.config['lowest_requestable_altitude']:
-                                g_dev['obs'].send_to_user("Not running project as it is too low: " + str(alt) + " degrees.")
-                                plog("Not running project as it is too low: " + str(alt) + " degrees.")
-                                pointing_good=False
-
-                        if pointing_good:
-                            completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
-                            #
-                            try:
-                                self.append_completes(completed_block['event_id'])
-                            except:
-                                plog ("block complete append didn't work")
-                                plog(traceback.format_exc())
-                            self.block_guard=False
-                            self.currently_mosaicing = False
-                            self.blockend = None
-                        elif identified_block is None:
-                            self.block_guard=False
-                            self.currently_mosaicing = False
-                            self.blockend = None
-                        else:
-                            plog ("Something didn't work, cancelling out of doing this project and putting it in the completes pile.")
-                            self.append_completes(block['event_id'])
-                            self.block_guard=False
-                            self.currently_mosaicing = False
-                            self.blockend = None
-
+                            # if identified_block == None:
+                            #     plog ("identified block is None")
+                            #     self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                            #     g_dev['seq'].blockend= None
+                            #     pointing_good=False   # Do not try to execute an empty block.
+    
+                            # elif identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                            #     plog ("identified block is real_time or none")
+                            #     print (identified_block['project_id'])
+                            #     self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                            #     g_dev['seq'].blockend= None
+                            #     pointing_good=False   # Do not try to execute an empty block.
+    
+    
+                            # elif identified_block['project'] == None:
+                            #     plog (identified_block)
+                            #     plog ("Skipping a block that contains an empty project")
+                            #     self.block_guard=False
+                            #     g_dev['seq'].blockend= None
+                            #     pointing_good=False
+    
+                            # elif identified_block['project'] != None:
+                            #     pointing_good=True
+                            #     # If a block is identified, check it is in the sky and not in a poor location
+                            #     target=identified_block['project']['project_targets'][0]
+    
+                            #     ra = float(target['ra'])
+                            #     dec = float(target['dec'])
+                            #     temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+                            #     temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
+                            #     alt = temppointingaltaz.alt.degree
+                            #     # Check the moon isn't right in front of the project target
+                            #     #moon_coords=get_moon(Time.now())
+                            #     moon_coords=get_body("moon", time=Time.now())
+                            #     moon_dist = moon_coords.separation(temppointing)
+                            #     if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
+                            #         g_dev['obs'].send_to_user("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                            #         plog("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                            #         pointing_good=False
+                            #     if alt < self.config['lowest_requestable_altitude']:
+                            #         g_dev['obs'].send_to_user("Not running project as it is too low: " + str(alt) + " degrees.")
+                            #         plog("Not running project as it is too low: " + str(alt) + " degrees.")
+                            #         pointing_good=False
+    
+                            # if pointing_good:
+                            #     completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
+                            #     #
+                            #     try:
+                            #         self.append_completes(completed_block['event_id'])
+                            #     except:
+                            #         plog ("block complete append didn't work")
+                            #         plog(traceback.format_exc())
+                            #     self.block_guard=False
+                            #     self.currently_mosaicing = False
+                            #     self.blockend = None
+                            # elif identified_block is None:
+                            #     self.block_guard=False
+                            #     self.currently_mosaicing = False
+                            #     self.blockend = None
+                            # else:
+                            #     plog ("Something didn't work, cancelling out of doing this project and putting it in the completes pile.")
+                            #     self.append_completes(block['event_id'])
+                            #     self.block_guard=False
+                            #     self.currently_mosaicing = False
+                            #     self.blockend = None
+                            
+                                if identified_block == None:
+                                    plog ("identified block is None")
+                                    # self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                                    # g_dev['seq'].blockend= None
+                                    pointing_good=False   # Do not try to execute an empty block.
+        
+                                elif identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                                    plog ("identified block is real_time or none")
+                                    print (identified_block['project_id'])
+                                    # self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                                    # g_dev['seq'].blockend= None
+                                    pointing_good=False   # Do not try to execute an empty block.
+        
+        
+                                elif identified_block['project'] == None:
+                                    plog (identified_block)
+                                    plog ("Skipping a block that contains an empty project")
+                                    # self.block_guard=False
+                                    # g_dev['seq'].blockend= None
+                                    pointing_good=False
+        
+                                elif identified_block['project'] != None:
+                                    pointing_good=True
+                                    # If a block is identified, check it is in the sky and not in a poor location
+                                    target=identified_block['project']['project_targets'][0]
+        
+                                    ra = float(target['ra'])
+                                    dec = float(target['dec'])
+                                    temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+                                    temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
+                                    alt = temppointingaltaz.alt.degree
+                                    # Check the moon isn't right in front of the project target
+                                    #moon_coords=get_moon(Time.now())
+                                    moon_coords=get_body("moon", time=Time.now())
+                                    moon_dist = moon_coords.separation(temppointing)
+                                    if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
+                                        g_dev['obs'].send_to_user("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                                        plog("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                                        pointing_good=False
+                                    if alt < self.config['lowest_requestable_altitude']:
+                                        g_dev['obs'].send_to_user("Not running project as it is too low: " + str(alt) + " degrees.")
+                                        plog("Not running project as it is too low: " + str(alt) + " degrees.")
+                                        pointing_good=False
+        
+                                if pointing_good:
+                                    completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
+                                    #
+                                    try:
+                                        self.append_completes(completed_block['event_id'])
+                                    except:
+                                        plog ("block complete append didn't work")
+                                        plog(traceback.format_exc())
+                                    # self.block_guard=False
+                                    # self.currently_mosaicing = False
+                                    self.blockend = None
+                                elif identified_block is None:
+                                    # self.block_guard=False
+                                    # self.currently_mosaicing = False
+                                    self.blockend = None
+                                else:
+                                    plog ("Something didn't work, cancelling out of doing this project and putting it in the completes pile.")
+                                    plog (block)
+                                    self.append_completes(block['event_id'])
+                                    # self.block_guard=False
+                                    # self.currently_mosaicing = False
+                                    self.blockend = None
+                                
+                    self.block_guard=False
+                    self.currently_mosaicing = False
+                    self.blockend = None
 
                 except:
                     plog(traceback.format_exc())
                     plog("Hang up in sequencer.")
                     self.blockend = None
                     self.block_guard=False
+                    self.currently_mosaicing = False
+                
+                # Double check
+                self.block_guard = False
 
 
 
@@ -1196,13 +1291,21 @@ class Sequencer:
         lcl_list.append(block_id)   #NB NB an in-line append did not work!
         seq_shelf['completed_blocks']= lcl_list
         plog('Appended completes contains:  ', seq_shelf['completed_blocks'])
+        
         seq_shelf.close()
+        
+        self.block_guard=False
+        
         return True
 
     def is_in_completes(self, block_id):
 
         camera = self.config['camera']['camera_1_1']['name']
         seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + '_completes_' + str(g_dev['obs'].name))
+        print ("is in check")
+        print ("block_id")
+        print (seq_shelf['completed_blocks'])
+        
         if block_id in seq_shelf['completed_blocks']:
             seq_shelf.close()
             return True
@@ -1227,14 +1330,15 @@ class Sequencer:
         This function executes an observing block provided by a calendar event.
         """
 
-        self.block_guard = True
-        self.total_sequencer_control=True
+        
         if (ephem.now() < g_dev['events']['Civil Dusk'] ) or \
             (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")
             return block_specification     #Added wer 20231103
-
+        
+        self.block_guard = True
+        self.total_sequencer_control=True
         #g_dev["obs"].request_full_update()
 
         plog('|n|n Starting a new project!  \n')
@@ -1420,11 +1524,13 @@ class Sequencer:
                                     g_dev["obs"].send_to_user("Calendar Block Ended. Stopping project run.")
                                     left_to_do=0
                                     self.blockend = None
+                                    self.total_sequencer_control=False
                                     return block_specification
                     if not foundcalendar:
                         plog ("could not find calendar entry, cancelling out of block.")
                         g_dev["obs"].send_to_user("Calendar block removed. Stopping project run.")
                         self.blockend = None
+                        self.total_sequencer_control=False
                         return block_specification
 
                     if g_dev["obs"].stop_all_activity:
@@ -1432,11 +1538,13 @@ class Sequencer:
 
                         #left_to_do =0
                         self.blockend = None
+                        self.total_sequencer_control=False
                         return block_specification
 
                     if g_dev['obs'].open_and_enabled_to_observe == False:
                         plog ("Obs not longer open and enabled to observe. Cancelling out.")
                         self.blockend = None
+                        self.total_sequencer_control=False
                         return block_specification
 
 
@@ -1578,6 +1686,7 @@ class Sequencer:
                         plog ("End of Block, exiting project block.")
                         self.blockend = None
                         self.currently_mosaicing = False
+                        self.total_sequencer_control=False
                         return block_specification
 
                     if result == 'calendarend':
@@ -1585,6 +1694,7 @@ class Sequencer:
                         plog ("Site bailing out of running project")
                         self.blockend = None
                         self.currently_mosaicing = False
+                        self.total_sequencer_control=False
                         return block_specification
 
 
@@ -1592,18 +1702,21 @@ class Sequencer:
                         plog ("Roof Shut, Site bailing out of Project")
                         self.blockend = None
                         self.currently_mosaicing = False
+                        self.total_sequencer_control=False
                         return block_specification
 
                     if result == 'outsideofnighttime':
                         plog ("Outside of Night Time. Site bailing out of Project")
                         self.blockend = None
                         self.currently_mosaicing = False
+                        self.total_sequencer_control=False
                         return block_specification
 
                     if g_dev["obs"].stop_all_activity:
                         plog('stop_all_activity cancelling out of Project')
                         self.blockend = None
                         self.currently_mosaicing = False
+                        self.total_sequencer_control=False
                         return block_specification
 
 
@@ -1652,6 +1765,7 @@ class Sequencer:
                                 plog ("End of Block, exiting project block.")
                                 self.blockend = None
                                 self.currently_mosaicing = False
+                                self.total_sequencer_control=False
                                 return block_specification
 
                             if result == 'calendarend':
@@ -1659,23 +1773,27 @@ class Sequencer:
                                 plog ("Site bailing out of running project")
                                 self.blockend = None
                                 self.currently_mosaicing = False
+                                self.total_sequencer_control=False
                                 return block_specification
                             if result == 'roofshut':
                                 plog ("Roof Shut, Site bailing out of Project")
                                 self.blockend = None
                                 self.currently_mosaicing = False
+                                self.total_sequencer_control=False
                                 return block_specification
 
                             if result == 'outsideofnighttime':
                                 plog ("Outside of Night Time. Site bailing out of Project")
                                 self.blockend = None
                                 self.currently_mosaicing = False
+                                self.total_sequencer_control=False
                                 return block_specification
 
                             if g_dev["obs"].stop_all_activity:
                                 plog('stop_all_activity cancelling out of Project')
                                 self.blockend = None
                                 self.currently_mosaicing = False
+                                self.total_sequencer_control=False
                                 return block_specification
 
                         if imtype in ['light']:
@@ -1701,6 +1819,7 @@ class Sequencer:
                                     left_to_do=0
                                     self.blockend = None
                                     self.currently_mosaicing = False
+                                    self.total_sequencer_control=False
                                     return
                             #g_dev["obs"].request_full_update()
                             #plog("*****Line 1304 Seg. Right before call expose:  req, opt:  ", req, opt)
@@ -1711,6 +1830,7 @@ class Sequencer:
                                     plog ("End of Block, exiting project block.")
                                     self.blockend = None
                                     self.currently_mosaicing = False
+                                    self.total_sequencer_control=False
                                     return block_specification
 
                                 if result == 'calendarend':
@@ -1718,24 +1838,28 @@ class Sequencer:
                                     plog ("Site bailing out of running project")
                                     self.blockend = None
                                     self.currently_mosaicing = False
+                                    self.total_sequencer_control=False
                                     return block_specification
 
                                 if result == 'roofshut':
                                     plog ("Roof Shut, Site bailing out of Project")
                                     self.blockend = None
                                     self.currently_mosaicing = False
+                                    self.total_sequencer_control=False
                                     return block_specification
 
                                 if result == 'outsideofnighttime':
                                     plog ("Outside of Night Time. Site bailing out of Project")
                                     self.blockend = None
                                     self.currently_mosaicing = False
+                                    self.total_sequencer_control=False
                                     return block_specification
 
                                 if g_dev["obs"].stop_all_activity:
                                     plog('stop_all_activity cancelling out of Project')
                                     self.blockend = None
                                     self.currently_mosaicing = False
+                                    self.total_sequencer_control=False
                                     return block_specification
 
                             except:
@@ -1757,6 +1881,7 @@ class Sequencer:
                             if ephem.now() >= events['Observing Ends']:
                                 self.blockend = None
                                 self.currently_mosaicing = False
+                                self.total_sequencer_control=False
                                 return block_specification
 
                             #if now_date_timeZ >= g_dev['seq'].blockend:
@@ -1766,6 +1891,7 @@ class Sequencer:
                                 #left_to_do=0
                                 self.blockend = None
                                 self.currently_mosaicing = False
+                                self.total_sequencer_control=False
                                 return block_specification
 
 
@@ -1773,6 +1899,7 @@ class Sequencer:
                                 #left_to_do=0
                                 self.blockend = None
                                 self.currently_mosaicing = False
+                                self.total_sequencer_control=False
                                 return block_specification
 
 
@@ -1780,18 +1907,21 @@ class Sequencer:
                                 #left_to_do =0
                                 self.blockend = None
                                 self.currently_mosaicing = False
+                                self.total_sequencer_control=False
                                 return block_specification
 
                             if result == 'roofshut':
                                 #left_to_do =0
                                 self.blockend = None
                                 self.currently_mosaicing = False
+                                self.total_sequencer_control=False
                                 return block_specification
 
                             if result == 'outsideofnighttime':
                                 #left_to_do =0
                                 self.blockend = None
                                 self.currently_mosaicing = False
+                                self.total_sequencer_control=False
                                 return block_specification
 
                             if g_dev["obs"].stop_all_activity:
@@ -1799,6 +1929,7 @@ class Sequencer:
                                 #left_to_do =0
                                 self.blockend = None
                                 self.currently_mosaicing = False
+                                self.total_sequencer_control=False
                                 return block_specification
 
 
@@ -4700,7 +4831,13 @@ class Sequencer:
 
             elif temp_separation < math.radians(self.config['minimum_distance_from_the_moon_when_taking_flats']): #and (ephem.Moon(datetime.datetime.now()).moon_phase) > 0.05:
                 plog ("Moon is in the sky and less than " + str(self.config['minimum_distance_from_the_moon_when_taking_flats']) + " degrees ("+str(temp_separation)+") away from the flat spot, skipping this flat time.")
-                #return
+                self.flats_being_collected = False
+                self.eve_sky_flat_latch = False
+                self.morn_sky_flat_latch = False
+                return
+            
+            else: 
+                plog ("Moon is in the sky but far enough way to take flats.")
 
 
         #self.flats_being_collected = True
@@ -4911,7 +5048,9 @@ class Sequencer:
                     current_filter='No Filter'
                     plog("Beginning flat run for filterless observation")
 
+                # For each filter, there are a few properties that drive the logic
                 sky_exposure_snap_this_filter=copy.deepcopy(sky_exposure_snap_to_grid)
+                number_of_exposures_so_far=0
 
 
                 min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
@@ -5209,6 +5348,7 @@ class Sequencer:
                                     time.sleep(1)
 
                                 fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
+                                number_of_exposures_so_far=number_of_exposures_so_far+1
                                 #breakpoint()
                                 try:
                                     if self.stop_script_called:
@@ -5338,8 +5478,16 @@ class Sequencer:
                                         new_throughput_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
 
                                 if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                                    
+                                    # Check the first image is not unnaturally low
+                                    # and wait again
+                                    if bright < 0.3 * flat_saturation_level and number_of_exposures_so_far == 1:
+                                        plog("Got an abnormally low value on the first shot")
+                                        plog("Retrying again after a little wait to check the filter is in place")
+                                        new_throughput_value=copy.deepcopy(old_throughput_value)
+                                        time.sleep(3)
 
-                                    if (
+                                    elif (
                                         bright
                                         <= 0.8* flat_saturation_level and
 
@@ -5362,7 +5510,14 @@ class Sequencer:
                                         sky_exposure_snap_this_filter.remove(exp_time)
 
                                 else:
-                                    if (
+                                    if bright < 0.1 * flat_saturation_level and number_of_exposures_so_far == 1:
+                                        plog("Got an abnormally low value on the first shot")
+                                        plog("Retrying again after a little wait to check the filter is in place")
+                                        
+                                        new_throughput_value=copy.deepcopy(old_throughput_value)
+                                        time.sleep(3)
+
+                                    elif (
                                         bright
                                         <= 0.75* flat_saturation_level and
 
@@ -5975,6 +6130,17 @@ class Sequencer:
                     print ("Attempting: " + str(new_focus_position_to_attempt))
                     plt.scatter(x,y)
                     plt.show()
+                    
+                    im_path_r = g_dev['cam'].camera_path
+                    raw_path = im_path_r + g_dev["day"] + "/raw/"
+                    throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
+                    plt.savefig(raw_path + '/'+ throwaway_filename)
+                    # Fling the jpeg up
+                    try:
+                        g_dev['obs'].enqueue_for_fastUI(100, raw_path, throwaway_filename)
+                    except:
+                        plog("Failed to send FOCUS PLOT up for some reason")
+                        plog(traceback.format_exc())
                 elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:   
                     plog ("Minimum too close to the sampling edge, getting another dot")
                     new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
@@ -5982,6 +6148,17 @@ class Sequencer:
                     print ("Attempting: " + str(new_focus_position_to_attempt))
                     plt.scatter(x,y)
                     plt.show()
+                    
+                    im_path_r = g_dev['cam'].camera_path
+                    raw_path = im_path_r + g_dev["day"] + "/raw/"
+                    throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
+                    plt.savefig(raw_path + '/'+ throwaway_filename)
+                    # Fling the jpeg up
+                    try:
+                        g_dev['obs'].enqueue_for_fastUI(100, raw_path, throwaway_filename)
+                    except:
+                        plog("Failed to send FOCUS PLOT up for some reason")
+                        plog(traceback.format_exc())
                 else:
                 
                     
@@ -6011,6 +6188,17 @@ class Sequencer:
                     
                     plt.show()
                     
+                    
+                    im_path_r = g_dev['cam'].camera_path
+                    raw_path = im_path_r + g_dev["day"] + "/raw/"
+                    throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
+                    plt.savefig(raw_path + '/'+ throwaway_filename)
+                    # Fling the jpeg up
+                    try:
+                        g_dev['obs'].enqueue_for_fastUI(100, raw_path, throwaway_filename)
+                    except:
+                        plog("Failed to send FOCUS PLOT up for some reason")
+                        plog(traceback.format_exc())
                     
                     #breakpoint()
                 
@@ -8340,6 +8528,7 @@ class Sequencer:
         )
         try:
             self.blocks = reqs.post(url_blk, body, timeout=20).json()
+            print ("successful calendar block query")
         except:
             plog ("A glitch found in the blocks reqs post, probably date format")
 

@@ -140,6 +140,8 @@ class Focuser:
         except:
             plog ('setting last filter offset to 0')
             self.last_filter_offset= 0
+        
+        self.focuser_settle_time=self.config['focuser_movement_settle_time']
 
 
 
@@ -490,16 +492,21 @@ class Focuser:
     #       Focuser Commands      #
     ###############################
 
-    def get_position(self, counts=False):
-        if not counts:
-            if not self.theskyx:
-                #self.current_focus_position=self.focuser.Position * self.steps_to_micron
+    def get_position_status(self, counts=False):
+        # if not counts:
+        #     if not self.theskyx:
+        #         #self.current_focus_position=self.focuser.Position * self.steps_to_micron
 
-                return int(self.current_focus_position)
-            else:
-                #self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
+        return int(self.current_focus_position)
+            # else:
+            #     #self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
 
-                return int(self.current_focus_position)
+            #     return int(self.current_focus_position)
+
+    def get_position_actual(self, counts=False):
+        self.wait_for_focuser_update()
+        return int(self.current_focus_position)
+
 
 
     def set_initial_best_guess_for_focus(self):
@@ -603,6 +610,9 @@ class Focuser:
             try:
                 if g_dev['seq'].focussing or self.focuser_is_moving or g_dev['seq'].measuring_focus_offsets:
                     return
+                if g_dev['mnt'].rapid_park_indicator:
+                    plog ("Not adjusting focus as telescope is parked")
+                    return
             except:
                 # On initialisation there is no g_dev
                 # so this just skips early checks.
@@ -652,11 +662,13 @@ class Focuser:
                 pass
 
 
-            if self.theskyx:
-                self.current_focus_position=self.get_position()
+            #if self.theskyx:
+                # self.current_focus_position=self.get_position()
 
-            else:
-                self.current_focus_position=self.get_position()
+            self.get_position_actual()
+
+            # else:
+            #     self.current_focus_position=self.get_position()
 
 
             if abs((self.last_known_focus + adjust) - self.current_focus_position) > 10:

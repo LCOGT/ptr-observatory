@@ -33,6 +33,7 @@ from astropy.stats import sigma_clip
 import math
 import threading
 from scipy import optimize
+from scipy.linalg import svd
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
@@ -46,6 +47,7 @@ from ctypes import *
 from skimage.registration import phase_cross_correlation
 from multiprocessing.pool import Pool,ThreadPool
 from scipy._lib._util import getfullargspec_no_self as _getfullargspec
+from scipy.stats import binned_statistic
 
 def mid_stretch_jpeg(data):
     """
@@ -386,6 +388,215 @@ def reset_sequence(pCamera):
         plog("Nothing on the cam shelf in reset_sequence")
         return None
 
+# THIS IS A SCIPY FUNCTION LIBERATED INTO THIS CODE FOR SPEED TESTS
+def _lightweight_memoizer(f):
+    # very shallow memoization to address gh-13670: only remember the first set
+    # of parameters and corresponding function value, and only attempt to use
+    # them twice (the number of times the function is evaluated at x0).
+    def _memoized_func(params):
+        if _memoized_func.skip_lookup:
+            return f(params)
+
+        if np.all(_memoized_func.last_params == params):
+            return _memoized_func.last_val
+        elif _memoized_func.last_params is not None:
+            _memoized_func.skip_lookup = True
+
+        val = f(params)
+
+        if _memoized_func.last_params is None:
+            _memoized_func.last_params = np.copy(params)
+            _memoized_func.last_val = val
+
+        return val
+
+    _memoized_func.last_params = None
+    _memoized_func.last_val = None
+    _memoized_func.skip_lookup = False
+    return _memoized_func
+
+
+# # THIS IS A SCIPY FUNCTION LIBERATED INTO THIS CODE FOR SPEED TESTS
+# def _asarray_validated(a, check_finite=True,
+#                        sparse_ok=False, objects_ok=False, mask_ok=False,
+#                        as_inexact=False):
+#     """
+#     Helper function for SciPy argument validation.
+
+#     Many SciPy linear algebra functions do support arbitrary array-like
+#     input arguments. Examples of commonly unsupported inputs include
+#     matrices containing inf/nan, sparse matrix representations, and
+#     matrices with complicated elements.
+
+#     Parameters
+#     ----------
+#     a : array_like
+#         The array-like input.
+#     check_finite : bool, optional
+#         Whether to check that the input matrices contain only finite numbers.
+#         Disabling may give a performance gain, but may result in problems
+#         (crashes, non-termination) if the inputs do contain infinities or NaNs.
+#         Default: True
+#     sparse_ok : bool, optional
+#         True if scipy sparse matrices are allowed.
+#     objects_ok : bool, optional
+#         True if arrays with dype('O') are allowed.
+#     mask_ok : bool, optional
+#         True if masked arrays are allowed.
+#     as_inexact : bool, optional
+#         True to convert the input array to a np.inexact dtype.
+
+#     Returns
+#     -------
+#     ret : ndarray
+#         The converted validated array.
+
+#     """
+#     if not sparse_ok:
+#         import scipy.sparse
+#         if scipy.sparse.issparse(a):
+#             msg = ('Sparse matrices are not supported by this function. '
+#                    'Perhaps one of the scipy.sparse.linalg functions '
+#                    'would work instead.')
+#             raise ValueError(msg)
+#     if not mask_ok:
+#         if np.ma.isMaskedArray(a):
+#             raise ValueError('masked arrays are not supported')
+#     toarray = np.asarray_chkfinite if check_finite else np.asarray
+#     a = toarray(a)
+#     if not objects_ok:
+#         if a.dtype is np.dtype('O'):
+#             raise ValueError('object arrays are not supported')
+#     if as_inexact:
+#         if not np.issubdtype(a.dtype, np.inexact):
+#             a = toarray(a, dtype=np.float64)
+#     return a
+
+# THIS IS A SCIPY FUNCTION LIBERATED INTO THIS CODE FOR SPEED TESTS
+def solve_triangular(a, b, trans=0, lower=False, unit_diagonal=False,
+                     overwrite_b=False, check_finite=True):
+    """
+    Solve the equation `a x = b` for `x`, assuming a is a triangular matrix.
+
+    Parameters
+    ----------
+    a : (M, M) array_like
+        A triangular matrix
+    b : (M,) or (M, N) array_like
+        Right-hand side matrix in `a x = b`
+    lower : bool, optional
+        Use only data contained in the lower triangle of `a`.
+        Default is to use upper triangle.
+    trans : {0, 1, 2, 'N', 'T', 'C'}, optional
+        Type of system to solve:
+
+        ========  =========
+        trans     system
+        ========  =========
+        0 or 'N'  a x  = b
+        1 or 'T'  a^T x = b
+        2 or 'C'  a^H x = b
+        ========  =========
+    unit_diagonal : bool, optional
+        If True, diagonal elements of `a` are assumed to be 1 and
+        will not be referenced.
+    overwrite_b : bool, optional
+        Allow overwriting data in `b` (may enhance performance)
+    check_finite : bool, optional
+        Whether to check that the input matrices contain only finite numbers.
+        Disabling may give a performance gain, but may result in problems
+        (crashes, non-termination) if the inputs do contain infinities or NaNs.
+
+    Returns
+    -------
+    x : (M,) or (M, N) ndarray
+        Solution to the system `a x = b`.  Shape of return matches `b`.
+
+    Raises
+    ------
+    LinAlgError
+        If `a` is singular
+
+    Notes
+    -----
+    .. versionadded:: 0.9.0
+
+    Examples
+    --------
+    Solve the lower triangular system a x = b, where::
+
+             [3  0  0  0]       [4]
+        a =  [2  1  0  0]   b = [2]
+             [1  0  1  0]       [4]
+             [1  1  1  1]       [2]
+
+    >>> import numpy as np
+    >>> from scipy.linalg import solve_triangular
+    >>> a = np.array([[3, 0, 0, 0], [2, 1, 0, 0], [1, 0, 1, 0], [1, 1, 1, 1]])
+    >>> b = np.array([4, 2, 4, 2])
+    >>> x = solve_triangular(a, b, lower=True)
+    >>> x
+    array([ 1.33333333, -0.66666667,  2.66666667, -1.33333333])
+    >>> a.dot(x)  # Check the result
+    array([ 4.,  2.,  4.,  2.])
+
+    """
+
+    # a1 = _asarray_validated(a, check_finite=check_finite)
+    # b1 = _asarray_validated(b, check_finite=check_finite)
+    
+    # if len(a1.shape) != 2 or a1.shape[0] != a1.shape[1]:
+    #     raise ValueError('expected square matrix')
+    # if a1.shape[0] != b1.shape[0]:
+    #     raise ValueError(f'shapes of a {a1.shape} and b {b1.shape} are incompatible')
+    # overwrite_b = overwrite_b or _datacopied(b1, b)
+
+    # if len(a1.shape) != 2 or a1.shape[0] != a1.shape[1]:
+    #     raise ValueError('expected square matrix')
+    # if a1.shape[0] != b1.shape[0]:
+    #     raise ValueError(f'shapes of a {a1.shape} and b {b1.shape} are incompatible')
+    overwrite_b = overwrite_b or _datacopied(b1, b)
+
+
+    trans = {'N': 0, 'T': 1, 'C': 2}.get(trans, trans)
+    trtrs, = get_lapack_funcs(('trtrs',), (a1, b1))
+    if a1.flags.f_contiguous or trans == 2:
+        x, info = trtrs(a1, b1, overwrite_b=overwrite_b, lower=lower,
+                        trans=trans, unitdiag=unit_diagonal)
+    else:
+        # transposed system is solved since trtrs expects Fortran ordering
+        x, info = trtrs(a1.T, b1, overwrite_b=overwrite_b, lower=not lower,
+                        trans=not trans, unitdiag=unit_diagonal)
+
+    if info == 0:
+        return x
+    # if info > 0:
+    #     raise LinAlgError("singular matrix: resolution failed at diagonal %d" %
+    #                       (info-1))
+    # raise ValueError('illegal value in %dth argument of internal trtrs' %
+    #                  (-info))
+
+# THIS IS A SCIPY FUNCTION LIBERATED INTO THIS CODE FOR SPEED TESTS
+def _wrap_func(func, xdata, ydata, transform):
+    if transform is None:
+        def func_wrapped(params):
+            return func(xdata, *params) - ydata
+    elif transform.size == 1 or transform.ndim == 1:
+        def func_wrapped(params):
+            return transform * (func(xdata, *params) - ydata)
+    else:
+        # Chisq = (y - yd)^T C^{-1} (y-yd)
+        # transform = L such that C = L L^T
+        # C^{-1} = L^{-T} L^{-1}
+        # Chisq = (y - yd)^T L^{-T} L^{-1} (y-yd)
+        # Define (y-yd)' = L^{-1} (y-yd)
+        # by solving
+        # L (y-yd)' = (y-yd)
+        # and minimize (y-yd)'^T (y-yd)'
+        def func_wrapped(params):
+            return solve_triangular(transform, func(xdata, *params) - ydata, lower=True)
+    return func_wrapped
+
 
 def nonscipy_gaussian_curve_fit(f, xdata, ydata, p0=None, sigma=None, absolute_sigma=False,
               check_finite=None, bounds=(-np.inf, np.inf), method=None,
@@ -408,7 +619,7 @@ def nonscipy_gaussian_curve_fit(f, xdata, ydata, p0=None, sigma=None, absolute_s
     #         raise ValueError("Unable to determine number of fit parameters.")
     #     n = len(args) - 1
     # else:
-    p0 = np.atleast_1d(p0)
+    #p0 = np.atleast_1d(p0)
     n = p0.size
         
     print ("p0 is " + str(p0))
@@ -453,115 +664,117 @@ def nonscipy_gaussian_curve_fit(f, xdata, ydata, p0=None, sigma=None, absolute_s
     # if ydata.size == 0:
     #     raise ValueError("`ydata` must not be empty!")
 
-    # nan handling is needed only if check_finite is False because if True,
-    # the x-y data are already checked, and they don't contain nans.
-    if not check_finite and nan_policy is not None:
-        if nan_policy == "propagate":
-            raise ValueError("`nan_policy='propagate'` is not supported "
-                             "by this function.")
+    # # nan handling is needed only if check_finite is False because if True,
+    # # the x-y data are already checked, and they don't contain nans.
+    # if not check_finite and nan_policy is not None:
+    #     if nan_policy == "propagate":
+    #         raise ValueError("`nan_policy='propagate'` is not supported "
+    #                          "by this function.")
 
-        policies = [None, 'raise', 'omit']
-        x_contains_nan, nan_policy = _contains_nan(xdata, nan_policy,
-                                                   policies=policies)
-        y_contains_nan, nan_policy = _contains_nan(ydata, nan_policy,
-                                                   policies=policies)
+    #     policies = [None, 'raise', 'omit']
+    #     x_contains_nan, nan_policy = _contains_nan(xdata, nan_policy,
+    #                                                policies=policies)
+    #     y_contains_nan, nan_policy = _contains_nan(ydata, nan_policy,
+    #                                                policies=policies)
 
-        if (x_contains_nan or y_contains_nan) and nan_policy == 'omit':
-            # ignore NaNs for N dimensional arrays
-            has_nan = np.isnan(xdata)
-            has_nan = has_nan.any(axis=tuple(range(has_nan.ndim-1)))
-            has_nan |= np.isnan(ydata)
+    #     if (x_contains_nan or y_contains_nan) and nan_policy == 'omit':
+    #         # ignore NaNs for N dimensional arrays
+    #         has_nan = np.isnan(xdata)
+    #         has_nan = has_nan.any(axis=tuple(range(has_nan.ndim-1)))
+    #         has_nan |= np.isnan(ydata)
 
-            xdata = xdata[..., ~has_nan]
-            ydata = ydata[~has_nan]
+    #         xdata = xdata[..., ~has_nan]
+    #         ydata = ydata[~has_nan]
 
     # Determine type of sigma
-    if sigma is not None:
-        sigma = np.asarray(sigma)
+    # if sigma is not None:
+    #     sigma = np.asarray(sigma)
 
-        # if 1-D or a scalar, sigma are errors, define transform = 1/sigma
-        if sigma.size == 1 or sigma.shape == (ydata.size, ):
-            transform = 1.0 / sigma
-        # if 2-D, sigma is the covariance matrix,
-        # define transform = L such that L L^T = C
-        elif sigma.shape == (ydata.size, ydata.size):
-            try:
-                # scipy.linalg.cholesky requires lower=True to return L L^T = A
-                transform = cholesky(sigma, lower=True)
-            except LinAlgError as e:
-                raise ValueError("`sigma` must be positive definite.") from e
-        else:
-            raise ValueError("`sigma` has incorrect shape.")
-    else:
-        transform = None
+    #     # if 1-D or a scalar, sigma are errors, define transform = 1/sigma
+    #     if sigma.size == 1 or sigma.shape == (ydata.size, ):
+    #         transform = 1.0 / sigma
+    #     # if 2-D, sigma is the covariance matrix,
+    #     # define transform = L such that L L^T = C
+    #     elif sigma.shape == (ydata.size, ydata.size):
+    #         try:
+    #             # scipy.linalg.cholesky requires lower=True to return L L^T = A
+    #             transform = cholesky(sigma, lower=True)
+    #         except LinAlgError as e:
+    #             raise ValueError("`sigma` must be positive definite.") from e
+    #     else:
+    #         raise ValueError("`sigma` has incorrect shape.")
+    # else:
+    transform = None
 
     func = _lightweight_memoizer(_wrap_func(f, xdata, ydata, transform))
 
-    if callable(jac):
-        jac = _lightweight_memoizer(_wrap_jac(jac, xdata, transform))
-    elif jac is None and method != 'lm':
-        jac = '2-point'
+    # if callable(jac):
+    #     jac = _lightweight_memoizer(_wrap_jac(jac, xdata, transform))
+    # elif jac is None and method != 'lm':
+    #     jac = '2-point'
+    jac = '2-point'
+    # if 'args' in kwargs:
+    #     # The specification for the model function `f` does not support
+    #     # additional arguments. Refer to the `curve_fit` docstring for
+    #     # acceptable call signatures of `f`.
+    #     raise ValueError("'args' is not a supported keyword argument.")
 
-    if 'args' in kwargs:
-        # The specification for the model function `f` does not support
-        # additional arguments. Refer to the `curve_fit` docstring for
-        # acceptable call signatures of `f`.
-        raise ValueError("'args' is not a supported keyword argument.")
+    # if method == 'lm':
+    #     # if ydata.size == 1, this might be used for broadcast.
+    #     if ydata.size != 1 and n > ydata.size:
+    #         raise TypeError(f"The number of func parameters={n} must not"
+    #                         f" exceed the number of data points={ydata.size}")
+    #     res = leastsq(func, p0, Dfun=jac, full_output=1, **kwargs)
+    #     popt, pcov, infodict, errmsg, ier = res
+    #     ysize = len(infodict['fvec'])
+    #     cost = np.sum(infodict['fvec'] ** 2)
+    #     if ier not in [1, 2, 3, 4]:
+    #         raise RuntimeError("Optimal parameters not found: " + errmsg)
+    # else:
+        
+    # Rename maxfev (leastsq) to max_nfev (least_squares), if specified.
+    # if 'max_nfev' not in kwargs:
+    #     kwargs['max_nfev'] = kwargs.pop('maxfev', None)
+    kwargs['max_nfev'] = None
+    res = optimize._lsq.least_squares(func, p0, jac=jac, bounds=bounds, method=method,
+                        **kwargs)
 
-    if method == 'lm':
-        # if ydata.size == 1, this might be used for broadcast.
-        if ydata.size != 1 and n > ydata.size:
-            raise TypeError(f"The number of func parameters={n} must not"
-                            f" exceed the number of data points={ydata.size}")
-        res = leastsq(func, p0, Dfun=jac, full_output=1, **kwargs)
-        popt, pcov, infodict, errmsg, ier = res
-        ysize = len(infodict['fvec'])
-        cost = np.sum(infodict['fvec'] ** 2)
-        if ier not in [1, 2, 3, 4]:
-            raise RuntimeError("Optimal parameters not found: " + errmsg)
-    else:
-        # Rename maxfev (leastsq) to max_nfev (least_squares), if specified.
-        if 'max_nfev' not in kwargs:
-            kwargs['max_nfev'] = kwargs.pop('maxfev', None)
+    if not res.success:
+        raise RuntimeError("Optimal parameters not found: " + res.message)
 
-        res = least_squares(func, p0, jac=jac, bounds=bounds, method=method,
-                            **kwargs)
+    infodict = dict(nfev=res.nfev, fvec=res.fun)
+    ier = res.status
+    errmsg = res.message
 
-        if not res.success:
-            raise RuntimeError("Optimal parameters not found: " + res.message)
+    ysize = len(res.fun)
+    cost = 2 * res.cost  # res.cost is half sum of squares!
+    popt = res.x
 
-        infodict = dict(nfev=res.nfev, fvec=res.fun)
-        ier = res.status
-        errmsg = res.message
-
-        ysize = len(res.fun)
-        cost = 2 * res.cost  # res.cost is half sum of squares!
-        popt = res.x
-
-        # Do Moore-Penrose inverse discarding zero singular values.
-        _, s, VT = svd(res.jac, full_matrices=False)
-        threshold = np.finfo(float).eps * max(res.jac.shape) * s[0]
-        s = s[s > threshold]
-        VT = VT[:s.size]
-        pcov = np.dot(VT.T / s**2, VT)
+    # Do Moore-Penrose inverse discarding zero singular values.
+    _, s, VT = svd(res.jac, full_matrices=False)
+    threshold = np.finfo(float).eps * max(res.jac.shape) * s[0]
+    s = s[s > threshold]
+    VT = VT[:s.size]
+    pcov = np.dot(VT.T / s**2, VT)
 
     warn_cov = False
     if pcov is None or np.isnan(pcov).any():
         # indeterminate covariance
-        pcov = zeros((len(popt), len(popt)), dtype=float)
-        pcov.fill(inf)
+        pcov = np.zeros((len(popt), len(popt)), dtype=float)
+        pcov.fill(np.inf)
         warn_cov = True
     elif not absolute_sigma:
         if ysize > p0.size:
             s_sq = cost / (ysize - p0.size)
             pcov = pcov * s_sq
         else:
-            pcov.fill(inf)
+            pcov.fill(np.inf)
             warn_cov = True
 
     if warn_cov:
-        warnings.warn('Covariance of the parameters could not be estimated',
-                      category=OptimizeWarning, stacklevel=2)
+        plog('Covariance of the parameters could not be estimated')
+        # warnings.warn('Covariance of the parameters could not be estimated',
+        #               category=OptimizeWarning, stacklevel=2)
 
     if full_output:
         return popt, pcov, infodict, errmsg, ier
@@ -575,8 +788,41 @@ def multiprocess_fast_gaussian_photometry(package):
         #temptimer=time.time()
         (cvalue, cx, cy, radprofile, temp_array,pixscale) = package
         #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-        popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
         
+        # BIN radial profile to make fit faster
+        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binned_statistic_2d.html
+        
+        # Reduce data down to make faster solvinging
+        upperbin=math.floor(max(radprofile[:,0]))
+        lowerbin=math.ceil(min(radprofile[:,0]))
+        number_of_bins=int((upperbin-lowerbin)/0.25)
+        s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
+        
+        max_value=max(s)
+        threshold_value=0.01*max_value
+        
+        actualprofile=[]
+        for q in range(len(s)):
+            if not np.isnan(s[q]): 
+                if s[q] > threshold_value:
+                    actualprofile.append([(edges[q]+edges[q+1])/2,s[q]])
+    
+        actualprofile=np.asarray(actualprofile)
+            
+        
+        #breakpoint()
+        
+        scipytime=time.time()
+        #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+        popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+        
+        print ("scipy optimize " + str(time.time() - scipytime))
+        
+        # scipytime=time.time()
+        # #popt, _ = nonscipy_gaussian_curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+        # popt, _ = nonscipy_gaussian_curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+        
+        # print ("local optimize " + str(time.time() - scipytime))
         #print ("Curve optimize")
         #print (time.time() -temptimer)
         #breakpoint()
@@ -586,8 +832,8 @@ def multiprocess_fast_gaussian_photometry(package):
         if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
             # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
             # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-            # plt.scatter(radprofile[:,0],radprofile[:,1])
-            # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
+            # plt.scatter(actualprofile[:,0],actualprofile[:,1])
+            # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
             # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
             # plt.show()
         
@@ -1605,6 +1851,10 @@ class Camera:
         print ("Setup for multiprocess focus: " + str(time.time()-setup_timer))
         
             
+        # Temporary just to get binning right
+        #multiprocess_fast_gaussian_photometry(focus_multiprocess[0])
+        #breakpoint()
+        
         mptimer=time.time()
         fwhm_results=[]
         number_to_collect=max(8,os.cpu_count())
@@ -1699,7 +1949,7 @@ class Camera:
         del stretched_data_float
         del final_image
 
-        return fwhm_file
+        return fwhm_file#, final_image
 
     # #I assume we might be able to read the shutter state...
 
@@ -3357,9 +3607,26 @@ class Camera:
                                     plog ("Waiting for focuser to finish moving")
                                     reporty=1
                                 time.sleep(0.05)
+                                
+                            # For some focusers, there is a non-trivial vibration time to 
+                            # wait until the mirror settles down before exposure
+                            # that isn't even caught in the focuser threads.
+                            # So if it has moved, as indicated by reporty
+                            # Then there is a further check before moving on
+                            if reporty==1:
+                                tempfocposition=g_dev['foc'].get_position_actual()
+                                while True:
+                                    time.sleep(0.2)
+                                    nowfocposition=g_dev['foc'].get_position_actual()
+                                    if tempfocposition==nowfocposition:
+                                        break
+                                    else:
+                                        plog("Detecting focuser still changing.")
+                                        tempfocposition=copy.deepcopy(nowfocposition)
+                                time.sleep(g_dev['foc'].focuser_settle_time)
+                                
 
                             self.exposure_busy = True
-
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
@@ -4438,7 +4705,7 @@ class Camera:
 
                     # Instead of waiting for the photometry process we quickly measure the FWHM
                     # in-line. Necessary particularly because the photometry subprocess can bank up.
-                    fwhm_dict=self.in_line_quick_focus(outputimg, im_path, text_name)
+                    fwhm_dict = self.in_line_quick_focus(outputimg, im_path, text_name)
 
                     print ("focus analysis time: " + str(time.time() - temptimer))
                     focus_image = False

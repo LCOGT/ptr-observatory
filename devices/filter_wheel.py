@@ -557,7 +557,11 @@ class FilterWheel:
             return None, None, None
 
         print ("Filter Change Offset: " + str(self.filter_offset))
-        g_dev['foc'].adjust_focus(force_change=True)
+        try:
+            if not g_dev['seq'].focussing:
+                g_dev['foc'].adjust_focus(force_change=True)
+        except:
+            plog ("not adjusting focus for filter change on bootup")
         # make sure focusser is adjusted every filter change
         #g_dev['foc'].adjust_focus()
         

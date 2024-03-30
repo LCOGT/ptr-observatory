@@ -473,26 +473,34 @@ else:
 
                         # FWHM is 2.355 * std for a gaussian
                         fwhmlist.append(popt[2])
-                        # Area under a gaussian is (amplitude * Stdev / 0.3989)
+                        # Area under a 1D gaussian is (amplitude * Stdev / 0.3989)
+                        
+                        # Volume under the 2D-Gaussian is computed as: 2 * pi * sqrt(abs(X_sig)) * sqrt(abs(Y_sig)) * amplitude
+                        # But our sigma in both dimensions are the same so sqrt times sqrt of something is equal to the something
+                        countsphot= 2 * math.pi * popt[2] * popt[0]
+                        
+                        
                         #breakpoint()
                         if good_radials < number_of_good_radials_to_get:
-                            sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
+                            #sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
+                            sources.append([cx,cy,radprofile,temp_array,cvalue, countsphot,popt[0],popt[1],popt[2],'r'])
+                            
                             good_radials=good_radials+1
                         else:
-                            sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
-                        photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710,popt[0]*popt[2]/0.3989])
+                            sources.append([cx,cy,0,0,cvalue, countsphot,popt[0],popt[1],popt[2],'n'])
+                        photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710,counts])
 
                         #breakpoint()
                         # If we've got more than 50 for a focus
                         # We only need some good ones.
-                        if frame_type == 'focus':
-                            if len(fwhmlist) > 50:
-                                bailout=True
-                                break
-                            #If we've got more than ten and we are getting dim, bail out.
-                            if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
-                                bailout=True
-                                break
+                        # if frame_type == 'focus':
+                        #     if len(fwhmlist) > 50:
+                        #         bailout=True
+                        #         break
+                        #     #If we've got more than ten and we are getting dim, bail out.
+                        #     if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
+                        #         bailout=True
+                        #         break
                 except:
                     pass
 
@@ -804,7 +812,7 @@ if frame_type=='expose':
         int_array_flattened=hdufocusdata.astype(int).ravel()
         unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
 
-
+    #breakpoint()
     # Collect unique values and counts
     histogramdata=np.column_stack([unique,counts]).astype(np.int32)
 
