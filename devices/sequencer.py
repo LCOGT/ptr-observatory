@@ -4787,6 +4787,7 @@ class Sequencer:
             self.flats_being_collected = False
             self.eve_sky_flat_latch = False
             self.morn_sky_flat_latch = False
+            self.total_sequencer_control = False
             return
 
         if  ((ephem.now() < g_dev['events']['Cool Down, Open']) or \
@@ -4796,6 +4797,7 @@ class Sequencer:
             self.flats_being_collected = False
             self.eve_sky_flat_latch = False
             self.morn_sky_flat_latch = False
+            self.total_sequencer_control = False
             return
 
         if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']) :
@@ -4804,6 +4806,7 @@ class Sequencer:
             self.flats_being_collected = False
             self.eve_sky_flat_latch = False
             self.morn_sky_flat_latch = False
+            self.total_sequencer_control = False
             return
 
 
@@ -4834,6 +4837,7 @@ class Sequencer:
                 self.flats_being_collected = False
                 self.eve_sky_flat_latch = False
                 self.morn_sky_flat_latch = False
+                self.total_sequencer_control = False
                 return
             
             else: 
@@ -5149,6 +5153,7 @@ class Sequencer:
                         self.flats_being_collected = False
                         self.eve_sky_flat_latch = False
                         self.morn_sky_flat_latch = False
+                        self.total_sequencer_control = False
                         return
 
                     # Check that Flat time hasn't ended
@@ -5159,6 +5164,7 @@ class Sequencer:
                         self.flats_being_collected = False
                         self.eve_sky_flat_latch = False
                         self.morn_sky_flat_latch = False
+                        self.total_sequencer_control = False
                         return
 
 
@@ -5223,6 +5229,7 @@ class Sequencer:
                             self.flats_being_collected = False
                             self.eve_sky_flat_latch = False
                             self.morn_sky_flat_latch = False
+                            self.total_sequencer_control = False
                             return
 
                         if not g_dev['obs'].open_and_enabled_to_observe:
@@ -5232,6 +5239,7 @@ class Sequencer:
                             self.flats_being_collected = False
                             self.eve_sky_flat_latch = False
                             self.morn_sky_flat_latch = False
+                            self.total_sequencer_control = False
                             return
 
 
@@ -5312,6 +5320,7 @@ class Sequencer:
                                 self.flats_being_collected = False
                                 self.eve_sky_flat_latch = False
                                 self.morn_sky_flat_latch = False
+                                self.total_sequencer_control = False
                                 return
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
@@ -5320,6 +5329,7 @@ class Sequencer:
                                 self.flats_being_collected = False
                                 self.eve_sky_flat_latch = False
                                 self.morn_sky_flat_latch = False
+                                self.total_sequencer_control = False
                                 return
 
                             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
@@ -5339,6 +5349,7 @@ class Sequencer:
                                 self.flats_being_collected = False
                                 self.eve_sky_flat_latch = False
                                 self.morn_sky_flat_latch = False
+                                self.total_sequencer_control = False
                                 return
                             try:
                                 # Particularly for AltAz, the slew and rotator rotation must have ended before exposing.
@@ -5366,6 +5377,7 @@ class Sequencer:
                                         self.flats_being_collected = False
                                         self.eve_sky_flat_latch = False
                                         self.morn_sky_flat_latch = False
+                                        self.total_sequencer_control = False
                                         return
 
                                     if not g_dev['obs'].open_and_enabled_to_observe:
@@ -5375,6 +5387,7 @@ class Sequencer:
                                         self.flats_being_collected = False
                                         self.eve_sky_flat_latch = False
                                         self.morn_sky_flat_latch = False
+                                        self.total_sequencer_control = False
                                         return
 
                                 except Exception as e:
@@ -5390,6 +5403,7 @@ class Sequencer:
                                     self.flats_being_collected = False
                                     self.eve_sky_flat_latch = False
                                     self.morn_sky_flat_latch = False
+                                    self.total_sequencer_control = False
                                     return
 
                                 if fred == 'blockend':
@@ -5400,6 +5414,7 @@ class Sequencer:
                                     self.flats_being_collected = False
                                     self.eve_sky_flat_latch = False
                                     self.morn_sky_flat_latch = False
+                                    self.total_sequencer_control = False
                                     return
 
                                 if g_dev["obs"].stop_all_activity:
@@ -5409,6 +5424,7 @@ class Sequencer:
                                     self.flats_being_collected = False
                                     self.eve_sky_flat_latch = False
                                     self.morn_sky_flat_latch = False
+                                    self.total_sequencer_control = False
                                     return
 
                                 try:
@@ -5444,6 +5460,7 @@ class Sequencer:
                                 self.flats_being_collected = False
                                 self.eve_sky_flat_latch = False
                                 self.morn_sky_flat_latch = False
+                                self.total_sequencer_control = False
                                 return
 
                             if not g_dev['obs'].open_and_enabled_to_observe:
@@ -5453,6 +5470,7 @@ class Sequencer:
                                 self.flats_being_collected = False
                                 self.eve_sky_flat_latch = False
                                 self.morn_sky_flat_latch = False
+                                self.total_sequencer_control = False
                                 return
 
                             got_a_flat_this_round=False
