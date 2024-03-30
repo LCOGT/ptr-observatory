@@ -4977,6 +4977,7 @@ class Sequencer:
             g_dev['mnt'].unpark_command({}, {})
 
         self.check_zenith_and_move_to_flat_spot(ending=ending)
+        self.time_of_next_slew = time.time() + 600
 
 
 
@@ -5005,6 +5006,7 @@ class Sequencer:
                 homerotator_time_shelf.close()
 
                 self.check_zenith_and_move_to_flat_spot(ending=ending)
+                self.time_of_next_slew = time.time() + 600
                 self.wait_for_slew()
                 while g_dev['rot'].rotator.IsMoving:
                     plog("home rotator wait")
@@ -5025,8 +5027,10 @@ class Sequencer:
             g_dev['cam'].openDarkslide()
             #g_dev['cam'].darkslide_open = True
             #g_dev['cam'].darkslide_state = 'Open'
-
-        self.check_zenith_and_move_to_flat_spot(ending=ending)
+        
+        if time.time() >= self.time_of_next_slew:
+            self.check_zenith_and_move_to_flat_spot(ending=ending)
+            self.time_of_next_slew = time.time() + 600
 
         while len(pop_list) > 0  and ephem.now() < ending and g_dev['obs'].open_and_enabled_to_observe:
 
@@ -5257,7 +5261,7 @@ class Sequencer:
                              if time.time() >= self.time_of_next_slew:
                                 self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
-                                self.time_of_next_slew = time.time() + 45
+                                self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 5
                         elif morn and exp_time > max_exposure :
                              if time.time()-slow_report_timer > 120:
@@ -5271,7 +5275,7 @@ class Sequencer:
                              if time.time() >= self.time_of_next_slew:
                                 self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
-                                self.time_of_next_slew = time.time() + 45
+                                self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 5
                              exp_time = min_exposure
                              # snap the exposure time to a discrete grid
@@ -5294,8 +5298,12 @@ class Sequencer:
                             if g_dev['mnt'].rapid_park_indicator:
                                 g_dev['mnt'].unpark_command({}, {})
                                 self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
+                                self.time_of_next_slew = time.time() + 600
 
-                                self.time_of_next_slew = time.time() + 45
+                            # If scope has drifted quite a lot from the null spot while waiting, nudge it back up.
+                            if time.time() >= (self.time_of_next_slew-270):                            
+                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)    
+                                self.time_of_next_slew = time.time() + 600
 
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -5485,6 +5493,7 @@ class Sequencer:
                                         plog("Got an abnormally low value on the first shot")
                                         plog("Retrying again after a little wait to check the filter is in place")
                                         new_throughput_value=copy.deepcopy(old_throughput_value)
+                                        scale=1
                                         time.sleep(3)
 
                                     elif (
@@ -5515,6 +5524,7 @@ class Sequencer:
                                         plog("Retrying again after a little wait to check the filter is in place")
                                         
                                         new_throughput_value=copy.deepcopy(old_throughput_value)
+                                        scale=1
                                         time.sleep(3)
 
                                     elif (
@@ -5552,7 +5562,8 @@ class Sequencer:
                             elif got_a_flat_this_round: # Only nudge if you got a good flat. No point otherwise.
                                 # Give it a bit of a nudge, not necessary if it is the last shot of the filter.
                                 # There is no reason to wait for it to finish slewing either.
-                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
+                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)                                    
+                                self.time_of_next_slew = time.time() + 600
 
 
                             continue
