@@ -556,7 +556,7 @@ class FilterWheel:
             self.filter_changing=False
             return None, None, None
 
-        print ("Filter Change Offset: " + str(self.filter_offset))
+        #print ("Filter Change Offset: " + str(self.filter_offset))
         try:
             if not g_dev['seq'].focussing:
                 g_dev['foc'].adjust_focus(force_change=True)

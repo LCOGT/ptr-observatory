@@ -358,7 +358,7 @@ site_config = {
             'driver': 'ASCOM.PWI3.Focuser',
 			'com_port':  'COM9',
 
-            'focuser_movement_settle_time': 3,
+            'focuser_movement_settle_time': 10,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
@@ -367,7 +367,7 @@ site_config = {
             'maximum': 18000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 400,
+            'throw' : 300,
             'unit': 'counts',
             'unit_conversion': 1.0,
             'has_dial_indicator': False

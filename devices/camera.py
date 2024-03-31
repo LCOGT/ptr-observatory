@@ -799,7 +799,8 @@ def multiprocess_fast_gaussian_photometry(package):
         s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
         
         max_value=max(s)
-        threshold_value=0.01*max_value
+        min_value=min(s)
+        threshold_value=(0.05*(max_value-min_value)) + min_value
         
         actualprofile=[]
         for q in range(len(s)):
@@ -812,11 +813,11 @@ def multiprocess_fast_gaussian_photometry(package):
         
         #breakpoint()
         
-        scipytime=time.time()
+        #scipytime=time.time()
         #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
         popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
         
-        print ("scipy optimize " + str(time.time() - scipytime))
+        #print ("scipy optimize " + str(time.time() - scipytime))
         
         # scipytime=time.time()
         # #popt, _ = nonscipy_gaussian_curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
@@ -3604,7 +3605,7 @@ class Camera:
                             reporty=0
                             while g_dev['foc'].focuser_is_moving:
                                 if reporty==0:
-                                    plog ("Waiting for focuser to finish moving")
+                                    #plog ("Waiting for focuser to finish moving")
                                     reporty=1
                                 time.sleep(0.05)
                                 

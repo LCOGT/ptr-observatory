@@ -663,9 +663,9 @@ class Sequencer:
                     # Mission critical calendar block update
                     self.update_calendar_blocks()
                     
-                    plog ("project test in")
+                    #plog ("project test in")
                     
-                    print (self.blocks)
+                    #print (self.blocks)
 
                     # only need to bother with the rest if there is more than 0 blocks.
                     #self.block_guard=False
@@ -693,7 +693,7 @@ class Sequencer:
                                     if project_response.status_code ==200:
                                         self.block_guard = True
                                         block['project']=project_response.json()
-                                        print ("FOUND: " + str(block))
+                                        #print ("FOUND: " + str(block))
                                         identified_block=copy.deepcopy(block)
                                     else:
                                         plog("Project response status code not 200")
@@ -779,7 +779,7 @@ class Sequencer:
         
                                 elif identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
                                     plog ("identified block is real_time or none")
-                                    print (identified_block['project_id'])
+                                    #print (identified_block['project_id'])
                                     # self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
                                     # g_dev['seq'].blockend= None
                                     pointing_good=False   # Do not try to execute an empty block.
@@ -6020,7 +6020,7 @@ class Sequencer:
             elif position_counter>5:
                 focus_position_this_loop=new_focus_position_to_attempt
             
-            print (focus_position_this_loop)
+            #print (focus_position_this_loop)
             
             #  If more than 10 attempts, fail and bail out.
             if position_counter > 10:
@@ -6069,7 +6069,7 @@ class Sequencer:
             
             while np.isnan(spot):
                 # Move the focuser
-                print ("Changing to " + str((focus_position_this_loop)))
+                plog ("Changing focus to " + str(round(focus_position_this_loop,1)))
                 g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
     
                 # Take the shot
@@ -6081,14 +6081,15 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Focus position: " + str(focus_position_this_loop) + " FWHM: " + str(round(spot,2)), p_level='INFO')
                 
                 if not np.isnan(spot):
-                    focus_spots.append((foc_pos,spot))
+                    if spot < 8.0:
+                        focus_spots.append((foc_pos,spot))
                     #focus_fwhms.append(spot)
                     
             # If you have the starting of a v-curve then now you can decide what to do.
             if position_counter >=5:
                 
                 
-                print ("blah")
+                #print ("blah")
                 # Start off by sorting in order of focus positions
                 focus_spots=sorted(focus_spots)
                 lowerbound=min(focus_spots)[0]
@@ -6109,12 +6110,12 @@ class Sequencer:
                     plog ("Minimum too close to the sampling edge, getting another dot")
                     new_focus_position_to_attempt=focus_spots[0][0] - throw
                     #breakpoint()
-                    print ("Attempting: " + str(new_focus_position_to_attempt))
+                    #print ("Attempting: " + str(new_focus_position_to_attempt))
                     plt.scatter(x,y)
                     plt.show()
                     
                     im_path_r = g_dev['cam'].camera_path
-                    raw_path = im_path_r + g_dev["day"] + "/raw/"
+                    raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
                     throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
                     plt.savefig(raw_path + '/'+ throwaway_filename)
                     # Fling the jpeg up
@@ -6127,12 +6128,12 @@ class Sequencer:
                     plog ("Minimum too close to the sampling edge, getting another dot")
                     new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                     #breakpoint()
-                    print ("Attempting: " + str(new_focus_position_to_attempt))
+                    #print ("Attempting: " + str(new_focus_position_to_attempt))
                     plt.scatter(x,y)
                     plt.show()
                     
                     im_path_r = g_dev['cam'].camera_path
-                    raw_path = im_path_r + g_dev["day"] + "/raw/"
+                    raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
                     throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
                     plt.savefig(raw_path + '/'+ throwaway_filename)
                     # Fling the jpeg up
@@ -6162,9 +6163,9 @@ class Sequencer:
                     #print (crit_points)
                     crit_points = bounds + [x for x in f.deriv().r if x.imag == 0 and bounds[0] < x.real < bounds[1]]
                     fitted_focus_position=crit_points[2]
-                    print (crit_points)
-                    print (len(crit_points))
-                    print ("focus pos: " + str(fitted_focus_position))
+                    #print (crit_points)
+                    #print (len(crit_points))
+                    plog ("focus pos: " + str(fitted_focus_position))
                     fitted_focus_fwhm=f(fitted_focus_position)
                     plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
                     
@@ -6172,7 +6173,7 @@ class Sequencer:
                     
                     
                     im_path_r = g_dev['cam'].camera_path
-                    raw_path = im_path_r + g_dev["day"] + "/raw/"
+                    raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
                     throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
                     plt.savefig(raw_path + '/'+ throwaway_filename)
                     # Fling the jpeg up

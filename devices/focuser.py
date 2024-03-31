@@ -216,7 +216,7 @@ class Focuser:
                         #self.current_focus_position=self.get_position()
 
                      else:
-                        print ("prefoc: " + str(self.current_focus_position))# * self.micron_to_steps))
+                        #print ("prefoc: " + str(self.current_focus_position))# * self.micron_to_steps))
                         #breakpoint()
                         self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))# * self.steps_to_micron))
                         time.sleep(0.1)
@@ -235,7 +235,7 @@ class Focuser:
 
                         self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
                         #self.current_focus_position=self.get_position()
-                        print ("postfoc "+ str(self.current_focus_position))# * self.micron_to_steps))
+                        #print ("postfoc "+ str(self.current_focus_position))# * self.micron_to_steps))
 
                             #plog(">f")
                 except:
