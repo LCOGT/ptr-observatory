@@ -268,7 +268,7 @@ class Sequencer:
         """
         A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
         """
-        if not g_dev['obs'].mountless_operation:   
+        if not g_dev['obs'].mountless_operation:
             try:
                 if not g_dev['mnt'].rapid_park_indicator:
                     movement_reporting_timer = time.time()
@@ -284,8 +284,8 @@ class Sequencer:
                     #g_dev['mnt'].currently_slewing= False
                     # Then wait for slew_time to settle
                     time.sleep(g_dev['mnt'].wait_after_slew_time)
-    
-    
+
+
             except Exception:
                 plog("Motion check faulted.")
                 plog(traceback.format_exc())
@@ -491,7 +491,7 @@ class Sequencer:
             if not self.bias_dark_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
                  self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
 
-    
+
 
                 self.bias_dark_latch = True   #Maybe long dark is a dark light leak check?
                 req = {'numOfBias': 31, \
@@ -636,12 +636,12 @@ class Sequencer:
                 self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
                 g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
-                
-                
+
+
                 g_dev['obs'].flush_command_queue()
 
                 self.total_sequencer_control=False
-                
+
                 self.night_focus_ready=False
                 self.clock_focus_latch = False
 
@@ -662,9 +662,9 @@ class Sequencer:
                     #g_dev['obs'].request_update_calendar_blocks()
                     # Mission critical calendar block update
                     self.update_calendar_blocks()
-                    
+
                     #plog ("project test in")
-                    
+
                     #print (self.blocks)
 
                     # only need to bother with the rest if there is more than 0 blocks.
@@ -710,27 +710,27 @@ class Sequencer:
                             #     self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
                             #     g_dev['seq'].blockend= None
                             #     pointing_good=False   # Do not try to execute an empty block.
-    
+
                             # elif identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
                             #     plog ("identified block is real_time or none")
                             #     print (identified_block['project_id'])
                             #     self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
                             #     g_dev['seq'].blockend= None
                             #     pointing_good=False   # Do not try to execute an empty block.
-    
-    
+
+
                             # elif identified_block['project'] == None:
                             #     plog (identified_block)
                             #     plog ("Skipping a block that contains an empty project")
                             #     self.block_guard=False
                             #     g_dev['seq'].blockend= None
                             #     pointing_good=False
-    
+
                             # elif identified_block['project'] != None:
                             #     pointing_good=True
                             #     # If a block is identified, check it is in the sky and not in a poor location
                             #     target=identified_block['project']['project_targets'][0]
-    
+
                             #     ra = float(target['ra'])
                             #     dec = float(target['dec'])
                             #     temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
@@ -748,7 +748,7 @@ class Sequencer:
                             #         g_dev['obs'].send_to_user("Not running project as it is too low: " + str(alt) + " degrees.")
                             #         plog("Not running project as it is too low: " + str(alt) + " degrees.")
                             #         pointing_good=False
-    
+
                             # if pointing_good:
                             #     completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
                             #     #
@@ -770,33 +770,33 @@ class Sequencer:
                             #     self.block_guard=False
                             #     self.currently_mosaicing = False
                             #     self.blockend = None
-                            
+
                                 if identified_block == None:
                                     plog ("identified block is None")
                                     # self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
                                     # g_dev['seq'].blockend= None
                                     pointing_good=False   # Do not try to execute an empty block.
-        
+
                                 elif identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
                                     plog ("identified block is real_time or none")
                                     #print (identified_block['project_id'])
                                     # self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
                                     # g_dev['seq'].blockend= None
                                     pointing_good=False   # Do not try to execute an empty block.
-        
-        
+
+
                                 elif identified_block['project'] == None:
                                     plog (identified_block)
                                     plog ("Skipping a block that contains an empty project")
                                     # self.block_guard=False
                                     # g_dev['seq'].blockend= None
                                     pointing_good=False
-        
+
                                 elif identified_block['project'] != None:
                                     pointing_good=True
                                     # If a block is identified, check it is in the sky and not in a poor location
                                     target=identified_block['project']['project_targets'][0]
-        
+
                                     ra = float(target['ra'])
                                     dec = float(target['dec'])
                                     temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
@@ -814,7 +814,7 @@ class Sequencer:
                                         g_dev['obs'].send_to_user("Not running project as it is too low: " + str(alt) + " degrees.")
                                         plog("Not running project as it is too low: " + str(alt) + " degrees.")
                                         pointing_good=False
-        
+
                                 if pointing_good:
                                     completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
                                     #
@@ -837,7 +837,7 @@ class Sequencer:
                                     # self.block_guard=False
                                     # self.currently_mosaicing = False
                                     self.blockend = None
-                                
+
                     self.block_guard=False
                     self.currently_mosaicing = False
                     self.blockend = None
@@ -848,7 +848,7 @@ class Sequencer:
                     self.blockend = None
                     self.block_guard=False
                     self.currently_mosaicing = False
-                
+
                 # Double check
                 self.block_guard = False
 
@@ -908,7 +908,7 @@ class Sequencer:
             #     self.park_and_close()
             #     self.morn_bias_dark_latch = False
             #     self.morn_bias_done = True
-                
+
             # if not g_dev['obs'].open_and_enabled_to_observe and not self.morn_bias_dark_latch and (events['Astro Dark'] <= ephem_now < events['End Astro Dark']) and \
             #           self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
 
@@ -926,7 +926,7 @@ class Sequencer:
             #     self.morn_bias_dark_latch = False
             #     self.morn_bias_done = True
 
-            
+
 
 
             if events['Sun Rise'] <= ephem_now and not self.end_of_night_token_sent:
@@ -1244,11 +1244,11 @@ class Sequencer:
         lcl_list.append(block_id)   #NB NB an in-line append did not work!
         seq_shelf['completed_blocks']= lcl_list
         plog('Appended completes contains:  ', seq_shelf['completed_blocks'])
-        
+
         seq_shelf.close()
-        
+
         self.block_guard=False
-        
+
         return True
 
     def is_in_completes(self, block_id):
@@ -1258,7 +1258,7 @@ class Sequencer:
         print ("is in check")
         print ("block_id")
         print (seq_shelf['completed_blocks'])
-        
+
         if block_id in seq_shelf['completed_blocks']:
             seq_shelf.close()
             return True
@@ -1283,13 +1283,13 @@ class Sequencer:
         This function executes an observing block provided by a calendar event.
         """
 
-        
+
         if (ephem.now() < g_dev['events']['Civil Dusk'] ) or \
             (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")
             return block_specification     #Added wer 20231103
-        
+
         self.block_guard = True
         self.total_sequencer_control=True
         #g_dev["obs"].request_full_update()
@@ -1897,7 +1897,7 @@ class Sequencer:
         self.currently_mosaicing = False
         plog("Project block has finished!")
         self.blockend = None
-        
+
         g_dev['obs'].flush_command_queue()
         self.total_sequencer_control=False
         return block_specification
@@ -1908,7 +1908,7 @@ class Sequencer:
         This functions runs through automatically collecting bias and darks for the local calibrations.
         """
         self.current_script = 'Bias Dark'
-        
+
         self.total_sequencer_control=True
         if morn:
             ending = g_dev['events']['End Morn Bias Dark']
@@ -2514,7 +2514,7 @@ class Sequencer:
             self.bias_dark_latch = False
             break
         self.bias_dark_latch = False
-        
+
         g_dev['obs'].flush_command_queue()
         self.total_sequencer_control=False
         return
@@ -4792,8 +4792,8 @@ class Sequencer:
                 self.morn_sky_flat_latch = False
                 self.total_sequencer_control = False
                 return
-            
-            else: 
+
+            else:
                 plog ("Moon is in the sky but far enough way to take flats.")
 
 
@@ -4984,7 +4984,7 @@ class Sequencer:
             g_dev['cam'].openDarkslide()
             #g_dev['cam'].darkslide_open = True
             #g_dev['cam'].darkslide_state = 'Open'
-        
+
         if time.time() >= self.time_of_next_slew:
             self.check_zenith_and_move_to_flat_spot(ending=ending)
             self.time_of_next_slew = time.time() + 600
@@ -5262,8 +5262,8 @@ class Sequencer:
                                 self.time_of_next_slew = time.time() + 600
 
                             # If scope has drifted quite a lot from the null spot while waiting, nudge it back up.
-                            if time.time() >= (self.time_of_next_slew-270):                            
-                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)    
+                            if time.time() >= (self.time_of_next_slew-270):
+                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
                                 self.time_of_next_slew = time.time() + 600
 
                             if self.stop_script_called:
@@ -5457,7 +5457,7 @@ class Sequencer:
                                         new_throughput_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
 
                                 if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                                    
+
                                     # Check the first image is not unnaturally low
                                     # and wait again
                                     if bright < 0.3 * flat_saturation_level and number_of_exposures_so_far == 1:
@@ -5493,7 +5493,7 @@ class Sequencer:
                                     if bright < 0.1 * flat_saturation_level and number_of_exposures_so_far == 1:
                                         plog("Got an abnormally low value on the first shot")
                                         plog("Retrying again after a little wait to check the filter is in place")
-                                        
+
                                         new_throughput_value=copy.deepcopy(old_throughput_value)
                                         scale=1
                                         time.sleep(3)
@@ -5533,7 +5533,7 @@ class Sequencer:
                             elif got_a_flat_this_round: # Only nudge if you got a good flat. No point otherwise.
                                 # Give it a bit of a nudge, not necessary if it is the last shot of the filter.
                                 # There is no reason to wait for it to finish slewing either.
-                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)                                    
+                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
                                 self.time_of_next_slew = time.time() + 600
 
 
@@ -5589,10 +5589,10 @@ class Sequencer:
         self.flats_being_collected = False
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
-        
+
         g_dev['obs'].flush_command_queue()
         self.total_sequencer_control = False
-        
+
 
     def screen_flat_script(self, req, opt):
 
@@ -5714,7 +5714,7 @@ class Sequencer:
 
     def filter_focus_offset_estimator_script(self):
 
-        self.measuring_focus_offsets=True        
+        self.measuring_focus_offsets=True
 
         plog ("Determining offsets between filters")
 
@@ -5789,12 +5789,12 @@ class Sequencer:
 
         #breakpoint()
         self.auto_focus_script(req2, opt,skip_pointing=True)
-        
+
         self.measuring_focus_offsets=False
 
 
     def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, dont_return_scope=False, dont_log_focus=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
-     
+
         self.focussing=True
 
 
@@ -5982,14 +5982,16 @@ class Sequencer:
 
         opt = { 'count': 1, 'filter': filter_choice}
 
+        #breakpoint()
+
         g_dev['foc'].guarded_move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
 
 
         # THE LOOP
         position_counter=0 # At various stages of the algorithm we attempt different things, this allows us to make that happen.
         central_starting_focus=copy.deepcopy(foc_pos0)
-        
-        
+
+
         focus_spots=[]
         #focus_fwhms=[]
         new_focus_position_to_attempt = central_starting_focus # Initialise this variable
@@ -6019,12 +6021,10 @@ class Sequencer:
                 focus_position_this_loop=central_starting_focus + 2* throw
             elif position_counter>5:
                 focus_position_this_loop=new_focus_position_to_attempt
-            
-            #print (focus_position_this_loop)
-            
+
             #  If more than 10 attempts, fail and bail out.
             if position_counter > 10:
-                
+
                 if extensive_focus == None:
 
                     plog('Autofocus quadratic equation did not converge. Moving back to starting focus:  ', focus_start)
@@ -6063,33 +6063,34 @@ class Sequencer:
                     self.af_guard = False
                     self.focussing=False
                     return np.nan, np.nan
-            
-            
+
+
             spot=np.nan
-            
+
             while np.isnan(spot):
                 # Move the focuser
+
                 plog ("Changing focus to " + str(round(focus_position_this_loop,1)))
+
                 g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
-    
                 # Take the shot
+
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
-                
+
+
                 spot = g_dev['obs'].fwhmresult['FWHM']
                 foc_pos=g_dev['foc'].current_focus_position
-                
+
                 g_dev['obs'].send_to_user("Focus position: " + str(focus_position_this_loop) + " FWHM: " + str(round(spot,2)), p_level='INFO')
-                
+
                 if not np.isnan(spot):
                     if spot < 8.0:
                         focus_spots.append((foc_pos,spot))
                     #focus_fwhms.append(spot)
-                    
+
             # If you have the starting of a v-curve then now you can decide what to do.
             if position_counter >=5:
-                
-                
-                #print ("blah")
+
                 # Start off by sorting in order of focus positions
                 focus_spots=sorted(focus_spots)
                 lowerbound=min(focus_spots)[0]
@@ -6100,7 +6101,7 @@ class Sequencer:
                 for i in focus_spots:
                     x.append(i[0])
                     y.append(i[1])
-                    
+
                 # If the minimum is at one of the two points on the side of the v curve take another point beyond that point, otherwise try to fit a parabola
                 minimumfind=[]
                 for entry in focus_spots:
@@ -6113,7 +6114,7 @@ class Sequencer:
                     #print ("Attempting: " + str(new_focus_position_to_attempt))
                     plt.scatter(x,y)
                     plt.show()
-                    
+
                     im_path_r = g_dev['cam'].camera_path
                     raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
                     throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
@@ -6124,14 +6125,15 @@ class Sequencer:
                     except:
                         plog("Failed to send FOCUS PLOT up for some reason")
                         plog(traceback.format_exc())
-                elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:   
+                elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
+
                     plog ("Minimum too close to the sampling edge, getting another dot")
                     new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                     #breakpoint()
                     #print ("Attempting: " + str(new_focus_position_to_attempt))
                     plt.scatter(x,y)
                     plt.show()
-                    
+
                     im_path_r = g_dev['cam'].camera_path
                     raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
                     throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
@@ -6143,13 +6145,13 @@ class Sequencer:
                         plog("Failed to send FOCUS PLOT up for some reason")
                         plog(traceback.format_exc())
                 else:
-                
-                    
-                    
+
+
+
                     # If you can fit a parabola, then you've got the focus
                     # If fit, then break
-                    
-                    
+
+
                     try:
                         fit = np.polyfit(x, y, 2)
                         f = np.poly1d(fit)
@@ -6168,10 +6170,10 @@ class Sequencer:
                     plog ("focus pos: " + str(fitted_focus_position))
                     fitted_focus_fwhm=f(fitted_focus_position)
                     plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
-                    
+
                     plt.show()
-                    
-                    
+
+
                     im_path_r = g_dev['cam'].camera_path
                     raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
                     throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
@@ -6182,36 +6184,38 @@ class Sequencer:
                     except:
                         plog("Failed to send FOCUS PLOT up for some reason")
                         plog(traceback.format_exc())
-                    
+
                     #breakpoint()
-                
-                
-                    # If successful, then move to focus and live long and prosper                    
+
+
+                    # If successful, then move to focus and live long and prosper
                     plog ('Moving to Solved focus:  ', round(fitted_focus_position, 2), ' calculated:  ', fitted_focus_fwhm)
-    
+
                     pos = int(fitted_focus_position*g_dev['foc'].micron_to_steps)
                     g_dev['foc'].guarded_move(pos)
-    
+
                     g_dev['foc'].last_known_focus = fitted_focus_position
                     g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
-                    
+
                     # We don't take a confirming exposure because there is no point actually and just wastes time.
                     # You can see if it is focussed with the first target shot.
-    
+
+
                     if not dont_return_scope:
                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                         self.wait_for_slew()
-    
+
                     self.af_guard = False
                     self.focussing=False
                     if not dont_log_focus:
                         g_dev['foc'].af_log(fitted_focus_position, fitted_focus_fwhm, spot)
                     return fitted_focus_position,fitted_focus_fwhm
-                
 
-                
+
+
+
 
 
     def extensive_focus_script(self, req, opt, throw=None, begin_at=None, no_auto_after_solve=False, dont_return_scope=False, skip_timer_check=False, dont_log_focus=False, skip_pointing=False,  filter_choice='focus'):
@@ -6619,19 +6623,19 @@ class Sequencer:
                     #     temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of script as stop script has been called.")
-                        
+
                         g_dev['obs'].flush_command_queue()
                         self.total_sequencer_control = False
                         g_dev['obs'].stop_processing_command_requests = False
-                        
+
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                        
+
                         g_dev['obs'].flush_command_queue()
                         self.total_sequencer_control = False
                         g_dev['obs'].stop_processing_command_requests = False
-                        
+
                         return
                     pass
 
@@ -6726,12 +6730,12 @@ class Sequencer:
 
 
         g_dev['obs'].auto_centering_off = prev_auto_centering
-        
+
         g_dev['obs'].flush_command_queue()
 
         self.total_sequencer_control = False
         g_dev['obs'].stop_processing_command_requests = False
-        
+
         return
 
 
@@ -6810,17 +6814,17 @@ class Sequencer:
 
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of script as stop script has been called.")
-                
+
                 g_dev['obs'].flush_command_queue()
                 self.total_sequencer_control = False
                 g_dev['obs'].stop_processing_command_requests = False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                
+
                 g_dev['obs'].flush_command_queue()
                 self.total_sequencer_control = False
-                
+
                 g_dev['obs'].stop_processing_command_requests = False
                 return
 
@@ -6907,18 +6911,18 @@ class Sequencer:
                     #     temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of script as stop script has been called.")
-                        
+
                         g_dev['obs'].flush_command_queue()
                         self.total_sequencer_control = False
-                        
+
                         g_dev['obs'].stop_processing_command_requests = False
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                        
+
                         g_dev['obs'].flush_command_queue()
                         self.total_sequencer_control = False
-                        
+
                         g_dev['obs'].stop_processing_command_requests = False
                         return
                     pass
@@ -7014,11 +7018,11 @@ class Sequencer:
 
 
         g_dev['obs'].auto_centering_off = prev_auto_centering
-        
+
         g_dev['obs'].flush_command_queue()
 
         self.total_sequencer_control = False
-        
+
         g_dev['obs'].stop_processing_command_requests = False
         return
 

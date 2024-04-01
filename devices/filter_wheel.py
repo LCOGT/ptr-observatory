@@ -547,7 +547,7 @@ class FilterWheel:
             #breakpoint()
             if filter_name in self.filter_offsets:
                 self.filter_offset=self.filter_offsets[filter_name]
-                
+
             else:
                 self.filter_offset = 0
         except:
@@ -556,15 +556,16 @@ class FilterWheel:
             self.filter_changing=False
             return None, None, None
 
-        #print ("Filter Change Offset: " + str(self.filter_offset))
         try:
             if not g_dev['seq'].focussing:
                 g_dev['foc'].adjust_focus(force_change=True)
         except:
+
             plog ("not adjusting focus for filter change on bootup")
+
         # make sure focusser is adjusted every filter change
         #g_dev['foc'].adjust_focus()
-        
+
         self.filter_change_requested=True
         self.wait_for_filterwheel_update()
 
@@ -586,7 +587,7 @@ class FilterWheel:
             #plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
             time.sleep(self.wait_time_after_filter_change)
 
-        
+
         self.previous_filter_name=filter_name
         self.previous_filter_match=match
 
