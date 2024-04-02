@@ -5928,6 +5928,7 @@ class Sequencer:
                 self.focussing=False
                 return np.nan, np.nan
 
+            #breakpoint()
 
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
 
@@ -7584,7 +7585,7 @@ class Sequencer:
         )
         try:
             self.blocks = reqs.post(url_blk, body, timeout=20).json()
-            print ("successful calendar block query")
+            #print ("successful calendar block query")
         except:
             plog ("A glitch found in the blocks reqs post, probably date format")
 
