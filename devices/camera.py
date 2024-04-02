@@ -2412,7 +2412,6 @@ class Camera:
         temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(self.current_setpoint))
         return True
 
-
     def _qhyccd_set_setpoint(self, p_temp):
         temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(p_temp))
         self.current_setpoint = p_temp
@@ -3619,7 +3618,7 @@ class Camera:
                             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
                             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
                             if self.config['camera']['camera_1_1']['settings']['substack']:
-                                if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat":
+                                if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat" and not frame_type=='pointing': 
                                     if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
                                         self.substacker=True
 
