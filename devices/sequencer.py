@@ -6024,8 +6024,8 @@ class Sequencer:
             elif position_counter>5:
                 focus_position_this_loop=new_focus_position_to_attempt
 
-            #  If more than 10 attempts, fail and bail out.
-            if position_counter > 10:
+            #  If more than 15 attempts, fail and bail out.
+            if position_counter > 15:
 
                 if extensive_focus == None:
 
@@ -6079,6 +6079,21 @@ class Sequencer:
                 plog ("Changing focus to " + str(round(focus_position_this_loop,1)))
 
                 g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
+                
+                self.wait_for_slew()
+                
+                try:
+                    while g_dev['rot'].rotator.IsMoving:
+                        plog("flat rotator wait")
+                        time.sleep(0.2)
+                except:
+                    pass
+
+                # If there is a rotator, give it a second
+                # to settle down after rotation complete
+                if g_dev['rot'] != None:
+                    time.sleep(1)
+                
                 # Take the shot
 
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.

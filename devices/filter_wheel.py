@@ -736,9 +736,10 @@ class FilterWheel:
 
         for sub in priority_order:
             if sub.lower() in available_filters:
-                plog(
-                    f"Found substitute {str(sub)} filter matching requested {str(requested_filter)}"
-                )
+                if not requested_filter == 'focus':
+                    plog(
+                        f"Found substitute {str(sub)} filter matching requested {str(requested_filter)}"
+                    )
                 return str(sub).lower()
         # NB I suggest we pick the default (w) filter instead of skipping. WER
 

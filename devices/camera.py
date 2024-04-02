@@ -1883,9 +1883,9 @@ class Camera:
         rfp = abs(bn.nanmedian(fwhm_results)) * 4.710
         rfr = rfp * self.pixscale
         rfs = np.nanstd(fwhm_results) * self.pixscale
-        print (rfr)
-        print (self.pixscale)
-        if rfr < 1.0 or rfr > 30:
+        #print (rfr)
+        #print (self.pixscale)
+        if rfr < 1.0 or rfr > 12:
             rfr= np.nan
             rfp= np.nan
             rfs= np.nan
