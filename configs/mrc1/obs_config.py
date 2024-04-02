@@ -648,7 +648,7 @@ site_config = {
                 'direct_qhy_offset': 9,
                 'set_qhy_usb_speed': True,
                 'direct_qhy_usb_traffic' : 60,     #NB NB Why two keys/
-                'direct_qhy_usb_speed' : 60,      #NB used in saving the image header.
+                #'direct_qhy_usb_speed' : 60,      #NB used in saving the image header.
 
 
 

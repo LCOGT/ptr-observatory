@@ -216,9 +216,9 @@ class Focuser:
                         #self.current_focus_position=self.get_position()
 
                      else:
-                        #print ("prefoc: " + str(self.current_focus_position))# * self.micron_to_steps))
+                        #print ("prefoc: " + str(self.current_focus_position) * self.micron_to_steps))
                         #breakpoint()
-                        self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))# * self.steps_to_micron))
+                        self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))# * self.steps_to_micron)
                         time.sleep(0.1)
                         movement_report=0
 
@@ -226,14 +226,14 @@ class Focuser:
                             if movement_report==0:
                                 plog("Focuser is moving.....")
                                 movement_report=1
-                            self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
+                            self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
                             #g_dev['obs'].request_update_status()#, dont_wait=True)
 
                             time.sleep(0.3)
 
                         time.sleep(self.config['focuser_movement_settle_time'])
 
-                        self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
+                        self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
                         #self.current_focus_position=self.get_position()
                         #print ("postfoc "+ str(self.current_focus_position))# * self.micron_to_steps))
 
@@ -464,7 +464,7 @@ class Focuser:
             #self.update_job_status(command["ulid"], "STARTED", 5)
             reference = self.get_focal_ref()
 
-            self.guarded_move(int(float(reference))) #* self.micron_to_steps))
+            self.guarded_move(int(float(reference)* self.micron_to_steps))
 
             # self.focuser.Move(reference * self.micron_to_steps)
             # time.sleep(0.1)
@@ -672,13 +672,15 @@ class Focuser:
 
             # else:
             #     self.current_focus_position=self.get_position()
+            
+            current_focus_micron=self.current_focus_position#*self.steps_to_micron
 
-
-            if abs((self.last_known_focus + adjust) - self.current_focus_position) > 10:
+            #breakpoint()
+            if abs((self.last_known_focus + adjust) - current_focus_micron) > 10:
                 #plog ('adjusting focus by ' + str(adjust))
                 #self.last_filter_offset = g_dev["fil"].filter_offset
-                plog ("Current focus: " +str(self.current_focus_position))
-                plog ("Focus different by: " + str((self.last_known_focus + adjust) - self.current_focus_position) +'. Sending adjust command.')
+                plog ("Current focus: " +str(current_focus_micron))
+                plog ("Focus different by: " + str((self.last_known_focus + adjust) - current_focus_micron) +'. Sending adjust command.')
                 plog ("Filter offset: " + str(g_dev["fil"].filter_offset))
                 plog ("Temperature difference: " + str(temp_delta))
                 plog ("Temperature focus difference: " + str(round(temp_delta * float(self.focus_temp_slope), 1)))
@@ -688,7 +690,7 @@ class Focuser:
                 plog ("sending to " + str(self.last_known_focus + adjust))
                 #self.move_absolute_command(req, opt)
                 #breakpoint()
-                self.guarded_move(self.last_known_focus + adjust)
+                self.guarded_move((self.last_known_focus + adjust)*self.micron_to_steps)
 
                 #plog ("Position now: " + str(self.current_focus_position))
                 # try:
