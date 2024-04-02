@@ -257,8 +257,8 @@ class Focuser:
                         try:
                             self.current_focus_temperature=self.focuser_update_wincom.Temperature
                         except:
-                            self.current_focus_temperature = 10.0  # NB 20231216 WER Temporary patch for MRC2
-                            plog("Focus temp set to 10C, temporary Focus.py  line 226")
+                            self.current_focus_temperature = None  # NB 20231216 WER Temporary patch for MRC2
+                            plog("Focus temp set to None as couldn't read temperature. Thats ok.")
                 except:
                     plog ("glitch in getting focus temperature")
                     plog (traceback.format_exc())
@@ -654,7 +654,7 @@ class Focuser:
 
                 adjust = round(temp_delta * float(self.focus_temp_slope), 1)
                 #print ("focus adjust value due to temperature: " + str(adjust))
-
+            
             # adjust for filter offset
             # it is try/excepted because some telescopes don't have filters
             try:
@@ -683,7 +683,8 @@ class Focuser:
                 plog ("Focus different by: " + str((self.last_known_focus + adjust) - current_focus_micron) +'. Sending adjust command.')
                 plog ("Filter offset: " + str(g_dev["fil"].filter_offset))
                 plog ("Temperature difference: " + str(temp_delta))
-                plog ("Temperature focus difference: " + str(round(temp_delta * float(self.focus_temp_slope), 1)))
+                if self.current_focus_temperature is not None:
+                    plog ("Temperature focus difference: " + str(round(temp_delta * float(self.focus_temp_slope), 1)))
                 #req = {"position": self.last_known_focus + adjust}
                 #opt = {}
                 self.focuser_is_moving=True
