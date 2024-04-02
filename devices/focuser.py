@@ -613,6 +613,9 @@ class Focuser:
                 if g_dev['mnt'].rapid_park_indicator:
                     plog ("Not adjusting focus as telescope is parked")
                     return
+                if not g_dev['obs'].open_and_enabled_to_observe:
+                    plog ("Not adjusting focus as observatory is not open and enabled to observe.")
+                    return
             except:
                 # On initialisation there is no g_dev
                 # so this just skips early checks.
