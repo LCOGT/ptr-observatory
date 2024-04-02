@@ -6090,7 +6090,7 @@ class Sequencer:
                 plog ("spot measurement: " +str(spot))
 
                 if not np.isnan(spot):
-                    if spot < 12.0:
+                    if spot < 15.0:
                         focus_spots.append((foc_pos,spot))
                 else:
                     plog ("retying this position - could not get a FWHM ")
