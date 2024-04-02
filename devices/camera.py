@@ -2484,7 +2484,7 @@ class Camera:
                     try:
                         sub_stacker_array[:,:,0]=sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
                     except:
-                        #plog ("Couldn't biasdark substack")
+                        plog ("Couldn't biasdark substack")
                         pass
                     # Flat field sub stack array
                     #plog ("Flatting 0")
@@ -2494,13 +2494,13 @@ class Camera:
                         else:
                             sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
                     except:
-                        #plog ("couldn't flat field substack")
+                        plog ("couldn't flat field substack")
                         pass
                     # Bad pixel map sub stack array
                     try:
                         sub_stacker_array[:,:,0][g_dev['cam'].bpmFiles[str(1)]] = np.nan
                     except:
-                        #plog ("Couldn't badpixel substack")
+                        plog ("Couldn't badpixel substack")
                         pass
 
                     # hdufocus = fits.PrimaryHDU()
@@ -2549,7 +2549,7 @@ class Camera:
                     # De-biasdark sub_stack array
                     sub_stacker_array[:,:,subexposure-1]=sub_stacker_array[:,:,subexposure-1] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
                 except:
-                    #plog ("couldn't biasdark substack")
+                    plog ("couldn't biasdark substack")
                     pass
 
 
@@ -2561,7 +2561,7 @@ class Camera:
                     else:
                         sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
                 except:
-                    #plog ("couldn't flat field substack")
+                    plog ("couldn't flat field substack")
                     pass
 
                 # Bad pixel map sub stack array
@@ -2569,7 +2569,7 @@ class Camera:
                     sub_stacker_array[:,:,subexposure-1][g_dev['cam'].bpmFiles[str(1)]] = np.nan
 
                 except:
-                    #plog ("couldn't badpixel field substack")
+                    plog ("couldn't badpixel field substack")
                     pass
                 # hdufocus = fits.PrimaryHDU()
                 # hdufocus.data = sub_stacker_array[:,:,subexposure-1]
