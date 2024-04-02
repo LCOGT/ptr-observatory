@@ -6087,9 +6087,13 @@ class Sequencer:
 
                 g_dev['obs'].send_to_user("Focus position: " + str(focus_position_this_loop) + " FWHM: " + str(round(spot,2)), p_level='INFO')
 
+                plog ("spot measurement: " +str(spot))
+
                 if not np.isnan(spot):
-                    if spot < 8.0:
+                    if spot < 12.0:
                         focus_spots.append((foc_pos,spot))
+                else:
+                    plog ("retying this position - could not get a FWHM ")
                     #focus_fwhms.append(spot)
 
             # If you have the starting of a v-curve then now you can decide what to do.
