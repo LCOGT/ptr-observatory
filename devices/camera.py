@@ -2438,6 +2438,26 @@ class Camera:
         #print ("subexposing")
         for subexposure in range(N_of_substacks+1):
             #print (subexposure)
+            
+            # Check there hasn't been a cancel sent through
+            if g_dev["obs"].stop_all_activity:
+                plog ("stop_all_activity cancelling out of camera exposure")
+                # Nsmartstack=1
+                # sskcounter=2
+                # # expresult["error"] = True
+                # # expresult["stopped"] = True
+                # g_dev["obs"].exposure_halted_indicator =False
+                # self.currently_in_smartstack_loop=False
+                self.exposure_busy = False 
+                return 
+            if g_dev["obs"].exposure_halted_indicator:
+                # expresult["error"] = True
+                # expresult["stopped"] = True
+                # g_dev["obs"].exposure_halted_indicator =False
+                # plog ("Exposure Halted Indicator On. Cancelling Exposure.")
+                self.exposure_busy = False 
+                return 
+            
             exposure_timer=time.time()
             # If it is the first exposure, then just take the exposure. Same with the second as the first one is the reference.
             if subexposure == 0 or subexposure == 1:
