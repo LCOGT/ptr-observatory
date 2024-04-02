@@ -39,6 +39,7 @@ import warnings
 # import requests
 # from requests import ConnectionError, HTTPError
 import traceback
+import bottleneck as bn
 # from colour_demosaicing import (
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
 #     # demosaicing_CFA_Bayer_Malvar2004,
@@ -109,7 +110,7 @@ x_size=hdufocusdata.shape[0]
 y_size=hdufocusdata.shape[1]
 # this is actually faster than np.nanmean
 #edgefillvalue=np.divide(np.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
-edgefillvalue=np.nanmean(hdufocusdata)
+edgefillvalue=bn.nanmedian(hdufocusdata)
 #breakpoint()
 # while num_of_nans > 0:
 #     # List the coordinates that are nan in the array
@@ -204,6 +205,7 @@ if pixscale != None:
         hdufocusdata=np.divide(block_reduce(hdufocusdata,3,func=np.sum),2)
         pixscale=pixscale*3
         binnedthree=True
+        
 # else:
 #     hdufocusdata=block_reduce(hdufocusdata,2,func=np.nanmean)
 #     #pixscale=pixscale*2
@@ -365,7 +367,8 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
 fx, fy = hdufocusdata.shape
 #hdufocusdata[np.isnan(hdufocusdata)] = imageMode
 #hdufocusdata=hdufocusdata-np.nanmedian(hdufocusdata)
-hdufocusdata=hdufocusdata-edgefillvalue
+#hdufocusdata=hdufocusdata-
+hdufocusdata=hdufocusdata-bn.nanmedian(hdufocusdata)
 tempstd=np.std(hdufocusdata)
 threshold=2.5* np.std(hdufocusdata[hdufocusdata < (5*tempstd)])
 list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
@@ -391,11 +394,11 @@ for point in list_of_local_maxima:
 
         # Check it isn't just a dot
         if value_at_neighbours < (0.4*value_at_point):
-            print(hdufocusdata[point[0]-1,point[1]])
-            print(hdufocusdata[point[0]+1,point[1]])
-            print(hdufocusdata[point[0],point[1]-1])
-            print(hdufocusdata[point[0],point[1]+1])
-            print ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
+            # print(hdufocusdata[point[0]-1,point[1]])
+            # print(hdufocusdata[point[0]+1,point[1]])
+            # print(hdufocusdata[point[0],point[1]-1])
+            # print(hdufocusdata[point[0],point[1]+1])
+            # print ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
             # breakpoint()
             pointvalues[counter][2]=np.nan
 
@@ -844,7 +847,7 @@ else:
         pass
 
 
-
+print (solve)
 print ("solver: " +str(time.time()-googtime))
 
 
