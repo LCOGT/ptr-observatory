@@ -702,15 +702,24 @@ site_config = {
                 # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
-                'direct_qhy_readout_mode' : 0,        
-                'direct_qhy_gain' : 26,
-                'direct_qhy_offset' : 60,
+                # 'direct_qhy_readout_mode' : 0,        
+                # 'direct_qhy_gain' : 26,
+                # 'direct_qhy_offset' : 60,
                 
-                'direct_qhy_usb_traffic' : 45,
+                # 'direct_qhy_usb_traffic' : 45,
                 
-                'set_qhy_usb_speed': True,
+                # 'set_qhy_usb_speed': True,
 
-                'direct_qhy_usb_speed' : 45,
+                # #'direct_qhy_usb_speed' : 45,
+
+
+                #HERE IS THE POTENTIAL MODE 1 SETTINGS
+                'direct_qhy_readout_mode' : 1,
+                'direct_qhy_gain' : 56,
+                'direct_qhy_offset' : 60,
+                #'direct_qhy_usb_speed' : 50,
+                'set_qhy_usb_speed': True,
+                'direct_qhy_usb_traffic' : 60, 
 
                 
                 # These options set whether an OSC gets binned or interpolated for different functions
@@ -890,10 +899,10 @@ site_config = {
                 'number_of_bias_to_collect': 27,
                 'number_of_dark_to_collect': 13,
 
-                'number_of_flat_to_collect': 5,   #just for now for CCD camera testing wer 20240113 (friday!)
+                'number_of_flat_to_collect': 8,   #just for now for CCD camera testing wer 20240113 (friday!)
                 'number_of_bias_to_store': 53,
                 'number_of_dark_to_store': 31,
-                'number_of_flat_to_store': 17,
+                'number_of_flat_to_store': 32,
 
                 # Default dark exposure time.
                 'dark_exposure': 360,

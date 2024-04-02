@@ -792,14 +792,19 @@ def multiprocess_fast_gaussian_photometry(package):
         # BIN radial profile to make fit faster
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binned_statistic_2d.html
         
+        #breakpoint()
+        
         # Reduce data down to make faster solvinging
         upperbin=math.floor(max(radprofile[:,0]))
         lowerbin=math.ceil(min(radprofile[:,0]))
-        number_of_bins=int((upperbin-lowerbin)/0.25)
+        #number_of_bins=int((upperbin-lowerbin)/0.25)
+        # Only need a quarter of an arcsecond bin.
+        arcsecond_length_radial_profile = int((upperbin-lowerbin)/0.25)
+        number_of_bins=int(arcsecond_length_radial_profile/0.25)
         s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
         
-        max_value=max(s)
-        min_value=min(s)
+        max_value=np.nanmax(s)
+        min_value=np.nanmin(s)
         threshold_value=(0.05*(max_value-min_value)) + min_value
         
         actualprofile=[]
@@ -830,7 +835,7 @@ def multiprocess_fast_gaussian_photometry(package):
         
         # Amplitude has to be a substantial fraction of the peak value
         # and the center of the gaussian needs to be near the center
-        if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
+        if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3,(3/pixscale)) :
             # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
             # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
             # plt.scatter(actualprofile[:,0],actualprofile[:,1])
@@ -1851,9 +1856,10 @@ class Camera:
                 focus_multiprocess.append((cvalue, cx, cy, radprofile, temp_array,self.pixscale))
         print ("Setup for multiprocess focus: " + str(time.time()-setup_timer))
         
-            
+        #breakpoint()
         # Temporary just to get binning right
-        #multiprocess_fast_gaussian_photometry(focus_multiprocess[0])
+        # for i in range(len(focus_multiprocess)):
+        #     multiprocess_fast_gaussian_photometry(focus_multiprocess[i])
         #breakpoint()
         
         mptimer=time.time()
@@ -1877,7 +1883,9 @@ class Camera:
         rfp = abs(bn.nanmedian(fwhm_results)) * 4.710
         rfr = rfp * self.pixscale
         rfs = np.nanstd(fwhm_results) * self.pixscale
-        if rfr < 1.0 or rfr > 15:
+        print (rfr)
+        print (self.pixscale)
+        if rfr < 1.0 or rfr > 30:
             rfr= np.nan
             rfp= np.nan
             rfs= np.nan
