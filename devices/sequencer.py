@@ -6066,8 +6066,11 @@ class Sequencer:
 
 
             spot=np.nan
-
-            while np.isnan(spot):
+            retry_attempts=0
+            while np.isnan(spot) and retry_attempts < 3:
+                
+                retry_attempts=retry_attempts+1
+                
                 # Move the focuser
 
                 plog ("Changing focus to " + str(round(focus_position_this_loop,1)))
