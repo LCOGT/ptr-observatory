@@ -4274,7 +4274,7 @@ class Observatory:
                     pixscale,
                     smartstackid,
                     sskcounter,
-                    Nsmartstack, pier_side, zoom_factor
+                    Nsmartstack, pier_side, zoom_factor, exposure_time
                 ) = self.smartstack_queue.get(block=False)
 
                 if paths is None:
@@ -4342,7 +4342,7 @@ class Observatory:
                             self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'],
                             self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'],
                             crop_preview,yb,yt,xl,xr,
-                            zoom_factor,
+                            zoom_factor
                             ]
                     else:
                         picklepayload=[
@@ -4366,7 +4366,7 @@ class Observatory:
                             self.config['minimum_realistic_seeing'],
                             0,0,0,0,0,
                             crop_preview,yb,yt,xl,xr,
-                            zoom_factor,
+                            zoom_factor
                             ]
 
 

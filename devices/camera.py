@@ -6090,7 +6090,9 @@ def post_exposure_process(payload):
                 # IMMEDIATELY SEND TO SEP QUEUE
                 # NEEDS to go up as fast as possible ahead of smartstacks to faciliate image matching.
                 g_dev['obs'].sep_processing=True
-                g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin))
+                #breakpoint()
+                print ("to_sep exposure: " + str(exposure_time))
+                g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))
 
 
                 if smartstackid != 'no':

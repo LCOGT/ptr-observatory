@@ -39,6 +39,9 @@ warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 #import matplotlib.pyplot as plt
 
+import math
+
+from scipy.stats import binned_statistic
 
 from scipy import optimize
 googtime=time.time()
@@ -100,11 +103,12 @@ saturate= input_sep_info[24]
 minimum_realistic_seeing=input_sep_info[25]
 #nativebin=input_sep_info[26]
 do_sep=input_sep_info[27]
+exposure_time=input_sep_info[28]
 
 
 # The photometry has a timelimit that is half of the exposure time
-time_limit=float(hduheader['EXPTIME'])/0.5
-
+time_limit=min (float(hduheader['EXPTIME'])/0.5, 30, exposure_time/0.5)
+#breakpoint()
 minimum_exposure_for_extended_stuff = 10
 
 #frame_type='focus'
@@ -368,7 +372,7 @@ else:
                     breakpoint()
 
                 # Check it isn't just a dot
-                if value_at_neighbours < (0.6*value_at_point):
+                if value_at_neighbours < (0.4*value_at_point):
                     #print ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
                     pointvalues[counter][2]=np.nan
 
@@ -482,16 +486,42 @@ else:
 
             # If the brightest pixel is in the center-ish
             # then attempt a fit
-            if abs(brightest_pixel_rdist) < 4:
+            if abs(brightest_pixel_rdist) < max(3, 3/pixscale):
 
                 try:
+                    
+                    
+                    # Reduce data down to make faster solvinging
+                    upperbin=math.floor(max(radprofile[:,0]))
+                    lowerbin=math.ceil(min(radprofile[:,0]))
+                    #number_of_bins=int((upperbin-lowerbin)/0.25)
+                    # Only need a quarter of an arcsecond bin.
+                    arcsecond_length_radial_profile = int((upperbin-lowerbin)/0.25)
+                    number_of_bins=int(arcsecond_length_radial_profile/0.25)
+                    s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
+                    
+                    max_value=np.nanmax(s)
+                    min_value=np.nanmin(s)
+                    threshold_value=(0.05*(max_value-min_value)) + min_value
+                    
+                    actualprofile=[]
+                    for q in range(len(s)):
+                        if not np.isnan(s[q]): 
+                            if s[q] > threshold_value:
+                                actualprofile.append([(edges[q]+edges[q+1])/2,s[q]])
+                
+                    actualprofile=np.asarray(actualprofile)
+                    
+                    
+                    
                     #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-                    popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-
+                    #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+                    popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+                
 
                     # Amplitude has to be a substantial fraction of the peak value
                     # and the center of the gaussian needs to be near the center
-                    if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
+                    if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, 3/pixscale) :
                         # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
                         # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
                         # plt.scatter(radprofile[:,0],radprofile[:,1])
