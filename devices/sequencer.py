@@ -1255,9 +1255,9 @@ class Sequencer:
 
         camera = self.config['camera']['camera_1_1']['name']
         seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + '_completes_' + str(g_dev['obs'].name))
-        print ("is in check")
-        print ("block_id")
-        print (seq_shelf['completed_blocks'])
+        # print ("is in check")
+        # print ("block_id")
+        # print (seq_shelf['completed_blocks'])
 
         if block_id in seq_shelf['completed_blocks']:
             seq_shelf.close()
