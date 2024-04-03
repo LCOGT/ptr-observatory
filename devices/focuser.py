@@ -611,7 +611,7 @@ class Focuser:
                 if g_dev['seq'].focussing or self.focuser_is_moving or g_dev['seq'].measuring_focus_offsets:
                     return
                 if g_dev['mnt'].rapid_park_indicator:
-                    plog ("Not adjusting focus as telescope is parked")
+                    #plog ("Not adjusting focus as telescope is parked")
                     return
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     plog ("Not adjusting focus as observatory is not open and enabled to observe.")
