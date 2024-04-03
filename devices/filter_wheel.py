@@ -682,10 +682,22 @@ class FilterWheel:
 
         # if asking for a pointing filter, but it is an osc, we actually need a lum filter
         try:
+            # OSC cameras gain no benefit from ip filter
             if g_dev['cam'].is_osc and requested_filter=='pointing':
                 requested_filter='w'
+                
+            # If the field of view is too small, then it becomes
+            # disadvantageous to use a non-white filter
+            if requested_filter=='pointing':
+                max_length_pixels=max(g_dev['cam'].imagesize_x,g_dev['cam'].imagesize_y)
+                max_length_arcminutes=(max_length_pixels * g_dev['cam'].pixscale)/60
+                if max_length_arcminutes < 45:
+                    requested_filter='w'
+                    
         except:
             pass
+        
+       # breakpoint()
 
         #  NB NB NB note any filter string when lower cased needs to be unique. j - Johnson,
         #  c = Cousins, p or ' implies Sloane, S is for stromgren.  Some of the mappings

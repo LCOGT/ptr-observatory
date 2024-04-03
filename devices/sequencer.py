@@ -6255,6 +6255,19 @@ class Sequencer:
                         self.focussing=False
                         if not dont_log_focus:
                             g_dev['foc'].af_log(fitted_focus_position, fitted_focus_fwhm, spot)
+                        
+                        # Store fitted focus as last result
+                        g_dev['obs'].fwhmresult={}
+                        g_dev['obs'].fwhmresult["FWHM"] = fitted_focus_fwhm
+                        #rfr=float(fwhm_info['rfr'])
+                        g_dev['obs'].fwhmresult["mean_focus"] = fitted_focus_position
+                        # g_dev['obs'].fwhmresult['No_of_sources'] =float(fwhm_info['sources'])
+                        # g_dev['obs'].fwhmresult["exp_time"] = hduheader['EXPTIME']
+
+                        # g_dev['obs'].fwhmresult["filter"] = hduheader['FILTER']
+                        # g_dev['obs'].fwhmresult["airmass"] = hduheader['AIRMASS']
+                        
+                        
                         return fitted_focus_position,fitted_focus_fwhm
 
 

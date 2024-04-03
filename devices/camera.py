@@ -3621,6 +3621,24 @@ class Camera:
                                 if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat" and not frame_type=='pointing': 
                                     if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
                                         self.substacker=True
+                                        
+                            # Adjust pointing exposure time relative to known focus
+                            if not g_dev['seq'].focussing and frame_type=='pointing':
+                                try:
+                                    last_fwhm=g_dev['obs'].fwhmresult["FWHM"]
+                                    
+                                    if last_fwhm > 4.0:
+                                        exposure_time=exposure_time * 4                                
+                                    elif last_fwhm > 3:
+                                        exposure_time=exposure_time * 3
+                                    elif last_fwhm > 2.5:
+                                        exposure_time=exposure_time * 2
+                                    elif last_fwhm > 2.0:
+                                        exposure_time=exposure_time * 1.5
+                                except:
+                                    plog ("can't adjust exposure time for pointing if no previous focus known")
+                                    
+                                #breakpoint()
 
                             if g_dev["fil"].null_filterwheel == False:
                                 while g_dev['fil'].filter_changing:
