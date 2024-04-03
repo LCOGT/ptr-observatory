@@ -4387,6 +4387,7 @@ class Observatory:
                     # if True:
                     #     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
+                    #breakpoint()
 
                     # Essentially wait until the subprocess is complete
                     smartstack_subprocess.communicate()

@@ -692,9 +692,9 @@ else:
         # Resizing the array to an appropriate shape for the small jpg
         #iy, ix = final_image.size
         ix, iy = final_image.size
-        if (crop_preview == True):
-            final_image=final_image.crop((xl,yt,iy-xr,ix-yb))
-            iy, ix = final_image.size
+        # if (crop_preview == True):
+        #     final_image=final_image.crop((xl,yt,ix-xr,iy-yb))
+        #     ix, iy = final_image.size
             #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
         print('Zoom factor is:  ', zoom_factor)
         if zoom_factor is not False:
@@ -736,6 +736,9 @@ else:
             yb *= iy
             #breakpoint()
             #trial_image=final_image.crop((int(xl),int(yt),int(iy-xr),int(ix-yb)))
+            
+            #breakpoint()
+            
             trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
             ix, iy = trial_image.size
             print("Zoomed Image size:", ix, iy)
@@ -800,14 +803,26 @@ else:
         
         
         
+        # iy, ix = final_image.size
+        # if iy == ix:
+        #     final_image = final_image.resize((900, 900))
+        # else:
+        #     if squash_on_x_axis:
+        #         final_image = final_image.resize((int(900 * iy / ix), 900))
+        #     else:
+        #         final_image = final_image.resize((900, int(900 * iy / ix)))
+
+        
+
         iy, ix = final_image.size
-        if iy == ix:
+        if ix == iy:
             final_image = final_image.resize((900, 900))
         else:
             if squash_on_x_axis:
                 final_image = final_image.resize((int(900 * iy / ix), 900))
             else:
                 final_image = final_image.resize((900, int(900 * iy / ix)))
+
 
         final_image.save(
             paths["im_path"] + paths["jpeg_name10"]
