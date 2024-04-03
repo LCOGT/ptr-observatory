@@ -5138,6 +5138,31 @@ class Camera:
                 if remaining < -15:
                     #breakpoint()
                     plog ("Camera overtime: " + str(remaining))
+                    
+                    
+                    g_dev['obs'].request_scan_requests()
+                    #g_dev['obs'].scan_requests()
+
+
+                    # Check there hasn't been a cancel sent through
+                    if g_dev["obs"].stop_all_activity:
+                        plog ("stop_all_activity cancelling out of camera exposure")
+                        Nsmartstack=1
+                        sskcounter=2
+                        expresult["error"] = True
+                        expresult["stopped"] = True
+                        g_dev["obs"].exposure_halted_indicator =False
+                        self.currently_in_smartstack_loop=False
+                        self.exposure_busy = False 
+                        return expresult
+
+                    if g_dev["obs"].exposure_halted_indicator:
+                        expresult["error"] = True
+                        expresult["stopped"] = True
+                        g_dev["obs"].exposure_halted_indicator =False
+                        plog ("Exposure Halted Indicator On. Cancelling Exposure.")
+                        self.exposure_busy = False 
+                        return expresult
                     # plog(
                     #     "Camera timed out; probably is no longer connected, resetting it now."
                     # )
