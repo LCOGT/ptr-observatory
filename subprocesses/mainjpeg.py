@@ -264,7 +264,8 @@ if smartstackid == 'no':
 
         
         # Resizing the array to an appropriate shape for the small jpg
-        iy, ix = final_image.size
+        #iy, ix = final_image.size
+        ix, iy = final_image.size
         if (crop_preview == True):
             final_image=final_image.crop((xl,yt,iy-xr,ix-yb))
             iy, ix = final_image.size
@@ -307,11 +308,15 @@ if smartstackid == 'no':
             yt *= iy
             xr *= ix
             yb *= iy
-            trial_image=final_image.crop((int(xl),int(yt),int(iy-xr),int(ix-yb)))
+            #breakpoint()
+            #trial_image=final_image.crop((int(xl),int(yt),int(iy-xr),int(ix-yb)))
+            trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
             ix, iy = trial_image.size
             print("Zoomed Image size:", ix, iy)
             final_image = trial_image
             
+        #breakpoint()
+        
         #breakpoint()
 
         iy, ix = final_image.size
