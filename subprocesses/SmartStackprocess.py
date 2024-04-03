@@ -687,23 +687,15 @@ else:
         #breakpoint()
         
         
-        
-        
-        
-        
-        
         # Resizing the array to an appropriate shape for the small jpg
-        
-        iy, ix = final_image.size
-        #breakpoint()
+        #iy, ix = final_image.size
+        ix, iy = final_image.size
         if (crop_preview == True):
-            #final_image=final_image.crop((xl,yt,ix-xr,iy-yb))
             final_image=final_image.crop((xl,yt,iy-xr,ix-yb))
-            #iy, ix = final_image.size
+            iy, ix = final_image.size
             #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
-        #breakpoint()
         print('Zoom factor is:  ', zoom_factor)
-        if zoom_factor is not False and not zoom_factor in ['full', 'Full', '100%'] :
+        if zoom_factor is not False:
             if zoom_factor in ['full', 'Full', '100%']:
                 zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
             elif zoom_factor in ['square', 'sqr.', 'small sq.']:
@@ -740,11 +732,69 @@ else:
             yt *= iy
             xr *= ix
             yb *= iy
-            #trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
-            trial_image=final_image.crop((int(xl),int(yt),int(iy-xr),int(ix-yb)))
+            #breakpoint()
+            #trial_image=final_image.crop((int(xl),int(yt),int(iy-xr),int(ix-yb)))
+            trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
             ix, iy = trial_image.size
             print("Zoomed Image size:", ix, iy)
             final_image = trial_image
+        
+        
+        
+        
+        # # Resizing the array to an appropriate shape for the small jpg
+        
+        # ix, iy = final_image.size
+        # #breakpoint()
+        # if (crop_preview == True):
+        #     #final_image=final_image.crop((xl,yt,ix-xr,iy-yb))
+        #     final_image=final_image.crop((xl,yt,iy-xr,ix-yb))
+        #     #iy, ix = final_image.size
+        #     #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
+        # #breakpoint()
+        # print('Zoom factor is:  ', zoom_factor)
+        # if zoom_factor is not False and not zoom_factor in ['full', 'Full', '100%'] :
+        #     if zoom_factor in ['full', 'Full', '100%']:
+        #         zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
+        #     elif zoom_factor in ['square', 'sqr.', 'small sq.']:
+        #         zoom = ((ix/iy -1)/2, 0.0, (ix/iy -1)/2, 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
+        #     elif zoom_factor in ['71%', '70.7%', '1.4x', '1.5x']:
+        #         r_sq2 = (1 - 1/sqrt(2))/2
+        #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        #     elif zoom_factor in ['50%', '2x']:
+        #         r_sq2 = (1 - 0.5)/2
+        #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        #     elif zoom_factor in ['35%', '2.8x', '3x']:
+        #         r_sq2 = (1 - 0.5/sqrt(2))/2
+        #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        #     elif zoom_factor in ['25%', '4x']:
+        #         r_sq2 = (1 - 0.25)/2
+        #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        #     elif zoom_factor in ['18%', '5.7x', '6x']:
+        #         r_sq2 = (1 - 0.25/sqrt(2))/2
+        #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        #     elif zoom_factor in ['12.5%', '13%', '12%', '8x']:
+        #         r_sq2 = (1 - 0.125)/2
+        #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        #     elif zoom_factor in ['9%', '11.3x', '11x', '12x']:
+        #         r_sq2 = (1 - 0.125/sqrt(2))/2
+        #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        #     elif zoom_factor in ['6%', '6.3%', '16x']:
+        #         r_sq2 = (1 - 0.0625)/2
+        #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)
+        #     else:
+        #         zoom = (0.0, 0.0, 0.0, 0.0)
+        #     #breakpoint()
+        #     xl, yt, xr, yb = zoom
+        #     xl *= ix
+        #     yt *= iy
+        #     xr *= ix
+        #     yb *= iy
+        #     #trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
+        #     trial_image=final_image.crop((int(xl),int(yt),int(iy-xr),int(ix-yb)))
+        #     ix, iy = trial_image.size
+        #     print("Zoomed Image size:", ix, iy)
+        #     final_image = trial_image
         
         
         
