@@ -15,3 +15,9 @@ sandbox/
 support_info/Installers/WCSIndexFiles/Kepler.zip
 support_info/Installers/WCSIndexFiles/Kepler.zip
 support_info/Installers/.wget-hsts
+subprocesses/testplatesolvepickle
+subprocesses/testSEPpickle
+subprocesses/testsmartstackpickle
+testjpegpickle
+subprocesses/testSEPpickle
+subprocesses/testSEPpickle
