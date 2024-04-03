@@ -44,7 +44,10 @@ import bottleneck as bn
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
 #     # demosaicing_CFA_Bayer_Malvar2004,
 #     demosaicing_CFA_Bayer_Menon2007)
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+import math
+
+from scipy.stats import binned_statistic
 
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -102,6 +105,35 @@ useastrometrynet=input_psolve_info[16]
 
 
 
+# Really need to thresh the incoming image
+googtime=time.time()
+int_array_flattened=hdufocusdata.astype(int).ravel()
+unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+m=counts.argmax()
+imageMode=unique[m]
+print ("Calculating Mode: " +str(time.time()-googtime))
+
+
+# Zerothreshing image
+googtime=time.time()
+histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+#Do some fiddle faddling to figure out the value that goes to zero less 
+zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+breaker=1
+counter=0
+while (breaker != 0):
+    counter=counter+1
+    if not (imageMode-counter) in zeroValueArray[:,0]:        
+        zeroValue=(imageMode-counter)
+        breaker =0
+    
+hdufocusdata[hdufocusdata < zeroValue] = np.nan  
+
+print ("Zero Threshing Image: " +str(time.time()-googtime))
+
+
+
+
 #Check there are no nans in the image upon receipt
 # This is necessary as nans aren't interpolated in the main thread.
 # Fast next-door-neighbour in-fill algorithm
@@ -110,7 +142,7 @@ x_size=hdufocusdata.shape[0]
 y_size=hdufocusdata.shape[1]
 # this is actually faster than np.nanmean
 #edgefillvalue=np.divide(np.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
-edgefillvalue=bn.nanmedian(hdufocusdata)
+edgefillvalue=imageMode
 #breakpoint()
 # while num_of_nans > 0:
 #     # List the coordinates that are nan in the array
@@ -213,7 +245,7 @@ if pixscale != None:
 
 # At least chop the edges off the image
 if platesolve_crop==0:
-    platesolve_crop=0.02
+    platesolve_crop=0.15
 
 # Crop the image for platesolving
 fx, fy = hdufocusdata.shape
@@ -371,11 +403,13 @@ fx, fy = hdufocusdata.shape
 hdufocusdata=hdufocusdata-bn.nanmedian(hdufocusdata)
 tempstd=np.std(hdufocusdata)
 threshold=2.5* np.std(hdufocusdata[hdufocusdata < (5*tempstd)])
+threshold=max(threshold,100)
 list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
 # Assess each point
 pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
 counter=0
 for point in list_of_local_maxima:
+    
 
     pointvalues[counter][0]=point[0]
     pointvalues[counter][1]=point[1]
@@ -383,6 +417,9 @@ for point in list_of_local_maxima:
     in_range=False
     if (point[0] > fx*0.1) and (point[1] > fy*0.1) and (point[0] < fx*0.9) and (point[1] < fy*0.9):
         in_range=True
+    # else:
+    #     print (point)
+    #     print(hdufocusdata[point[0],point[1]])
 
     if in_range:
         value_at_point=hdufocusdata[point[0],point[1]]
@@ -399,7 +436,7 @@ for point in list_of_local_maxima:
             # print(hdufocusdata[point[0],point[1]-1])
             # print(hdufocusdata[point[0],point[1]+1])
             # print ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
-            # breakpoint()
+            #breakpoint()
             pointvalues[counter][2]=np.nan
 
         # # If not saturated and far away from the edge
@@ -421,6 +458,18 @@ pointvalues=pointvalues[~np.isnan(pointvalues).any(axis=1)]
 # reverse sort by brightness
 pointvalues=pointvalues[pointvalues[:,2].argsort()[::-1]]
 
+
+# reject things that are X times dimmer than the brightest source
+# hdufocus = fits.PrimaryHDU()
+# hdufocus.data = hdufocusdata
+# hdufocus.header = hduheader
+# hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+# hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+# hdufocus.writeto(cal_path + 'goop.fits', overwrite=True, output_verify='silentfix')
+
+
+#breakpoint()
+
 #breakpoint()
 
 
@@ -438,84 +487,122 @@ sources=[]
 
 for i in range(min(len(pointvalues),200)):
     
-    cx= (pointvalues[i][0])
-    cy= (pointvalues[i][1])
-    cvalue=hdufocusdata[int(cx)][int(cy)]
-    sources.append([cx,cy,cvalue])
-    
-    
-    
     # cx= (pointvalues[i][0])
     # cy= (pointvalues[i][1])
     # cvalue=hdufocusdata[int(cx)][int(cy)]
-    # try:
-    #     temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
-    # except:
-    #     print(traceback.format_exc())
-    #     breakpoint()
-    # #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
+    #sources.append([cx,cy,cvalue])
+    
+    
+    
+    cx= (pointvalues[i][0])
+    cy= (pointvalues[i][1])
+    cvalue=hdufocusdata[int(cx)][int(cy)]
+    try:
+        temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
+    except:
+        print(traceback.format_exc())
+        breakpoint()
+    #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
 
-    # #construct radial profile
-    # cut_x,cut_y=temp_array.shape
-    # cut_x_center=(cut_x/2)-1
-    # cut_y_center=(cut_y/2)-1
-    # radprofile=np.zeros([cut_x*cut_y,2],dtype=float)
-    # counter=0
-    # brightest_pixel_rdist=0
-    # brightest_pixel_value=0
-    # bailout=False
-    # for q in range(cut_x):
-    #     if bailout==True:
-    #         break
-    #     for t in range(cut_y):
-    #         #breakpoint()
-    #         r_dist=pow(pow((q-cut_x_center),2) + pow((t-cut_y_center),2),0.5)
-    #         if q-cut_x_center < 0:# or t-cut_y_center < 0:
-    #             r_dist=r_dist*-1
-    #         radprofile[counter][0]=r_dist
-    #         radprofile[counter][1]=temp_array[q][t]
-    #         if temp_array[q][t] > brightest_pixel_value:
-    #             brightest_pixel_rdist=r_dist
-    #             brightest_pixel_value=temp_array[q][t]
-    #         counter=counter+1
-
-
-
-
-    # # If the brightest pixel is in the center-ish
-    # # then attempt a fit
-    # if abs(brightest_pixel_rdist) < 4:
-
-    #     try:
-    #         #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-    #         popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]), xtol=0.05, ftol=0.05)
+    #construct radial profile
+    cut_x,cut_y=temp_array.shape
+    cut_x_center=(cut_x/2)-1
+    cut_y_center=(cut_y/2)-1
+    radprofile=np.zeros([cut_x*cut_y,2],dtype=float)
+    counter=0
+    brightest_pixel_rdist=0
+    brightest_pixel_value=0
+    bailout=False
+    for q in range(cut_x):
+        if bailout==True:
+            break
+        for t in range(cut_y):
+            #breakpoint()
+            r_dist=pow(pow((q-cut_x_center),2) + pow((t-cut_y_center),2),0.5)
+            if q-cut_x_center < 0:# or t-cut_y_center < 0:
+                r_dist=r_dist*-1
+            radprofile[counter][0]=r_dist
+            radprofile[counter][1]=temp_array[q][t]
+            if temp_array[q][t] > brightest_pixel_value:
+                brightest_pixel_rdist=r_dist
+                brightest_pixel_value=temp_array[q][t]
+            counter=counter+1
 
 
-    #         # Amplitude has to be a substantial fraction of the peak value
-    #         # and the center of the gaussian needs to be near the center
-    #         if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, 3/pixscale) :
-    #             # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-    #             # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-    #             # plt.scatter(radprofile[:,0],radprofile[:,1])
-    #             # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
-    #             # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-    #             # plt.show()
 
-    #             sources.append([cx,cy,cvalue])
 
-    #             # FWHM is 2.355 * std for a gaussian
-    #             #fwhmlist.append(popt[2])
-    #             #sources.append([cx,cy,radprofile,temp_array])
-    #             # If we've got more than 50, good
-    #             #if len(fwhmlist) > 50:
-    #             #    bailout=True
-    #             #    break
-    #             # #If we've got more than ten and we are getting dim, bail out.
-    #             # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
-    #             #     bailout=True
-    #             #     break
-    #     except:
-    #         pass
+    # If the brightest pixel is in the center-ish
+    # then attempt a fit
+    # print (abs(brightest_pixel_rdist))
+    if abs(brightest_pixel_rdist) <  max(3, 3/pixscale):
+
+        try:
+            
+            
+            
+            
+            # Reduce data down to make faster solvinging
+            upperbin=math.floor(max(radprofile[:,0]))
+            lowerbin=math.ceil(min(radprofile[:,0]))
+            #number_of_bins=int((upperbin-lowerbin)/0.25)
+            # Only need a quarter of an arcsecond bin.
+            arcsecond_length_radial_profile = int((upperbin-lowerbin)/0.25)
+            number_of_bins=int(arcsecond_length_radial_profile/0.25)
+            s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
+            
+            max_value=np.nanmax(s)
+            min_value=np.nanmin(s)
+            threshold_value=(0.05*(max_value-min_value)) + min_value
+            
+            actualprofile=[]
+            for q in range(len(s)):
+                if not np.isnan(s[q]): 
+                    if s[q] > threshold_value:
+                        actualprofile.append([(edges[q]+edges[q+1])/2,s[q]])
+        
+            actualprofile=np.asarray(actualprofile)
+            
+            
+            
+            
+            
+            
+            
+            #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+            #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]), xtol=0.05, ftol=0.05)
+            popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+        
+    
+            # Amplitude has to be a substantial fraction of the peak value
+            # and the center of the gaussian needs to be near the center
+            if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, 3/pixscale) :
+                # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
+                # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
+                #plt.scatter(radprofile[:,0],radprofile[:,1])
+                #plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
+                
+                
+                
+                # plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
+                # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                # plt.show()
+    
+                sources.append([cx,cy,cvalue])
+    
+                # FWHM is 2.355 * std for a gaussian
+                #fwhmlist.append(popt[2])
+                #sources.append([cx,cy,radprofile,temp_array])
+                # If we've got more than 50, good
+                #if len(fwhmlist) > 50:
+                #    bailout=True
+                #    break
+                # #If we've got more than ten and we are getting dim, bail out.
+                # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
+                #     bailout=True
+                #     break
+        except:
+            pass
 
 
 # Keep top 200
@@ -601,6 +688,8 @@ if len(sources) >= 5:
     hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
     hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
     #pixscale = (hdufocus.header['PIXSCALE'])
+    
+    #breakpoint()
 
     try:
         hdufocus.close()
