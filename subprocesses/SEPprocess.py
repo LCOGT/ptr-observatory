@@ -25,6 +25,7 @@ import json
 import copy
 # from scipy import ndimage as nd
 from auto_stretch.stretch import Stretch
+from astropy.io import fits
 # from astropy.nddata import block_reduce
 # from colour_demosaicing import (
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
@@ -137,13 +138,32 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
 
 # For a QHY600, it takes a few seconds to calculate the mode. We don't need it for a focus frame.
 # If the exposure time is short then just take the median
-if not frame_type == 'focus' and float(hduheader['EXPTIME']) > minimum_exposure_for_extended_stuff :
+if not frame_type == 'focus' and float(hduheader['EXPTIME']) >= minimum_exposure_for_extended_stuff :
     googtime=time.time()
     int_array_flattened=hdufocusdata.astype(int).ravel()
     unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
     m=counts.argmax()
     imageMode=unique[m]
     print ("Calculating Mode: " +str(time.time()-googtime))
+    
+    
+    # Zerothreshing image
+    googtime=time.time()
+    histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+    #Do some fiddle faddling to figure out the value that goes to zero less 
+    zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+    breaker=1
+    counter=0
+    while (breaker != 0):
+        counter=counter+1
+        if not (imageMode-counter) in zeroValueArray[:,0]:        
+            zeroValue=(imageMode-counter)
+            breaker =0
+        
+    hdufocusdata[hdufocusdata < zeroValue] = np.nan  
+    
+    print ("Zero Threshing Image: " +str(time.time()-googtime))
+    
     real_mode=True
 else:
     imageMode=bn.nanmedian(hdufocusdata)
@@ -240,38 +260,38 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
 
 else:
 
-    # Realistically we can figure out the focus stuff here from first principles.
-    if frame_type == 'focus':
-        fx, fy = hdufocusdata.shape
-        # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
-        # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
-        # So we chop the image down to a degree by a degree
-        # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
-        fx_degrees = (fx * pixscale) /3600
-        fy_degrees = (fy * pixscale) /3600
+    # # Realistically we can figure out the focus stuff here from first principles.
+    # if frame_type == 'focus':
+    #     fx, fy = hdufocusdata.shape
+    #     # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
+    #     # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
+    #     # So we chop the image down to a degree by a degree
+    #     # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
+    #     fx_degrees = (fx * pixscale) /3600
+    #     fy_degrees = (fy * pixscale) /3600
 
-        crop_x=0
-        crop_y=0
+    #     crop_x=0
+    #     crop_y=0
 
 
-        if fx_degrees > 1.0:
-            ratio_crop= 1/fx_degrees
-            crop_x = int((fx - (ratio_crop * fx))/2)
-        if fy_degrees > 1.0:
-            ratio_crop= 1/fy_degrees
-            crop_y = int((fy - (ratio_crop * fy))/2)
+    #     if fx_degrees > 1.0:
+    #         ratio_crop= 1/fx_degrees
+    #         crop_x = int((fx - (ratio_crop * fx))/2)
+    #     if fy_degrees > 1.0:
+    #         ratio_crop= 1/fy_degrees
+    #         crop_y = int((fy - (ratio_crop * fy))/2)
 
-        if crop_x > 0 or crop_y > 0:
-            if crop_x == 0:
-                crop_x = 2
-            if crop_y == 0:
-                crop_y = 2
-            # Make sure it is an even number for OSCs
-            if (crop_x % 2) != 0:
-                crop_x = crop_x+1
-            if (crop_y % 2) != 0:
-                crop_y = crop_y+1
-            hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
+    #     if crop_x > 0 or crop_y > 0:
+    #         if crop_x == 0:
+    #             crop_x = 2
+    #         if crop_y == 0:
+    #             crop_y = 2
+    #         # Make sure it is an even number for OSCs
+    #         if (crop_x % 2) != 0:
+    #             crop_x = crop_x+1
+    #         if (crop_y % 2) != 0:
+    #             crop_y = crop_y+1
+    #         hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
 
     if is_osc:
 
@@ -305,7 +325,15 @@ else:
 
         fx, fy = hdufocusdata.shape        #
         hdufocusdata=hdufocusdata-imageMode
+        
+        # hdufocus = fits.PrimaryHDU()
+        # hdufocus.data = hdufocusdata
+        # hdufocus.header = hduheader
+        # hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+        # hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+        # hdufocus.writeto('goop.fits', overwrite=True, output_verify='silentfix')
 
+        
 
         #if frame_type == 'focus':       # This hasn't been calculated yet for focus, but already has for a normal image.
         tempstd=np.std(hdufocusdata)

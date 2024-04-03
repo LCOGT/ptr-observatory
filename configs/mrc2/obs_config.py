@@ -837,7 +837,7 @@ site_config = {
    
                 #'onebyone_pix_scale': 0.15874,    #  This is the 1x1 binning pixelscale
 
-                'native_bin': 3, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
                 'y_pixel':  3.76, # pixel size in microns
                 
