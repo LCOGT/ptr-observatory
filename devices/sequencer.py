@@ -6128,6 +6128,17 @@ class Sequencer:
                     y.append(i[1])
 
 
+                # Check that from the minimum value, each of the points always increases in both directions.
+                # If not, we don't have a parabola shaped data-set
+                # Cull these wonky spots.
+                # From the minima step out in one direction to check it is increasing.
+                minimumfind=[]
+                for entry in focus_spots:
+                    minimumfind.append(entry[1])
+                minimum_index=minimumfind.index(min(minimumfind))
+                
+
+
                 if len(focus_spots) == 0:
                     plog ("Sheesh, not one spot found yet!")
                     plog ("Having a crack at a further spot")
@@ -6145,6 +6156,11 @@ class Sequencer:
                     else:
                         plog ("higher focus spot has lower fwhm value, trying out a spot out there")
                         new_focus_position_to_attempt=focus_spots[-1][0] + throw
+                
+                
+                        
+                    
+                
                 else:
                     # If the minimum is at one of the two points on the side of the v curve take another point beyond that point, otherwise try to fit a parabola
                     minimumfind=[]
@@ -6188,8 +6204,30 @@ class Sequencer:
                         except:
                             plog("Failed to send FOCUS PLOT up for some reason")
                             plog(traceback.format_exc())
+                            
+                    #elif len(focus_spots) > 4:
+                        
+                            
+                            
+                            
                     else:
     
+                        
+                        # # Check that from the minimum value, each of the points always increases in both directions.
+                        # # If not, we don't have a parabola shaped data-set
+                        # # Cull these wonky spots.
+                        # # From the minima step out in one direction to check it is increasing.
+                        # minimumfind=[]
+                        # for entry in focus_spots:
+                        #     minimumfind.append(entry[1])
+                        # minimum_index=minimumfind.index(min(minimumfind))
+                        # minimum_value=focus_spots[minimum_index][1]
+                        
+                        
+                        # # step lower
+                        # step=1
+                        # previous_value=copy.deepcopy(minimum_value)
+                        # while minimum_index-step > -1:
     
     
                         # If you can fit a parabola, then you've got the focus
@@ -6216,60 +6254,132 @@ class Sequencer:
                         plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
     
                         plt.show()
-    
-    
-                        im_path_r = g_dev['cam'].camera_path
-                        raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
-                        throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
-                        plt.savefig(raw_path + '/'+ throwaway_filename)
-                        # Fling the jpeg up
-                        try:
-                            g_dev['obs'].enqueue_for_fastUI(100, raw_path, throwaway_filename)
-                        except:
-                            plog("Failed to send FOCUS PLOT up for some reason")
-                            plog(traceback.format_exc())
-    
-                        #breakpoint()
-    
-    
-                        # If successful, then move to focus and live long and prosper
-                        plog ('Moving to Solved focus:  ', round(fitted_focus_position, 2), ' calculated:  ', fitted_focus_fwhm)
-    
-                        pos = int(fitted_focus_position*g_dev['foc'].micron_to_steps)
-                        g_dev['foc'].guarded_move(pos)
-    
-                        g_dev['foc'].last_known_focus = fitted_focus_position
-                        g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
-    
-                        # We don't take a confirming exposure because there is no point actually and just wastes time.
-                        # You can see if it is focussed with the first target shot.
-    
-    
-                        if not dont_return_scope:
-                            plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                            g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                            g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                            self.wait_for_slew()
-    
-                        self.af_guard = False
-                        self.focussing=False
-                        if not dont_log_focus:
-                            g_dev['foc'].af_log(fitted_focus_position, fitted_focus_fwhm, spot)
-                        
-                        # Store fitted focus as last result
-                        g_dev['obs'].fwhmresult={}
-                        g_dev['obs'].fwhmresult["FWHM"] = fitted_focus_fwhm
-                        #rfr=float(fwhm_info['rfr'])
-                        g_dev['obs'].fwhmresult["mean_focus"] = fitted_focus_position
-                        # g_dev['obs'].fwhmresult['No_of_sources'] =float(fwhm_info['sources'])
-                        # g_dev['obs'].fwhmresult["exp_time"] = hduheader['EXPTIME']
-
-                        # g_dev['obs'].fwhmresult["filter"] = hduheader['FILTER']
-                        # g_dev['obs'].fwhmresult["airmass"] = hduheader['AIRMASS']
                         
                         
-                        return fitted_focus_position,fitted_focus_fwhm
-
+                        # Check that the solved minimum focussed position actually fits in between the lowest measured point and 
+                        # the two next door measured points.
+                        minimumfind=[]
+                        for entry in focus_spots:
+                            minimumfind.append(entry[1])
+                        minimum_index=minimumfind.index(min(minimumfind))
+                        #minimum_position_value=focus_spots[minimum_index][0]
+                        minimum_position_value_left=focus_spots[minimum_index-1][0] + 0.5 * throw
+                        minimum_position_value_right=focus_spots[minimum_index+1][0] - 0.5 * throw                        
+                        
+                        if minimum_position_value_left < fitted_focus_position and minimum_position_value_right > fitted_focus_position:
+                            # if so, then the fit is likely pretty good. 
+                            im_path_r = g_dev['cam'].camera_path
+                            raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
+                            throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
+                            plt.savefig(raw_path + '/'+ throwaway_filename)
+                            # Fling the jpeg up
+                            try:
+                                g_dev['obs'].enqueue_for_fastUI(100, raw_path, throwaway_filename)
+                            except:
+                                plog("Failed to send FOCUS PLOT up for some reason")
+                                plog(traceback.format_exc())
+        
+                            #breakpoint()
+        
+        
+                            # If successful, then move to focus and live long and prosper
+                            plog ('Moving to Solved focus:  ', round(fitted_focus_position, 2), ' calculated:  ', fitted_focus_fwhm)
+        
+                            pos = int(fitted_focus_position*g_dev['foc'].micron_to_steps)
+                            g_dev['foc'].guarded_move(pos)
+        
+                            g_dev['foc'].last_known_focus = fitted_focus_position
+                            g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+        
+                            # We don't take a confirming exposure because there is no point actually and just wastes time.
+                            # You can see if it is focussed with the first target shot.
+        
+        
+                            if not dont_return_scope:
+                                plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                                g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                                g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+                                self.wait_for_slew()
+        
+                            self.af_guard = False
+                            self.focussing=False
+                            if not dont_log_focus:
+                                g_dev['foc'].af_log(fitted_focus_position, fitted_focus_fwhm, spot)
+                            
+                            # Store fitted focus as last result
+                            g_dev['obs'].fwhmresult={}
+                            g_dev['obs'].fwhmresult["FWHM"] = fitted_focus_fwhm
+                            #rfr=float(fwhm_info['rfr'])
+                            g_dev['obs'].fwhmresult["mean_focus"] = fitted_focus_position
+                            # g_dev['obs'].fwhmresult['No_of_sources'] =float(fwhm_info['sources'])
+                            # g_dev['obs'].fwhmresult["exp_time"] = hduheader['EXPTIME']
+    
+                            # g_dev['obs'].fwhmresult["filter"] = hduheader['FILTER']
+                            # g_dev['obs'].fwhmresult["airmass"] = hduheader['AIRMASS']
+                            
+                            
+                            return fitted_focus_position,fitted_focus_fwhm
+                        
+                        else:
+                            # Lets step out from the minimum value and delete any points that are wonky.
+                            plog ("We don't have a good fit where the minimum fit is near the minimum measured value, attempting to examine the data points, potential trim them and trying another point")
+                            
+                            
+                            delete_list=[]
+                            
+                            # step lower
+                            step=1
+                            minimum_value=focus_spots[minimum_index][1]
+                            previous_value=copy.deepcopy(minimum_value)
+                            while minimum_index-step > -1:
+                                print (focus_spots[minimum_index-step][1])
+                                
+                                if focus_spots[minimum_index-step][1] > previous_value:
+                                    print ("Good")
+                                else:
+                                    print ("Bad")
+                                    delete_list.append(focus_spots[minimum_index-step])
+                                previous_value=focus_spots[minimum_index-step][1] 
+                                step=step+1
+                            
+                            # step higher
+                            step=1
+                            minimum_value=focus_spots[minimum_index][1]
+                            previous_value=copy.deepcopy(minimum_value)
+                            while minimum_index+step < len(focus_spots):
+                                print (focus_spots[minimum_index+step][1])
+                                
+                                if focus_spots[minimum_index+step][1] > previous_value:
+                                    print ("Good")
+                                else:
+                                    print ("Bad")
+                                    delete_list.append(focus_spots[minimum_index+step])
+                                previous_value=focus_spots[minimum_index+step][1] 
+                                step=step+1
+                            
+                            
+                            # If there seems to be a wonky spot, remove it and try again
+                            if len(delete_list) > 1:
+                                print ("Found possible problem spots: " + str(delete_list))
+                                
+                                for entry in delete_list:
+                                    new_focus_position_to_attempt=entry[0]                                
+                                    focus_spots.remove(entry)
+                                    
+                                print ("Attempting this spot again: " + str(new_focus_position_to_attempt))
+                            
+                            else:
+                                print ("Couldn't find a problem spot, attempting another point on the smaller end of the curve")
+                                if focus_spots[0][1] < focus_spots[-1][1]:
+                                    plog ("smaller focus spot has lower fwhm value, trying out a spot out there")
+                                    new_focus_position_to_attempt=focus_spots[0][0] - throw
+                                else:
+                                    plog ("higher focus spot has lower fwhm value, trying out a spot out there")
+                                    new_focus_position_to_attempt=focus_spots[-1][0] + throw
+                                
+                            
+                            
+                                
 
 
 
