@@ -206,8 +206,9 @@ for nancoord in nan_coords:
 hdufocusdata[np.isnan(hdufocusdata)] = edgefillvalue
     #num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
 
-
-
+#if not is_osc:
+bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+bkg.subfrom(hdufocusdata)
 
 
 # hdufocus = fits.PrimaryHDU()
@@ -410,8 +411,7 @@ fx, fy = hdufocusdata.shape
 #hdufocusdata=hdufocusdata-np.nanmedian(hdufocusdata)
 #hdufocusdata=hdufocusdata-
 
-bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-bkg.subfrom(hdufocusdata)
+
 
 #hdufocusdata=hdufocusdata-bn.nanmedian(hdufocusdata)
 tempstd=np.std(hdufocusdata)
