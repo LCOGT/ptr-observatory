@@ -25,7 +25,7 @@ import sys
 import pickle
 from astropy.nddata import block_reduce
 import numpy as np
-#import sep
+import sep
 #from astropy.table import Table
 from astropy.nddata.utils import extract_array
 from astropy.io import fits
@@ -207,6 +207,16 @@ hdufocusdata[np.isnan(hdufocusdata)] = edgefillvalue
     #num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
 
 
+
+bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+bkg.subfrom(hdufocusdata)
+
+hdufocus = fits.PrimaryHDU()
+hdufocus.data = bkg
+hdufocus.header = hduheader
+hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+hdufocus.writeto(cal_path + 'background.fits', overwrite=True, output_verify='silentfix')
 
 
 parentPath = Path(getcwd())
@@ -485,14 +495,15 @@ centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
 
 sources=[]
 
-for i in range(min(len(pointvalues),200)):
+for i in range(len(pointvalues)):
     
     # cx= (pointvalues[i][0])
     # cy= (pointvalues[i][1])
     # cvalue=hdufocusdata[int(cx)][int(cy)]
     #sources.append([cx,cy,cvalue])
     
-    
+    if len(sources) > 200:
+        break
     
     cx= (pointvalues[i][0])
     cy= (pointvalues[i][1])
@@ -534,6 +545,8 @@ for i in range(min(len(pointvalues),200)):
     # If the brightest pixel is in the center-ish
     # then attempt a fit
     # print (abs(brightest_pixel_rdist))
+    
+    #breakpoint()
     if abs(brightest_pixel_rdist) <  max(3, 3/pixscale):
 
         try:
@@ -565,42 +578,48 @@ for i in range(min(len(pointvalues),200)):
             
             
             
+            edgevalue_left=actualprofile[0][1]
+            edgevalue_right=actualprofile[-1][1]
+            
+            if edgevalue_left < 0.6*cvalue and  edgevalue_right < 0.6*cvalue:
             
             
             
-            #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-            #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]), xtol=0.05, ftol=0.05)
-            popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+                #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+                #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]), xtol=0.05, ftol=0.05)
+                popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+            
         
-    
-            # Amplitude has to be a substantial fraction of the peak value
-            # and the center of the gaussian needs to be near the center
-            if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, 3/pixscale) :
-                # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-                # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-                #plt.scatter(radprofile[:,0],radprofile[:,1])
-                #plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
-                
-                
-                
-                # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
-                # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                # plt.show()
-    
-                sources.append([cx,cy,cvalue])
-    
-                # FWHM is 2.355 * std for a gaussian
-                #fwhmlist.append(popt[2])
-                #sources.append([cx,cy,radprofile,temp_array])
-                # If we've got more than 50, good
-                #if len(fwhmlist) > 50:
-                #    bailout=True
-                #    break
-                # #If we've got more than ten and we are getting dim, bail out.
-                # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
-                #     bailout=True
-                #     break
+                # Amplitude has to be a substantial fraction of the peak value
+                # and the center of the gaussian needs to be near the center
+                if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, 3/pixscale) :
+                    # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
+                    # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
+                    #plt.scatter(radprofile[:,0],radprofile[:,1])
+                    #plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
+                    
+                    
+                    
+                    # plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                    # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
+                    # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                    # plt.show()
+                    
+                    #breakpoint()
+        
+                    sources.append([cx,cy,cvalue])
+        
+                    # FWHM is 2.355 * std for a gaussian
+                    #fwhmlist.append(popt[2])
+                    #sources.append([cx,cy,radprofile,temp_array])
+                    # If we've got more than 50, good
+                    #if len(fwhmlist) > 50:
+                    #    bailout=True
+                    #    break
+                    # #If we've got more than ten and we are getting dim, bail out.
+                    # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
+                    #     bailout=True
+                    #     break
         except:
             pass
 
@@ -610,12 +629,12 @@ sources=np.asarray(sources)
 if len(sources) > 200:
     sources=sources[:200,:]
 
-# hdufocus = fits.PrimaryHDU()
-# hdufocus.data = hdufocusdata
-# hdufocus.header = hduheader
-# hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-# hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-# hdufocus.writeto(cal_path + 'goop.fits', overwrite=True, output_verify='silentfix')
+hdufocus = fits.PrimaryHDU()
+hdufocus.data = hdufocusdata
+hdufocus.header = hduheader
+hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+hdufocus.writeto(cal_path + 'goop.fits', overwrite=True, output_verify='silentfix')
 
 
 # breakpoint()
@@ -722,18 +741,36 @@ if len(sources) >= 5:
         process.kill()
 
         solve = parse_platesolve_output(output_file_path)
-
-        if binnedtwo:
-            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
-        elif binnedthree:
-            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+        
         #breakpoint()
 
+        if binnedtwo:
+            solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
+        elif binnedthree:
+            solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
+        
+        pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
+
+        # try:
+        #     os.remove(cal_path + 'platesolvetemp.fits')
+        # except:
+        #     pass
+        # try:
+        #     os.remove(output_file_path)
+        # except:
+        #     pass
+    
+        # sys.exit()
+        
+
     except:
+        print(traceback.format_exc())
+        #breakpoint()
         failed = True
         process.kill()
 
     if failed:
+        failed=False
         try:
             # Try again with a lower pixelscale... yes it makes no sense
             # But I didn't write PS3.exe ..... but it works (MTF)
@@ -757,16 +794,32 @@ if len(sources) >= 5:
 
             solve = parse_platesolve_output(output_file_path)
             if binnedtwo:
-                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+                solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
             elif binnedthree:
-                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+                solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
+            
+            pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
+
+            # try:
+            #     os.remove(cal_path + 'platesolvetemp.fits')
+            # except:
+            #     pass
+            # try:
+            #     os.remove(output_file_path)
+            # except:
+            #     pass
+        
+            # sys.exit()
 
         except:
+            print(traceback.format_exc())
+            failed=True
             process.kill()
             solve = 'error'
 
     # if unknown pixelscale do a search
-    if pixscale == None or useastrometrynet:
+    print (failed)
+    if failed:# or pixscale == None) and useastrometrynet:
 
 
         #from astropy.table import Table
@@ -825,7 +878,7 @@ if len(sources) >= 5:
             solve = 'error'
             #breakpoint()
 
-        #breakpoint()
+        breakpoint()
 
 
 
