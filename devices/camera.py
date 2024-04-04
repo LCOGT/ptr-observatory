@@ -31,6 +31,7 @@ import bottleneck as bn
 import win32com.client
 from astropy.stats import sigma_clip
 import math
+import sep
 import threading
 from scipy import optimize
 from scipy.linalg import svd
@@ -786,7 +787,8 @@ def nonscipy_gaussian_curve_fit(f, xdata, ydata, p0=None, sigma=None, absolute_s
 def multiprocess_fast_gaussian_photometry(package):           
     try:
         #temptimer=time.time()
-        (cvalue, cx, cy, radprofile, temp_array,pixscale) = package
+        #(cvalue, cx, cy, radprofile, temp_array,pixscale) = package
+        (cvalue, cx, cy, radprofile ,pixscale) = package
         #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
         
         # BIN radial profile to make fit faster
@@ -1651,10 +1653,17 @@ class Camera:
         #num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
         #x_size=hdufocusdata.shape[0]
         #y_size=hdufocusdata.shape[1]
+        
+        
+        bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+        bkg.subfrom(hdufocusdata)
+        
         # this is actually faster than np.nanmean
         imageMedian=bn.nanmedian(hdufocusdata)
         # Mop up any remaining nans
         hdufocusdata[np.isnan(hdufocusdata)] =imageMedian
+
+
 
         # Cut down focus image to central degree
         fx, fy = hdufocusdata.shape
@@ -1724,7 +1733,7 @@ class Camera:
 
 
         fx, fy = hdufocusdata.shape        #
-        hdufocusdata=hdufocusdata-imageMedian
+        #hdufocusdata=hdufocusdata-imageMedian
         tempstd=np.std(hdufocusdata)
         saturate = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
 
@@ -1773,7 +1782,7 @@ class Camera:
         #From...... NOW
         #timer_for_bailing=time.time()
         # radial profile
-        fwhmlist=[]
+        #fwhmlist=[]
         #sources=[]
         #photometry=[]
         #radius_of_radialprofile=(30)
@@ -1793,7 +1802,7 @@ class Camera:
         focus_multiprocess=[]
         #for i in range(len(pointvalues)):
         #for i in range(min(len(pointvalues),200)):
-        for i in range(min(len(pointvalues),1000)):
+        for i in range(min(len(pointvalues),200)):
 
             # # Don't take too long!
             # if ((time.time() - timer_for_bailing) > time_limit):# and good_radials > 20:
@@ -1853,7 +1862,8 @@ class Camera:
             # If the brightest pixel is in the center-ish
             # then put it in contention
             if abs(brightest_pixel_rdist) < 4:
-                focus_multiprocess.append((cvalue, cx, cy, radprofile, temp_array,self.pixscale))
+                #focus_multiprocess.append((cvalue, cx, cy, radprofile, temp_array,self.pixscale))
+                focus_multiprocess.append((cvalue, cx, cy, radprofile, self.pixscale))
         print ("Setup for multiprocess focus: " + str(time.time()-setup_timer))
         
         #breakpoint()
