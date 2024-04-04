@@ -208,15 +208,14 @@ hdufocusdata[np.isnan(hdufocusdata)] = edgefillvalue
 
 
 
-bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-bkg.subfrom(hdufocusdata)
 
-hdufocus = fits.PrimaryHDU()
-hdufocus.data = bkg
-hdufocus.header = hduheader
-hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-hdufocus.writeto(cal_path + 'background.fits', overwrite=True, output_verify='silentfix')
+
+# hdufocus = fits.PrimaryHDU()
+# hdufocus.data = bkg
+# hdufocus.header = hduheader
+# hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+# hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+# hdufocus.writeto(cal_path + 'background.fits', overwrite=True, output_verify='silentfix')
 
 
 parentPath = Path(getcwd())
@@ -410,7 +409,11 @@ fx, fy = hdufocusdata.shape
 #hdufocusdata[np.isnan(hdufocusdata)] = imageMode
 #hdufocusdata=hdufocusdata-np.nanmedian(hdufocusdata)
 #hdufocusdata=hdufocusdata-
-hdufocusdata=hdufocusdata-bn.nanmedian(hdufocusdata)
+
+bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+bkg.subfrom(hdufocusdata)
+
+#hdufocusdata=hdufocusdata-bn.nanmedian(hdufocusdata)
 tempstd=np.std(hdufocusdata)
 threshold=2.5* np.std(hdufocusdata[hdufocusdata < (5*tempstd)])
 threshold=max(threshold,100)
@@ -629,12 +632,12 @@ sources=np.asarray(sources)
 if len(sources) > 200:
     sources=sources[:200,:]
 
-hdufocus = fits.PrimaryHDU()
-hdufocus.data = hdufocusdata
-hdufocus.header = hduheader
-hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-hdufocus.writeto(cal_path + 'goop.fits', overwrite=True, output_verify='silentfix')
+# hdufocus = fits.PrimaryHDU()
+# hdufocus.data = hdufocusdata
+# hdufocus.header = hduheader
+# hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+# hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+# hdufocus.writeto(cal_path + 'goop.fits', overwrite=True, output_verify='silentfix')
 
 
 # breakpoint()
@@ -878,7 +881,7 @@ if len(sources) >= 5:
             solve = 'error'
             #breakpoint()
 
-        breakpoint()
+        #breakpoint()
 
 
 
