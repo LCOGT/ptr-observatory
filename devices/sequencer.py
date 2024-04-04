@@ -5796,7 +5796,7 @@ class Sequencer:
     def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, dont_return_scope=False, dont_log_focus=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
 
         self.focussing=True
-
+        self.total_sequencer_control = True
 
         if throw==None:
             throw= self.config['focuser']['focuser1']['throw']
@@ -5806,6 +5806,7 @@ class Sequencer:
             plog ("NOT DOING AUTO FOCUS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("An auto focus was rejected as it is during the daytime.")
             self.focussing=False
+            self.total_sequencer_control = False
             return np.nan, np.nan
 
         # First check how long it has been since the last focus
@@ -5818,10 +5819,12 @@ class Sequencer:
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
             self.focussing=False
+            
             return np.nan, np.nan
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
             self.focussing=False
+            
             return np.nan, np.nan
 
 
@@ -5835,6 +5838,7 @@ class Sequencer:
             else:
                 plog ("too soon since last autofocus")
                 self.focussing=False
+                self.total_sequencer_control = False
                 return np.nan, np.nan
 
 
@@ -5921,11 +5925,13 @@ class Sequencer:
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                 self.focussing=False
+                self.total_sequencer_control = False
                 return np.nan, np.nan
 
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                 self.focussing=False
+                self.total_sequencer_control = False
                 return np.nan, np.nan
 
             #breakpoint()
@@ -5954,10 +5960,12 @@ class Sequencer:
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                             self.focussing=False
+                            self.total_sequencer_control = False
                             return np.nan, np.nan
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                             self.focussing=False
+                            self.total_sequencer_control = False
                             return np.nan, np.nan
                         pass
 
@@ -5967,10 +5975,12 @@ class Sequencer:
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
             self.focussing=False
+            self.total_sequencer_control = False
             return np.nan, np.nan
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
             self.focussing=False
+            self.total_sequencer_control = False
             return np.nan, np.nan
 
 
@@ -6005,10 +6015,12 @@ class Sequencer:
             if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                     self.focussing=False
+                    self.total_sequencer_control = False
                     return np.nan, np.nan
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                 self.focussing=False
+                self.total_sequencer_control = False
                 return np.nan, np.nan
 
             # What focus position should i be using?
@@ -6044,6 +6056,7 @@ class Sequencer:
                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                         self.wait_for_slew()
                     self.focussing=False
+                    self.total_sequencer_control = False
                     return np.nan, np.nan
                 else:
                     plog('Autofocus quadratic equation did not converge. Moving back to extensive focus:  ', extensive_focus)
@@ -6065,6 +6078,7 @@ class Sequencer:
 
                     self.af_guard = False
                     self.focussing=False
+                    self.total_sequencer_control = False
                     return np.nan, np.nan
 
 
@@ -6074,6 +6088,27 @@ class Sequencer:
             while np.isnan(spot) and retry_attempts < 3:
                 
                 retry_attempts=retry_attempts+1
+                
+                # Check in with stop scripts and roof
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+                    #self.filter_throughput_shelf.close()
+                    g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+
+                    self.total_sequencer_control = False
+                    self.focussing=False
+                    
+                    return
+
+                if not g_dev['obs'].open_and_enabled_to_observe:
+                    #g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+
+                    g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+
+                    self.total_sequencer_control = False
+                    self.focussing=False
+                    return
+                
                 
                 # Move the focuser
 
@@ -6117,6 +6152,17 @@ class Sequencer:
             # If you have the starting of a v-curve then now you can decide what to do.
             if position_counter >=5:
 
+                if len(focus_spots) == 0:
+                    plog ("Sheesh, not one spot found yet!")
+                    plog ("Having a crack at a further spot")
+                    if position_counter & 1:
+                        new_focus_position_to_attempt=min(spots_tried) - throw
+                    else:
+                        new_focus_position_to_attempt=max(spots_tried) + throw                
+
+
+
+
                 # Start off by sorting in order of focus positions
                 focus_spots=sorted(focus_spots)
                 lowerbound=min(focus_spots)[0]
@@ -6136,18 +6182,7 @@ class Sequencer:
                 minimumfind=[]
                 for entry in focus_spots:
                     minimumfind.append(entry[1])
-                minimum_index=minimumfind.index(min(minimumfind))
-                
-
-
-                if len(focus_spots) == 0:
-                    plog ("Sheesh, not one spot found yet!")
-                    plog ("Having a crack at a further spot")
-                    if position_counter & 1:
-                        new_focus_position_to_attempt=min(spots_tried) - throw
-                    else:
-                        new_focus_position_to_attempt=max(spots_tried) + throw
-                
+                minimum_index=minimumfind.index(min(minimumfind))                
 
                 # If there is only two or three throw out from the lowest edge
                 elif len(focus_spots) == 2 or len(focus_spots) == 3:
@@ -6320,7 +6355,7 @@ class Sequencer:
                             # g_dev['obs'].fwhmresult["filter"] = hduheader['FILTER']
                             # g_dev['obs'].fwhmresult["airmass"] = hduheader['AIRMASS']
                             
-                            
+                            self.total_sequencer_control = False
                             return fitted_focus_position,fitted_focus_fwhm
                         
                         else:
