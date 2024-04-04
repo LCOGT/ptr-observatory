@@ -816,60 +816,64 @@ def multiprocess_fast_gaussian_photometry(package):
                     actualprofile.append([(edges[q]+edges[q+1])/2,s[q]])
     
         actualprofile=np.asarray(actualprofile)
+        
+        # Don't consider things that are clearly not stars but extended objects or blended stars).
+        edgevalue_left=actualprofile[0][1]
+        edgevalue_right=actualprofile[-1][1]
+        
+        if edgevalue_left < 0.6*cvalue and  edgevalue_right < 0.6*cvalue:
+            #breakpoint()
             
+            #scipytime=time.time()
+            #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+            popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+            
+            #print ("scipy optimize " + str(time.time() - scipytime))
+            
+            # scipytime=time.time()
+            # #popt, _ = nonscipy_gaussian_curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+            # popt, _ = nonscipy_gaussian_curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+            
+            # print ("local optimize " + str(time.time() - scipytime))
+            #print ("Curve optimize")
+            #print (time.time() -temptimer)
+            #breakpoint()
+            
+            # Amplitude has to be a substantial fraction of the peak value
+            # and the center of the gaussian needs to be near the center
+            if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3,(3/pixscale)) :
+                # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
+                # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
+                # plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
+                # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                # plt.show()
+            
+                # FWHM is 2.355 * std for a gaussian
+                #fwhmlist.append(popt[2])
+                return popt[2]
+            else:
+                return np.nan
+            # Area under a gaussian is (amplitude * Stdev / 0.3989)
+            #breakpoint()
+            # if good_radials < number_of_good_radials_to_get:
+            #     sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
+            #     good_radials=good_radials+1
+            # else:
+            #     sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
+            # photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
         
-        #breakpoint()
+            #breakpoint()
+            # If we've got more than 50 for a focus
+            # We only need some good ones.
         
-        #scipytime=time.time()
-        #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-        popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-        
-        #print ("scipy optimize " + str(time.time() - scipytime))
-        
-        # scipytime=time.time()
-        # #popt, _ = nonscipy_gaussian_curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-        # popt, _ = nonscipy_gaussian_curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-        
-        # print ("local optimize " + str(time.time() - scipytime))
-        #print ("Curve optimize")
-        #print (time.time() -temptimer)
-        #breakpoint()
-        
-        # Amplitude has to be a substantial fraction of the peak value
-        # and the center of the gaussian needs to be near the center
-        if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3,(3/pixscale)) :
-            # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-            # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-            # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-            # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
-            # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-            # plt.show()
-        
-            # FWHM is 2.355 * std for a gaussian
-            #fwhmlist.append(popt[2])
-            return popt[2]
-        else:
-            return np.nan
-        # Area under a gaussian is (amplitude * Stdev / 0.3989)
-        #breakpoint()
-        # if good_radials < number_of_good_radials_to_get:
-        #     sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
-        #     good_radials=good_radials+1
-        # else:
-        #     sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
-        # photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
-    
-        #breakpoint()
-        # If we've got more than 50 for a focus
-        # We only need some good ones.
-    
-        # if len(fwhmlist) > 10:
-        #     bailout=True
-        #     break
-        # #If we've got more than ten and we are getting dim, bail out.
-        # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
-        #     bailout=True
-        #     break
+            # if len(fwhmlist) > 10:
+            #     bailout=True
+            #     break
+            # #If we've got more than ten and we are getting dim, bail out.
+            # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
+            #     bailout=True
+            #     break
     except:
         return np.nan
             
