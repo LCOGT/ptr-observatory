@@ -5995,6 +5995,7 @@ class Sequencer:
 
         focus_spots=[]
         spots_tried=[]
+        extra_tries=0
         #focus_fwhms=[]
         new_focus_position_to_attempt = central_starting_focus # Initialise this variable
         while True:
@@ -6266,7 +6267,9 @@ class Sequencer:
                         minimum_position_value_left=focus_spots[minimum_index-1][0] + 0.5 * throw
                         minimum_position_value_right=focus_spots[minimum_index+1][0] - 0.5 * throw                        
                         
-                        if minimum_position_value_left < fitted_focus_position and minimum_position_value_right > fitted_focus_position:
+                        # If the dot is in the center of the distribution
+                        # OR we have tried four or more extra points
+                        if (minimum_position_value_left < fitted_focus_position and minimum_position_value_right > fitted_focus_position) or extra_tries > 4:
                             # if so, then the fit is likely pretty good. 
                             im_path_r = g_dev['cam'].camera_path
                             raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
@@ -6323,7 +6326,7 @@ class Sequencer:
                         else:
                             # Lets step out from the minimum value and delete any points that are wonky.
                             plog ("We don't have a good fit where the minimum fit is near the minimum measured value, attempting to examine the data points, potential trim them and trying another point")
-                            
+                            extra_tries=extra_tries+1
                             
                             delete_list=[]
                             
