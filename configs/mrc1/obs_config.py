@@ -404,7 +404,7 @@ site_config = {
             # Use previous best focus information to correct focuser for temperature change
             'correct_focus_for_temperature' : True,
             # highest value to consider as being in "good focus". Used to select last good focus value
-            'maximum_good_focus_in_arcsecond': 2.5,
+            'maximum_good_focus_in_arcsecond': 3.0,
 
             # When the focusser has no previous best focus values
             # start from this reference position

@@ -684,7 +684,10 @@ class Focuser:
                 plog ("Filter offset: " + str(g_dev["fil"].filter_offset))
                 plog ("Temperature difference: " + str(temp_delta))
                 if self.current_focus_temperature is not None:
-                    plog ("Temperature focus difference: " + str(round(temp_delta * float(self.focus_temp_slope), 1)))
+                    try:
+                        plog ("Temperature focus difference: " + str(round(temp_delta * float(self.focus_temp_slope), 1)))
+                    except:
+                        pass
                 #req = {"position": self.last_known_focus + adjust}
                 #opt = {}
                 self.focuser_is_moving=True
