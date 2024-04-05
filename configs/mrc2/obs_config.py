@@ -896,10 +896,10 @@ site_config = {
                 
 
                 # As simple as it states, how many calibration frames to collect and how many to store.                
-                'number_of_bias_to_collect': 27,
+                'number_of_bias_to_collect': 13,
                 'number_of_dark_to_collect': 13,
 
-                'number_of_flat_to_collect': 8,   #just for now for CCD camera testing wer 20240113 (friday!)
+                'number_of_flat_to_collect': 10,   #just for now for CCD camera testing wer 20240113 (friday!)
                 'number_of_bias_to_store': 53,
                 'number_of_dark_to_store': 31,
                 'number_of_flat_to_store': 32,

@@ -177,7 +177,8 @@ class Sequencer:
         # An end of night token is put into the upload queue
         # once the evening has ended.
         self.end_of_night_token_sent = False
-
+        
+        
         # Makes sure only one big focus occurs at start of night
         self.night_focus_ready=False
 
@@ -966,7 +967,7 @@ class Sequencer:
                                 if (moondata.alt.deg < -15):
                                     # If the moon is way below the horizon
                                     if g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
-                                        if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']:
+                                        if self.nightime_bias_counter < (self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect'] / 4):
                                             plog ("It is dark and the moon isn't up! Lets do a bias!")
                                             g_dev['mnt'].park_command({}, {})
                                             plog("Exposing 1x1 bias frame.")
@@ -979,7 +980,7 @@ class Sequencer:
                                             # these exposures shouldn't reset these timers
                                             g_dev['obs'].time_of_last_exposure = time.time() - 840
                                             g_dev['obs'].time_of_last_slew = time.time() - 840
-                                        if self.nightime_dark_counter < self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']:
+                                        if self.nightime_dark_counter < (self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']/ 4):
                                             plog ("It is dark and the moon isn't up! Lets do a dark!")
                                             g_dev['mnt'].park_command({}, {})
                                             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
