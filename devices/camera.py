@@ -545,7 +545,7 @@ def solve_triangular(a, b, trans=0, lower=False, unit_diagonal=False,
 
     # a1 = _asarray_validated(a, check_finite=check_finite)
     # b1 = _asarray_validated(b, check_finite=check_finite)
-    
+
     # if len(a1.shape) != 2 or a1.shape[0] != a1.shape[1]:
     #     raise ValueError('expected square matrix')
     # if a1.shape[0] != b1.shape[0]:
@@ -610,7 +610,7 @@ def nonscipy_gaussian_curve_fit(f, xdata, ydata, p0=None, sigma=None, absolute_s
 
     Assumes ``ydata = f(xdata, *params) + eps``.
 
-    
+
     """
     # if p0 is None:
     #     # determine number of parameters by inspecting the function
@@ -622,7 +622,7 @@ def nonscipy_gaussian_curve_fit(f, xdata, ydata, p0=None, sigma=None, absolute_s
     # else:
     #p0 = np.atleast_1d(p0)
     n = p0.size
-        
+
     print ("p0 is " + str(p0))
     print ("n is " + str(n))
 
@@ -732,7 +732,7 @@ def nonscipy_gaussian_curve_fit(f, xdata, ydata, p0=None, sigma=None, absolute_s
     #     if ier not in [1, 2, 3, 4]:
     #         raise RuntimeError("Optimal parameters not found: " + errmsg)
     # else:
-        
+
     # Rename maxfev (leastsq) to max_nfev (least_squares), if specified.
     # if 'max_nfev' not in kwargs:
     #     kwargs['max_nfev'] = kwargs.pop('maxfev', None)
@@ -784,18 +784,16 @@ def nonscipy_gaussian_curve_fit(f, xdata, ydata, p0=None, sigma=None, absolute_s
 
 
 
-def multiprocess_fast_gaussian_photometry(package):           
+def multiprocess_fast_gaussian_photometry(package):
     try:
         #temptimer=time.time()
         #(cvalue, cx, cy, radprofile, temp_array,pixscale) = package
         (cvalue, cx, cy, radprofile ,pixscale) = package
         #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-        
+
         # BIN radial profile to make fit faster
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binned_statistic_2d.html
-        
-        #breakpoint()
-        
+
         # Reduce data down to make faster solvinging
         upperbin=math.floor(max(radprofile[:,0]))
         lowerbin=math.ceil(min(radprofile[:,0]))
@@ -804,41 +802,43 @@ def multiprocess_fast_gaussian_photometry(package):
         arcsecond_length_radial_profile = int((upperbin-lowerbin)/0.25)
         number_of_bins=int(arcsecond_length_radial_profile/0.25)
         s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
-        
+
         max_value=np.nanmax(s)
         min_value=np.nanmin(s)
+
         threshold_value=(0.05*(max_value-min_value)) + min_value
-        
+
         actualprofile=[]
         for q in range(len(s)):
-            if not np.isnan(s[q]): 
+            if not np.isnan(s[q]):
                 if s[q] > threshold_value:
                     actualprofile.append([(edges[q]+edges[q+1])/2,s[q]])
-    
+
         actualprofile=np.asarray(actualprofile)
-        
+
+
         # Don't consider things that are clearly not stars but extended objects or blended stars).
         edgevalue_left=actualprofile[0][1]
         edgevalue_right=actualprofile[-1][1]
-        
+
         if edgevalue_left < 0.6*cvalue and  edgevalue_right < 0.6*cvalue:
             #breakpoint()
-            
+
             #scipytime=time.time()
             #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
             popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-            
+
             #print ("scipy optimize " + str(time.time() - scipytime))
-            
+
             # scipytime=time.time()
             # #popt, _ = nonscipy_gaussian_curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
             # popt, _ = nonscipy_gaussian_curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-            
+
             # print ("local optimize " + str(time.time() - scipytime))
             #print ("Curve optimize")
             #print (time.time() -temptimer)
             #breakpoint()
-            
+
             # Amplitude has to be a substantial fraction of the peak value
             # and the center of the gaussian needs to be near the center
             if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3,(3/pixscale)) :
@@ -848,7 +848,7 @@ def multiprocess_fast_gaussian_photometry(package):
                 # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
                 # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                 # plt.show()
-            
+
                 # FWHM is 2.355 * std for a gaussian
                 #fwhmlist.append(popt[2])
                 return popt[2]
@@ -862,11 +862,11 @@ def multiprocess_fast_gaussian_photometry(package):
             # else:
             #     sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
             # photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
-        
+
             #breakpoint()
             # If we've got more than 50 for a focus
             # We only need some good ones.
-        
+
             # if len(fwhmlist) > 10:
             #     bailout=True
             #     break
@@ -874,9 +874,10 @@ def multiprocess_fast_gaussian_photometry(package):
             # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
             #     bailout=True
             #     break
+
     except:
         return np.nan
-            
+
     # Then multiprocess
 
 class Camera:
@@ -1657,11 +1658,11 @@ class Camera:
         #num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
         #x_size=hdufocusdata.shape[0]
         #y_size=hdufocusdata.shape[1]
-        
-        
+
+
         bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
         bkg.subfrom(hdufocusdata)
-        
+
         # this is actually faster than np.nanmean
         imageMedian=bn.nanmedian(hdufocusdata)
         # Mop up any remaining nans
@@ -1800,7 +1801,7 @@ class Camera:
         googtime=time.time()
 
         #amount=min(len(pointvalues),50)
-        
+
         setup_timer=time.time()
         # Don't do them individually, set them up for multiprocessing
         focus_multiprocess=[]
@@ -1869,13 +1870,12 @@ class Camera:
                 #focus_multiprocess.append((cvalue, cx, cy, radprofile, temp_array,self.pixscale))
                 focus_multiprocess.append((cvalue, cx, cy, radprofile, self.pixscale))
         print ("Setup for multiprocess focus: " + str(time.time()-setup_timer))
-        
-        #breakpoint()
+
         # Temporary just to get binning right
         # for i in range(len(focus_multiprocess)):
         #     multiprocess_fast_gaussian_photometry(focus_multiprocess[i])
         #breakpoint()
-        
+
         mptimer=time.time()
         fwhm_results=[]
         number_to_collect=max(8,os.cpu_count())
@@ -1885,10 +1885,10 @@ class Camera:
                     fwhm_results.append(result)
                     if len(fwhm_results) >= number_to_collect:
                         break
-        #print (fwhm_results)        
+        #print (fwhm_results)
 
         print ("multiprocess timer: " + str(time.time() - mptimer))
-                
+
 
         print ("Extracting and Gaussianingx: " + str(time.time()-googtime))
                 #breakpoint()
@@ -2459,7 +2459,7 @@ class Camera:
         #print ("subexposing")
         for subexposure in range(N_of_substacks+1):
             #print (subexposure)
-            
+
             # Check there hasn't been a cancel sent through
             if g_dev["obs"].stop_all_activity:
                 plog ("stop_all_activity cancelling out of camera exposure")
@@ -2469,16 +2469,16 @@ class Camera:
                 # # expresult["stopped"] = True
                 # g_dev["obs"].exposure_halted_indicator =False
                 # self.currently_in_smartstack_loop=False
-                self.exposure_busy = False 
-                return 
+                self.exposure_busy = False
+                return
             if g_dev["obs"].exposure_halted_indicator:
                 # expresult["error"] = True
                 # expresult["stopped"] = True
                 # g_dev["obs"].exposure_halted_indicator =False
                 # plog ("Exposure Halted Indicator On. Cancelling Exposure.")
-                self.exposure_busy = False 
-                return 
-            
+                self.exposure_busy = False
+                return
+
             exposure_timer=time.time()
             # If it is the first exposure, then just take the exposure. Same with the second as the first one is the reference.
             if subexposure == 0 or subexposure == 1:
@@ -2529,8 +2529,8 @@ class Camera:
                     fx, fy = de_nanned_reference_frame.shape
                     crop_x= int(0.5*fx) -500
 
-                    crop_y= int(0.5*fy) -500                        
-                    de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]                                                    
+                    crop_y= int(0.5*fy) -500
+                    de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
                     imageMode=bn.nanmedian(de_nanned_reference_frame)
 
                     #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
@@ -2747,7 +2747,7 @@ class Camera:
         """
         A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
         """
-        if not g_dev['obs'].mountless_operation:   
+        if not g_dev['obs'].mountless_operation:
             try:
                 if not g_dev['mnt'].rapid_park_indicator:
                     movement_reporting_timer = time.time()
@@ -2763,7 +2763,7 @@ class Camera:
                     #g_dev['mnt'].currently_slewing= False
                     # Then wait for slew_time to settle
                     time.sleep(g_dev['mnt'].wait_after_slew_time)
-    
+
             except Exception as e:
                 plog("Motion check faulted.")
                 plog(traceback.format_exc())
@@ -2854,8 +2854,8 @@ class Camera:
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose":# and not self.exposure_busy:
-            
-            
+
+
 
             if self.exposure_busy:
                 plog("Cannot expose, camera is currently busy, waiting for exposure to clear")
@@ -3028,7 +3028,7 @@ class Camera:
 
                 g_dev['obs'].send_to_user("Refusing exposure request as the observatory is currently undertaking flats.")
                 plog("Refusing exposure request as the observatory is currently taking flats.")
-                self.exposure_busy = False 
+                self.exposure_busy = False
                 return
 
         #self.exposure_busy = True # This really needs to be here from the start
@@ -3173,7 +3173,7 @@ class Camera:
                         ##a breakpoint to catch this path next time.  WER
                         plog(traceback.format_exc())
                         #breakpoint()
-                        self.exposure_busy = False 
+                        self.exposure_busy = False
                         return
 
 
@@ -3214,7 +3214,7 @@ class Camera:
                             Nsmartstack=1
                             sskcounter=2
                             plog('stop_all_activity cancelling camera exposure')
-                            self.exposure_busy = False 
+                            self.exposure_busy = False
                             return
 
 
@@ -3325,8 +3325,8 @@ class Camera:
 
                 # If the pier just flipped, trigger a recentering exposure.
                 #if not g_dev['mnt'].rapid_park_indicator:# and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-                if not g_dev['obs'].mountless_operation:           
-                
+                if not g_dev['obs'].mountless_operation:
+
                     if not g_dev['mnt'].rapid_park_indicator:# and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                         #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
                         self.wait_for_slew()
@@ -3348,7 +3348,7 @@ class Camera:
                             #plog ("MTF temp reporting. No pierflip.")
                             pass
                     #g_dev['mnt'].previous_pier_side=g_dev['mnt'].rapid_pier_indicator
-    
+
                     if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread:
                         plog ("Major shift detected, recentering.")
                         g_dev['obs'].check_platesolve_and_nudge()
@@ -3432,7 +3432,7 @@ class Camera:
                             sskcounter=2
                             self.currently_in_smartstack_loop=False
                             self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
-                            self.exposure_busy = False 
+                            self.exposure_busy = False
                             return 'calendarend'
 
                     # # Check that the roof hasn't shut
@@ -3456,7 +3456,7 @@ class Camera:
                         sskcounter=2
                         self.currently_in_smartstack_loop=False
                         self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
-                        self.exposure_busy = False 
+                        self.exposure_busy = False
                         return 'roofshut'
 
 
@@ -3490,7 +3490,7 @@ class Camera:
 
 
                             # Good spot to check if we need to nudge the telescope
-                            
+
                             g_dev['obs'].check_platesolve_and_nudge()
                             g_dev['obs'].time_of_last_exposure = time.time()
 
@@ -3509,7 +3509,7 @@ class Camera:
                             else:
                                 ra_at_time_of_exposure = 99.9
                                 dec_at_time_of_exposure = 99.9
-                                
+
                             observer_user_name = user_name
 
                             try:
@@ -3528,7 +3528,7 @@ class Camera:
 
 
                             # Always check rotator just before exposure  The Rot jitters wehn parked so
-        
+
                             if not g_dev['obs'].mountless_operation:
                                 rot_report=0
                                 if g_dev['rot']!=None:
@@ -3539,7 +3539,7 @@ class Camera:
                                              if rot_report == 0 :
                                                  plog("Waiting for camera rotator to catch up. ")
                                                  g_dev["obs"].send_to_user("Waiting for instrument rotator to catch up before exposing.")
-    
+
                                                  rot_report=1
                                              time.sleep(0.2)
                                              if g_dev["obs"].stop_all_activity:
@@ -3583,12 +3583,12 @@ class Camera:
                                 sskcounter=2
                                 self.currently_in_smartstack_loop=False
                                 self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
-                                self.exposure_busy = False 
+                                self.exposure_busy = False
                                 return 'cancelled'
 
                             #plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
-                            
-                            if not g_dev['obs'].mountless_operation:
+
+                            if not g_dev['obs'].mountless_operation and not g_dev['mnt'].rapid_park_indicator:
                                 self.wait_for_slew()
                                 if g_dev['mnt'].pier_flip_detected==True:
                                     plog("Detected a pier flip just before exposure!")
@@ -3632,17 +3632,17 @@ class Camera:
                             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
                             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
                             if self.config['camera']['camera_1_1']['settings']['substack']:
-                                if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat" and not frame_type=='pointing': 
+                                if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat" and not frame_type=='pointing':
                                     if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
                                         self.substacker=True
-                                        
+
                             # Adjust pointing exposure time relative to known focus
                             if not g_dev['seq'].focussing and frame_type=='pointing':
                                 try:
                                     last_fwhm=g_dev['obs'].fwhmresult["FWHM"]
-                                    
+
                                     if last_fwhm > 4.0:
-                                        exposure_time=exposure_time * 4                                
+                                        exposure_time=exposure_time * 4
                                     elif last_fwhm > 3:
                                         exposure_time=exposure_time * 3
                                     elif last_fwhm > 2.5:
@@ -3651,24 +3651,24 @@ class Camera:
                                         exposure_time=exposure_time * 1.5
                                 except:
                                     plog ("can't adjust exposure time for pointing if no previous focus known")
-                                    
+
                                 #breakpoint()
 
                             if g_dev["fil"].null_filterwheel == False:
                                 while g_dev['fil'].filter_changing:
                                     #plog ("Waiting for filter_change")
                                     time.sleep(0.05)
-                                    
+
                             g_dev['foc'].adjust_focus()
-                            
+
                             reporty=0
                             while g_dev['foc'].focuser_is_moving:
                                 if reporty==0:
                                     #plog ("Waiting for focuser to finish moving")
                                     reporty=1
                                 time.sleep(0.05)
-                                
-                            # For some focusers, there is a non-trivial vibration time to 
+
+                            # For some focusers, there is a non-trivial vibration time to
                             # wait until the mirror settles down before exposure
                             # that isn't even caught in the focuser threads.
                             # So if it has moved, as indicated by reporty
@@ -3684,7 +3684,7 @@ class Camera:
                                         plog("Detecting focuser still changing.")
                                         tempfocposition=copy.deepcopy(nowfocposition)
                                 time.sleep(g_dev['foc'].focuser_settle_time)
-                                
+
 
                             self.exposure_busy = True
                             start_time_of_observation=time.time()
@@ -3713,18 +3713,18 @@ class Camera:
                             # airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
                             # if airmass > 10: airmass = 10
 
-                            
+
                             if not g_dev['obs'].mountless_operation:
                                 airmass = round(g_dev['mnt'].airmass, 4)
-    
+
                                 airmass_of_observation = airmass
                                 g_dev["airmass"] = float(airmass_of_observation)
-    
+
                                 azimuth_of_observation = g_dev['mnt'].az
                                 altitude_of_observation = g_dev['mnt'].alt
                             else:
                                 airmass_of_observation = 99.9
-    
+
                                 azimuth_of_observation = 99.9
                                 altitude_of_observation = 99.9
 
@@ -3751,7 +3751,7 @@ class Camera:
                                 pass
                         except:
                             plog ("couldn't grab quick status focus")
-                        
+
                         if not g_dev['obs'].mountless_operation:
                             g_dev["mnt"].get_rapid_exposure_status(
                                 self.pre_mnt
@@ -3840,7 +3840,7 @@ class Camera:
                     g_dev['obs'].pointing_correction_request_ra_err = 0
                     g_dev['obs'].pointing_correction_request_dec_err = 0
                     g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)
-    
+
                 else:
                     #plog ("MTF temp reporting. No pierflip.")
                     pass
@@ -3855,7 +3855,7 @@ class Camera:
         # trap missing expresult (e.g. cancelled exposures etc.)
         if not 'expresult' in locals():
             expresult = 'error'
-        self.exposure_busy = False 
+        self.exposure_busy = False
         return expresult
 
     def write_out_realtimefiles_token_to_disk(self,token_name,real_time_files):
@@ -4097,7 +4097,7 @@ class Camera:
                         expresult["stopped"] = True
                         g_dev["obs"].exposure_halted_indicator =False
                         self.currently_in_smartstack_loop=False
-                        self.exposure_busy = False 
+                        self.exposure_busy = False
                         return expresult
 
                     if g_dev["obs"].exposure_halted_indicator:
@@ -4105,7 +4105,7 @@ class Camera:
                         expresult["stopped"] = True
                         g_dev["obs"].exposure_halted_indicator =False
                         plog ("Exposure Halted Indicator On. Cancelling Exposure.")
-                        self.exposure_busy = False 
+                        self.exposure_busy = False
                         return expresult
 
                 remaining = round(self.completion_time - time.time(), 1)
@@ -4237,16 +4237,16 @@ class Camera:
                                 self.wait_for_slew()
                                 g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
                                 # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-    
+
                             except Exception as e:
                                 plog (traceback.format_exc())
                                 if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-    
+
                                     plog("The SkyX had an error.")
                                     plog("Usually this is because of a broken connection.")
                                     plog("Killing then waiting 60 seconds then reconnecting")
                                     g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-    
+
                         # Otherwise immediately nudge scope back to initial pointing in smartstack after the last frame of the smartstack
                         # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
                         elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
@@ -4254,16 +4254,16 @@ class Camera:
                                 self.wait_for_slew()
                                 g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra, dec=initial_smartstack_dec)
                                 # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-    
+
                             except Exception as e:
                                 plog (traceback.format_exc())
                                 if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-    
+
                                     plog("The SkyX had an error.")
                                     plog("Usually this is because of a broken connection.")
                                     plog("Killing then waiting 60 seconds then reconnecting")
                                     g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-    
+
 
 
                 # If you are shooting for short exposure times, the overhead
@@ -4297,7 +4297,7 @@ class Camera:
                     if retrycounter == 8:
                         expresult = {"error": True}
                         plog("Retried 8 times and didn't get an image, giving up.")
-                        self.exposure_busy = False 
+                        self.exposure_busy = False
                         return expresult
                     try:
                         outputimg = self._getImageArray().astype(np.float32)
@@ -4364,7 +4364,7 @@ class Camera:
 
 
                 # HERE IS WHERE WE SPIT OUT THE FILES INTO A MULTIPROCESSING FUNCTION
-                if not g_dev['obs'].mountless_operation:   
+                if not g_dev['obs'].mountless_operation:
                     avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
                 else:
                     avg_mnt = None
@@ -4461,7 +4461,7 @@ class Camera:
 
                     # If the files are local calibrations, save them out to the local calibration directory
                     if not manually_requested_calibration:
-                        if not g_dev['obs'].mountless_operation:   
+                        if not g_dev['obs'].mountless_operation:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                         else:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, None, None))
@@ -4483,7 +4483,7 @@ class Camera:
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                     del hdu
-                    self.exposure_busy = False 
+                    self.exposure_busy = False
                     return copy.deepcopy(expresult)
 
 
@@ -4837,7 +4837,7 @@ class Camera:
                         except:
                             plog("Failed to send FOCUS TEXT up for some reason")
                             plog(traceback.format_exc())
-                    self.exposure_busy = False 
+                    self.exposure_busy = False
                     return expresult
 
                 blockended=False
@@ -4931,7 +4931,7 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        self.exposure_busy = False 
+                        self.exposure_busy = False
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
 
                     elif (
@@ -4946,7 +4946,7 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        self.exposure_busy = False 
+                        self.exposure_busy = False
                         return copy.deepcopy(expresult)  # signals to flat routine image was rejected, prompt return
                     elif (
                         central_median
@@ -4960,7 +4960,7 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        self.exposure_busy = False 
+                        self.exposure_busy = False
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
                     else:
                         expresult={}
@@ -5030,7 +5030,7 @@ class Camera:
                                 expresult["error"] = True
                                 expresult["patch"] = central_median
                                 expresult["camera_gain"] = np.nan
-                                self.exposure_busy = False 
+                                self.exposure_busy = False
                                 return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
 
                             expresult["camera_gain"] = cge_gain
@@ -5135,8 +5135,8 @@ class Camera:
                             #                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                         del hdu
-                        
-                        self.exposure_busy = False 
+
+                        self.exposure_busy = False
                         return copy.deepcopy(expresult)
 
 
@@ -5158,7 +5158,7 @@ class Camera:
 
                 plog("Exposure Complete")
                 g_dev["obs"].send_to_user("Exposure Complete")
-                self.exposure_busy = False 
+                self.exposure_busy = False
                 return copy.deepcopy(expresult)
 
             else:
@@ -5170,8 +5170,8 @@ class Camera:
                 if remaining < -15:
                     #breakpoint()
                     plog ("Camera overtime: " + str(remaining))
-                    
-                    
+
+
                     g_dev['obs'].request_scan_requests()
                     #g_dev['obs'].scan_requests()
 
@@ -5185,7 +5185,7 @@ class Camera:
                         expresult["stopped"] = True
                         g_dev["obs"].exposure_halted_indicator =False
                         self.currently_in_smartstack_loop=False
-                        self.exposure_busy = False 
+                        self.exposure_busy = False
                         return expresult
 
                     if g_dev["obs"].exposure_halted_indicator:
@@ -5193,7 +5193,7 @@ class Camera:
                         expresult["stopped"] = True
                         g_dev["obs"].exposure_halted_indicator =False
                         plog ("Exposure Halted Indicator On. Cancelling Exposure.")
-                        self.exposure_busy = False 
+                        self.exposure_busy = False
                         return expresult
                     # plog(
                     #     "Camera timed out; probably is no longer connected, resetting it now."
@@ -6255,7 +6255,7 @@ def wait_for_slew():
     """
     A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
     """
-    if not g_dev['obs'].mountless_operation:   
+    if not g_dev['obs'].mountless_operation:
         try:
             if not g_dev['mnt'].rapid_park_indicator:
                 movement_reporting_timer=time.time()
@@ -6270,7 +6270,7 @@ def wait_for_slew():
                         #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
                         g_dev['obs'].update_status(mount_only=True, dont_wait=True)
                 #g_dev['mnt'].currently_slewing= False
-    
+
         except Exception as e:
             plog("Motion check faulted.")
             plog(traceback.format_exc())
