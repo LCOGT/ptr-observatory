@@ -23,6 +23,7 @@ from numpy import inf
 import os
 import gc
 import bottleneck as bn
+from PIL import Image
 #from pyowm import OWM
 #from pyowm.utils import config
 #from scipy import interpolate
@@ -30,6 +31,7 @@ import warnings
 import matplotlib.pyplot as plt
 import queue
 import threading
+import io
 
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -6004,6 +6006,23 @@ class Sequencer:
         central_starting_focus=copy.deepcopy(foc_pos0)
 
 
+        im_path_r = self.camera_path
+        im_type = "EX"
+        #f_ext = "-"
+        text_name = (
+            self.config["obs_id"]
+            + "-"
+            + self.config["camera"][self.name]["name"]
+            + "-"
+            + g_dev["day"]
+            + "-"
+            + g_dev['cam'].focus_next_seq
+            + "-"
+            + im_type
+            + "00.txt"
+        )
+        im_path = im_path_r + g_dev["day"] + "/to_AWS/"
+
         focus_spots=[]
         spots_tried=[]
         extra_tries=0
@@ -6151,7 +6170,39 @@ class Sequencer:
                     #focus_fwhms.append(spot)
 
             # If you have the starting of a v-curve then now you can decide what to do.
-            if position_counter >=5:
+            
+            # Start off by sorting in order of focus positions
+            if len(focus_spots) > 0:
+                focus_spots=sorted(focus_spots)
+                lowerbound=min(focus_spots)[0]
+                upperbound=max(focus_spots)[0]
+                bounds=[lowerbound,upperbound]
+                x = list()
+                y = list()
+                for i in focus_spots:
+                    x.append(i[0])
+                    y.append(i[1])
+            
+            if position_counter < 5:
+                if len(focus_spots) > 0:
+                    # Just plot and fling up the jpeg
+                    plt.scatter(x,y)
+                    plt.show()
+                    
+                    # Weird way to convert plt to pil image, overlay and close
+                    img_buf = io.BytesIO()
+                    plt.savefig(img_buf, format='png')                            
+                    pltim = Image.open(img_buf)
+                    #im.show(title="My Image")       
+                    box = (200, 200)
+                    g_dev['cam'].current_focus_jpg.paste(pltim, box )
+                g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                #img_buf.close()
+                
+                # Fling the jpeg up
+                g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+            
+            elif position_counter >=5:
 
                 if len(focus_spots) == 0:
                     plog ("Sheesh, not one spot found yet!")
@@ -6161,16 +6212,7 @@ class Sequencer:
                     else:
                         new_focus_position_to_attempt=max(spots_tried) + throw    
                 else:
-                    # Start off by sorting in order of focus positions
-                    focus_spots=sorted(focus_spots)
-                    lowerbound=min(focus_spots)[0]
-                    upperbound=max(focus_spots)[0]
-                    bounds=[lowerbound,upperbound]
-                    x = list()
-                    y = list()
-                    for i in focus_spots:
-                        x.append(i[0])
-                        y.append(i[1])
+                    
     
     
                     # Check that from the minimum value, each of the points always increases in both directions.
@@ -6208,17 +6250,31 @@ class Sequencer:
                             #print ("Attempting: " + str(new_focus_position_to_attempt))
                             plt.scatter(x,y)
                             plt.show()
-        
-                            im_path_r = g_dev['cam'].camera_path
-                            raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
-                            throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
-                            plt.savefig(raw_path + '/'+ throwaway_filename)
+                            
+                            # Weird way to convert plt to pil image, overlay and close
+                            img_buf = io.BytesIO()
+                            plt.savefig(img_buf, format='png')                            
+                            pltim = Image.open(img_buf)
+                            #im.show(title="My Image")       
+                            box = (200, 200)
+                            g_dev['cam'].current_focus_jpg.paste(pltim, box )
+                            g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                            img_buf.close()
+                            
                             # Fling the jpeg up
-                            try:
-                                g_dev['obs'].enqueue_for_fastUI(100, raw_path, throwaway_filename)
-                            except:
-                                plog("Failed to send FOCUS PLOT up for some reason")
-                                plog(traceback.format_exc())
+                            g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            
+        
+                            # im_path_r = g_dev['cam'].camera_path
+                            # raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
+                            # throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
+                            # plt.savefig(raw_path + '/'+ throwaway_filename)
+                            # # Fling the jpeg up
+                            # try:
+                            #     g_dev['obs'].enqueue_for_fastUI(100, raw_path, throwaway_filename)
+                            # except:
+                            #     plog("Failed to send FOCUS PLOT up for some reason")
+                            #     plog(traceback.format_exc())
                         elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
         
                             plog ("Minimum too close to the sampling edge, getting another dot")
@@ -6227,17 +6283,31 @@ class Sequencer:
                             #print ("Attempting: " + str(new_focus_position_to_attempt))
                             plt.scatter(x,y)
                             plt.show()
-        
-                            im_path_r = g_dev['cam'].camera_path
-                            raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
-                            throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
-                            plt.savefig(raw_path + '/'+ throwaway_filename)
+                            
+                            # Weird way to convert plt to pil image, overlay and close
+                            img_buf = io.BytesIO()
+                            plt.savefig(img_buf, format='png')                            
+                            pltim = Image.open(img_buf)
+                            #im.show(title="My Image")       
+                            box = (200, 200)
+                            g_dev['cam'].current_focus_jpg.paste(pltim, box )
+                            g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                            img_buf.close()
+                            
                             # Fling the jpeg up
-                            try:
-                                g_dev['obs'].enqueue_for_fastUI(100, raw_path, throwaway_filename)
-                            except:
-                                plog("Failed to send FOCUS PLOT up for some reason")
-                                plog(traceback.format_exc())
+                            g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                           
+        
+                            # im_path_r = g_dev['cam'].camera_path
+                            # raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
+                            # throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
+                            # plt.savefig(raw_path + '/'+ throwaway_filename)
+                            # # Fling the jpeg up
+                            # try:
+                            #     g_dev['obs'].enqueue_for_fastUI(100, raw_path, throwaway_filename)
+                            # except:
+                            #     plog("Failed to send FOCUS PLOT up for some reason")
+                            #     plog(traceback.format_exc())
                                 
                         #elif len(focus_spots) > 4:
                             
@@ -6289,6 +6359,19 @@ class Sequencer:
         
                             plt.show()
                             
+                            # Weird way to convert plt to pil image, overlay and close
+                            img_buf = io.BytesIO()
+                            plt.savefig(img_buf, format='png')                            
+                            pltim = Image.open(img_buf)
+                            #im.show(title="My Image")       
+                            box = (200, 200)
+                            g_dev['cam'].current_focus_jpg.paste(pltim, box )
+                            g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                            img_buf.close()
+                            
+                            # Fling the jpeg up
+                            g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            
                             
                             # Check that the solved minimum focussed position actually fits in between the lowest measured point and 
                             # the two next door measured points.
@@ -6303,17 +6386,17 @@ class Sequencer:
                             # If the dot is in the center of the distribution
                             # OR we have tried four or more extra points
                             if (minimum_position_value_left < fitted_focus_position and minimum_position_value_right > fitted_focus_position) or extra_tries > 4:
-                                # if so, then the fit is likely pretty good. 
-                                im_path_r = g_dev['cam'].camera_path
-                                raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
-                                throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
-                                plt.savefig(raw_path + '/'+ throwaway_filename)
-                                # Fling the jpeg up
-                                try:
-                                    g_dev['obs'].enqueue_for_fastUI(100, raw_path, throwaway_filename)
-                                except:
-                                    plog("Failed to send FOCUS PLOT up for some reason")
-                                    plog(traceback.format_exc())
+                                # # if so, then the fit is likely pretty good. 
+                                # im_path_r = g_dev['cam'].camera_path
+                                # raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
+                                # throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
+                                # plt.savefig(raw_path + '/'+ throwaway_filename)
+                                # # Fling the jpeg up
+                                # try:
+                                #     g_dev['obs'].enqueue_for_fastUI(100, raw_path, throwaway_filename)
+                                # except:
+                                #     plog("Failed to send FOCUS PLOT up for some reason")
+                                #     plog(traceback.format_exc())
             
                                 #breakpoint()
             

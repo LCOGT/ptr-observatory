@@ -2231,10 +2231,9 @@ class Camera:
 
         #draw.text((0, 0), str(focus_position), (255))
         draw.text((0, 0), str('MEANT TO BE FOCUS POSITION'), (255))
-        try:
-            final_image.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-        except:
-            pass
+        
+        g_dev['cam'].current_focus_jpg=copy.deepcopy(final_image)
+        
 
         del hdusmalldata
         del stretched_data_float
@@ -5361,6 +5360,8 @@ class Camera:
                     # Instead of waiting for the photometry process we quickly measure the FWHM
                     # in-line. Necessary particularly because the photometry subprocess can bank up.
                     fwhm_dict = self.in_line_quick_focus(outputimg, im_path, text_name)
+                    self.focus_next_seq = next_seq
+
 
                     print ("focus analysis time: " + str(time.time() - temptimer))
                     focus_image = False
@@ -5419,12 +5420,7 @@ class Camera:
                         plog(traceback.format_exc())
 
 
-                    # Fling the jpeg up
-                    try:
-                        g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
-                    except:
-                        plog("Failed to send FOCUS IMAGE up for some reason")
-                        plog(traceback.format_exc())
+                    
 
                     if os.path.exists(im_path + text_name):
                         try:
