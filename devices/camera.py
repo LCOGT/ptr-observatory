@@ -797,9 +797,12 @@ def multiprocess_fast_gaussian_photometry(package):
         lowerbin=math.ceil(min(radprofile[:,0]))
         #number_of_bins=int((upperbin-lowerbin)/0.25)
         # Only need a quarter of an arcsecond bin.
-        arcsecond_length_radial_profile = int((upperbin-lowerbin)/0.25)
+        arcsecond_length_radial_profile = (upperbin-lowerbin)*pixscale
         number_of_bins=int(arcsecond_length_radial_profile/0.25)
+        
         s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
+
+        #breakpoint()
 
         max_value=np.nanmax(s)
         min_value=np.nanmin(s)
@@ -814,7 +817,7 @@ def multiprocess_fast_gaussian_photometry(package):
 
         actualprofile=np.asarray(actualprofile)
 
-
+        #breakpoint()
         # Don't consider things that are clearly not stars but extended objects or blended stars).
         edgevalue_left=actualprofile[0][1]
         edgevalue_right=actualprofile[-1][1]
@@ -844,9 +847,12 @@ def multiprocess_fast_gaussian_photometry(package):
                 # Get the center of mass peak value
                 sum_of_positions_times_values=0
                 sum_of_values=0
-                for spotty in range(5):
-                    sum_of_positions_times_values=sum_of_positions_times_values+(actualprofile[peak_value_index-2+spotty][1]*actualprofile[peak_value_index-2+spotty][0])
-                    sum_of_values=sum_of_values+actualprofile[peak_value_index-2+spotty][1]
+                number_of_positions_to_test=7 # odd value
+                poswidth=int(number_of_positions_to_test/2)
+                
+                for spotty in range(number_of_positions_to_test):
+                    sum_of_positions_times_values=sum_of_positions_times_values+(actualprofile[peak_value_index-poswidth+spotty][1]*actualprofile[peak_value_index-poswidth+spotty][0])
+                    sum_of_values=sum_of_values+actualprofile[peak_value_index-poswidth+spotty][1]
                 peak_position=(sum_of_positions_times_values / sum_of_values)
                 # width checker
                 #print (2.355 * popt[2]) 
@@ -859,7 +865,7 @@ def multiprocess_fast_gaussian_photometry(package):
                 temppos=abs(actualprofile[:,0] - peak_position).argmin()
                 tempvalue=actualprofile[temppos,1]
                 temppeakvalue=copy.deepcopy(tempvalue)
-                # Get lefthand quarter percentile
+                # Get lefthand quarter percentiles
                 counter=1
                 while tempvalue > 0.25*temppeakvalue:
                     tempvalue=actualprofile[temppos-counter,1]
@@ -877,7 +883,7 @@ def multiprocess_fast_gaussian_photometry(package):
                 
                 righthand_quarter_spot=actualprofile[temppos+counter][0]
                     
-                largest_reasonable_position_deviation_in_pixels=max(abs(peak_position - righthand_quarter_spot),abs(peak_position - lefthand_quarter_spot))
+                largest_reasonable_position_deviation_in_pixels=1.5*max(abs(peak_position - righthand_quarter_spot),abs(peak_position - lefthand_quarter_spot))
                 largest_reasonable_position_deviation_in_arcseconds=largest_reasonable_position_deviation_in_pixels *pixscale
                 #breakpoint()
                 
@@ -888,27 +894,29 @@ def multiprocess_fast_gaussian_photometry(package):
 
                 
                 
-                    # Construct testing array
+                     # Construct testing array
                     # Initially on pixelscale then convert to pixels
                     testvalue=0.1
                     testvalues=[]                        
                     while testvalue < 12:
-                        if testvalue > 1 and testvalue < 6:
+                        if testvalue > 1 and testvalue <= 7:
                             testvalues.append(testvalue)
                             testvalues.append(testvalue+0.05)
-                        elif testvalue > 6:
+                        elif testvalue > 7:
                             if (int(testvalue * 10) % 3) == 0 :
                                 testvalues.append(testvalue)
                         else:
                             testvalues.append(testvalue)
                         testvalue=testvalue+0.1
                     # convert pixelscales into pixels
-                    #pixel_testvalues=np.array(testvalues) / pixscale
+                    pixel_testvalues=np.array(testvalues) / pixscale
                 
                     smallest_value=999999999999999.9
                     #smallest_index=0
-                    for pixeltestvalue in testvalues:
-                        if pixeltestvalue < largest_reasonable_position_deviation_in_arcseconds:
+                    for pixeltestvalue in pixel_testvalues:
+                        
+                        # googtime=time.time()
+                        if pixeltestvalue*pixscale < largest_reasonable_position_deviation_in_arcseconds:
                             test_fpopt= [temp_amplitude, peak_position, pixeltestvalue]
                             # print (test_fpopt)
                             
@@ -919,11 +927,12 @@ def multiprocess_fast_gaussian_photometry(package):
                             if difference < smallest_value:
                                 smallest_value=copy.deepcopy(difference)
                                 smallest_fpopt=copy.deepcopy(test_fpopt)
-                            
-                            plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                            plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
-                            plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                            plt.show()
+                            # print (time.time()-googtime)
+                            # plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                            # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
+                            # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                            # plt.show()
+                    
                         
                     # slow scipy way
                     #popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
@@ -943,12 +952,12 @@ def multiprocess_fast_gaussian_photometry(package):
                      
                         # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
                         # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-                        plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                        plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
+                        # plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                        # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
                         
                         #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
-                        plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                        plt.show()
+                        #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                        # plt.show()
                         #breakpoint()
 
                         # FWHM is 2.355 * std for a gaussian
@@ -1785,6 +1794,9 @@ class Camera:
         self.camera_known_gain_stdev=70000.0
         self.camera_known_readnoise=70000.0
         self.camera_known_readnoise_stdev=70000.0
+        
+        next_seq = next_sequence(self.config["camera"][self.name]["name"])
+        self.next_seq= next_seq
 
         #breakpoint()
         # if True:
@@ -2140,9 +2152,9 @@ class Camera:
         print ("Setup for multiprocess focus: " + str(time.time()-setup_timer))
 
         #Temporary just fur testing
-        for i in range(len(focus_multiprocess)):
-            multiprocess_fast_gaussian_photometry(focus_multiprocess[i])
-        breakpoint()
+        # for i in range(len(focus_multiprocess)):
+        #     multiprocess_fast_gaussian_photometry(focus_multiprocess[i])
+        # breakpoint()
 
         mptimer=time.time()
         fwhm_results=[]
@@ -4955,6 +4967,7 @@ class Camera:
 
 
                 next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                self.next_seq= next_seq
 
 
                 # HERE IS WHERE WE SPIT OUT THE FILES INTO A MULTIPROCESSING FUNCTION
@@ -5424,7 +5437,9 @@ class Camera:
 
                     if os.path.exists(im_path + text_name):
                         try:
+                            #g_dev['obs'].enqueue_for_fastUI(10, im_path, text_name)
                             g_dev['obs'].enqueue_for_fastUI(10, im_path, text_name)
+                        
                         except:
                             plog("Failed to send FOCUS TEXT up for some reason")
                             plog(traceback.format_exc())

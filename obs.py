@@ -3832,7 +3832,14 @@ class Observatory:
                 try:
                     filename = pri_image[1][1]
                     filepath = pri_image[1][0] + filename  # Full path to file on disk
-                    timesubmitted = pri_image[1][2]
+                    try:
+                    
+                        timesubmitted = pri_image[1][2]
+                    except:
+                        plog((traceback.format_exc()))
+                        breakpoint()
+                    
+                    
                     # If the file is there now
                     if os.path.exists(filepath):
                         # To the extent it has a size
@@ -4184,9 +4191,9 @@ class Observatory:
                     smartstack_subprocess.communicate()
 
 
-                    self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)
+                    self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"],time.time())), block=False)
                     self.fast_queue.put(
-                        (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'))), block=False)
+                        (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
 
                     try:
                         #breakpoint()
@@ -4433,11 +4440,11 @@ class Observatory:
 
     def enqueue_for_fastUI(self, priority, im_path, name):
         image = (im_path, name)
-        self.fast_queue.put((priority, image, time.time()), block=False)
+        self.fast_queue.put((priority, (image[0], image[1], time.time())), block=False)
 
     def enqueue_for_mediumUI(self, priority, im_path, name):
         image = (im_path, name)
-        self.mediumui_queue.put((priority, image, time.time()), block=False)
+        self.mediumui_queue.put((priority, (image[0], image[1], time.time())), block=False)
 
     def enqueue_for_calibrationUI(self, priority, im_path, name):
         image = (im_path, name)

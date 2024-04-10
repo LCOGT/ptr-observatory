@@ -6006,21 +6006,36 @@ class Sequencer:
         central_starting_focus=copy.deepcopy(foc_pos0)
 
 
-        im_path_r = self.camera_path
+        im_path_r = g_dev['cam'].camera_path
         im_type = "EX"
         #f_ext = "-"
-        text_name = (
-            self.config["obs_id"]
-            + "-"
-            + self.config["camera"][self.name]["name"]
-            + "-"
-            + g_dev["day"]
-            + "-"
-            + g_dev['cam'].focus_next_seq
-            + "-"
-            + im_type
-            + "00.txt"
-        )
+        try:
+            text_name = (
+                g_dev['cam'].config["obs_id"]
+                + "-"
+                + g_dev['cam'].config["camera"][g_dev['cam'].name]["name"]
+                + "-"
+                + g_dev["day"]
+                + "-"
+                + g_dev['cam'].focus_next_seq
+                + "-"
+                + im_type
+                + "00.txt"
+            )
+        except:
+            text_name = (
+                g_dev['cam'].config["obs_id"]
+                + "-"
+                + g_dev['cam'].config["camera"][g_dev['cam'].name]["name"]
+                + "-"
+                + g_dev["day"]
+                + "-"
+                + g_dev['cam'].next_seq
+                + "-"
+                + im_type
+                + "00.txt"
+            )
+            
         im_path = im_path_r + g_dev["day"] + "/to_AWS/"
 
         focus_spots=[]
