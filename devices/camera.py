@@ -39,6 +39,11 @@ from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['path.simplify'] = True
+mpl.rcParams['path.simplify_threshold'] = 1.0
+
+
 warnings.simplefilter("ignore", category=RuntimeWarning)
 from devices.darkslide import Darkslide
 from PIL import Image, ImageDraw
@@ -839,6 +844,7 @@ def multiprocess_fast_gaussian_photometry(package):
             temp_amplitude=actualprofile[peak_value_index-2][1]+actualprofile[peak_value_index-1][1]+actualprofile[peak_value_index][1]+actualprofile[peak_value_index+1][1]+actualprofile[peak_value_index+2][1]    
             temp_amplitude=temp_amplitude/5
             # Check that the mean of the temp_amplitude here is at least 0.6 * cvalue
+            
             if temp_amplitude > 0.5*peak_value:
             
                 # DELETE THIS ONLY FOR TESTING
@@ -847,7 +853,7 @@ def multiprocess_fast_gaussian_photometry(package):
                 # Get the center of mass peak value
                 sum_of_positions_times_values=0
                 sum_of_values=0
-                number_of_positions_to_test=7 # odd value
+                number_of_positions_to_test=3 # odd value
                 poswidth=int(number_of_positions_to_test/2)
                 
                 for spotty in range(number_of_positions_to_test):
@@ -862,29 +868,43 @@ def multiprocess_fast_gaussian_photometry(package):
                 # Whats the nearest point?
                 
                 #print (peak_position)
-                temppos=abs(actualprofile[:,0] - peak_position).argmin()
+                #temppos=abs(actualprofile[:,0] - peak_position).argmin()
+                temppos=peak_value_index
                 tempvalue=actualprofile[temppos,1]
                 temppeakvalue=copy.deepcopy(tempvalue)
                 # Get lefthand quarter percentiles
+                threequartertemp=actualprofile[temppos,1]
+                
                 counter=1
                 while tempvalue > 0.25*temppeakvalue:
+                    
                     tempvalue=actualprofile[temppos-counter,1]
+                    if tempvalue > 0.75:
+                        threequartertemp=temppos-counter
                     #print (tempvalue)
                     counter=counter+1
                 
                 lefthand_quarter_spot=actualprofile[temppos-counter][0]
+                lefthand_threequarter_spot=actualprofile[threequartertemp][0]
                 
                 # Get righthand quarter percentile
                 counter=1
                 while tempvalue > 0.25*temppeakvalue:
                     tempvalue=actualprofile[temppos+counter,1]
                     #print (tempvalue)
+                    if tempvalue > 0.75:
+                        threequartertemp=temppos+counter
                     counter=counter+1
                 
                 righthand_quarter_spot=actualprofile[temppos+counter][0]
+                righthand_threequarter_spot=actualprofile[threequartertemp][0]
                     
                 largest_reasonable_position_deviation_in_pixels=1.5*max(abs(peak_position - righthand_quarter_spot),abs(peak_position - lefthand_quarter_spot))
                 largest_reasonable_position_deviation_in_arcseconds=largest_reasonable_position_deviation_in_pixels *pixscale
+                
+                smallest_reasonable_position_deviation_in_pixels=0.75*min(abs(peak_position - righthand_threequarter_spot),abs(peak_position - lefthand_threequarter_spot))
+                smallest_reasonable_position_deviation_in_arcseconds=smallest_reasonable_position_deviation_in_pixels *pixscale
+                
                 #breakpoint()
                 
                 
@@ -894,19 +914,20 @@ def multiprocess_fast_gaussian_photometry(package):
 
                 
                 
-                     # Construct testing array
+                    # Construct testing array
                     # Initially on pixelscale then convert to pixels
                     testvalue=0.1
                     testvalues=[]                        
                     while testvalue < 12:
-                        if testvalue > 1 and testvalue <= 7:
-                            testvalues.append(testvalue)
-                            testvalues.append(testvalue+0.05)
-                        elif testvalue > 7:
-                            if (int(testvalue * 10) % 3) == 0 :
+                        if testvalue > smallest_reasonable_position_deviation_in_arcseconds and testvalue < largest_reasonable_position_deviation_in_arcseconds:
+                            if testvalue > 1 and testvalue <= 7:
                                 testvalues.append(testvalue)
-                        else:
-                            testvalues.append(testvalue)
+                                testvalues.append(testvalue+0.05)
+                            elif testvalue > 7:
+                                if (int(testvalue * 10) % 3) == 0 :
+                                    testvalues.append(testvalue)
+                            else:
+                                testvalues.append(testvalue)
                         testvalue=testvalue+0.1
                     # convert pixelscales into pixels
                     pixel_testvalues=np.array(testvalues) / pixscale
@@ -916,7 +937,7 @@ def multiprocess_fast_gaussian_photometry(package):
                     for pixeltestvalue in pixel_testvalues:
                         
                         # googtime=time.time()
-                        if pixeltestvalue*pixscale < largest_reasonable_position_deviation_in_arcseconds:
+                        if pixeltestvalue*pixscale < largest_reasonable_position_deviation_in_arcseconds and pixeltestvalue*pixscale > smallest_reasonable_position_deviation_in_arcseconds:
                             test_fpopt= [temp_amplitude, peak_position, pixeltestvalue]
                             # print (test_fpopt)
                             
@@ -928,10 +949,12 @@ def multiprocess_fast_gaussian_photometry(package):
                                 smallest_value=copy.deepcopy(difference)
                                 smallest_fpopt=copy.deepcopy(test_fpopt)
                             # print (time.time()-googtime)
-                            # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                            # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
+                            plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                            plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
                             # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                            # plt.show()
+                            plt.show()
+                            
+                            breakpoint()
                     
                         
                     # slow scipy way
@@ -2152,9 +2175,9 @@ class Camera:
         print ("Setup for multiprocess focus: " + str(time.time()-setup_timer))
 
         #Temporary just fur testing
-        # for i in range(len(focus_multiprocess)):
-        #     multiprocess_fast_gaussian_photometry(focus_multiprocess[i])
-        # breakpoint()
+        for i in range(len(focus_multiprocess)):
+            multiprocess_fast_gaussian_photometry(focus_multiprocess[i])
+        breakpoint()
 
         mptimer=time.time()
         fwhm_results=[]
