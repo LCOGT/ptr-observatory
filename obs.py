@@ -547,6 +547,11 @@ class Observatory:
         self.fast_queue_thread.daemon = True
         self.fast_queue_thread.start()
 
+        self.file_wait_and_act_queue = queue.PriorityQueue(maxsize=0)
+        self.fast_queue_thread = threading.Thread(target=self.fast_to_ui, args=())
+        self.fast_queue_thread.daemon = True
+        self.fast_queue_thread.start()
+
         self.mediumui_queue = queue.PriorityQueue(maxsize=0)
         self.mediumui_thread = threading.Thread(target=self.medium_to_ui, args=())
         self.mediumui_thread.daemon = True
@@ -600,6 +605,8 @@ class Observatory:
         self.smartstack_queue_thread = threading.Thread(target=self.smartstack_image, args=())
         self.smartstack_queue_thread.daemon = True
         self.smartstack_queue_thread.start()
+
+    
 
 
 
