@@ -153,6 +153,8 @@ if int(now_utc.hour) < int_sunrise_hour:
     now_utc = now_utc - timedelta(days=1)
 DAY_Directory = str(now_utc.year) + str(now_utc.month) + str(now_utc.day)
 
+
+
 try:
     if not os.path.exists(site_config['plog_path']  + 'plog/'):
         os.makedirs(site_config['plog_path']  + 'plog/')
@@ -161,9 +163,21 @@ try:
 except KeyError:
     try:
         #plog_path = site_config['archive_path'] + '/' + site_config['obs_id'] + '/' + DAY_Directory + '/'
-        if not g_dev['obs'].obsid_path  + 'plog/':
-            os.makedirs(g_dev['obs'].obsid_path + 'plog/')
-        plog_path = g_dev['obs'].obsid_path + 'plog/' + DAY_Directory + '/'
+        
+        obsid_path = str(site_config["archive_path"] + '/' + site_config['obs_id'] + '/').replace('//','/')
+        plog_path= obsid_path + 'plog/'
+        if not os.path.exists(obsid_path):
+            os.makedirs(obsid_path)
+        if not os.path.exists(plog_path):
+            os.makedirs(plog_path)
+        plog_path = obsid_path + 'plog/' + DAY_Directory + '/'
+        if not os.path.exists(plog_path):
+            os.makedirs(plog_path)
+        #breakpoint()
+        
+        # if not g_dev['obs'].obsid_path  + 'plog/':
+        #     os.makedirs(g_dev['obs'].obsid_path + 'plog/')
+        
     except:
         if not site_config['archive_path'] + '/' + site_config['obs_id'] + '/'  + 'plog/':
             os.makedirs(site_config['archive_path'] + '/' + site_config['obs_id'] + '/' + 'plog/')

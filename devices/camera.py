@@ -40,9 +40,13 @@ import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+#%matplotlib inline
+#mpl.use('inline')
+#['GTK3Agg', 'GTK3Cairo', 'MacOSX', 'nbAgg', 'Qt4Agg', 'Qt4Cairo', 'Qt5Agg', 'Qt5Cairo', 'TkAgg', 'TkCairo', 'WebAgg', 'WX', 'WXAgg', 'WXCairo', 'agg', 'cairo', 'pdf', 'pgf', 'ps', 'svg', 'template']
+import matplotlib.style as mplstyle
+mplstyle.use('fast')
 mpl.rcParams['path.simplify'] = True
 mpl.rcParams['path.simplify_threshold'] = 1.0
-
 
 warnings.simplefilter("ignore", category=RuntimeWarning)
 from devices.darkslide import Darkslide
@@ -853,7 +857,7 @@ def multiprocess_fast_gaussian_photometry(package):
                 # Get the center of mass peak value
                 sum_of_positions_times_values=0
                 sum_of_values=0
-                number_of_positions_to_test=3 # odd value
+                number_of_positions_to_test=7 # odd value
                 poswidth=int(number_of_positions_to_test/2)
                 
                 for spotty in range(number_of_positions_to_test):
@@ -863,17 +867,21 @@ def multiprocess_fast_gaussian_photometry(package):
                 # width checker
                 #print (2.355 * popt[2]) 
                 #print (0.8 / pixscale)
-                
+                #breakpoint()
                 # Get a handwavey distance to the HWHM
                 # Whats the nearest point?
-                
-                #print (peak_position)
-                #temppos=abs(actualprofile[:,0] - peak_position).argmin()
-                temppos=peak_value_index
+                # plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                # plt.show()
+                # print (peak_position)
+                # print (actualprofile[peak_value_index][0])
+                #breakpoint()
+                temppos=abs(actualprofile[:,0] - peak_position).argmin()
+                # print (actualprofile[temppos,0])
+                #temppos=peak_value_index
                 tempvalue=actualprofile[temppos,1]
                 temppeakvalue=copy.deepcopy(tempvalue)
                 # Get lefthand quarter percentiles
-                threequartertemp=actualprofile[temppos,1]
+                #threequartertemp=actualprofile[temppos,1]
                 
                 counter=1
                 while tempvalue > 0.25*temppeakvalue:
@@ -899,15 +907,15 @@ def multiprocess_fast_gaussian_photometry(package):
                 righthand_quarter_spot=actualprofile[temppos+counter][0]
                 righthand_threequarter_spot=actualprofile[threequartertemp][0]
                     
-                largest_reasonable_position_deviation_in_pixels=1.5*max(abs(peak_position - righthand_quarter_spot),abs(peak_position - lefthand_quarter_spot))
+                largest_reasonable_position_deviation_in_pixels=1.25*max(abs(peak_position - righthand_quarter_spot),abs(peak_position - lefthand_quarter_spot))
                 largest_reasonable_position_deviation_in_arcseconds=largest_reasonable_position_deviation_in_pixels *pixscale
                 
-                smallest_reasonable_position_deviation_in_pixels=0.75*min(abs(peak_position - righthand_threequarter_spot),abs(peak_position - lefthand_threequarter_spot))
+                smallest_reasonable_position_deviation_in_pixels=0.7*min(abs(peak_position - righthand_threequarter_spot),abs(peak_position - lefthand_threequarter_spot))
                 smallest_reasonable_position_deviation_in_arcseconds=smallest_reasonable_position_deviation_in_pixels *pixscale
                 
                 #breakpoint()
                 
-                
+                print ("************************")
                 # If peak reasonably in the center
                 # And the largest reasonable position deviation isn't absurdly small
                 if abs(peak_position) < max(3, 3/pixscale) and largest_reasonable_position_deviation_in_arcseconds > 1.0:
@@ -931,30 +939,42 @@ def multiprocess_fast_gaussian_photometry(package):
                         testvalue=testvalue+0.1
                     # convert pixelscales into pixels
                     pixel_testvalues=np.array(testvalues) / pixscale
+                    # convert fwhm into appropriate stdev
+                    pixel_testvalues=(pixel_testvalues/2.355) /2
+                    
+                    #breakpoint()
                 
                     smallest_value=999999999999999.9
                     #smallest_index=0
                     for pixeltestvalue in pixel_testvalues:
                         
                         # googtime=time.time()
-                        if pixeltestvalue*pixscale < largest_reasonable_position_deviation_in_arcseconds and pixeltestvalue*pixscale > smallest_reasonable_position_deviation_in_arcseconds:
-                            test_fpopt= [temp_amplitude, peak_position, pixeltestvalue]
-                            # print (test_fpopt)
-                            
-                            # differences between gaussian and data
-                            difference=(np.sum(abs(actualprofile[:,1] - gaussian(actualprofile[:,0], *test_fpopt))))
-                            # print (difference)
-                            
-                            if difference < smallest_value:
-                                smallest_value=copy.deepcopy(difference)
-                                smallest_fpopt=copy.deepcopy(test_fpopt)
+                        #if pixeltestvalue*pixscale < largest_reasonable_position_deviation_in_arcseconds and pixeltestvalue*pixscale > smallest_reasonable_position_deviation_in_arcseconds:
+                        #est_fpopt= [peak_value, peak_position, pixeltestvalue]
+                        test_fpopt= [peak_value, peak_position, pixeltestvalue]
+                        
+                        #print (test_fpopt)
+                        
+                        # differences between gaussian and data
+                        difference=(np.sum(abs(actualprofile[:,1] - gaussian(actualprofile[:,0], *test_fpopt))))
+                        #print (difference)
+                        
+                        if difference < smallest_value:
+                            smallest_value=copy.deepcopy(difference)
+                            smallest_fpopt=copy.deepcopy(test_fpopt)
+                        
+                        if difference < 1.25 * smallest_value:
                             # print (time.time()-googtime)
-                            plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                            plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
-                            # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                            plt.show()
+                            # plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                            # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
+                            # # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                            # plt.show()
+                            pass
+                        else:
+                            #print ("gone through and sampled range enough")
+                            break
                             
-                    breakpoint()
+                    #breakpoint()
                     
                         
                     # slow scipy way
@@ -978,8 +998,8 @@ def multiprocess_fast_gaussian_photometry(package):
                         # plt.scatter(actualprofile[:,0],actualprofile[:,1])
                         # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
                         
-                        #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
-                        #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                        # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
+                        # #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                         # plt.show()
                         #breakpoint()
 
@@ -1081,6 +1101,8 @@ def multiprocess_fast_gaussian_photometry(package):
         # If rejected by some if statement, return nan
         return np.nan
     except:
+        plog(traceback.format_exc())
+        breakpoint()
         return np.nan
 
 
@@ -2175,9 +2197,9 @@ class Camera:
         print ("Setup for multiprocess focus: " + str(time.time()-setup_timer))
 
         #Temporary just fur testing
-        for i in range(len(focus_multiprocess)):
-            multiprocess_fast_gaussian_photometry(focus_multiprocess[i])
-        breakpoint()
+        # for i in range(len(focus_multiprocess)):
+        #     multiprocess_fast_gaussian_photometry(focus_multiprocess[i])
+        # breakpoint()
 
         mptimer=time.time()
         fwhm_results=[]

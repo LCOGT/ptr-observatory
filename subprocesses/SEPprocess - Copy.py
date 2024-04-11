@@ -108,12 +108,9 @@ exposure_time=input_sep_info[28]
 
 
 # The photometry has a timelimit that is half of the exposure time
-time_limit=min (float(hduheader['EXPTIME'])*0.5, 30, exposure_time*0.5)
-
-minimum_exposure_for_extended_stuff = 10
-
-print ("Time Limit: " + str(time_limit))
+time_limit=min (float(hduheader['EXPTIME'])/0.5, 30, exposure_time/0.5)
 #breakpoint()
+minimum_exposure_for_extended_stuff = 10
 
 #frame_type='focus'
 
@@ -164,13 +161,10 @@ if not frame_type == 'focus' and float(hduheader['EXPTIME']) >= minimum_exposure
     counter=0
     while (breaker != 0):
         counter=counter+1
-        if not (imageMode-counter) in zeroValueArray[:,0]:       
-            if not (imageMode-counter-counter) in zeroValueArray[:,0]:       
-                if not (imageMode-counter-counter-counter) in zeroValueArray[:,0]:       
-                    
-                    zeroValue=(imageMode-counter)
-                    breaker =0
-            
+        if not (imageMode-counter) in zeroValueArray[:,0]:        
+            zeroValue=(imageMode-counter)
+            breaker =0
+        
     hdufocusdata[hdufocusdata < zeroValue] = np.nan  
     
     print ("Zero Threshing Image: " +str(time.time()-googtime))
@@ -179,7 +173,6 @@ if not frame_type == 'focus' and float(hduheader['EXPTIME']) >= minimum_exposure
 else:
     imageMode=bn.nanmedian(hdufocusdata)
     real_mode=False
-
 
 
 googtime=time.time()
@@ -525,7 +518,7 @@ else:
                     lowerbin=math.ceil(min(radprofile[:,0]))
                     #number_of_bins=int((upperbin-lowerbin)/0.25)
                     # Only need a quarter of an arcsecond bin.
-                    arcsecond_length_radial_profile = (upperbin-lowerbin)*pixscale
+                    arcsecond_length_radial_profile = int((upperbin-lowerbin)/0.25)
                     number_of_bins=int(arcsecond_length_radial_profile/0.25)
                     s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
                     
@@ -577,122 +570,69 @@ else:
                             # Get the center of mass peak value
                             sum_of_positions_times_values=0
                             sum_of_values=0
-                            number_of_positions_to_test=7 # odd value
-                            poswidth=int(number_of_positions_to_test/2)
-                            
-                            for spotty in range(number_of_positions_to_test):
-                                sum_of_positions_times_values=sum_of_positions_times_values+(actualprofile[peak_value_index-poswidth+spotty][1]*actualprofile[peak_value_index-poswidth+spotty][0])
-                                sum_of_values=sum_of_values+actualprofile[peak_value_index-poswidth+spotty][1]
+                            for spotty in range(5):
+                                sum_of_positions_times_values=sum_of_positions_times_values+(actualprofile[peak_value_index-2+spotty][1]*actualprofile[peak_value_index-2+spotty][0])
+                                sum_of_values=sum_of_values+actualprofile[peak_value_index-2+spotty][1]
                             peak_position=(sum_of_positions_times_values / sum_of_values)
                             # width checker
                             #print (2.355 * popt[2]) 
                             #print (0.8 / pixscale)
-                            #breakpoint()
+                            
                             # Get a handwavey distance to the HWHM
                             # Whats the nearest point?
-                            # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                            # plt.show()
-                            # print (peak_position)
-                            # print (actualprofile[peak_value_index][0])
-                            #breakpoint()
+                            
+                            #print (peak_position)
                             temppos=abs(actualprofile[:,0] - peak_position).argmin()
-                            # print (actualprofile[temppos,0])
-                            #temppos=peak_value_index
                             tempvalue=actualprofile[temppos,1]
                             temppeakvalue=copy.deepcopy(tempvalue)
-                            # Get lefthand quarter percentiles
-                            #threequartertemp=actualprofile[temppos,1]
-                            
+                            # Get lefthand quarter percentile
                             counter=1
                             while tempvalue > 0.25*temppeakvalue:
-                                
                                 tempvalue=actualprofile[temppos-counter,1]
-                                if tempvalue > 0.75:
-                                    threequartertemp=temppos-counter
                                 #print (tempvalue)
                                 counter=counter+1
                             
                             lefthand_quarter_spot=actualprofile[temppos-counter][0]
-                            lefthand_threequarter_spot=actualprofile[threequartertemp][0]
                             
                             # Get righthand quarter percentile
                             counter=1
                             while tempvalue > 0.25*temppeakvalue:
                                 tempvalue=actualprofile[temppos+counter,1]
                                 #print (tempvalue)
-                                if tempvalue > 0.75:
-                                    threequartertemp=temppos+counter
                                 counter=counter+1
                             
                             righthand_quarter_spot=actualprofile[temppos+counter][0]
-                            righthand_threequarter_spot=actualprofile[threequartertemp][0]
                                 
-                            largest_reasonable_position_deviation_in_pixels=1.25*max(abs(peak_position - righthand_quarter_spot),abs(peak_position - lefthand_quarter_spot))
+                            largest_reasonable_position_deviation_in_pixels=max(abs(peak_position - righthand_quarter_spot),abs(peak_position - lefthand_quarter_spot))
                             largest_reasonable_position_deviation_in_arcseconds=largest_reasonable_position_deviation_in_pixels *pixscale
-                            
-                            smallest_reasonable_position_deviation_in_pixels=0.7*min(abs(peak_position - righthand_threequarter_spot),abs(peak_position - lefthand_threequarter_spot))
-                            smallest_reasonable_position_deviation_in_arcseconds=smallest_reasonable_position_deviation_in_pixels *pixscale
-                            
                             #breakpoint()
                             
-                            #print ("************************")
+                            
                             # If peak reasonably in the center
                             # And the largest reasonable position deviation isn't absurdly small
                             if abs(peak_position) < max(3, 3/pixscale) and largest_reasonable_position_deviation_in_arcseconds > 1.0:
-
+        
                             
-                            
-                                # Construct testing array
-                                # Initially on pixelscale then convert to pixels
-                                testvalue=0.1
-                                testvalues=[]                        
-                                while testvalue < 12:
-                                    if testvalue > smallest_reasonable_position_deviation_in_arcseconds and testvalue < largest_reasonable_position_deviation_in_arcseconds:
-                                        if testvalue > 1 and testvalue <= 7:
-                                            testvalues.append(testvalue)
-                                            testvalues.append(testvalue+0.05)
-                                        elif testvalue > 7:
-                                            if (int(testvalue * 10) % 3) == 0 :
-                                                testvalues.append(testvalue)
-                                        else:
-                                            testvalues.append(testvalue)
-                                    testvalue=testvalue+0.1
-                                # convert pixelscales into pixels
-                                pixel_testvalues=np.array(testvalues) / pixscale
-                                # convert fwhm into appropriate stdev
-                                pixel_testvalues=(pixel_testvalues/2.355) /2
-                                
-                                #breakpoint()
                             
                                 smallest_value=999999999999999.9
-                                #smallest_index=0
-                                for pixeltestvalue in pixel_testvalues:
-                                    
-                                    # googtime=time.time()
-                                    #if pixeltestvalue*pixscale < largest_reasonable_position_deviation_in_arcseconds and pixeltestvalue*pixscale > smallest_reasonable_position_deviation_in_arcseconds:
-                                    #est_fpopt= [peak_value, peak_position, pixeltestvalue]
-                                    test_fpopt= [peak_value, peak_position, pixeltestvalue]
-                                    
-                                    #print (test_fpopt)
-                                    
-                                    # differences between gaussian and data
-                                    difference=(np.sum(abs(actualprofile[:,1] - gaussian(actualprofile[:,0], *test_fpopt))))
-                                    #print (difference)
-                                    
-                                    if difference < smallest_value:
-                                        smallest_value=copy.deepcopy(difference)
-                                        smallest_fpopt=copy.deepcopy(test_fpopt)
-                                    
-                                    if difference < 1.25 * smallest_value:
-                                        # print (time.time()-googtime)
-                                        # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                                        # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
-                                        # # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                                        # plt.show()
-                                        pass
-                                    else:
-                                        #print ("gone through and sampled range enough")
-                                        break
+                                smallest_index=0
+                                for pixeltestvalue in testvalues:
+                                    if pixeltestvalue < largest_reasonable_position_deviation_in_arcseconds:
+                                        test_fpopt= [temp_amplitude, peak_position, pixeltestvalue]
+                                        # print (test_fpopt)
+                                        
+                                        # differences between gaussian and data
+                                        difference=(np.sum(abs(actualprofile[:,1] - gaussian(actualprofile[:,0], *test_fpopt))))
+                                        # print (difference)
+                                        
+                                        if difference < smallest_value:
+                                            smallest_value=copy.deepcopy(difference)
+                                            smallest_fpopt=copy.deepcopy(test_fpopt)
+                                        
+                                        plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                                        plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
+                                        plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                                        plt.show()
                                     
                                 # slow scipy way
                                 #popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
@@ -712,12 +652,12 @@ else:
                                  
                                     # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
                                     # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-                                    # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                                    # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
+                                    plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                                    plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
                                     
-                                    # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
-                                    # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                                    # plt.show()
+                                    #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
+                                    plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                                    plt.show()
                                     #breakpoint()
             
                                     # FWHM is 2.355 * std for a gaussian
@@ -754,7 +694,6 @@ else:
                     pass
 
         print ("Extracting and Gaussianingx: " + str(time.time()-googtime))
-        print ("N of sources processed: " + str(len(sources)))
         #breakpoint()
 
 

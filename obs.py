@@ -2465,10 +2465,10 @@ class Observatory:
         to run, so it is an overhead we can't have hanging around.
         """
 
-        one_at_a_time = 0
+        #one_at_a_time = 0
         while True:
-            if (not self.sep_queue.empty()) and one_at_a_time == 0:
-                one_at_a_time = 1
+            if (not self.sep_queue.empty()):# a#nd one_at_a_time == 0:
+                #one_at_a_time = 1
 
 
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, nativebin, exposure_time) = self.sep_queue.get(block=False)
@@ -2594,7 +2594,7 @@ class Observatory:
 
                 self.sep_processing = False
                 self.sep_queue.task_done()
-                one_at_a_time = 0
+                #one_at_a_time = 0
                 #time.sleep(1)
 
             else:
@@ -3874,7 +3874,7 @@ class Observatory:
                             self.fast_queue.put((100, pri_image[1]), block=False)
                     # If it has been less than 3 minutes put it back in
                     elif time.time() -timesubmitted < 180:
-                        plog (str(filepath) + " Not there yet, putting back in queue.")
+                        #plog (str(filepath) + " Not there yet, putting back in queue.")
                         self.fast_queue.put((100, pri_image[1]), block=False)
                     else:
                         plog (str(filepath) + " seemed to never turn up... not putting back in the queue")
@@ -4009,7 +4009,7 @@ class Observatory:
                             self.fast_queue.put((100, pri_image[1]), block=False)
                     # If it has been less than 3 minutes put it back in
                     elif time.time() - timesubmitted < 180:
-                        plog (str(filepath) + " Not there yet, putting back in queue.")
+                        #plog (str(filepath) + " Not there yet, putting back in queue.")
                         self.fast_queue.put((100, pri_image[1]), block=False)
                     else:
                         plog (str(filepath) + " seemed to never turn up... not putting back in the queue")       
