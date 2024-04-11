@@ -547,10 +547,10 @@ class Observatory:
         self.fast_queue_thread.daemon = True
         self.fast_queue_thread.start()
 
-        self.file_wait_and_act_queue = queue.PriorityQueue(maxsize=0)
-        self.fast_queue_thread = threading.Thread(target=self.fast_to_ui, args=())
-        self.fast_queue_thread.daemon = True
-        self.fast_queue_thread.start()
+        self.file_wait_and_act_queue = queue.Queue(maxsize=0)
+        self.file_wait_and_act_queue_thread = threading.Thread(target=self.file_wait_and_act, args=())
+        self.file_wait_and_act_queue_thread.daemon = True
+        self.file_wait_and_act_queue_thread.start()
 
         self.mediumui_queue = queue.PriorityQueue(maxsize=0)
         self.mediumui_thread = threading.Thread(target=self.medium_to_ui, args=())
@@ -2531,61 +2531,20 @@ class Observatory:
                     plog ("Problem in the SEP pickle dump")
                     plog(traceback.format_exc())
 
+
+                # delete the subprocess connection once the data have been dumped out to the process. 
+                del sep_subprocess
+
                 # Essentially wait until the subprocess is complete
                 #sep_subprocess.communicate()
+                packet=(avg_foc,hduheader['EXPTIME'],hduheader['FILTER'], hduheader['AIRMASS'])
+                self.file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
 
-                # We actually don't need to wait until the subprocess is fully complete.
-                while not os.path.exists(im_path + text_name.replace('.txt', '.fwhm')):
-                    time.sleep(0.05)
+                # # We actually don't need to wait until the subprocess is fully complete.
+                # while not os.path.exists(im_path + text_name.replace('.txt', '.fwhm')):
+                #     time.sleep(0.05)
                 
-                try:
-                    with open(im_path + text_name.replace('.txt', '.fwhm'), 'r') as f:
-                        fwhm_info = json.load(f)
-    
-                    self.fwhmresult={}
-                    self.fwhmresult["FWHM"] = float(fwhm_info['rfr'])
-                    rfr=float(fwhm_info['rfr'])
-                    self.fwhmresult["mean_focus"] = avg_foc
-                    self.fwhmresult['No_of_sources'] =float(fwhm_info['sources'])
-                    self.fwhmresult["exp_time"] = hduheader['EXPTIME']
-    
-                    self.fwhmresult["filter"] = hduheader['FILTER']
-                    self.fwhmresult["airmass"] = hduheader['AIRMASS']
-                except:
-                    plog ("something funky in the fwhm area ")
-                    plog(traceback.format_exc())
-
-
-                if focus_image != True and not np.isnan(self.fwhmresult['FWHM']):
-                    # Focus tracker code. This keeps track of the focus and if it drifts
-                    # Then it triggers an autofocus.
-
-                    g_dev["foc"].focus_tracker.pop(0)
-                    g_dev["foc"].focus_tracker.append((self.fwhmresult["mean_focus"],g_dev["foc"].current_focus_temperature,self.fwhmresult["exp_time"],self.fwhmresult["filter"], self.fwhmresult["airmass"] ,round(rfr, 3)))
-                    plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker))# + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
-
-                    #self.mega_tracker.append((self.fwhmresult["mean_focus"],self.fwhmresult["exp_time"] ,round(rfr, 3)))
-
-                    # If there hasn't been a focus yet, then it can't check it,
-                    # so make this image the last solved focus.
-                    if g_dev["foc"].last_focus_fwhm == None:
-                        g_dev["foc"].last_focus_fwhm = rfr
-                    else:
-                        # Very dumb focus slip deteector
-                        # if (
-                        #     np.nanmedian(g_dev["foc"].focus_tracker)
-                        #     > g_dev["foc"].last_focus_fwhm
-                        #     + self.config["focus_trigger"]
-                        # ):
-                        #     g_dev["foc"].focus_needed = True
-                        #     g_dev["obs"].send_to_user(
-                        #         "FWHM has drifted to:  "
-                        #         + str(round(np.nanmedian(g_dev["foc"].focus_tracker),2))
-                        #         + " from "
-                        #         + str(g_dev["foc"].last_focus_fwhm)
-                        #         + ".",
-                        #         p_level="INFO")
-                        print ("TEMPORARILY DISABLED 1234")
+                
 
                 if self.config['keep_focus_images_on_disk']:
                     g_dev['obs'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
@@ -3810,6 +3769,121 @@ class Observatory:
             else:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
                 time.sleep(1)
+
+
+
+
+# self.file_wait_and_act_queue = queue.Queue(maxsize=0)
+# self.file_wait_and_act_queue_thread = threading.Thread(target=self.file_wait_and_act, args=())
+# self.file_wait_and_act_queue_thread.daemon = True
+# self.file_wait_and_act_queue_thread.start()
+
+
+    # Note this is a thread!
+    def file_wait_and_act(self):
+        """A general purpose wait for file and act thread
+        
+        """
+
+        
+        while True:
+
+            if (not self.file_wait_and_act_queue.empty()): 
+                #one_at_a_time = 1
+                (filename, timesubmitted, packet) = self.file_wait_and_act_queue.get(block=False)
+                # if pri_image is None:
+                #     plog("Got an empty entry in fast_queue.")
+                #     self.file_wait_and_act_queue.task_done()
+                #     #one_at_a_time = 0
+                #     continue
+
+                # Here we parse the file, set up and send to AWS
+                try:
+                                       
+                    
+                    # If the file is there now
+                    if os.path.exists(filename):
+                        # To the extent it has a size
+                        if os.stat(filename).st_size > 0:
+                            
+                            print ("Arrived and processing")
+                            print (filename)
+                            if '.fwhm' in filename:
+                            
+                                try:
+                                    with open(filename, 'r') as f:
+                                        fwhm_info = json.load(f)
+                    
+                                    
+                    
+                                    self.fwhmresult={}
+                                    self.fwhmresult["FWHM"] = float(fwhm_info['rfr'])
+                                    rfr=float(fwhm_info['rfr'])
+                                    self.fwhmresult["mean_focus"] = packet[0]
+                                    self.fwhmresult['No_of_sources'] =float(fwhm_info['sources'])
+                                    self.fwhmresult["exp_time"] = packet[1]
+                    
+                                    self.fwhmresult["filter"] = packet[2]
+                                    self.fwhmresult["airmass"] = packet[3]
+                                except:
+                                    plog ("something funky in the fwhm area ")
+                                    plog(traceback.format_exc())
+    
+    
+                                if not np.isnan(self.fwhmresult['FWHM']):
+                                    # Focus tracker code. This keeps track of the focus and if it drifts
+                                    # Then it triggers an autofocus.
+    
+                                    g_dev["foc"].focus_tracker.pop(0)
+                                    g_dev["foc"].focus_tracker.append((self.fwhmresult["mean_focus"],g_dev["foc"].current_focus_temperature,self.fwhmresult["exp_time"],self.fwhmresult["filter"], self.fwhmresult["airmass"] ,round(rfr, 3)))
+                                    plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker))# + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+    
+                                    #self.mega_tracker.append((self.fwhmresult["mean_focus"],self.fwhmresult["exp_time"] ,round(rfr, 3)))
+    
+                                    # If there hasn't been a focus yet, then it can't check it,
+                                    # so make this image the last solved focus.
+                                    if g_dev["foc"].last_focus_fwhm == None:
+                                        g_dev["foc"].last_focus_fwhm = rfr
+                                    else:
+                                        # Very dumb focus slip deteector
+                                        # if (
+                                        #     np.nanmedian(g_dev["foc"].focus_tracker)
+                                        #     > g_dev["foc"].last_focus_fwhm
+                                        #     + self.config["focus_trigger"]
+                                        # ):
+                                        #     g_dev["foc"].focus_needed = True
+                                        #     g_dev["obs"].send_to_user(
+                                        #         "FWHM has drifted to:  "
+                                        #         + str(round(np.nanmedian(g_dev["foc"].focus_tracker),2))
+                                        #         + " from "
+                                        #         + str(g_dev["foc"].last_focus_fwhm)
+                                        #         + ".",
+                                        #         p_level="INFO")
+                                        print ("TEMPORARILY DISABLED 1234")
+                            
+                            
+                                        
+                        else:
+                            #plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in wait queue.")
+                            self.file_wait_and_act_queue.put((filename, timesubmitted) , block=False)
+                    # If it has been less than 3 minutes put it back in
+                    elif time.time() -timesubmitted < 180:
+                        #plog (str(filepath) + " Not there yet, putting back in queue.")
+                        self.file_wait_and_act_queue.put((filename, timesubmitted) , block=False)
+                    else:
+                        plog (str(filename) + " seemed to never turn up... not putting back in the queue")
+                        
+                except:
+                    plog ("something strange in the UI uploader")
+                    plog((traceback.format_exc()))
+                self.file_wait_and_act_queue.task_done()
+                time.sleep(1)
+
+            else:
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(5)
+
+
 
     # Note this is a thread!
     def fast_to_ui(self):

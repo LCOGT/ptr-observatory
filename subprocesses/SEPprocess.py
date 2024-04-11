@@ -166,10 +166,11 @@ if not frame_type == 'focus' and float(hduheader['EXPTIME']) >= minimum_exposure
         counter=counter+1
         if not (imageMode-counter) in zeroValueArray[:,0]:       
             if not (imageMode-counter-counter) in zeroValueArray[:,0]:       
-                if not (imageMode-counter-counter-counter) in zeroValueArray[:,0]:       
-                    
-                    zeroValue=(imageMode-counter)
-                    breaker =0
+                if not (imageMode-counter-counter-counter) in zeroValueArray[:,0]:     
+                    if not (imageMode-counter-counter-counter-counter) in zeroValueArray[:,0]:  
+                        if not (imageMode-counter-counter-counter-counter-counter) in zeroValueArray[:,0]:    
+                            zeroValue=(imageMode-counter)
+                            breaker =0
             
     hdufocusdata[hdufocusdata < zeroValue] = np.nan  
     
