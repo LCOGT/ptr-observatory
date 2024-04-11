@@ -954,7 +954,7 @@ def multiprocess_fast_gaussian_photometry(package):
                             # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                             plt.show()
                             
-                            breakpoint()
+                    breakpoint()
                     
                         
                     # slow scipy way
