@@ -3707,170 +3707,176 @@ class Sequencer:
                                 #hdu1data = np.load(file, mmap_mode='r')
                                 try:
                                     hdu1data = np.load(file)
-                                except:
-                                    plog(traceback.format_exc())
-                                    breakpoint()
-                                #PLDrive[i] = np.load(file, mmap_mode='r')
-
-                                hdu1exp=float(file.split('_')[-2])
-                                #plog ("EXP")
-                                #plog (hdu1exp)
-                                fraction_through_range=0
-
-
-
-#g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy'
-
-
-                                # This try/except is here because if there is a missing dark
-                                # we can always just revert to using the long dark.
-                                try:
-
-                                    if hdu1exp == 0.0045 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy')
-                                        #print("five percent")
-                                    elif hdu1exp == 0.015 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'onepointfivepercent' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'onepointfivepercent' +'tempbiasdark.npy')
-                                        #print("five percent")
-                                    elif hdu1exp == 0.05 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy')
-                                        #print("five percent")
-                                    elif hdu1exp == 0.1 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'tenpercent' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'tenpercent' +'tempbiasdark.npy')
-                                        #print("ten percent")
-                                    elif hdu1exp == 0.25 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'quartersec' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'quartersec' +'tempbiasdark.npy')
-                                        #print("quartersec")
-                                    elif hdu1exp == 0.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'halfsec' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'halfsec' +'tempbiasdark.npy')
-                                        #plog("halfsec")
-                                    elif hdu1exp == 0.75 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'sevenfivepercent' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'sevenfivepercent' +'tempbiasdark.npy')
-                                        #plog("sevenfivepercent")
-                                    elif hdu1exp == 1.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'onesec' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'onesec' +'tempbiasdark.npy')
-                                        #plog("onesec")
-                                    elif hdu1exp == 1.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'oneandahalfsec' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'oneandahalfsec' +'tempbiasdark.npy')
-                                        #plog("one and a half sec")
-                                    elif hdu1exp == 2.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'twosec' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'twosec' +'tempbiasdark.npy')
-                                        #plog("two sec")
-                                    elif hdu1exp == 3.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'threepointfivesec' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'threepointfivesec' +'tempbiasdark.npy')
-                                        #plog("threepointfive sec")
-                                    elif hdu1exp == 5.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fivesec' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fivesec' +'tempbiasdark.npy')
-                                        #plog("five sec")
-                                    elif hdu1exp == 7.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'sevenpointfivesec' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'sevenpointfivesec' +'tempbiasdark.npy')
-                                        #plog("sevenpointfive sec")
-                                    elif hdu1exp == 10.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'tensec' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'tensec' +'tempbiasdark.npy')
-                                        #plog("ten sec")
-                                    elif hdu1exp == 15.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fifteensec' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fifteensec' +'tempbiasdark.npy')
-                                        #plog("fiveteen sec")
-                                    elif hdu1exp == 20.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'twentysec' +'tempbiasdark.npy'):
-                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'twentysec' +'tempbiasdark.npy')
-                                        #plog("twenty sec")
-                                    elif hdu1exp == broadband_ss_biasdark_exp_time:
-                                        flatdebiaseddedarked=hdu1data -g_dev['cam'].darkFiles['broadband_ss_biasdark']
-                                        #plog ("broady")
-                                    elif hdu1exp == narrowband_ss_biasdark_exp_time:
-                                        flatdebiaseddedarked=hdu1data -g_dev['cam'].darkFiles['narrowband_ss_biasdark']
-                                        #plog ("Narrowy")
-                                    elif hdu1exp < 0.5:
-                                        flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['halfsec_exposure_dark']*hdu1exp)
-                                    elif hdu1exp <= 2.0:
-                                        fraction_through_range=(hdu1exp-0.5)/(2.0-0.5)
-                                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
-                                        flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                        del tempmasterDark
-                                    elif hdu1exp <= 10.0:
-                                        fraction_through_range=(hdu1exp-2)/(10.0-2.0)
-                                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
-                                        flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                        del tempmasterDark
-                                    elif hdu1exp <= broadband_ss_biasdark_exp_time:
-                                        fraction_through_range=(hdu1exp-10)/(broadband_ss_biasdark_exp_time-10.0)
-                                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
-                                        flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                        del tempmasterDark
-                                    elif hdu1exp <= narrowband_ss_biasdark_exp_time:
-                                        fraction_through_range=(hdu1exp-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
-                                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
-                                        flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                        del tempmasterDark
-                                    elif dark_exp_time > narrowband_ss_biasdark_exp_time:
-                                        fraction_through_range=(hdu1exp-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
-                                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['1']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
-                                        flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                        del tempmasterDark
+                                
+                                    #PLDrive[i] = np.load(file, mmap_mode='r')
+    
+                                    hdu1exp=float(file.split('_')[-2])
+                                    #plog ("EXP")
+                                    #plog (hdu1exp)
+                                    fraction_through_range=0
+    
+    
+    
+    #g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy'
+    
+    
+                                    # This try/except is here because if there is a missing dark
+                                    # we can always just revert to using the long dark.
+                                    try:
+    
+                                        if hdu1exp == 0.0045 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy')
+                                            #print("five percent")
+                                        elif hdu1exp == 0.015 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'onepointfivepercent' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'onepointfivepercent' +'tempbiasdark.npy')
+                                            #print("five percent")
+                                        elif hdu1exp == 0.05 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy')
+                                            #print("five percent")
+                                        elif hdu1exp == 0.1 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'tenpercent' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'tenpercent' +'tempbiasdark.npy')
+                                            #print("ten percent")
+                                        elif hdu1exp == 0.25 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'quartersec' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'quartersec' +'tempbiasdark.npy')
+                                            #print("quartersec")
+                                        elif hdu1exp == 0.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'halfsec' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'halfsec' +'tempbiasdark.npy')
+                                            #plog("halfsec")
+                                        elif hdu1exp == 0.75 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'sevenfivepercent' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'sevenfivepercent' +'tempbiasdark.npy')
+                                            #plog("sevenfivepercent")
+                                        elif hdu1exp == 1.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'onesec' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'onesec' +'tempbiasdark.npy')
+                                            #plog("onesec")
+                                        elif hdu1exp == 1.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'oneandahalfsec' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'oneandahalfsec' +'tempbiasdark.npy')
+                                            #plog("one and a half sec")
+                                        elif hdu1exp == 2.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'twosec' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'twosec' +'tempbiasdark.npy')
+                                            #plog("two sec")
+                                        elif hdu1exp == 3.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'threepointfivesec' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'threepointfivesec' +'tempbiasdark.npy')
+                                            #plog("threepointfive sec")
+                                        elif hdu1exp == 5.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fivesec' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fivesec' +'tempbiasdark.npy')
+                                            #plog("five sec")
+                                        elif hdu1exp == 7.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'sevenpointfivesec' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'sevenpointfivesec' +'tempbiasdark.npy')
+                                            #plog("sevenpointfive sec")
+                                        elif hdu1exp == 10.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'tensec' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'tensec' +'tempbiasdark.npy')
+                                            #plog("ten sec")
+                                        elif hdu1exp == 15.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fifteensec' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fifteensec' +'tempbiasdark.npy')
+                                            #plog("fiveteen sec")
+                                        elif hdu1exp == 20.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'twentysec' +'tempbiasdark.npy'):
+                                            flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'twentysec' +'tempbiasdark.npy')
+                                            #plog("twenty sec")
+                                        elif hdu1exp == broadband_ss_biasdark_exp_time:
+                                            flatdebiaseddedarked=hdu1data -g_dev['cam'].darkFiles['broadband_ss_biasdark']
+                                            #plog ("broady")
+                                        elif hdu1exp == narrowband_ss_biasdark_exp_time:
+                                            flatdebiaseddedarked=hdu1data -g_dev['cam'].darkFiles['narrowband_ss_biasdark']
+                                            #plog ("Narrowy")
+                                        elif hdu1exp < 0.5:
+                                            flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['halfsec_exposure_dark']*hdu1exp)
+                                        elif hdu1exp <= 2.0:
+                                            fraction_through_range=(hdu1exp-0.5)/(2.0-0.5)
+                                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
+                                            flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                            del tempmasterDark
+                                        elif hdu1exp <= 10.0:
+                                            fraction_through_range=(hdu1exp-2)/(10.0-2.0)
+                                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
+                                            flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                            del tempmasterDark
+                                        elif hdu1exp <= broadband_ss_biasdark_exp_time:
+                                            fraction_through_range=(hdu1exp-10)/(broadband_ss_biasdark_exp_time-10.0)
+                                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
+                                            flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                            del tempmasterDark
+                                        elif hdu1exp <= narrowband_ss_biasdark_exp_time:
+                                            fraction_through_range=(hdu1exp-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
+                                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
+                                            flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                            del tempmasterDark
+                                        elif dark_exp_time > narrowband_ss_biasdark_exp_time:
+                                            fraction_through_range=(hdu1exp-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
+                                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['1']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
+                                            flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                            del tempmasterDark
+                                        else:
+                                            flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['narrowband_ss_dark']*hdu1exp)
+                                    except:
+                                        flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['1']*hdu1exp)
+    
+                                    #plog ("Fraction through range")
+                                    #plog (fraction_through_range)
+                                    del hdu1data
+    
+                                    # Normalising flat file
+                                    if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                                        normalising_factor=np.nanmedian(flatdebiaseddedarked)
+                                        flatdebiaseddedarked = flatdebiaseddedarked/normalising_factor
+                                        # Naning bad entries into master flat
+                                        flatdebiaseddedarked[flatdebiaseddedarked < 0.25] = np.nan
+                                        flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
+                                        # Rescaling median once nan'ed
+                                        flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
                                     else:
-                                        flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['narrowband_ss_dark']*hdu1exp)
+    
+                                        debayered=[]
+                                        max_median=0
+    
+                                        debayered.append(flatdebiaseddedarked[::2, ::2])
+                                        debayered.append(flatdebiaseddedarked[::2, 1::2])
+                                        debayered.append(flatdebiaseddedarked[1::2, ::2])
+                                        debayered.append(flatdebiaseddedarked[1::2, 1::2])
+    
+                                        osc_normalising_factor=[]
+                                        # crop each of the images to the central region
+    
+                                        for oscimage in debayered:
+                                            cropx = int( (oscimage.shape[0] -500)/2)
+                                            cropy = int((oscimage.shape[1] -500) /2)
+                                            oscimage=oscimage[cropx:-cropx, cropy:-cropy]
+                                            oscmedian=np.nanmedian(oscimage)
+                                            osc_normalising_factor.append(oscmedian)
+    
+                                        del debayered
+    
+                                        flatdebiaseddedarked[::2, ::2]=flatdebiaseddedarked[::2, ::2]/osc_normalising_factor[0]
+                                        flatdebiaseddedarked[::2, 1::2]=flatdebiaseddedarked[::2, 1::2]/osc_normalising_factor[1]
+                                        flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
+                                        flatdebiaseddedarked[1::2, 1::2]=flatdebiaseddedarked[1::2, 1::2]/osc_normalising_factor[3]
+                                        # Naning bad entries into master flat
+                                        flatdebiaseddedarked[flatdebiaseddedarked < 0.25] = np.nan
+                                        flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
+                                        # Rescaling median once nan'ed
+                                        flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
+    
+                                    #PLDrive[:,:,i] = copy.deepcopy(flatdebiaseddedarked)
+    
+                                    #breakpoint()
+                                    # Make new filename
+                                    tempfile=file.replace('\\','/').split('/')
+                                    tempfile[-1]='tempcali_' + tempfile[-1]
+                                    tempfile="/".join(tempfile)
+    
+                                    np.save(tempfile, flatdebiaseddedarked)
+                                    del flatdebiaseddedarked
+                                    temp_flat_file_list.append(tempfile)
+                                    PLDrive[i] = np.load(tempfile, mmap_mode='r')
+    
+                                    i=i+1
                                 except:
-                                    flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['1']*hdu1exp)
-
-                                #plog ("Fraction through range")
-                                #plog (fraction_through_range)
-                                del hdu1data
-
-                                # Normalising flat file
-                                if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                                    normalising_factor=np.nanmedian(flatdebiaseddedarked)
-                                    flatdebiaseddedarked = flatdebiaseddedarked/normalising_factor
-                                    # Naning bad entries into master flat
-                                    flatdebiaseddedarked[flatdebiaseddedarked < 0.25] = np.nan
-                                    flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
-                                    # Rescaling median once nan'ed
-                                    flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
-                                else:
-
-                                    debayered=[]
-                                    max_median=0
-
-                                    debayered.append(flatdebiaseddedarked[::2, ::2])
-                                    debayered.append(flatdebiaseddedarked[::2, 1::2])
-                                    debayered.append(flatdebiaseddedarked[1::2, ::2])
-                                    debayered.append(flatdebiaseddedarked[1::2, 1::2])
-
-                                    osc_normalising_factor=[]
-                                    # crop each of the images to the central region
-
-                                    for oscimage in debayered:
-                                        cropx = int( (oscimage.shape[0] -500)/2)
-                                        cropy = int((oscimage.shape[1] -500) /2)
-                                        oscimage=oscimage[cropx:-cropx, cropy:-cropy]
-                                        oscmedian=np.nanmedian(oscimage)
-                                        osc_normalising_factor.append(oscmedian)
-
-                                    del debayered
-
-                                    flatdebiaseddedarked[::2, ::2]=flatdebiaseddedarked[::2, ::2]/osc_normalising_factor[0]
-                                    flatdebiaseddedarked[::2, 1::2]=flatdebiaseddedarked[::2, 1::2]/osc_normalising_factor[1]
-                                    flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
-                                    flatdebiaseddedarked[1::2, 1::2]=flatdebiaseddedarked[1::2, 1::2]/osc_normalising_factor[3]
-                                    # Naning bad entries into master flat
-                                    flatdebiaseddedarked[flatdebiaseddedarked < 0.25] = np.nan
-                                    flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
-                                    # Rescaling median once nan'ed
-                                    flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
-
-                                #PLDrive[:,:,i] = copy.deepcopy(flatdebiaseddedarked)
-
-                                #breakpoint()
-                                # Make new filename
-                                tempfile=file.replace('\\','/').split('/')
-                                tempfile[-1]='tempcali_' + tempfile[-1]
-                                tempfile="/".join(tempfile)
-
-                                np.save(tempfile, flatdebiaseddedarked)
-                                del flatdebiaseddedarked
-                                temp_flat_file_list.append(tempfile)
-                                PLDrive[i] = np.load(tempfile, mmap_mode='r')
-
-                                i=i+1
+                                    a = np.empty((shapeImage[0],shapeImage[1]))
+                                    a[:] = np.nan
+                                    PLDrive[i] = copy.deepcopy(a)
+                                    plog ("failed on a flat component. Placing an nan array. ")
+                                    plog(traceback.format_exc())
+                                    i=i+1
+                                    
 
                             plog ("Insert flats into megaarray: " +str(time.time()-calibration_timer))
 
