@@ -2875,13 +2875,18 @@ class Sequencer:
             # Test each flat file actually opens
             for file in inputList:
                 try:
-                    tempy=np.load(file, mmap_mode='r')
-                    if tempy.size < 1000:
-                        plog ("corrupt flat skipped: " + str(file))
+                    tempy=np.load(file, mmap_mode='r')                    
+                    tempy=np.load(file)
+                    if tempy.size < 1000:                        
+                        plog ("corrupt dark skipped: " + str(file))
+                        os.remove(file)
                         inputList.remove(file)
                 except:
                     plog ("corrupt dark skipped: " + str(file))
+                    os.remove(file)
                     inputList.remove(file)
+
+        
 
             # # Array to hold loaded images
             # PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
@@ -3026,11 +3031,15 @@ class Sequencer:
             for file in inputList:
                 try:
                     tempy=np.load(file, mmap_mode='r')
+                    
+                    tempy=np.load(file)
                     if tempy.size < 1000:
-                        plog ("corrupt flat skipped: " + str(file))
+                        plog ("corrupt dark skipped: " + str(file))
+                        os.remove(file)
                         inputList.remove(file)
                 except:
                     plog ("corrupt dark skipped: " + str(file))
+                    os.remove(file)
                     inputList.remove(file)
 
 
@@ -3278,11 +3287,14 @@ class Sequencer:
         for file in inputList:
             try:
                 tempy=np.load(file, mmap_mode='r')
+                tempy=np.load(file)
                 if tempy.size < 1000:
-                    plog ("corrupt flat skipped: " + str(file))
+                    plog ("corrupt bias skipped: " + str(file))
+                    os.remove(file)
                     inputList.remove(file)
             except:
                 plog ("corrupt bias skipped: " + str(file))
+                os.remove(file)
                 inputList.remove(file)
 
 
