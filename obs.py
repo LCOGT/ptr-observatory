@@ -1671,10 +1671,12 @@ class Observatory:
                         self.temperature_in_observatory_from_focuser=20.0
                         pass
 
-
-                    if self.temperature_in_observatory_from_focuser > self.too_hot_temperature:  #This should be a per obsy config item
-                        self.too_hot_in_observatory=True
-
+                    try:
+                        if self.temperature_in_observatory_from_focuser > self.too_hot_temperature:  #This should be a per obsy config item
+                            self.too_hot_in_observatory=True
+                    except:
+                        plog ("observatory temperature probe failed.")
+                        
                     if g_dev['cam'].day_warm  and (ephem.now() < g_dev['events']['Eve Bias Dark'] - ephem.hour) or \
                             (g_dev['events']['End Morn Bias Dark'] + ephem.hour < ephem.now() < g_dev['events']['Nightly Reset']):
                         plog("In Daytime: Camera set at warmer temperature")

@@ -3338,6 +3338,11 @@ class Camera:
 
         self.substacker_available=False
 
+        #breakpoint()
+
+        
+        if bias_dark_or_light_type_frame == 'bias':
+            exposure_time = 40 /1000/1000 # shortest requestable exposure time
 
         if not self.substacker:
             success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
@@ -4990,9 +4995,24 @@ class Camera:
                     if frame_type in ["dark"]  or a_dark_exposure :
                         dark_limit_adu =   self.config["camera"][self.name]["settings"]['dark_lim_adu']
                         if len(self.biasFiles) > 0:
-                            debiaseddarkmedian= bn.nanmedian(outputimg - self.biasFiles[str(1)]) / exposure_time
+                            tempcrop=int(min(outputimg.shape)*0.15)
+                            
+                            tempmodearray=((outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) *10)
+                            int_array_flattened=tempmodearray.astype(int).ravel()
+                            unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                            m=counts.argmax()
+                            imageMode=unique[m]
+                            debiaseddarkmode= imageMode / 10 / exposure_time
+                            plog ("Debiased 1s Dark Mode is " + str(debiaseddarkmode))
+                            
+                            debiaseddarkmedian= bn.nanmedian(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time
                             plog ("Debiased 1s Dark Median is " + str(debiaseddarkmedian))
-
+                            
+                            debiaseddarkmean= bn.nanmean(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time
+                            plog ("Debiased 1s Dark Mean is " + str(debiaseddarkmean))
+                            
+                            plog ("Exposure time: " + str(exposure_time))
+                            #breakpoint()
                             #Short exposures are inherently much more variable, so their limit is set much higher.
                             if frame_type in ['fivepercent_exposure_dark','tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark']:
                                 if debiaseddarkmedian > 4*dark_limit_adu:   # was 0.5, NB later add in an std based second rejection criterion

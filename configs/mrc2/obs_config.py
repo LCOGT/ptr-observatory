@@ -876,7 +876,7 @@ site_config = {
                 # 'camera_gain_stdev':   0.04, #[10., 10., 10., 10.],     #  One val for each binning.
                 # 'read_noise':  10.615, #[9, 9, 9, 9],    #  All SWAGs right now
                 # 'read_noise_stdev':   0.012, #[10., 10., 10., 10.],     #  One val for each binning.     
-                'dark_lim_adu': 0.5,   #adu/s of dark 20231229 moved down from 0.5
+                'dark_lim_adu': 3,   #adu/s of dark 20231229 moved down from 0.5
                 'dark_lim_std': 15,  #first guess. See above.
 
                 # Saturate is the important one. Others are informational only.

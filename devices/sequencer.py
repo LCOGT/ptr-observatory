@@ -2875,7 +2875,10 @@ class Sequencer:
             # Test each flat file actually opens
             for file in inputList:
                 try:
-                    np.load(file, mmap_mode='r')
+                    tempy=np.load(file, mmap_mode='r')
+                    if tempy.size < 1000:
+                        plog ("corrupt flat skipped: " + str(file))
+                        inputList.remove(file)
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
@@ -3022,7 +3025,10 @@ class Sequencer:
             # Test each flat file actually opens
             for file in inputList:
                 try:
-                    np.load(file, mmap_mode='r')
+                    tempy=np.load(file, mmap_mode='r')
+                    if tempy.size < 1000:
+                        plog ("corrupt flat skipped: " + str(file))
+                        inputList.remove(file)
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
@@ -3271,7 +3277,10 @@ class Sequencer:
         # Test each file actually opens
         for file in inputList:
             try:
-                hdu1data = np.load(file, mmap_mode='r')
+                tempy=np.load(file, mmap_mode='r')
+                if tempy.size < 1000:
+                    plog ("corrupt flat skipped: " + str(file))
+                    inputList.remove(file)
             except:
                 plog ("corrupt bias skipped: " + str(file))
                 inputList.remove(file)
@@ -3644,9 +3653,28 @@ class Sequencer:
                     for file in inputList:
                         try:
                             hdu1data = np.load(file, mmap_mode='r')
+                            hdu1data = np.load(file)
+                            if hdu1data.size < 1000:
+                                plog ("corrupt flat skipped: " + str(file))
+                            
+                            
+                                os.remove(file)
+                                inputList.remove(file)
+                                
+                            elif os.stat(file).st_size < 5000:
+                                plog ("corrupt flat skipped: " + str(file))
+                            
+                            
+                                os.remove(file)
+                                inputList.remove(file)
+                                
                         except:
                             plog ("corrupt flat skipped: " + str(file))
+                            os.remove(file)
                             inputList.remove(file)
+
+                    inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.n*'))
+
 
                     # Generate temp memmap
                     # plog ("Loading files into memmap")
@@ -3677,7 +3705,11 @@ class Sequencer:
                             for file in inputList:
                                 #plog("Storing flat in a memmap array: " + str(file))
                                 #hdu1data = np.load(file, mmap_mode='r')
-                                hdu1data = np.load(file)
+                                try:
+                                    hdu1data = np.load(file)
+                                except:
+                                    plog(traceback.format_exc())
+                                    breakpoint()
                                 #PLDrive[i] = np.load(file, mmap_mode='r')
 
                                 hdu1exp=float(file.split('_')[-2])
