@@ -398,32 +398,32 @@ def reset_sequence(pCamera):
         plog("Nothing on the cam shelf in reset_sequence")
         return None
 
-# THIS IS A SCIPY FUNCTION LIBERATED INTO THIS CODE FOR SPEED TESTS
-def _lightweight_memoizer(f):
-    # very shallow memoization to address gh-13670: only remember the first set
-    # of parameters and corresponding function value, and only attempt to use
-    # them twice (the number of times the function is evaluated at x0).
-    def _memoized_func(params):
-        if _memoized_func.skip_lookup:
-            return f(params)
+# # THIS IS A SCIPY FUNCTION LIBERATED INTO THIS CODE FOR SPEED TESTS
+# def _lightweight_memoizer(f):
+#     # very shallow memoization to address gh-13670: only remember the first set
+#     # of parameters and corresponding function value, and only attempt to use
+#     # them twice (the number of times the function is evaluated at x0).
+#     def _memoized_func(params):
+#         if _memoized_func.skip_lookup:
+#             return f(params)
 
-        if np.all(_memoized_func.last_params == params):
-            return _memoized_func.last_val
-        elif _memoized_func.last_params is not None:
-            _memoized_func.skip_lookup = True
+#         if np.all(_memoized_func.last_params == params):
+#             return _memoized_func.last_val
+#         elif _memoized_func.last_params is not None:
+#             _memoized_func.skip_lookup = True
 
-        val = f(params)
+#         val = f(params)
 
-        if _memoized_func.last_params is None:
-            _memoized_func.last_params = np.copy(params)
-            _memoized_func.last_val = val
+#         if _memoized_func.last_params is None:
+#             _memoized_func.last_params = np.copy(params)
+#             _memoized_func.last_val = val
 
-        return val
+#         return val
 
-    _memoized_func.last_params = None
-    _memoized_func.last_val = None
-    _memoized_func.skip_lookup = False
-    return _memoized_func
+#     _memoized_func.last_params = None
+#     _memoized_func.last_val = None
+#     _memoized_func.skip_lookup = False
+#     return _memoized_func
 
 
 # # THIS IS A SCIPY FUNCTION LIBERATED INTO THIS CODE FOR SPEED TESTS
@@ -482,314 +482,314 @@ def _lightweight_memoizer(f):
 #             a = toarray(a, dtype=np.float64)
 #     return a
 
-# THIS IS A SCIPY FUNCTION LIBERATED INTO THIS CODE FOR SPEED TESTS
-def solve_triangular(a, b, trans=0, lower=False, unit_diagonal=False,
-                     overwrite_b=False, check_finite=True):
-    """
-    Solve the equation `a x = b` for `x`, assuming a is a triangular matrix.
+# # THIS IS A SCIPY FUNCTION LIBERATED INTO THIS CODE FOR SPEED TESTS
+# def solve_triangular(a, b, trans=0, lower=False, unit_diagonal=False,
+#                      overwrite_b=False, check_finite=True):
+#     """
+#     Solve the equation `a x = b` for `x`, assuming a is a triangular matrix.
 
-    Parameters
-    ----------
-    a : (M, M) array_like
-        A triangular matrix
-    b : (M,) or (M, N) array_like
-        Right-hand side matrix in `a x = b`
-    lower : bool, optional
-        Use only data contained in the lower triangle of `a`.
-        Default is to use upper triangle.
-    trans : {0, 1, 2, 'N', 'T', 'C'}, optional
-        Type of system to solve:
+#     Parameters
+#     ----------
+#     a : (M, M) array_like
+#         A triangular matrix
+#     b : (M,) or (M, N) array_like
+#         Right-hand side matrix in `a x = b`
+#     lower : bool, optional
+#         Use only data contained in the lower triangle of `a`.
+#         Default is to use upper triangle.
+#     trans : {0, 1, 2, 'N', 'T', 'C'}, optional
+#         Type of system to solve:
 
-        ========  =========
-        trans     system
-        ========  =========
-        0 or 'N'  a x  = b
-        1 or 'T'  a^T x = b
-        2 or 'C'  a^H x = b
-        ========  =========
-    unit_diagonal : bool, optional
-        If True, diagonal elements of `a` are assumed to be 1 and
-        will not be referenced.
-    overwrite_b : bool, optional
-        Allow overwriting data in `b` (may enhance performance)
-    check_finite : bool, optional
-        Whether to check that the input matrices contain only finite numbers.
-        Disabling may give a performance gain, but may result in problems
-        (crashes, non-termination) if the inputs do contain infinities or NaNs.
+#         ========  =========
+#         trans     system
+#         ========  =========
+#         0 or 'N'  a x  = b
+#         1 or 'T'  a^T x = b
+#         2 or 'C'  a^H x = b
+#         ========  =========
+#     unit_diagonal : bool, optional
+#         If True, diagonal elements of `a` are assumed to be 1 and
+#         will not be referenced.
+#     overwrite_b : bool, optional
+#         Allow overwriting data in `b` (may enhance performance)
+#     check_finite : bool, optional
+#         Whether to check that the input matrices contain only finite numbers.
+#         Disabling may give a performance gain, but may result in problems
+#         (crashes, non-termination) if the inputs do contain infinities or NaNs.
 
-    Returns
-    -------
-    x : (M,) or (M, N) ndarray
-        Solution to the system `a x = b`.  Shape of return matches `b`.
+#     Returns
+#     -------
+#     x : (M,) or (M, N) ndarray
+#         Solution to the system `a x = b`.  Shape of return matches `b`.
 
-    Raises
-    ------
-    LinAlgError
-        If `a` is singular
+#     Raises
+#     ------
+#     LinAlgError
+#         If `a` is singular
 
-    Notes
-    -----
-    .. versionadded:: 0.9.0
+#     Notes
+#     -----
+#     .. versionadded:: 0.9.0
 
-    Examples
-    --------
-    Solve the lower triangular system a x = b, where::
+#     Examples
+#     --------
+#     Solve the lower triangular system a x = b, where::
 
-             [3  0  0  0]       [4]
-        a =  [2  1  0  0]   b = [2]
-             [1  0  1  0]       [4]
-             [1  1  1  1]       [2]
+#              [3  0  0  0]       [4]
+#         a =  [2  1  0  0]   b = [2]
+#              [1  0  1  0]       [4]
+#              [1  1  1  1]       [2]
 
-    >>> import numpy as np
-    >>> from scipy.linalg import solve_triangular
-    >>> a = np.array([[3, 0, 0, 0], [2, 1, 0, 0], [1, 0, 1, 0], [1, 1, 1, 1]])
-    >>> b = np.array([4, 2, 4, 2])
-    >>> x = solve_triangular(a, b, lower=True)
-    >>> x
-    array([ 1.33333333, -0.66666667,  2.66666667, -1.33333333])
-    >>> a.dot(x)  # Check the result
-    array([ 4.,  2.,  4.,  2.])
+#     >>> import numpy as np
+#     >>> from scipy.linalg import solve_triangular
+#     >>> a = np.array([[3, 0, 0, 0], [2, 1, 0, 0], [1, 0, 1, 0], [1, 1, 1, 1]])
+#     >>> b = np.array([4, 2, 4, 2])
+#     >>> x = solve_triangular(a, b, lower=True)
+#     >>> x
+#     array([ 1.33333333, -0.66666667,  2.66666667, -1.33333333])
+#     >>> a.dot(x)  # Check the result
+#     array([ 4.,  2.,  4.,  2.])
 
-    """
+#     """
 
-    # a1 = _asarray_validated(a, check_finite=check_finite)
-    # b1 = _asarray_validated(b, check_finite=check_finite)
+#     # a1 = _asarray_validated(a, check_finite=check_finite)
+#     # b1 = _asarray_validated(b, check_finite=check_finite)
 
-    # if len(a1.shape) != 2 or a1.shape[0] != a1.shape[1]:
-    #     raise ValueError('expected square matrix')
-    # if a1.shape[0] != b1.shape[0]:
-    #     raise ValueError(f'shapes of a {a1.shape} and b {b1.shape} are incompatible')
-    # overwrite_b = overwrite_b or _datacopied(b1, b)
+#     # if len(a1.shape) != 2 or a1.shape[0] != a1.shape[1]:
+#     #     raise ValueError('expected square matrix')
+#     # if a1.shape[0] != b1.shape[0]:
+#     #     raise ValueError(f'shapes of a {a1.shape} and b {b1.shape} are incompatible')
+#     # overwrite_b = overwrite_b or _datacopied(b1, b)
 
-    # if len(a1.shape) != 2 or a1.shape[0] != a1.shape[1]:
-    #     raise ValueError('expected square matrix')
-    # if a1.shape[0] != b1.shape[0]:
-    #     raise ValueError(f'shapes of a {a1.shape} and b {b1.shape} are incompatible')
-    overwrite_b = overwrite_b or _datacopied(b1, b)
-
-
-    trans = {'N': 0, 'T': 1, 'C': 2}.get(trans, trans)
-    trtrs, = get_lapack_funcs(('trtrs',), (a1, b1))
-    if a1.flags.f_contiguous or trans == 2:
-        x, info = trtrs(a1, b1, overwrite_b=overwrite_b, lower=lower,
-                        trans=trans, unitdiag=unit_diagonal)
-    else:
-        # transposed system is solved since trtrs expects Fortran ordering
-        x, info = trtrs(a1.T, b1, overwrite_b=overwrite_b, lower=not lower,
-                        trans=not trans, unitdiag=unit_diagonal)
-
-    if info == 0:
-        return x
-    # if info > 0:
-    #     raise LinAlgError("singular matrix: resolution failed at diagonal %d" %
-    #                       (info-1))
-    # raise ValueError('illegal value in %dth argument of internal trtrs' %
-    #                  (-info))
-
-# THIS IS A SCIPY FUNCTION LIBERATED INTO THIS CODE FOR SPEED TESTS
-def _wrap_func(func, xdata, ydata, transform):
-    if transform is None:
-        def func_wrapped(params):
-            return func(xdata, *params) - ydata
-    elif transform.size == 1 or transform.ndim == 1:
-        def func_wrapped(params):
-            return transform * (func(xdata, *params) - ydata)
-    else:
-        # Chisq = (y - yd)^T C^{-1} (y-yd)
-        # transform = L such that C = L L^T
-        # C^{-1} = L^{-T} L^{-1}
-        # Chisq = (y - yd)^T L^{-T} L^{-1} (y-yd)
-        # Define (y-yd)' = L^{-1} (y-yd)
-        # by solving
-        # L (y-yd)' = (y-yd)
-        # and minimize (y-yd)'^T (y-yd)'
-        def func_wrapped(params):
-            return solve_triangular(transform, func(xdata, *params) - ydata, lower=True)
-    return func_wrapped
+#     # if len(a1.shape) != 2 or a1.shape[0] != a1.shape[1]:
+#     #     raise ValueError('expected square matrix')
+#     # if a1.shape[0] != b1.shape[0]:
+#     #     raise ValueError(f'shapes of a {a1.shape} and b {b1.shape} are incompatible')
+#     overwrite_b = overwrite_b or _datacopied(b1, b)
 
 
-def nonscipy_gaussian_curve_fit(f, xdata, ydata, p0=None, sigma=None, absolute_sigma=False,
-              check_finite=None, bounds=(-np.inf, np.inf), method=None,
-              jac=None, *, full_output=False, nan_policy=None,
-              **kwargs):
-    """
-    THIS IS MTF STRIPPING THE SCIPY CURVE_FIT FUNCTION TO BARE BONES.
+#     trans = {'N': 0, 'T': 1, 'C': 2}.get(trans, trans)
+#     trtrs, = get_lapack_funcs(('trtrs',), (a1, b1))
+#     if a1.flags.f_contiguous or trans == 2:
+#         x, info = trtrs(a1, b1, overwrite_b=overwrite_b, lower=lower,
+#                         trans=trans, unitdiag=unit_diagonal)
+#     else:
+#         # transposed system is solved since trtrs expects Fortran ordering
+#         x, info = trtrs(a1.T, b1, overwrite_b=overwrite_b, lower=not lower,
+#                         trans=not trans, unitdiag=unit_diagonal)
 
-    Use non-linear least squares to fit a function, f, to data.
+#     if info == 0:
+#         return x
+#     # if info > 0:
+#     #     raise LinAlgError("singular matrix: resolution failed at diagonal %d" %
+#     #                       (info-1))
+#     # raise ValueError('illegal value in %dth argument of internal trtrs' %
+#     #                  (-info))
 
-    Assumes ``ydata = f(xdata, *params) + eps``.
+# # THIS IS A SCIPY FUNCTION LIBERATED INTO THIS CODE FOR SPEED TESTS
+# def _wrap_func(func, xdata, ydata, transform):
+#     if transform is None:
+#         def func_wrapped(params):
+#             return func(xdata, *params) - ydata
+#     elif transform.size == 1 or transform.ndim == 1:
+#         def func_wrapped(params):
+#             return transform * (func(xdata, *params) - ydata)
+#     else:
+#         # Chisq = (y - yd)^T C^{-1} (y-yd)
+#         # transform = L such that C = L L^T
+#         # C^{-1} = L^{-T} L^{-1}
+#         # Chisq = (y - yd)^T L^{-T} L^{-1} (y-yd)
+#         # Define (y-yd)' = L^{-1} (y-yd)
+#         # by solving
+#         # L (y-yd)' = (y-yd)
+#         # and minimize (y-yd)'^T (y-yd)'
+#         def func_wrapped(params):
+#             return solve_triangular(transform, func(xdata, *params) - ydata, lower=True)
+#     return func_wrapped
 
 
-    """
-    # if p0 is None:
-    #     # determine number of parameters by inspecting the function
-    #     sig = _getfullargspec(f)
-    #     args = sig.args
-    #     if len(args) < 2:
-    #         raise ValueError("Unable to determine number of fit parameters.")
-    #     n = len(args) - 1
-    # else:
-    #p0 = np.atleast_1d(p0)
-    n = p0.size
+# def nonscipy_gaussian_curve_fit(f, xdata, ydata, p0=None, sigma=None, absolute_sigma=False,
+#               check_finite=None, bounds=(-np.inf, np.inf), method=None,
+#               jac=None, *, full_output=False, nan_policy=None,
+#               **kwargs):
+#     """
+#     THIS IS MTF STRIPPING THE SCIPY CURVE_FIT FUNCTION TO BARE BONES.
 
-    print ("p0 is " + str(p0))
-    print ("n is " + str(n))
+#     Use non-linear least squares to fit a function, f, to data.
 
-    #if isinstance(bounds, Bounds):
-    #lb, ub = bounds.lb, bounds.ub
-    lb, ub = bounds
-    # else:
-    #     lb, ub = prepare_bounds(bounds, n)
-    # if p0 is None:
-    #     p0 = _initialize_feasible(lb, ub)
+#     Assumes ``ydata = f(xdata, *params) + eps``.
 
-    # bounded_problem = np.any((lb > -np.inf) | (ub < np.inf))
-    # if method is None:
-    #     if bounded_problem:
-    method = 'trf'
-        # else:
-        #     method = 'lm'
 
-    # if method == 'lm' and bounded_problem:
-    #     raise ValueError("Method 'lm' only works for unconstrained problems. "
-    #                      "Use 'trf' or 'dogbox' instead.")
+#     """
+#     # if p0 is None:
+#     #     # determine number of parameters by inspecting the function
+#     #     sig = _getfullargspec(f)
+#     #     args = sig.args
+#     #     if len(args) < 2:
+#     #         raise ValueError("Unable to determine number of fit parameters.")
+#     #     n = len(args) - 1
+#     # else:
+#     #p0 = np.atleast_1d(p0)
+#     n = p0.size
 
-    # if check_finite is None:
-    #     check_finite = True if nan_policy is None else False
+#     print ("p0 is " + str(p0))
+#     print ("n is " + str(n))
 
-    # # optimization may produce garbage for float32 inputs, cast them to float64
-    # if check_finite:
-    #     ydata = np.asarray_chkfinite(ydata, float)
-    # else:
-    #     ydata = np.asarray(ydata, float)
+#     #if isinstance(bounds, Bounds):
+#     #lb, ub = bounds.lb, bounds.ub
+#     lb, ub = bounds
+#     # else:
+#     #     lb, ub = prepare_bounds(bounds, n)
+#     # if p0 is None:
+#     #     p0 = _initialize_feasible(lb, ub)
 
-    # if isinstance(xdata, (list, tuple, np.ndarray)):
-    #     # `xdata` is passed straight to the user-defined `f`, so allow
-    #     # non-array_like `xdata`.
-    #     if check_finite:
-    #         xdata = np.asarray_chkfinite(xdata, float)
-    #     else:
-    #         xdata = np.asarray(xdata, float)
+#     # bounded_problem = np.any((lb > -np.inf) | (ub < np.inf))
+#     # if method is None:
+#     #     if bounded_problem:
+#     method = 'trf'
+#         # else:
+#         #     method = 'lm'
 
-    # if ydata.size == 0:
-    #     raise ValueError("`ydata` must not be empty!")
+#     # if method == 'lm' and bounded_problem:
+#     #     raise ValueError("Method 'lm' only works for unconstrained problems. "
+#     #                      "Use 'trf' or 'dogbox' instead.")
 
-    # # nan handling is needed only if check_finite is False because if True,
-    # # the x-y data are already checked, and they don't contain nans.
-    # if not check_finite and nan_policy is not None:
-    #     if nan_policy == "propagate":
-    #         raise ValueError("`nan_policy='propagate'` is not supported "
-    #                          "by this function.")
+#     # if check_finite is None:
+#     #     check_finite = True if nan_policy is None else False
 
-    #     policies = [None, 'raise', 'omit']
-    #     x_contains_nan, nan_policy = _contains_nan(xdata, nan_policy,
-    #                                                policies=policies)
-    #     y_contains_nan, nan_policy = _contains_nan(ydata, nan_policy,
-    #                                                policies=policies)
+#     # # optimization may produce garbage for float32 inputs, cast them to float64
+#     # if check_finite:
+#     #     ydata = np.asarray_chkfinite(ydata, float)
+#     # else:
+#     #     ydata = np.asarray(ydata, float)
 
-    #     if (x_contains_nan or y_contains_nan) and nan_policy == 'omit':
-    #         # ignore NaNs for N dimensional arrays
-    #         has_nan = np.isnan(xdata)
-    #         has_nan = has_nan.any(axis=tuple(range(has_nan.ndim-1)))
-    #         has_nan |= np.isnan(ydata)
+#     # if isinstance(xdata, (list, tuple, np.ndarray)):
+#     #     # `xdata` is passed straight to the user-defined `f`, so allow
+#     #     # non-array_like `xdata`.
+#     #     if check_finite:
+#     #         xdata = np.asarray_chkfinite(xdata, float)
+#     #     else:
+#     #         xdata = np.asarray(xdata, float)
 
-    #         xdata = xdata[..., ~has_nan]
-    #         ydata = ydata[~has_nan]
+#     # if ydata.size == 0:
+#     #     raise ValueError("`ydata` must not be empty!")
 
-    # Determine type of sigma
-    # if sigma is not None:
-    #     sigma = np.asarray(sigma)
+#     # # nan handling is needed only if check_finite is False because if True,
+#     # # the x-y data are already checked, and they don't contain nans.
+#     # if not check_finite and nan_policy is not None:
+#     #     if nan_policy == "propagate":
+#     #         raise ValueError("`nan_policy='propagate'` is not supported "
+#     #                          "by this function.")
 
-    #     # if 1-D or a scalar, sigma are errors, define transform = 1/sigma
-    #     if sigma.size == 1 or sigma.shape == (ydata.size, ):
-    #         transform = 1.0 / sigma
-    #     # if 2-D, sigma is the covariance matrix,
-    #     # define transform = L such that L L^T = C
-    #     elif sigma.shape == (ydata.size, ydata.size):
-    #         try:
-    #             # scipy.linalg.cholesky requires lower=True to return L L^T = A
-    #             transform = cholesky(sigma, lower=True)
-    #         except LinAlgError as e:
-    #             raise ValueError("`sigma` must be positive definite.") from e
-    #     else:
-    #         raise ValueError("`sigma` has incorrect shape.")
-    # else:
-    transform = None
+#     #     policies = [None, 'raise', 'omit']
+#     #     x_contains_nan, nan_policy = _contains_nan(xdata, nan_policy,
+#     #                                                policies=policies)
+#     #     y_contains_nan, nan_policy = _contains_nan(ydata, nan_policy,
+#     #                                                policies=policies)
 
-    func = _lightweight_memoizer(_wrap_func(f, xdata, ydata, transform))
+#     #     if (x_contains_nan or y_contains_nan) and nan_policy == 'omit':
+#     #         # ignore NaNs for N dimensional arrays
+#     #         has_nan = np.isnan(xdata)
+#     #         has_nan = has_nan.any(axis=tuple(range(has_nan.ndim-1)))
+#     #         has_nan |= np.isnan(ydata)
 
-    # if callable(jac):
-    #     jac = _lightweight_memoizer(_wrap_jac(jac, xdata, transform))
-    # elif jac is None and method != 'lm':
-    #     jac = '2-point'
-    jac = '2-point'
-    # if 'args' in kwargs:
-    #     # The specification for the model function `f` does not support
-    #     # additional arguments. Refer to the `curve_fit` docstring for
-    #     # acceptable call signatures of `f`.
-    #     raise ValueError("'args' is not a supported keyword argument.")
+#     #         xdata = xdata[..., ~has_nan]
+#     #         ydata = ydata[~has_nan]
 
-    # if method == 'lm':
-    #     # if ydata.size == 1, this might be used for broadcast.
-    #     if ydata.size != 1 and n > ydata.size:
-    #         raise TypeError(f"The number of func parameters={n} must not"
-    #                         f" exceed the number of data points={ydata.size}")
-    #     res = leastsq(func, p0, Dfun=jac, full_output=1, **kwargs)
-    #     popt, pcov, infodict, errmsg, ier = res
-    #     ysize = len(infodict['fvec'])
-    #     cost = np.sum(infodict['fvec'] ** 2)
-    #     if ier not in [1, 2, 3, 4]:
-    #         raise RuntimeError("Optimal parameters not found: " + errmsg)
-    # else:
+#     # Determine type of sigma
+#     # if sigma is not None:
+#     #     sigma = np.asarray(sigma)
 
-    # Rename maxfev (leastsq) to max_nfev (least_squares), if specified.
-    # if 'max_nfev' not in kwargs:
-    #     kwargs['max_nfev'] = kwargs.pop('maxfev', None)
-    kwargs['max_nfev'] = None
-    res = optimize._lsq.least_squares(func, p0, jac=jac, bounds=bounds, method=method,
-                        **kwargs)
+#     #     # if 1-D or a scalar, sigma are errors, define transform = 1/sigma
+#     #     if sigma.size == 1 or sigma.shape == (ydata.size, ):
+#     #         transform = 1.0 / sigma
+#     #     # if 2-D, sigma is the covariance matrix,
+#     #     # define transform = L such that L L^T = C
+#     #     elif sigma.shape == (ydata.size, ydata.size):
+#     #         try:
+#     #             # scipy.linalg.cholesky requires lower=True to return L L^T = A
+#     #             transform = cholesky(sigma, lower=True)
+#     #         except LinAlgError as e:
+#     #             raise ValueError("`sigma` must be positive definite.") from e
+#     #     else:
+#     #         raise ValueError("`sigma` has incorrect shape.")
+#     # else:
+#     transform = None
 
-    if not res.success:
-        raise RuntimeError("Optimal parameters not found: " + res.message)
+#     func = _lightweight_memoizer(_wrap_func(f, xdata, ydata, transform))
 
-    infodict = dict(nfev=res.nfev, fvec=res.fun)
-    ier = res.status
-    errmsg = res.message
+#     # if callable(jac):
+#     #     jac = _lightweight_memoizer(_wrap_jac(jac, xdata, transform))
+#     # elif jac is None and method != 'lm':
+#     #     jac = '2-point'
+#     jac = '2-point'
+#     # if 'args' in kwargs:
+#     #     # The specification for the model function `f` does not support
+#     #     # additional arguments. Refer to the `curve_fit` docstring for
+#     #     # acceptable call signatures of `f`.
+#     #     raise ValueError("'args' is not a supported keyword argument.")
 
-    ysize = len(res.fun)
-    cost = 2 * res.cost  # res.cost is half sum of squares!
-    popt = res.x
+#     # if method == 'lm':
+#     #     # if ydata.size == 1, this might be used for broadcast.
+#     #     if ydata.size != 1 and n > ydata.size:
+#     #         raise TypeError(f"The number of func parameters={n} must not"
+#     #                         f" exceed the number of data points={ydata.size}")
+#     #     res = leastsq(func, p0, Dfun=jac, full_output=1, **kwargs)
+#     #     popt, pcov, infodict, errmsg, ier = res
+#     #     ysize = len(infodict['fvec'])
+#     #     cost = np.sum(infodict['fvec'] ** 2)
+#     #     if ier not in [1, 2, 3, 4]:
+#     #         raise RuntimeError("Optimal parameters not found: " + errmsg)
+#     # else:
 
-    # Do Moore-Penrose inverse discarding zero singular values.
-    _, s, VT = svd(res.jac, full_matrices=False)
-    threshold = np.finfo(float).eps * max(res.jac.shape) * s[0]
-    s = s[s > threshold]
-    VT = VT[:s.size]
-    pcov = np.dot(VT.T / s**2, VT)
+#     # Rename maxfev (leastsq) to max_nfev (least_squares), if specified.
+#     # if 'max_nfev' not in kwargs:
+#     #     kwargs['max_nfev'] = kwargs.pop('maxfev', None)
+#     kwargs['max_nfev'] = None
+#     res = optimize._lsq.least_squares(func, p0, jac=jac, bounds=bounds, method=method,
+#                         **kwargs)
 
-    warn_cov = False
-    if pcov is None or np.isnan(pcov).any():
-        # indeterminate covariance
-        pcov = np.zeros((len(popt), len(popt)), dtype=float)
-        pcov.fill(np.inf)
-        warn_cov = True
-    elif not absolute_sigma:
-        if ysize > p0.size:
-            s_sq = cost / (ysize - p0.size)
-            pcov = pcov * s_sq
-        else:
-            pcov.fill(np.inf)
-            warn_cov = True
+#     if not res.success:
+#         raise RuntimeError("Optimal parameters not found: " + res.message)
 
-    if warn_cov:
-        plog('Covariance of the parameters could not be estimated')
-        # warnings.warn('Covariance of the parameters could not be estimated',
-        #               category=OptimizeWarning, stacklevel=2)
+#     infodict = dict(nfev=res.nfev, fvec=res.fun)
+#     ier = res.status
+#     errmsg = res.message
 
-    if full_output:
-        return popt, pcov, infodict, errmsg, ier
-    else:
-        return popt, pcov
+#     ysize = len(res.fun)
+#     cost = 2 * res.cost  # res.cost is half sum of squares!
+#     popt = res.x
+
+#     # Do Moore-Penrose inverse discarding zero singular values.
+#     _, s, VT = svd(res.jac, full_matrices=False)
+#     threshold = np.finfo(float).eps * max(res.jac.shape) * s[0]
+#     s = s[s > threshold]
+#     VT = VT[:s.size]
+#     pcov = np.dot(VT.T / s**2, VT)
+
+#     warn_cov = False
+#     if pcov is None or np.isnan(pcov).any():
+#         # indeterminate covariance
+#         pcov = np.zeros((len(popt), len(popt)), dtype=float)
+#         pcov.fill(np.inf)
+#         warn_cov = True
+#     elif not absolute_sigma:
+#         if ysize > p0.size:
+#             s_sq = cost / (ysize - p0.size)
+#             pcov = pcov * s_sq
+#         else:
+#             pcov.fill(np.inf)
+#             warn_cov = True
+
+#     if warn_cov:
+#         plog('Covariance of the parameters could not be estimated')
+#         # warnings.warn('Covariance of the parameters could not be estimated',
+#         #               category=OptimizeWarning, stacklevel=2)
+
+#     if full_output:
+#         return popt, pcov, infodict, errmsg, ier
+#     else:
+        # return popt, pcov
 
 def multiprocess_fast_gaussian_photometry(package):
     try:
@@ -1931,6 +1931,30 @@ class Camera:
         self.post_processing_queue_thread = threading.Thread(target=self.post_processing_process, args=())
         self.post_processing_queue_thread.daemon = True
         self.post_processing_queue_thread.start()
+
+
+
+        # Load in previous estimates of readout_time
+        self.readout_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'readout' + g_dev['cam'].alias + str(g_dev['obs'].name))
+        try:
+            readout_list=self.readout_shelf['readout_list']
+        except:
+            readout_list=[]
+
+        self.readout_shelf.close()
+
+        if len(readout_list) > 0:
+            self.readout_time = bn.nanmedian(readout_list)
+        else:
+            self.readout_time = 0 # if it is zero, thats fine, it will estimate the readout time on the first readout. 
+
+        plog ("Currently estimated readout time: " + str(self.readout_time))
+        #self.readout_time=0
+
+
+
+        
+        
 
 
         if self.theskyx:
@@ -3103,7 +3127,7 @@ class Camera:
 
         #N_of_substacks = 10
         exp_of_substacks = 10
-
+        readout_estimate_holder=[]
         N_of_substacks = int(exposure_time / exp_of_substacks)
         readouts=0
         sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
@@ -3132,9 +3156,12 @@ class Camera:
 
             exposure_timer=time.time()
             # If it is the first exposure, then just take the exposure. Same with the second as the first one is the reference.
+            
             if subexposure == 0 or subexposure == 1:
-                print ("Collecting subexposure " + str(subexposure+1))
+                print ("Collecting subexposure " + str(subexposure+1))                
                 success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
+                if subexposure == 0 :
+                    self.substack_start_time=time.time()
                 qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
                 exposure_timer=time.time()
                 if subexposure == 1:
@@ -3197,7 +3224,9 @@ class Camera:
                     # Fire off an exposure.
                     print ("Collecting subexposure " + str(subexposure+1))
                     success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
+                    self.expected_endpoint_of_substack_exposure=time.time() + exp_of_substacks
                     qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+                    
                     exposure_timer=time.time()
                 # While the exposure is happening prep align and stack the previous exposure.
                 #print ("Processing " +str(subexposure))
@@ -3296,7 +3325,7 @@ class Camera:
                 #print ("readouts " +str(readouts))
                 while (time.time() - exposure_timer) < exp_of_substacks:
                     #print ("Watiing for exposure to finish")
-                    time.sleep(0.05)
+                    time.sleep(0.005)
 
             #if not subexposure == (N_of_substacks):
                 # READOUT FROM THE QHY
@@ -3304,16 +3333,24 @@ class Camera:
                 image_width_byref = c_uint32()
                 image_height_byref = c_uint32()
                 bits_per_pixel_byref = c_uint32()
+                time_before_last_substack_readout=time.time()    
                 success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
                                                       byref(image_width_byref),
                                                       byref(image_height_byref),
                                                       byref(bits_per_pixel_byref),
                                                       byref(qhycam.camera_params[qhycam_id]['channels']),
                                                       byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-
+                time_after_last_substack_readout=time.time()
+                
+                plog ("readout time: " + str(time_after_last_substack_readout - time_before_last_substack_readout))
+                readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
+                
                 image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
+                
 
+                            
                 sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+                
                 #print ("Collected " +str(subexposure+1))
 
 
@@ -3324,11 +3361,15 @@ class Camera:
 
         # Once collected and done, nanmedian the array into the single image
 
+        self.readout_estimate= np.median(np.array(readout_estimate_holder))
+
         temptimer=time.time()
         sub_stacker_array=bn.nanmedian(sub_stacker_array, axis=2) * N_of_substacks
         print ("Stacktime: " + str(time.time()-temptimer))
         self.sub_stack_hold = sub_stacker_array
-
+        
+        #self.substack_midpoint_time=(self.substack_start_time + expected_endpoint_of_substack_exposure) / 2
+        
         del sub_stacker_array
         self.substacker_available=True
 
@@ -3382,12 +3423,17 @@ class Camera:
             bits_per_pixel_byref = c_uint32()
 
             #qhycommand=time.time()
+            time_before_readout=time.time()    
             success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
                                                   byref(image_width_byref),
                                                   byref(image_height_byref),
                                                   byref(bits_per_pixel_byref),
                                                   byref(qhycam.camera_params[qhycam_id]['channels']),
                                                   byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
+            time_after_readout=time.time()
+            
+            plog ("readout time: " + str(time_after_readout - time_before_readout))
+            self.readout_estimate= time_after_readout - time_before_readout
             #print (time.time() - qhycommand)
 
             image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
@@ -3778,11 +3824,11 @@ class Camera:
         self.native_bin = self.config["camera"][self.name]["settings"]["native_bin"]
         self.ccd_sum = str(1) + ' ' + str(1)
 
-        readout_time = float(
-            self.config["camera"][self.name]["settings"]["cycle_time"]
-        )
+        # readout_time = float(
+        #     self.config["camera"][self.name]["settings"]["cycle_time"]
+        # )
         self.estimated_readtime = (
-            exposure_time + readout_time
+            exposure_time + self.readout_time
         )
         count = int(
             optional_params.get("count", 1)
@@ -4348,6 +4394,8 @@ class Camera:
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
 
+
+                            
                             # # Calculate current airmass now
                             # #try:
                             # rd = SkyCoord(ra=ra_at_time_of_exposure*u.hour, dec=dec_at_time_of_exposure*u.deg)
@@ -4682,19 +4730,19 @@ class Camera:
         self.post_ocn = []
         counter = 0
 
-        cycle_time = (
-            float(self.config["camera"][self.name]["settings"]['cycle_time'])
-        )
+        # cycle_time = (
+        #     float(self.config["camera"][self.name]["settings"]['cycle_time'])
+        # )
 
         if substack:
             # It takes time to do the median stack... add in a bit of an empirical overhead
             stacking_overhead= 0.0005*pow(exposure_time,2) + 0.0334*exposure_time
             print ("Expected stacking overhead: " + str(stacking_overhead))
-            cycle_time=exposure_time + (exposure_time / 10)*cycle_time + stacking_overhead
+            cycle_time=exposure_time + (exposure_time / 10)*self.readout_time + stacking_overhead
             self.completion_time = start_time_of_observation + cycle_time
             #breakpoint()
         else:
-            cycle_time=cycle_time+exposure_time
+            cycle_time=self.readout_time+exposure_time
             self.completion_time = start_time_of_observation + cycle_time
         expresult = {"error": False}
         quartileExposureReport = 0
@@ -4876,6 +4924,21 @@ class Camera:
 
             elif self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
 
+                                
+                if self.substacker:
+                    expected_endpoint_of_substack_exposure=copy.deepcopy(self.expected_endpoint_of_substack_exposure)
+                    substack_start_time=copy.deepcopy(self.substack_start_time)
+                else:
+                    expected_endpoint_of_substack_exposure=None
+                    substack_start_time=None 
+                    
+                readout_estimate = copy.deepcopy(self.readout_estimate)
+                
+                # If there isn't an estimated readout time shelf yet, use this first one as the estimate to begin with. 
+                if self.readout_time==0:
+                    self.readout_time=copy.deepcopy(readout_estimate)
+                
+                
                 self.exposure_busy=False
                 # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
                 if not g_dev['obs'].mountless_operation:
@@ -5162,8 +5225,9 @@ class Camera:
 
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
-
-                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker)), block=False)
+                    
+                    
+                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate)), block=False)
 
 
                 # If this is a pointing or a focus frame, we need to do an
@@ -5894,11 +5958,30 @@ def post_exposure_process(payload):
      dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, \
      ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, \
      camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path, \
-     solve_it, next_seq, zoom_factor, useastrometrynet, substack) = payload
+     solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate) = payload
     post_exposure_process_timer=time.time()
     ix, iy = img.shape
 
 
+
+    # Update readout time list
+    readout_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'readout' + g_dev['cam'].alias + str(g_dev['obs'].name))
+    try:
+        readout_list=readout_shelf['readout_list']
+    except:
+        readout_list=[]
+
+    readout_list.append(readout_estimate)
+
+    too_long=True
+    while too_long:
+        if len(readout_list) > 100:
+            readout_list.pop(0)
+        else:
+            too_long = False
+
+    readout_shelf['readout_list'] = readout_list
+    readout_shelf.close()
 
     image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
 
@@ -6055,37 +6138,9 @@ def post_exposure_process(payload):
             ]['direct_qhy_readout_mode'], "QHY Readout Mode")
 
 
-        hdu.header["TIMESYS"] = ("UTC", "Time system used")
 
-        hdu.header["DATE"] = (
-            datetime.datetime.isoformat(
-                datetime.datetime.utcfromtimestamp(start_time_of_observation)
-            ),
-            "Start date and time of observation"
-        )
-
-        hdu.header["DATE-OBS"] = (
-            datetime.datetime.isoformat(
-                datetime.datetime.utcfromtimestamp(start_time_of_observation)
-            ),
-            "Start date and time of observation"
-        )
-        hdu.header["DAY-OBS"] = (
-            g_dev["day"],
-            "Date at start of observing night"
-        )
-        hdu.header["MJD-OBS"] = (
-            Time(start_time_of_observation, format="unix").mjd,
-            "[UTC days] Modified Julian Date start date/time",
-        )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
-        yesterday = datetime.datetime.now() - datetime.timedelta(1)
-        hdu.header["L1PUBDAT"] = datetime.datetime.strftime(
-            yesterday, "%Y-%m-%dT%H:%M:%S.%fZ"
-        )  # IF THIS DOESN"T WORK, subtract the extra datetime ...
-        hdu.header["JD-START"] = (
-            Time(start_time_of_observation, format="unix").jd,
-            "[UTC days] Julian Date at start of exposure",
-        )
+        hdu.header["READOUTE"]= (readout_estimate, "Readout time estimated from this exposure")
+        hdu.header["READOUTU"] = (self.readout_time, "Readout time used for this exposure")
         hdu.header["OBSTYPE"] = (
             frame_type.upper(),
             "Observation type",
@@ -6093,23 +6148,123 @@ def post_exposure_process(payload):
         if frame_type.upper() == "SKY FLAT":
            frame_type =="SKYFLAT"
         hdu.header["IMAGETYP"] = (frame_type.upper(), "Observation type")
-        hdu.header["EXPTIME"] = (
-            exposure_time,
-            "[s] Requested exposure length",
-        )  # This is the exposure in seconds specified by the user
-        hdu.header["EFFEXPT"] = (
-            exposure_time,
-            "[s] Integrated exposure length",
-        )
-        hdu.header["EFFEXPN"] = (
-            1,
-            "[s] Number of integrated exposures",
-        )
-        hdu.header["BUNIT"] = "adu"
 
-        hdu.header[
-            "EXPOSURE"
-        ] = exposure_time  # Ideally this needs to be calculated from actual times
+        hdu.header["TIMESYS"] = ("UTC", "Time system used")
+
+
+        hdu.header["DAY-OBS"] = (
+            g_dev["day"],
+            "Date at start of observing night"
+        )
+        yesterday = datetime.datetime.now() - datetime.timedelta(1)
+        hdu.header["L1PUBDAT"] = datetime.datetime.strftime(
+            yesterday, "%Y-%m-%dT%H:%M:%S.%fZ"
+        )  # IF THIS DOESN"T WORK, subtract the extra datetime ...
+        
+        # There is a significant difference between substack timing and "normal" exposure timing
+        # Also it has impacts on the actual "exposure time" as well.... the exposure time is "longer" but has LESS effective exposure time
+        
+        if substack:
+            
+            hdu.header["SUBSTK"] = (True, "Is this made from at-site sub exposures.") 
+            hdu.header["SUBEXPT"] = (expected_endpoint_of_substack_exposure - substack_start_time, "Time between start and end of subexposure set")
+            
+            
+            
+        
+            hdu.header["DATE"] = (
+                datetime.datetime.isoformat(
+                    datetime.datetime.utcfromtimestamp(substack_start_time)
+                ),
+                "Start date and time of observation"
+            )
+    
+            hdu.header["DATE-OBS"] = (
+                datetime.datetime.isoformat(
+                    datetime.datetime.utcfromtimestamp(substack_start_time)
+                ),
+                "Start date and time of observation"
+            )
+            
+            hdu.header["MJD-OBS"] = (
+                Time(substack_start_time, format="unix").mjd,
+                "[UTC days] Modified Julian Date start date/time",
+            )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
+            hdu.header["JD-START"] = (
+                Time(substack_start_time, format="unix").jd,
+                "[UTC days] Julian Date at start of exposure",
+            )       
+            hdu.header["EXPTIME"] = (
+                expected_endpoint_of_substack_exposure - substack_start_time,
+                "[s] Actual exposure length",
+            )  # This is the exposure in seconds specified by the user
+            hdu.header["EFFEXPT"] = (
+                exposure_time,
+                "[s] Integrated exposure length",
+            )
+            hdu.header["EFFEXPN"] = (
+                int(exposure_time / 10),
+                "[s] Number of integrated exposures",
+            )
+            
+    
+            hdu.header[
+                "EXPOSURE"
+            ] = (
+                expected_endpoint_of_substack_exposure - substack_start_time,
+                "[s] Actual exposure length",
+            )  # Ideally this needs to be calculated from actual times
+        
+
+        else:
+            
+            hdu.header["SUBSTK"] = (False, "Is this made from at-site sub exposures.") 
+            
+            hdu.header["DATE"] = (
+                datetime.datetime.isoformat(
+                    datetime.datetime.utcfromtimestamp(start_time_of_observation)
+                ),
+                "Start date and time of observation"
+            )
+    
+            hdu.header["DATE-OBS"] = (
+                datetime.datetime.isoformat(
+                    datetime.datetime.utcfromtimestamp(start_time_of_observation)
+                ),
+                "Start date and time of observation"
+            )
+            
+            hdu.header["MJD-OBS"] = (
+                Time(start_time_of_observation, format="unix").mjd,
+                "[UTC days] Modified Julian Date start date/time",
+            )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
+            hdu.header["JD-START"] = (
+                Time(start_time_of_observation, format="unix").jd,
+                "[UTC days] Julian Date at start of exposure",
+            )       
+            hdu.header["EXPTIME"] = (
+                exposure_time,
+                "[s] Actual exposure length",
+            )  # This is the exposure in seconds specified by the user
+            hdu.header["EFFEXPT"] = (
+                exposure_time,
+                "[s] Integrated exposure length",
+            )
+            hdu.header["EFFEXPN"] = (
+                1,
+                "[s] Number of integrated exposures",
+            )
+            
+    
+            hdu.header[
+                "EXPOSURE"
+            ] = (
+                exposure_time,
+                "[s] Actual exposure length",
+            )  # Ideally this needs to be calculated from actual times
+        
+        hdu.header["BUNIT"] = "adu"
+        
         hdu.header["FILTER"] = (
             this_exposure_filter,
             "Filter type")
