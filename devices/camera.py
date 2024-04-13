@@ -3340,12 +3340,12 @@ class Camera:
                                                       byref(bits_per_pixel_byref),
                                                       byref(qhycam.camera_params[qhycam_id]['channels']),
                                                       byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
+                
+                image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
                 time_after_last_substack_readout=time.time()
                 
                 plog ("readout time: " + str(time_after_last_substack_readout - time_before_last_substack_readout))
                 readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
-                
-                image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
                 
 
                             
@@ -3430,14 +3430,14 @@ class Camera:
                                                   byref(bits_per_pixel_byref),
                                                   byref(qhycam.camera_params[qhycam_id]['channels']),
                                                   byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
+            
+            #print (time.time() - qhycommand)
+
+            image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
             time_after_readout=time.time()
             
             plog ("readout time: " + str(time_after_readout - time_before_readout))
             self.readout_estimate= time_after_readout - time_before_readout
-            #print (time.time() - qhycommand)
-
-            image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
-
             #npreshaprecommand=time.time()
             #image = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
@@ -4932,11 +4932,9 @@ class Camera:
                     expected_endpoint_of_substack_exposure=None
                     substack_start_time=None 
                     
-                readout_estimate = copy.deepcopy(self.readout_estimate)
                 
-                # If there isn't an estimated readout time shelf yet, use this first one as the estimate to begin with. 
-                if self.readout_time==0:
-                    self.readout_time=copy.deepcopy(readout_estimate)
+                
+                
                 
                 
                 self.exposure_busy=False
@@ -5028,7 +5026,12 @@ class Camera:
                             plog("Still waiting for file to arrive: ", e)
                         time.sleep(3)
                         retrycounter = retrycounter + 1
-
+                        
+                
+                readout_estimate = copy.deepcopy(self.readout_estimate)
+                # If there isn't an estimated readout time shelf yet, use this first one as the estimate to begin with. 
+                if self.readout_time==0:
+                    self.readout_time=copy.deepcopy(readout_estimate)
                 # Here is where we wait for any slew left over while async'ing and grabbing image
                 if Nsmartstack > 1:
                     self.wait_for_slew()
@@ -5227,7 +5230,7 @@ class Camera:
                     focus_position=g_dev['foc'].current_focus_position
                     
                     
-                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate)), block=False)
+                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time)), block=False)
 
 
                 # If this is a pointing or a focus frame, we need to do an
@@ -5958,7 +5961,7 @@ def post_exposure_process(payload):
      dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, \
      ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, \
      camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path, \
-     solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate) = payload
+     solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate,readout_time) = payload
     post_exposure_process_timer=time.time()
     ix, iy = img.shape
 
@@ -6140,7 +6143,7 @@ def post_exposure_process(payload):
 
 
         hdu.header["READOUTE"]= (readout_estimate, "Readout time estimated from this exposure")
-        hdu.header["READOUTU"] = (self.readout_time, "Readout time used for this exposure")
+        hdu.header["READOUTU"] = (readout_time, "Readout time used for this exposure")
         hdu.header["OBSTYPE"] = (
             frame_type.upper(),
             "Observation type",

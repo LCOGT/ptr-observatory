@@ -3867,11 +3867,11 @@ class Observatory:
                                         
                         else:
                             #plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in wait queue.")
-                            self.file_wait_and_act_queue.put((filename, timesubmitted) , block=False)
+                            self.file_wait_and_act_queue.put((filename, timesubmitted, packet) , block=False)
                     # If it has been less than 3 minutes put it back in
                     elif time.time() -timesubmitted < 180:
                         #plog (str(filepath) + " Not there yet, putting back in queue.")
-                        self.file_wait_and_act_queue.put((filename, timesubmitted) , block=False)
+                        self.file_wait_and_act_queue.put((filename, timesubmitted, packet) , block=False)
                     else:
                         plog (str(filename) + " seemed to never turn up... not putting back in the queue")
                         
