@@ -4736,14 +4736,25 @@ class Camera:
 
         if substack:
             # It takes time to do the median stack... add in a bit of an empirical overhead
+            # We also have to factor in all the readout times unlike a single exposure
+            # As the readouts are all done in the substack thread.            
             stacking_overhead= 0.0005*pow(exposure_time,2) + 0.0334*exposure_time
-            print ("Expected stacking overhead: " + str(stacking_overhead))
-            cycle_time=exposure_time + (exposure_time / 10)*self.readout_time + stacking_overhead
+            plog ("Expected stacking overhead: " + str(stacking_overhead))
+            cycle_time=exposure_time + ((exposure_time / 10))*self.readout_time + stacking_overhead
             self.completion_time = start_time_of_observation + cycle_time
             #breakpoint()
-        else:
+        # For file-based readouts, we need to factor in the readout time
+        # and wait for that as well as the exposure time.
+        # Currently this is just theskyx... probably also ascom and maxim but we don't use either of them anymore
+        elif self.theskyx: 
             cycle_time=self.readout_time+exposure_time
             self.completion_time = start_time_of_observation + cycle_time
+        # Otherwise just wait for the exposure_time to end
+        # Because the readout time occurs in the image aquisition function
+        else:
+            cycle_time=exposure_time
+            self.completion_time = start_time_of_observation + cycle_time
+            
         expresult = {"error": False}
         quartileExposureReport = 0
         self.plog_exposure_time_counter_timer=time.time() -3.0
