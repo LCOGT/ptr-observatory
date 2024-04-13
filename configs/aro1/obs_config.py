@@ -701,7 +701,7 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -7.5,  # Verify we can go colder
+                'temp_setpoint': -1.0,  # Verify we can go colder
                 'temp_setpoint_tolerance': 1.0, #down from 1.5 that was built into the code.
                 'has_chiller': True,
                 'chiller_com_port': 'COM1',
