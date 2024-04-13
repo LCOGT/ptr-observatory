@@ -3131,6 +3131,10 @@ class Camera:
         N_of_substacks = int(exposure_time / exp_of_substacks)
         readouts=0
         sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
+        
+        self.sub_stacker_midpoints=[]
+        
+        
         #print ("subexposing")
         for subexposure in range(N_of_substacks+1):
             #print (subexposure)
@@ -3158,12 +3162,17 @@ class Camera:
             # If it is the first exposure, then just take the exposure. Same with the second as the first one is the reference.
             
             if subexposure == 0 or subexposure == 1:
-                print ("Collecting subexposure " + str(subexposure+1))                
+                print ("Collecting subexposure " + str(subexposure+1))      
+                
                 success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                 if subexposure == 0 :
                     self.substack_start_time=time.time()
+                self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
                 qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
                 exposure_timer=time.time()
+                
+                
+                
                 if subexposure == 1:
                     #print ("Flat,DarkBiasing reference frame")
                     # De-biasdark sub_stack array
@@ -3225,6 +3234,7 @@ class Camera:
                     print ("Collecting subexposure " + str(subexposure+1))
                     success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                     self.expected_endpoint_of_substack_exposure=time.time() + exp_of_substacks
+                    self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
                     qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
                     
                     exposure_timer=time.time()
@@ -4943,9 +4953,11 @@ class Camera:
                 if self.substacker:
                     expected_endpoint_of_substack_exposure=copy.deepcopy(self.expected_endpoint_of_substack_exposure)
                     substack_start_time=copy.deepcopy(self.substack_start_time)
+                    sub_stacker_midpoints=copy.deepcopy(self.sub_stacker_midpoints)
                 else:
                     expected_endpoint_of_substack_exposure=None
                     substack_start_time=None 
+                    sub_stacker_midpoints=None
                     
                 
                 
@@ -5245,7 +5257,7 @@ class Camera:
                     focus_position=g_dev['foc'].current_focus_position
                     
                     
-                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time)), block=False)
+                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time, sub_stacker_midpoints)), block=False)
 
 
                 # If this is a pointing or a focus frame, we need to do an
@@ -5977,7 +5989,7 @@ def post_exposure_process(payload):
      dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, \
      ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, \
      camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path, \
-     solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate,readout_time) = payload
+     solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints) = payload
     post_exposure_process_timer=time.time()
     ix, iy = img.shape
 
@@ -6188,9 +6200,18 @@ def post_exposure_process(payload):
             #hdu.header["SUBSTK"] = (True, "Is this made from at-site sub exposures.") 
             hdu.header["SUBEXPT"] = (expected_endpoint_of_substack_exposure - substack_start_time, "Time between start and end of subexposure set")
             
+            hdu.header['SUBMIDTS'] = (sub_stacker_midpoints, "Midpoints of substack exposures")
             
             
+            substack_midexposure=np.mean(np.array(sub_stacker_midpoints))
+            
+            print ("substacker midpoints")
+            print (sub_stacker_midpoints)
         
+            print ("substacked midpoint")
+            print (substack_midexposure)
+            
+            
             hdu.header["DATE"] = (
                 datetime.datetime.isoformat(
                     datetime.datetime.utcfromtimestamp(substack_start_time)
@@ -6213,6 +6234,19 @@ def post_exposure_process(payload):
                 Time(substack_start_time, format="unix").jd,
                 "[UTC days] Julian Date at start of exposure",
             )       
+            
+            
+            hdu.header["MJD-MID"] = (
+                Time(substack_midexposure, format="unix").mjd,
+                "[UTC days] Modified Julian Date start date/time",
+            )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
+            hdu.header["JD-MID"] = (
+                Time(substack_midexposure, format="unix").jd,
+                "[UTC days] Julian Date at start of exposure",
+            )       
+            
+            
+            
             hdu.header["EXPTIME"] = (
                 expected_endpoint_of_substack_exposure - substack_start_time,
                 "[s] Actual exposure length",
@@ -6261,6 +6295,17 @@ def post_exposure_process(payload):
                 Time(start_time_of_observation, format="unix").jd,
                 "[UTC days] Julian Date at start of exposure",
             )       
+            
+            
+            hdu.header["MJD-MID"] = (
+                Time(start_time_of_observation + (0.5 * exposure_time), format="unix").mjd,
+                "[UTC days] Modified Julian Date start date/time",
+            )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
+            hdu.header["JD-MID"] = (
+                Time(start_time_of_observation+ (0.5 * exposure_time), format="unix").jd,
+                "[UTC days] Julian Date at start of exposure",
+            )     
+            
             hdu.header["EXPTIME"] = (
                 exposure_time,
                 "[s] Actual exposure length",
@@ -6948,7 +6993,7 @@ def post_exposure_process(payload):
                 # Focus images use it for focus, Normal images also report their focus.
                 # IMMEDIATELY SEND TO SEP QUEUE
                 # NEEDS to go up as fast as possible ahead of smartstacks to faciliate image matching.
-                g_dev['obs'].sep_processing=True
+                #g_dev['obs'].sep_processing=True
                 #breakpoint()
                 #print ("to_sep exposure: " + str(exposure_time))
                 g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))

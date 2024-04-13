@@ -2558,14 +2558,14 @@ class Observatory:
                 
                 del hdufocusdata
 
-                self.sep_processing = False
+                #self.sep_processing = False
                 self.sep_queue.task_done()
                 #one_at_a_time = 0
                 #time.sleep(1)
 
             else:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                time.sleep(1)
+                time.sleep(0.25)
 
     def platesolve_process(self):
         """This is the platesolve queue that happens in a different process
