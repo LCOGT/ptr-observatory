@@ -371,12 +371,14 @@ site_config = {
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
             'focuser_movement_settle_time': 3,
-                # # F4.9 setup
-                # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
-                # 'ref_temp':  5.1,    # Update when pinning reference
+            #F.9 setup
+            'reference': 6500,    # 2024-04-13 Total guess WER
+            'ref_temp':  15.,
+            'temp_coeff': 0.0,     #Initial setting 20240413 WER
+            # Update when pinning reference
             #F4.9 setup
-            'reference': 5462.94, #5743,
-            'temp_coeff': -20.4541,  #  Meas   -12 c to 4C so nominal -4C
+            #'reference': 5462.94, #5743,
+            #'temp_coeff': -20.4541,  #  Meas   -12 c to 4C so nominal -4C
                                     #  microns per degree of tube temperature
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20240320',
@@ -702,7 +704,7 @@ site_config = {
                 # This is the area for cooling related settings
                 'cooler_on': True,
                 'temp_setpoint': -1.0,  # Verify we can go colder
-                'temp_setpoint_tolerance': 1.0, #down from 1.5 that was built into the code.
+                'temp_setpoint_tolerance': 1.5, #down from 1.5 that was built into the code.
                 'has_chiller': True,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C

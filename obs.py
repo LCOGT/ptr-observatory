@@ -606,7 +606,7 @@ class Observatory:
         self.smartstack_queue_thread.daemon = True
         self.smartstack_queue_thread.start()
 
-    
+
 
 
 
@@ -834,7 +834,7 @@ class Observatory:
         # Insert camera size into config
         self.config['camera']['camera_1_1']['camera_size_x'] = g_dev['cam'].imagesize_x
         self.config['camera']['camera_1_1']['camera_size_y'] = g_dev['cam'].imagesize_y
-        
+
         retryapi=True
         while retryapi:
             try:
@@ -1106,7 +1106,7 @@ class Observatory:
 
                         if cancel_check:
                             return  # Note we do not process any commands.
-                       
+
 
                     else:
                         plog("Request rejected as obs in admin or owner mode.")
@@ -1608,14 +1608,14 @@ class Observatory:
                             plog("Camera cooler reconnect failed 2nd time.")
 
                 # Things that only rarely have to be reported go in this block.
-                if (time.time() - self.last_time_report_to_console) > 600:
+                if (time.time() - self.last_time_report_to_console) > 180:
                     plog (ephem.now())
                     if self.camera_sufficiently_cooled_for_calibrations == False:
-                        if (time.time() - self.last_time_camera_was_warm) < 600:
+                        if (time.time() - self.last_time_camera_was_warm) < 180:    #Temporary NB WER 2024_04-13
                             plog ("Camera was recently out of the temperature range for calibrations")
-                            plog ("Waiting for a 10 minute period where camera has been cooled to the right temperature")
+                            plog ("Waiting for a 3 minute period where camera has been cooled to the right temperature")
                             plog ("Before continuing calibrations to ensure cooler is evenly cooled")
-                            plog ( str(int(600 - (time.time() - self.last_time_camera_was_warm))) + " seconds to go.")
+                            plog ( str(int(180 - (time.time() - self.last_time_camera_was_warm))) + " seconds to go.")
                             plog ("Camera current temperature ("+ str(current_camera_temperature)+").")
                             plog ("Difference from setpoint: " + str( (current_camera_temperature - g_dev['cam'].setpoint)))
                         else:
@@ -1676,7 +1676,7 @@ class Observatory:
                             self.too_hot_in_observatory=True
                     except:
                         plog ("observatory temperature probe failed.")
-                        
+
                     if g_dev['cam'].day_warm  and (ephem.now() < g_dev['events']['Eve Bias Dark'] - ephem.hour) or \
                             (g_dev['events']['End Morn Bias Dark'] + ephem.hour < ephem.now() < g_dev['events']['Nightly Reset']):
                         plog("In Daytime: Camera set at warmer temperature")
@@ -1903,7 +1903,7 @@ class Observatory:
                                 headerdict[entry] = tempheader[entry]
 
                             upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)
-                            
+
                             # Only remove file if successfully uploaded
                             if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
                                 try:
@@ -2441,7 +2441,7 @@ class Observatory:
                 del hdusmalldata # Get big file out of memory
 
 
-                # Actually there is no need to wait. 
+                # Actually there is no need to wait.
                 # Essentially wait until the subprocess is complete
                 #jpeg_subprocess.communicate()
 
@@ -2532,7 +2532,7 @@ class Observatory:
                     plog(traceback.format_exc())
 
 
-                # delete the subprocess connection once the data have been dumped out to the process. 
+                # delete the subprocess connection once the data have been dumped out to the process.
                 del sep_subprocess
 
                 # Essentially wait until the subprocess is complete
@@ -2543,8 +2543,8 @@ class Observatory:
                 # # We actually don't need to wait until the subprocess is fully complete.
                 # while not os.path.exists(im_path + text_name.replace('.txt', '.fwhm')):
                 #     time.sleep(0.05)
-                
-                
+
+
 
                 if self.config['keep_focus_images_on_disk']:
                     g_dev['obs'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
@@ -2555,7 +2555,7 @@ class Observatory:
                                                             frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                 self.enqueue_for_fastUI(10, im_path, text_name)
-                
+
                 del hdufocusdata
 
                 #self.sep_processing = False
@@ -3271,7 +3271,7 @@ class Observatory:
                                 if not os.path.exists(self.local_flat_folder + tempfilter):
                                     os.makedirs(self.local_flat_folder + tempfilter)
                                 tempfilename = self.local_flat_folder + tempfilter + '/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')                               
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
 
                                 # Don't consider tempfiles that may be in use
                                 files_in_folder=glob.glob(self.local_flat_folder + tempfilter + '/' + '*.n*')
@@ -3782,13 +3782,13 @@ class Observatory:
     # Note this is a thread!
     def file_wait_and_act(self):
         """A general purpose wait for file and act thread
-        
+
         """
 
-        
+
         while True:
 
-            if (not self.file_wait_and_act_queue.empty()): 
+            if (not self.file_wait_and_act_queue.empty()):
                 #one_at_a_time = 1
                 (filename, timesubmitted, packet) = self.file_wait_and_act_queue.get(block=False)
                 # if pri_image is None:
@@ -3799,47 +3799,47 @@ class Observatory:
 
                 # Here we parse the file, set up and send to AWS
                 try:
-                                       
-                    
+
+
                     # If the file is there now
                     if os.path.exists(filename):
                         # To the extent it has a size
                         if os.stat(filename).st_size > 0:
-                            
+
                             # print ("Arrived and processing")
                             # print (filename)
                             if '.fwhm' in filename:
-                            
+
                                 try:
                                     with open(filename, 'r') as f:
                                         fwhm_info = json.load(f)
-                    
-                                    
-                    
+
+
+
                                     self.fwhmresult={}
                                     self.fwhmresult["FWHM"] = float(fwhm_info['rfr'])
                                     rfr=float(fwhm_info['rfr'])
                                     self.fwhmresult["mean_focus"] = packet[0]
                                     self.fwhmresult['No_of_sources'] =float(fwhm_info['sources'])
                                     self.fwhmresult["exp_time"] = packet[1]
-                    
+
                                     self.fwhmresult["filter"] = packet[2]
                                     self.fwhmresult["airmass"] = packet[3]
                                 except:
                                     plog ("something funky in the fwhm area ")
                                     plog(traceback.format_exc())
-    
-    
+
+
                                 if not np.isnan(self.fwhmresult['FWHM']):
                                     # Focus tracker code. This keeps track of the focus and if it drifts
                                     # Then it triggers an autofocus.
-    
+
                                     g_dev["foc"].focus_tracker.pop(0)
                                     g_dev["foc"].focus_tracker.append((self.fwhmresult["mean_focus"],g_dev["foc"].current_focus_temperature,self.fwhmresult["exp_time"],self.fwhmresult["filter"], self.fwhmresult["airmass"] ,round(rfr, 3)))
                                     plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker))# + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
-    
+
                                     #self.mega_tracker.append((self.fwhmresult["mean_focus"],self.fwhmresult["exp_time"] ,round(rfr, 3)))
-    
+
                                     # If there hasn't been a focus yet, then it can't check it,
                                     # so make this image the last solved focus.
                                     if g_dev["foc"].last_focus_fwhm == None:
@@ -3860,9 +3860,9 @@ class Observatory:
                                         #         + ".",
                                         #         p_level="INFO")
                                         print ("TEMPORARILY DISABLED 1234")
-                            
-                            
-                                        
+
+
+
                         else:
                             #plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in wait queue.")
                             self.file_wait_and_act_queue.put((filename, timesubmitted, packet) , block=False)
@@ -3872,7 +3872,7 @@ class Observatory:
                         self.file_wait_and_act_queue.put((filename, timesubmitted, packet) , block=False)
                     else:
                         plog (str(filename) + " seemed to never turn up... not putting back in the queue")
-                        
+
                 except:
                     plog ("something strange in the UI uploader")
                     plog((traceback.format_exc()))
@@ -3914,25 +3914,25 @@ class Observatory:
                     filename = pri_image[1][1]
                     filepath = pri_image[1][0] + filename  # Full path to file on disk
                     try:
-                    
+
                         timesubmitted = pri_image[1][2]
                     except:
                         plog((traceback.format_exc()))
                         breakpoint()
-                    
-                    
+
+
                     # If the file is there now
                     if os.path.exists(filepath):
                         # To the extent it has a size
                         if os.stat(filepath).st_size > 0:
                             aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
-                            
-                            
+
+
                             with open(filepath, "rb") as fileobj:
                                 files = {"file": (filepath, fileobj)}
                                 #while True:
                                 try:
-                                    reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=10)                                    
+                                    reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=10)
                                 except Exception as e:
                                     if 'timeout' in str(e).lower() or 'SSLWantWriteError' or 'RemoteDisconnected' in str(e):
                                         plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
@@ -3949,7 +3949,7 @@ class Observatory:
                                         plog("Fatal connection glitch for a file posted: " + str(e))
                                         plog(files)
                                         plog((traceback.format_exc()))
-                                        
+
                         else:
                             plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in queue.")
                             self.fast_queue.put((100, pri_image[1]), block=False)
@@ -3959,7 +3959,7 @@ class Observatory:
                         self.fast_queue.put((100, pri_image[1]), block=False)
                     else:
                         plog (str(filepath) + " seemed to never turn up... not putting back in the queue")
-                        
+
                 except:
                     plog ("something strange in the UI uploader")
                     plog((traceback.format_exc()))
@@ -4022,7 +4022,7 @@ class Observatory:
                                 plog("Fatal connection glitch for a file posted: " + str(e))
                                 plog(files)
                                 plog((traceback.format_exc()))
-                                
+
                 except:
                     plog ("something strange in the calibration uploader")
                     plog((traceback.format_exc()))
@@ -4064,12 +4064,12 @@ class Observatory:
                     filename = pri_image[1][1]
                     filepath = pri_image[1][0] + filename  # Full path to file on disk
                     timesubmitted= pri_image[1][2]
-                    
+
                     # If the file is there now
                     if os.path.exists(filepath):
                         # To the extent it has a size
                         if os.stat(filepath).st_size > 0:
-                    
+
                             aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
                             with open(filepath, "rb") as fileobj:
                                 files = {"file": (filepath, fileobj)}
@@ -4084,7 +4084,7 @@ class Observatory:
                                         plog("Fatal connection glitch for a file posted: " + str(e))
                                         plog(files)
                                         plog((traceback.format_exc()))
-                                    
+
                         else:
                             plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in queue.")
                             self.fast_queue.put((100, pri_image[1]), block=False)
@@ -4093,8 +4093,8 @@ class Observatory:
                         #plog (str(filepath) + " Not there yet, putting back in queue.")
                         self.fast_queue.put((100, pri_image[1]), block=False)
                     else:
-                        plog (str(filepath) + " seemed to never turn up... not putting back in the queue")       
-                                    
+                        plog (str(filepath) + " seemed to never turn up... not putting back in the queue")
+
                 except:
                     plog ("something strange in the medium-UI uploader")
                     plog((traceback.format_exc()))
@@ -4113,7 +4113,7 @@ class Observatory:
         # everything down each time this was called!
 
         self.sendtouser_queue.put((p_log, p_level),block=False)
-        
+
     # Note this is another thread!
     def reconstitute_pipe_copy_queue(self):
 
