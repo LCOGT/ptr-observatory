@@ -6180,7 +6180,7 @@ def post_exposure_process(payload):
         
         if substack:
             
-            hdu.header["SUBSTK"] = (True, "Is this made from at-site sub exposures.") 
+            #hdu.header["SUBSTK"] = (True, "Is this made from at-site sub exposures.") 
             hdu.header["SUBEXPT"] = (expected_endpoint_of_substack_exposure - substack_start_time, "Time between start and end of subexposure set")
             
             
@@ -6232,7 +6232,7 @@ def post_exposure_process(payload):
 
         else:
             
-            hdu.header["SUBSTK"] = (False, "Is this made from at-site sub exposures.") 
+            #hdu.header["SUBSTK"] = (False, "Is this made from at-site sub exposures.") 
             
             hdu.header["DATE"] = (
                 datetime.datetime.isoformat(
