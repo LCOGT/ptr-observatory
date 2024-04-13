@@ -4935,6 +4935,10 @@ class Camera:
 
             elif self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
 
+
+                if self.theskyx:
+                    self.readout_estimate= time.time()-start_time_of_observation-exposure_time
+                    plog ("Theskyx readout time: " + str(self.readout_estimate))
                                 
                 if self.substacker:
                     expected_endpoint_of_substack_exposure=copy.deepcopy(self.expected_endpoint_of_substack_exposure)
@@ -5914,7 +5918,8 @@ class Camera:
                 remaining = round(self.completion_time - time.time(), 1)
 
                 # Need to have a time sleep to release the GIL to run the other threads
-                time.sleep(min(0.5, max(self.completion_time - time.time() - 0.05,0.01) ))
+                if self.completion_time - time.time() > 0:
+                    time.sleep(min(0.5, abs(self.completion_time - time.time() )))
 
                 if remaining < -15:
                     #breakpoint()
