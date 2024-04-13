@@ -185,7 +185,7 @@ smartStackFilename = (
 if not is_osc:   #This is the monochrome camera processing path.
     #breakpoint()
     eternal_loop_break=time.time()    
-    while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')) and (time.time()-eternal_loop_break < 2* float(ssexptime)):
+    while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')) and (time.time()-eternal_loop_break < 2* float(ssexptime.replace('d','.'))):
         print (paths["im_path"] + paths["text_name00"].replace('.txt','.sep'))
         print ("in the loop")
         time.sleep(1)
