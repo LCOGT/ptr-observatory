@@ -179,8 +179,8 @@ class Sequencer:
         # An end of night token is put into the upload queue
         # once the evening has ended.
         self.end_of_night_token_sent = False
-        
-        
+
+
         # Makes sure only one big focus occurs at start of night
         self.night_focus_ready=False
 
@@ -2875,9 +2875,9 @@ class Sequencer:
             # Test each flat file actually opens
             for file in inputList:
                 try:
-                    tempy=np.load(file, mmap_mode='r')                    
+                    tempy=np.load(file, mmap_mode='r')
                     tempy=np.load(file)
-                    if tempy.size < 1000:                        
+                    if tempy.size < 1000:
                         plog ("corrupt dark skipped: " + str(file))
                         os.remove(file)
                         inputList.remove(file)
@@ -2886,7 +2886,7 @@ class Sequencer:
                     os.remove(file)
                     inputList.remove(file)
 
-        
+
 
             # # Array to hold loaded images
             # PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
@@ -3031,7 +3031,7 @@ class Sequencer:
             for file in inputList:
                 try:
                     tempy=np.load(file, mmap_mode='r')
-                    
+
                     tempy=np.load(file)
                     if tempy.size < 1000:
                         plog ("corrupt dark skipped: " + str(file))
@@ -3668,18 +3668,18 @@ class Sequencer:
                             hdu1data = np.load(file)
                             if hdu1data.size < 1000:
                                 plog ("corrupt flat skipped: " + str(file))
-                            
-                            
+
+
                                 os.remove(file)
                                 inputList.remove(file)
-                                
+
                             elif os.stat(file).st_size < 5000:
                                 plog ("corrupt flat skipped: " + str(file))
-                            
-                            
+
+
                                 os.remove(file)
                                 inputList.remove(file)
-                                
+
                         except:
                             plog ("corrupt flat skipped: " + str(file))
                             os.remove(file)
@@ -3719,23 +3719,23 @@ class Sequencer:
                                 #hdu1data = np.load(file, mmap_mode='r')
                                 try:
                                     hdu1data = np.load(file)
-                                
+
                                     #PLDrive[i] = np.load(file, mmap_mode='r')
-    
+
                                     hdu1exp=float(file.split('_')[-2])
                                     #plog ("EXP")
                                     #plog (hdu1exp)
                                     fraction_through_range=0
-    
-    
-    
+
+
+
     #g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy'
-    
-    
+
+
                                     # This try/except is here because if there is a missing dark
                                     # we can always just revert to using the long dark.
                                     try:
-    
+
                                         if hdu1exp == 0.0045 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy'):
                                             flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy')
                                             #print("five percent")
@@ -3821,11 +3821,11 @@ class Sequencer:
                                             flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['narrowband_ss_dark']*hdu1exp)
                                     except:
                                         flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['1']*hdu1exp)
-    
+
                                     #plog ("Fraction through range")
                                     #plog (fraction_through_range)
                                     del hdu1data
-    
+
                                     # Normalising flat file
                                     if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                                         normalising_factor=np.nanmedian(flatdebiaseddedarked)
@@ -3836,27 +3836,27 @@ class Sequencer:
                                         # Rescaling median once nan'ed
                                         flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
                                     else:
-    
+
                                         debayered=[]
                                         max_median=0
-    
+
                                         debayered.append(flatdebiaseddedarked[::2, ::2])
                                         debayered.append(flatdebiaseddedarked[::2, 1::2])
                                         debayered.append(flatdebiaseddedarked[1::2, ::2])
                                         debayered.append(flatdebiaseddedarked[1::2, 1::2])
-    
+
                                         osc_normalising_factor=[]
                                         # crop each of the images to the central region
-    
+
                                         for oscimage in debayered:
                                             cropx = int( (oscimage.shape[0] -500)/2)
                                             cropy = int((oscimage.shape[1] -500) /2)
                                             oscimage=oscimage[cropx:-cropx, cropy:-cropy]
                                             oscmedian=np.nanmedian(oscimage)
                                             osc_normalising_factor.append(oscmedian)
-    
+
                                         del debayered
-    
+
                                         flatdebiaseddedarked[::2, ::2]=flatdebiaseddedarked[::2, ::2]/osc_normalising_factor[0]
                                         flatdebiaseddedarked[::2, 1::2]=flatdebiaseddedarked[::2, 1::2]/osc_normalising_factor[1]
                                         flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
@@ -3866,20 +3866,20 @@ class Sequencer:
                                         flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
                                         # Rescaling median once nan'ed
                                         flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
-    
+
                                     #PLDrive[:,:,i] = copy.deepcopy(flatdebiaseddedarked)
-    
+
                                     #breakpoint()
                                     # Make new filename
                                     tempfile=file.replace('\\','/').split('/')
                                     tempfile[-1]='tempcali_' + tempfile[-1]
                                     tempfile="/".join(tempfile)
-    
+
                                     np.save(tempfile, flatdebiaseddedarked)
                                     del flatdebiaseddedarked
                                     temp_flat_file_list.append(tempfile)
                                     PLDrive[i] = np.load(tempfile, mmap_mode='r')
-    
+
                                     i=i+1
                                 except:
                                     a = np.empty((shapeImage[0],shapeImage[1]))
@@ -3888,7 +3888,7 @@ class Sequencer:
                                     plog ("failed on a flat component. Placing an nan array. ")
                                     plog(traceback.format_exc())
                                     i=i+1
-                                    
+
 
                             plog ("Insert flats into megaarray: " +str(time.time()-calibration_timer))
 
@@ -5872,12 +5872,12 @@ class Sequencer:
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
             self.focussing=False
-            
+
             return np.nan, np.nan
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
             self.focussing=False
-            
+
             return np.nan, np.nan
 
 
@@ -6085,7 +6085,7 @@ class Sequencer:
                 + im_type
                 + "00.txt"
             )
-            
+
         im_path = im_path_r + g_dev["day"] + "/to_AWS/"
 
         focus_spots=[]
@@ -6171,9 +6171,9 @@ class Sequencer:
             retry_attempts=0
             spots_tried.append(focus_position_this_loop)
             while np.isnan(spot) and retry_attempts < 3:
-                
+
                 retry_attempts=retry_attempts+1
-                
+
                 # Check in with stop scripts and roof
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -6182,7 +6182,7 @@ class Sequencer:
 
                     self.total_sequencer_control = False
                     self.focussing=False
-                    
+
                     return
 
                 if not g_dev['obs'].open_and_enabled_to_observe:
@@ -6193,16 +6193,16 @@ class Sequencer:
                     self.total_sequencer_control = False
                     self.focussing=False
                     return
-                
-                
+
+
                 # Move the focuser
 
                 plog ("Changing focus to " + str(round(focus_position_this_loop,1)))
 
                 g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
-                
+
                 self.wait_for_slew()
-                
+
                 try:
                     while g_dev['rot'].rotator.IsMoving:
                         plog("flat rotator wait")
@@ -6214,7 +6214,7 @@ class Sequencer:
                 # to settle down after rotation complete
                 if g_dev['rot'] != None:
                     time.sleep(1)
-                
+
                 # Take the shot
 
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
@@ -6235,7 +6235,7 @@ class Sequencer:
                     #focus_fwhms.append(spot)
 
             # If you have the starting of a v-curve then now you can decide what to do.
-            
+
             # Start off by sorting in order of focus positions
             if len(focus_spots) > 0:
                 focus_spots=sorted(focus_spots)
@@ -6247,26 +6247,26 @@ class Sequencer:
                 for i in focus_spots:
                     x.append(i[0])
                     y.append(i[1])
-            
+
             if position_counter < 5:
                 if len(focus_spots) > 0:
                     # Just plot and fling up the jpeg
                     plt.scatter(x,y)
                     plt.show()
-                    
+
                     # Weird way to convert plt to pil image, overlay and close
                     img_buf = io.BytesIO()
-                    plt.savefig(img_buf, format='png')                            
+                    plt.savefig(img_buf, format='png')
                     pltim = Image.open(img_buf)
-                    #im.show(title="My Image")       
+                    #im.show(title="My Image")
                     box = (200, 200)
                     g_dev['cam'].current_focus_jpg.paste(pltim, box )
                 g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                 #img_buf.close()
-                
+
                 # Fling the jpeg up
                 g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
-            
+
             elif position_counter >=5:
 
                 if len(focus_spots) == 0:
@@ -6275,11 +6275,11 @@ class Sequencer:
                     if position_counter & 1:
                         new_focus_position_to_attempt=min(spots_tried) - throw
                     else:
-                        new_focus_position_to_attempt=max(spots_tried) + throw    
+                        new_focus_position_to_attempt=max(spots_tried) + throw
                 else:
-                    
-    
-    
+
+
+
                     # Check that from the minimum value, each of the points always increases in both directions.
                     # If not, we don't have a parabola shaped data-set
                     # Cull these wonky spots.
@@ -6287,8 +6287,8 @@ class Sequencer:
                     minimumfind=[]
                     for entry in focus_spots:
                         minimumfind.append(entry[1])
-                    minimum_index=minimumfind.index(min(minimumfind))                
-    
+                    minimum_index=minimumfind.index(min(minimumfind))
+
                     # If there is only two or three throw out from the lowest edge
                     if len(focus_spots) == 2 or len(focus_spots) == 3:
                         if focus_spots[0][1] < focus_spots[-1][1]:
@@ -6297,11 +6297,11 @@ class Sequencer:
                         else:
                             plog ("higher focus spot has lower fwhm value, trying out a spot out there")
                             new_focus_position_to_attempt=focus_spots[-1][0] + throw
-                    
-                    
-                            
-                        
-                    
+
+
+
+
+
                     else:
                         # If the minimum is at one of the two points on the side of the v curve take another point beyond that point, otherwise try to fit a parabola
                         minimumfind=[]
@@ -6315,21 +6315,21 @@ class Sequencer:
                             #print ("Attempting: " + str(new_focus_position_to_attempt))
                             plt.scatter(x,y)
                             plt.show()
-                            
+
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
-                            plt.savefig(img_buf, format='png')                            
+                            plt.savefig(img_buf, format='png')
                             pltim = Image.open(img_buf)
-                            #im.show(title="My Image")       
+                            #im.show(title="My Image")
                             box = (200, 200)
                             g_dev['cam'].current_focus_jpg.paste(pltim, box )
                             g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
-                            
+
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
-                            
-        
+
+
                             # im_path_r = g_dev['cam'].camera_path
                             # raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
                             # throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
@@ -6341,28 +6341,28 @@ class Sequencer:
                             #     plog("Failed to send FOCUS PLOT up for some reason")
                             #     plog(traceback.format_exc())
                         elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
-        
+
                             plog ("Minimum too close to the sampling edge, getting another dot")
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             #breakpoint()
                             #print ("Attempting: " + str(new_focus_position_to_attempt))
                             plt.scatter(x,y)
                             plt.show()
-                            
+
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
-                            plt.savefig(img_buf, format='png')                            
+                            plt.savefig(img_buf, format='png')
                             pltim = Image.open(img_buf)
-                            #im.show(title="My Image")       
+                            #im.show(title="My Image")
                             box = (200, 200)
                             g_dev['cam'].current_focus_jpg.paste(pltim, box )
                             g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
-                            
+
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
-                           
-        
+
+
                             # im_path_r = g_dev['cam'].camera_path
                             # raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
                             # throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
@@ -6373,15 +6373,15 @@ class Sequencer:
                             # except:
                             #     plog("Failed to send FOCUS PLOT up for some reason")
                             #     plog(traceback.format_exc())
-                                
+
                         #elif len(focus_spots) > 4:
-                            
-                                
-                                
-                                
+
+
+
+
                         else:
-        
-                            
+
+
                             # # Check that from the minimum value, each of the points always increases in both directions.
                             # # If not, we don't have a parabola shaped data-set
                             # # Cull these wonky spots.
@@ -6391,18 +6391,18 @@ class Sequencer:
                             #     minimumfind.append(entry[1])
                             # minimum_index=minimumfind.index(min(minimumfind))
                             # minimum_value=focus_spots[minimum_index][1]
-                            
-                            
+
+
                             # # step lower
                             # step=1
                             # previous_value=copy.deepcopy(minimum_value)
                             # while minimum_index-step > -1:
-        
-        
+
+
                             # If you can fit a parabola, then you've got the focus
                             # If fit, then break
-        
-        
+
+
                             try:
                                 fit = np.polyfit(x, y, 2)
                                 f = np.poly1d(fit)
@@ -6421,24 +6421,24 @@ class Sequencer:
                             plog ("focus pos: " + str(fitted_focus_position))
                             fitted_focus_fwhm=f(fitted_focus_position)
                             plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
-        
+
                             plt.show()
-                            
+
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
-                            plt.savefig(img_buf, format='png')                            
+                            plt.savefig(img_buf, format='png')
                             pltim = Image.open(img_buf)
-                            #im.show(title="My Image")       
+                            #im.show(title="My Image")
                             box = (200, 200)
                             g_dev['cam'].current_focus_jpg.paste(pltim, box )
                             g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
-                            
+
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
-                            
-                            
-                            # Check that the solved minimum focussed position actually fits in between the lowest measured point and 
+
+
+                            # Check that the solved minimum focussed position actually fits in between the lowest measured point and
                             # the two next door measured points.
                             minimumfind=[]
                             for entry in focus_spots:
@@ -6446,12 +6446,14 @@ class Sequencer:
                             minimum_index=minimumfind.index(min(minimumfind))
                             #minimum_position_value=focus_spots[minimum_index][0]
                             minimum_position_value_left=focus_spots[minimum_index-1][0] + max(0.5,(len(focus_spots)-4)*0.5) * throw
-                            minimum_position_value_right=focus_spots[minimum_index+1][0] - max(0.5,(len(focus_spots)-4)*0.5) * throw                        
-                            
+                            minimum_position_value_right=focus_spots[minimum_index+1][0] - max(0.5,(len(focus_spots)-4)*0.5) * throw
+                            print (minimum_position_value_left)
+                            print (fitted_focus_position)
+                            print (minimum_position_value_right)
                             # If the dot is in the center of the distribution
                             # OR we have tried four or more extra points
                             if (minimum_position_value_left < fitted_focus_position and minimum_position_value_right > fitted_focus_position) or extra_tries > 4:
-                                # # if so, then the fit is likely pretty good. 
+                                # # if so, then the fit is likely pretty good.
                                 # im_path_r = g_dev['cam'].camera_path
                                 # raw_path = im_path_r + g_dev["day"] + "/to_AWS/"
                                 # throwaway_filename= str(time.time()).replace('.','d') +'.jpg'
@@ -6462,34 +6464,34 @@ class Sequencer:
                                 # except:
                                 #     plog("Failed to send FOCUS PLOT up for some reason")
                                 #     plog(traceback.format_exc())
-            
+
                                 #breakpoint()
-            
-            
+
+
                                 # If successful, then move to focus and live long and prosper
                                 plog ('Moving to Solved focus:  ', round(fitted_focus_position, 2), ' calculated:  ', fitted_focus_fwhm)
-            
+
                                 pos = int(fitted_focus_position*g_dev['foc'].micron_to_steps)
                                 g_dev['foc'].guarded_move(pos)
-            
+
                                 g_dev['foc'].last_known_focus = fitted_focus_position
                                 g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
-            
+
                                 # We don't take a confirming exposure because there is no point actually and just wastes time.
                                 # You can see if it is focussed with the first target shot.
-            
-            
+
+
                                 if not dont_return_scope:
                                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                                     self.wait_for_slew()
-            
+
                                 self.af_guard = False
                                 self.focussing=False
                                 if not dont_log_focus:
                                     g_dev['foc'].af_log(fitted_focus_position, fitted_focus_fwhm, spot)
-                                
+
                                 # Store fitted focus as last result
                                 g_dev['obs'].fwhmresult={}
                                 g_dev['obs'].fwhmresult["FWHM"] = fitted_focus_fwhm
@@ -6497,61 +6499,61 @@ class Sequencer:
                                 g_dev['obs'].fwhmresult["mean_focus"] = fitted_focus_position
                                 # g_dev['obs'].fwhmresult['No_of_sources'] =float(fwhm_info['sources'])
                                 # g_dev['obs'].fwhmresult["exp_time"] = hduheader['EXPTIME']
-        
+
                                 # g_dev['obs'].fwhmresult["filter"] = hduheader['FILTER']
                                 # g_dev['obs'].fwhmresult["airmass"] = hduheader['AIRMASS']
-                                
+
                                 self.total_sequencer_control = False
                                 return fitted_focus_position,fitted_focus_fwhm
-                            
+
                             else:
                                 # Lets step out from the minimum value and delete any points that are wonky.
                                 plog ("We don't have a good fit where the minimum fit is near the minimum measured value, attempting to examine the data points, potential trim them and trying another point")
                                 extra_tries=extra_tries+1
-                                
+
                                 delete_list=[]
-                                
+
                                 # step lower
                                 step=1
                                 minimum_value=focus_spots[minimum_index][1]
                                 previous_value=copy.deepcopy(minimum_value)
                                 while minimum_index-step > -1:
                                     print (focus_spots[minimum_index-step][1])
-                                    
+
                                     if focus_spots[minimum_index-step][1] > previous_value:
                                         print ("Good")
                                     else:
                                         print ("Bad")
                                         delete_list.append(focus_spots[minimum_index-step])
-                                    previous_value=focus_spots[minimum_index-step][1] 
+                                    previous_value=focus_spots[minimum_index-step][1]
                                     step=step+1
-                                
+
                                 # step higher
                                 step=1
                                 minimum_value=focus_spots[minimum_index][1]
                                 previous_value=copy.deepcopy(minimum_value)
                                 while minimum_index+step < len(focus_spots):
                                     print (focus_spots[minimum_index+step][1])
-                                    
+
                                     if focus_spots[minimum_index+step][1] > previous_value:
                                         print ("Good")
                                     else:
                                         print ("Bad")
                                         delete_list.append(focus_spots[minimum_index+step])
-                                    previous_value=focus_spots[minimum_index+step][1] 
+                                    previous_value=focus_spots[minimum_index+step][1]
                                     step=step+1
-                                
-                                
+
+
                                 # If there seems to be a wonky spot, remove it and try again
                                 if len(delete_list) > 1:
                                     print ("Found possible problem spots: " + str(delete_list))
-                                    
+
                                     for entry in delete_list:
-                                        new_focus_position_to_attempt=entry[0]                                
+                                        new_focus_position_to_attempt=entry[0]
                                         focus_spots.remove(entry)
-                                        
+
                                     print ("Attempting this spot again: " + str(new_focus_position_to_attempt))
-                                
+
                                 else:
                                     print ("Couldn't find a problem spot, attempting another point on the smaller end of the curve")
                                     if focus_spots[0][1] < focus_spots[-1][1]:
@@ -6560,10 +6562,10 @@ class Sequencer:
                                     else:
                                         plog ("higher focus spot has lower fwhm value, trying out a spot out there")
                                         new_focus_position_to_attempt=focus_spots[-1][0] + throw
-                                    
-                            
-                            
-                                
+
+
+
+
 
 
 
