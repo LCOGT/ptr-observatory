@@ -2233,7 +2233,7 @@ class Camera:
 
         mptimer=time.time()
         fwhm_results=[]
-        number_to_collect=max(8,os.cpu_count())
+        number_to_collect=max(16,2*os.cpu_count())
         with Pool(os.cpu_count()) as pool:
             for result in pool.map(multiprocess_fast_gaussian_photometry, focus_multiprocess):
                 if not np.isnan(result):
