@@ -706,6 +706,7 @@ site_config = {
                 'temp_setpoint': -1.0,  # Verify we can go colder
                 'temp_setpoint_tolerance': 1.5, #down from 1.5 that was built into the code.
                 'has_chiller': True,
+                #"temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C
                 'day_warm': False,   #This is converted to a 0 or 1 depending on the Boolean value
