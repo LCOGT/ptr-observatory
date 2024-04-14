@@ -15,7 +15,7 @@ import time
 from astropy.table import Table
 import astroalign as aa
 
-    
+
 from auto_stretch.stretch import Stretch
 from PIL import Image, ImageEnhance
 import subprocess
@@ -151,7 +151,7 @@ for nancoord in nan_coords:
                 done=True
 
     #num_of_nans=np.count_nonzero(np.isnan(imgdata))
-#breakpoint() 
+#breakpoint()
 # Mop up any remaining nans
 imgdata[np.isnan(imgdata)] =edgefillvalue
 
@@ -184,7 +184,7 @@ smartStackFilename = (
 # For OSC, we need to smartstack individual frames.
 if not is_osc:   #This is the monochrome camera processing path.
     #breakpoint()
-    eternal_loop_break=time.time()    
+    eternal_loop_break=time.time()
     while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')) and (time.time()-eternal_loop_break < 2* float(ssexptime.replace('d','.'))):
         print (paths["im_path"] + paths["text_name00"].replace('.txt','.sep'))
         print ("in the loop")
@@ -193,10 +193,10 @@ if not is_osc:   #This is the monochrome camera processing path.
     #plog("Now to figure out how to get sep into a csv.")
     sstack_process_timer = time.time()
     #sources = Table.read(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'), format='csv')
-    
+
     sources = pickle.load(open(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'),'rb'))
     sources=np.asarray(sources)
-    
+
     #breakpoint()
 
     # IF SMARSTACK NPY FILE EXISTS ADD next image to the stack, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
@@ -215,9 +215,9 @@ if not is_osc:   #This is the monochrome camera processing path.
             # sources.write(obsid_path
             # + "smartstacks/"
             # + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
-            
+
             pickle.dump(sources, open(obsid_path+ "smartstacks/" + smartStackFilename.replace('.npy','.sep'),'wb'))
-            
+
             # sources.write(obsid_path
             # + "smartstacks/"
             # + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
@@ -687,10 +687,10 @@ else:
         # ):
         #     final_image=final_image.crop((xl,yt,xr,yb))
         #     iy, ix = final_image.size
-            
+
         #breakpoint()
-        
-        
+
+
         # Resizing the array to an appropriate shape for the small jpg
         #iy, ix = final_image.size
         ix, iy = final_image.size
@@ -738,19 +738,19 @@ else:
             yb *= iy
             #breakpoint()
             #trial_image=final_image.crop((int(xl),int(yt),int(iy-xr),int(ix-yb)))
-            
+
             #breakpoint()
-            
+
             trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
             ix, iy = trial_image.size
             print("Zoomed Image size:", ix, iy)
             final_image = trial_image
-        
-        
-        
-        
+
+
+
+
         # # Resizing the array to an appropriate shape for the small jpg
-        
+
         # ix, iy = final_image.size
         # #breakpoint()
         # if (crop_preview == True):
@@ -802,9 +802,9 @@ else:
         #     ix, iy = trial_image.size
         #     print("Zoomed Image size:", ix, iy)
         #     final_image = trial_image
-        
-        
-        
+
+
+
         # iy, ix = final_image.size
         # if iy == ix:
         #     final_image = final_image.resize((900, 900))
@@ -814,7 +814,7 @@ else:
         #     else:
         #         final_image = final_image.resize((900, int(900 * iy / ix)))
 
-        
+
 
         iy, ix = final_image.size
         if ix == iy:
@@ -830,8 +830,8 @@ else:
             paths["im_path"] + paths["jpeg_name10"]
         )
         del final_image
-        
-        
+
+
         #breakpoint()
 
 try:

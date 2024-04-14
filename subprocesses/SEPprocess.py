@@ -106,9 +106,10 @@ minimum_realistic_seeing=input_sep_info[25]
 do_sep=input_sep_info[27]
 exposure_time=input_sep_info[28]
 
-
+#print (exposure_time)
+#breakpoint()
 # The photometry has a timelimit that is half of the exposure time
-time_limit=min (float(hduheader['EXPTIME'])*0.5, 30, exposure_time*0.5)
+time_limit=min (float(hduheader['EXPTIME'])*0.5, 20, exposure_time*0.5)
 
 minimum_exposure_for_extended_stuff = 10
 
@@ -165,15 +166,23 @@ if not frame_type == 'focus' and float(hduheader['EXPTIME']) >= minimum_exposure
     while (breaker != 0):
         counter=counter+1
         if not (imageMode-counter) in zeroValueArray[:,0]:
-            if not (imageMode-counter-counter) in zeroValueArray[:,0]:
-                if not (imageMode-counter-counter-counter) in zeroValueArray[:,0]:
-                    if not (imageMode-counter-counter-counter-counter) in zeroValueArray[:,0]:
-                        if not (imageMode-counter-counter-counter-counter-counter) in zeroValueArray[:,0]:
-                            zeroValue=(imageMode-counter)
-                            breaker =0
+            if not (imageMode-counter-1) in zeroValueArray[:,0]:
+                if not (imageMode-counter-2) in zeroValueArray[:,0]:
+                    if not (imageMode-counter-3) in zeroValueArray[:,0]:
+                        if not (imageMode-counter-4) in zeroValueArray[:,0]:
+                            if not (imageMode-counter-5) in zeroValueArray[:,0]:
+                                if not (imageMode-counter-6) in zeroValueArray[:,0]:
+                                    if not (imageMode-counter-7) in zeroValueArray[:,0]:
+                                        if not (imageMode-counter-8) in zeroValueArray[:,0]:
+                                            if not (imageMode-counter-9) in zeroValueArray[:,0]:
+                                                if not (imageMode-counter-10) in zeroValueArray[:,0]:
+                                                    if not (imageMode-counter-11) in zeroValueArray[:,0]:
+                                                        if not (imageMode-counter-12) in zeroValueArray[:,0]:
+                                                            zeroValue=(imageMode-counter)
+                                                            breaker =0
 
     hdufocusdata[hdufocusdata < zeroValue] = np.nan
-
+    print ("Zero Value: " + str(zeroValue))
     print ("Zero Threshing Image: " +str(time.time()-googtime))
 
     real_mode=True
@@ -193,6 +202,7 @@ y_size=hdufocusdata.shape[1]
 # this is actually faster than np.nanmean
 edgefillvalue=imageMode
 # List the coordinates that are nan in the array
+#breakpoint()
 nan_coords=np.argwhere(np.isnan(hdufocusdata))
 
 # For each coordinate try and find a non-nan-neighbour and steal its value
@@ -338,11 +348,11 @@ else:
 
         fx, fy = hdufocusdata.shape        #
 
-        if real_mode:
-            bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-            bkg.subfrom(hdufocusdata)
-        else:
-            hdufocusdata=hdufocusdata-imageMode
+        # if real_mode:
+        bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+        bkg.subfrom(hdufocusdata)
+        # else:
+        #     hdufocusdata=hdufocusdata-imageMode
 
         # hdufocus = fits.PrimaryHDU()
         # hdufocus.data = hdufocusdata

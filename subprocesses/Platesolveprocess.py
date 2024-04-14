@@ -124,12 +124,20 @@ counter=0
 while (breaker != 0):
     counter=counter+1
     if not (imageMode-counter) in zeroValueArray[:,0]:
-        if not (imageMode-counter-counter) in zeroValueArray[:,0]:
-            if not (imageMode-counter-counter-counter) in zeroValueArray[:,0]:
-                if not (imageMode-counter-counter-counter-counter) in zeroValueArray[:,0]:
-                    if not (imageMode-counter-counter-counter-counter-counter) in zeroValueArray[:,0]:
-                        zeroValue=(imageMode-counter)
-                        breaker =0
+        if not (imageMode-counter-1) in zeroValueArray[:,0]:
+            if not (imageMode-counter-2) in zeroValueArray[:,0]:
+                if not (imageMode-counter-3) in zeroValueArray[:,0]:
+                    if not (imageMode-counter-4) in zeroValueArray[:,0]:
+                        if not (imageMode-counter-5) in zeroValueArray[:,0]:
+                            if not (imageMode-counter-6) in zeroValueArray[:,0]:
+                                if not (imageMode-counter-7) in zeroValueArray[:,0]:
+                                    if not (imageMode-counter-8) in zeroValueArray[:,0]:
+                                        if not (imageMode-counter-9) in zeroValueArray[:,0]:
+                                            if not (imageMode-counter-10) in zeroValueArray[:,0]:
+                                                if not (imageMode-counter-11) in zeroValueArray[:,0]:
+                                                    if not (imageMode-counter-12) in zeroValueArray[:,0]:
+                                                        zeroValue=(imageMode-counter)
+                                                        breaker =0
 
 hdufocusdata[hdufocusdata < zeroValue] = np.nan
 
