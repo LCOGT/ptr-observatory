@@ -898,7 +898,7 @@ if len(sources) >= 5:
             else:
                 wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
                                                         image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=5.0,
-                                                        solve_timeout=60)
+                                                        solve_timeout=600)
             solve={}
             solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
             solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
