@@ -614,7 +614,7 @@ class Focuser:
         to focus. Functionally dependent of temp, coef_c, and filter thickness."""
 
         # Hack to stop focus during commissioning
-        return
+        #return
 
         if not force_change: # If the filter is changed, then a force change is necessary.
             try:

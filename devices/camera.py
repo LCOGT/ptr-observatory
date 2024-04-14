@@ -1726,8 +1726,6 @@ class Camera:
         #expresult={}
 
 
-        # SUPER TEMPORARY HACK SO  MTF CAN GO DEBUG SOMETHING
-
 
         # Figure out pixelscale from own observations
         # Or use the config value if there hasn't been enough
@@ -1745,7 +1743,7 @@ class Camera:
         else:
             self.pixscale = None
             # SUPER TEMPORARY HACK SO  MTF CAN GO DEBUG SOMETHING
-            self.pixscale=0.288
+            #self.pixscale=0.288
             #self.pixscale = 0.198
 
         plog('1x1 pixel scale: ' + str(self.pixscale))
