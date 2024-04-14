@@ -6122,8 +6122,8 @@ class Sequencer:
             elif position_counter>5:
                 focus_position_this_loop=new_focus_position_to_attempt
 
-            #  If more than 15 attempts, fail and bail out.
-            if position_counter > 15:
+            #  If more than 25 attempts, fail and bail out.
+            if position_counter > 25:
 
                 if extensive_focus == None:
 
@@ -6445,8 +6445,8 @@ class Sequencer:
                                 minimumfind.append(entry[1])
                             minimum_index=minimumfind.index(min(minimumfind))
                             #minimum_position_value=focus_spots[minimum_index][0]
-                            minimum_position_value_left=focus_spots[minimum_index-1][0] + max(0.5,(len(focus_spots)-4)*0.5) * throw
-                            minimum_position_value_right=focus_spots[minimum_index+1][0] - max(0.5,(len(focus_spots)-4)*0.5) * throw                        
+                            minimum_position_value_left=focus_spots[minimum_index-1][0] - max(0.5,(len(focus_spots)-4)*0.5) * throw
+                            minimum_position_value_right=focus_spots[minimum_index+1][0] + max(0.5,(len(focus_spots)-4)*0.5) * throw                        
                             
                             # If the dot is in the center of the distribution
                             # OR we have tried four or more extra points
