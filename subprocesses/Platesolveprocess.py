@@ -117,21 +117,21 @@ print ("Calculating Mode: " +str(time.time()-googtime))
 # Zerothreshing image
 googtime=time.time()
 histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-#Do some fiddle faddling to figure out the value that goes to zero less 
+#Do some fiddle faddling to figure out the value that goes to zero less
 zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
 breaker=1
 counter=0
 while (breaker != 0):
     counter=counter+1
-    if not (imageMode-counter) in zeroValueArray[:,0]:       
-        if not (imageMode-counter-counter) in zeroValueArray[:,0]:       
-            if not (imageMode-counter-counter-counter) in zeroValueArray[:,0]:     
-                if not (imageMode-counter-counter-counter-counter) in zeroValueArray[:,0]:  
-                    if not (imageMode-counter-counter-counter-counter-counter) in zeroValueArray[:,0]:    
+    if not (imageMode-counter) in zeroValueArray[:,0]:
+        if not (imageMode-counter-counter) in zeroValueArray[:,0]:
+            if not (imageMode-counter-counter-counter) in zeroValueArray[:,0]:
+                if not (imageMode-counter-counter-counter-counter) in zeroValueArray[:,0]:
+                    if not (imageMode-counter-counter-counter-counter-counter) in zeroValueArray[:,0]:
                         zeroValue=(imageMode-counter)
                         breaker =0
-    
-hdufocusdata[hdufocusdata < zeroValue] = np.nan  
+
+hdufocusdata[hdufocusdata < zeroValue] = np.nan
 
 print ("Zero Threshing Image: " +str(time.time()-googtime))
 
@@ -251,7 +251,7 @@ if pixscale != None:
         hdufocusdata=np.divide(block_reduce(hdufocusdata,3,func=np.sum),2)
         pixscale=pixscale*3
         binnedthree=True
-        
+
 # else:
 #     hdufocusdata=block_reduce(hdufocusdata,2,func=np.nanmean)
 #     #pixscale=pixscale*2
@@ -426,7 +426,7 @@ list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
 pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
 counter=0
 for point in list_of_local_maxima:
-    
+
 
     pointvalues[counter][0]=point[0]
     pointvalues[counter][1]=point[1]
@@ -495,7 +495,10 @@ pointvalues=pointvalues[pointvalues[:,2].argsort()[::-1]]
 fwhmlist=[]
 sources=[]
 #radius_of_radialprofile=(20)
-radius_of_radialprofile=int(12/pixscale)
+if pixscale == None:
+    radius_of_radialprofile=50
+else:
+    radius_of_radialprofile=int(12/pixscale)
 # Round up to nearest odd number to make a symmetrical array
 radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
 centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
@@ -503,15 +506,15 @@ centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
 sources=[]
 
 for i in range(len(pointvalues)):
-    
+
     # cx= (pointvalues[i][0])
     # cy= (pointvalues[i][1])
     # cvalue=hdufocusdata[int(cx)][int(cy)]
     #sources.append([cx,cy,cvalue])
-    
+
     if len(sources) > 200:
         break
-    
+
     cx= (pointvalues[i][0])
     cy= (pointvalues[i][1])
     cvalue=hdufocusdata[int(cx)][int(cy)]
@@ -552,15 +555,21 @@ for i in range(len(pointvalues)):
     # If the brightest pixel is in the center-ish
     # then attempt a fit
     # print (abs(brightest_pixel_rdist))
-    
+
     #breakpoint()
-    if abs(brightest_pixel_rdist) <  max(3, 3/pixscale):
+
+    if pixscale == None:
+        largest_deviation_from_center=12
+    else:
+        largest_deviation_from_center=3/pixscale
+
+    if abs(brightest_pixel_rdist) <  max(3, largest_deviation_from_center):
 
         try:
-            
-            
-            
-            
+
+
+
+
             # Reduce data down to make faster solvinging
             upperbin=math.floor(max(radprofile[:,0]))
             lowerbin=math.ceil(min(radprofile[:,0]))
@@ -569,53 +578,56 @@ for i in range(len(pointvalues)):
             arcsecond_length_radial_profile = int((upperbin-lowerbin)/0.25)
             number_of_bins=int(arcsecond_length_radial_profile/0.25)
             s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
-            
+
             max_value=np.nanmax(s)
             min_value=np.nanmin(s)
             threshold_value=(0.05*(max_value-min_value)) + min_value
-            
+
             actualprofile=[]
             for q in range(len(s)):
-                if not np.isnan(s[q]): 
+                if not np.isnan(s[q]):
                     if s[q] > threshold_value:
                         actualprofile.append([(edges[q]+edges[q+1])/2,s[q]])
-        
+
             actualprofile=np.asarray(actualprofile)
-            
-            
-            
-            
+
+
+
+
             edgevalue_left=actualprofile[0][1]
             edgevalue_right=actualprofile[-1][1]
-            
+
             if edgevalue_left < 0.6*cvalue and  edgevalue_right < 0.6*cvalue:
-            
-            
-            
+
+                if pixscale == None:
+                    stdevstart= 4
+                else:
+                    stdevstart=2/pixscale
+
                 #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
                 #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]), xtol=0.05, ftol=0.05)
-                popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-            
-        
+                popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((stdevstart) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
+
+
                 # Amplitude has to be a substantial fraction of the peak value
                 # and the center of the gaussian needs to be near the center
-                if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, 3/pixscale) :
+                if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, largest_deviation_from_center) :
                     # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
                     # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
                     #plt.scatter(radprofile[:,0],radprofile[:,1])
                     #plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
-                    
-                    
-                    
+
+
+
                     # plt.scatter(actualprofile[:,0],actualprofile[:,1])
                     # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
                     # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                     # plt.show()
-                    
+
                     #breakpoint()
-        
+
                     sources.append([cx,cy,cvalue])
-        
+
                     # FWHM is 2.355 * std for a gaussian
                     #fwhmlist.append(popt[2])
                     #sources.append([cx,cy,radprofile,temp_array])
@@ -653,138 +665,86 @@ googtime=time.time()
 #breakpoint()
 #breakpoint()
 #breakpoint()
+failed=False
 if len(sources) >= 5:
 
+    if not pixscale == None:
+        # Get size of original image
+        xpixelsize = hdufocusdata.shape[0]
+        ypixelsize = hdufocusdata.shape[1]
+        shape = (xpixelsize, ypixelsize)
 
-    # Get size of original image
-    xpixelsize = hdufocusdata.shape[0]
-    ypixelsize = hdufocusdata.shape[1]
-    shape = (xpixelsize, ypixelsize)
+        # Make blank synthetic image with a sky background
+        synthetic_image = np.zeros([xpixelsize, ypixelsize])
+        synthetic_image = synthetic_image + 200
 
-    # Make blank synthetic image with a sky background
-    synthetic_image = np.zeros([xpixelsize, ypixelsize])
-    synthetic_image = synthetic_image + 200
+        #Bullseye Star Shape
+        modelstar = [
+                    [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01],
+                    [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
+                    [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
+                    [ 0.2 , 0.4 , 0.8 , 1.2,  0.8, 0.4, 0.2],
+                    [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
+                    [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
+                    [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01]
 
-    #Bullseye Star Shape
-    modelstar = [
-                [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01],
-                [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
-                [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
-                [ 0.2 , 0.4 , 0.8 , 1.2,  0.8, 0.4, 0.2],
-                [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
-                [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
-                [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01]
-
-                ]
-
-
-    modelstar=np.array(modelstar)
-
-    # # Add bullseye stars to blank image
-    # for addingstar in sources:
-    #     x = round(addingstar['x'] -1)
-    #     y = round(addingstar['y'] -1)
-    #     peak = int(addingstar['peak'])
-    #     # Add star to numpy array as a slice
-    #     try:
-    #         synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
-    #     except Exception as e:
-    #         print (e)
-    #         #breakpoint()
-
-    # Add bullseye stars to blank image
-    for addingstar in sources:
-        x = round(addingstar[1] -1)
-        y = round(addingstar[0] -1)
-        peak = int(addingstar[2])
-        # Add star to numpy array as a slice
-        try:
-            synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
-        except Exception as e:
-            print (e)
-            #breakpoint()
-
-    # Make an int16 image for planewave solver
-    hdufocusdata = np.array(synthetic_image, dtype=np.int32)
-    hdufocusdata[hdufocusdata < 0] = 200
-    hdufocus = fits.PrimaryHDU()
-    hdufocus.data = hdufocusdata
-    hdufocus.header = hduheader
-    hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-    hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-    hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
-    #pixscale = (hdufocus.header['PIXSCALE'])
-    
-    #breakpoint()
-
-    try:
-        hdufocus.close()
-    except:
-        pass
-    del hdufocusdata
-    del hdufocus
+                    ]
 
 
+        modelstar=np.array(modelstar)
 
+        # # Add bullseye stars to blank image
+        # for addingstar in sources:
+        #     x = round(addingstar['x'] -1)
+        #     y = round(addingstar['y'] -1)
+        #     peak = int(addingstar['peak'])
+        #     # Add star to numpy array as a slice
+        #     try:
+        #         synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
+        #     except Exception as e:
+        #         print (e)
+        #         #breakpoint()
 
-    try:
-        args = [
-            PS3CLI_EXE,
-            cal_path + 'platesolvetemp.fits',
-            str(pixscale),
-            output_file_path,
-            catalog_path
-        ]
+        # Add bullseye stars to blank image
+        for addingstar in sources:
+            x = round(addingstar[1] -1)
+            y = round(addingstar[0] -1)
+            peak = int(addingstar[2])
+            # Add star to numpy array as a slice
+            try:
+                synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
+            except Exception as e:
+                print (e)
+                #breakpoint()
 
-        process = Popen(
-                args,
-                stdout=None,
-                stderr=PIPE
-                )
-        (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
-        exit_code = process.wait() # Wait for process to complete and obtain the exit code
-        failed = False
-        time.sleep(1)
-        process.kill()
+        # Make an int16 image for planewave solver
+        hdufocusdata = np.array(synthetic_image, dtype=np.int32)
+        hdufocusdata[hdufocusdata < 0] = 200
+        hdufocus = fits.PrimaryHDU()
+        hdufocus.data = hdufocusdata
+        hdufocus.header = hduheader
+        hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+        hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+        hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
+        #pixscale = (hdufocus.header['PIXSCALE'])
 
-        solve = parse_platesolve_output(output_file_path)
-        
         #breakpoint()
 
-        if binnedtwo:
-            solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
-        elif binnedthree:
-            solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
-        
-        pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
-
-        # try:
-        #     os.remove(cal_path + 'platesolvetemp.fits')
-        # except:
-        #     pass
-        # try:
-        #     os.remove(output_file_path)
-        # except:
-        #     pass
-    
-        # sys.exit()
-        
-
-    except:
-        print(traceback.format_exc())
-        #breakpoint()
-        failed = True
-        process.kill()
-
-    if failed:
-        failed=False
         try:
-            # Try again with a lower pixelscale... yes it makes no sense
-            # But I didn't write PS3.exe ..... but it works (MTF)
+            hdufocus.close()
+        except:
+            pass
+        del hdufocusdata
+        del hdufocus
+
+
+
+
+        try:
             args = [
                 PS3CLI_EXE,
                 cal_path + 'platesolvetemp.fits',
-                str(float(pixscale)/2.0),
+                str(pixscale),
                 output_file_path,
                 catalog_path
             ]
@@ -796,15 +756,19 @@ if len(sources) >= 5:
                     )
             (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
             exit_code = process.wait() # Wait for process to complete and obtain the exit code
+            failed = False
             time.sleep(1)
             process.kill()
 
             solve = parse_platesolve_output(output_file_path)
+
+            #breakpoint()
+
             if binnedtwo:
                 solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
             elif binnedthree:
                 solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
-            
+
             pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
 
             # try:
@@ -815,18 +779,67 @@ if len(sources) >= 5:
             #     os.remove(output_file_path)
             # except:
             #     pass
-        
+
             # sys.exit()
+
 
         except:
             print(traceback.format_exc())
-            failed=True
+            #breakpoint()
+            failed = True
             process.kill()
-            solve = 'error'
+
+        if failed:
+            failed=False
+            try:
+                # Try again with a lower pixelscale... yes it makes no sense
+                # But I didn't write PS3.exe ..... but it works (MTF)
+                args = [
+                    PS3CLI_EXE,
+                    cal_path + 'platesolvetemp.fits',
+                    str(float(pixscale)/2.0),
+                    output_file_path,
+                    catalog_path
+                ]
+
+                process = Popen(
+                        args,
+                        stdout=None,
+                        stderr=PIPE
+                        )
+                (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
+                exit_code = process.wait() # Wait for process to complete and obtain the exit code
+                time.sleep(1)
+                process.kill()
+
+                solve = parse_platesolve_output(output_file_path)
+                if binnedtwo:
+                    solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
+                elif binnedthree:
+                    solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
+
+                pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
+
+                # try:
+                #     os.remove(cal_path + 'platesolvetemp.fits')
+                # except:
+                #     pass
+                # try:
+                #     os.remove(output_file_path)
+                # except:
+                #     pass
+
+                # sys.exit()
+
+            except:
+                print(traceback.format_exc())
+                failed=True
+                process.kill()
+                solve = 'error'
 
     # if unknown pixelscale do a search
-    print (failed)
-    if failed:# or pixscale == None) and useastrometrynet:
+    #print (failed)
+    if failed or pixscale == None:#) and useastrometrynet:
 
 
         #from astropy.table import Table
@@ -855,12 +868,12 @@ if len(sources) >= 5:
         elif binnedtwo:
             scale_lower=0.9* pixscale*2
             scale_upper=1.1* pixscale*2
-            
-        elif binnedthree:    
+
+        elif binnedthree:
             scale_lower=0.9* pixscale*3
             scale_upper=1.1* pixscale*3
-        
-        else:            
+
+        else:
             scale_lower=0.9* pixscale
             scale_upper=1.1* pixscale
 
@@ -874,12 +887,12 @@ if len(sources) >= 5:
             solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
             solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
             solve["arcsec_per_pixel"] = wcs_header['CD1_2'] *3600
-            
+
             if binnedtwo:
                 solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
             elif binnedthree:
                 solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-            
+
         except:
             print(traceback.format_exc())
             solve = 'error'

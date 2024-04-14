@@ -372,7 +372,7 @@ site_config = {
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
             'focuser_movement_settle_time': 3,
             #F.9 setup
-            'reference': 6500,    # 2024-04-13 Total guess WER
+            'reference': 9089,    # 2024-04-13 Total guess WER
             'ref_temp':  15.,
             'temp_coeff': 0.0,     #Initial setting 20240413 WER
             # Update when pinning reference

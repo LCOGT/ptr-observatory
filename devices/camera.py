@@ -808,7 +808,7 @@ def multiprocess_fast_gaussian_photometry(package):
         # Only need a quarter of an arcsecond bin.
         arcsecond_length_radial_profile = (upperbin-lowerbin)*pixscale
         number_of_bins=int(arcsecond_length_radial_profile/0.25)
-        
+
         s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
 
         #breakpoint()
@@ -832,40 +832,40 @@ def multiprocess_fast_gaussian_photometry(package):
         edgevalue_right=actualprofile[-1][1]
 
         if edgevalue_left < 0.6*cvalue and  edgevalue_right < 0.6*cvalue:
-            
-            
+
+
             # Different faster fitter to consider
             peak_value_index=np.argmax(actualprofile[:,1])
             peak_value=actualprofile[peak_value_index][1]
             #x_axis_of_peak_value=actualprofile[peak_value_index][0]
-            
+
             # middle_distribution= actualprofile[actualprofile[:,0] < 5]
             # middle_distribution= middle_distribution[middle_distribution[:,0] > -5]
 
             # Get the mean of the 5 pixels around the max
             # and use the mean of those values and the peak value
             # to use as the amplitude
-            temp_amplitude=actualprofile[peak_value_index-2][1]+actualprofile[peak_value_index-1][1]+actualprofile[peak_value_index][1]+actualprofile[peak_value_index+1][1]+actualprofile[peak_value_index+2][1]    
+            temp_amplitude=actualprofile[peak_value_index-2][1]+actualprofile[peak_value_index-1][1]+actualprofile[peak_value_index][1]+actualprofile[peak_value_index+1][1]+actualprofile[peak_value_index+2][1]
             temp_amplitude=temp_amplitude/5
             # Check that the mean of the temp_amplitude here is at least 0.6 * cvalue
-            
+
             if temp_amplitude > 0.5*peak_value:
-            
+
                 # DELETE THIS ONLY FOR TESTING
                 #temp_amplitude=peak_value
-                
+
                 # Get the center of mass peak value
                 sum_of_positions_times_values=0
                 sum_of_values=0
                 number_of_positions_to_test=7 # odd value
                 poswidth=int(number_of_positions_to_test/2)
-                
+
                 for spotty in range(number_of_positions_to_test):
                     sum_of_positions_times_values=sum_of_positions_times_values+(actualprofile[peak_value_index-poswidth+spotty][1]*actualprofile[peak_value_index-poswidth+spotty][0])
                     sum_of_values=sum_of_values+actualprofile[peak_value_index-poswidth+spotty][1]
                 peak_position=(sum_of_positions_times_values / sum_of_values)
                 # width checker
-                #print (2.355 * popt[2]) 
+                #print (2.355 * popt[2])
                 #print (0.8 / pixscale)
                 #breakpoint()
                 # Get a handwavey distance to the HWHM
@@ -882,19 +882,19 @@ def multiprocess_fast_gaussian_photometry(package):
                 temppeakvalue=copy.deepcopy(tempvalue)
                 # Get lefthand quarter percentiles
                 #threequartertemp=actualprofile[temppos,1]
-                
+
                 counter=1
                 while tempvalue > 0.25*temppeakvalue:
-                    
+
                     tempvalue=actualprofile[temppos-counter,1]
                     if tempvalue > 0.75:
                         threequartertemp=temppos-counter
                     #print (tempvalue)
                     counter=counter+1
-                
+
                 lefthand_quarter_spot=actualprofile[temppos-counter][0]
                 lefthand_threequarter_spot=actualprofile[threequartertemp][0]
-                
+
                 # Get righthand quarter percentile
                 counter=1
                 while tempvalue > 0.25*temppeakvalue:
@@ -903,29 +903,29 @@ def multiprocess_fast_gaussian_photometry(package):
                     if tempvalue > 0.75:
                         threequartertemp=temppos+counter
                     counter=counter+1
-                
+
                 righthand_quarter_spot=actualprofile[temppos+counter][0]
                 righthand_threequarter_spot=actualprofile[threequartertemp][0]
-                    
+
                 largest_reasonable_position_deviation_in_pixels=1.25*max(abs(peak_position - righthand_quarter_spot),abs(peak_position - lefthand_quarter_spot))
                 largest_reasonable_position_deviation_in_arcseconds=largest_reasonable_position_deviation_in_pixels *pixscale
-                
+
                 smallest_reasonable_position_deviation_in_pixels=0.7*min(abs(peak_position - righthand_threequarter_spot),abs(peak_position - lefthand_threequarter_spot))
                 smallest_reasonable_position_deviation_in_arcseconds=smallest_reasonable_position_deviation_in_pixels *pixscale
-                
+
                 #breakpoint()
-                
-                print ("************************")
+
+                #print ("************************")
                 # If peak reasonably in the center
                 # And the largest reasonable position deviation isn't absurdly small
                 if abs(peak_position) < max(3, 3/pixscale) and largest_reasonable_position_deviation_in_arcseconds > 1.0:
 
-                
-                
+
+
                     # Construct testing array
                     # Initially on pixelscale then convert to pixels
                     testvalue=0.1
-                    testvalues=[]                        
+                    testvalues=[]
                     while testvalue < 12:
                         if testvalue > smallest_reasonable_position_deviation_in_arcseconds and testvalue < largest_reasonable_position_deviation_in_arcseconds:
                             if testvalue > 1 and testvalue <= 7:
@@ -941,28 +941,28 @@ def multiprocess_fast_gaussian_photometry(package):
                     pixel_testvalues=np.array(testvalues) / pixscale
                     # convert fwhm into appropriate stdev
                     pixel_testvalues=(pixel_testvalues/2.355) /2
-                    
+
                     #breakpoint()
-                
+
                     smallest_value=999999999999999.9
                     #smallest_index=0
                     for pixeltestvalue in pixel_testvalues:
-                        
+
                         # googtime=time.time()
                         #if pixeltestvalue*pixscale < largest_reasonable_position_deviation_in_arcseconds and pixeltestvalue*pixscale > smallest_reasonable_position_deviation_in_arcseconds:
                         #est_fpopt= [peak_value, peak_position, pixeltestvalue]
                         test_fpopt= [peak_value, peak_position, pixeltestvalue]
-                        
+
                         #print (test_fpopt)
-                        
+
                         # differences between gaussian and data
                         difference=(np.sum(abs(actualprofile[:,1] - gaussian(actualprofile[:,0], *test_fpopt))))
                         #print (difference)
-                        
+
                         if difference < smallest_value:
                             smallest_value=copy.deepcopy(difference)
                             smallest_fpopt=copy.deepcopy(test_fpopt)
-                        
+
                         if difference < 1.25 * smallest_value:
                             # print (time.time()-googtime)
                             # plt.scatter(actualprofile[:,0],actualprofile[:,1])
@@ -973,31 +973,31 @@ def multiprocess_fast_gaussian_photometry(package):
                         else:
                             #print ("gone through and sampled range enough")
                             break
-                            
+
                     #breakpoint()
-                    
-                        
+
+
                     # slow scipy way
                     #popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-                    
-                    
+
+
 
                     #fpopt=[temp_amplitude, peak_position, 0.2]
-                    
-                    
+
+
                     # Amplitude has to be a substantial fraction of the peak value
                     # and the center of the gaussian needs to be near the center
                     # and the FWHM has to be above 0.8 arcseconds.
                     #if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, 3/pixscale):# and (2.355 * popt[2]) > (0.8 / pixscale) :
-                    
-                    # if it isn't a unreasonably small fwhm then measure it.    
+
+                    # if it isn't a unreasonably small fwhm then measure it.
                     if (2.355 * smallest_fpopt[2]) > (0.8 / pixscale) :
-                     
+
                         # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
                         # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
                         # plt.scatter(actualprofile[:,0],actualprofile[:,1])
                         # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
-                        
+
                         # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
                         # #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                         # plt.show()
@@ -1005,7 +1005,7 @@ def multiprocess_fast_gaussian_photometry(package):
 
                         # FWHM is 2.355 * std for a gaussian
                         #fwhmlist.append(smallest_fpopt[2])
-                        
+
                         #if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3,(3/pixscale)) :
                             # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
                             # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
@@ -1019,33 +1019,33 @@ def multiprocess_fast_gaussian_photometry(package):
                         return smallest_fpopt[2]
                     else:
                         return np.nan
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             #breakpoint()
 
             #scipytime=time.time()
@@ -1725,6 +1725,10 @@ class Camera:
 
         #expresult={}
 
+
+        # SUPER TEMPORARY HACK SO  MTF CAN GO DEBUG SOMETHING
+
+
         # Figure out pixelscale from own observations
         # Or use the config value if there hasn't been enough
         # observations yet.
@@ -1740,6 +1744,8 @@ class Camera:
             self.pixscale = bn.nanmedian(pixelscale_list)
         else:
             self.pixscale = None
+            # SUPER TEMPORARY HACK SO  MTF CAN GO DEBUG SOMETHING
+            self.pixscale=0.288
             #self.pixscale = 0.198
 
         plog('1x1 pixel scale: ' + str(self.pixscale))
@@ -1839,7 +1845,7 @@ class Camera:
         self.camera_known_gain_stdev=70000.0
         self.camera_known_readnoise=70000.0
         self.camera_known_readnoise_stdev=70000.0
-        
+
         next_seq = next_sequence(self.config["camera"][self.name]["name"])
         self.next_seq= next_seq
 
@@ -1946,15 +1952,15 @@ class Camera:
         if len(readout_list) > 0:
             self.readout_time = bn.nanmedian(readout_list)
         else:
-            self.readout_time = 0 # if it is zero, thats fine, it will estimate the readout time on the first readout. 
+            self.readout_time = 0 # if it is zero, thats fine, it will estimate the readout time on the first readout.
 
         plog ("Currently estimated readout time: " + str(self.readout_time))
         #self.readout_time=0
 
 
 
-        
-        
+
+
 
 
         if self.theskyx:
@@ -2312,9 +2318,9 @@ class Camera:
 
         #draw.text((0, 0), str(focus_position), (255))
         draw.text((0, 0), str('MEANT TO BE FOCUS POSITION'), (255))
-        
+
         g_dev['cam'].current_focus_jpg=copy.deepcopy(final_image)
-        
+
 
         del hdusmalldata
         del stretched_data_float
@@ -3131,10 +3137,10 @@ class Camera:
         N_of_substacks = int(exposure_time / exp_of_substacks)
         readouts=0
         sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
-        
+
         self.sub_stacker_midpoints=[]
-        
-        
+
+
         #print ("subexposing")
         for subexposure in range(N_of_substacks+1):
             #print (subexposure)
@@ -3160,19 +3166,19 @@ class Camera:
 
             exposure_timer=time.time()
             # If it is the first exposure, then just take the exposure. Same with the second as the first one is the reference.
-            
+
             if subexposure == 0 or subexposure == 1:
-                print ("Collecting subexposure " + str(subexposure+1))      
-                
+                print ("Collecting subexposure " + str(subexposure+1))
+
                 success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                 if subexposure == 0 :
                     self.substack_start_time=time.time()
                 self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
                 qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
                 exposure_timer=time.time()
-                
-                
-                
+
+
+
                 if subexposure == 1:
                     #print ("Flat,DarkBiasing reference frame")
                     # De-biasdark sub_stack array
@@ -3236,7 +3242,7 @@ class Camera:
                     self.expected_endpoint_of_substack_exposure=time.time() + exp_of_substacks
                     self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
                     qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
-                    
+
                     exposure_timer=time.time()
                 # While the exposure is happening prep align and stack the previous exposure.
                 #print ("Processing " +str(subexposure))
@@ -3343,24 +3349,24 @@ class Camera:
                 image_width_byref = c_uint32()
                 image_height_byref = c_uint32()
                 bits_per_pixel_byref = c_uint32()
-                time_before_last_substack_readout=time.time()    
+                time_before_last_substack_readout=time.time()
                 success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
                                                       byref(image_width_byref),
                                                       byref(image_height_byref),
                                                       byref(bits_per_pixel_byref),
                                                       byref(qhycam.camera_params[qhycam_id]['channels']),
                                                       byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-                
+
                 image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
                 time_after_last_substack_readout=time.time()
-                
+
                 plog ("readout time: " + str(time_after_last_substack_readout - time_before_last_substack_readout))
                 readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
-                
 
-                            
+
+
                 sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-                
+
                 #print ("Collected " +str(subexposure+1))
 
 
@@ -3377,9 +3383,9 @@ class Camera:
         sub_stacker_array=bn.nanmedian(sub_stacker_array, axis=2) * N_of_substacks
         print ("Stacktime: " + str(time.time()-temptimer))
         self.sub_stack_hold = sub_stacker_array
-        
+
         #self.substack_midpoint_time=(self.substack_start_time + expected_endpoint_of_substack_exposure) / 2
-        
+
         del sub_stacker_array
         self.substacker_available=True
 
@@ -3391,7 +3397,7 @@ class Camera:
 
         #breakpoint()
 
-        
+
         if bias_dark_or_light_type_frame == 'bias':
             exposure_time = 40 /1000/1000 # shortest requestable exposure time
 
@@ -3433,19 +3439,19 @@ class Camera:
             bits_per_pixel_byref = c_uint32()
 
             #qhycommand=time.time()
-            time_before_readout=time.time()    
+            time_before_readout=time.time()
             success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
                                                   byref(image_width_byref),
                                                   byref(image_height_byref),
                                                   byref(bits_per_pixel_byref),
                                                   byref(qhycam.camera_params[qhycam_id]['channels']),
                                                   byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-            
+
             #print (time.time() - qhycommand)
 
             image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
             time_after_readout=time.time()
-            
+
             plog ("readout time: " + str(time_after_readout - time_before_readout))
             self.readout_estimate= time_after_readout - time_before_readout
             #npreshaprecommand=time.time()
@@ -4405,7 +4411,7 @@ class Camera:
                             self.end_of_last_exposure_time=time.time()
 
 
-                            
+
                             # # Calculate current airmass now
                             # #try:
                             # rd = SkyCoord(ra=ra_at_time_of_exposure*u.hour, dec=dec_at_time_of_exposure*u.deg)
@@ -4747,7 +4753,7 @@ class Camera:
         if substack:
             # It takes time to do the median stack... add in a bit of an empirical overhead
             # We also have to factor in all the readout times unlike a single exposure
-            # As the readouts are all done in the substack thread.            
+            # As the readouts are all done in the substack thread.
             stacking_overhead= 0.0005*pow(exposure_time,2) + 0.0334*exposure_time
             plog ("Expected stacking overhead: " + str(stacking_overhead))
             cycle_time=exposure_time + ((exposure_time / 10))*self.readout_time + stacking_overhead
@@ -4756,7 +4762,7 @@ class Camera:
         # For file-based readouts, we need to factor in the readout time
         # and wait for that as well as the exposure time.
         # Currently this is just theskyx... probably also ascom and maxim but we don't use either of them anymore
-        elif self.theskyx: 
+        elif self.theskyx:
             cycle_time=self.readout_time+exposure_time
             self.completion_time = start_time_of_observation + cycle_time
         # Otherwise just wait for the exposure_time to end
@@ -4764,7 +4770,7 @@ class Camera:
         else:
             cycle_time=exposure_time
             self.completion_time = start_time_of_observation + cycle_time
-            
+
         expresult = {"error": False}
         quartileExposureReport = 0
         self.plog_exposure_time_counter_timer=time.time() -3.0
@@ -4949,21 +4955,21 @@ class Camera:
                 if self.theskyx:
                     self.readout_estimate= time.time()-start_time_of_observation-exposure_time
                     plog ("Theskyx readout time: " + str(self.readout_estimate))
-                                
+
                 if self.substacker:
                     expected_endpoint_of_substack_exposure=copy.deepcopy(self.expected_endpoint_of_substack_exposure)
                     substack_start_time=copy.deepcopy(self.substack_start_time)
                     sub_stacker_midpoints=copy.deepcopy(self.sub_stacker_midpoints)
                 else:
                     expected_endpoint_of_substack_exposure=None
-                    substack_start_time=None 
+                    substack_start_time=None
                     sub_stacker_midpoints=None
-                    
-                
-                
-                
-                
-                
+
+
+
+
+
+
                 self.exposure_busy=False
                 # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
                 if not g_dev['obs'].mountless_operation:
@@ -5053,10 +5059,10 @@ class Camera:
                             plog("Still waiting for file to arrive: ", e)
                         time.sleep(3)
                         retrycounter = retrycounter + 1
-                        
-                
+
+
                 readout_estimate = copy.deepcopy(self.readout_estimate)
-                # If there isn't an estimated readout time shelf yet, use this first one as the estimate to begin with. 
+                # If there isn't an estimated readout time shelf yet, use this first one as the estimate to begin with.
                 if self.readout_time==0:
                     self.readout_time=copy.deepcopy(readout_estimate)
                 # Here is where we wait for any slew left over while async'ing and grabbing image
@@ -5089,7 +5095,7 @@ class Camera:
                         dark_limit_adu =   self.config["camera"][self.name]["settings"]['dark_lim_adu']
                         if len(self.biasFiles) > 0:
                             tempcrop=int(min(outputimg.shape)*0.15)
-                            
+
                             tempmodearray=((outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) *10)
                             int_array_flattened=tempmodearray.astype(int).ravel()
                             unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
@@ -5097,13 +5103,13 @@ class Camera:
                             imageMode=unique[m]
                             debiaseddarkmode= imageMode / 10 / exposure_time
                             plog ("Debiased 1s Dark Mode is " + str(debiaseddarkmode))
-                            
+
                             debiaseddarkmedian= bn.nanmedian(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time
                             plog ("Debiased 1s Dark Median is " + str(debiaseddarkmedian))
-                            
+
                             debiaseddarkmean= bn.nanmean(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time
                             plog ("Debiased 1s Dark Mean is " + str(debiaseddarkmean))
-                            
+
                             plog ("Exposure time: " + str(exposure_time))
                             #breakpoint()
                             #Short exposures are inherently much more variable, so their limit is set much higher.
@@ -5255,8 +5261,8 @@ class Camera:
 
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
-                    
-                    
+
+
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time, sub_stacker_midpoints)), block=False)
 
 
@@ -5592,13 +5598,13 @@ class Camera:
                         plog(traceback.format_exc())
 
 
-                    
+
 
                     if os.path.exists(im_path + text_name):
                         try:
                             #g_dev['obs'].enqueue_for_fastUI(10, im_path, text_name)
                             g_dev['obs'].enqueue_for_fastUI(10, im_path, text_name)
-                        
+
                         except:
                             plog("Failed to send FOCUS TEXT up for some reason")
                             plog(traceback.format_exc())
@@ -6191,41 +6197,41 @@ def post_exposure_process(payload):
         hdu.header["L1PUBDAT"] = datetime.datetime.strftime(
             yesterday, "%Y-%m-%dT%H:%M:%S.%fZ"
         )  # IF THIS DOESN"T WORK, subtract the extra datetime ...
-        
+
         # There is a significant difference between substack timing and "normal" exposure timing
         # Also it has impacts on the actual "exposure time" as well.... the exposure time is "longer" but has LESS effective exposure time
-        
+
         if substack:
-            
-            #hdu.header["SUBSTK"] = (True, "Is this made from at-site sub exposures.") 
+
+            #hdu.header["SUBSTK"] = (True, "Is this made from at-site sub exposures.")
             hdu.header["SUBEXPT"] = (expected_endpoint_of_substack_exposure - substack_start_time, "Time between start and end of subexposure set")
-            
-            hdu.header['SUBMIDTS'] = (sub_stacker_midpoints, "Midpoints of substack exposures")
-            
-            
+
+            hdu.header['SUBMIDTS'] = (str(sub_stacker_midpoints), "Midpoints of substack exposures")
+
+
             substack_midexposure=np.mean(np.array(sub_stacker_midpoints))
-            
+
             print ("substacker midpoints")
             print (sub_stacker_midpoints)
-        
+
             print ("substacked midpoint")
             print (substack_midexposure)
-            
-            
+
+
             hdu.header["DATE"] = (
                 datetime.datetime.isoformat(
                     datetime.datetime.utcfromtimestamp(substack_start_time)
                 ),
                 "Start date and time of observation"
             )
-    
+
             hdu.header["DATE-OBS"] = (
                 datetime.datetime.isoformat(
                     datetime.datetime.utcfromtimestamp(substack_start_time)
                 ),
                 "Start date and time of observation"
             )
-            
+
             hdu.header["MJD-OBS"] = (
                 Time(substack_start_time, format="unix").mjd,
                 "[UTC days] Modified Julian Date start date/time",
@@ -6233,9 +6239,9 @@ def post_exposure_process(payload):
             hdu.header["JD-START"] = (
                 Time(substack_start_time, format="unix").jd,
                 "[UTC days] Julian Date at start of exposure",
-            )       
-            
-            
+            )
+
+
             hdu.header["MJD-MID"] = (
                 Time(substack_midexposure, format="unix").mjd,
                 "[UTC days] Modified Julian Date start date/time",
@@ -6243,10 +6249,10 @@ def post_exposure_process(payload):
             hdu.header["JD-MID"] = (
                 Time(substack_midexposure, format="unix").jd,
                 "[UTC days] Julian Date at start of exposure",
-            )       
-            
-            
-            
+            )
+
+
+
             hdu.header["EXPTIME"] = (
                 expected_endpoint_of_substack_exposure - substack_start_time,
                 "[s] Actual exposure length",
@@ -6259,34 +6265,34 @@ def post_exposure_process(payload):
                 int(exposure_time / 10),
                 "[s] Number of integrated exposures",
             )
-            
-    
+
+
             hdu.header[
                 "EXPOSURE"
             ] = (
                 expected_endpoint_of_substack_exposure - substack_start_time,
                 "[s] Actual exposure length",
             )  # Ideally this needs to be calculated from actual times
-        
+
 
         else:
-            
-            #hdu.header["SUBSTK"] = (False, "Is this made from at-site sub exposures.") 
-            
+
+            #hdu.header["SUBSTK"] = (False, "Is this made from at-site sub exposures.")
+
             hdu.header["DATE"] = (
                 datetime.datetime.isoformat(
                     datetime.datetime.utcfromtimestamp(start_time_of_observation)
                 ),
                 "Start date and time of observation"
             )
-    
+
             hdu.header["DATE-OBS"] = (
                 datetime.datetime.isoformat(
                     datetime.datetime.utcfromtimestamp(start_time_of_observation)
                 ),
                 "Start date and time of observation"
             )
-            
+
             hdu.header["MJD-OBS"] = (
                 Time(start_time_of_observation, format="unix").mjd,
                 "[UTC days] Modified Julian Date start date/time",
@@ -6294,9 +6300,9 @@ def post_exposure_process(payload):
             hdu.header["JD-START"] = (
                 Time(start_time_of_observation, format="unix").jd,
                 "[UTC days] Julian Date at start of exposure",
-            )       
-            
-            
+            )
+
+
             hdu.header["MJD-MID"] = (
                 Time(start_time_of_observation + (0.5 * exposure_time), format="unix").mjd,
                 "[UTC days] Modified Julian Date start date/time",
@@ -6304,8 +6310,8 @@ def post_exposure_process(payload):
             hdu.header["JD-MID"] = (
                 Time(start_time_of_observation+ (0.5 * exposure_time), format="unix").jd,
                 "[UTC days] Julian Date at start of exposure",
-            )     
-            
+            )
+
             hdu.header["EXPTIME"] = (
                 exposure_time,
                 "[s] Actual exposure length",
@@ -6318,17 +6324,17 @@ def post_exposure_process(payload):
                 1,
                 "[s] Number of integrated exposures",
             )
-            
-    
+
+
             hdu.header[
                 "EXPOSURE"
             ] = (
                 exposure_time,
                 "[s] Actual exposure length",
             )  # Ideally this needs to be calculated from actual times
-        
+
         hdu.header["BUNIT"] = "adu"
-        
+
         hdu.header["FILTER"] = (
             this_exposure_filter,
             "Filter type")
@@ -6952,7 +6958,7 @@ def post_exposure_process(payload):
                     hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
                 # bin to native binning
-                if selfnative_bin != 1:
+                if selfnative_bin != 1 and (not pixscale == None):
                     reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
                     reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
                     reduced_hdusmallheader['XBINING']=selfnative_bin

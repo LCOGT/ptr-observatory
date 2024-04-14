@@ -140,7 +140,7 @@ class Focuser:
         except:
             plog ('setting last filter offset to 0')
             self.last_filter_offset= 0
-        
+
         self.focuser_settle_time=self.config['focuser_movement_settle_time']
 
 
@@ -241,6 +241,13 @@ class Focuser:
                 except:
                     plog("AF Guarded move failed.")
                     plog (traceback.format_exc())
+                try:
+                    g_dev["obs"].send_to_user("Focus Movement Complete")
+
+                    plog("Focus Movement Complete")
+                except:
+                    # first time booting up this won't work.
+                    pass
 
                 self.focuser_is_moving=False
                 self.guarded_move_requested=False
@@ -606,6 +613,9 @@ class Focuser:
         This uses te most recent focus procedure that used self.current_focus_temperature
         to focus. Functionally dependent of temp, coef_c, and filter thickness."""
 
+        # Hack to stop focus during commissioning
+        return
+
         if not force_change: # If the filter is changed, then a force change is necessary.
             try:
                 if g_dev['seq'].focussing or self.focuser_is_moving or g_dev['seq'].measuring_focus_offsets:
@@ -654,7 +664,7 @@ class Focuser:
 
                 adjust = round(temp_delta * float(self.focus_temp_slope), 1)
                 #print ("focus adjust value due to temperature: " + str(adjust))
-            
+
             # adjust for filter offset
             # it is try/excepted because some telescopes don't have filters
             try:
@@ -672,7 +682,7 @@ class Focuser:
 
             # else:
             #     self.current_focus_position=self.get_position()
-            
+
             current_focus_micron=self.current_focus_position#*self.steps_to_micron
 
             #breakpoint()

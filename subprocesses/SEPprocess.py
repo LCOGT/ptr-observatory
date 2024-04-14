@@ -153,29 +153,29 @@ if not frame_type == 'focus' and float(hduheader['EXPTIME']) >= minimum_exposure
     m=counts.argmax()
     imageMode=unique[m]
     print ("Calculating Mode: " +str(time.time()-googtime))
-    
-    
+
+
     # Zerothreshing image
     googtime=time.time()
     histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-    #Do some fiddle faddling to figure out the value that goes to zero less 
+    #Do some fiddle faddling to figure out the value that goes to zero less
     zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
     breaker=1
     counter=0
     while (breaker != 0):
         counter=counter+1
-        if not (imageMode-counter) in zeroValueArray[:,0]:       
-            if not (imageMode-counter-counter) in zeroValueArray[:,0]:       
-                if not (imageMode-counter-counter-counter) in zeroValueArray[:,0]:     
-                    if not (imageMode-counter-counter-counter-counter) in zeroValueArray[:,0]:  
-                        if not (imageMode-counter-counter-counter-counter-counter) in zeroValueArray[:,0]:    
+        if not (imageMode-counter) in zeroValueArray[:,0]:
+            if not (imageMode-counter-counter) in zeroValueArray[:,0]:
+                if not (imageMode-counter-counter-counter) in zeroValueArray[:,0]:
+                    if not (imageMode-counter-counter-counter-counter) in zeroValueArray[:,0]:
+                        if not (imageMode-counter-counter-counter-counter-counter) in zeroValueArray[:,0]:
                             zeroValue=(imageMode-counter)
                             breaker =0
-            
-    hdufocusdata[hdufocusdata < zeroValue] = np.nan  
-    
+
+    hdufocusdata[hdufocusdata < zeroValue] = np.nan
+
     print ("Zero Threshing Image: " +str(time.time()-googtime))
-    
+
     real_mode=True
 else:
     imageMode=bn.nanmedian(hdufocusdata)
@@ -337,13 +337,13 @@ else:
     try:
 
         fx, fy = hdufocusdata.shape        #
-        
+
         if real_mode:
             bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
             bkg.subfrom(hdufocusdata)
         else:
             hdufocusdata=hdufocusdata-imageMode
-        
+
         # hdufocus = fits.PrimaryHDU()
         # hdufocus.data = hdufocusdata
         # hdufocus.header = hduheader
@@ -351,7 +351,7 @@ else:
         # hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
         # hdufocus.writeto('goop.fits', overwrite=True, output_verify='silentfix')
 
-        
+
 
         #if frame_type == 'focus':       # This hasn't been calculated yet for focus, but already has for a normal image.
         tempstd=np.std(hdufocusdata)
@@ -439,16 +439,16 @@ else:
         number_of_good_radials_to_get = 50
 
 
-       
+
 
         #print (amount)
 
         good_radials=0
-        
+
         # Construct testing array
         # Initially on pixelscale then convert to pixels
         testvalue=0.1
-        testvalues=[]                        
+        testvalues=[]
         while testvalue < 12:
             if testvalue > 1 and testvalue < 6:
                 testvalues.append(testvalue)
@@ -461,7 +461,7 @@ else:
             testvalue=testvalue+0.1
         # convert pixelscales into pixels
         pixel_testvalues=np.array(testvalues) / pixscale
-        
+
 
         for i in range(len(pointvalues)):
 
@@ -515,12 +515,12 @@ else:
             if abs(brightest_pixel_rdist) < max(3, 3/pixscale):
 
                 try:
-                    
-                    
-                    
-                    
-                    
-                    
+
+
+
+
+
+
                     # Reduce data down to make faster solvinging
                     upperbin=math.floor(max(radprofile[:,0]))
                     lowerbin=math.ceil(min(radprofile[:,0]))
@@ -529,64 +529,64 @@ else:
                     arcsecond_length_radial_profile = (upperbin-lowerbin)*pixscale
                     number_of_bins=int(arcsecond_length_radial_profile/0.25)
                     s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
-                    
+
                     max_value=np.nanmax(s)
                     min_value=np.nanmin(s)
                     threshold_value=(0.05*(max_value-min_value)) + min_value
-                    
+
                     actualprofile=[]
                     for q in range(len(s)):
-                        if not np.isnan(s[q]): 
+                        if not np.isnan(s[q]):
                             if s[q] > threshold_value:
                                 actualprofile.append([(edges[q]+edges[q+1])/2,s[q]])
-                
+
                     actualprofile=np.asarray(actualprofile)
-                    
+
                     edgevalue_left=actualprofile[0][1]
                     edgevalue_right=actualprofile[-1][1]
-                    
+
                     # Also remove any things that don't have many pixels above 20
                     # DO THIS SOON
-                    
+
                     if edgevalue_left < 0.6*cvalue and  edgevalue_right < 0.6*cvalue:
-                    
+
                         #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
                         #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-                        
+
                         #print (popt)
-                        
-                        
+
+
                         # Different faster fitter to consider
                         peak_value_index=np.argmax(actualprofile[:,1])
                         peak_value=actualprofile[peak_value_index][1]
                         x_axis_of_peak_value=actualprofile[peak_value_index][0]
-                        
+
                         # middle_distribution= actualprofile[actualprofile[:,0] < 5]
                         # middle_distribution= middle_distribution[middle_distribution[:,0] > -5]
-    
+
                         # Get the mean of the 5 pixels around the max
                         # and use the mean of those values and the peak value
                         # to use as the amplitude
-                        temp_amplitude=actualprofile[peak_value_index-2][1]+actualprofile[peak_value_index-1][1]+actualprofile[peak_value_index][1]+actualprofile[peak_value_index+1][1]+actualprofile[peak_value_index+2][1]    
+                        temp_amplitude=actualprofile[peak_value_index-2][1]+actualprofile[peak_value_index-1][1]+actualprofile[peak_value_index][1]+actualprofile[peak_value_index+1][1]+actualprofile[peak_value_index+2][1]
                         temp_amplitude=temp_amplitude/5
                         # Check that the mean of the temp_amplitude here is at least 0.6 * cvalue
                         if temp_amplitude > 0.5*peak_value:
-                        
+
                             # DELETE THIS ONLY FOR TESTING
                             #temp_amplitude=peak_value
-                            
+
                             # Get the center of mass peak value
                             sum_of_positions_times_values=0
                             sum_of_values=0
                             number_of_positions_to_test=7 # odd value
                             poswidth=int(number_of_positions_to_test/2)
-                            
+
                             for spotty in range(number_of_positions_to_test):
                                 sum_of_positions_times_values=sum_of_positions_times_values+(actualprofile[peak_value_index-poswidth+spotty][1]*actualprofile[peak_value_index-poswidth+spotty][0])
                                 sum_of_values=sum_of_values+actualprofile[peak_value_index-poswidth+spotty][1]
                             peak_position=(sum_of_positions_times_values / sum_of_values)
                             # width checker
-                            #print (2.355 * popt[2]) 
+                            #print (2.355 * popt[2])
                             #print (0.8 / pixscale)
                             #breakpoint()
                             # Get a handwavey distance to the HWHM
@@ -603,19 +603,19 @@ else:
                             temppeakvalue=copy.deepcopy(tempvalue)
                             # Get lefthand quarter percentiles
                             #threequartertemp=actualprofile[temppos,1]
-                            
+
                             counter=1
                             while tempvalue > 0.25*temppeakvalue:
-                                
+
                                 tempvalue=actualprofile[temppos-counter,1]
                                 if tempvalue > 0.75:
                                     threequartertemp=temppos-counter
                                 #print (tempvalue)
                                 counter=counter+1
-                            
+
                             lefthand_quarter_spot=actualprofile[temppos-counter][0]
                             lefthand_threequarter_spot=actualprofile[threequartertemp][0]
-                            
+
                             # Get righthand quarter percentile
                             counter=1
                             while tempvalue > 0.25*temppeakvalue:
@@ -624,29 +624,29 @@ else:
                                 if tempvalue > 0.75:
                                     threequartertemp=temppos+counter
                                 counter=counter+1
-                            
+
                             righthand_quarter_spot=actualprofile[temppos+counter][0]
                             righthand_threequarter_spot=actualprofile[threequartertemp][0]
-                                
+
                             largest_reasonable_position_deviation_in_pixels=1.25*max(abs(peak_position - righthand_quarter_spot),abs(peak_position - lefthand_quarter_spot))
                             largest_reasonable_position_deviation_in_arcseconds=largest_reasonable_position_deviation_in_pixels *pixscale
-                            
+
                             smallest_reasonable_position_deviation_in_pixels=0.7*min(abs(peak_position - righthand_threequarter_spot),abs(peak_position - lefthand_threequarter_spot))
                             smallest_reasonable_position_deviation_in_arcseconds=smallest_reasonable_position_deviation_in_pixels *pixscale
-                            
+
                             #breakpoint()
-                            
+
                             #print ("************************")
                             # If peak reasonably in the center
                             # And the largest reasonable position deviation isn't absurdly small
                             if abs(peak_position) < max(3, 3/pixscale) and largest_reasonable_position_deviation_in_arcseconds > 1.0:
 
-                            
-                            
+
+
                                 # Construct testing array
                                 # Initially on pixelscale then convert to pixels
                                 testvalue=0.1
-                                testvalues=[]                        
+                                testvalues=[]
                                 while testvalue < 12:
                                     if testvalue > smallest_reasonable_position_deviation_in_arcseconds and testvalue < largest_reasonable_position_deviation_in_arcseconds:
                                         if testvalue > 1 and testvalue <= 7:
@@ -662,28 +662,28 @@ else:
                                 pixel_testvalues=np.array(testvalues) / pixscale
                                 # convert fwhm into appropriate stdev
                                 pixel_testvalues=(pixel_testvalues/2.355) /2
-                                
+
                                 #breakpoint()
-                            
+
                                 smallest_value=999999999999999.9
                                 #smallest_index=0
                                 for pixeltestvalue in pixel_testvalues:
-                                    
+
                                     # googtime=time.time()
                                     #if pixeltestvalue*pixscale < largest_reasonable_position_deviation_in_arcseconds and pixeltestvalue*pixscale > smallest_reasonable_position_deviation_in_arcseconds:
                                     #est_fpopt= [peak_value, peak_position, pixeltestvalue]
                                     test_fpopt= [peak_value, peak_position, pixeltestvalue]
-                                    
+
                                     #print (test_fpopt)
-                                    
+
                                     # differences between gaussian and data
                                     difference=(np.sum(abs(actualprofile[:,1] - gaussian(actualprofile[:,0], *test_fpopt))))
                                     #print (difference)
-                                    
+
                                     if difference < smallest_value:
                                         smallest_value=copy.deepcopy(difference)
                                         smallest_fpopt=copy.deepcopy(test_fpopt)
-                                    
+
                                     if difference < 1.25 * smallest_value:
                                         # print (time.time()-googtime)
                                         # plt.scatter(actualprofile[:,0],actualprofile[:,1])
@@ -694,52 +694,52 @@ else:
                                     else:
                                         #print ("gone through and sampled range enough")
                                         break
-                                    
+
                                 # slow scipy way
                                 #popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-                                
-                                
-            
+
+
+
                                 #fpopt=[temp_amplitude, peak_position, 0.2]
-                                
-                                
+
+
                                 # Amplitude has to be a substantial fraction of the peak value
                                 # and the center of the gaussian needs to be near the center
                                 # and the FWHM has to be above 0.8 arcseconds.
                                 #if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, 3/pixscale):# and (2.355 * popt[2]) > (0.8 / pixscale) :
-                                
-                                # if it isn't a unreasonably small fwhm then measure it.    
+
+                                # if it isn't a unreasonably small fwhm then measure it.
                                 if (2.355 * smallest_fpopt[2]) > (0.8 / pixscale) :
-                                 
+
                                     # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
                                     # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
                                     # plt.scatter(actualprofile[:,0],actualprofile[:,1])
                                     # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
-                                    
+
                                     # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
                                     # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                                     # plt.show()
                                     #breakpoint()
-            
+
                                     # FWHM is 2.355 * std for a gaussian
                                     fwhmlist.append(smallest_fpopt[2])
                                     # Area under a 1D gaussian is (amplitude * Stdev / 0.3989)
-                                    
+
                                     # Volume under the 2D-Gaussian is computed as: 2 * pi * sqrt(abs(X_sig)) * sqrt(abs(Y_sig)) * amplitude
                                     # But our sigma in both dimensions are the same so sqrt times sqrt of something is equal to the something
                                     countsphot= 2 * math.pi * smallest_fpopt[2] * smallest_fpopt[0]
-                                    
-                                    
+
+
                                     #breakpoint()
                                     if good_radials < number_of_good_radials_to_get:
                                         #sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
                                         sources.append([cx,cy,radprofile,temp_array,cvalue, countsphot,smallest_fpopt[0],smallest_fpopt[1],smallest_fpopt[2],'r'])
-                                        
+
                                         good_radials=good_radials+1
                                     else:
                                         sources.append([cx,cy,0,0,cvalue, countsphot,smallest_fpopt[0],smallest_fpopt[1],smallest_fpopt[2],'n'])
                                     photometry.append([cx,cy,cvalue,smallest_fpopt[0],smallest_fpopt[2]*4.710,countsphot])
-            
+
                                     #breakpoint()
                                     # If we've got more than 50 for a focus
                                     # We only need some good ones.
@@ -779,8 +779,8 @@ else:
 
         # This pickled sep file is for internal use - usually used by the smartstack thread to align mono smartstacks.
         pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.sep'),'wb'))
-        
-        
+
+
         # Grab the central arcminute out of the image.
         cx = int(fx/2)
         cy = int(fy/2)
@@ -788,8 +788,8 @@ else:
         central_half_arcminute=copy.deepcopy(hdufocusdata[cx-width:cx+width,cy-width:cy+width])
         imageinspection_json_snippets['central_patch']= re.sub('\s+',' ',str(central_half_arcminute))
 
-        
-        
+
+
         #print (im_path + text_name.replace('.txt', '.sep'))
 
 
