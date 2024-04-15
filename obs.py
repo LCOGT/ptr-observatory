@@ -4345,7 +4345,7 @@ class Observatory:
 
             # This block repeats itself in various locations to try and nudge the scope
             # If the platesolve requests such a thing.
-            if self.pointing_correction_requested_by_platesolve_thread and not g_dev['cam'].currently_in_smartstack_loop:
+            if self.pointing_correction_requested_by_platesolve_thread: # and not g_dev['cam'].currently_in_smartstack_loop:
 
                 if self.pointing_correction_request_time > self.time_of_last_slew:  # Check it hasn't slewed since request
 
