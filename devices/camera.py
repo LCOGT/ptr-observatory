@@ -6204,7 +6204,10 @@ def post_exposure_process(payload):
             #hdu.header["SUBSTK"] = (True, "Is this made from at-site sub exposures.")
             hdu.header["SUBEXPT"] = (expected_endpoint_of_substack_exposure - substack_start_time, "Time between start and end of subexposure set")
 
-            hdu.header['SUBMIDTS'] = (str(sub_stacker_midpoints), "Midpoints of substack exposures")
+            hdu.header.add_comment('Substacker Midpoints:')
+            hdu.header.add_comment(str(sub_stacker_midpoints))
+
+            #hdu.header['SUBMIDTS'] = (str(sub_stacker_midpoints), "Midpoints of substack exposures")
 
 
             substack_midexposure=np.mean(np.array(sub_stacker_midpoints))

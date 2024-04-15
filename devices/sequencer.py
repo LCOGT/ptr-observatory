@@ -6059,7 +6059,11 @@ class Sequencer:
         im_path_r = g_dev['cam'].camera_path
         im_type = "EX"
         #f_ext = "-"
+        
+        
         try:
+            plog ("FOCUS NEXT SEQ: " + str(g_dev['cam'].focus_next_seq))
+            
             text_name = (
                 g_dev['cam'].config["obs_id"]
                 + "-"
@@ -6073,6 +6077,8 @@ class Sequencer:
                 + "00.txt"
             )
         except:
+            plog ("CAM NEXT SEQ: " + str(g_dev['cam'].focus_next_seq))
+            
             text_name = (
                 g_dev['cam'].config["obs_id"]
                 + "-"
@@ -6085,6 +6091,8 @@ class Sequencer:
                 + im_type
                 + "00.txt"
             )
+
+        print ("TEXTNAME: " + str(text_name))
 
         im_path = im_path_r + g_dev["day"] + "/to_AWS/"
 
@@ -6247,6 +6255,9 @@ class Sequencer:
                 for i in focus_spots:
                     x.append(i[0])
                     y.append(i[1])
+                    
+                x=np.asarray(x, dtype=float)
+                y=np.asarray(y, dtype=float)
 
             if position_counter < 5:
                 if len(focus_spots) > 0:
@@ -6256,10 +6267,11 @@ class Sequencer:
 
                     # Weird way to convert plt to pil image, overlay and close
                     img_buf = io.BytesIO()
+                    plt.scatter(x,y)
                     plt.savefig(img_buf, format='png')
                     pltim = Image.open(img_buf)
                     #im.show(title="My Image")
-                    box = (200, 200)
+                    box = (500, 500)
                     g_dev['cam'].current_focus_jpg.paste(pltim, box )
                 g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                 #img_buf.close()
@@ -6318,10 +6330,11 @@ class Sequencer:
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
+                            plt.scatter(x,y)
                             plt.savefig(img_buf, format='png')
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
-                            box = (200, 200)
+                            box = (500, 500)
                             g_dev['cam'].current_focus_jpg.paste(pltim, box )
                             g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
@@ -6351,10 +6364,11 @@ class Sequencer:
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
+                            plt.scatter(x,y)
                             plt.savefig(img_buf, format='png')
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
-                            box = (200, 200)
+                            box = (500, 500)
                             g_dev['cam'].current_focus_jpg.paste(pltim, box )
                             g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
@@ -6426,10 +6440,13 @@ class Sequencer:
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
+                            plt.scatter(x,y)
+                            plt.plot(x,f(x), color = 'green')                            
+                            plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
                             plt.savefig(img_buf, format='png')
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
-                            box = (200, 200)
+                            box = (500, 500)
                             g_dev['cam'].current_focus_jpg.paste(pltim, box )
                             g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
