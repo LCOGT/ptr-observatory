@@ -991,33 +991,36 @@ def multiprocess_fast_gaussian_photometry(package):
                     #if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, 3/pixscale):# and (2.355 * popt[2]) > (0.8 / pixscale) :
 
                     # if it isn't a unreasonably small fwhm then measure it.
-                    if (2.355 * smallest_fpopt[2]) > (0.8 / pixscale) :
-
-                        # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-                        # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-                        # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                        # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
-
-                        # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
-                        # #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                        # plt.show()
-                        #breakpoint()
-
-                        # FWHM is 2.355 * std for a gaussian
-                        #fwhmlist.append(smallest_fpopt[2])
-
-                        #if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3,(3/pixscale)) :
+                    try:
+                        if (2.355 * smallest_fpopt[2]) > (0.8 / pixscale) :
+    
                             # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
                             # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
                             # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                            # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
-                            # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                            # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
+    
+                            # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
+                            # #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                             # plt.show()
-
+                            #breakpoint()
+    
                             # FWHM is 2.355 * std for a gaussian
-                            #fwhmlist.append(popt[2])
-                        return smallest_fpopt[2]
-                    else:
+                            #fwhmlist.append(smallest_fpopt[2])
+    
+                            #if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3,(3/pixscale)) :
+                                # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
+                                # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
+                                # plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                                # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
+                                # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                                # plt.show()
+    
+                                # FWHM is 2.355 * std for a gaussian
+                                #fwhmlist.append(popt[2])
+                            return smallest_fpopt[2]
+                        else:
+                            return np.nan
+                    except:
                         return np.nan
 
 
@@ -2225,22 +2228,30 @@ class Camera:
         print ("Setup for multiprocess focus: " + str(time.time()-setup_timer))
 
         #Temporary just fur testing
-        # for i in range(len(focus_multiprocess)):
-        #     multiprocess_fast_gaussian_photometry(focus_multiprocess[i])
-        # breakpoint()
-
         mptimer=time.time()
         fwhm_results=[]
         number_to_collect=max(16,2*os.cpu_count())
-        with Pool(os.cpu_count()) as pool:
-            for result in pool.map(multiprocess_fast_gaussian_photometry, focus_multiprocess):
-                if not np.isnan(result):
-                    fwhm_results.append(result)
-                    if len(fwhm_results) >= number_to_collect:
-                        break
-        #print (fwhm_results)
+        for i in range(len(focus_multiprocess)):
+            result=multiprocess_fast_gaussian_photometry(focus_multiprocess[i])
+            if not np.isnan(result):
+                fwhm_results.append(result)
+                if len(fwhm_results) >= number_to_collect:
+                    break
+        # breakpoint()
+        print ("not multiprocess timer: " + str(time.time() - mptimer))
 
-        print ("multiprocess timer: " + str(time.time() - mptimer))
+        # mptimer=time.time()
+        # fwhm_results=[]
+        # number_to_collect=max(16,2*os.cpu_count())
+        # with Pool(os.cpu_count()) as pool:
+        #     for result in pool.map(multiprocess_fast_gaussian_photometry, focus_multiprocess):
+        #         if not np.isnan(result):
+        #             fwhm_results.append(result)
+        #             if len(fwhm_results) >= number_to_collect:
+        #                 break
+        # #print (fwhm_results)
+
+        # print ("multiprocess timer: " + str(time.time() - mptimer))
 
 
         print ("Extracting and Gaussianingx: " + str(time.time()-googtime))
@@ -4761,7 +4772,7 @@ class Camera:
         # and wait for that as well as the exposure time.
         # Currently this is just theskyx... probably also ascom and maxim but we don't use either of them anymore
         elif self.theskyx:
-            cycle_time=self.readout_time+exposure_time
+            cycle_time=(0.75*self.readout_time)+exposure_time # We have a 25% buffer so that it can record faster readout times.
             self.completion_time = start_time_of_observation + cycle_time
         # Otherwise just wait for the exposure_time to end
         # Because the readout time occurs in the image aquisition function

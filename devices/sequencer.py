@@ -6056,52 +6056,55 @@ class Sequencer:
         central_starting_focus=copy.deepcopy(foc_pos0)
 
 
-        im_path_r = g_dev['cam'].camera_path
-        im_type = "EX"
-        #f_ext = "-"
         
+
         
-        try:
-            plog ("FOCUS NEXT SEQ: " + str(g_dev['cam'].focus_next_seq))
-            
-            text_name = (
-                g_dev['cam'].config["obs_id"]
-                + "-"
-                + g_dev['cam'].config["camera"][g_dev['cam'].name]["name"]
-                + "-"
-                + g_dev["day"]
-                + "-"
-                + g_dev['cam'].focus_next_seq
-                + "-"
-                + im_type
-                + "00.txt"
-            )
-        except:
-            plog ("CAM NEXT SEQ: " + str(g_dev['cam'].focus_next_seq))
-            
-            text_name = (
-                g_dev['cam'].config["obs_id"]
-                + "-"
-                + g_dev['cam'].config["camera"][g_dev['cam'].name]["name"]
-                + "-"
-                + g_dev["day"]
-                + "-"
-                + g_dev['cam'].next_seq
-                + "-"
-                + im_type
-                + "00.txt"
-            )
-
-        print ("TEXTNAME: " + str(text_name))
-
-        im_path = im_path_r + g_dev["day"] + "/to_AWS/"
 
         focus_spots=[]
         spots_tried=[]
         extra_tries=0
         #focus_fwhms=[]
         new_focus_position_to_attempt = central_starting_focus # Initialise this variable
-        while True:
+        while True:           
+            
+            im_path_r = g_dev['cam'].camera_path
+            im_type = "EX"
+            #f_ext = "-"
+            im_path = im_path_r + g_dev["day"] + "/to_AWS/"
+            
+            try:
+                plog ("FOCUS NEXT SEQ: " + str(g_dev['cam'].focus_next_seq))
+                
+                text_name = (
+                    g_dev['cam'].config["obs_id"]
+                    + "-"
+                    + g_dev['cam'].config["camera"][g_dev['cam'].name]["name"]
+                    + "-"
+                    + g_dev["day"]
+                    + "-"
+                    + g_dev['cam'].focus_next_seq
+                    + "-"
+                    + im_type
+                    + "00.txt"
+                )
+            except:
+                plog ("CAM NEXT SEQ: " + str(g_dev['cam'].next_seq))
+                
+                text_name = (
+                    g_dev['cam'].config["obs_id"]
+                    + "-"
+                    + g_dev['cam'].config["camera"][g_dev['cam'].name]["name"]
+                    + "-"
+                    + g_dev["day"]
+                    + "-"
+                    + g_dev['cam'].next_seq
+                    + "-"
+                    + im_type
+                    + "00.txt"
+                )
+
+            print ("TEXTNAME: " + str(text_name))
+            
             position_counter=position_counter+1
             # General command bailout section
             g_dev['obs'].request_scan_requests()
