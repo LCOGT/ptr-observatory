@@ -115,7 +115,7 @@ class Focuser:
             10000  # Set images since last focus as sillyvalue
         )
         self.last_focus_fwhm = None
-        self.focus_tracker = [np.nan] * 1000
+        self.focus_tracker = [np.nan] * 10
         self.focus_needed = False # A variable that if the code detects that the focus has worsened it can trigger an autofocus
 
         self.focus_temp_slope = None

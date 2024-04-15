@@ -2759,11 +2759,11 @@ class Observatory:
                                 # dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
                                 # ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
 
-                                if firstframesmartstack:
-                                    plog ("Not recentering as this is the first frame of a smartstack.")
-                                    self.pointing_correction_requested_by_platesolve_thread = False
+                                # if firstframesmartstack:
+                                #     plog ("Not recentering as this is the first frame of a smartstack.")
+                                #     self.pointing_correction_requested_by_platesolve_thread = False
 
-                                elif (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
+                                if (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
                                     err_ha = 0
                                     err_dec = 0
                                     plog("Platesolve has found that the current suggested pointing is way off!")
@@ -4347,7 +4347,8 @@ class Observatory:
             # If the platesolve requests such a thing.
             if self.pointing_correction_requested_by_platesolve_thread: # and not g_dev['cam'].currently_in_smartstack_loop:
 
-                if self.pointing_correction_request_time > self.time_of_last_slew:  # Check it hasn't slewed since request
+                # Check it hasn't slewed since request, although ignore this if in smartstack_loop due to dithering.
+                if (self.pointing_correction_request_time > self.time_of_last_slew) or g_dev['cam'].currently_in_smartstack_loop:  
 
                     plog("Re-centering Telescope Slightly.")
                     self.send_to_user("Re-centering Telescope Slightly.")
