@@ -4359,8 +4359,13 @@ class Observatory:
 
                     #ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
                     #decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
-                    ranudge= g_dev['mnt'].return_right_ascension() + g_dev['obs'].pointing_correction_request_ra_err
-                    decnudge= g_dev['mnt'].return_declination() + g_dev['obs'].pointing_correction_request_dec_err
+                    #ranudge= g_dev['mnt'].return_right_ascension() + g_dev['obs'].pointing_correction_request_ra_err
+                    #decnudge= g_dev['mnt'].return_declination() + g_dev['obs'].pointing_correction_request_dec_err
+                    
+                    ranudge=self.pointing_correction_request_ra
+                    decnudge=self.pointing_correction_request_dec
+                    
+                    
                     if ranudge < 0:
                         ranudge=ranudge+24
                     if ranudge > 24:
