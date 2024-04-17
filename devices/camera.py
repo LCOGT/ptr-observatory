@@ -4408,6 +4408,7 @@ class Camera:
                             # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
                             # This is now done in async update_status thread
                             #g_dev["mnt"].get_mount_coordinates()
+                            googtime=time.time()
                             if not g_dev['obs'].mountless_operation:
                                 ra_at_time_of_exposure , dec_at_time_of_exposure = g_dev["mnt"].get_mount_coordinates()                              
                                 
@@ -4416,7 +4417,7 @@ class Camera:
                             else:
                                 ra_at_time_of_exposure = 99.9
                                 dec_at_time_of_exposure = 99.9
-
+                            print ("Mount RA and Dec readtime " +str(time.time()-googtime))
                             
 
 
