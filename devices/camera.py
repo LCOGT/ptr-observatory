@@ -5108,7 +5108,10 @@ class Camera:
                             plog ("Exposure time: " + str(exposure_time))
                             #breakpoint()
                             #Short exposures are inherently much more variable, so their limit is set much higher.
-                            if frame_type in ['pointzerozerofourfive_exposure_dark','onepointfivepercent_exposure_dark','fivepercent_exposure_dark','tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark']:
+                            
+                            if frame_type in ['pointzerozerofourfive_exposure_dark','onepointfivepercent_exposure_dark','fivepercent_exposure_dark','tenpercent_exposure_dark']:
+                                plog ("This exposure is too short for the dark rejecter to be particularly reliable.")
+                            elif frame_type in ['quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark']:
                                 if debiaseddarkmedian > 10*dark_limit_adu:   # was 0.5, NB later add in an std based second rejection criterion
                                     plog ("Reject! This Dark seems to be light affected. ")
                                     expresult = {}
