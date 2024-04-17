@@ -4405,20 +4405,6 @@ class Camera:
                                 time.sleep(g_dev['foc'].focuser_settle_time)
 
 
-                            # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
-                            # This is now done in async update_status thread
-                            #g_dev["mnt"].get_mount_coordinates()
-                            googtime=time.time()
-                            if not g_dev['obs'].mountless_operation:
-                                ra_at_time_of_exposure , dec_at_time_of_exposure = g_dev["mnt"].get_mount_coordinates()                              
-                                
-                                # ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
-                                # dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
-                            else:
-                                ra_at_time_of_exposure = 99.9
-                                dec_at_time_of_exposure = 99.9
-                            print ("Mount RA and Dec readtime " +str(time.time()-googtime))
-                            
 
 
                             self.exposure_busy = True
@@ -4427,29 +4413,20 @@ class Camera:
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
 
+                            # After sending the exposure command, the camera is exposing
+                            # So commands placed here are essentially "cost-free" in terms of overhead.
 
-
-                            # # Calculate current airmass now
-                            # #try:
-                            # rd = SkyCoord(ra=ra_at_time_of_exposure*u.hour, dec=dec_at_time_of_exposure*u.deg)
-                            # #except:
-                            # #    icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
-                            # #    rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
-                            # aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
-                            # rd = rd.transform_to(aa)
-                            # alt = float(rd.alt/u.deg)
-                            # az = float(rd.az/u.deg)
-                            # zen = round((90 - alt), 3)
-                            # if zen > 90:
-                            #     zen = 90.0
-                            # if zen < 0.1:    #This can blow up when zen <=0!
-                            #     new_z = 0.1
-                            # else:
-                            #     new_z = zen
-                            # sec_z = 1/math.cos(math.radians(new_z))
-                            # airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
-                            # if airmass > 10: airmass = 10
-
+                            # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
+                            googtime=time.time()
+                            if not g_dev['obs'].mountless_operation:
+                                ra_at_time_of_exposure , dec_at_time_of_exposure = g_dev["mnt"].get_mount_coordinates_after_next_update()                              
+                                
+                                # ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
+                                # dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
+                            else:
+                                ra_at_time_of_exposure = 99.9
+                                dec_at_time_of_exposure = 99.9
+                            print ("Mount RA and Dec readtime " +str(time.time()-googtime))
 
                             if not g_dev['obs'].mountless_operation:
                                 airmass = round(g_dev['mnt'].airmass, 4)
@@ -4991,7 +4968,8 @@ class Camera:
                 # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
                 if not g_dev['obs'].mountless_operation:
 
-                    if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing:
+                    # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
+                    if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not self.pointing_correction_requested_by_platesolve_thread:
                         if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                             #breakpoint()
                             if (self.pixscale == None):

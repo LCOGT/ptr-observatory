@@ -847,13 +847,47 @@ class Mount:
 
         # mount command #
         #plog("get mount coordinates (line 851) called:  ", round(time.time, 3))
-        while self.mount_busy:
-            time.sleep(0.05)
-        self.mount_busy=True
-        # self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
-        # self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
-        self.mount_busy=False
+        # while self.mount_busy:
+        #     time.sleep(0.05)
+        # self.mount_busy=True
+        # # self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
+        # # self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
+        # self.mount_busy=False
         # end mount command #
+        self.current_icrs_ra = self.right_ascension_directly_from_mount    #May not be applied in positioning
+        self.current_icrs_dec = self.declination_directly_from_mount
+
+        #return copy.deepcopy(self.current_icrs_ra, self.current_icrs_dec)
+        return self.current_icrs_ra, self.current_icrs_dec
+    
+    def get_mount_coordinates_after_next_update(self):
+        #global loop_count
+        '''
+        Build up an ICRS coordinate from mount reported coordinates,
+        removing offset and pierside calibrations.  From either flip
+        the ICRS coordiate returned should be that of the object
+        commanded, hence removing the offsets that are needed to
+        position the mount on the axis.
+
+        Returns
+        -------
+        ra : TYPE
+            DESCRIPTION.
+        dec : TYPE
+            DESCRIPTION.
+
+        '''
+
+        # mount command #
+        #plog("get mount coordinates (line 851) called:  ", round(time.time, 3))
+        # while self.mount_busy:
+        #     time.sleep(0.05)
+        # self.mount_busy=True
+        # # self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
+        # # self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
+        # self.mount_busy=False
+        # end mount command #
+        self.wait_for_mount_update()
         self.current_icrs_ra = self.right_ascension_directly_from_mount    #May not be applied in positioning
         self.current_icrs_dec = self.declination_directly_from_mount
 
