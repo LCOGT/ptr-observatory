@@ -4227,15 +4227,7 @@ class Camera:
                             #g_dev['obs'].update()
 
 
-                            # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
-                            # This is now done in async update_status thread
-                            #g_dev["mnt"].get_mount_coordinates()
-                            if not g_dev['obs'].mountless_operation:
-                                ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
-                                dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
-                            else:
-                                ra_at_time_of_exposure = 99.9
-                                dec_at_time_of_exposure = 99.9
+                            
 
                             observer_user_name = user_name
 
@@ -4411,6 +4403,21 @@ class Camera:
                                         plog("Detecting focuser still changing.")
                                         tempfocposition=copy.deepcopy(nowfocposition)
                                 time.sleep(g_dev['foc'].focuser_settle_time)
+
+
+                            # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
+                            # This is now done in async update_status thread
+                            #g_dev["mnt"].get_mount_coordinates()
+                            if not g_dev['obs'].mountless_operation:
+                                ra_at_time_of_exposure , dec_at_time_of_exposure = g_dev["mnt"].get_mount_coordinates()                              
+                                
+                                # ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
+                                # dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
+                            else:
+                                ra_at_time_of_exposure = 99.9
+                                dec_at_time_of_exposure = 99.9
+
+                            
 
 
                             self.exposure_busy = True
