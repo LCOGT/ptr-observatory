@@ -12,7 +12,7 @@ NB NB NB  If we have one config file then paths need to change depending upon wh
 aro-0m30      10.0.0.73
 aro-wema      10.0.0.50
 Power Control 10.0.0.100   admin arot******
-Roof Control  10.0.0.200   admin arot******
+Roof Control  10.0.0.200   admin arot******    /setup.html     for setup.
 Redis         10.0.0.174:6379  ; rds = redis.Redis(host='10.0.0.174', port=6379); rds.set('wx', 'bogus'); rds.get('wx').decode()
 Dragonfly     Obsolete.
 
@@ -136,12 +136,12 @@ site_config = {
     # How many minutes with respect to eve sunset start flats
     'bias_dark interval':  135.,   #minutes
     'eve_sky_flat_sunset_offset': -45.,  # Was 55 WER 20240313 Before Sunset Minutes  neg means before, + after.
-    'end_eve_sky_flats_offset': -5 ,      # How many minutes after civilDusk to do....
+    'end_eve_sky_flats_offset': -5. ,      # How many minutes after civilDusk to do....
     'clock_and_auto_focus_offset':-10,   #min before start of observing
     'astro_dark_buffer': 15,   #Min before and after AD to extend observing window
-    'morn_flat_start_offset': -45,       #min from Sunrise
-    'morn_flat_end_offset':  +50,        #min from Sunrise
-    'end_night_processing_time':  90,   #  A guess
+    'morn_flat_start_offset': -10.,       #min from Sunrise
+    'morn_flat_end_offset':  +45.,        #min from Sunrise
+    'end_night_processing_time':  60.,   #  A guess
     #'observing_begins_offset': -1,       #min from AstroDark
     # How many minutes before civilDawn to do ....
 
@@ -158,8 +158,8 @@ site_config = {
      # Turn on and off various automated calibrations at different times.
      'auto_eve_bias_dark': True,
      'auto_eve_sky_flat': True,
-     'time_to_wait_after_roof_opens_to_take_flats': 1,   #  Units??  Just imposing a minimum in case of a restart.
-     'auto_midnight_moonless_bias_dark': False,  # WER 20240303 Afternoon, changed from True
+     'time_to_wait_after_roof_opens_to_take_flats': 3,   #  Units??  Just imposing a minimum in case of a restart.
+     'auto_midnight_moonless_bias_dark': True,  # WER 20240303 Afternoon, changed from True
      'auto_morn_sky_flat': True,
      'auto_morn_bias_dark': True,
 
@@ -229,8 +229,8 @@ site_config = {
             'home_after_unpark' : False,
             'home_before_park' : False,
 
-            'settle_time_after_unpark' : 10,
-            'settle_time_after_park' : 10,
+            'settle_time_after_unpark' : 5,
+            'settle_time_after_park' : 5,
   #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
@@ -300,7 +300,7 @@ site_config = {
             'instrument names':  ['camera1'],
             'instrument aliases':  ['QHY600Mono'],
             'configuration': {
-                 'f-ratio':  'f4.9',     #  This needs expanding into something easy for the owner to change.
+                 'f-ratio':  'f9',     #  This needs expanding into something easy for the owner to change.
                  "position1": ["darkslide1", "filter_wheel1", "camera1"]
                  },
             'camera_name':  'camera_1_1',
@@ -372,7 +372,7 @@ site_config = {
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
             'focuser_movement_settle_time': 3,
             #F.9 setup
-            'reference': 9089,    # 2024-04-13 Total guess WER
+            'reference': 9089,    # 2024-04-13
             'ref_temp':  15.,
             'temp_coeff': 0.0,     #Initial setting 20240413 WER
             # Update when pinning reference
@@ -386,7 +386,7 @@ site_config = {
             'maximum': 12600,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw': 200,
+            'throw': 200,    #Consider making larget for F9 configuration
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
             'has_dial_indicator': False
