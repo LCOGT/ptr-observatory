@@ -40,6 +40,48 @@ im_path=input_sep_info[6]
 text_name=input_sep_info[7]
 channel=input_sep_info[8]
 
+
+# Really need to thresh the incoming image
+googtime=time.time()
+int_array_flattened=hdufocusdata.astype(int).ravel()
+unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+m=counts.argmax()
+imageMode=unique[m]
+print ("Calculating Mode: " +str(time.time()-googtime))
+
+# Zerothreshing image
+googtime=time.time()
+histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+#Do some fiddle faddling to figure out the value that goes to zero less
+zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+breaker=1
+counter=0
+while (breaker != 0):
+    counter=counter+1
+    if not (imageMode-counter) in zeroValueArray[:,0]:
+        if not (imageMode-counter-1) in zeroValueArray[:,0]:
+            if not (imageMode-counter-2) in zeroValueArray[:,0]:
+                if not (imageMode-counter-3) in zeroValueArray[:,0]:
+                    if not (imageMode-counter-4) in zeroValueArray[:,0]:
+                        if not (imageMode-counter-5) in zeroValueArray[:,0]:
+                            if not (imageMode-counter-6) in zeroValueArray[:,0]:
+                                if not (imageMode-counter-7) in zeroValueArray[:,0]:
+                                    if not (imageMode-counter-8) in zeroValueArray[:,0]:
+                                        if not (imageMode-counter-9) in zeroValueArray[:,0]:
+                                            if not (imageMode-counter-10) in zeroValueArray[:,0]:
+                                                if not (imageMode-counter-11) in zeroValueArray[:,0]:
+                                                    if not (imageMode-counter-12) in zeroValueArray[:,0]:
+                                                        zeroValue=(imageMode-counter)
+                                                        breaker =0
+
+hdufocusdata[hdufocusdata < zeroValue] = np.nan
+
+print ("Zero Threshing Image: " +str(time.time()-googtime))
+
+
+
+
+
 # Check there are no nans in the image upon receipt
 # This is necessary as nans aren't interpolated in the main thread.
 # Fast next-door-neighbour in-fill algorithm
@@ -47,7 +89,7 @@ num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
 x_size=hdufocusdata.shape[0]
 y_size=hdufocusdata.shape[1]
 # this is actually faster than np.nanmean
-edgefillvalue=np.divide(bn.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
+#edgefillvalue=np.divide(bn.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
 #breakpoint()
 while num_of_nans > 0:
     # List the coordinates that are nan in the array
@@ -64,18 +106,18 @@ while num_of_nans > 0:
         # makes this MUCH faster to no visible effect for humans.
         # Also removes overscan
         if x_nancoord < 100:
-            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+            hdufocusdata[x_nancoord,y_nancoord]=imageMode
             done=True
         elif x_nancoord > (x_size-100):
-            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+            hdufocusdata[x_nancoord,y_nancoord]=imageMode
 
             done=True
         elif y_nancoord < 100:
-            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+            hdufocusdata[x_nancoord,y_nancoord]=imageMode
 
             done=True
         elif y_nancoord > (y_size-100):
-            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+            hdufocusdata[x_nancoord,y_nancoord]=imageMode
             done=True
 
         # left
@@ -144,7 +186,14 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
 
 fx, fy = hdufocusdata.shape
 #hdufocusdata[np.isnan(hdufocusdata)] = imageMode
-hdufocusdata=hdufocusdata-bn.nanmedian(hdufocusdata)
+
+
+
+#hdufocusdata=hdufocusdata-bn.nanmedian(hdufocusdata)
+bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+bkg.subfrom(hdufocusdata)
+
+
 tempstd=np.std(hdufocusdata)
 threshold=3* np.std(hdufocusdata[hdufocusdata < (5*tempstd)])
 list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
@@ -210,129 +259,3 @@ sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwri
 pickle.dump(sources, open(im_path + 'oscaasep.pickle' + channel, 'wb'))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# focusimg = np.array(
-#     hdufocusdata, order="C"
-# )
-
-
-# bkg = sep.Background(focusimg, bw=32, bh=32, fw=3, fh=3)
-# bkg.subfrom(focusimg)
-# ix, iy = focusimg.shape
-# border_x = int(ix * 0.05)
-# border_y = int(iy * 0.05)
-# sep.set_extract_pixstack(int(ix*iy - 1))
-
-# #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
-# # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
-# # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-# minarea= -9.2421 * pixscale + 16.553
-# if minarea < 5:  # There has to be a min minarea though!
-#     minarea = 5
-
-# extract_factor=8.0
-
-# sources = sep.extract(
-#     focusimg, extract_factor, err=bkg.globalrms, minarea=minarea
-# )
-# sources = Table(sources)
-# sources = sources[sources['flag'] < 8]
-# sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(nativebin, 2)]
-# sources = sources[sources["cpeak"] < 0.8 * image_saturation_level * pow(nativebin, 2)]
-# sources = sources[sources["flux"] > 2000]
-# sources = sources[sources["x"] < ix - border_x]
-# sources = sources[sources["x"] > border_x]
-# sources = sources[sources["y"] < iy - border_y]
-# sources = sources[sources["y"] > border_y]
-
-# # BANZAI prune nans from table
-# nan_in_row = np.zeros(len(sources), dtype=bool)
-# for col in sources.colnames:
-#     nan_in_row |= np.isnan(sources[col])
-# sources = sources[~nan_in_row]
-
-# # Calculate the ellipticity (Thanks BANZAI)
-# sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
-# sources = sources[sources['ellipticity'] < 0.3]  # Remove things that are not circular stars
-
-# # Calculate the kron radius (Thanks BANZAI)
-# kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
-#                                   sources['a'], sources['b'],
-#                                   sources['theta'], 6.0)
-# sources['flag'] |= krflag
-# sources['kronrad'] = kronrad
-
-# # Calculate uncertainty of image (thanks BANZAI)
-# uncertainty = float(readnoise) * np.ones(focusimg.shape,
-#                                          dtype=focusimg.dtype) / float(readnoise)
-
-
-# flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
-#                                   sources['a'], sources['b'],
-#                                   np.pi / 2.0, 2.5 * kronrad,
-#                                   subpix=1, err=uncertainty)
-
-
-# sources['flux'] = flux
-# sources['fluxerr'] = fluxerr
-# sources['flag'] |= flag
-# sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
-#                                      subpix=5)
-# # If image has been binned for focus we need to multiply some of these things by the binning
-# # To represent the original image
-# sources['FWHM'] = (sources['FWHM'] * 2) * nativebin
-# sources['x'] = (sources['x'])
-# sources['y'] = (sources['y'])
-
-# sources['a'] = (sources['a'])
-# sources['b'] = (sources['b'])
-# sources['kronrad'] = (sources['kronrad'])
-# sources['peak'] = (sources['peak']) / pow(nativebin, 2)
-# sources['cpeak'] = (sources['cpeak']) / pow(nativebin, 2)
-
-
-
-
-# # Need to reject any stars that have FWHM that are less than a extremely
-# # perfect night as artifacts
-# sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
-# sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
-# sources = sources[sources['FWHM'] != 0]
-
-# # BANZAI prune nans from table
-# nan_in_row = np.zeros(len(sources), dtype=bool)
-# for col in sources.colnames:
-#     nan_in_row |= np.isnan(sources[col])
-# sources = sources[~nan_in_row]
-
-
-# source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
-#                  'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
-
-# sources.remove_columns(source_delete)
-
-# sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
-
-
-# pickle.dump(sources, open(im_path + 'oscaasep.pickle' + channel, 'wb'))

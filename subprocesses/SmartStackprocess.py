@@ -9,7 +9,7 @@ import pickle
 import sys
 from astropy.io import fits
 import numpy as np
-import bottleneck as bn
+#import bottleneck as bn
 import os
 import time
 from astropy.table import Table
@@ -81,6 +81,46 @@ img = fits.open(
 imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
 
 
+
+# Really need to thresh the incoming image
+googtime=time.time()
+int_array_flattened=imgdata.astype(int).ravel()
+unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+m=counts.argmax()
+imageMode=unique[m]
+print ("Calculating Mode: " +str(time.time()-googtime))
+
+# Zerothreshing image
+googtime=time.time()
+histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+#Do some fiddle faddling to figure out the value that goes to zero less
+zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+breaker=1
+counter=0
+while (breaker != 0):
+    counter=counter+1
+    if not (imageMode-counter) in zeroValueArray[:,0]:
+        if not (imageMode-counter-1) in zeroValueArray[:,0]:
+            if not (imageMode-counter-2) in zeroValueArray[:,0]:
+                if not (imageMode-counter-3) in zeroValueArray[:,0]:
+                    if not (imageMode-counter-4) in zeroValueArray[:,0]:
+                        if not (imageMode-counter-5) in zeroValueArray[:,0]:
+                            if not (imageMode-counter-6) in zeroValueArray[:,0]:
+                                if not (imageMode-counter-7) in zeroValueArray[:,0]:
+                                    if not (imageMode-counter-8) in zeroValueArray[:,0]:
+                                        if not (imageMode-counter-9) in zeroValueArray[:,0]:
+                                            if not (imageMode-counter-10) in zeroValueArray[:,0]:
+                                                if not (imageMode-counter-11) in zeroValueArray[:,0]:
+                                                    if not (imageMode-counter-12) in zeroValueArray[:,0]:
+                                                        zeroValue=(imageMode-counter)
+                                                        breaker =0
+
+imgdata[imgdata < zeroValue] = np.nan
+
+print ("Zero Threshing Image: " +str(time.time()-googtime))
+
+
+
 # Check there are no nans in the image upon receipt
 # This is necessary as nans aren't interpolated in the main thread.
 # Fast next-door-neighbour in-fill algorithm
@@ -88,7 +128,7 @@ num_of_nans=np.count_nonzero(np.isnan(imgdata))
 x_size=imgdata.shape[0]
 y_size=imgdata.shape[1]
 # this is actually faster than np.nanmean
-edgefillvalue=np.divide(bn.nansum(imgdata),(x_size*y_size)-num_of_nans)
+#edgefillvalue=np.divide(bn.nansum(imgdata),(x_size*y_size)-num_of_nans)
 #breakpoint()
 #while num_of_nans > 0:
 # List the coordinates that are nan in the array
@@ -107,18 +147,18 @@ for nancoord in nan_coords:
     # makes this MUCH faster to no visible effect for humans.
     # Also removes overscan
     if x_nancoord < 100:
-        imgdata[x_nancoord,y_nancoord]=edgefillvalue
+        imgdata[x_nancoord,y_nancoord]=imageMode
         done=True
     elif x_nancoord > (x_size-100):
-        imgdata[x_nancoord,y_nancoord]=edgefillvalue
+        imgdata[x_nancoord,y_nancoord]=imageMode
 
         done=True
     elif y_nancoord < 100:
-        imgdata[x_nancoord,y_nancoord]=edgefillvalue
+        imgdata[x_nancoord,y_nancoord]=imageMode
 
         done=True
     elif y_nancoord > (y_size-100):
-        imgdata[x_nancoord,y_nancoord]=edgefillvalue
+        imgdata[x_nancoord,y_nancoord]=imageMode
         done=True
 
     # left
@@ -153,7 +193,7 @@ for nancoord in nan_coords:
     #num_of_nans=np.count_nonzero(np.isnan(imgdata))
 #breakpoint()
 # Mop up any remaining nans
-imgdata[np.isnan(imgdata)] =edgefillvalue
+imgdata[np.isnan(imgdata)] =imageMode
 
 #Make sure there is a smartstack directory!
 if not os.path.exists(obsid_path+ "smartstacks/"):
@@ -546,10 +586,10 @@ else:
                     else:
                         reprojection_failed = True
 
-        newhdugreen[np.isnan(newhdugreen)] =edgefillvalue
-        newhdured[np.isnan(newhdured)] =edgefillvalue
-        newhdublue[np.isnan(newhdublue)] =edgefillvalue
-
+        newhdugreen[np.isnan(newhdugreen)] =imageMode
+        newhdured[np.isnan(newhdured)] =imageMode
+        newhdublue[np.isnan(newhdublue)] =imageMode
+        
         # NOW THAT WE HAVE THE INDIVIDUAL IMAGES THEN PUT THEM TOGETHER
         xshape = newhdugreen.shape[0]
         yshape = newhdugreen.shape[1]
