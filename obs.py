@@ -4372,8 +4372,8 @@ class Observatory:
                     print ("ranudge: " +str(ranudge))
                     print ("decnudge: " +str(decnudge))
 
-                    print ("Difference between RA Nudge and current position: " + str((g_dev['mnt'].mount.RightAscension-ranudge) *15*3600))
-                    print ("Difference between DEC Nudge and current position: " + str((g_dev['mnt'].mount.Declination-decnudge) * 3600))
+                    print ("Difference between RA Nudge and current position: " + str((g_dev['mnt'].return_right_ascension()-ranudge) *15*3600))
+                    print ("Difference between DEC Nudge and current position: " + str((g_dev['mnt'].return_declination()-decnudge) * 3600))
 
                     print ("Expected RA difference: " + str(g_dev['obs'].pointing_correction_request_ra_err * 3600))
                     print ("Expected DEC difference: " + str(g_dev['obs'].pointing_correction_request_dec_err * 3600))
