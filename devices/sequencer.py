@@ -1418,11 +1418,14 @@ class Sequencer:
             # Input the global smartstack and longstack request from the project
             # Into the individual exposure requests
             try:
-                # This is the "proper" way of doing things.
-                do_long_stack=block['project']['project_constraints']['long_stack']
+                try:
+                    # This is the "proper" way of doing things.
+                    do_sub_stack=block['project']['project_constraints']['sub_stack']
+                except:
+                    # This is the old way for old projects
+                    do_sub_stack=block['project']['exposures'][0]['substack']
             except:
-                # This is the old way for old projects
-                do_long_stack=block['project']['exposures'][0]['longstack']
+                do_sub_stack=True
             try:
                 # This is the "proper" way of doing things.
                 do_smart_stack=block['project']['project_constraints']['smart_stack']
@@ -1436,7 +1439,7 @@ class Sequencer:
 
             for exposure in block['project']['exposures']:
 
-                exposure['longstack'] = do_long_stack
+                exposure['substack'] = do_sub_stack
                 exposure['smartstack'] = do_smart_stack
                 left_to_do += int(exposure['count'])
 
@@ -1611,15 +1614,15 @@ class Sequencer:
 
 
                     # Longstacks need to be defined out here for mosaicing purposes.
-                    if exposure['longstack'] == False:
-                        longstackswitch='no'
-                        longstackname='no'
-                    elif exposure['longstack'] == True:
-                        longstackswitch='yes'
-                        longstackname=block_specification['project']['created_at'].replace('-','').replace(':','')
-                    else:
-                        longstackswitch='no'
-                        longstackname='no'
+                    # if exposure['longstack'] == False:
+                    #     longstackswitch='no'
+                    #     longstackname='no'
+                    # elif exposure['longstack'] == True:
+                    #     longstackswitch='yes'
+                    #     longstackname=block_specification['project']['created_at'].replace('-','').replace(':','')
+                    # else:
+                    #     longstackswitch='no'
+                    #     longstackname='no'
 
 
 
@@ -1764,7 +1767,7 @@ class Sequencer:
                                 smartstackswitch='no'
 
                             # Set up options for exposure and take exposure.
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch,  'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
                             opt = {'count': 1, 'filter': filter_requested, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane, 'zoom': zoom_factor}
                             plog('Seq Blk sent to camera:  ', req, opt)
@@ -6056,25 +6059,25 @@ class Sequencer:
         central_starting_focus=copy.deepcopy(foc_pos0)
 
 
-        
 
-        
+
+
 
         focus_spots=[]
         spots_tried=[]
         extra_tries=0
         #focus_fwhms=[]
         new_focus_position_to_attempt = central_starting_focus # Initialise this variable
-        while True:           
-            
+        while True:
+
             im_path_r = g_dev['cam'].camera_path
             im_type = "EX"
             #f_ext = "-"
             im_path = im_path_r + g_dev["day"] + "/to_AWS/"
-            
+
             try:
                 plog ("FOCUS NEXT SEQ: " + str(g_dev['cam'].focus_next_seq))
-                
+
                 text_name = (
                     g_dev['cam'].config["obs_id"]
                     + "-"
@@ -6089,7 +6092,7 @@ class Sequencer:
                 )
             except:
                 plog ("CAM NEXT SEQ: " + str(g_dev['cam'].next_seq))
-                
+
                 text_name = (
                     g_dev['cam'].config["obs_id"]
                     + "-"
@@ -6104,7 +6107,7 @@ class Sequencer:
                 )
 
             print ("TEXTNAME: " + str(text_name))
-            
+
             position_counter=position_counter+1
             # General command bailout section
             g_dev['obs'].request_scan_requests()
@@ -6258,7 +6261,7 @@ class Sequencer:
                 for i in focus_spots:
                     x.append(i[0])
                     y.append(i[1])
-                    
+
                 x=np.asarray(x, dtype=float)
                 y=np.asarray(y, dtype=float)
 
@@ -6444,7 +6447,7 @@ class Sequencer:
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
-                            plt.plot(x,f(x), color = 'green')                            
+                            plt.plot(x,f(x), color = 'green')
                             plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
                             plt.savefig(img_buf, format='png')
                             pltim = Image.open(img_buf)

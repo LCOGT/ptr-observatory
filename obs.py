@@ -4348,7 +4348,7 @@ class Observatory:
             if self.pointing_correction_requested_by_platesolve_thread: # and not g_dev['cam'].currently_in_smartstack_loop:
 
                 # Check it hasn't slewed since request, although ignore this if in smartstack_loop due to dithering.
-                if (self.pointing_correction_request_time > self.time_of_last_slew) or g_dev['cam'].currently_in_smartstack_loop:  
+                if (self.pointing_correction_request_time > self.time_of_last_slew) or g_dev['cam'].currently_in_smartstack_loop:
 
                     plog("Re-centering Telescope Slightly.")
                     self.send_to_user("Re-centering Telescope Slightly.")
@@ -4362,22 +4362,22 @@ class Observatory:
                     #decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
                     #ranudge= g_dev['mnt'].return_right_ascension() + g_dev['obs'].pointing_correction_request_ra_err
                     #decnudge= g_dev['mnt'].return_declination() + g_dev['obs'].pointing_correction_request_dec_err
-                    
+
                     ranudge=self.pointing_correction_request_ra
                     decnudge=self.pointing_correction_request_dec
-                    
+
                     g_dev['cam'].initial_smartstack_ra=copy.deepcopy(ranudge)
-                    g_dev['cam'].initial_smartstack_dec=copy.deepcoopy(decnudge)
-                    
+                    g_dev['cam'].initial_smartstack_dec=copy.deepcopy(decnudge)
+
                     print ("ranudge: " +str(ranudge))
                     print ("decnudge: " +str(decnudge))
-                    
+
                     print ("Difference between RA Nudge and current position: " + str((g_dev['mnt'].mount.RightAscension-ranudge) *15*3600))
                     print ("Difference between DEC Nudge and current position: " + str((g_dev['mnt'].mount.Declination-decnudge) * 3600))
-                    
+
                     print ("Expected RA difference: " + str(g_dev['obs'].pointing_correction_request_ra_err * 3600))
                     print ("Expected DEC difference: " + str(g_dev['obs'].pointing_correction_request_dec_err * 3600))
-                    
+
                     if ranudge < 0:
                         ranudge=ranudge+24
                     if ranudge > 24:
@@ -4385,11 +4385,11 @@ class Observatory:
                     self.time_of_last_slew=time.time()
                     try:
                         wait_for_slew()
-                        
+
                         print ("2: " + str(g_dev["mnt"].get_mount_coordinates_after_next_update()))
                         #g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
                         g_dev['mnt'].slew_async_directly(ra=ranudge, dec=decnudge)
-                        
+
                         print ("3: " + str(g_dev["mnt"].get_mount_coordinates_after_next_update()))
                         wait_for_slew()
                     except:

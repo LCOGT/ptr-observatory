@@ -993,20 +993,20 @@ def multiprocess_fast_gaussian_photometry(package):
                     # if it isn't a unreasonably small fwhm then measure it.
                     try:
                         if (2.355 * smallest_fpopt[2]) > (0.8 / pixscale) :
-    
+
                             # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
                             # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
                             # plt.scatter(actualprofile[:,0],actualprofile[:,1])
                             # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
-    
+
                             # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
                             # #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                             # plt.show()
                             #breakpoint()
-    
+
                             # FWHM is 2.355 * std for a gaussian
                             #fwhmlist.append(smallest_fpopt[2])
-    
+
                             #if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3,(3/pixscale)) :
                                 # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
                                 # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
@@ -1014,7 +1014,7 @@ def multiprocess_fast_gaussian_photometry(package):
                                 # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
                                 # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                                 # plt.show()
-    
+
                                 # FWHM is 2.355 * std for a gaussian
                                 #fwhmlist.append(popt[2])
                             return smallest_fpopt[2]
@@ -4246,7 +4246,7 @@ class Camera:
                             #g_dev['obs'].update()
 
 
-                            
+
 
                             observer_user_name = user_name
 
@@ -4438,8 +4438,8 @@ class Camera:
                             # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
                             googtime=time.time()
                             if not g_dev['obs'].mountless_operation:
-                                ra_at_time_of_exposure , dec_at_time_of_exposure = g_dev["mnt"].get_mount_coordinates_after_next_update()                              
-                                
+                                ra_at_time_of_exposure , dec_at_time_of_exposure = g_dev["mnt"].get_mount_coordinates_after_next_update()
+
                                 # ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
                                 # dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
                             else:
@@ -4988,7 +4988,7 @@ class Camera:
                 if not g_dev['obs'].mountless_operation:
 
                     # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
-                    if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not self.pointing_correction_requested_by_platesolve_thread:
+                    if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
                         if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                             #breakpoint()
                             if (self.pixscale == None):
@@ -5127,7 +5127,7 @@ class Camera:
                             plog ("Exposure time: " + str(exposure_time))
                             #breakpoint()
                             #Short exposures are inherently much more variable, so their limit is set much higher.
-                            
+
                             if frame_type in ['pointzerozerofourfive_exposure_dark','onepointfivepercent_exposure_dark','fivepercent_exposure_dark','tenpercent_exposure_dark']:
                                 plog ("This exposure is too short for the dark rejecter to be particularly reliable.")
                             elif frame_type in ['quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark']:
@@ -5145,8 +5145,8 @@ class Camera:
                                 return expresult
 
 
-                
-                    
+
+
 
 
 
