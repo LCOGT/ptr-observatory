@@ -6277,8 +6277,9 @@ class Sequencer:
                     plt.savefig(img_buf, format='png')
                     pltim = Image.open(img_buf)
                     #im.show(title="My Image")
-                    box = (500, 500)
-                    g_dev['cam'].current_focus_jpg.paste(pltim, box )
+                    #box = (500, 500)
+                    #box=
+                    g_dev['cam'].current_focus_jpg.paste(pltim)#, box )
                 g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                 #img_buf.close()
 
@@ -6341,7 +6342,7 @@ class Sequencer:
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
-                            g_dev['cam'].current_focus_jpg.paste(pltim, box )
+                            g_dev['cam'].current_focus_jpg.paste(pltim)#), box )
                             g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
 
@@ -6375,7 +6376,7 @@ class Sequencer:
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
-                            g_dev['cam'].current_focus_jpg.paste(pltim, box )
+                            g_dev['cam'].current_focus_jpg.paste(pltim)#), box )
                             g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
 
@@ -6453,7 +6454,7 @@ class Sequencer:
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
-                            g_dev['cam'].current_focus_jpg.paste(pltim, box )
+                            g_dev['cam'].current_focus_jpg.paste(pltim)#), box )
                             g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
 
