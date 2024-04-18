@@ -4366,6 +4366,9 @@ class Observatory:
                     ranudge=self.pointing_correction_request_ra
                     decnudge=self.pointing_correction_request_dec
                     
+                    g_dev['cam'].initial_smartstack_ra=copy.deepcopy(ranudge)
+                    g_dev['cam'].initial_smartstack_dec=copy.deepcoopy(decnudge)
+                    
                     print ("ranudge: " +str(ranudge))
                     print ("decnudge: " +str(decnudge))
                     

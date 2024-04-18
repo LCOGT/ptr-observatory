@@ -4056,11 +4056,11 @@ class Camera:
 
             if Nsmartstack > 1 :
                 self.currently_in_smartstack_loop=True
-                initial_smartstack_ra= g_dev['mnt'].return_right_ascension()
-                initial_smartstack_dec= g_dev['mnt'].return_declination()
+                self.initial_smartstack_ra= g_dev['mnt'].return_right_ascension()
+                self.initial_smartstack_dec= g_dev['mnt'].return_declination()
             else:
-                initial_smartstack_ra= None
-                initial_smartstack_dec= None
+                self.initial_smartstack_ra= None
+                self.initial_smartstack_dec= None
                 self.currently_in_smartstack_loop=False
 
             #Repeat camera acquisition loop to collect all smartstacks necessary
@@ -4523,8 +4523,8 @@ class Camera:
                             azimuth_of_observation = azimuth_of_observation,
                             altitude_of_observation = altitude_of_observation,
                             manually_requested_calibration=manually_requested_calibration,
-                            initial_smartstack_ra=initial_smartstack_ra,
-                            initial_smartstack_dec= initial_smartstack_dec,
+                            # initial_smartstack_ra=initial_smartstack_ra,
+                            # initial_smartstack_dec= initial_smartstack_dec,
                             zoom_factor=self.zoom_factor,
                             useastrometrynet=useastrometrynet,
                             a_dark_exposure=a_dark_exposure,
@@ -4663,8 +4663,8 @@ class Camera:
         azimuth_of_observation=None,
         altitude_of_observation=None,
         manually_requested_calibration=False,
-        initial_smartstack_ra=None,
-        initial_smartstack_dec=None,
+        # initial_smartstack_ra=None,
+        # initial_smartstack_dec=None,
         zoom_factor=False,
         useastrometrynet=False,
         a_dark_exposure=False,
@@ -4999,7 +4999,7 @@ class Camera:
                                 dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
                             try:
                                 self.wait_for_slew()
-                                g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
+                                g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra + ra_random_dither, dec=self.initial_smartstack_dec + dec_random_dither)
                                 # no wait for slew here as we start downloading the image. the wait_for_slew is after that
 
                             except Exception as e:
@@ -5016,7 +5016,7 @@ class Camera:
                         elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                             try:
                                 self.wait_for_slew()
-                                g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra, dec=initial_smartstack_dec)
+                                g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra, dec=self.initial_smartstack_dec)
                                 # no wait for slew here as we start downloading the image. the wait_for_slew is after that
 
                             except Exception as e:
