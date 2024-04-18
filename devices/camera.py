@@ -2323,10 +2323,29 @@ class Camera:
 
         iy, ix = stretched_data_uint8.shape
         final_image = Image.fromarray(stretched_data_uint8)
-        draw = ImageDraw.Draw(final_image)
+        #draw = ImageDraw.Draw(final_image)
 
         #draw.text((0, 0), str(focus_position), (255))
-        draw.text((0, 0), str('MEANT TO BE FOCUS POSITION'), (255))
+        #draw.text((0, 0), str('MEANT TO BE FOCUS POSITION'), (255))
+
+
+        if iy == ix:
+            final_image = final_image.resize(
+                (900, 900)
+            )
+        else:
+            if g_dev['obs'].config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
+                final_image = final_image.resize(
+
+                    (int(900 * iy / ix), 900)
+
+                )
+            else:
+                final_image = final_image.resize(
+
+                    (900, int(900 * iy / ix))
+
+                )
 
         g_dev['cam'].current_focus_jpg=copy.deepcopy(final_image)
 
