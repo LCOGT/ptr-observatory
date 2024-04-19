@@ -6268,13 +6268,13 @@ class Sequencer:
             if position_counter < 5:
                 if len(focus_spots) > 0:
                     # Just plot and fling up the jpeg
-                    plt.scatter(x,y)
-                    plt.show()
+                    # plt.scatter(x,y)
+                    # plt.show()
 
                     # Weird way to convert plt to pil image, overlay and close
                     img_buf = io.BytesIO()
                     plt.scatter(x,y)
-                    plt.savefig(img_buf, format='png')
+                    plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0)
                     pltim = Image.open(img_buf)
                     #im.show(title="My Image")
                     #box = (500, 500)
@@ -6332,13 +6332,13 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
                             #breakpoint()
                             #print ("Attempting: " + str(new_focus_position_to_attempt))
-                            plt.scatter(x,y)
-                            plt.show()
+                            # plt.scatter(x,y)
+                            # plt.show()
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
-                            plt.savefig(img_buf, format='png')
+                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0)
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
@@ -6366,13 +6366,13 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             #breakpoint()
                             #print ("Attempting: " + str(new_focus_position_to_attempt))
-                            plt.scatter(x,y)
-                            plt.show()
+                            # plt.scatter(x,y)
+                            # plt.show()
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
-                            plt.savefig(img_buf, format='png')
+                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0)
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
@@ -6431,26 +6431,26 @@ class Sequencer:
                                 print ("focus fit didn't work dunno y yet.")
                                 plog(traceback.format_exc())
                                 breakpoint()
-                            plt.scatter(x,y)
-                            plt.plot(x,f(x), color = 'green')
-                            #plt.xlim(0.16888549099999922 - 0.000000001,0.1688855399999992 + 0.000000001)
-                            #print (crit_points)
+                            # plt.scatter(x,y)
+                            # plt.plot(x,f(x), color = 'green')
+                            # #plt.xlim(0.16888549099999922 - 0.000000001,0.1688855399999992 + 0.000000001)
+                            # #print (crit_points)
                             crit_points = bounds + [x for x in f.deriv().r if x.imag == 0 and bounds[0] < x.real < bounds[1]]
                             fitted_focus_position=crit_points[2]
                             #print (crit_points)
                             #print (len(crit_points))
                             plog ("focus pos: " + str(fitted_focus_position))
                             fitted_focus_fwhm=f(fitted_focus_position)
-                            plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
+                            # plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
 
-                            plt.show()
+                            # plt.show()
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
                             plt.plot(x,f(x), color = 'green')
                             plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
-                            plt.savefig(img_buf, format='png')
+                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0)
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
