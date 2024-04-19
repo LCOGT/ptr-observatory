@@ -3579,16 +3579,8 @@ class Sequencer:
 
             bias_darklist=[
 
-                [g_dev['obs'].local_dark_folder+ 'pointzerozerofourfivedarks/', 'pointzerozerofourfiveBIASDARK','pointzerozerofourfive' ],
-                [g_dev['obs'].local_dark_folder+ 'onepointfivepercentdarks/', 'onepointfivepercentBIASDARK','onepointfivepercent' ],
-
-                [g_dev['obs'].local_dark_folder+ 'fivepercentdarks/', 'fivepercentBIASDARK','fivepercent' ],
-                [g_dev['obs'].local_dark_folder+ 'tenpercentdarks/','tenpercentBIASDARK','tenpercent'],
-                [g_dev['obs'].local_dark_folder+ 'quartersecdarks/','quartersecBIASDARK', 'quartersec' ],
-                [g_dev['obs'].local_dark_folder+ 'halfsecdarks/','halfsecBIASDARK', 'halfsec'],
-                [g_dev['obs'].local_dark_folder+ 'sevenfivepercentdarks/', 'sevenfivepercentBIASDARK', 'sevenfivepercent'],
-                [g_dev['obs'].local_dark_folder+ 'onesecdarks/', 'onesecBIASDARK', 'onesec'],
-                [g_dev['obs'].local_dark_folder+ 'oneandahalfsecdarks/', 'oneandahalfsecBIASDARK','oneandahalfsec'],
+                
+                [g_dev['obs'].local_dark_folder+ 'halfsecdarks/','halfsecBIASDARK', 'halfsec'],                
                 [g_dev['obs'].local_dark_folder+ 'twosecdarks/', 'twosecBIASDARK', 'twosec' ],
                 [g_dev['obs'].local_dark_folder+ 'threepointfivesecdarks/', 'threepointfivesecBIASDARK', 'threepointfivesec'],
                 [g_dev['obs'].local_dark_folder+ 'fivesecdarks/', 'fivesecBIASDARK','fivesec' ],
@@ -3599,6 +3591,34 @@ class Sequencer:
                 [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssBIASDARK', 'broadband_ss_biasdark']
                 
                 ]
+            
+            # There is no point creating biasdark exposures below the min_flat_exposure time aside from the scaled dark values.                                            
+            min_flat_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
+            
+            if min_flat_exposure <= 0.0045:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'pointzerozerofourfivedarks/', 'pointzerozerofourfiveBIASDARK','pointzerozerofourfive' ])
+            
+            if min_flat_exposure <= 0.015:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'onepointfivepercentdarks/', 'onepointfivepercentBIASDARK','onepointfivepercent' ])
+            
+            if min_flat_exposure <= 0.05:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'fivepercentdarks/', 'fivepercentBIASDARK','fivepercent' ])
+            
+            if min_flat_exposure <= 0.1:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'tenpercentdarks/','tenpercentBIASDARK','tenpercent'])
+            
+            if min_flat_exposure <= 0.25:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'quartersecdarks/','quartersecBIASDARK', 'quartersec' ])
+            
+            
+            if min_flat_exposure <= 0.75:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'sevenfivepercentdarks/', 'sevenfivepercentBIASDARK', 'sevenfivepercent'])
+            
+            if min_flat_exposure <= 1.0:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'onesecdarks/', 'onesecBIASDARK', 'onesec'])
+            
+            if min_flat_exposure <= 1.5:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'oneandahalfsecdarks/', 'oneandahalfsecBIASDARK','oneandahalfsec'])
             
             # If you don't have a filter wheel, then you don't have any distinction between broadband or narrowband darks
             if not g_dev["fil"].null_filterwheel:
