@@ -996,6 +996,9 @@ class Sequencer:
                                             # self.nightime_dark_counter = self.nightime_dark_counter + 1
                                             # g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                             #                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                            
+                                            # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.                                            
+                                            min_flat_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
 
                                             stride=1
                                             min_to_do=1
@@ -1071,71 +1074,79 @@ class Sequencer:
                                                 return
 
                                             # COLLECTING A NARROWBAND SMARTSTACK BIASDARK FRAME
-                                            plog("Expose " + str(stride) +" 1x1 narrowband smstack biasdark frames.")
-                                            req = {'time': narrowband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'narrowband_ss_biasdark'}
-                                            opt = {'count': 2*min_to_do,  \
-                                                   'filter': 'dark'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
+                                            if not g_dev["fil"].null_filterwheel:
+                                                plog("Expose " + str(stride) +" 1x1 narrowband smstack biasdark frames.")
+                                                req = {'time': narrowband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'narrowband_ss_biasdark'}
+                                                opt = {'count': 2*min_to_do,  \
+                                                       'filter': 'dark'}
+                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                g_dev['obs'].request_scan_requests()
+                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                    return
 
                                             # COLLECTING A 0.0045 Second EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1 0.0045 second exposure dark frames.")
-                                            req = {'time': 0.0045,  'script': 'True', 'image_type': 'pointzerozerofourfive_exposure_dark'}
-                                            opt = {'count':  min_to_do,  \
-                                                   'filter': 'dark'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
+                                            if min_flat_exposure < 0.0045:
+                                                plog("Expose " + str(5*stride) +" 1x1 0.0045 second exposure dark frames.")
+                                                req = {'time': 0.0045,  'script': 'True', 'image_type': 'pointzerozerofourfive_exposure_dark'}
+                                                opt = {'count':  min_to_do,  \
+                                                       'filter': 'dark'}
+                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                g_dev['obs'].request_scan_requests()
+                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                    return
 
                                             # COLLECTING A 0.015 Second EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1 0.015 second exposure dark frames.")
-                                            req = {'time': 0.015,  'script': 'True', 'image_type': 'onepointfivepercent_exposure_dark'}
-                                            opt = {'count':  min_to_do,  \
-                                                   'filter': 'dark'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
+                                            if min_flat_exposure < 0.015:
+                                                plog("Expose " + str(5*stride) +" 1x1 0.015 second exposure dark frames.")
+                                                req = {'time': 0.015,  'script': 'True', 'image_type': 'onepointfivepercent_exposure_dark'}
+                                                opt = {'count':  min_to_do,  \
+                                                       'filter': 'dark'}
+                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                g_dev['obs'].request_scan_requests()
+                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                    return
 
                                             # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
-                                            req = {'time': 0.05,  'script': 'True', 'image_type': 'fivepercent_exposure_dark'}
-                                            opt = {'count':  min_to_do,  \
-                                                   'filter': 'dark'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
+                                            
+                                            if min_flat_exposure < 0.05:
+                                                plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
+                                                req = {'time': 0.05,  'script': 'True', 'image_type': 'fivepercent_exposure_dark'}
+                                                opt = {'count':  min_to_do,  \
+                                                       'filter': 'dark'}
+                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                g_dev['obs'].request_scan_requests()
+                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                    return
 
                                             # COLLECTING A 0.1 Second EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1 0.1 second exposure dark frames.")
-                                            req = {'time': 0.1,  'script': 'True', 'image_type': 'tenpercent_exposure_dark'}
-                                            opt = {'count':  min_to_do,  \
-                                                   'filter': 'dark'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
+                                            if min_flat_exposure < 0.0045:
+                                                plog("Expose " + str(5*stride) +" 1x1 0.1 second exposure dark frames.")
+                                                req = {'time': 0.1,  'script': 'True', 'image_type': 'tenpercent_exposure_dark'}
+                                                opt = {'count':  min_to_do,  \
+                                                       'filter': 'dark'}
+                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                g_dev['obs'].request_scan_requests()
+                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                    return
 
 
                                             # COLLECTING A 0.25 Second EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1 0.25 second exposure dark frames.")
-                                            req = {'time': 0.25,  'script': 'True', 'image_type': 'quartersec_exposure_dark'}
-                                            opt = {'count':  min_to_do,  \
-                                                   'filter': 'dark'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
+                                            
+                                            if min_flat_exposure < 0.25:
+                                                plog("Expose " + str(5*stride) +" 1x1 0.25 second exposure dark frames.")
+                                                req = {'time': 0.25,  'script': 'True', 'image_type': 'quartersec_exposure_dark'}
+                                                opt = {'count':  min_to_do,  \
+                                                       'filter': 'dark'}
+                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                g_dev['obs'].request_scan_requests()
+                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                    return
 
                                             # COLLECTING A Half Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 half-second exposure dark frames.")
@@ -1149,37 +1160,41 @@ class Sequencer:
                                                 return
 
                                             # COLLECTING A 0.75 Second EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1 0.75 second exposure dark frames.")
-                                            req = {'time': 0.75,  'script': 'True', 'image_type': 'threequartersec_exposure_dark'}
-                                            opt = {'count':  min_to_do,  \
-                                                   'filter': 'dark'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
+                                            if min_flat_exposure < 0.75:
+                                                plog("Expose " + str(5*stride) +" 1x1 0.75 second exposure dark frames.")
+                                                req = {'time': 0.75,  'script': 'True', 'image_type': 'threequartersec_exposure_dark'}
+                                                opt = {'count':  min_to_do,  \
+                                                       'filter': 'dark'}
+                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                g_dev['obs'].request_scan_requests()
+                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                    return
 
                                             # COLLECTING A one Second EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1  1 second exposure dark frames.")
-                                            req = {'time': 1,  'script': 'True', 'image_type': 'onesec_exposure_dark'}
-                                            opt = {'count':  min_to_do,  \
-                                                   'filter': 'dark'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
+                                            
+                                            if min_flat_exposure < 1.0:
+                                                plog("Expose " + str(5*stride) +" 1x1  1 second exposure dark frames.")
+                                                req = {'time': 1,  'script': 'True', 'image_type': 'onesec_exposure_dark'}
+                                                opt = {'count':  min_to_do,  \
+                                                       'filter': 'dark'}
+                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                g_dev['obs'].request_scan_requests()
+                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                    return
 
                                             # COLLECTING A one and a half Second EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1  1.5 second exposure dark frames.")
-                                            req = {'time': 1.5,  'script': 'True', 'image_type': 'oneandahalfsec_exposure_dark'}
-                                            opt = {'count':  min_to_do,  \
-                                                   'filter': 'dark'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
+                                            if min_flat_exposure < 0.5:
+                                                plog("Expose " + str(5*stride) +" 1x1  1.5 second exposure dark frames.")
+                                                req = {'time': 1.5,  'script': 'True', 'image_type': 'oneandahalfsec_exposure_dark'}
+                                                opt = {'count':  min_to_do,  \
+                                                       'filter': 'dark'}
+                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                g_dev['obs'].request_scan_requests()
+                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                    return
 
                                             # COLLECTING A BIAS FRAME
                                             # COLLECT BIAS FRAMES LATER as there is no way to know whether bias frames are affected
@@ -2203,27 +2218,29 @@ class Sequencer:
                 g_dev['obs'].request_scan_requests()
 
                 # COLLECTING A NARROWBAND SMARTSTACK BIASDARK FRAME
-                plog("Expose " + str(stride) +" 1x1 narrowband smstack biasdark frames.")
-                req = {'time': narrowband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'narrowband_ss_biasdark'}
-                opt = {'count': 2*min_to_do,  \
-                       'filter': 'dark'}
-
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                if not g_dev['obs'].mountless_operation:
-                    g_dev['mnt'].park_command({}, {})
-
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
+                # But only if there is a filterwheel, otherwise no point. 
+                if not g_dev["fil"].null_filterwheel:
+                    plog("Expose " + str(stride) +" 1x1 narrowband smstack biasdark frames.")
+                    req = {'time': narrowband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'narrowband_ss_biasdark'}
+                    opt = {'count': 2*min_to_do,  \
+                           'filter': 'dark'}
+    
+                    # Check it is in the park position and not pointing at the sky.
+                    # It can be pointing at the sky if cool down open is triggered during the biasdark process
+                    if not g_dev['obs'].mountless_operation:
+                        g_dev['mnt'].park_command({}, {})
+    
+                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+    
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+                        self.bias_dark_latch = False
+                        return
+                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                        self.bias_dark_latch = False
+                        break
+                    g_dev['obs'].request_scan_requests()
 
 
                 # If we've been collecting bias darks for TWO HOURS, bail out... someone has asked for too many!
@@ -3435,8 +3452,8 @@ class Sequencer:
 
 
             # Bad pixel accumulator for the bias frame
-            img_temp_median=np.nanmedian(masterBias)
-            img_temp_stdev=np.nanstd(masterBias)
+            img_temp_median=bn.nanmedian(masterBias)
+            img_temp_stdev=bn.nanstd(masterBias)
             above_array=(masterBias > (img_temp_median + (10 * img_temp_stdev)))
             below_array=(masterBias < (img_temp_median - (10 * img_temp_stdev)))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
@@ -3491,7 +3508,7 @@ class Sequencer:
 
                     hdu1data=PLDrive[i]-masterBias
                     hdu1data = hdu1data[500:-500,500:-500]
-                    stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))
+                    stddiffimage=bn.nanstd(pow(pow(hdu1data,2),0.5))
                     #est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
 
                     est_read_noise= (stddiffimage * g_dev['cam'].camera_known_gain) / 1.414
@@ -3502,7 +3519,7 @@ class Sequencer:
                 readnoise_array=np.array(readnoise_array)
                 #plog ("Raw Readnoise outputs: " +str(readnoise_array))
 
-                #plog ("Final Readnoise: " + str(np.nanmedian(readnoise_array)) + " std: " + str(np.nanstd(readnoise_array)))
+                #plog ("Final Readnoise: " + str(bn.nanmedian(readnoise_array)) + " std: " + str(bn.nanstd(readnoise_array)))
            # else:
                 #plog ("Skipping readnoise estimation as we don't currently have a reliable camera gain estimate.")
 
@@ -3531,9 +3548,12 @@ class Sequencer:
                 [g_dev['obs'].local_dark_folder+ 'halfsecdarks/', 'halfsecondDARK', 'halfsec_exposure_dark' ],
                 [g_dev['obs'].local_dark_folder+ 'twosecdarks/', '2secondDARK', 'twosec_exposure_dark' ],
                 [g_dev['obs'].local_dark_folder+ 'tensecdarks/', '10secondDARK', 'tensec_exposure_dark'],
-                [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssDARK', 'broadband_ss_dark' ],
-                [g_dev['obs'].local_dark_folder+ 'narrowbanddarks/', 'narrowbandssDARK','narrowband_ss_dark']
+                [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssDARK', 'broadband_ss_dark' ]                
                 ]
+
+            # If you don't have a filter wheel, then you don't have any distinction between broadband or narrowband darks
+            if not g_dev["fil"].null_filterwheel:
+                scaled_darklist.append([g_dev['obs'].local_dark_folder+ 'narrowbanddarks/', 'narrowbandssDARK','narrowband_ss_dark'])
 
             bias_darklist=[
 
@@ -3554,9 +3574,13 @@ class Sequencer:
                 [g_dev['obs'].local_dark_folder+ 'tensecdarks/','tensecBIASDARK', 'tensec' ],
                 [g_dev['obs'].local_dark_folder+ 'fifteensecdarks/', 'fifteensecBIASDARK','fifteensec' ],
                 [g_dev['obs'].local_dark_folder+ 'twentysecdarks/', 'twentysecBIASDARK', 'twentysec'],
-                [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssBIASDARK', 'broadband_ss_biasdark'],
-                [g_dev['obs'].local_dark_folder+ 'narrowbanddarks/', 'narrowbandssBIASDARK', 'narrowband_ss_biasdark']
+                [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssBIASDARK', 'broadband_ss_biasdark']
+                
                 ]
+            
+            # If you don't have a filter wheel, then you don't have any distinction between broadband or narrowband darks
+            if not g_dev["fil"].null_filterwheel:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'narrowbanddarks/', 'narrowbandssBIASDARK', 'narrowband_ss_biasdark'])
 
             # CLEAR OUT OLD TEMPFILES
             darkdeleteList=(glob(g_dev['obs'].local_dark_folder +'/*tempbiasdark.n*'))
@@ -3603,23 +3627,24 @@ class Sequencer:
 
 
             # Bad pixel accumulator from long exposure dark
-            img_temp_median=np.nanmedian(g_dev['cam'].darkFiles['1'])
-            img_temp_stdev=np.nanstd(g_dev['cam'].darkFiles['1'])
+            img_temp_median=bn.nanmedian(g_dev['cam'].darkFiles['1'])
+            img_temp_stdev=bn.nanstd(g_dev['cam'].darkFiles['1'])
             above_array=(g_dev['cam'].darkFiles['1'] > 20)
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
 
 
             # Bad pixel accumulator from broadband exposure dark
-            img_temp_median=np.nanmedian(g_dev['cam'].darkFiles['broadband_ss_dark' ])
-            img_temp_stdev=np.nanstd(g_dev['cam'].darkFiles['broadband_ss_dark' ])
+            img_temp_median=bn.nanmedian(g_dev['cam'].darkFiles['broadband_ss_dark' ])
+            img_temp_stdev=bn.nanstd(g_dev['cam'].darkFiles['broadband_ss_dark' ])
             above_array=(g_dev['cam'].darkFiles['broadband_ss_dark' ] > 20)
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
 
             # Bad pixel accumulator from narrowband exposure dark
-            img_temp_median=np.nanmedian(g_dev['cam'].darkFiles['narrowband_ss_dark'])
-            img_temp_stdev=np.nanstd(g_dev['cam'].darkFiles['narrowband_ss_dark'])
-            above_array=(g_dev['cam'].darkFiles['narrowband_ss_dark'] > 20)
-            bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
+            if not g_dev["fil"].null_filterwheel:
+                img_temp_median=bn.nanmedian(g_dev['cam'].darkFiles['narrowband_ss_dark'])
+                img_temp_stdev=bn.nanstd(g_dev['cam'].darkFiles['narrowband_ss_dark'])
+                above_array=(g_dev['cam'].darkFiles['narrowband_ss_dark'] > 20)
+                bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
 
 
 
@@ -3790,7 +3815,7 @@ class Sequencer:
                                         elif hdu1exp == broadband_ss_biasdark_exp_time:
                                             flatdebiaseddedarked=hdu1data -g_dev['cam'].darkFiles['broadband_ss_biasdark']
                                             #plog ("broady")
-                                        elif hdu1exp == narrowband_ss_biasdark_exp_time:
+                                        elif hdu1exp == narrowband_ss_biasdark_exp_time and not g_dev["fil"].null_filterwheel:
                                             flatdebiaseddedarked=hdu1data -g_dev['cam'].darkFiles['narrowband_ss_biasdark']
                                             #plog ("Narrowy")
                                         elif hdu1exp < 0.5:
@@ -3810,18 +3835,21 @@ class Sequencer:
                                             tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
                                             flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                             del tempmasterDark
-                                        elif hdu1exp <= narrowband_ss_biasdark_exp_time:
+                                        elif hdu1exp <= narrowband_ss_biasdark_exp_time and not g_dev["fil"].null_filterwheel:
                                             fraction_through_range=(hdu1exp-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
                                             tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
                                             flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                             del tempmasterDark
-                                        elif dark_exp_time > narrowband_ss_biasdark_exp_time:
+                                        elif dark_exp_time > narrowband_ss_biasdark_exp_time and not g_dev["fil"].null_filterwheel:
                                             fraction_through_range=(hdu1exp-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
                                             tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['1']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
                                             flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                             del tempmasterDark
-                                        else:
+                                        elif not g_dev["fil"].null_filterwheel:
                                             flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['narrowband_ss_dark']*hdu1exp)
+                                        else:
+                                            flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['1']*hdu1exp)
+
                                     except:
                                         flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['1']*hdu1exp)
 
@@ -3831,13 +3859,13 @@ class Sequencer:
 
                                     # Normalising flat file
                                     if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                                        normalising_factor=np.nanmedian(flatdebiaseddedarked)
+                                        normalising_factor=bn.nanmedian(flatdebiaseddedarked)
                                         flatdebiaseddedarked = flatdebiaseddedarked/normalising_factor
                                         # Naning bad entries into master flat
                                         flatdebiaseddedarked[flatdebiaseddedarked < 0.25] = np.nan
                                         flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
                                         # Rescaling median once nan'ed
-                                        flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
+                                        flatdebiaseddedarked = flatdebiaseddedarked/bn.nanmedian(flatdebiaseddedarked)
                                     else:
 
                                         debayered=[]
@@ -3855,7 +3883,7 @@ class Sequencer:
                                             cropx = int( (oscimage.shape[0] -500)/2)
                                             cropy = int((oscimage.shape[1] -500) /2)
                                             oscimage=oscimage[cropx:-cropx, cropy:-cropy]
-                                            oscmedian=np.nanmedian(oscimage)
+                                            oscmedian=bn.nanmedian(oscimage)
                                             osc_normalising_factor.append(oscmedian)
 
                                         del debayered
@@ -3868,7 +3896,7 @@ class Sequencer:
                                         flatdebiaseddedarked[flatdebiaseddedarked < 0.25] = np.nan
                                         flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
                                         # Rescaling median once nan'ed
-                                        flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
+                                        flatdebiaseddedarked = flatdebiaseddedarked/bn.nanmedian(flatdebiaseddedarked)
 
                                     #PLDrive[:,:,i] = copy.deepcopy(flatdebiaseddedarked)
 
@@ -3965,8 +3993,8 @@ class Sequencer:
                                 #tempdivide=PLDrive[:,:,flat_component] / finalImage
                                 tempdivide=PLDrive[flat_component] / finalImage
 
-                                #tempnanmedian=np.nanmedian(tempdivide)
-                                tempstd=np.nanstd(tempdivide)
+                                #tempnanmedian=bn.nanmedian(tempdivide)
+                                tempstd=bn.nanstd(tempdivide)
                                 #plog ("nanmedian: " + str(tempnanmedian ))
                                 #plog ("nanstdev: " + str(tempstd))
                                 #nanmedian_collector.append(tempnanmedian)
@@ -3975,11 +4003,11 @@ class Sequencer:
                             # plog ("*********************************")
                             # #plog (nanmedian_collector)
                             # plog (nanstd_collector)
-                            # #plog ("Median of median: " + str(np.array(np.nanmedian(nanmedian_collector))))
+                            # #plog ("Median of median: " + str(np.array(bn.nanmedian(nanmedian_collector))))
                             # #plog ("Std of median: " + str(np.array(np.std(nanmedian_collector))))
-                            # plog ("Median of stdev: " + str(np.array(np.nanmedian(nanstd_collector))))
+                            # plog ("Median of stdev: " + str(np.array(bn.nanmedian(nanstd_collector))))
                             # plog ("Std of stdev: " + str(np.array(np.std(nanstd_collector))))
-                            med_std=np.array(np.nanmedian(nanstd_collector))
+                            med_std=np.array(bn.nanmedian(nanstd_collector))
                             std_std=np.array(np.std(nanstd_collector))
                             # plog ("*********************************")
                             # plog ("Assessing component flat fits to stacked flat")
@@ -4014,8 +4042,8 @@ class Sequencer:
                         del finalImage
 
                         # Bad pixel accumulator
-                        img_temp_median=np.nanmedian(temporaryFlat)
-                        img_temp_stdev=np.nanstd(temporaryFlat)
+                        img_temp_median=bn.nanmedian(temporaryFlat)
+                        img_temp_stdev=bn.nanstd(temporaryFlat)
                         above_array=(temporaryFlat > (img_temp_median + (10 * img_temp_stdev)))
                         # BELOW IS A BAD IDEA FOR FLATS, BECAUSE HEAVY VIGNETTING WILL CAUSE BAD PIXELS
                         #below_array=(temporaryFlat < (img_temp_median - (10 * img_temp_stdev)))
@@ -4112,20 +4140,20 @@ class Sequencer:
                             pre_num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
 
 
-                        # plog ("Final Flat Max: " + str(np.nanmax(temporaryFlat)))
-                        # plog ("Final Flat Min: " + str(np.nanmin(temporaryFlat)))
-                        # plog ("Final Flat Median: " + str(np.nanmedian(temporaryFlat)))
+                        # plog ("Final Flat Max: " + str(bn.nanmax(temporaryFlat)))
+                        # plog ("Final Flat Min: " + str(bn.nanmin(temporaryFlat)))
+                        # plog ("Final Flat Median: " + str(bn.nanmedian(temporaryFlat)))
 
-                        # plog ("Final Flat Average: " + str(np.nanmean(temporaryFlat)))  #<<WER changed average to mean
+                        # plog ("Final Flat Average: " + str(bn.nanmean(temporaryFlat)))  #<<WER changed average to mean
 
-                        # plog ("Final Flat Stdev: " + str(np.nanstd(temporaryFlat)))
+                        # plog ("Final Flat Stdev: " + str(bn.nanstd(temporaryFlat)))
 
                         #breakpoint()
 
                         if np.count_nonzero(np.isnan(temporaryFlat)) > 0:
                             plog ("No improvement with last interpolation attempt.")
                             plog ("Filling remaining nans with median")
-                            temporaryFlat=np.nan_to_num(temporaryFlat, nan = np.nanmedian(temporaryFlat))
+                            temporaryFlat=np.nan_to_num(temporaryFlat, nan = bn.nanmedian(temporaryFlat))
 
 
 
@@ -4166,8 +4194,8 @@ class Sequencer:
 
                         # # REMOVE HIGH VALUES
                         # while True:
-                        #     tempstd=np.nanstd(sigma_clipped_array)
-                        #     tempmedian=np.nanmedian(sigma_clipped_array)
+                        #     tempstd=bn.nanstd(sigma_clipped_array)
+                        #     tempmedian=bn.nanmedian(sigma_clipped_array)
                         #     clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
                         #     if np.sum(clipped_areas) == 0:
                         #         break
@@ -4177,8 +4205,8 @@ class Sequencer:
 
                         # # REMOVE LOW VALUES
                         # while True:
-                        #     tempstd=np.nanstd(sigma_clipped_array)
-                        #     tempmedian=np.nanmedian(sigma_clipped_array)
+                        #     tempstd=bn.nanstd(sigma_clipped_array)
+                        #     tempmedian=bn.nanmedian(sigma_clipped_array)
                         #     clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
                         #     if np.sum(clipped_areas) == 0:
                         #         break
@@ -4188,13 +4216,13 @@ class Sequencer:
 
 
                         # # Do rows
-                        # rows_median = np.nanmedian(sigma_clipped_array,axis=1)
+                        # rows_median = bn.nanmedian(sigma_clipped_array,axis=1)
                         # #rows_x = np.arange(0,len(rows_median),1.0)
                         # #plt.scatter(columns_median)
-                        # rows_median[np.isnan(rows_median)] = np.nanmedian(rows_median) # This should bea more thorough nearest neighbour thing when I get to it
+                        # rows_median[np.isnan(rows_median)] = bn.nanmedian(rows_median) # This should bea more thorough nearest neighbour thing when I get to it
 
                         # row_debanded_image= temporaryFlat-rows_median[:,None]
-                        # #debanded_rows_median=np.nanmedian(row_debanded_image,axis=1)
+                        # #debanded_rows_median=bn.nanmedian(row_debanded_image,axis=1)
                         # #plt.scatter(columns_x,debanded_columns_medain)
 
                         # # plog ("Done rows. Now columns.")
@@ -4203,8 +4231,8 @@ class Sequencer:
                         # sigma_clipped_array=copy.deepcopy(row_debanded_image)
                         # # REMOVE HIGH VALUES
                         # while True:
-                        #     tempstd=np.nanstd(sigma_clipped_array)
-                        #     tempmedian=np.nanmedian(sigma_clipped_array)
+                        #     tempstd=bn.nanstd(sigma_clipped_array)
+                        #     tempmedian=bn.nanmedian(sigma_clipped_array)
                         #     clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
                         #     if np.sum(clipped_areas) == 0:
                         #         break
@@ -4214,8 +4242,8 @@ class Sequencer:
 
                         # # REMOVE LOW VALUES
                         # while True:
-                        #     tempstd=np.nanstd(sigma_clipped_array)
-                        #     tempmedian=np.nanmedian(sigma_clipped_array)
+                        #     tempstd=bn.nanstd(sigma_clipped_array)
+                        #     tempmedian=bn.nanmedian(sigma_clipped_array)
                         #     clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
                         #     if np.sum(clipped_areas) == 0:
                         #         break
@@ -4224,12 +4252,12 @@ class Sequencer:
                         #     #breakpoint()
 
 
-                        # columns_median = np.nanmedian(sigma_clipped_array,axis=0)
+                        # columns_median = bn.nanmedian(sigma_clipped_array,axis=0)
                         # #columns_x = np.arange(0,len(columns_median),1.0)
-                        # columns_median[np.isnan(columns_median)] = np.nanmedian(columns_median)
+                        # columns_median[np.isnan(columns_median)] = bn.nanmedian(columns_median)
 
                         # both_debanded_image= row_debanded_image-columns_median[None,:]
-                        # #debanded_both_median=np.nanmedian(both_debanded_image,axis=0)
+                        # #debanded_both_median=bn.nanmedian(both_debanded_image,axis=0)
 
                         # # Reinstitute pedestal
                         # both_debanded_image=both_debanded_image+1
@@ -4320,7 +4348,7 @@ class Sequencer:
                                     cropx = int( (oscimage.shape[0] -500)/2)
                                     cropy = int((oscimage.shape[1] -500) /2)
                                     oscimage=oscimage[cropx:-cropx, cropy:-cropy]
-                                    oscmedian=np.nanmedian(oscimage)
+                                    oscmedian=bn.nanmedian(oscimage)
                                     if oscmedian > max_median:
                                         max_median=oscmedian
                                         brightest_bayer=copy.deepcopy(oscounter)
@@ -4338,8 +4366,8 @@ class Sequencer:
                             camera_gain_estimate_image = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
 
 
-                            cge_median=np.nanmedian(camera_gain_estimate_image)
-                            cge_stdev=np.nanstd(camera_gain_estimate_image)
+                            cge_median=bn.nanmedian(camera_gain_estimate_image)
+                            cge_stdev=bn.nanstd(camera_gain_estimate_image)
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
                             plog ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
@@ -4350,8 +4378,8 @@ class Sequencer:
 
                         single_filter_camera_gains=np.array(single_filter_camera_gains)
                         single_filter_camera_gains = sigma_clip(single_filter_camera_gains, masked=False, axis=None)
-                        plog ("Filter Gain Sigma Clipped Estimates: " + str(np.nanmedian(single_filter_camera_gains)) + " std " + str(np.std(single_filter_camera_gains)) + " N " + str(len(single_filter_camera_gains)))
-                        flat_gains[filtercode]=[np.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
+                        plog ("Filter Gain Sigma Clipped Estimates: " + str(bn.nanmedian(single_filter_camera_gains)) + " std " + str(np.std(single_filter_camera_gains)) + " N " + str(len(single_filter_camera_gains)))
+                        flat_gains[filtercode]=[bn.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
 
                         # Chuck camera gain and number of images into the shelf
                         try:
@@ -4363,7 +4391,7 @@ class Sequencer:
                             # There is no hope for individual owners with a multitude of telescopes to keep up with
                             # this estimate, so we need to automate it with a first best guess given in the config.
                             self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
-                            self.filter_camera_gain_shelf[filtercode]=[np.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
+                            self.filter_camera_gain_shelf[filtercode]=[bn.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
                             self.filter_camera_gain_shelf.close()
                         except:
                             plog("************* FAILED TO WRITE TO FILTER GAIN SHELF. Usually while flats are being taken at the same time. Follow-up if this becomes relatively frequent.")
@@ -4412,7 +4440,7 @@ class Sequencer:
                 # Close up the filter camera gain shelf.
                 try:
                     self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
-                    self.filter_camera_gain_shelf['readnoise']=[np.nanmedian(post_readnoise_array) , np.nanstd(post_readnoise_array), len(post_readnoise_array)]
+                    self.filter_camera_gain_shelf['readnoise']=[bn.nanmedian(post_readnoise_array) , bn.nanstd(post_readnoise_array), len(post_readnoise_array)]
                     self.filter_camera_gain_shelf.close()
                 except:
                     plog ("cannot write the readnoise array to the shelf. Probs because this is the first time estimating gains")
@@ -4436,24 +4464,24 @@ class Sequencer:
                         #plog ("Raw List of Gains: " +str(estimated_flat_gain))
                         #f.write ("Raw List of Gains: " +str(estimated_flat_gain)+ "\n"+ "\n")
 
-                        #plog ("Camera Gain Non-Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
-                        #f.write ("Camera Gain Non-Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
+                        #plog ("Camera Gain Non-Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
+                        #f.write ("Camera Gain Non-Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
 
                         estimated_flat_gain = sigma_clip(estimated_flat_gain, masked=False, axis=None)
-                       # plog ("Camera Gain Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
-                        #f.write ("Camera Gain Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
+                       # plog ("Camera Gain Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
+                        #f.write ("Camera Gain Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
 
                         est_read_noise=[]
                         try:
                             for rnentry in post_readnoise_array:
-                                est_read_noise.append( (rnentry * np.nanmedian(estimated_flat_gain)) / 1.414)
+                                est_read_noise.append( (rnentry * bn.nanmedian(estimated_flat_gain)) / 1.414)
 
                             est_read_noise=np.array(est_read_noise)
-                            #plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
-                            f.write ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise))+ "\n")
+                            #plog ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise)))
+                            f.write ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise))+ "\n")
                             est_read_noise = sigma_clip(est_read_noise, masked=False, axis=None)
-                            #plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
-                            f.write ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise))+ "\n")
+                            #plog ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise)))
+                            f.write ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise))+ "\n")
                         except:
                             plog ("Did not estimate readnoise as probs no previous known gains.")
                             #plog(traceback.format_exc())
@@ -4620,9 +4648,9 @@ class Sequencer:
 
             while True:
                 print (gain_collector)
-                gainmed=np.nanmedian(gain_collector)
+                gainmed=bn.nanmedian(gain_collector)
                 print (gainmed)
-                gainstd=np.nanstd(gain_collector)
+                gainstd=bn.nanstd(gain_collector)
                 print (gainstd)
                 new_gain_pile=[]
                 new_stdev_pile=[]
@@ -4646,7 +4674,7 @@ class Sequencer:
             else:
 
                 g_dev['cam'].camera_known_gain=gainmed
-                g_dev['cam'].camera_known_gain_stdev=np.nanstd(gain_collector)
+                g_dev['cam'].camera_known_gain_stdev=bn.nanstd(gain_collector)
 
             #breakpoint()
 
@@ -4869,7 +4897,10 @@ class Sequencer:
         broadband_ss_biasdark_exp_time = float(self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time'])
         narrowband_ss_biasdark_exp_time = float(broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier'])
 
-        sky_exposure_snap_to_grid = [ 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, broadband_ss_biasdark_exp_time, narrowband_ss_biasdark_exp_time]
+        sky_exposure_snap_to_grid = [ 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, broadband_ss_biasdark_exp_time]
+
+        if not g_dev["fil"].null_filterwheel:
+            sky_exposure_snap_to_grid.append(narrowband_ss_biasdark_exp_time)
 
         # Load up the pickled list of gains or start a new one.
         self.filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].alias + str(g_dev['obs'].name))
@@ -5622,7 +5653,7 @@ class Sequencer:
         # Report on camera gain estimation
         try:
             camera_gain_collector=np.array(camera_gain_collector)
-            plog ("Camera Gain Estimates: " + str(np.nanmedian(camera_gain_collector)) + " std " + str(np.std(camera_gain_collector)) + " N " + str(len(camera_gain_collector)))
+            plog ("Camera Gain Estimates: " + str(bn.nanmedian(camera_gain_collector)) + " std " + str(np.std(camera_gain_collector)) + " N " + str(len(camera_gain_collector)))
             plog ("Raw List of Gains: " +str(camera_gain_collector))
         except:
             plog ("hit some snag with reporting gains")
@@ -6268,13 +6299,13 @@ class Sequencer:
             if position_counter < 5:
                 if len(focus_spots) > 0:
                     # Just plot and fling up the jpeg
-                    plt.scatter(x,y)
-                    plt.show()
+                    # plt.scatter(x,y)
+                    # plt.show()
 
                     # Weird way to convert plt to pil image, overlay and close
                     img_buf = io.BytesIO()
                     plt.scatter(x,y)
-                    plt.savefig(img_buf, format='png')
+                    plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=70)
                     pltim = Image.open(img_buf)
                     #im.show(title="My Image")
                     #box = (500, 500)
@@ -6332,13 +6363,13 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
                             #breakpoint()
                             #print ("Attempting: " + str(new_focus_position_to_attempt))
-                            plt.scatter(x,y)
-                            plt.show()
+                            # plt.scatter(x,y)
+                            # plt.show()
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
-                            plt.savefig(img_buf, format='png')
+                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=70)
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
@@ -6366,13 +6397,13 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             #breakpoint()
                             #print ("Attempting: " + str(new_focus_position_to_attempt))
-                            plt.scatter(x,y)
-                            plt.show()
+                            # plt.scatter(x,y)
+                            # plt.show()
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
-                            plt.savefig(img_buf, format='png')
+                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=70)
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
@@ -6431,26 +6462,26 @@ class Sequencer:
                                 print ("focus fit didn't work dunno y yet.")
                                 plog(traceback.format_exc())
                                 breakpoint()
-                            plt.scatter(x,y)
-                            plt.plot(x,f(x), color = 'green')
-                            #plt.xlim(0.16888549099999922 - 0.000000001,0.1688855399999992 + 0.000000001)
-                            #print (crit_points)
+                            # plt.scatter(x,y)
+                            # plt.plot(x,f(x), color = 'green')
+                            # #plt.xlim(0.16888549099999922 - 0.000000001,0.1688855399999992 + 0.000000001)
+                            # #print (crit_points)
                             crit_points = bounds + [x for x in f.deriv().r if x.imag == 0 and bounds[0] < x.real < bounds[1]]
                             fitted_focus_position=crit_points[2]
                             #print (crit_points)
                             #print (len(crit_points))
                             plog ("focus pos: " + str(fitted_focus_position))
                             fitted_focus_fwhm=f(fitted_focus_position)
-                            plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
+                            # plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
 
-                            plt.show()
+                            # plt.show()
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
                             plt.plot(x,f(x), color = 'green')
                             plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
-                            plt.savefig(img_buf, format='png')
+                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=70)
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
@@ -7974,7 +8005,7 @@ def stack_nanmedian_row_memmapped(inputinfo):
     tempPLDrive = np.memmap(pldrivetempfiletemp, dtype='float32', mode= 'r', shape = shape )
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
-        return np.nanmedian(tempPLDrive[counter,:,:], axis=1)
+        return bn.nanmedian(tempPLDrive[counter,:,:], axis=1)
 
 
 def stack_nanmedian_row(inputline):
@@ -7988,5 +8019,5 @@ def stack_nanmedian_row(inputline):
     # tempPLDrive = np.memmap(pldrivetempfiletemp, dtype='float32', mode= 'r', shape = shape )
     # with warnings.catch_warnings():
     #     warnings.simplefilter("ignore", category=RuntimeWarning)
-    #     return np.nanmedian(tempPLDrive[counter,:,:], axis=1)
+    #     return bn.nanmedian(tempPLDrive[counter,:,:], axis=1)
 
