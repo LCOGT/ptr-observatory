@@ -3345,6 +3345,8 @@ class Sequencer:
         #     del g_dev['cam'].flatFiles
         # except:
         #     pass
+    
+        tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
 
         if len(inputList) == 0 or len(darkinputList) == 0 or len(inputList) == 1 or len(darkinputList) == 1:
             plog ("Not reprocessing local masters as there are not enough biases or darks")
@@ -3370,7 +3372,19 @@ class Sequencer:
             bad_pixel_mapper_array=np.full((shapeImage[0],shapeImage[1]), False)
 
             # Array to hold loaded images
-            #PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
+            #PLDrive = np.empty((shapeImage[0],shapeImge[1],len(inputList)), dtype=np.float32)
+            
+            # Check if the latest file is older than the latest calibration
+            latestfile=0
+            for tem in inputList:
+                filetime=os.path.getmtime(tem)
+                if filetime > latestfile:
+                    latestfile=copy.deepcopy(filetime)
+            
+            latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
+            
+            
+            
 
             # Store the biases in the memmap file
             PLDrive= [None] * len(inputList)
@@ -3477,7 +3491,7 @@ class Sequencer:
             below_array=(masterBias < (img_temp_median - (10 * img_temp_stdev)))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
-            tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+            
             try:
                 #fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
 
