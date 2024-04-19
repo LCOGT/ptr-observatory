@@ -3569,6 +3569,9 @@ class Sequencer:
                 [g_dev['obs'].local_dark_folder+ 'tensecdarks/', '10secondDARK', 'tensec_exposure_dark'],
                 [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssDARK', 'broadband_ss_dark' ]                
                 ]
+            
+            
+            
 
             # If you don't have a filter wheel, then you don't have any distinction between broadband or narrowband darks
             if not g_dev["fil"].null_filterwheel:
