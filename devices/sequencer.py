@@ -3837,6 +3837,16 @@ class Sequencer:
                         if latestfile < latestcalib:
                             plog ("There are no new flats since last super-flat was made. Skipping construction")
                             temporaryFlat=np.load(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy')
+                            # Bad pixel accumulator
+                            img_temp_median=bn.nanmedian(temporaryFlat)
+                            img_temp_stdev=bn.nanstd(temporaryFlat)
+                            above_array=(temporaryFlat > (img_temp_median + (10 * img_temp_stdev)))
+                            # BELOW IS A BAD IDEA FOR FLATS, BECAUSE HEAVY VIGNETTING WILL CAUSE BAD PIXELS
+                            #below_array=(temporaryFlat < (img_temp_median - (10 * img_temp_stdev)))
+                            # plog ("Bad pixels above: " + str(above_array.sum()))
+                            #plog ("Bad pixels below: " + str(below_array.sum()))
+                            bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
+                            
                            #masterDark= np.array(masterDark[0].data, dtype=np.float32)                
                             
                         else:
@@ -4573,47 +4583,47 @@ class Sequencer:
                     pass
 
 
-                # Report on camera estimated gains
-                # Report on camera gain estimation
-                try:
-                    with open(textfilename, 'w') as f:
-                        plog ("Ending stored filter throughputs")
+                # # Report on camera estimated gains
+                # # Report on camera gain estimation
+                # try:
+                #     with open(textfilename, 'w') as f:
+                #         plog ("Ending stored filter throughputs")
 
 
-                        estimated_flat_gain=np.array(estimated_flat_gain)
-                        #plog ("Raw List of Gains: " +str(estimated_flat_gain))
-                        #f.write ("Raw List of Gains: " +str(estimated_flat_gain)+ "\n"+ "\n")
+                #         estimated_flat_gain=np.array(estimated_flat_gain)
+                #         #plog ("Raw List of Gains: " +str(estimated_flat_gain))
+                #         #f.write ("Raw List of Gains: " +str(estimated_flat_gain)+ "\n"+ "\n")
 
-                        #plog ("Camera Gain Non-Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
-                        #f.write ("Camera Gain Non-Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
+                #         #plog ("Camera Gain Non-Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
+                #         #f.write ("Camera Gain Non-Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
 
-                        estimated_flat_gain = sigma_clip(estimated_flat_gain, masked=False, axis=None)
-                       # plog ("Camera Gain Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
-                        #f.write ("Camera Gain Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
+                #         estimated_flat_gain = sigma_clip(estimated_flat_gain, masked=False, axis=None)
+                #        # plog ("Camera Gain Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
+                #         #f.write ("Camera Gain Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
 
-                        est_read_noise=[]
-                        try:
-                            for rnentry in post_readnoise_array:
-                                est_read_noise.append( (rnentry * bn.nanmedian(estimated_flat_gain)) / 1.414)
+                #         est_read_noise=[]
+                #         try:
+                #             for rnentry in post_readnoise_array:
+                #                 est_read_noise.append( (rnentry * bn.nanmedian(estimated_flat_gain)) / 1.414)
 
-                            est_read_noise=np.array(est_read_noise)
-                            #plog ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise)))
-                            f.write ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise))+ "\n")
-                            est_read_noise = sigma_clip(est_read_noise, masked=False, axis=None)
-                            #plog ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise)))
-                            f.write ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise))+ "\n")
-                        except:
-                            plog ("Did not estimate readnoise as probs no previous known gains.")
-                            #plog(traceback.format_exc())
+                #             est_read_noise=np.array(est_read_noise)
+                #             #plog ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise)))
+                #             f.write ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise))+ "\n")
+                #             est_read_noise = sigma_clip(est_read_noise, masked=False, axis=None)
+                #             #plog ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise)))
+                #             f.write ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise))+ "\n")
+                #         except:
+                #             plog ("Did not estimate readnoise as probs no previous known gains.")
+                #             plog(traceback.format_exc())
 
-                        plog ("Gains by filter")
-                        for filterline in flat_gains:
-                            plog (filterline+ " " + str(flat_gains[filterline]))
-                            f.write(filterline + " " + str(flat_gains[filterline]) + "\n")
+                #         plog ("Gains by filter")
+                #         for filterline in flat_gains:
+                #             plog (filterline+ " " + str(flat_gains[filterline]))
+                #             f.write(filterline + " " + str(flat_gains[filterline]) + "\n")
 
-                except:
-                    plog ("hit some snag with reporting gains")
-                    plog(traceback.format_exc())
+                # except:
+                #     plog ("hit some snag with reporting gains")
+                #     plog(traceback.format_exc())
                     #
 
 
