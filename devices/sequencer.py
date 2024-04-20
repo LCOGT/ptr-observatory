@@ -3591,7 +3591,7 @@ class Sequencer:
                     #PLDrive[:,:,i] = np.load(file)
 
 
-                    hdu1data=PLDrive[i]-masterBias
+                    hdu1data=np.load(file)-masterBias
                     hdu1data = hdu1data[500:-500,500:-500]
                     stddiffimage=bn.nanstd(pow(pow(hdu1data,2),0.5))
                     #est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
