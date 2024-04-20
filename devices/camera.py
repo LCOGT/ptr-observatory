@@ -3705,8 +3705,7 @@ class Camera:
         skip_open_check=False,
         skip_daytime_check=False,
         manually_requested_calibration=False,
-        useastrometrynet=False
-    ):
+        useastrometrynet=False):
         """
         This is Phase 1:  Setup the camera.
         Apply settings and start an exposure.
@@ -3785,29 +3784,13 @@ class Camera:
         opt = optional_params
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
-# =============================================================================
-#         #Todo  NB NB NB Temp injection of a  Zoom value 20231222 WER
-# =============================================================================
-        # try:
-        #     test = opt['zoom']
-        #     #test2 = opt['area']
-        #     print("Cam line 1508.  Zoom and Area value is:  ", test, " --  end of tests.")
-        # except:
-        #     #opt['zoom'] = 'Full'
-        #     #print('Camera, line 1337 temporary code, injection.  req, opt:  ', req, opt)
-        #     pass
-# =============================================================================
-#         #Todo  NB NB NB Temp injection of a  Zoom value 20231222 WER
-# =============================================================================
+
         try:
 
             self.zoom_factor = optional_params.get('zoom', False)
         except:
             plog("Problem with supplied Zoom factor, Camera line 1510")
             self.zoom_factor = "Full"
-
-
-
 
         if imtype.lower() in ("bias"):
             exposure_time = 0.0
