@@ -6210,7 +6210,7 @@ class Sequencer:
                     # Weird way to convert plt to pil image, overlay and close
                     img_buf = io.BytesIO()
                     plt.scatter(x,y)
-                    plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=70)
+                    plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=200)
                     pltim = Image.open(img_buf)
                     #im.show(title="My Image")
                     #box = (500, 500)
@@ -6274,7 +6274,7 @@ class Sequencer:
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
-                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=70)
+                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=200)
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
@@ -6308,7 +6308,7 @@ class Sequencer:
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
-                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=70)
+                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=200)
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
@@ -6386,7 +6386,7 @@ class Sequencer:
                             plt.scatter(x,y)
                             plt.plot(x,f(x), color = 'green')
                             plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
-                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=70)
+                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=200)
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
