@@ -584,10 +584,6 @@ class Sequencer:
                 # Super-duper double check that darkslide is open
                 if g_dev['cam'].has_darkslide:
                     g_dev['cam'].openDarkslide()
-                    # g_dev['cam'].darkslide_open = True
-                    # g_dev['cam'].darkslide_state = 'Open'
-
-
 
                 self.wait_for_slew()
 
@@ -662,23 +658,18 @@ class Sequencer:
 
                     self.project_call_timer = time.time()
 
-                    #g_dev['obs'].request_update_calendar_blocks()
                     # Mission critical calendar block update
                     self.update_calendar_blocks()
 
-                    #plog ("project test in")
-
-                    #print (self.blocks)
 
                     # only need to bother with the rest if there is more than 0 blocks.
-                    #self.block_guard=False
                     if not len(self.blocks) > 0:
                         self.block_guard=False
                         g_dev['seq'].blockend= None
                     else:
                         now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
                         identified_block=None
-                        #breakpoint()
+                        
                         for block in self.blocks:  #  This merges project spec into the blocks.
                                    #(block['start'] <= now_date_timeZ < block['end'])
                             if (block['start'] <= now_date_timeZ < block['end']) and not self.is_in_completes(block['event_id']):
@@ -706,93 +697,19 @@ class Sequencer:
                                         identified_block=None
                                 except:
                                     plog(traceback.format_exc())
-                                    #
-
-                            # if identified_block == None:
-                            #     plog ("identified block is None")
-                            #     self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                            #     g_dev['seq'].blockend= None
-                            #     pointing_good=False   # Do not try to execute an empty block.
-
-                            # elif identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
-                            #     plog ("identified block is real_time or none")
-                            #     print (identified_block['project_id'])
-                            #     self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                            #     g_dev['seq'].blockend= None
-                            #     pointing_good=False   # Do not try to execute an empty block.
-
-
-                            # elif identified_block['project'] == None:
-                            #     plog (identified_block)
-                            #     plog ("Skipping a block that contains an empty project")
-                            #     self.block_guard=False
-                            #     g_dev['seq'].blockend= None
-                            #     pointing_good=False
-
-                            # elif identified_block['project'] != None:
-                            #     pointing_good=True
-                            #     # If a block is identified, check it is in the sky and not in a poor location
-                            #     target=identified_block['project']['project_targets'][0]
-
-                            #     ra = float(target['ra'])
-                            #     dec = float(target['dec'])
-                            #     temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
-                            #     temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
-                            #     alt = temppointingaltaz.alt.degree
-                            #     # Check the moon isn't right in front of the project target
-                            #     #moon_coords=get_moon(Time.now())
-                            #     moon_coords=get_body("moon", time=Time.now())
-                            #     moon_dist = moon_coords.separation(temppointing)
-                            #     if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
-                            #         g_dev['obs'].send_to_user("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                            #         plog("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                            #         pointing_good=False
-                            #     if alt < self.config['lowest_requestable_altitude']:
-                            #         g_dev['obs'].send_to_user("Not running project as it is too low: " + str(alt) + " degrees.")
-                            #         plog("Not running project as it is too low: " + str(alt) + " degrees.")
-                            #         pointing_good=False
-
-                            # if pointing_good:
-                            #     completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
-                            #     #
-                            #     try:
-                            #         self.append_completes(completed_block['event_id'])
-                            #     except:
-                            #         plog ("block complete append didn't work")
-                            #         plog(traceback.format_exc())
-                            #     self.block_guard=False
-                            #     self.currently_mosaicing = False
-                            #     self.blockend = None
-                            # elif identified_block is None:
-                            #     self.block_guard=False
-                            #     self.currently_mosaicing = False
-                            #     self.blockend = None
-                            # else:
-                            #     plog ("Something didn't work, cancelling out of doing this project and putting it in the completes pile.")
-                            #     self.append_completes(block['event_id'])
-                            #     self.block_guard=False
-                            #     self.currently_mosaicing = False
-                            #     self.blockend = None
 
                                 if identified_block == None:
                                     plog ("identified block is None")
-                                    # self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                                    # g_dev['seq'].blockend= None
-                                    pointing_good=False   # Do not try to execute an empty block.
+                                    pointing_good=False  
 
                                 elif identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
                                     plog ("identified block is real_time or none")
-                                    #print (identified_block['project_id'])
-                                    # self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                                    # g_dev['seq'].blockend= None
-                                    pointing_good=False   # Do not try to execute an empty block.
+                                    pointing_good=False  
 
 
                                 elif identified_block['project'] == None:
                                     plog (identified_block)
                                     plog ("Skipping a block that contains an empty project")
-                                    # self.block_guard=False
-                                    # g_dev['seq'].blockend= None
                                     pointing_good=False
 
                                 elif identified_block['project'] != None:
@@ -806,7 +723,6 @@ class Sequencer:
                                     temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
                                     alt = temppointingaltaz.alt.degree
                                     # Check the moon isn't right in front of the project target
-                                    #moon_coords=get_moon(Time.now())
                                     moon_coords=get_body("moon", time=Time.now())
                                     moon_dist = moon_coords.separation(temppointing)
                                     if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
@@ -826,19 +742,13 @@ class Sequencer:
                                     except:
                                         plog ("block complete append didn't work")
                                         plog(traceback.format_exc())
-                                    # self.block_guard=False
-                                    # self.currently_mosaicing = False
                                     self.blockend = None
                                 elif identified_block is None:
-                                    # self.block_guard=False
-                                    # self.currently_mosaicing = False
                                     self.blockend = None
                                 else:
                                     plog ("Something didn't work, cancelling out of doing this project and putting it in the completes pile.")
                                     plog (block)
                                     self.append_completes(block['event_id'])
-                                    # self.block_guard=False
-                                    # self.currently_mosaicing = False
                                     self.blockend = None
 
                     self.block_guard=False
@@ -894,43 +804,6 @@ class Sequencer:
                 self.park_and_close()
                 self.morn_bias_dark_latch = False
                 self.morn_bias_done = True
-
-            # if not g_dev['obs'].open_and_enabled_to_observe and not self.morn_bias_dark_latch and (events['Astro Dark'] <= ephem_now < events['End Astro Dark']) and \
-            #           self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
-
-            #     self.morn_bias_dark_latch = True
-            #     req = {'numOfBias': 63, \
-            #             'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
-            #             'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
-            #     opt = {}
-
-            #     self.park_and_close()
-
-            #     self.bias_dark_script(req, opt, morn=True, ending = events['End Astro Dark'])
-
-            #     self.park_and_close()
-            #     self.morn_bias_dark_latch = False
-            #     self.morn_bias_done = True
-
-            # if not g_dev['obs'].open_and_enabled_to_observe and not self.morn_bias_dark_latch and (events['Astro Dark'] <= ephem_now < events['End Astro Dark']) and \
-            #           self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
-
-            #     self.morn_bias_dark_latch = True
-            #     req = {'numOfBias': 63, \
-            #             'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
-            #             'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
-            #     opt = {}
-
-            #     self.park_and_close()
-
-            #     self.bias_dark_script(req, opt, morn=True, ending = events['End Astro Dark'])
-
-            #     self.park_and_close()
-            #     self.morn_bias_dark_latch = False
-            #     self.morn_bias_done = True
-
-
-
 
             if events['Sun Rise'] <= ephem_now and not self.end_of_night_token_sent:
 
@@ -989,13 +862,6 @@ class Sequencer:
                                             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
                                             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
 
-                                            # plog("Exposing 1x1 dark exposure:  " + str(dark_exp_time) )
-                                            # req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
-                                            # opt = { 'count': 1,  \
-                                            #         'filter': 'dark'}
-                                            # self.nightime_dark_counter = self.nightime_dark_counter + 1
-                                            # g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                            #                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             
                                             # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.                                            
                                             min_flat_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
@@ -1015,11 +881,38 @@ class Sequencer:
                                                 print (g_dev['obs'].open_and_enabled_to_observe)
                                                 print ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
                                                 return
+                                            
+                                            # COLLECTING A Three point five sec SECOND EXPOSURE DARK FRAME
+                                            plog("Expose " + str(5*stride) +" 1x1 3.5s exposure dark frames.")
+                                            req = {'time': 3.5,  'script': 'True', 'image_type': 'threepointfivesec_exposure_dark'}
+                                            opt = {'count': min_to_do,  \
+                                                   'filter': 'dark'}
+
+                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                            g_dev['obs'].request_scan_requests()
+                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                print (self.stop_script_called)
+                                                print (g_dev['obs'].open_and_enabled_to_observe)
+                                                print ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
+                                                return
 
 
                                             # COLLECTING A FIVE SECOND EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 5s exposure dark frames.")
                                             req = {'time': 5,  'script': 'True', 'image_type': 'fivesec_exposure_dark'}
+                                            opt = {'count': min_to_do,  \
+                                                   'filter': 'dark'}
+                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                            g_dev['obs'].request_scan_requests()
+                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                return
+                                            
+                                            
+                                            # COLLECTING A SEVENPOINTFIVE SECOND EXPOSURE DARK FRAME
+                                            plog("Expose " + str(5*stride) +" 1x1 7.5s exposure dark frames.")
+                                            req = {'time': 7.5,  'script': 'True', 'image_type': 'sevenpointfivesec_exposure_dark'}
                                             opt = {'count': min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
@@ -1134,9 +1027,7 @@ class Sequencer:
                                                 if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
                                                     return
 
-
-                                            # COLLECTING A 0.25 Second EXPOSURE DARK FRAME
-                                            
+                                            # COLLECTING A 0.25 Second EXPOSURE DARK FRAME                                            
                                             if min_flat_exposure <= 0.25:
                                                 plog("Expose " + str(5*stride) +" 1x1 0.25 second exposure dark frames.")
                                                 req = {'time': 0.25,  'script': 'True', 'image_type': 'quartersec_exposure_dark'}
@@ -1171,8 +1062,7 @@ class Sequencer:
                                                 if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
                                                     return
 
-                                            # COLLECTING A one Second EXPOSURE DARK FRAME
-                                            
+                                            # COLLECTING A one Second EXPOSURE DARK FRAME                                            
                                             if min_flat_exposure <= 1.0:
                                                 plog("Expose " + str(5*stride) +" 1x1  1 second exposure dark frames.")
                                                 req = {'time': 1,  'script': 'True', 'image_type': 'onesec_exposure_dark'}
@@ -1216,8 +1106,6 @@ class Sequencer:
                                             opt = {'count': 1, 'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-
-
 
                                             # these exposures shouldn't reset these timers
                                             g_dev['obs'].time_of_last_exposure = time.time() - 840
@@ -1272,10 +1160,7 @@ class Sequencer:
     def is_in_completes(self, block_id):
 
         camera = self.config['camera']['camera_1_1']['name']
-        seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + '_completes_' + str(g_dev['obs'].name))
-        # print ("is in check")
-        # print ("block_id")
-        # print (seq_shelf['completed_blocks'])
+        seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + '_completes_' + str(g_dev['obs'].name))        
 
         if block_id in seq_shelf['completed_blocks']:
             seq_shelf.close()
@@ -1310,20 +1195,13 @@ class Sequencer:
 
         self.block_guard = True
         self.total_sequencer_control=True
-        #g_dev["obs"].request_full_update()
 
         plog('|n|n Starting a new project!  \n')
         plog(block_specification, ' \n\n\n')
 
         calendar_event_id=block_specification['event_id']
 
-        #breakpoint()
-        # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
-
-        #g_dev['mnt'].unpark_command({}, {})
-        #plog("unparked")
-
 
         # this variable is what we check to see if the calendar
         # event still exists on AWS. If not, we assume it has been
@@ -1352,11 +1230,6 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
                 self.blockend = None
                 continue
-
-            #try:
-            #    g_dev['mnt'].get_mount_coordinates()
-            #except:
-            #    pass
 
             # Store this ra as the "block" ra for centering purposes
             self.block_ra=copy.deepcopy(dest_ra)
@@ -4587,80 +4460,9 @@ class Sequencer:
                     pass
 
 
-                # # Report on camera estimated gains
-                # # Report on camera gain estimation
-                # try:
-                #     with open(textfilename, 'w') as f:
-                #         plog ("Ending stored filter throughputs")
-
-
-                #         estimated_flat_gain=np.array(estimated_flat_gain)
-                #         #plog ("Raw List of Gains: " +str(estimated_flat_gain))
-                #         #f.write ("Raw List of Gains: " +str(estimated_flat_gain)+ "\n"+ "\n")
-
-                #         #plog ("Camera Gain Non-Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
-                #         #f.write ("Camera Gain Non-Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
-
-                #         estimated_flat_gain = sigma_clip(estimated_flat_gain, masked=False, axis=None)
-                #        # plog ("Camera Gain Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
-                #         #f.write ("Camera Gain Sigma Clipped Estimates: " + str(bn.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
-
-                #         est_read_noise=[]
-                #         try:
-                #             for rnentry in post_readnoise_array:
-                #                 est_read_noise.append( (rnentry * bn.nanmedian(estimated_flat_gain)) / 1.414)
-
-                #             est_read_noise=np.array(est_read_noise)
-                #             #plog ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise)))
-                #             f.write ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise))+ "\n")
-                #             est_read_noise = sigma_clip(est_read_noise, masked=False, axis=None)
-                #             #plog ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise)))
-                #             f.write ("Non Sigma Clipped Readnoise with this gain: " + str(bn.nanmedian(est_read_noise)) + " std: " + str(bn.nanstd(est_read_noise))+ "\n")
-                #         except:
-                #             plog ("Did not estimate readnoise as probs no previous known gains.")
-                #             plog(traceback.format_exc())
-
-                #         plog ("Gains by filter")
-                #         for filterline in flat_gains:
-                #             plog (filterline+ " " + str(flat_gains[filterline]))
-                #             f.write(filterline + " " + str(flat_gains[filterline]) + "\n")
-
-                # except:
-                #     plog ("hit some snag with reporting gains")
-                #     plog(traceback.format_exc())
-                    #
-
-
-
-
-                # THEN reload them to use for the next night.
-                # First delete the calibrations out of memory.
-
-                # g_dev['cam'].flatFiles = {}
-                # g_dev['cam'].hotFiles = {}
-                # try:
-                #     fileList = glob(g_dev['obs'].calib_masters_folder + '/masterFlat*_bin1.npy')
-                #     for file in fileList:
-                #         if self.config['camera'][g_dev['cam'].name]['settings']['hold_flats_in_memory']:
-                #             tempflatframe=np.load(file)
-                #             #
-                #             g_dev['cam'].flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
-                #             del tempflatframe
-                #         else:
-                #             g_dev['cam'].flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
-                #     # To supress occasional flatfield div errors
-                #     np.seterr(divide="ignore")
-                # except:
-                #     plog(traceback.format_exc())
-                #     plog("Flat frames not loaded or available")
-
 
                 plog ("Regenerated Flat Masters and Re-loaded them into memory.")
 
-            plog ("Re-loading Bias and Dark masters into memory.")
-            # Reload the bias and dark frames
-
-            #g_dev['cam'].darkFiles = {}
 
             # Create the bad pixel map fits and npy
             # Save the local boolean array
@@ -4668,13 +4470,6 @@ class Sequencer:
             plog ("Writing out bad pixel map npy and fits.")
             np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
 
-            # pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
-            # g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
-
-            # convert the boolean
-
-            #breakpoint()
             fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
 
             filepathaws=g_dev['obs'].calib_masters_folder
@@ -4759,8 +4554,6 @@ class Sequencer:
         g_dev['cam'].camera_known_readnoise=70000.0
         g_dev['cam'].camera_known_readnoise_stdev=70000.0
 
-        #breakpoint()
-        # if True:
         try:
 
             gain_collector=[]
@@ -4771,21 +4564,13 @@ class Sequencer:
             for entry in g_dev['cam'].filter_camera_gain_shelf:
                 if entry != 'readnoise':
                     singlentry=g_dev['cam'].filter_camera_gain_shelf[entry]
-                    #if singlentry[2] > int(0.8 * g_dev['cam'].config['camera'][g_dev['cam'].name]['settings']['number_of_flat_to_store']):
                     gain_collector.append(singlentry[0])
                     stdev_collector.append(singlentry[1])
-                        # if singlentry[0] < g_dev['cam'].camera_known_gain:
-                        #     g_dev['cam'].camera_known_gain=singlentry[0]
-                        #     g_dev['cam'].camera_known_gain_stdev=singlentry[1]
+                    plog (str(entry) +" gain: " + str(singlentry[0]) + " stdev " + str(singlentry[1]))
 
-
-
-            while True:
-                print (gain_collector)
-                gainmed=bn.nanmedian(gain_collector)
-                print (gainmed)
-                gainstd=bn.nanstd(gain_collector)
-                print (gainstd)
+            while True:                
+                gainmed=bn.nanmedian(gain_collector)               
+                gainstd=bn.nanstd(gain_collector)                
                 new_gain_pile=[]
                 new_stdev_pile=[]
                 counter=0
@@ -4806,36 +4591,22 @@ class Sequencer:
                 g_dev['cam'].camera_known_gain=gain_collector[0]
                 g_dev['cam'].camera_known_gain_stdev=stdev_collector[0]
             else:
-
                 g_dev['cam'].camera_known_gain=gainmed
                 g_dev['cam'].camera_known_gain_stdev=bn.nanstd(gain_collector)
 
-            #breakpoint()
 
             singlentry=g_dev['cam'].filter_camera_gain_shelf['readnoise']
             g_dev['cam'].camera_known_readnoise= (singlentry[0] * g_dev['cam'].camera_known_gain) / 1.414
             g_dev['cam'].camera_known_readnoise_stdev = (singlentry[1] * g_dev['cam'].camera_known_gain) / 1.414
         except:
             plog('failed to estimate gain and readnoise from flats and such')
-        #         g_dev['cam'].camera_known_gain=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]
-        #         g_dev['cam'].camera_known_gain_stdev=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['camera_gain_stdev']
-        #         g_dev['cam'].camera_known_readnoise=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise']
-        #         g_dev['cam'].camera_known_readnoise_stdev=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise_stdev']
-
-        # else:
-        #     g_dev['cam'].camera_known_gain=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]
-        #     g_dev['cam'].camera_known_gain_stdev=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['camera_gain_stdev']
-        #     g_dev['cam'].camera_known_readnoise=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise']
-        #     g_dev['cam'].camera_known_readnoise_stdev=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['read_noise_stdev']
-
+            
         if np.isnan(g_dev['cam'].camera_known_gain):
             g_dev['cam'].camera_known_gain = 70000
         plog ("Used Camera Gain: " + str(g_dev['cam'].camera_known_gain))
         plog ("Used Readnoise  : "+ str(g_dev['cam'].camera_known_readnoise))
 
         g_dev["obs"].send_to_user("All calibration frames completed.")
-
-        #self.total_sequencer_control = False
 
         return
 
