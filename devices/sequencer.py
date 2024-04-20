@@ -2973,6 +2973,7 @@ class Sequencer:
             latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
             
             
+            plog ("Inspecting dark set: " +str(filename_start))
             if latestfile < latestcalib:
                 plog ("There are no new darks since last super-dark was made. Skipping construction")
                 masterDark=fits.open(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
@@ -3148,7 +3149,7 @@ class Sequencer:
             
             latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
             
-            
+            plog ("Inspecting dark set: " +str(filename_start))
             if latestfile < latestcalib:
                 plog ("There are no new darks since last super-dark was made. Skipping construction")
                 masterDark=fits.open(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
@@ -3427,7 +3428,7 @@ class Sequencer:
             
             latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
             
-            
+            plog ("Inpecting bias set")
             if latestfile < latestcalib:
                 plog ("There are no new biases since last super-bias was made. Skipping construction")
                 masterBias=fits.open(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
@@ -3559,33 +3560,7 @@ class Sequencer:
                     plog ("Could not save bias frame: ",e)
                     
                     
-                # Now that we have the master bias, we can estimate the readnoise actually
-                # by comparing the standard deviations between the bias and the masterbias
-                if g_dev['cam'].camera_known_gain <1000:
-                    readnoise_array=[]
-                    post_readnoise_array=[]
-                    #plog ("Calculating Readnoise. Please Wait.")
-                    #for file in inputList:
-                        #hdu1data = np.load(file, mmap_mode='r')
-                        #hdu1data = np.load(file)
-
-                    #counter=0
-                    i=0
-                    for file in inputList:
-                        #PLDrive[:,:,i] = np.load(file)
-
-
-                        hdu1data=PLDrive[i]-masterBias
-                        hdu1data = hdu1data[500:-500,500:-500]
-                        stddiffimage=bn.nanstd(pow(pow(hdu1data,2),0.5))
-                        #est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
-
-                        est_read_noise= (stddiffimage * g_dev['cam'].camera_known_gain) / 1.414
-                        readnoise_array.append(est_read_noise)
-                        post_readnoise_array.append(stddiffimage)
-                        i=i+1
-
-                    readnoise_array=np.array(readnoise_array)
+                
 
                 try:
                     g_dev['cam'].biasFiles.update({'1': masterBias.astype(np.float32)})
@@ -3598,6 +3573,35 @@ class Sequencer:
                 plog ("Bias reconstructed: " +str(time.time()-calibration_timer))
                 calibration_timer=time.time()
                 g_dev["obs"].send_to_user("Bias calibration frame created.")
+
+
+            # Now that we have the master bias, we can estimate the readnoise actually
+            # by comparing the standard deviations between the bias and the masterbias
+            if g_dev['cam'].camera_known_gain <1000:
+                readnoise_array=[]
+                post_readnoise_array=[]
+                #plog ("Calculating Readnoise. Please Wait.")
+                #for file in inputList:
+                    #hdu1data = np.load(file, mmap_mode='r')
+                    #hdu1data = np.load(file)
+
+                #counter=0
+                i=0
+                for file in inputList:
+                    #PLDrive[:,:,i] = np.load(file)
+
+
+                    hdu1data=PLDrive[i]-masterBias
+                    hdu1data = hdu1data[500:-500,500:-500]
+                    stddiffimage=bn.nanstd(pow(pow(hdu1data,2),0.5))
+                    #est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
+
+                    est_read_noise= (stddiffimage * g_dev['cam'].camera_known_gain) / 1.414
+                    readnoise_array.append(est_read_noise)
+                    post_readnoise_array.append(stddiffimage)
+                    i=i+1
+
+                readnoise_array=np.array(readnoise_array)
 
 
             # Bad pixel accumulator for the bias frame
@@ -3833,7 +3837,7 @@ class Sequencer:
                         
                         latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy')
                         
-                        
+                        plog ("Inspecting flats for filter: " + str(filtercode))
                         if latestfile < latestcalib:
                             plog ("There are no new flats since last super-flat was made. Skipping construction")
                             temporaryFlat=np.load(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy')
