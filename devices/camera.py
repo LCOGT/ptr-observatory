@@ -793,25 +793,17 @@ def reset_sequence(pCamera):
 
 def multiprocess_fast_gaussian_photometry(package):
     try:
-        #temptimer=time.time()
-        #(cvalue, cx, cy, radprofile, temp_array,pixscale) = package
+        
         (cvalue, cx, cy, radprofile ,pixscale) = package
-        #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-
-        # BIN radial profile to make fit faster
-        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binned_statistic_2d.html
-
+        
         # Reduce data down to make faster solvinging
         upperbin=math.floor(max(radprofile[:,0]))
         lowerbin=math.ceil(min(radprofile[:,0]))
-        #number_of_bins=int((upperbin-lowerbin)/0.25)
         # Only need a quarter of an arcsecond bin.
         arcsecond_length_radial_profile = (upperbin-lowerbin)*pixscale
         number_of_bins=int(arcsecond_length_radial_profile/0.25)
 
         s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
-
-        #breakpoint()
 
         max_value=np.nanmax(s)
         min_value=np.nanmin(s)
@@ -826,7 +818,6 @@ def multiprocess_fast_gaussian_photometry(package):
 
         actualprofile=np.asarray(actualprofile)
 
-        #breakpoint()
         # Don't consider things that are clearly not stars but extended objects or blended stars).
         edgevalue_left=actualprofile[0][1]
         edgevalue_right=actualprofile[-1][1]
@@ -837,10 +828,6 @@ def multiprocess_fast_gaussian_photometry(package):
             # Different faster fitter to consider
             peak_value_index=np.argmax(actualprofile[:,1])
             peak_value=actualprofile[peak_value_index][1]
-            #x_axis_of_peak_value=actualprofile[peak_value_index][0]
-
-            # middle_distribution= actualprofile[actualprofile[:,0] < 5]
-            # middle_distribution= middle_distribution[middle_distribution[:,0] > -5]
 
             # Get the mean of the 5 pixels around the max
             # and use the mean of those values and the peak value
@@ -864,25 +851,12 @@ def multiprocess_fast_gaussian_photometry(package):
                     sum_of_positions_times_values=sum_of_positions_times_values+(actualprofile[peak_value_index-poswidth+spotty][1]*actualprofile[peak_value_index-poswidth+spotty][0])
                     sum_of_values=sum_of_values+actualprofile[peak_value_index-poswidth+spotty][1]
                 peak_position=(sum_of_positions_times_values / sum_of_values)
-                # width checker
-                #print (2.355 * popt[2])
-                #print (0.8 / pixscale)
-                #breakpoint()
-                # Get a handwavey distance to the HWHM
-                # Whats the nearest point?
-                # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                # plt.show()
-                # print (peak_position)
-                # print (actualprofile[peak_value_index][0])
-                #breakpoint()
+                
                 temppos=abs(actualprofile[:,0] - peak_position).argmin()
-                # print (actualprofile[temppos,0])
-                #temppos=peak_value_index
                 tempvalue=actualprofile[temppos,1]
                 temppeakvalue=copy.deepcopy(tempvalue)
+                
                 # Get lefthand quarter percentiles
-                #threequartertemp=actualprofile[temppos,1]
-
                 counter=1
                 while tempvalue > 0.25*temppeakvalue:
 
@@ -913,9 +887,6 @@ def multiprocess_fast_gaussian_photometry(package):
                 smallest_reasonable_position_deviation_in_pixels=0.7*min(abs(peak_position - righthand_threequarter_spot),abs(peak_position - lefthand_threequarter_spot))
                 smallest_reasonable_position_deviation_in_arcseconds=smallest_reasonable_position_deviation_in_pixels *pixscale
 
-                #breakpoint()
-
-                #print ("************************")
                 # If peak reasonably in the center
                 # And the largest reasonable position deviation isn't absurdly small
                 if abs(peak_position) < max(3, 3/pixscale) and largest_reasonable_position_deviation_in_arcseconds > 1.0:
@@ -942,22 +913,15 @@ def multiprocess_fast_gaussian_photometry(package):
                     # convert fwhm into appropriate stdev
                     pixel_testvalues=(pixel_testvalues/2.355) /2
 
-                    #breakpoint()
 
                     smallest_value=999999999999999.9
-                    #smallest_index=0
                     for pixeltestvalue in pixel_testvalues:
 
-                        # googtime=time.time()
-                        #if pixeltestvalue*pixscale < largest_reasonable_position_deviation_in_arcseconds and pixeltestvalue*pixscale > smallest_reasonable_position_deviation_in_arcseconds:
-                        #est_fpopt= [peak_value, peak_position, pixeltestvalue]
                         test_fpopt= [peak_value, peak_position, pixeltestvalue]
 
-                        #print (test_fpopt)
 
                         # differences between gaussian and data
                         difference=(np.sum(abs(actualprofile[:,1] - gaussian(actualprofile[:,0], *test_fpopt))))
-                        #print (difference)
 
                         if difference < smallest_value:
                             smallest_value=copy.deepcopy(difference)
@@ -971,18 +935,8 @@ def multiprocess_fast_gaussian_photometry(package):
                             # plt.show()
                             pass
                         else:
-                            #print ("gone through and sampled range enough")
                             break
 
-                    #breakpoint()
-
-
-                    # slow scipy way
-                    #popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-
-
-
-                    #fpopt=[temp_amplitude, peak_position, 0.2]
 
 
                     # Amplitude has to be a substantial fraction of the peak value
@@ -994,113 +948,19 @@ def multiprocess_fast_gaussian_photometry(package):
                     try:
                         if (2.355 * smallest_fpopt[2]) > (0.8 / pixscale) :
 
-                            # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-                            # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
                             # plt.scatter(actualprofile[:,0],actualprofile[:,1])
                             # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
 
                             # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
                             # #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                             # plt.show()
-                            #breakpoint()
-
-                            # FWHM is 2.355 * std for a gaussian
-                            #fwhmlist.append(smallest_fpopt[2])
-
-                            #if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3,(3/pixscale)) :
-                                # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-                                # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-                                # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                                # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
-                                # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                                # plt.show()
-
-                                # FWHM is 2.355 * std for a gaussian
-                                #fwhmlist.append(popt[2])
+                            
                             return smallest_fpopt[2]
                         else:
                             return np.nan
                     except:
                         return np.nan
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            #breakpoint()
-
-            #scipytime=time.time()
-            #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-            #popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-
-            #print ("scipy optimize " + str(time.time() - scipytime))
-
-            # scipytime=time.time()
-            # #popt, _ = nonscipy_gaussian_curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-            # popt, _ = nonscipy_gaussian_curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-
-            # print ("local optimize " + str(time.time() - scipytime))
-            #print ("Curve optimize")
-            #print (time.time() -temptimer)
-            #breakpoint()
-
-            # Amplitude has to be a substantial fraction of the peak value
-            # and the center of the gaussian needs to be near the center
-            # if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3,(3/pixscale)) :
-            #     # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-            #     # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-            #     # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-            #     # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
-            #     # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-            #     # plt.show()
-
-            #     # FWHM is 2.355 * std for a gaussian
-            #     #fwhmlist.append(popt[2])
-            #     return popt[2]
-            # else:
-            #     return np.nan
-            # # Area under a gaussian is (amplitude * Stdev / 0.3989)
-            # #breakpoint()
-            # # if good_radials < number_of_good_radials_to_get:
-            # #     sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
-            # #     good_radials=good_radials+1
-            # # else:
-            # #     sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
-            # # photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
-
-            # #breakpoint()
-            # # If we've got more than 50 for a focus
-            # # We only need some good ones.
-
-            # # if len(fwhmlist) > 10:
-            # #     bailout=True
-            # #     break
-            # # #If we've got more than ten and we are getting dim, bail out.
-            # # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
-            # #     bailout=True
-            # #     break
         # If rejected by some if statement, return nan
         return np.nan
     except:
@@ -1109,101 +969,6 @@ def multiprocess_fast_gaussian_photometry(package):
         return np.nan
 
 
-# def multiprocess_fast_gaussian_photometry(package):
-#     try:
-#         #temptimer=time.time()
-#         #(cvalue, cx, cy, radprofile, temp_array,pixscale) = package
-#         (cvalue, cx, cy, radprofile ,pixscale) = package
-#         #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-
-#         # BIN radial profile to make fit faster
-#         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binned_statistic_2d.html
-
-#         # Reduce data down to make faster solvinging
-#         upperbin=math.floor(max(radprofile[:,0]))
-#         lowerbin=math.ceil(min(radprofile[:,0]))
-#         #number_of_bins=int((upperbin-lowerbin)/0.25)
-#         # Only need a quarter of an arcsecond bin.
-#         arcsecond_length_radial_profile = int((upperbin-lowerbin)/0.25)
-#         number_of_bins=int(arcsecond_length_radial_profile/0.25)
-#         s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
-
-#         max_value=np.nanmax(s)
-#         min_value=np.nanmin(s)
-
-#         threshold_value=(0.05*(max_value-min_value)) + min_value
-
-#         actualprofile=[]
-#         for q in range(len(s)):
-#             if not np.isnan(s[q]):
-#                 if s[q] > threshold_value:
-#                     actualprofile.append([(edges[q]+edges[q+1])/2,s[q]])
-
-#         actualprofile=np.asarray(actualprofile)
-
-
-#         # Don't consider things that are clearly not stars but extended objects or blended stars).
-#         edgevalue_left=actualprofile[0][1]
-#         edgevalue_right=actualprofile[-1][1]
-
-#         if edgevalue_left < 0.6*cvalue and  edgevalue_right < 0.6*cvalue:
-#             #breakpoint()
-
-#             #scipytime=time.time()
-#             #popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-#             popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-
-#             #print ("scipy optimize " + str(time.time() - scipytime))
-
-#             # scipytime=time.time()
-#             # #popt, _ = nonscipy_gaussian_curve_fit(gaussian, radprofile[:,0], radprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-#             # popt, _ = nonscipy_gaussian_curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((2/pixscale) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-
-#             # print ("local optimize " + str(time.time() - scipytime))
-#             #print ("Curve optimize")
-#             #print (time.time() -temptimer)
-#             #breakpoint()
-
-#             # Amplitude has to be a substantial fraction of the peak value
-#             # and the center of the gaussian needs to be near the center
-#             if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3,(3/pixscale)) :
-#                 # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-#                 # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-#                 # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-#                 # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
-#                 # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-#                 # plt.show()
-
-#                 # FWHM is 2.355 * std for a gaussian
-#                 #fwhmlist.append(popt[2])
-#                 return popt[2]
-#             else:
-#                 return np.nan
-#             # Area under a gaussian is (amplitude * Stdev / 0.3989)
-#             #breakpoint()
-#             # if good_radials < number_of_good_radials_to_get:
-#             #     sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
-#             #     good_radials=good_radials+1
-#             # else:
-#             #     sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
-#             # photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
-
-#             #breakpoint()
-#             # If we've got more than 50 for a focus
-#             # We only need some good ones.
-
-#             # if len(fwhmlist) > 10:
-#             #     bailout=True
-#             #     break
-#             # #If we've got more than ten and we are getting dim, bail out.
-#             # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
-#             #     bailout=True
-#             #     break
-
-#     except:
-#         return np.nan
-
-    # Then multiprocess
 
 class Camera:
     """A camera instrument.
