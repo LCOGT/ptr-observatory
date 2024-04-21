@@ -4352,7 +4352,7 @@ class Observatory:
 
                     plog("Re-centering Telescope Slightly.")
                     self.send_to_user("Re-centering Telescope Slightly.")
-                    print ("1: " + str(g_dev["mnt"].get_mount_coordinates_after_next_update()))
+                    # print ("1: " + str(g_dev["mnt"].get_mount_coordinates_after_next_update()))
                     wait_for_slew()
                     #g_dev['mnt'].previous_pier_side=g_dev['mnt'].mount.sideOfPier
                     g_dev['mnt'].previous_pier_side=g_dev['mnt'].return_side_of_pier()
@@ -4386,11 +4386,11 @@ class Observatory:
                     try:
                         wait_for_slew()
 
-                        print ("2: " + str(g_dev["mnt"].get_mount_coordinates_after_next_update()))
+                        # print ("2: " + str(g_dev["mnt"].get_mount_coordinates_after_next_update()))
                         #g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
                         g_dev['mnt'].slew_async_directly(ra=ranudge, dec=decnudge)
 
-                        print ("3: " + str(g_dev["mnt"].get_mount_coordinates_after_next_update()))
+                        # print ("3: " + str(g_dev["mnt"].get_mount_coordinates_after_next_update()))
                         wait_for_slew()
                     except:
                         plog (traceback.format_exc())
@@ -4400,7 +4400,7 @@ class Observatory:
                         g_dev['seq'].centering_exposure(no_confirmation=no_confirmation, try_hard=True, try_forever=True)
                     g_dev['obs'].time_of_last_slew = time.time()
                     wait_for_slew()
-                    print ("4: " + str(g_dev["mnt"].get_mount_coordinates_after_next_update()))
+                    # print ("4: " + str(g_dev["mnt"].get_mount_coordinates_after_next_update()))
 
                     #self.drift_tracker_ra=0
                     #self.drift_tracker_dec=0
