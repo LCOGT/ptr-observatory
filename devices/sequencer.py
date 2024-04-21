@@ -4401,7 +4401,7 @@ class Sequencer:
                                 # There is no hope for individual owners with a multitude of telescopes to keep up with
                                 # this estimate, so we need to automate it with a first best guess given in the config.
                                 self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
-                                self.filter_camera_gain_shelf[filtercode]=[bn.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
+                                self.filter_camera_gain_shelf[filtercode.lower()]=[bn.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
                                 self.filter_camera_gain_shelf.close()
                             except:
                                 plog("************* FAILED TO WRITE TO FILTER GAIN SHELF. Usually while flats are being taken at the same time. Follow-up if this becomes relatively frequent.")
