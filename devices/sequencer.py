@@ -6392,7 +6392,7 @@ class Sequencer:
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
                             plt.plot(x,f(x), color = 'green')
-                            plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red')
+                            plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red', marker = 'X')
                             plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=140)
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
