@@ -4369,14 +4369,14 @@ class Observatory:
                     g_dev['cam'].initial_smartstack_ra=copy.deepcopy(ranudge)
                     g_dev['cam'].initial_smartstack_dec=copy.deepcopy(decnudge)
 
-                    print ("ranudge: " +str(ranudge))
-                    print ("decnudge: " +str(decnudge))
+                    # print ("ranudge: " +str(ranudge))
+                    # print ("decnudge: " +str(decnudge))
 
-                    print ("Difference between RA Nudge and current position: " + str((g_dev['mnt'].return_right_ascension()-ranudge) *15*3600))
-                    print ("Difference between DEC Nudge and current position: " + str((g_dev['mnt'].return_declination()-decnudge) * 3600))
+                    # print ("Difference between RA Nudge and current position: " + str((g_dev['mnt'].return_right_ascension()-ranudge) *15*3600))
+                    # print ("Difference between DEC Nudge and current position: " + str((g_dev['mnt'].return_declination()-decnudge) * 3600))
 
-                    print ("Expected RA difference: " + str(g_dev['obs'].pointing_correction_request_ra_err * 3600))
-                    print ("Expected DEC difference: " + str(g_dev['obs'].pointing_correction_request_dec_err * 3600))
+                    # print ("Expected RA difference: " + str(g_dev['obs'].pointing_correction_request_ra_err * 3600))
+                    # print ("Expected DEC difference: " + str(g_dev['obs'].pointing_correction_request_dec_err * 3600))
 
                     if ranudge < 0:
                         ranudge=ranudge+24
