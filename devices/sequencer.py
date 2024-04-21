@@ -2462,8 +2462,11 @@ class Sequencer:
         bigfzs=glob(orphan_path + '*.fz')
 
         for fzneglect in bigfzs:
-            g_dev['obs'].enqueue_for_PTRarchive(56000000, orphan_path, fzneglect.split('orphans')[-1].replace('\\',''))
-
+            # If it is todays image, put it in priority ahead of the token, otherwise place it behind the token because it is some old potentially broken file.
+            if str(g_dev["day"]) in fzneglect.split('orphans')[-1].replace('\\',''):                           
+                g_dev['obs'].enqueue_for_PTRarchive(56000000, orphan_path, fzneglect.split('orphans')[-1].replace('\\',''))
+            else:
+                g_dev['obs'].enqueue_for_PTRarchive(56000002, orphan_path, fzneglect.split('orphans')[-1].replace('\\',''))
         bigtokens=glob(g_dev['obs'].obsid_path + 'tokens/*.token')
         for fzneglect in bigtokens:
             g_dev['obs'].enqueue_for_PTRarchive(56000001, g_dev['obs'].obsid_path + 'tokens/', fzneglect.split('tokens')[-1].replace('\\',''))

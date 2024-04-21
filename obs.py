@@ -1879,12 +1879,17 @@ class Observatory:
                         aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
                         while True:
                             try:
-                                reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
+                                plog ("Attempting upload of token")
+                                plog (str(files))
+                                token_output=reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
+                                plog (token_output)
+                                plog (token_output.json())
                                 try:
                                     os.remove(filepath)
                                 except:
                                     self.laterdelete_queue.put(filepath, block=False)
-                                break
+                                return ("Nightly token uploaded.")
+                                #break
                             except:
                                 plog("Non-fatal connection glitch for a file posted.")
                                 plog(files)
