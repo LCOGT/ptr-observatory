@@ -5059,12 +5059,14 @@ class Sequencer:
                 # Pick up previous camera_gain specific for this filter
                 self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
                 try:
-                    self.current_filter_last_camera_gain=self.filter_camera_gain_shelf[current_filter.lower()][0]
-                    if self.filter_camera_gain_shelf[current_filter.lower()][1] > 15:
+                    plog(self.filter_camera_gain_shelf[current_filter.lower()])
+                    self.current_filter_last_camera_gain=float(self.filter_camera_gain_shelf[current_filter.lower()][0])
+                    if float(self.filter_camera_gain_shelf[current_filter.lower()][1]) < 25:
                         self.current_filter_last_camera_gain_stdev=self.filter_camera_gain_shelf[current_filter.lower()][1]
                     else:
                         self.current_filter_last_camera_gain_stdev=200
-                except:
+                except:                    
+                    plog(traceback.format_exc())
                     self.current_filter_last_camera_gain=200
                     self.current_filter_last_camera_gain_stdev=200
                 self.filter_camera_gain_shelf.close()
@@ -5074,6 +5076,8 @@ class Sequencer:
                 if known_throughput==False:
                     self.current_filter_last_camera_gain=200
                     self.current_filter_last_camera_gain_stdev=200
+                    
+                plog ("MTF tracking this issue: current_filter_last_camera_gain: " + str(self.current_filter_last_camera_gain))
 
                 acquired_count = 0
                 flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
