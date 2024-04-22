@@ -793,9 +793,9 @@ def reset_sequence(pCamera):
 
 def multiprocess_fast_gaussian_photometry(package):
     try:
-        
+
         (cvalue, cx, cy, radprofile ,pixscale) = package
-        
+
         # Reduce data down to make faster solvinging
         upperbin=math.floor(max(radprofile[:,0]))
         lowerbin=math.ceil(min(radprofile[:,0]))
@@ -851,11 +851,11 @@ def multiprocess_fast_gaussian_photometry(package):
                     sum_of_positions_times_values=sum_of_positions_times_values+(actualprofile[peak_value_index-poswidth+spotty][1]*actualprofile[peak_value_index-poswidth+spotty][0])
                     sum_of_values=sum_of_values+actualprofile[peak_value_index-poswidth+spotty][1]
                 peak_position=(sum_of_positions_times_values / sum_of_values)
-                
+
                 temppos=abs(actualprofile[:,0] - peak_position).argmin()
                 tempvalue=actualprofile[temppos,1]
                 temppeakvalue=copy.deepcopy(tempvalue)
-                
+
                 # Get lefthand quarter percentiles
                 counter=1
                 while tempvalue > 0.25*temppeakvalue:
@@ -954,7 +954,7 @@ def multiprocess_fast_gaussian_photometry(package):
                             # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
                             # #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                             # plt.show()
-                            
+
                             return smallest_fpopt[2]
                         else:
                             return np.nan
@@ -3380,8 +3380,8 @@ class Camera:
                     else:
                         break
 
-            if req['longstack'] or req['longstack'] == 'yes':
-                req['longstackname'] = (datetime.datetime.now().strftime("%d%m%y%H%M%S") + 'lngstk')
+            # if req['longstack'] or req['longstack'] == 'yes':
+            #     req['longstackname'] = (datetime.datetime.now().strftime("%d%m%y%H%M%S") + 'lngstk')
 
             if req['image_type'].lower() in (
                 "bias",
