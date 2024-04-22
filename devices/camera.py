@@ -3083,7 +3083,7 @@ class Camera:
 
 
                 # Using the nan'ed file, calculate the shift
-                rolltimer=time.time()
+                #rolltimer=time.time()
                 tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
                 # Cut down image to central thousand by thousand patch to align
                 tempnan= tempnan[crop_x:-crop_x, crop_y:-crop_y]
@@ -3092,28 +3092,76 @@ class Camera:
 
 
 
+                denan_mask=copy.deepcopy(de_nanned_reference_frame)
+                denan_median=bn.nanmedian(denan_mask)
+                denan_mask[denan_mask <= denan_median] = False
+                denan_mask[denan_mask > denan_median] = True
+                denan_mask=denan_mask.astype('bool')
+
+                #de_nanned_reference_frame[de_nanned_reference_frame < bn.nanmedian(de_nanned_reference_frame)] = np.nan
+
+                tempnan_mask=copy.deepcopy(tempnan)
+                tempnan_median=bn.nanmedian(tempnan_mask)
+                tempnan_mask[tempnan_mask <= tempnan_median] = False
+                tempnan_mask[tempnan_mask > tempnan_median] = True
+                tempnan_mask=tempnan_mask.astype('bool')
+
+                #breakpoint()
+
+                imageshift = phase_cross_correlation(de_nanned_reference_frame, tempnan, reference_mask=denan_mask, moving_mask=tempnan_mask)
 
 
 
-                imageshift, error, diffphase = phase_cross_correlation(de_nanned_reference_frame, tempnan)
+                #imageshift, error, diffphase = phase_cross_correlation(de_nanned_reference_frame, tempnan)
                 #print ("Shift: " + str(time.time()-rolltimer))
                 del tempnan
                 #print (imageshift)
 
-                # rolltimer=time.time()
-                # roll the original array around by the shift
+
                 if abs(imageshift[0]) > 0:
                     # print ("X shifter")
                     # print (int(imageshift[0]))
-                    sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(imageshift[0]), axis=0)
+                    #if imageshift[0]
+                    imageshiftabs=int(abs(imageshift[0]))
+                    if imageshift[0] > 0:
+                        imageshiftsign = 1
+                    else:
+                        imageshiftsign = -1
+
+                    sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=0)
                     # print ("Roll: " + str(time.time()-rolltimer))
 
                 # rolltimer=time.time()
                 if abs(imageshift[1]) > 0:
                     # print ("Y shifter")
                     # print (int(imageshift[1]))
-                    sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(imageshift[1]), axis=1)
-                    # print ("Roll: " + str(time.time()-rolltimer))
+
+                    imageshiftabs=int(abs(imageshift[1]))
+                    if imageshift[1] > 0:
+                        imageshiftsign = 1
+                    else:
+                        imageshiftsign = -1
+
+
+                    sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=1)
+
+
+
+
+                # # rolltimer=time.time()
+                # # roll the original array around by the shift
+                # if abs(imageshift[0]) > 0:
+                #     # print ("X shifter")
+                #     # print (int(imageshift[0]))
+                #     sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(imageshift[0]), axis=0)
+                #     # print ("Roll: " + str(time.time()-rolltimer))
+
+                # # rolltimer=time.time()
+                # if abs(imageshift[1]) > 0:
+                #     # print ("Y shifter")
+                #     # print (int(imageshift[1]))
+                #     sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(imageshift[1]), axis=1)
+                #     # print ("Roll: " + str(time.time()-rolltimer))
 
                 # from scipy.ndimage import shift
 
