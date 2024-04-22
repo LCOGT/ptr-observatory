@@ -1881,23 +1881,26 @@ class Observatory:
                         while retry < 10:
                             retry=retry+1
                             try:
-                                plog ("Attempting upload of token")
-                                plog (str(files))
-                                token_output=reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
-                                plog (token_output)
-                                plog (token_output.json())
-                                try:
-                                    os.remove(filepath)
-                                except:
-                                    self.laterdelete_queue.put(filepath, block=False)
-                                return ("Nightly token uploaded.")
+                                #plog ("Attempting upload of token")
+                                #plog (str(files))
+                                #token_output=reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
+                                #plog (token_output)
+                                if '204' in str(token_output):
+                                    
+                                    try:
+                                        os.remove(filepath)
+                                    except:
+                                        self.laterdelete_queue.put(filepath, block=False)
+                                    return ("Nightly token uploaded.")
+                                else:
+                                    plog("Not successful, attempting token again.")
                                 #break
                             except:
                                 plog("Non-fatal connection glitch for a file posted.")
                                 plog(files)
                                 plog(traceback.format_exc())
-                                if self.obs_id == 'eco1': # Just here to catch an error without affecting other sites.
-                                    breakpoint()
+                                #if self.obs_id == 'eco1': # Just here to catch an error without affecting other sites.
+                                breakpoint()
 
                                 time.sleep(5)
 
