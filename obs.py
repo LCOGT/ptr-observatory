@@ -1877,7 +1877,9 @@ class Observatory:
                     if filepath.split('.')[-1] == 'token':
                         files = {"file": (filepath, fileobj)}
                         aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
-                        while True:
+                        retry=0
+                        while retry < 10:
+                            retry=retry+1
                             try:
                                 plog ("Attempting upload of token")
                                 plog (str(files))
@@ -1893,6 +1895,9 @@ class Observatory:
                             except:
                                 plog("Non-fatal connection glitch for a file posted.")
                                 plog(files)
+                                plog(traceback.format_exc())
+                                if self.obs_id == 'eco1': # Just here to catch an error without affecting other sites.
+                                    breakpoint()
 
                                 time.sleep(5)
 
