@@ -3100,20 +3100,20 @@ class Camera:
                 del tempnan
                 #print (imageshift)
 
-                rolltimer=time.time()
+                # rolltimer=time.time()
                 # roll the original array around by the shift
                 if abs(imageshift[0]) > 0:
-                    print ("X shifter")
-                    print (int(imageshift[0]))
+                    # print ("X shifter")
+                    # print (int(imageshift[0]))
                     sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(imageshift[0]), axis=0)
-                    print ("Roll: " + str(time.time()-rolltimer))
+                    # print ("Roll: " + str(time.time()-rolltimer))
 
-                rolltimer=time.time()
+                # rolltimer=time.time()
                 if abs(imageshift[1]) > 0:
-                    print ("Y shifter")
-                    print (int(imageshift[1]))
+                    # print ("Y shifter")
+                    # print (int(imageshift[1]))
                     sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(imageshift[1]), axis=1)
-                    print ("Roll: " + str(time.time()-rolltimer))
+                    # print ("Roll: " + str(time.time()-rolltimer))
 
                 # from scipy.ndimage import shift
 
@@ -3153,7 +3153,7 @@ class Camera:
                 image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
                 time_after_last_substack_readout=time.time()
 
-                plog ("readout time: " + str(time_after_last_substack_readout - time_before_last_substack_readout))
+                #plog ("readout time: " + str(time_after_last_substack_readout - time_before_last_substack_readout))
                 readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
 
 
@@ -3174,7 +3174,7 @@ class Camera:
 
         temptimer=time.time()
         sub_stacker_array=bn.nanmedian(sub_stacker_array, axis=2) * N_of_substacks
-        print ("Stacktime: " + str(time.time()-temptimer))
+        #print ("Stacktime: " + str(time.time()-temptimer))
         self.sub_stack_hold = sub_stacker_array
 
         #self.substack_midpoint_time=(self.substack_start_time + expected_endpoint_of_substack_exposure) / 2
@@ -3245,7 +3245,7 @@ class Camera:
             image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
             time_after_readout=time.time()
 
-            plog ("readout time: " + str(time_after_readout - time_before_readout))
+            #plog ("readout time: " + str(time_after_readout - time_before_readout))
             self.readout_estimate= time_after_readout - time_before_readout
             #npreshaprecommand=time.time()
             #image = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
@@ -4516,7 +4516,7 @@ class Camera:
             # We also have to factor in all the readout times unlike a single exposure
             # As the readouts are all done in the substack thread.
             stacking_overhead= 0.0005*pow(exposure_time,2) + 0.0334*exposure_time
-            plog ("Expected stacking overhead: " + str(stacking_overhead))
+            #plog ("Expected stacking overhead: " + str(stacking_overhead))
             cycle_time=exposure_time + ((exposure_time / 10))*self.readout_time + stacking_overhead
             self.completion_time = start_time_of_observation + cycle_time
             #breakpoint()
@@ -5974,19 +5974,19 @@ def post_exposure_process(payload):
             #hdu.header["SUBSTK"] = (True, "Is this made from at-site sub exposures.")
             hdu.header["SUBEXPT"] = (expected_endpoint_of_substack_exposure - substack_start_time, "Time between start and end of subexposure set")
 
-            hdu.header.add_comment('Substacker Midpoints:')
-            hdu.header.add_comment(str(sub_stacker_midpoints))
+            # hdu.header.add_comment('Substacker Midpoints:')
+            # hdu.header.add_comment(str(sub_stacker_midpoints))
 
             #hdu.header['SUBMIDTS'] = (str(sub_stacker_midpoints), "Midpoints of substack exposures")
 
 
             substack_midexposure=np.mean(np.array(sub_stacker_midpoints))
 
-            print ("substacker midpoints")
-            print (sub_stacker_midpoints)
+            # print ("substacker midpoints")
+            # print (sub_stacker_midpoints)
 
-            print ("substacked midpoint")
-            print (substack_midexposure)
+            # print ("substacked midpoint")
+            # print (substack_midexposure)
 
 
             hdu.header["DATE"] = (
@@ -6015,11 +6015,11 @@ def post_exposure_process(payload):
 
             hdu.header["MJD-MID"] = (
                 Time(substack_midexposure, format="unix").mjd,
-                "[UTC days] Modified Julian Date start date/time",
+                "[UTC days] Modified Julian Date mid exposure date/time",
             )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
             hdu.header["JD-MID"] = (
                 Time(substack_midexposure, format="unix").jd,
-                "[UTC days] Julian Date at start of exposure",
+                "[UTC days] Julian Date at middle of exposure",
             )
 
 
@@ -6067,21 +6067,24 @@ def post_exposure_process(payload):
             hdu.header["MJD-OBS"] = (
                 Time(start_time_of_observation, format="unix").mjd,
                 "[UTC days] Modified Julian Date start date/time",
+
             )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
             hdu.header["JD-START"] = (
                 Time(start_time_of_observation, format="unix").jd,
-                "[UTC days] Julian Date at start of exposure",
-            )
+                "[UTC days] Julian Date at start of exposure")
+
 
 
             hdu.header["MJD-MID"] = (
                 Time(start_time_of_observation + (0.5 * exposure_time), format="unix").mjd,
-                "[UTC days] Modified Julian Date start date/time",
+                "[UTC days] Modified Julian Date mid exposure date/time",
             )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
             hdu.header["JD-MID"] = (
                 Time(start_time_of_observation+ (0.5 * exposure_time), format="unix").jd,
-                "[UTC days] Julian Date at start of exposure",
+
+                "[UTC days] Julian Date at middle of exposure",
             )
+
 
             hdu.header["EXPTIME"] = (
                 exposure_time,

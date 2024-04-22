@@ -15,8 +15,6 @@ import time
 from astropy.table import Table
 import astroalign as aa
 
-import bottleneck as bn
-
 
 from auto_stretch.stretch import Stretch
 from PIL import Image, ImageEnhance
@@ -25,13 +23,11 @@ from math import sqrt
 import traceback
 import copy
 
-from skimage.registration import phase_cross_correlation
-
 # from astropy.coordinates import SkyCoord
 # from astropy.units import pixel
 
-input_sstk_info=pickle.load(sys.stdin.buffer)
-#input_sstk_info=pickle.load(open('testsmartstackpickle','rb'))
+#input_sstk_info=pickle.load(sys.stdin.buffer)
+input_sstk_info=pickle.load(open('testsmartstackpickle','rb'))
 
 print ("HERE IS THE INCOMING. ")
 print (input_sstk_info)
@@ -232,24 +228,24 @@ smartStackFilename = (
 # For OSC, we need to smartstack individual frames.
 if not is_osc:   #This is the monochrome camera processing path.
     #breakpoint()
-    # eternal_loop_break=time.time()
-    # while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')) and (time.time()-eternal_loop_break < 2* float(ssexptime.replace('d','.'))):
-    #     print (paths["im_path"] + paths["text_name00"].replace('.txt','.sep'))
-    #     print ("in the loop")
-    #     time.sleep(1)
+    eternal_loop_break=time.time()
+    while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')) and (time.time()-eternal_loop_break < 2* float(ssexptime.replace('d','.'))):
+        print (paths["im_path"] + paths["text_name00"].replace('.txt','.sep'))
+        print ("in the loop")
+        time.sleep(1)
 
-    # if not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')):
-    #    print ("Yikes. Couldn't find SEP file in time")
-    #    reprojection_failed = True
-    if True:
+    if not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')):
+       print ("Yikes. Couldn't find SEP file in time")
+       reprojection_failed = True
+    else:
         #print (os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')))
 
         #plog("Now to figure out how to get sep into a csv.")
         sstack_process_timer = time.time()
         #sources = Table.read(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'), format='csv')
 
-        # sources = pickle.load(open(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'),'rb'))
-        # sources=np.asarray(sources)
+        sources = pickle.load(open(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'),'rb'))
+        sources=np.asarray(sources)
 
         #breakpoint()
 
@@ -264,13 +260,9 @@ if not is_osc:   #This is the monochrome camera processing path.
         if not os.path.exists(
             obsid_path + "smartstacks/" + smartStackFilename
         ):
-            if True: #len(sources) >= 5:    #IF image has at least five sources
+            if len(sources) >= 5:    #IF image has at least five sources
 
                 print ("Storing single original image")
-
-
-
-
 
                 # Store original image
                 np.save(
@@ -282,7 +274,7 @@ if not is_osc:   #This is the monochrome camera processing path.
                 # + "smartstacks/"
                 # + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
 
-                #pickle.dump(sources, open(obsid_path+ "smartstacks/" + smartStackFilename.replace('.npy','.sep'),'wb'))
+                pickle.dump(sources, open(obsid_path+ "smartstacks/" + smartStackFilename.replace('.npy','.sep'),'wb'))
 
                 # sources.write(obsid_path
                 # + "smartstacks/"
@@ -296,198 +288,113 @@ if not is_osc:   #This is the monochrome camera processing path.
             storedsStack = np.load(
                 obsid_path + "smartstacks/" + smartStackFilename
             )
-
-
-            de_nanned_reference_frame=copy.deepcopy(storedsStack)
-            # Cut down image to central thousand by thousand patch to align
-            fx, fy = de_nanned_reference_frame.shape
-            crop_x= int(0.5*fx) -500
-
-            crop_y= int(0.5*fy) -500
-            de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
-            imageMode=bn.nanmedian(de_nanned_reference_frame)
-
-            #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
-            de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
-
-
-
-            # # Collect stored SEP for first smartstack image
-            # # ref_sources = Table.read(obsid_path
-            # # + "smartstacks/"
-            # # + smartStackFilename.replace('.npy','.sep'), format='csv')
-            # ref_sources=pickle.load(open(obsid_path
+            # Collect stored SEP for first smartstack image
+            # ref_sources = Table.read(obsid_path
             # + "smartstacks/"
-            # + smartStackFilename.replace('.npy','.sep'),'rb'))
-            # ref_sources=np.asarray(ref_sources)
+            # + smartStackFilename.replace('.npy','.sep'), format='csv')
+            ref_sources=pickle.load(open(obsid_path
+            + "smartstacks/"
+            + smartStackFilename.replace('.npy','.sep'),'rb'))
+            ref_sources=np.asarray(ref_sources)
 
-            # # breakpoint()
+            # breakpoint()
 
-            # #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
-            # # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
-            # # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-            # minarea= -9.2421 * pixscale + 16.553
-            # if minarea < 5:  # There has to be a min minarea though!
-            #     minarea = 5
+            #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
+            # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
+            # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
+            minarea= -9.2421 * pixscale + 16.553
+            if minarea < 5:  # There has to be a min minarea though!
+                minarea = 5
 
-            # if len(sources) > 5:
-            #     try:
+            if len(sources) > 5:
+                try:
 
-            #         #sources=np.column_stack((sources['x'],sources['y']))
-            #         #ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
-            #         # sources=np.column_stack((sources[:,0],sources[:,1]))
-            #         # ref_sources=np.column_stack((ref_sources[:,0],ref_sources[:,1]))
-
-
-
-            #         sources=sources[~np.isnan(sources).any(axis=1)]
-            #         sources=sources[sources[:,2] > 100]
-            #         sources=sources[sources[:,2].argsort()[::-1]]
-            #         # breakpoint()
-
-            #         # # Remove any star from calibration catalogue that has another star in the catalogue within closerejectd arcseconds of it.
-            #         # if len(sources) != 0:
-            #         #     catReject=[]
-            #         #     while True:
-            #         #         #fileRaDec = SkyCoord(ra=sources[:,0]*pixel, dec=sources[:,1]*pixel)
-            #         #         #idx, d2d, _ = fileRaDec.match_to_catalog_sky(fileRaDec, nthneighbor=2) # Closest matches that isn't itself.
-
-
-            #         #         catReject = []
-            #         #         for q in range(len(d2d)):
-            #         #             if d2d[q] < 5:
-            #         #                 catReject.append(q)
-            #         #         if catReject == []:
-            #         #             break
-            #         #         del sources[catReject]
-            #         #         print("Stars rejected that are too close (<5 pixels) in catalogue: " +str(len(catReject)))
-
-            #         # breakpoint()
-            #         # sources = sources[where(np.abs(resp[radecname['ra']]-tg[0]) > 0.0014) and where(np.abs(resp[radecname['dec']]-tg[1]) > 0.0014)]
-
-
-            #         x= np.asarray([sources[:,0],sources[:,1]]).T
-            #         a,b = np.tril_indices(len(sources), -1)
-            #         #breakpoint()
-            #         diss = np.linalg.norm(x[b] - x[a], axis=1)
-            #         distance = 5
-            #         near = x[np.unique(np.concatenate([b[diss < distance], a[diss < distance]]))]
-            #         sources = copy.deepcopy(np.delete(x,np.unique(np.concatenate([b[diss < distance], a[diss < distance]])), axis=0))
-            #         sources=sources.astype('int')
-            #         #sources=sources[sources[:,2].argsort()[::-1]]
-            #         #sources=sources[:200,:]
-
-            #         ref_sources=ref_sources[~np.isnan(ref_sources).any(axis=1)]
-            #         ref_sources=ref_sources[ref_sources[:,2] > 100]
-            #         ref_sources=ref_sources[ref_sources[:,2].argsort()[::-1]]
-            #         # ref_sources=ref_sources[:200,:]
-
-
-            #         x= np.asarray([ref_sources[:,0],ref_sources[:,1]]).T
-            #         a,b = np.tril_indices(len(ref_sources), -1)
-            #         #breakpoint()
-            #         diss = np.linalg.norm(x[b] - x[a], axis=1)
-            #         distance = 5
-            #         near = x[np.unique(np.concatenate([b[diss < distance], a[diss < distance]]))]
-            #         ref_sources = copy.deepcopy(np.delete(x,np.unique(np.concatenate([b[diss < distance], a[diss < distance]])), axis=0))
-            #         ref_sources=ref_sources.astype('int')
-
-            #         breakpoint()
-
-            #         sources=np.column_stack((sources[:,0],sources[:,1]))
-            #         ref_sources=np.column_stack((ref_sources[:,0],ref_sources[:,1]))
-
-            #         transf, (source_list, target_list) = aa.find_transform(sources, ref_sources, max_control_points=200)
-            #         reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
-
-
-            tempnan=copy.deepcopy(imgdata)
-            # Cut down image to central thousand by thousand patch to align
-            tempnan= tempnan[crop_x:-crop_x, crop_y:-crop_y]
-            imageMode=bn.nanmedian(tempnan)
-            tempnan[np.isnan(tempnan)] =imageMode
-
-
-            #cut down the background and align on the signal in the images.
-            #de_nanned_reference_frame=
-
-
-            denan_mask=copy.deepcopy(de_nanned_reference_frame)
-            denan_median=bn.nanmedian(denan_mask)
-            denan_mask[denan_mask <= denan_median] = False
-            denan_mask[denan_mask > denan_median] = True
+                    #sources=np.column_stack((sources['x'],sources['y']))
+                    #ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
+                    # sources=np.column_stack((sources[:,0],sources[:,1]))
+                    # ref_sources=np.column_stack((ref_sources[:,0],ref_sources[:,1]))
 
 
 
-            #de_nanned_reference_frame[de_nanned_reference_frame < bn.nanmedian(de_nanned_reference_frame)] = np.nan
+                    sources=sources[~np.isnan(sources).any(axis=1)]
+                    sources=sources[sources[:,2] > 100]
+                    sources=sources[sources[:,2].argsort()[::-1]]
+                    # breakpoint()
 
-            tempnan_mask=copy.deepcopy(tempnan)
-            tempnan_median=bn.nanmedian(tempnan_mask)
-            tempnan_mask[tempnan_mask <= tempnan_median] = False
-            tempnan_mask[tempnan_mask > tempnan_median] = True
-
-
-
-
-
-
-            imageshift, error, diffphase = phase_cross_correlation(de_nanned_reference_frame, tempnan, reference_mask=denan_mask, moving_mask=tempnan_mask)
+                    # # Remove any star from calibration catalogue that has another star in the catalogue within closerejectd arcseconds of it.
+                    # if len(sources) != 0:
+                    #     catReject=[]
+                    #     while True:
+                    #         #fileRaDec = SkyCoord(ra=sources[:,0]*pixel, dec=sources[:,1]*pixel)
+                    #         #idx, d2d, _ = fileRaDec.match_to_catalog_sky(fileRaDec, nthneighbor=2) # Closest matches that isn't itself.
 
 
-            imageshiftabs=int(abs(imageshift[0]))
+                    #         catReject = []
+                    #         for q in range(len(d2d)):
+                    #             if d2d[q] < 5:
+                    #                 catReject.append(q)
+                    #         if catReject == []:
+                    #             break
+                    #         del sources[catReject]
+                    #         print("Stars rejected that are too close (<5 pixels) in catalogue: " +str(len(catReject)))
+
+                    # breakpoint()
+                    # sources = sources[where(np.abs(resp[radecname['ra']]-tg[0]) > 0.0014) and where(np.abs(resp[radecname['dec']]-tg[1]) > 0.0014)]
 
 
-            #breakpoint()
-            if abs(imageshift[0]) > 0:
-                # print ("X shifter")
-                # print (int(imageshift[0]))
-                #if imageshift[0]
-                imageshiftabs=int(abs(imageshift[0]))
-                if imageshift[0] > 0:
-                    imageshiftsign = 1
-                else:
-                    imageshiftsign = -1
+                    x= np.asarray([sources[:,0],sources[:,1]]).T
+                    a,b = np.tril_indices(len(sources), -1)
+                    #breakpoint()
+                    diss = np.linalg.norm(x[b] - x[a], axis=1)
+                    distance = 5
+                    near = x[np.unique(np.concatenate([b[diss < distance], a[diss < distance]]))]
+                    sources = copy.deepcopy(np.delete(x,np.unique(np.concatenate([b[diss < distance], a[diss < distance]])), axis=0))
+                    sources=sources.astype('int')
+                    #sources=sources[sources[:,2].argsort()[::-1]]
+                    #sources=sources[:200,:]
 
-                imgdata=np.roll(imgdata, imageshiftabs*imageshiftsign, axis=0)
-                # print ("Roll: " + str(time.time()-rolltimer))
-
-            # rolltimer=time.time()
-            if abs(imageshift[1]) > 0:
-                # print ("Y shifter")
-                # print (int(imageshift[1]))
-
-                imageshiftabs=int(abs(imageshift[1]))
-                if imageshift[1] > 0:
-                    imageshiftsign = 1
-                else:
-                    imageshiftsign = -1
+                    ref_sources=ref_sources[~np.isnan(ref_sources).any(axis=1)]
+                    ref_sources=ref_sources[ref_sources[:,2] > 100]
+                    ref_sources=ref_sources[ref_sources[:,2].argsort()[::-1]]
+                    # ref_sources=ref_sources[:200,:]
 
 
-                imgdata=np.roll(imgdata, imageshiftabs*imageshiftsign, axis=1)
-                # print ("Roll: " + str(time.time()-rolltimer))
+                    x= np.asarray([ref_sources[:,0],ref_sources[:,1]]).T
+                    a,b = np.tril_indices(len(ref_sources), -1)
+                    #breakpoint()
+                    diss = np.linalg.norm(x[b] - x[a], axis=1)
+                    distance = 5
+                    near = x[np.unique(np.concatenate([b[diss < distance], a[diss < distance]]))]
+                    ref_sources = copy.deepcopy(np.delete(x,np.unique(np.concatenate([b[diss < distance], a[diss < distance]])), axis=0))
+                    ref_sources=ref_sources.astype('int')
 
+                    breakpoint()
 
+                    sources=np.column_stack((sources[:,0],sources[:,1]))
+                    ref_sources=np.column_stack((ref_sources[:,0],ref_sources[:,1]))
 
-            storedsStack += imgdata  # + storedsStack   A WER experiment!
+                    transf, (source_list, target_list) = aa.find_transform(sources, ref_sources, max_control_points=200)
+                    reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
+                    storedsStack += reprojectedimage  # + storedsStack   A WER experiment!
 
-            # Save new stack to disk
-            np.save(
-                obsid_path
-                + "smartstacks/"
-                + smartStackFilename,
-                storedsStack,
-            )
-            #         reprojection_failed = False
-            #     except aa.MaxIterError:
-            #         reprojection_failed = True
-            #         # print(traceback.format_exc())
-            #         # breakpoint()
-            #     except Exception:
-            #         reprojection_failed = True
-            #         # print(traceback.format_exc())
-            #         # breakpoint()
-            # else:
-            #     reprojection_failed = True
+                    # Save new stack to disk
+                    np.save(
+                        obsid_path
+                        + "smartstacks/"
+                        + smartStackFilename,
+                        storedsStack,
+                    )
+                    reprojection_failed = False
+                except aa.MaxIterError:
+                    reprojection_failed = True
+                    # print(traceback.format_exc())
+                    # breakpoint()
+                except Exception:
+                    reprojection_failed = True
+                    # print(traceback.format_exc())
+                    # breakpoint()
+            else:
+                reprojection_failed = True
 
     if reprojection_failed == True:  # If we couldn't make a stack send a jpeg of the original image.
         storedsStack = imgdata

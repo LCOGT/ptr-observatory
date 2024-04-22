@@ -2655,8 +2655,8 @@ class Observatory:
                             target_ra = g_dev["mnt"].last_ra_requested
                             target_dec = g_dev["mnt"].last_dec_requested
 
-                            print("Last RA requested: " + str(g_dev["mnt"].last_ra_requested))
-                            print("Last DEC requested: " + str(g_dev["mnt"].last_dec_requested))
+                            # print("Last RA requested: " + str(g_dev["mnt"].last_ra_requested))
+                            # print("Last DEC requested: " + str(g_dev["mnt"].last_dec_requested))
 
                             if g_dev['seq'].block_guard and not g_dev["seq"].focussing:
                                 print ("Block RA: " +str(g_dev['seq'].block_ra))
@@ -2830,13 +2830,13 @@ class Observatory:
                                      if not g_dev['obs'].mount_reference_model_off:
                                          if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
                                              try:
-                                                 plog ("updating mount reference")
+                                                 #plog ("updating mount reference")
                                                  g_dev['mnt'].last_slew_was_pointing_slew = False
 
-                                                 plog ("adjustment: " + str(err_ha) +' ' +str(err_dec))
+                                                 #plog ("adjustment: " + str(err_ha) +' ' +str(err_dec))
                                                  if g_dev["mnt"].pier_side == 0:
                                                      try:
-                                                         plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
+                                                         #plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
                                                          g_dev["mnt"].adjust_mount_reference(
                                                              err_ha, err_dec
                                                          )
@@ -2844,13 +2844,13 @@ class Observatory:
                                                          plog("Something is up in the mount reference adjustment code ", e)
                                                  else:
                                                      try:
-                                                         plog ("current references: " + str ( g_dev['mnt'].get_flip_reference()))
+                                                         #plog ("current references: " + str ( g_dev['mnt'].get_flip_reference()))
                                                          g_dev["mnt"].adjust_flip_reference(
                                                              err_ha, err_dec
                                                          )
                                                      except Exception as e:
                                                          plog("Something is up in the mount reference adjustment code ", e)
-                                                 plog ("final references: " + str ( g_dev['mnt'].get_mount_reference()))
+                                                 #plog ("final references: " + str ( g_dev['mnt'].get_mount_reference()))
 
                                              except:
                                                  plog("This mount doesn't report pierside")
@@ -4257,6 +4257,10 @@ class Observatory:
                         pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
                     #breakpoint()
+
+
+                    # if sskcounter >0:
+                    #     breakpoint()
 
                     smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
