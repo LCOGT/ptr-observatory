@@ -121,9 +121,13 @@ while (breaker != 0):
                                                 if not (imageMode-counter-11) in zeroValueArray[:,0]:
                                                     if not (imageMode-counter-12) in zeroValueArray[:,0]:
                                                         zeroValue=(imageMode-counter)
+                                                        top_of_sky_background_value=imageMode+counter
                                                         breaker =0
 
 imgdata[imgdata < zeroValue] = np.nan
+
+
+
 
 print ("Zero Threshing Image: " +str(time.time()-googtime))
 
@@ -298,134 +302,119 @@ if not is_osc:   #This is the monochrome camera processing path.
             )
 
 
-            de_nanned_reference_frame=copy.deepcopy(storedsStack)
+            # Grab the two arrays
+            de_nanned_reference_frame=copy.deepcopy(storedsStack)          
+            tempnan=copy.deepcopy(imgdata)
             # Cut down image to central thousand by thousand patch to align
             fx, fy = de_nanned_reference_frame.shape
             crop_x= int(0.5*fx) -500
-
             crop_y= int(0.5*fy) -500
             de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
-            imageMode=bn.nanmedian(de_nanned_reference_frame)
-
-            #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
-            de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
-
-
-
-            # # Collect stored SEP for first smartstack image
-            # # ref_sources = Table.read(obsid_path
-            # # + "smartstacks/"
-            # # + smartStackFilename.replace('.npy','.sep'), format='csv')
-            # ref_sources=pickle.load(open(obsid_path
-            # + "smartstacks/"
-            # + smartStackFilename.replace('.npy','.sep'),'rb'))
-            # ref_sources=np.asarray(ref_sources)
-
-            # # breakpoint()
-
-            # #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
-            # # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
-            # # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-            # minarea= -9.2421 * pixscale + 16.553
-            # if minarea < 5:  # There has to be a min minarea though!
-            #     minarea = 5
-
-            # if len(sources) > 5:
-            #     try:
-
-            #         #sources=np.column_stack((sources['x'],sources['y']))
-            #         #ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
-            #         # sources=np.column_stack((sources[:,0],sources[:,1]))
-            #         # ref_sources=np.column_stack((ref_sources[:,0],ref_sources[:,1]))
-
-
-
-            #         sources=sources[~np.isnan(sources).any(axis=1)]
-            #         sources=sources[sources[:,2] > 100]
-            #         sources=sources[sources[:,2].argsort()[::-1]]
-            #         # breakpoint()
-
-            #         # # Remove any star from calibration catalogue that has another star in the catalogue within closerejectd arcseconds of it.
-            #         # if len(sources) != 0:
-            #         #     catReject=[]
-            #         #     while True:
-            #         #         #fileRaDec = SkyCoord(ra=sources[:,0]*pixel, dec=sources[:,1]*pixel)
-            #         #         #idx, d2d, _ = fileRaDec.match_to_catalog_sky(fileRaDec, nthneighbor=2) # Closest matches that isn't itself.
-
-
-            #         #         catReject = []
-            #         #         for q in range(len(d2d)):
-            #         #             if d2d[q] < 5:
-            #         #                 catReject.append(q)
-            #         #         if catReject == []:
-            #         #             break
-            #         #         del sources[catReject]
-            #         #         print("Stars rejected that are too close (<5 pixels) in catalogue: " +str(len(catReject)))
-
-            #         # breakpoint()
-            #         # sources = sources[where(np.abs(resp[radecname['ra']]-tg[0]) > 0.0014) and where(np.abs(resp[radecname['dec']]-tg[1]) > 0.0014)]
-
-
-            #         x= np.asarray([sources[:,0],sources[:,1]]).T
-            #         a,b = np.tril_indices(len(sources), -1)
-            #         #breakpoint()
-            #         diss = np.linalg.norm(x[b] - x[a], axis=1)
-            #         distance = 5
-            #         near = x[np.unique(np.concatenate([b[diss < distance], a[diss < distance]]))]
-            #         sources = copy.deepcopy(np.delete(x,np.unique(np.concatenate([b[diss < distance], a[diss < distance]])), axis=0))
-            #         sources=sources.astype('int')
-            #         #sources=sources[sources[:,2].argsort()[::-1]]
-            #         #sources=sources[:200,:]
-
-            #         ref_sources=ref_sources[~np.isnan(ref_sources).any(axis=1)]
-            #         ref_sources=ref_sources[ref_sources[:,2] > 100]
-            #         ref_sources=ref_sources[ref_sources[:,2].argsort()[::-1]]
-            #         # ref_sources=ref_sources[:200,:]
-
-
-            #         x= np.asarray([ref_sources[:,0],ref_sources[:,1]]).T
-            #         a,b = np.tril_indices(len(ref_sources), -1)
-            #         #breakpoint()
-            #         diss = np.linalg.norm(x[b] - x[a], axis=1)
-            #         distance = 5
-            #         near = x[np.unique(np.concatenate([b[diss < distance], a[diss < distance]]))]
-            #         ref_sources = copy.deepcopy(np.delete(x,np.unique(np.concatenate([b[diss < distance], a[diss < distance]])), axis=0))
-            #         ref_sources=ref_sources.astype('int')
-
-            #         breakpoint()
-
-            #         sources=np.column_stack((sources[:,0],sources[:,1]))
-            #         ref_sources=np.column_stack((ref_sources[:,0],ref_sources[:,1]))
-
-            #         transf, (source_list, target_list) = aa.find_transform(sources, ref_sources, max_control_points=200)
-            #         reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
-
-
-            tempnan=copy.deepcopy(imgdata)
-            # Cut down image to central thousand by thousand patch to align
             tempnan= tempnan[crop_x:-crop_x, crop_y:-crop_y]
-            imageMode=bn.nanmedian(tempnan)
-            tempnan[np.isnan(tempnan)] =imageMode
+
 
 
             #cut down the background and align on the signal in the images.
-            #de_nanned_reference_frame=
+            median_used=False
 
-
+            # Grab the reference frame, then figure out the sky background offset from the mode
+            # in one direction and assume it is symmetrical in the other direction and use that
+            # UNLESS the median is lower than the sky background offset... then use that... that 
+            # can happen when there is not much signal.
             denan_mask=copy.deepcopy(de_nanned_reference_frame)
             denan_median=bn.nanmedian(denan_mask)
-            denan_mask[denan_mask <= denan_median] = False
-            denan_mask[denan_mask > denan_median] = True
-            denan_mask=denan_mask.astype('bool')
-
-            #de_nanned_reference_frame[de_nanned_reference_frame < bn.nanmedian(de_nanned_reference_frame)] = np.nan
-
+            
+            # Calculating the edge of the sky distribution            
+            int_array_flattened=denan_mask.astype(int).ravel()
+            unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+            m=counts.argmax()
+            denanMode=unique[m]
+            # Zerothreshing image            
+            histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+            #Do some fiddle faddling to figure out the value that goes to zero less
+            zeroValueArray=histogramdata[histogramdata[:,0] < denanMode]
+            breaker=1
+            counter=0
+            while (breaker != 0):
+                counter=counter+1
+                if not (denanMode-counter) in zeroValueArray[:,0]:
+                    if not (denanMode-counter-1) in zeroValueArray[:,0]:
+                        if not (denanMode-counter-2) in zeroValueArray[:,0]:
+                            if not (denanMode-counter-3) in zeroValueArray[:,0]:
+                                if not (denanMode-counter-4) in zeroValueArray[:,0]:
+                                    if not (denanMode-counter-5) in zeroValueArray[:,0]:
+                                        if not (denanMode-counter-6) in zeroValueArray[:,0]:
+                                            if not (denanMode-counter-7) in zeroValueArray[:,0]:
+                                                if not (denanMode-counter-8) in zeroValueArray[:,0]:
+                                                    if not (denanMode-counter-9) in zeroValueArray[:,0]:
+                                                        if not (denanMode-counter-10) in zeroValueArray[:,0]:
+                                                            if not (denanMode-counter-11) in zeroValueArray[:,0]:
+                                                                if not (denanMode-counter-12) in zeroValueArray[:,0]:
+                                                                    denan_zeroValue=(denanMode-counter)
+                                                                    denan_top_of_sky_background_value=denanMode+counter
+                                                                    breaker =0
+            
+            if denan_top_of_sky_background_value > denan_median:
+                median_used=True
+            
+            
+            
+            # Do the same for the new image
             tempnan_mask=copy.deepcopy(tempnan)
             tempnan_median=bn.nanmedian(tempnan_mask)
-            tempnan_mask[tempnan_mask <= tempnan_median] = False
-            tempnan_mask[tempnan_mask > tempnan_median] = True
-            tempnan_mask=tempnan_mask.astype('bool')
-
+            
+            # Calculating the edge of the sky distribution            
+            int_array_flattened=tempnan_mask.astype(int).ravel()
+            unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+            m=counts.argmax()
+            tempnanMode=unique[m]
+            # Zerothreshing image            
+            histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+            #Do some fiddle faddling to figure out the value that goes to zero less
+            zeroValueArray=histogramdata[histogramdata[:,0] < tempnanMode]
+            breaker=1
+            counter=0
+            while (breaker != 0):
+                counter=counter+1
+                if not (tempnanMode-counter) in zeroValueArray[:,0]:
+                    if not (tempnanMode-counter-1) in zeroValueArray[:,0]:
+                        if not (tempnanMode-counter-2) in zeroValueArray[:,0]:
+                            if not (tempnanMode-counter-3) in zeroValueArray[:,0]:
+                                if not (tempnanMode-counter-4) in zeroValueArray[:,0]:
+                                    if not (tempnanMode-counter-5) in zeroValueArray[:,0]:
+                                        if not (tempnanMode-counter-6) in zeroValueArray[:,0]:
+                                            if not (tempnanMode-counter-7) in zeroValueArray[:,0]:
+                                                if not (tempnanMode-counter-8) in zeroValueArray[:,0]:
+                                                    if not (tempnanMode-counter-9) in zeroValueArray[:,0]:
+                                                        if not (tempnanMode-counter-10) in zeroValueArray[:,0]:
+                                                            if not (tempnanMode-counter-11) in zeroValueArray[:,0]:
+                                                                if not (tempnanMode-counter-12) in zeroValueArray[:,0]:
+                                                                    tempnan_zeroValue=(tempnanMode-counter)
+                                                                    tempnan_top_of_sky_background_value=tempnanMode+counter
+                                                                    breaker =0
+            
+            if tempnan_top_of_sky_background_value > tempnan_median:
+                median_used=True
+            
+            
+            denan_mask[np.isnan(denan_mask)] = False
+            tempnan_mask[np.isnan(tempnan_mask)] = False
+            
+            if median_used:                
+                denan_mask[denan_mask <= denan_median] = False
+                denan_mask[denan_mask > denan_median] = True
+                denan_mask=denan_mask.astype('bool')            
+                tempnan_mask[tempnan_mask <= tempnan_median] = False 
+                tempnan_mask[tempnan_mask > tempnan_median] = True
+                tempnan_mask=tempnan_mask.astype('bool')
+            else:
+                denan_mask[denan_mask <= denan_top_of_sky_background_value] = False
+                denan_mask[denan_mask > denan_top_of_sky_background_value] = True
+                denan_mask=denan_mask.astype('bool')            
+                tempnan_mask[tempnan_mask <= tempnan_top_of_sky_background_value] = False 
+                tempnan_mask[tempnan_mask > tempnan_top_of_sky_background_value] = True
+                tempnan_mask=tempnan_mask.astype('bool')
+                
             #breakpoint()
 
             imageshift = phase_cross_correlation(de_nanned_reference_frame, tempnan, reference_mask=denan_mask, moving_mask=tempnan_mask)
