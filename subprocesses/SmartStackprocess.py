@@ -417,19 +417,12 @@ if not is_osc:   #This is the monochrome camera processing path.
             denan_mask[denan_mask <= denan_median] = False
             denan_mask[denan_mask > denan_median] = True
 
-
-
             #de_nanned_reference_frame[de_nanned_reference_frame < bn.nanmedian(de_nanned_reference_frame)] = np.nan
 
             tempnan_mask=copy.deepcopy(tempnan)
             tempnan_median=bn.nanmedian(tempnan_mask)
             tempnan_mask[tempnan_mask <= tempnan_median] = False
             tempnan_mask[tempnan_mask > tempnan_median] = True
-
-
-
-
-
 
             imageshift, error, diffphase = phase_cross_correlation(de_nanned_reference_frame, tempnan, reference_mask=denan_mask, moving_mask=tempnan_mask)
 
