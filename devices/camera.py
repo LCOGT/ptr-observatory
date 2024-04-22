@@ -3021,6 +3021,13 @@ class Camera:
 
                     #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
                     de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
+                    
+                    denan_mask=copy.deepcopy(de_nanned_reference_frame)
+                    denan_median=bn.nanmedian(denan_mask)
+                    denan_mask[np.isnan(denan_mask)] = False
+                    denan_mask[denan_mask <= denan_median] = False
+                    denan_mask[denan_mask > denan_median] = True
+                    denan_mask=denan_mask.astype('bool')
 
             # For each further exposure, align the previous subexposure while exposing the next exposure
             # Do this through separate threads. The alignment should be faster than the exposure
@@ -3030,8 +3037,8 @@ class Camera:
 
                 if not subexposure == (N_of_substacks):
                     # Fire off an exposure.
-                    print ("Collecting subexposure " + str(subexposure+1))
-                    success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
+                    plog ("Collecting subexposure " + str(subexposure+1))
+                    qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                     self.expected_endpoint_of_substack_exposure=time.time() + exp_of_substacks
                     self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
                     qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
@@ -3046,7 +3053,7 @@ class Camera:
                 # #hdufocus.header = googimage[0].header
                 # hdufocus.writeto(str(subexposure-1) + 'frame.fits', overwrite=True, output_verify='silentfix')
 
-                rolltimer=time.time()
+                #rolltimer=time.time()
                 try:
                     # De-biasdark sub_stack array
                     sub_stacker_array[:,:,subexposure-1]=sub_stacker_array[:,:,subexposure-1] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
@@ -3084,31 +3091,24 @@ class Camera:
 
                 # Using the nan'ed file, calculate the shift
                 #rolltimer=time.time()
-                tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
+                tempnan_mask=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
                 # Cut down image to central thousand by thousand patch to align
-                tempnan= tempnan[crop_x:-crop_x, crop_y:-crop_y]
-                imageMode=bn.nanmedian(tempnan)
-                tempnan[np.isnan(tempnan)] =imageMode
-
-
-
-                denan_mask=copy.deepcopy(de_nanned_reference_frame)
-                denan_median=bn.nanmedian(denan_mask)
-                denan_mask[denan_mask <= denan_median] = False
-                denan_mask[denan_mask > denan_median] = True
-                denan_mask=denan_mask.astype('bool')
+                tempnan_mask= tempnan_mask[crop_x:-crop_x, crop_y:-crop_y]
+                #imageMode=bn.nanmedian(tempnan)
+                #tempnan[np.isnan(tempnan)] =imageMode
 
                 #de_nanned_reference_frame[de_nanned_reference_frame < bn.nanmedian(de_nanned_reference_frame)] = np.nan
 
-                tempnan_mask=copy.deepcopy(tempnan)
+                #tempnan_mask=copy.deepcopy(tempnan)
                 tempnan_median=bn.nanmedian(tempnan_mask)
+                tempnan_mask[np.isnan(tempnan_mask)] = False
                 tempnan_mask[tempnan_mask <= tempnan_median] = False
                 tempnan_mask[tempnan_mask > tempnan_median] = True
                 tempnan_mask=tempnan_mask.astype('bool')
 
                 #breakpoint()
 
-                imageshift = phase_cross_correlation(de_nanned_reference_frame, tempnan, reference_mask=denan_mask, moving_mask=tempnan_mask)
+                imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1], reference_mask=denan_mask, moving_mask=tempnan_mask)
 
 
 
@@ -3220,7 +3220,7 @@ class Camera:
 
         self.readout_estimate= np.median(np.array(readout_estimate_holder))
 
-        temptimer=time.time()
+        #temptimer=time.time()
         sub_stacker_array=bn.nanmedian(sub_stacker_array, axis=2) * N_of_substacks
         #print ("Stacktime: " + str(time.time()-temptimer))
         self.sub_stack_hold = sub_stacker_array
