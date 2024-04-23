@@ -445,6 +445,7 @@ class Sequencer:
             # turned off.  So that if a sequencer script starts running, we don't get
             # an odd request out of nowhere that knocks it out
             g_dev['obs'].stop_processing_command_requests = True
+            self.total_sequencer_control = True
             ###########################################################################
 
             # A little switch flip to make sure focus goes off when roof is simulated
@@ -1115,6 +1116,7 @@ class Sequencer:
             # While in this part of the sequencer, we need to have manual UI commands turned back on
             # So that we can process any new manual commands that come in.
             g_dev['obs'].stop_processing_command_requests = False
+            self.total_sequencer_control = False
             g_dev['obs'].request_scan_requests()
             ###########################################################################
 
