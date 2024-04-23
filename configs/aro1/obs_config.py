@@ -386,7 +386,7 @@ site_config = {
             'maximum': 12600,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw': 200,    #Consider making larget for F9 configuration
+            'throw': 300,    #Consider making larget for F9 configuration
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
             'has_dial_indicator': False

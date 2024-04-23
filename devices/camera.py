@@ -1990,7 +1990,7 @@ class Camera:
             if abs(brightest_pixel_rdist) <  max(3, 3/self.pixscale):
                 #focus_multiprocess.append((cvalue, cx, cy, radprofile, temp_array,self.pixscale))
                 focus_multiprocess.append((cvalue, cx, cy, radprofile, self.pixscale))
-        print ("Setup for multiprocess focus: " + str(time.time()-setup_timer))
+        #print ("Setup for multiprocess focus: " + str(time.time()-setup_timer))
 
         #Temporary just fur testing
         mptimer=time.time()
@@ -2003,7 +2003,7 @@ class Camera:
                 if len(fwhm_results) >= number_to_collect:
                     break
         # breakpoint()
-        print ("not multiprocess timer: " + str(time.time() - mptimer))
+        #print ("not multiprocess timer: " + str(time.time() - mptimer))
 
         # mptimer=time.time()
         # fwhm_results=[]
@@ -2019,7 +2019,7 @@ class Camera:
         # print ("multiprocess timer: " + str(time.time() - mptimer))
 
 
-        print ("Extracting and Gaussianingx: " + str(time.time()-googtime))
+        #print ("Extracting and Gaussianingx: " + str(time.time()-googtime))
                 #breakpoint()
         #breakpoint()
 
@@ -3021,7 +3021,7 @@ class Camera:
 
                     #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
                     de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
-                    
+
                     denan_mask=copy.deepcopy(de_nanned_reference_frame)
                     denan_median=bn.nanmedian(denan_mask)
                     denan_mask[np.isnan(denan_mask)] = False
@@ -3108,13 +3108,13 @@ class Camera:
 
                 #breakpoint()
 
-                imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1], reference_mask=denan_mask, moving_mask=tempnan_mask)
+                imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y], reference_mask=denan_mask, moving_mask=tempnan_mask)
 
 
 
                 #imageshift, error, diffphase = phase_cross_correlation(de_nanned_reference_frame, tempnan)
                 #print ("Shift: " + str(time.time()-rolltimer))
-                del tempnan
+                #del tempnan
                 #print (imageshift)
 
 
@@ -5353,7 +5353,7 @@ class Camera:
                     self.focus_next_seq = next_seq
 
 
-                    print ("focus analysis time: " + str(time.time() - temptimer))
+                    #print ("focus analysis time: " + str(time.time() - temptimer))
                     focus_image = False
                     #breakpoint()
 
