@@ -438,8 +438,8 @@ class Sequencer:
 
             self.nightly_reset_complete = False
 
-        # Don't attempt to start a sequence during an exposure OR when a function (usually TPOINT) has taken total control OR if it is doing something else or waiting to readjust. 
-        if not self.total_sequencer_control and not g_dev['cam'].exposure_busy and not g_dev['mnt'].currently_slewing and not self.pointing_recentering_requested_by_platesolve_thread and self.pointing_correction_requested_by_platesolve_thread:
+        # Don't attempt to start a sequence during an exposure OR when a function (usually TPOINT) has taken total control OR if it is doing something else or waiting to readjust.
+        if not self.total_sequencer_control and not g_dev['cam'].exposure_busy and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_recentering_requested_by_platesolve_thread and g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             ###########################################################################
             # While in this part of the sequencer, we need to have manual UI commands
             # turned off.  So that if a sequencer script starts running, we don't get
