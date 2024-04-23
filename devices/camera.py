@@ -3519,13 +3519,10 @@ class Camera:
         skip_daytime_check=False,
         manually_requested_calibration=False,
         useastrometrynet=False):
-        """
-        This is Phase 1:  Setup the camera.
-        Apply settings and start an exposure.
-        Quick=True is meant to be fast.  We assume the ASCOM/Maxim imageBuffer is the source of data in that mode,
-        not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
-        image data.
-        """
+        
+        
+        self.exposure_busy = True
+        
 
         # First check that it isn't an exposure that doesn't need a check (e.g. bias, darks etc.)
         if not g_dev['obs'].assume_roof_open and not skip_open_check and not g_dev['obs'].scope_in_manual_mode:
@@ -3968,7 +3965,6 @@ class Camera:
                         now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
                         if foundcalendar == False or now_date_timeZ >= g_dev['seq'].blockend:
                             plog ("could not find calendar entry, cancelling out of block.")
-                            self.exposure_busy = False
                             plog ("And Cancelling SmartStacks.")
                             Nsmartstack=1
                             sskcounter=2
@@ -3992,7 +3988,6 @@ class Camera:
                             if g_dev['mnt'].home_before_park:
                                 g_dev['mnt'].home_command()
                             g_dev['mnt'].park_command()
-                        self.exposure_busy = False
                         plog ("And Cancelling SmartStacks.")
                         Nsmartstack=1
                         sskcounter=2
@@ -4326,7 +4321,7 @@ class Camera:
                             a_dark_exposure=a_dark_exposure,
                             substack=self.substacker
                         )  # NB all these parameters are crazy!
-                        self.exposure_busy = False
+                        #self.exposure_busy = False
                         self.retry_camera = 0
                         #self.currently_in_smartstack_loop=False
                         #print ("EXPRESULT: " + str(expresult))
@@ -4344,9 +4339,10 @@ class Camera:
                         plog(traceback.format_exc())
                         self.retry_camera -= 1
                         num_retries += 1
-                        self.exposure_busy = False
+                        #self.exposure_busy = False
                         #self.currently_in_smartstack_loop=False
                         continue
+            self.exposure_busy = False
             self.currently_in_smartstack_loop=False
 
 
