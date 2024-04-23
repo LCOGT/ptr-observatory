@@ -669,7 +669,7 @@ class Sequencer:
                     else:
                         now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
                         identified_block=None
-                        
+
                         for block in self.blocks:  #  This merges project spec into the blocks.
                                    #(block['start'] <= now_date_timeZ < block['end'])
                             if (block['start'] <= now_date_timeZ < block['end']) and not self.is_in_completes(block['event_id']):
@@ -700,11 +700,11 @@ class Sequencer:
 
                                 if identified_block == None:
                                     plog ("identified block is None")
-                                    pointing_good=False  
+                                    pointing_good=False
 
                                 elif identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
                                     plog ("identified block is real_time or none")
-                                    pointing_good=False  
+                                    pointing_good=False
 
 
                                 elif identified_block['project'] == None:
@@ -862,8 +862,8 @@ class Sequencer:
                                             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
                                             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
 
-                                            
-                                            # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.                                            
+
+                                            # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.
                                             min_flat_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
 
                                             stride=1
@@ -881,7 +881,7 @@ class Sequencer:
                                                 print (g_dev['obs'].open_and_enabled_to_observe)
                                                 print ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
                                                 return
-                                            
+
                                             # COLLECTING A Three point five sec SECOND EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 3.5s exposure dark frames.")
                                             req = {'time': 3.5,  'script': 'True', 'image_type': 'threepointfivesec_exposure_dark'}
@@ -908,8 +908,8 @@ class Sequencer:
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
                                                 return
-                                            
-                                            
+
+
                                             # COLLECTING A SEVENPOINTFIVE SECOND EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 7.5s exposure dark frames.")
                                             req = {'time': 7.5,  'script': 'True', 'image_type': 'sevenpointfivesec_exposure_dark'}
@@ -1003,7 +1003,7 @@ class Sequencer:
                                                     return
 
                                             # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
-                                            
+
                                             if min_flat_exposure <= 0.05:
                                                 plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
                                                 req = {'time': 0.05,  'script': 'True', 'image_type': 'fivepercent_exposure_dark'}
@@ -1027,7 +1027,7 @@ class Sequencer:
                                                 if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
                                                     return
 
-                                            # COLLECTING A 0.25 Second EXPOSURE DARK FRAME                                            
+                                            # COLLECTING A 0.25 Second EXPOSURE DARK FRAME
                                             if min_flat_exposure <= 0.25:
                                                 plog("Expose " + str(5*stride) +" 1x1 0.25 second exposure dark frames.")
                                                 req = {'time': 0.25,  'script': 'True', 'image_type': 'quartersec_exposure_dark'}
@@ -1062,7 +1062,7 @@ class Sequencer:
                                                 if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
                                                     return
 
-                                            # COLLECTING A one Second EXPOSURE DARK FRAME                                            
+                                            # COLLECTING A one Second EXPOSURE DARK FRAME
                                             if min_flat_exposure <= 1.0:
                                                 plog("Expose " + str(5*stride) +" 1x1  1 second exposure dark frames.")
                                                 req = {'time': 1,  'script': 'True', 'image_type': 'onesec_exposure_dark'}
@@ -1160,7 +1160,7 @@ class Sequencer:
     def is_in_completes(self, block_id):
 
         camera = self.config['camera']['camera_1_1']['name']
-        seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + '_completes_' + str(g_dev['obs'].name))        
+        seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + '_completes_' + str(g_dev['obs'].name))
 
         if block_id in seq_shelf['completed_blocks']:
             seq_shelf.close()
@@ -1847,7 +1847,7 @@ class Sequencer:
             # But for PTR, we have some very frequent used exposure times, so this is a worthwhile endeavour.
             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
-            # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.                                            
+            # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.
             min_flat_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
 
 
@@ -2094,21 +2094,21 @@ class Sequencer:
                 g_dev['obs'].request_scan_requests()
 
                 # COLLECTING A NARROWBAND SMARTSTACK BIASDARK FRAME
-                # But only if there is a filterwheel, otherwise no point. 
+                # But only if there is a filterwheel, otherwise no point.
                 if not g_dev["fil"].null_filterwheel:
                     plog("Expose " + str(stride) +" 1x1 narrowband smstack biasdark frames.")
                     req = {'time': narrowband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'narrowband_ss_biasdark'}
                     opt = {'count': 2*min_to_do,  \
                            'filter': 'dark'}
-    
+
                     # Check it is in the park position and not pointing at the sky.
                     # It can be pointing at the sky if cool down open is triggered during the biasdark process
                     if not g_dev['obs'].mountless_operation:
                         g_dev['mnt'].park_command({}, {})
-    
+
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                     do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-    
+
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
@@ -2126,20 +2126,20 @@ class Sequencer:
 
                 # COLLECTING A 0.0045 Second EXPOSURE DARK FRAME
                 if min_flat_exposure <= 0.0045:
-                
+
                     plog("Expose " + str(5*stride) +" 1x1 0.0045 second exposure dark frames.")
                     req = {'time': 0.0045,  'script': 'True', 'image_type': 'pointzerozerofourfive_exposure_dark'}
                     opt = {'count':  min_to_do,  \
                            'filter': 'dark'}
-    
+
                     # Check it is in the park position and not pointing at the sky.
                     # It can be pointing at the sky if cool down open is triggered during the biasdark process
                     if not g_dev['obs'].mountless_operation:
                         g_dev['mnt'].park_command({}, {})
-    
+
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                     do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-    
+
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
@@ -2155,15 +2155,15 @@ class Sequencer:
                     req = {'time': 0.015,  'script': 'True', 'image_type': 'onepointfivepercent_exposure_dark'}
                     opt = {'count':  min_to_do,  \
                            'filter': 'dark'}
-    
+
                     # Check it is in the park position and not pointing at the sky.
                     # It can be pointing at the sky if cool down open is triggered during the biasdark process
                     if not g_dev['obs'].mountless_operation:
                         g_dev['mnt'].park_command({}, {})
-    
+
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                     do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-    
+
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
@@ -2175,20 +2175,20 @@ class Sequencer:
 
                 # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
                 if min_flat_exposure <= 0.05:
-                
+
                     plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
                     req = {'time': 0.05,  'script': 'True', 'image_type': 'fivepercent_exposure_dark'}
                     opt = {'count':  min_to_do,  \
                            'filter': 'dark'}
-    
+
                     # Check it is in the park position and not pointing at the sky.
                     # It can be pointing at the sky if cool down open is triggered during the biasdark process
                     if not g_dev['obs'].mountless_operation:
                         g_dev['mnt'].park_command({}, {})
-    
+
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                     do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-    
+
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
@@ -2199,21 +2199,21 @@ class Sequencer:
                     g_dev['obs'].request_scan_requests()
 
                 # COLLECTING A 0.1 Second EXPOSURE DARK FRAME
-                
+
                 if min_flat_exposure <= 0.1:
                     plog("Expose " + str(5*stride) +" 1x1 0.1 second exposure dark frames.")
                     req = {'time': 0.1,  'script': 'True', 'image_type': 'tenpercent_exposure_dark'}
                     opt = {'count':  min_to_do,  \
                            'filter': 'dark'}
-    
+
                     # Check it is in the park position and not pointing at the sky.
                     # It can be pointing at the sky if cool down open is triggered during the biasdark process
                     if not g_dev['obs'].mountless_operation:
                         g_dev['mnt'].park_command({}, {})
-    
+
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                     do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-    
+
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
@@ -2225,21 +2225,21 @@ class Sequencer:
 
 
                 # COLLECTING A 0.25 Second EXPOSURE DARK FRAME
-                
+
                 if min_flat_exposure <= 0.25:
                     plog("Expose " + str(5*stride) +" 1x1 0.25 second exposure dark frames.")
                     req = {'time': 0.25,  'script': 'True', 'image_type': 'quartersec_exposure_dark'}
                     opt = {'count':  min_to_do,  \
                            'filter': 'dark'}
-    
+
                     # Check it is in the park position and not pointing at the sky.
                     # It can be pointing at the sky if cool down open is triggered during the biasdark process
                     if not g_dev['obs'].mountless_operation:
                         g_dev['mnt'].park_command({}, {})
-    
+
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                     do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-    
+
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
@@ -2276,21 +2276,21 @@ class Sequencer:
 
 
                 # COLLECTING A 0.75 Second EXPOSURE DARK FRAME
-                
+
                 if min_flat_exposure <= 0.75:
                     plog("Expose " + str(5*stride) +" 1x1 0.75 second exposure dark frames.")
                     req = {'time': 0.75,  'script': 'True', 'image_type': 'threequartersec_exposure_dark'}
                     opt = {'count': min_to_do,  \
                            'filter': 'dark'}
-    
+
                     # Check it is in the park position and not pointing at the sky.
                     # It can be pointing at the sky if cool down open is triggered during the biasdark process
                     if not g_dev['obs'].mountless_operation:
                         g_dev['mnt'].park_command({}, {})
-    
+
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                     do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-    
+
 
 
                 if self.stop_script_called:
@@ -2305,22 +2305,22 @@ class Sequencer:
 
 
                 # COLLECTING A one Second EXPOSURE DARK FRAME
-                
-                
+
+
                 if min_flat_exposure <= 1.0:
                     plog("Expose " + str(5*stride) +" 1x1  1 second exposure dark frames.")
                     req = {'time': 1,  'script': 'True', 'image_type': 'onesec_exposure_dark'}
                     opt = {'count':  min_to_do,  \
                            'filter': 'dark'}
-    
+
                     # Check it is in the park position and not pointing at the sky.
                     # It can be pointing at the sky if cool down open is triggered during the biasdark process
                     if not g_dev['obs'].mountless_operation:
                         g_dev['mnt'].park_command({}, {})
-    
+
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                     do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-    
+
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
@@ -2331,21 +2331,21 @@ class Sequencer:
                     g_dev['obs'].request_scan_requests()
 
                 # COLLECTING A one and a half Second EXPOSURE DARK FRAME
-                
+
                 if min_flat_exposure <= 1.5:
                     plog("Expose " + str(5*stride) +" 1x1  1.5 second exposure dark frames.")
                     req = {'time': 1.5,  'script': 'True', 'image_type': 'oneandahalfsec_exposure_dark'}
                     opt = {'count':  min_to_do,  \
                            'filter': 'dark'}
-    
+
                     # Check it is in the park position and not pointing at the sky.
                     # It can be pointing at the sky if cool down open is triggered during the biasdark process
                     if not g_dev['obs'].mountless_operation:
                         g_dev['mnt'].park_command({}, {})
-    
+
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                     do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-    
+
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
@@ -2354,7 +2354,7 @@ class Sequencer:
                         self.bias_dark_latch = False
                         break
                     g_dev['obs'].request_scan_requests()
-    
+
 
                 # COLLECTING A BIAS FRAME
                 # COLLECT BIAS FRAMES LATER as there is no way to know whether bias frames are affected
@@ -2463,7 +2463,7 @@ class Sequencer:
 
         for fzneglect in bigfzs:
             # If it is todays image, put it in priority ahead of the token, otherwise place it behind the token because it is some old potentially broken file.
-            if str(g_dev["day"]) in fzneglect.split('orphans')[-1].replace('\\',''):                           
+            if str(g_dev["day"]) in fzneglect.split('orphans')[-1].replace('\\',''):
                 g_dev['obs'].enqueue_for_PTRarchive(56000000, orphan_path, fzneglect.split('orphans')[-1].replace('\\',''))
             else:
                 g_dev['obs'].enqueue_for_PTRarchive(56000002, orphan_path, fzneglect.split('orphans')[-1].replace('\\',''))
@@ -2836,8 +2836,8 @@ class Sequencer:
 
             # create an empty array to hold each chunk
             # the size of this array will determine the amount of RAM usage
-            
-            
+
+
             # Check if the latest file is older than the latest calibration
             tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
             latestfile=0
@@ -2845,23 +2845,23 @@ class Sequencer:
                 filetime=os.path.getmtime(tem)
                 if filetime > latestfile:
                     latestfile=copy.deepcopy(filetime)
-            
+
             latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
-            
-            
+
+
             plog ("Inspecting dark set: " +str(filename_start))
             if latestfile < latestcalib:
                 plog ("There are no new darks since last super-dark was made. Skipping construction")
                 masterDark=fits.open(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
-                masterDark= np.array(masterDark[0].data, dtype=np.float32)                
-                
+                masterDark= np.array(masterDark[0].data, dtype=np.float32)
+
             else:
                 plog ("There is a new dark frame since the last super-dark was made")
-            
-            
+
+
 
                 finalImage=np.zeros(shapeImage,dtype=float)
-    
+
                 # Store the biases in the memmap file
                 PLDrive= [None] * len(inputList)
                 exposures= [None] * len(inputList)
@@ -2874,18 +2874,18 @@ class Sequencer:
                     except:
                         plog(traceback.format_exc())
                         breakpoint()
-    
+
                     i=i+1
-    
+
                 # Get a chunk size that evenly divides the array
                 chunk_size=8
                 while not ( shapeImage[0] % chunk_size ==0):
                     chunk_size=chunk_size+1
                     #print (chunk_size)
                 chunk_size=int(shapeImage[0]/chunk_size)
-    
+
                 holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
-    
+
                 # iterate through the input, replace with ones, and write to output
                 for i in range(shapeImage[0]):
                     if i % chunk_size == 0:
@@ -2895,9 +2895,9 @@ class Sequencer:
                             #breakpoint() holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
                             holder[counter][0:chunk_size,:] = (copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)-copy.deepcopy(masterBias[i:i+chunk_size,:]).astype(np.float32))/exposures[counter]
                             counter=counter+1
-    
+
                         finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
-    
+
                         # Wipe and restore files in the memmap file
                         # To clear RAM usage
                         PLDrive= [None] * len(inputList)
@@ -2906,43 +2906,43 @@ class Sequencer:
                             #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
                             PLDrive[i] = np.load(file, mmap_mode='r')
                             i=i+1
-    
-    
-    
+
+
+
                 masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                 del finalImage
-    
-    
+
+
                 tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
                 try:
                     #fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
-    
+
                     # Save and upload master bias
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, tempfrontcalib + filename_start+'_master_bin1.fits' ))
-    
+
                      # Store a version of the bias for the archive too
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
-    
-    
+
+
                     # fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
-    
+
                     # filepathaws=g_dev['obs'].calib_masters_folder
                     # filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
                     # g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-    
-    
+
+
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         #fits.writeto(pipefolder + '/' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
                         #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
                         #np.save(pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy', masterBias)
                         g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterDark)))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
-    
+
+
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
-    
+
                 g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
 
             return masterDark
@@ -3022,24 +3022,24 @@ class Sequencer:
                 filetime=os.path.getmtime(tem)
                 if filetime > latestfile:
                     latestfile=copy.deepcopy(filetime)
-            
+
             latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
-            
+
             plog ("Inspecting dark set: " +str(filename_start))
             if latestfile < latestcalib:
                 plog ("There are no new darks since last super-dark was made. Skipping construction")
                 masterDark=fits.open(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
-                masterDark= np.array(masterDark[0].data, dtype=np.float32)                
-                
+                masterDark= np.array(masterDark[0].data, dtype=np.float32)
+
             else:
                 plog ("There is a new dark frame since the last super-dark was made")
 
 
                 # create an empty array to hold each chunk
                 # the size of this array will determine the amount of RAM usage
-    
+
                 finalImage=np.zeros(shapeImage,dtype=float)
-    
+
                 # Store the biases in the memmap file
                 PLDrive= [None] * len(inputList)
                 exposures= [None] * len(inputList)
@@ -3049,16 +3049,16 @@ class Sequencer:
                     PLDrive[i] = np.load(file, mmap_mode='r')
                     exposures[i]=float(file.split('_')[-2])
                     i=i+1
-    
+
                 # Get a chunk size that evenly divides the array
                 chunk_size=8
                 while not ( shapeImage[0] % chunk_size ==0):
                     chunk_size=chunk_size+1
                     #print (chunk_size)
                 chunk_size=int(shapeImage[0]/chunk_size)
-    
+
                 holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
-    
+
                 # iterate through the input, replace with ones, and write to output
                 for i in range(shapeImage[0]):
                     if i % chunk_size == 0:
@@ -3067,11 +3067,11 @@ class Sequencer:
                         for imagefile in range(len(PLDrive)):
                             holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
                             counter=counter+1
-    
-    
-    
+
+
+
                         finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
-    
+
                         # Wipe and restore files in the memmap file
                         # To clear RAM usage
                         PLDrive= [None] * len(inputList)
@@ -3080,43 +3080,43 @@ class Sequencer:
                             #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
                             PLDrive[i] = np.load(file, mmap_mode='r')
                             i=i+1
-    
-    
-    
+
+
+
                 masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                 del finalImage
-    
-    
+
+
                 tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
                 try:
                     #fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
-    
+
                     # Save and upload master bias
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, tempfrontcalib +filename_start+'_master_bin1.fits' ))
-    
+
                      # Store a version of the bias for the archive too
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
-    
-    
+
+
                     # fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
-    
+
                     # filepathaws=g_dev['obs'].calib_masters_folder
                     # filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
                     # g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-    
-    
+
+
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         #fits.writeto(pipefolder + '/' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
                         #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
                         #np.save(pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy', masterBias)
                         g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterDark)))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
-    
+
+
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
-    
+
                 g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
 
             return masterDark
@@ -3264,7 +3264,7 @@ class Sequencer:
         #     del g_dev['cam'].flatFiles
         # except:
         #     pass
-    
+
         tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
 
         if len(inputList) == 0 or len(darkinputList) == 0 or len(inputList) == 1 or len(darkinputList) == 1:
@@ -3292,24 +3292,24 @@ class Sequencer:
 
             # Array to hold loaded images
             #PLDrive = np.empty((shapeImage[0],shapeImge[1],len(inputList)), dtype=np.float32)
-            
-            
-            
+
+
+
             # Check if the latest file is older than the latest calibration
             latestfile=0
             for tem in inputList:
                 filetime=os.path.getmtime(tem)
                 if filetime > latestfile:
                     latestfile=copy.deepcopy(filetime)
-            
+
             latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
-            
+
             plog ("Inpecting bias set")
             if latestfile < latestcalib:
                 plog ("There are no new biases since last super-bias was made. Skipping construction")
                 masterBias=fits.open(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
-                masterBias= np.array(masterBias[0].data, dtype=np.float32)                
-                
+                masterBias= np.array(masterBias[0].data, dtype=np.float32)
+
             else:
                 plog ("There is a new bias frame since the last super-bias was made")
 
@@ -3320,30 +3320,30 @@ class Sequencer:
                     #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
                     PLDrive[i] = np.load(file, mmap_mode='r')
                     i=i+1
-    
+
                 #breakpoint()
-    
+
                 #PLDrive_holder = copy.deepcopy(PLDrive)
-    
+
                 # finalImage array
                 finalImage=np.zeros(shapeImage, dtype=np.float32)
-    
-    
-    
+
+
+
                 try:
-    
+
                     # create an empty array to hold each chunk
                     # the size of this array will determine the amount of RAM usage
-    
+
                     # Get a chunk size that evenly divides the array
                     chunk_size=8
                     while not ( shapeImage[0] % chunk_size ==0):
                         chunk_size=chunk_size+1
                         #print (chunk_size)
                     chunk_size=int(shapeImage[0]/chunk_size)
-    
+
                     holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
-    
+
                     # iterate through the input, replace with ones, and write to output
                     for i in range(shapeImage[0]):
                         if i % chunk_size == 0:
@@ -3352,14 +3352,14 @@ class Sequencer:
                             for imagefile in range(len(PLDrive)):
                                 holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
                                 counter=counter+1
-    
+
                             finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
-    
-    
+
+
                             # # Clear out memory
                             # del holder
                             # holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
-    
+
                             # Wipe and restore files in the memmap file
                             # To clear RAM usage
                             PLDrive= [None] * len(inputList)
@@ -3368,17 +3368,17 @@ class Sequencer:
                                 #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
                                 PLDrive[i] = np.load(file, mmap_mode='r')
                                 i=i+1
-    
+
                             #PLDrive=copy.deepcopy(PLDrive_holder)
-    
-    
-    
+
+
+
                 except:
                     plog(traceback.format_exc())
                     breakpoint()
-    
+
                 #plog ("Bias reconstructed: " +str(time.time()-calibration_timer))
-    
+
                 #breakpoint()
                 # counter=0
                 # with Pool(os.cpu_count()) as pool:
@@ -3386,27 +3386,27 @@ class Sequencer:
                 #         finalImage[counter,:]=result
                 #         #lst[counter] = result
                 #         counter=counter+1
-    
+
                 # # MULTIPROCESSED VERSION
                 # mptask=[]
                 # counter=0
                 # for goog in range(shapeImage[0]):
                 #     #mptask.append(PLDrive[counter,:,:])
                 #     counter=counter+1
-    
+
                 # counter=0
                 # with Pool(os.cpu_count()) as pool:
                 #     for result in pool.map(stack_nanmedian_row, mptask):
                 #         finalImage[counter,:]=result
                 #         #lst[counter] = result
                 #         counter=counter+1
-    
+
                 masterBias=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                 del finalImage
                 del holder
                 #del PLDrive
-    
-    
+
+
                 #plog ("Bias File Created: " +str(time.time()-calibration_timer))
                 #calibration_timer=time.time()
 
@@ -3434,9 +3434,9 @@ class Sequencer:
                         g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy',copy.deepcopy(masterBias)))
                 except Exception as e:
                     plog ("Could not save bias frame: ",e)
-                    
-                    
-                
+
+
+
 
                 try:
                     g_dev['cam'].biasFiles.update({'1': masterBias.astype(np.float32)})
@@ -3487,8 +3487,8 @@ class Sequencer:
             below_array=(masterBias < (img_temp_median - (10 * img_temp_stdev)))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
-            
-            
+
+
 
 ############################################# DARK
 
@@ -3501,11 +3501,11 @@ class Sequencer:
                 [g_dev['obs'].local_dark_folder+ 'halfsecdarks/', 'halfsecondDARK', 'halfsec_exposure_dark' ],
                 [g_dev['obs'].local_dark_folder+ 'twosecdarks/', '2secondDARK', 'twosec_exposure_dark' ],
                 [g_dev['obs'].local_dark_folder+ 'tensecdarks/', '10secondDARK', 'tensec_exposure_dark'],
-                [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssDARK', 'broadband_ss_dark' ]                
+                [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssDARK', 'broadband_ss_dark' ]
                 ]
-            
-            
-            
+
+
+
 
             # If you don't have a filter wheel, then you don't have any distinction between broadband or narrowband darks
             if not g_dev["fil"].null_filterwheel:
@@ -3513,8 +3513,8 @@ class Sequencer:
 
             bias_darklist=[
 
-                
-                [g_dev['obs'].local_dark_folder+ 'halfsecdarks/','halfsecBIASDARK', 'halfsec'],                
+
+                [g_dev['obs'].local_dark_folder+ 'halfsecdarks/','halfsecBIASDARK', 'halfsec'],
                 [g_dev['obs'].local_dark_folder+ 'twosecdarks/', 'twosecBIASDARK', 'twosec' ],
                 [g_dev['obs'].local_dark_folder+ 'threepointfivesecdarks/', 'threepointfivesecBIASDARK', 'threepointfivesec'],
                 [g_dev['obs'].local_dark_folder+ 'fivesecdarks/', 'fivesecBIASDARK','fivesec' ],
@@ -3523,37 +3523,37 @@ class Sequencer:
                 [g_dev['obs'].local_dark_folder+ 'fifteensecdarks/', 'fifteensecBIASDARK','fifteensec' ],
                 [g_dev['obs'].local_dark_folder+ 'twentysecdarks/', 'twentysecBIASDARK', 'twentysec'],
                 [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssBIASDARK', 'broadband_ss_biasdark']
-                
+
                 ]
-            
-            # There is no point creating biasdark exposures below the min_flat_exposure time aside from the scaled dark values.                                            
+
+            # There is no point creating biasdark exposures below the min_flat_exposure time aside from the scaled dark values.
             min_flat_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
-            
+
             if min_flat_exposure <= 0.0045:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'pointzerozerofourfivedarks/', 'pointzerozerofourfiveBIASDARK','pointzerozerofourfive' ])
-            
+
             if min_flat_exposure <= 0.015:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'onepointfivepercentdarks/', 'onepointfivepercentBIASDARK','onepointfivepercent' ])
-            
+
             if min_flat_exposure <= 0.05:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'fivepercentdarks/', 'fivepercentBIASDARK','fivepercent' ])
-            
+
             if min_flat_exposure <= 0.1:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'tenpercentdarks/','tenpercentBIASDARK','tenpercent'])
-            
+
             if min_flat_exposure <= 0.25:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'quartersecdarks/','quartersecBIASDARK', 'quartersec' ])
-            
-            
+
+
             if min_flat_exposure <= 0.75:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'sevenfivepercentdarks/', 'sevenfivepercentBIASDARK', 'sevenfivepercent'])
-            
+
             if min_flat_exposure <= 1.0:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'onesecdarks/', 'onesecBIASDARK', 'onesec'])
-            
+
             if min_flat_exposure <= 1.5:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'oneandahalfsecdarks/', 'oneandahalfsecBIASDARK','oneandahalfsec'])
-            
+
             # If you don't have a filter wheel, then you don't have any distinction between broadband or narrowband darks
             if not g_dev["fil"].null_filterwheel:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'narrowbanddarks/', 'narrowbandssBIASDARK', 'narrowband_ss_biasdark'])
@@ -3568,10 +3568,10 @@ class Sequencer:
 
 
 
-            for entry in scaled_darklist:              
-                
-                
-                
+            for entry in scaled_darklist:
+
+
+
 
                 processedDark = self.make_scaled_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder)
 
@@ -3701,8 +3701,8 @@ class Sequencer:
                     if len(inputList) == 0 or len(inputList) == 1:
                         plog ("Not doing " + str(filtercode) + " flat. Not enough available files in directory.")
                     else:
-                        
-                        
+
+
                         # Check if the latest file is older than the latest calibration
                         tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
                         latestfile=0
@@ -3710,9 +3710,9 @@ class Sequencer:
                             filetime=os.path.getmtime(tem)
                             if filetime > latestfile:
                                 latestfile=copy.deepcopy(filetime)
-                        
+
                         latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy')
-                        
+
                         plog ("Inspecting flats for filter: " + str(filtercode))
                         if latestfile < latestcalib:
                             plog ("There are no new flats since last super-flat was made. Skipping construction")
@@ -3726,18 +3726,18 @@ class Sequencer:
                             # plog ("Bad pixels above: " + str(above_array.sum()))
                             #plog ("Bad pixels below: " + str(below_array.sum()))
                             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
-                            
-                           #masterDark= np.array(masterDark[0].data, dtype=np.float32)                
-                            
+
+                           #masterDark= np.array(masterDark[0].data, dtype=np.float32)
+
                         else:
                             plog ("There is a new flat frame since the last super-flat was made")
-                        
+
 
                             while True:
-    
+
                                 #PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
                                 #PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
-    
+
                                 # DELETE ALL TEMP FILES FROM FLAT DIRECTORY
                                 deleteList= (glob(g_dev['obs'].local_flat_folder + filtercode + '/tempcali_*.n*'))
                                 for file in deleteList:
@@ -3745,10 +3745,10 @@ class Sequencer:
                                         os.remove(file)
                                     except:
                                         plog ("couldn't remove tempflat: " + str(file))
-    
+
                                 PLDrive = [None] * len(inputList)
-    
-    
+
+
                                 # Debias and dedark flat frames and stick them in the memmap
                                 i=0
                                 temp_flat_file_list=[]
@@ -3757,23 +3757,23 @@ class Sequencer:
                                     #hdu1data = np.load(file, mmap_mode='r')
                                     try:
                                         hdu1data = np.load(file)
-    
+
                                         #PLDrive[i] = np.load(file, mmap_mode='r')
-    
+
                                         hdu1exp=float(file.split('_')[-2])
                                         #plog ("EXP")
                                         #plog (hdu1exp)
                                         fraction_through_range=0
-    
-    
-    
+
+
+
         #g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy'
-    
-    
+
+
                                         # This try/except is here because if there is a missing dark
                                         # we can always just revert to using the long dark.
                                         try:
-    
+
                                             if hdu1exp == 0.0045 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy'):
                                                 flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy')
                                                 #print("five percent")
@@ -3859,14 +3859,14 @@ class Sequencer:
                                                 flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['narrowband_ss_dark']*hdu1exp)
                                             else:
                                                 flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['1']*hdu1exp)
-    
+
                                         except:
                                             flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['1']*hdu1exp)
-    
+
                                         #plog ("Fraction through range")
                                         #plog (fraction_through_range)
                                         del hdu1data
-    
+
                                         # Normalising flat file
                                         if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                                             normalising_factor=bn.nanmedian(flatdebiaseddedarked)
@@ -3877,27 +3877,27 @@ class Sequencer:
                                             # Rescaling median once nan'ed
                                             flatdebiaseddedarked = flatdebiaseddedarked/bn.nanmedian(flatdebiaseddedarked)
                                         else:
-    
+
                                             debayered=[]
                                             max_median=0
-    
+
                                             debayered.append(flatdebiaseddedarked[::2, ::2])
                                             debayered.append(flatdebiaseddedarked[::2, 1::2])
                                             debayered.append(flatdebiaseddedarked[1::2, ::2])
                                             debayered.append(flatdebiaseddedarked[1::2, 1::2])
-    
+
                                             osc_normalising_factor=[]
                                             # crop each of the images to the central region
-    
+
                                             for oscimage in debayered:
                                                 cropx = int( (oscimage.shape[0] -500)/2)
                                                 cropy = int((oscimage.shape[1] -500) /2)
                                                 oscimage=oscimage[cropx:-cropx, cropy:-cropy]
                                                 oscmedian=bn.nanmedian(oscimage)
                                                 osc_normalising_factor.append(oscmedian)
-    
+
                                             del debayered
-    
+
                                             flatdebiaseddedarked[::2, ::2]=flatdebiaseddedarked[::2, ::2]/osc_normalising_factor[0]
                                             flatdebiaseddedarked[::2, 1::2]=flatdebiaseddedarked[::2, 1::2]/osc_normalising_factor[1]
                                             flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
@@ -3907,20 +3907,20 @@ class Sequencer:
                                             flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
                                             # Rescaling median once nan'ed
                                             flatdebiaseddedarked = flatdebiaseddedarked/bn.nanmedian(flatdebiaseddedarked)
-    
+
                                         #PLDrive[:,:,i] = copy.deepcopy(flatdebiaseddedarked)
-    
+
                                         #breakpoint()
                                         # Make new filename
                                         tempfile=file.replace('\\','/').split('/')
                                         tempfile[-1]='tempcali_' + tempfile[-1]
                                         tempfile="/".join(tempfile)
-    
+
                                         np.save(tempfile, flatdebiaseddedarked)
                                         del flatdebiaseddedarked
                                         temp_flat_file_list.append(tempfile)
                                         PLDrive[i] = np.load(tempfile, mmap_mode='r')
-    
+
                                         i=i+1
                                     except:
                                         a = np.empty((shapeImage[0],shapeImage[1]))
@@ -3929,28 +3929,28 @@ class Sequencer:
                                         plog ("failed on a flat component. Placing an nan array. ")
                                         plog(traceback.format_exc())
                                         i=i+1
-    
-    
+
+
                                 plog ("Insert flats into megaarray: " +str(time.time()-calibration_timer))
-    
+
                                 #
-    
+
                                 finalImage=np.zeros(shapeImage, dtype=np.float32)
-    
+
                                 #try:
-    
+
                                 # create an empty array to hold each chunk
                                 # the size of this array will determine the amount of RAM usage
-    
+
                                 # Get a chunk size that evenly divides the array
                                 chunk_size=8
                                 while not ( shapeImage[0] % chunk_size ==0):
                                     chunk_size=chunk_size+1
                                     #print (chunk_size)
                                 chunk_size=int(shapeImage[0]/chunk_size)
-    
+
                                 holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
-    
+
                                 # iterate through the input, replace with ones, and write to output
                                 for i in range(shapeImage[0]):
                                     if i % chunk_size == 0:
@@ -3959,9 +3959,9 @@ class Sequencer:
                                         for imagefile in range(len(PLDrive)):
                                             holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
                                             counter=counter+1
-    
+
                                         finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
-    
+
                                         # Wipe and restore files in the memmap file
                                         # To clear RAM usage
                                         PLDrive= [None] * len(temp_flat_file_list)
@@ -3970,31 +3970,31 @@ class Sequencer:
                                             #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
                                             PLDrive[i] = np.load(file, mmap_mode='r')
                                             i=i+1
-    
-    
+
+
                                 # # plog ("**********************************")
                                 # # plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
                                 # # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                                 # # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                                 # finalImage=np.zeros(shapeImage,dtype=float)
-    
+
                                 # mptask=[]
                                 # counter=0
                                 # for goog in range(shapeImage[0]):
                                 #     #mptask.append((g_dev['obs'].local_flat_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
                                 #     mptask.append(PLDrive[counter,:,:])
                                 #     counter=counter+1
-    
+
                                 # counter=0
                                 # with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                                 #     for result in pool.map(stack_nanmedian_row, mptask):
                                 #         finalImage[counter,:]=result
                                 #         counter=counter+1
-    
+
                                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                                 # #plog ("**********************************")
                                 plog ("Median stack flat: " +str(time.time()-calibration_timer))
-    
+
                                 # plog ("Assessing flat components")
                                 #nanmedian_collector=[]
                                 nanstd_collector=[]
@@ -4002,14 +4002,14 @@ class Sequencer:
                                     #plog (flat_component)
                                     #tempdivide=PLDrive[:,:,flat_component] / finalImage
                                     tempdivide=PLDrive[flat_component] / finalImage
-    
+
                                     #tempnanmedian=bn.nanmedian(tempdivide)
                                     tempstd=bn.nanstd(tempdivide)
                                     #plog ("nanmedian: " + str(tempnanmedian ))
                                     #plog ("nanstdev: " + str(tempstd))
                                     #nanmedian_collector.append(tempnanmedian)
                                     nanstd_collector.append(tempstd)
-    
+
                                 # plog ("*********************************")
                                 # #plog (nanmedian_collector)
                                 # plog (nanstd_collector)
@@ -4021,17 +4021,17 @@ class Sequencer:
                                 std_std=np.array(np.std(nanstd_collector))
                                 # plog ("*********************************")
                                 # plog ("Assessing component flat fits to stacked flat")
-    
+
                                 delete_flat_components=[]
                                 for counterflat in range(len(nanstd_collector)):
                                     #plog ("Image " + str(counterflat) + " assessment")
                                     if nanstd_collector[counterflat] > (med_std + 5 * std_std):
                                         # plog ("FOUND A REJECTION: " + str(round(nanstd_collector[counterflat],5)) + " > " + str(round(med_std + 3 * std_std,5)))
                                         delete_flat_components.append(counterflat)
-    
+
                                 if len(delete_flat_components) < math.ceil(0.1*len(nanstd_collector)):
                                     break
-    
+
                                 # plog ("REPROCESSING FLAT WITH BAD COMPONENTS REMOVED")
                                 # Remove problematic flat images from squishener so we can re-run the flat.
                                 for index in sorted(delete_flat_components, reverse=True):
@@ -4040,17 +4040,17 @@ class Sequencer:
                                 del PLDrive
                                 #gc.collect()
                                 #os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
-    
+
                                 plog ("REDOING FLAT. TOO MANY OUTLIERS: " + str(len(delete_flat_components)))
-    
+
                             plog ("Checked component flats vs stacked flat: " +str(time.time()-calibration_timer))
-    
+
                             del PLDrive
                             #del flat_biasdarks
-    
+
                             temporaryFlat=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                             del finalImage
-    
+
                             # Bad pixel accumulator
                             img_temp_median=bn.nanmedian(temporaryFlat)
                             img_temp_stdev=bn.nanstd(temporaryFlat)
@@ -4060,33 +4060,33 @@ class Sequencer:
                             # plog ("Bad pixels above: " + str(above_array.sum()))
                             #plog ("Bad pixels below: " + str(below_array.sum()))
                             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
-    
-    
+
+
                             temporaryFlat[temporaryFlat == inf] = np.nan
                             temporaryFlat[temporaryFlat == -inf] = np.nan
                             temporaryFlat[temporaryFlat < 0.5] = np.nan
                             temporaryFlat[temporaryFlat > 2.0] = np.nan
                             pre_num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
-    
+
                             # plog ("Interpolating Nans")
                             last_num_of_nans=846753876359.0
                             while pre_num_of_nans > 0:
                                 # Fix up any glitches in the flat
-    
-    
+
+
                                 num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
                                 #plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
-    
+
                                 if num_of_nans == last_num_of_nans:
                                     break
                                 last_num_of_nans=copy.deepcopy(num_of_nans)
                                 while num_of_nans > 0:
-    
+
                                     # List the coordinates that are nan in the array
                                     nan_coords=np.argwhere(np.isnan(temporaryFlat))
                                     x_size=temporaryFlat.shape[0]
                                     y_size=temporaryFlat.shape[1]
-    
+
                                     # For each coordinate pop out the 3x3 grid
                                     try:
                                         for nancoord in nan_coords:
@@ -4118,76 +4118,76 @@ class Sequencer:
                                                 if not np.isnan(value_here):
                                                     countervalue=countervalue+value_here
                                                     countern=countern+1
-    
+
                                             if countern == 0:
                                                 temporaryFlat[x_nancoord,y_nancoord]=np.nan
                                             else:
                                                 temporaryFlat[x_nancoord,y_nancoord]=countervalue/countern
-    
-    
+
+
                                     except:
                                         plog(traceback.format_exc())
-    
+
                                     num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
                                     #plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
-    
-    
-    
-    
+
+
+
+
                                 #plog ("Round Flat Max: " + str(np.max(temporaryFlat)))
-    
+
                                 #plog ("Round Flat Min: " + str(np.min(temporaryFlat)))
                                 #plog ("Round Flat Median: " + str(np.median(temporaryFlat)))
                                 #plog ("Round Flat Average: " + str(np.average(temporaryFlat)))
                                 #plog ("Round Flat Stdev: " + str(np.std(temporaryFlat)))
-    
+
                                 temporaryFlat[temporaryFlat == inf] = np.nan
                                 temporaryFlat[temporaryFlat == -inf] = np.nan
                                 temporaryFlat[temporaryFlat < 0.5] = np.nan
                                 temporaryFlat[temporaryFlat > 2.0] = np.nan
-    
-    
+
+
                                 pre_num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
-    
-    
+
+
                             # plog ("Final Flat Max: " + str(bn.nanmax(temporaryFlat)))
                             # plog ("Final Flat Min: " + str(bn.nanmin(temporaryFlat)))
                             # plog ("Final Flat Median: " + str(bn.nanmedian(temporaryFlat)))
-    
+
                             # plog ("Final Flat Average: " + str(bn.nanmean(temporaryFlat)))  #<<WER changed average to mean
-    
+
                             # plog ("Final Flat Stdev: " + str(bn.nanstd(temporaryFlat)))
-    
+
                             #breakpoint()
-    
+
                             if np.count_nonzero(np.isnan(temporaryFlat)) > 0:
                                 plog ("No improvement with last interpolation attempt.")
                                 plog ("Filling remaining nans with median")
                                 temporaryFlat=np.nan_to_num(temporaryFlat, nan = bn.nanmedian(temporaryFlat))
-    
-    
-    
+
+
+
                             plog ("Interpolated flat: " +str(time.time()-calibration_timer))
-    
-    
-    
-    
+
+
+
+
                             # # plog ('debanding flatfield')
                             # ###### We have to deband the flat to stop banded flats band light images.
                             # # If that makes sense.
-    
+
                             # # Remove horizontal and vertical banding
                             # # If there isn't banding this should not alter the array really
                             # sigma_clipped_array=copy.deepcopy(temporaryFlat)
-    
+
                             # # REMOVE LOW VALUES
-    
+
                             # #Do some fiddle faddling to figure out the value that goes to zero less
                             # int_array_flattened=sigma_clipped_array.astype(int).ravel()
                             # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
                             # m=counts.argmax()
                             # imageMode=unique[m]
-    
+
                             # # Collect unique values and counts
                             # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
                             # zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
@@ -4196,12 +4196,12 @@ class Sequencer:
                             # while (breaker != 0):
                             #     counter=counter+1
                             #     if not (imageMode-counter) in zeroValueArray[:,0]:
-    
+
                             #         zeroValue=(imageMode-counter)
                             #         breaker =0
                             # sigma_clipped_array[sigma_clipped_array < zeroValue] = np.nan
                             # #histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
-    
+
                             # # REMOVE HIGH VALUES
                             # while True:
                             #     tempstd=bn.nanstd(sigma_clipped_array)
@@ -4212,7 +4212,7 @@ class Sequencer:
                             #     #plog (np.sum(clipped_areas))
                             #     sigma_clipped_array[clipped_areas] = np.nan
                             #     #breakpoint()
-    
+
                             # # REMOVE LOW VALUES
                             # while True:
                             #     tempstd=bn.nanstd(sigma_clipped_array)
@@ -4223,20 +4223,20 @@ class Sequencer:
                             #     #plog (np.sum(clipped_areas))
                             #     sigma_clipped_array[clipped_areas] = np.nan
                             #     #breakpoint()
-    
-    
+
+
                             # # Do rows
                             # rows_median = bn.nanmedian(sigma_clipped_array,axis=1)
                             # #rows_x = np.arange(0,len(rows_median),1.0)
                             # #plt.scatter(columns_median)
                             # rows_median[np.isnan(rows_median)] = bn.nanmedian(rows_median) # This should bea more thorough nearest neighbour thing when I get to it
-    
+
                             # row_debanded_image= temporaryFlat-rows_median[:,None]
                             # #debanded_rows_median=bn.nanmedian(row_debanded_image,axis=1)
                             # #plt.scatter(columns_x,debanded_columns_medain)
-    
+
                             # # plog ("Done rows. Now columns.")
-    
+
                             # # Then run this on columns
                             # sigma_clipped_array=copy.deepcopy(row_debanded_image)
                             # # REMOVE HIGH VALUES
@@ -4249,7 +4249,7 @@ class Sequencer:
                             #     #plog (np.sum(clipped_areas))
                             #     sigma_clipped_array[clipped_areas] = np.nan
                             #     #breakpoint()
-    
+
                             # # REMOVE LOW VALUES
                             # while True:
                             #     tempstd=bn.nanstd(sigma_clipped_array)
@@ -4260,98 +4260,98 @@ class Sequencer:
                             #     #plog (np.sum(clipped_areas))
                             #     sigma_clipped_array[clipped_areas] = np.nan
                             #     #breakpoint()
-    
-    
+
+
                             # columns_median = bn.nanmedian(sigma_clipped_array,axis=0)
                             # #columns_x = np.arange(0,len(columns_median),1.0)
                             # columns_median[np.isnan(columns_median)] = bn.nanmedian(columns_median)
-    
+
                             # both_debanded_image= row_debanded_image-columns_median[None,:]
                             # #debanded_both_median=bn.nanmedian(both_debanded_image,axis=0)
-    
+
                             # # Reinstitute pedestal
                             # both_debanded_image=both_debanded_image+1
-    
+
                             # #both_debanded_image = thresh(both_debanded_image, image_saturation_level)
                             # temporaryFlat=both_debanded_image
-    
+
                             # plog ("Debanded flat: " +str(time.time()-calibration_timer))
-    
-    
-    
+
+
+
                             try:
-    
-    
-    
-    
+
+
+
+
                                 g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-    
-    
+
+
                                 #np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
-    
+
                                 # # Write to and upload current master flat
                                 # fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
-    
+
                                 # filepathaws=g_dev['obs'].calib_masters_folder
                                 # filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
                                 # g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-    
-    
+
+
                                 # Save and upload master bias
                                 g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), None, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
-    
-    
+
+
                                 # # Store a version of the flat for the archive too
                                 # fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
-    
+
                                 # filepathaws=g_dev['obs'].calib_masters_folder
                                 # filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
                                 # g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-    
+
                                 # Store a version of the bias for the archive too
                                 g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
-    
-    
-    
+
+
+
                                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                                     #fits.writeto(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
                                     #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
                                     #np.save(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
                                     #np.save(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
                                     g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-    
-    
-    
+
+
+
                             except Exception as e:
                                 plog ("Could not save flat frame: ",e)
-    
+
                             plog ("Saved flat: " +str(time.time()-calibration_timer))
-    
-    
+
+
                             # Now to estimate gain from flats
                             for fullflat in inputList:
                                 #hdu1data = np.load(fullflat, mmap_mode='r')
                                 hdu1data = np.load(fullflat)
-    
+
                                 hdu1exp=float(file.split('_')[-2])
-    
+
                                 camera_gain_estimate_image=((hdu1data-masterBias)-(g_dev['cam'].darkFiles['1']*hdu1exp))
                                 camera_gain_estimate_image[camera_gain_estimate_image == inf] = np.nan
                                 camera_gain_estimate_image[camera_gain_estimate_image == -inf] = np.nan
-    
+
                                 # If an OSC, just use the brightest bayer bit.
                                 if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-    
+
                                     osc_fits=copy.deepcopy(camera_gain_estimate_image)
-    
+
                                     debayered=[]
                                     max_median=0
-    
+
                                     debayered.append(osc_fits[::2, ::2])
                                     debayered.append(osc_fits[::2, 1::2])
                                     debayered.append(osc_fits[1::2, ::2])
                                     debayered.append(osc_fits[1::2, 1::2])
-    
+
                                     # crop each of the images to the central region
                                     oscounter=0
                                     for oscimage in debayered:
@@ -4363,34 +4363,34 @@ class Sequencer:
                                             max_median=oscmedian
                                             brightest_bayer=copy.deepcopy(oscounter)
                                         oscounter=oscounter+1
-    
+
                                     camera_gain_estimate_image=copy.deepcopy(debayered[brightest_bayer])
-    
+
                                     del osc_fits
                                     del debayered
-    
-    
+
+
                                 cropx = int( (camera_gain_estimate_image.shape[0] -500)/2)
                                 cropy = int((camera_gain_estimate_image.shape[1] -500) /2)
                                 camera_gain_estimate_image=camera_gain_estimate_image[cropx:-cropx, cropy:-cropy]
                                 camera_gain_estimate_image = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
-    
-    
+
+
                                 cge_median=bn.nanmedian(camera_gain_estimate_image)
                                 cge_stdev=bn.nanstd(camera_gain_estimate_image)
                                 cge_sqrt=pow(cge_median,0.5)
                                 cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
                                 plog ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
-    
+
                                 estimated_flat_gain.append(cge_gain)
-    
+
                                 single_filter_camera_gains.append(cge_gain)
-    
+
                             single_filter_camera_gains=np.array(single_filter_camera_gains)
                             single_filter_camera_gains = sigma_clip(single_filter_camera_gains, masked=False, axis=None)
                             plog ("Filter Gain Sigma Clipped Estimates: " + str(bn.nanmedian(single_filter_camera_gains)) + " std " + str(np.std(single_filter_camera_gains)) + " N " + str(len(single_filter_camera_gains)))
                             flat_gains[filtercode]=[bn.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
-    
+
                             # Chuck camera gain and number of images into the shelf
                             try:
                                 # for every filter hold onto an estimate of the current camera gain.
@@ -4405,16 +4405,16 @@ class Sequencer:
                                 self.filter_camera_gain_shelf.close()
                             except:
                                 plog("************* FAILED TO WRITE TO FILTER GAIN SHELF. Usually while flats are being taken at the same time. Follow-up if this becomes relatively frequent.")
-    
-    
+
+
                             #PLDrive._mmap.close()
                             #del PLDrive
                             #gc.collect()
                             #os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
-    
+
                             plog (str(filtercode) + " flat camera gains measured : " +str(time.time()-calibration_timer))
-    
-    
+
+
                             # DELETE ALL TEMP FILES FROM FLAT DIRECTORY
                             deleteList= (glob(g_dev['obs'].local_flat_folder + filtercode + '/tempcali_*.n*'))
                             for file in deleteList:
@@ -4422,7 +4422,7 @@ class Sequencer:
                                     os.remove(file)
                                 except:
                                     plog ("couldn't remove tempflat: " + str(file))
-        
+
                             #for file in fileList:
                             if self.config['camera'][g_dev['cam'].name]['settings']['hold_flats_in_memory']:
                                 #tempflatframe=np.load(file)
@@ -4431,7 +4431,7 @@ class Sequencer:
                                 #del tempflatframe
                             else:
                                 g_dev['cam'].flatFiles.update({filtercode: g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy'})
-        
+
                             g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
                             plog (str(filtercode) + " flat calibration frame created: " +str(time.time()-calibration_timer))
                             calibration_timer=time.time()
@@ -4571,9 +4571,9 @@ class Sequencer:
                     stdev_collector.append(singlentry[1])
                     plog (str(entry) +" gain: " + str(singlentry[0]) + " stdev " + str(singlentry[1]))
 
-            while True:                
-                gainmed=bn.nanmedian(gain_collector)               
-                gainstd=bn.nanstd(gain_collector)                
+            while True:
+                gainmed=bn.nanmedian(gain_collector)
+                gainstd=bn.nanstd(gain_collector)
                 new_gain_pile=[]
                 new_stdev_pile=[]
                 counter=0
@@ -4603,7 +4603,7 @@ class Sequencer:
             g_dev['cam'].camera_known_readnoise_stdev = (singlentry[1] * g_dev['cam'].camera_known_gain) / 1.414
         except:
             plog('failed to estimate gain and readnoise from flats and such')
-            
+
         if np.isnan(g_dev['cam'].camera_known_gain):
             g_dev['cam'].camera_known_gain = 70000
         plog ("Used Camera Gain: " + str(g_dev['cam'].camera_known_gain))
@@ -5065,7 +5065,7 @@ class Sequencer:
                         self.current_filter_last_camera_gain_stdev=self.filter_camera_gain_shelf[current_filter.lower()][1]
                     else:
                         self.current_filter_last_camera_gain_stdev=200
-                except:                    
+                except:
                     plog(traceback.format_exc())
                     self.current_filter_last_camera_gain=200
                     self.current_filter_last_camera_gain_stdev=200
@@ -5076,7 +5076,7 @@ class Sequencer:
                 if known_throughput==False:
                     self.current_filter_last_camera_gain=200
                     self.current_filter_last_camera_gain_stdev=200
-                    
+
                 plog ("MTF tracking this issue: current_filter_last_camera_gain: " + str(self.current_filter_last_camera_gain))
 
                 acquired_count = 0
@@ -5730,6 +5730,17 @@ class Sequencer:
         plog ("focus position: " + str(foc_pos))
         plog ("focus fwhm: " + str(foc_fwhm))
 
+        if self.stop_script_called:
+            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+            self.focussing=False
+
+            return
+        if not g_dev['obs'].open_and_enabled_to_observe:
+            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+            self.focussing=False
+
+            return
+
         if np.isnan(foc_pos):
             plog ("initial focus on offset run failed, giving it another shot after extensive focus attempt.")
             foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, dont_return_scope=True, skip_timer_check=True, filter_choice='focus')
@@ -5740,6 +5751,8 @@ class Sequencer:
                 plog ("Second initial focus on offset run failed, we really need a very good initial estimate, so bailing out.")
 
                 return
+
+
 
         focus_filter_focus_point=foc_pos
 
@@ -5756,9 +5769,26 @@ class Sequencer:
 
         for chosen_filter in list_of_filters_for_this_run:
             plog ("Running offset test for " + str(chosen_filter))
-            foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, dont_return_scope=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, begin_at=focus_filter_focus_point, filter_choice=chosen_filter)
+            try:
+                foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, dont_return_scope=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, begin_at=focus_filter_focus_point, filter_choice=chosen_filter)
+            except:
+                plog(traceback.format_exc())
+                plog ("dodgy auto focus return")
+                foc_pos=np.nan
+                foc_fwhm=np.nan
             plog ("focus position: " + str(foc_pos))
             plog ("focus fwhm: " + str(foc_fwhm))
+
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                self.focussing=False
+
+                return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                self.focussing=False
+
+                return
 
             if np.isnan(foc_pos):
                 plog ("initial focus on offset run failed, giving it another shot after extensive focus attempt.")
@@ -5770,12 +5800,24 @@ class Sequencer:
                     plog ("Second attempt on offset run failed, couldn't update the offset for this filter.")
 
 
+
             if not np.isnan(foc_pos):
                 filter_offset_collector[chosen_filter]=focus_filter_focus_point-foc_pos
                 filteroffset_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filteroffsets_' + g_dev['cam'].alias + str(g_dev['obs'].name))
                 filteroffset_shelf[chosen_filter]=focus_filter_focus_point-foc_pos
                 g_dev['fil'].filter_offsets[chosen_filter]=focus_filter_focus_point-foc_pos
                 filteroffset_shelf.close()
+
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                self.focussing=False
+
+                return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                self.focussing=False
+
+                return
 
         plog ("Final determined offsets this run")
         plog (filter_offset_collector)
@@ -6019,7 +6061,7 @@ class Sequencer:
             im_path = im_path_r + g_dev["day"] + "/to_AWS/"
 
             try:
-                plog ("FOCUS NEXT SEQ: " + str(g_dev['cam'].focus_next_seq))
+                #plog ("FOCUS NEXT SEQ: " + str(g_dev['cam'].focus_next_seq))
 
                 text_name = (
                     g_dev['cam'].config["obs_id"]
@@ -6034,7 +6076,7 @@ class Sequencer:
                     + "00.txt"
                 )
             except:
-                plog ("CAM NEXT SEQ: " + str(g_dev['cam'].next_seq))
+                #plog ("CAM NEXT SEQ: " + str(g_dev['cam'].next_seq))
 
                 text_name = (
                     g_dev['cam'].config["obs_id"]
@@ -6049,7 +6091,7 @@ class Sequencer:
                     + "00.txt"
                 )
 
-            print ("TEXTNAME: " + str(text_name))
+            #print ("TEXTNAME: " + str(text_name))
 
             position_counter=position_counter+1
             # General command bailout section
@@ -6379,7 +6421,12 @@ class Sequencer:
                             # #plt.xlim(0.16888549099999922 - 0.000000001,0.1688855399999992 + 0.000000001)
                             # #print (crit_points)
                             crit_points = bounds + [x for x in f.deriv().r if x.imag == 0 and bounds[0] < x.real < bounds[1]]
-                            fitted_focus_position=crit_points[2]
+                            try:
+                                fitted_focus_position=crit_points[2]
+                            except:
+                                print ("focus fit didn't work dunno y yet.")
+                                plog(traceback.format_exc())
+                                breakpoint()
                             #print (crit_points)
                             #print (len(crit_points))
                             plog ("focus pos: " + str(fitted_focus_position))
@@ -6400,6 +6447,7 @@ class Sequencer:
                             g_dev['cam'].current_focus_jpg.paste(pltim)#), box )
                             g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
+                            plt.clf()
 
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
