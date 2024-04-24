@@ -1883,8 +1883,8 @@ class Observatory:
                             try:
                                 #plog ("Attempting upload of token")
                                 #plog (str(files))
-                                #token_output=reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
-                                #plog (token_output)
+                                token_output=reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
+                                plog (token_output)
                                 if '204' in str(token_output):
 
                                     try:
