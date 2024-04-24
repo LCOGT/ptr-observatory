@@ -2875,7 +2875,7 @@ class Sequencer:
                         exposures[i]=float(file.split('_')[-2])
                     except:
                         plog(traceback.format_exc())
-                        breakpoint()
+                        #breakpoint()
 
                     i=i+1
 
@@ -3377,7 +3377,7 @@ class Sequencer:
 
                 except:
                     plog(traceback.format_exc())
-                    breakpoint()
+                    #breakpoint()
 
                 #plog ("Bias reconstructed: " +str(time.time()-calibration_timer))
 
@@ -5449,7 +5449,7 @@ class Sequencer:
                                             plog('New Throughput Value: ', round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3), '\n\n')
                                         except:
                                             plog ("this seems to be a bug that occurs when the temperature is out of range, here is a breakpoint for you to test it")
-                                            breakpoint()
+                                            #breakpoint()
                                         old_throughput_value=copy.deepcopy(new_throughput_value)
                                         new_throughput_value = round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3)
                                     else:
@@ -6417,7 +6417,7 @@ class Sequencer:
                             except:
                                 print ("focus fit didn't work dunno y yet.")
                                 plog(traceback.format_exc())
-                                breakpoint()
+                                #breakpoint()
                             # plt.scatter(x,y)
                             # plt.plot(x,f(x), color = 'green')
                             # #plt.xlim(0.16888549099999922 - 0.000000001,0.1688855399999992 + 0.000000001)
@@ -6428,7 +6428,7 @@ class Sequencer:
                             except:
                                 print ("focus fit didn't work dunno y yet.")
                                 plog(traceback.format_exc())
-                                breakpoint()
+                                #breakpoint()
                             #print (crit_points)
                             #print (len(crit_points))
                             plog ("focus pos: " + str(fitted_focus_position))

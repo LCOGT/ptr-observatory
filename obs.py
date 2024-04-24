@@ -738,7 +738,7 @@ class Observatory:
         #killing this in favor of triggering by using the "Take Lunar Stack" sequencer script.z
 
         #g_dev['seq'].filter_focus_offset_estimator_script()
-       # breakpoint()
+       #breakpoint()
         #g_dev['seq'].bias_dark_script()
 
 
@@ -1900,7 +1900,7 @@ class Observatory:
                                 plog(files)
                                 plog(traceback.format_exc())
                                 #if self.obs_id == 'eco1': # Just here to catch an error without affecting other sites.
-                                breakpoint()
+                                #breakpoint()
 
                                 time.sleep(5)
 
@@ -3929,7 +3929,7 @@ class Observatory:
                         timesubmitted = pri_image[1][2]
                     except:
                         plog((traceback.format_exc()))
-                        breakpoint()
+                        #breakpoint()
 
 
                     # If the file is there now
@@ -4268,7 +4268,7 @@ class Observatory:
 
 
                     # if sskcounter >0:
-                    #     breakpoint()
+                    #breakpoint()
 
                     smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 

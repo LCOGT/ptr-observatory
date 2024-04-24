@@ -965,7 +965,7 @@ def multiprocess_fast_gaussian_photometry(package):
         return np.nan
     except:
         plog(traceback.format_exc())
-        breakpoint()
+        #breakpoint()
         return np.nan
 
 
@@ -1887,7 +1887,7 @@ class Camera:
                     value_at_neighbours=(hdufocusdata[point[0]-1,point[1]]+hdufocusdata[point[0]+1,point[1]]+hdufocusdata[point[0],point[1]-1]+hdufocusdata[point[0],point[1]+1])/4
                 except:
                     print(traceback.format_exc())
-                    breakpoint()
+                    #breakpoint()
                 # Check it isn't just a dot
                 if value_at_neighbours < (0.6*value_at_point):
                     #print ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
@@ -1951,7 +1951,7 @@ class Camera:
                 #temp_numpy=hdufocusdata[cx-radius_of_radialprofile:cx+radius_of_radialprofile,cy-radius_of_radialprofile:cy+radius_of_radialprofile]
             except:
                 print(traceback.format_exc())
-                breakpoint()
+               # breakpoint()
             #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
 
 
@@ -2238,7 +2238,7 @@ class Camera:
     #                 value_at_neighbours=(hdufocusdata[point[0]-1,point[1]]+hdufocusdata[point[0]+1,point[1]]+hdufocusdata[point[0],point[1]-1]+hdufocusdata[point[0],point[1]+1])/4
     #             except:
     #                 print(traceback.format_exc())
-    #                 breakpoint()
+    #                 #breakpoint()
     #             # Check it isn't just a dot
     #             if value_at_neighbours < (0.6*value_at_point):
     #                 #print ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
@@ -2302,7 +2302,7 @@ class Camera:
     #             #temp_numpy=hdufocusdata[cx-radius_of_radialprofile:cx+radius_of_radialprofile,cy-radius_of_radialprofile:cy+radius_of_radialprofile]
     #         except:
     #             print(traceback.format_exc())
-    #             breakpoint()
+    #             #breakpoint()
     #         #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
 
 
@@ -5197,7 +5197,7 @@ class Camera:
                     #                         done=True
                     #     except:
                     #         plog(traceback.format_exc())
-                    #         breakpoint()
+                    #         #breakpoint()
                     #     num_of_nans=np.count_nonzero(np.isnan(outputimg))
                     # plog ("bad pixel time monitor " + str(time.time()-bpmtime))
 
@@ -5767,7 +5767,7 @@ class Camera:
                         expresult["real_time_filename"] =  self.config["obs_id"]+ "-"+ self.alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)+ "-"+ g_dev["day"]+ "-"+ next_seq+ "-"+ im_type+ "00.fits"
                     except:
                         plog(traceback.format_exc())
-                        breakpoint()
+                        #breakpoint()
                 # self.exposure_busy = False
 
                 plog("Exposure Complete")

@@ -372,7 +372,7 @@ class FilterWheel:
                             except:
                                 #plog("Filter RPC error, Maxim not responding. Reset Maxim needed.")
                                 plog(traceback.format_exc())
-                                breakpoint()
+                                #breakpoint()
                         elif self.theskyx:
 
                             self.filterwheel_update_wincom.FilterIndexZeroBased = self.filter_data[self.filt_pointer][1][0]
@@ -576,7 +576,7 @@ class FilterWheel:
 #             self.filter_offset = float(self.filter_data[filt_pointer][2])
 #         elif self.maxim and self.dual:
 #             try:
-#                 breakpoint()
+#                 #breakpoint()
 #                 self.filter.Filter = filter_selections[0]
 #                 if self.dual_filter:
 #                     self.filter.GuiderFilter = filter_selections[1]

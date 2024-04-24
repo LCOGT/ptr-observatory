@@ -393,7 +393,7 @@ else:
                     value_at_neighbours=(hdufocusdata[point[0]-1,point[1]]+hdufocusdata[point[0]+1,point[1]]+hdufocusdata[point[0],point[1]-1]+hdufocusdata[point[0],point[1]+1])/4
                 except:
                     print(traceback.format_exc())
-                    breakpoint()
+                    #breakpoint()
 
                 # Check it isn't just a dot
                 if value_at_neighbours < (0.4*value_at_point):
@@ -490,7 +490,7 @@ else:
                 #temp_numpy=hdufocusdata[cx-radius_of_radialprofile:cx+radius_of_radialprofile,cy-radius_of_radialprofile:cy+radius_of_radialprofile]
             except:
                 print(traceback.format_exc())
-                breakpoint()
+                #breakpoint()
             #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
 
             #construct radial profile

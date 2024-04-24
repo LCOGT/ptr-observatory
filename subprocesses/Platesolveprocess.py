@@ -452,7 +452,7 @@ for point in list_of_local_maxima:
             value_at_neighbours=(hdufocusdata[point[0]-1,point[1]]+hdufocusdata[point[0]+1,point[1]]+hdufocusdata[point[0],point[1]-1]+hdufocusdata[point[0],point[1]+1])/4
         except:
             print(traceback.format_exc())
-            breakpoint()
+            #breakpoint()
 
         # Check it isn't just a dot
         if value_at_neighbours < (0.4*value_at_point):
@@ -530,7 +530,7 @@ for i in range(len(pointvalues)):
         temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
     except:
         print(traceback.format_exc())
-        breakpoint()
+        #breakpoint()
     #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
 
     #construct radial profile
