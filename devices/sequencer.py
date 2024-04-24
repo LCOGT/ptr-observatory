@@ -437,15 +437,16 @@ class Sequencer:
         if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
 
             self.nightly_reset_complete = False
-
+        # print ("at point one")
+        # breakpoint()
         # Don't attempt to start a sequence during an exposure OR when a function (usually TPOINT) has taken total control OR if it is doing something else or waiting to readjust.
-        if not self.total_sequencer_control and not g_dev['cam'].exposure_busy and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_recentering_requested_by_platesolve_thread and g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+        if not self.total_sequencer_control and not g_dev['cam'].exposure_busy and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_recentering_requested_by_platesolve_thread and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             ###########################################################################
             # While in this part of the sequencer, we need to have manual UI commands
             # turned off.  So that if a sequencer script starts running, we don't get
             # an odd request out of nowhere that knocks it out
             g_dev['obs'].stop_processing_command_requests = True
-            self.total_sequencer_control = True
+            #self.total_sequencer_control = True
             ###########################################################################
 
             # A little switch flip to make sure focus goes off when roof is simulated
@@ -490,7 +491,6 @@ class Sequencer:
                     plog ("Found telescope unparked after Close and Park, parking the scope")
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
-
 
             if not self.bias_dark_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
                  self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
@@ -1116,7 +1116,7 @@ class Sequencer:
             # While in this part of the sequencer, we need to have manual UI commands turned back on
             # So that we can process any new manual commands that come in.
             g_dev['obs'].stop_processing_command_requests = False
-            self.total_sequencer_control = False
+            #self.total_sequencer_control = False
             g_dev['obs'].request_scan_requests()
             ###########################################################################
 
