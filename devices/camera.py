@@ -1221,6 +1221,8 @@ class Camera:
             plog("Flat frames not loaded or available")
 
 
+        self.shutter_open = False # Initialise
+
         """
         This section connects the appropriate methods for various
         camera actions for various drivers. Each separate software
@@ -2948,6 +2950,7 @@ class Camera:
                 # g_dev["obs"].exposure_halted_indicator =False
                 # self.currently_in_smartstack_loop=False
                 self.exposure_busy = False
+                self.shutter_open=False
                 return
             if g_dev["obs"].exposure_halted_indicator:
                 # expresult["error"] = True
@@ -2955,6 +2958,7 @@ class Camera:
                 # g_dev["obs"].exposure_halted_indicator =False
                 # plog ("Exposure Halted Indicator On. Cancelling Exposure.")
                 self.exposure_busy = False
+                self.shutter_open=False
                 return
 
             exposure_timer=time.time()
@@ -3229,6 +3233,7 @@ class Camera:
 
         del sub_stacker_array
         self.substacker_available=True
+        self.shutter_open=False
 
     def _qhyccd_expose(self, exposure_time, bias_dark_or_light_type_frame):
 
@@ -3263,6 +3268,7 @@ class Camera:
     def _qhyccd_stop_expose(self):
         expresult = {}
         expresult["stopped"] = True
+        self.shutter_open=False
         try:
             qhycam.so.CancelQHYCCDExposingAndReadout(qhycam.camera_params[qhycam_id]['handle'])
         except:
@@ -3519,10 +3525,10 @@ class Camera:
         skip_daytime_check=False,
         manually_requested_calibration=False,
         useastrometrynet=False):
-        
-        
+
+
         self.exposure_busy = True
-        
+
 
         # First check that it isn't an exposure that doesn't need a check (e.g. bias, darks etc.)
         if not g_dev['obs'].assume_roof_open and not skip_open_check and not g_dev['obs'].scope_in_manual_mode:
@@ -4218,8 +4224,10 @@ class Camera:
 
 
                             self.exposure_busy = True
+
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
+                            self.shutter_open = True
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
 
@@ -4259,6 +4267,7 @@ class Camera:
                             expresult = {}
                             expresult["error"] = True
                             self.exposure_busy = False
+                            self.shutter_open=False
                             self.currently_in_smartstack_loop=False
                             self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
                             return expresult
@@ -4321,6 +4330,9 @@ class Camera:
                             a_dark_exposure=a_dark_exposure,
                             substack=self.substacker
                         )  # NB all these parameters are crazy!
+
+
+
                         #self.exposure_busy = False
                         self.retry_camera = 0
                         #self.currently_in_smartstack_loop=False
@@ -4339,9 +4351,11 @@ class Camera:
                         plog(traceback.format_exc())
                         self.retry_camera -= 1
                         num_retries += 1
+                        self.shutter_open=False
                         #self.exposure_busy = False
                         #self.currently_in_smartstack_loop=False
                         continue
+            self.shutter_open=False
             self.exposure_busy = False
             self.currently_in_smartstack_loop=False
 
@@ -4373,7 +4387,7 @@ class Camera:
         self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
 
         #  This is the loop point for the seq count loop
-        self.exposure_busy = False
+        #self.exposure_busy = False
         self.currently_in_smartstack_loop=False
         #breakpoint()
 
@@ -4381,6 +4395,7 @@ class Camera:
         if not 'expresult' in locals():
             expresult = 'error'
         self.exposure_busy = False
+        self.shutter_open=False
         return expresult
 
     def write_out_realtimefiles_token_to_disk(self,token_name,real_time_files):
@@ -4421,6 +4436,7 @@ class Camera:
         g_dev['cam'].expresult = {}
         g_dev['cam'].expresult["stopped"] = True
         self.exposure_busy = False
+        self.shutter_open=False
         self.exposure_halted = True
 
     def finish_exposure(
@@ -4633,7 +4649,8 @@ class Camera:
                         expresult["stopped"] = True
                         g_dev["obs"].exposure_halted_indicator =False
                         self.currently_in_smartstack_loop=False
-                        self.exposure_busy = False
+                        # self.exposure_busy = False
+                        # self.shutter_open=False
                         return expresult
 
                     if g_dev["obs"].exposure_halted_indicator:
@@ -4641,7 +4658,8 @@ class Camera:
                         expresult["stopped"] = True
                         g_dev["obs"].exposure_halted_indicator =False
                         plog ("Exposure Halted Indicator On. Cancelling Exposure.")
-                        self.exposure_busy = False
+                        # self.exposure_busy = False
+                        # self.shutter_open=False
                         return expresult
 
                 remaining = round(self.completion_time - time.time(), 1)
@@ -4757,6 +4775,8 @@ class Camera:
             elif self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
 
 
+                self.shutter_open=False
+
                 if self.theskyx:
                     self.readout_estimate= time.time()-start_time_of_observation-exposure_time
                     plog ("Theskyx readout time: " + str(self.readout_estimate))
@@ -4775,7 +4795,7 @@ class Camera:
 
 
 
-                self.exposure_busy=False
+                #self.exposure_busy=False
                 # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
                 if not g_dev['obs'].mountless_operation:
 
@@ -4853,7 +4873,8 @@ class Camera:
                     if retrycounter == 8:
                         expresult = {"error": True}
                         plog("Retried 8 times and didn't get an image, giving up.")
-                        self.exposure_busy = False
+                        # self.exposure_busy = False
+                        # self.shutter_open=False
                         return expresult
                     try:
                         outputimg = self._getImageArray().astype(np.float32)
@@ -4888,7 +4909,8 @@ class Camera:
                         g_dev['obs'].camera_sufficiently_cooled_for_calibrations = False
                         expresult = {}
                         expresult["error"] = True
-                        self.exposure_busy = False
+                        # self.exposure_busy = False
+                        # self.shutter_open=False
                         return expresult
 
                     else:
@@ -4927,13 +4949,15 @@ class Camera:
                                     plog ("Reject! This Dark seems to be light affected. ")
                                     expresult = {}
                                     expresult["error"] = True
-                                    self.exposure_busy = False
+                                    # self.exposure_busy = False
+                                    # self.shutter_open=False
                                     return expresult
                             elif debiaseddarkmedian > dark_limit_adu:   # was 0.5, NB later add in an std based second rejection criterion
                                 plog ("Reject! This Dark seems to be light affected. ")
                                 expresult = {}
                                 expresult["error"] = True
-                                self.exposure_busy = False
+                                # self.exposure_busy = False
+                                # self.shutter_open=False
                                 return expresult
 
 
@@ -5066,7 +5090,7 @@ class Camera:
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                     del hdu
-                    self.exposure_busy = False
+                    #self.exposure_busy = False
                     return copy.deepcopy(expresult)
 
 
@@ -5420,7 +5444,7 @@ class Camera:
                         except:
                             plog("Failed to send FOCUS TEXT up for some reason")
                             plog(traceback.format_exc())
-                    self.exposure_busy = False
+                    #self.exposure_busy = False
                     return expresult
 
                 blockended=False
@@ -5444,7 +5468,8 @@ class Camera:
                         plog ("And Cancelling SmartStacks.")
                         Nsmartstack=1
                         sskcounter=2
-                        self.exposure_busy = False
+                        # self.exposure_busy = False
+                        # self.shutter_open=False
                         self.currently_in_smartstack_loop=False
 
 
@@ -5514,7 +5539,8 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        self.exposure_busy = False
+                        # self.exposure_busy = False
+
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
 
                     elif (
@@ -5529,7 +5555,8 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        self.exposure_busy = False
+                        # self.exposure_busy = False
+                        # self.shutter_open=False
                         return copy.deepcopy(expresult)  # signals to flat routine image was rejected, prompt return
                     elif (
                         central_median
@@ -5543,7 +5570,8 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        self.exposure_busy = False
+                        # self.exposure_busy = False
+                        # self.shutter_open=False
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
                     else:
                         expresult={}
@@ -5613,7 +5641,8 @@ class Camera:
                                 expresult["error"] = True
                                 expresult["patch"] = central_median
                                 expresult["camera_gain"] = np.nan
-                                self.exposure_busy = False
+                                # self.exposure_busy = False
+                                # self.shutter_open=False
                                 return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
 
                             expresult["camera_gain"] = cge_gain
@@ -5626,7 +5655,8 @@ class Camera:
                         del camera_gain_estimate_image
                         expresult["error"] = False
                         expresult["patch"] = central_median
-                        self.exposure_busy = False
+                        # self.exposure_busy = False
+                        # self.shutter_open=False
                         plog("Exposure Complete")
                         g_dev["obs"].send_to_user("Exposure Complete")
 
@@ -5719,7 +5749,8 @@ class Camera:
 
                         del hdu
 
-                        self.exposure_busy = False
+                        # self.exposure_busy = False
+                        # self.shutter_open=False
                         return copy.deepcopy(expresult)
 
 
@@ -5737,11 +5768,11 @@ class Camera:
                     except:
                         plog(traceback.format_exc())
                         breakpoint()
-                self.exposure_busy = False
+                # self.exposure_busy = False
 
                 plog("Exposure Complete")
                 g_dev["obs"].send_to_user("Exposure Complete")
-                self.exposure_busy = False
+                # self.exposure_busy = False
                 return copy.deepcopy(expresult)
 
             else:
@@ -5770,6 +5801,7 @@ class Camera:
                         g_dev["obs"].exposure_halted_indicator =False
                         self.currently_in_smartstack_loop=False
                         self.exposure_busy = False
+                        self.shutter_open=False
                         return expresult
 
                     if g_dev["obs"].exposure_halted_indicator:
@@ -5778,6 +5810,7 @@ class Camera:
                         g_dev["obs"].exposure_halted_indicator =False
                         plog ("Exposure Halted Indicator On. Cancelling Exposure.")
                         self.exposure_busy = False
+                        self.shutter_open=False
                         return expresult
                     # plog(
                     #     "Camera timed out; probably is no longer connected, resetting it now."
