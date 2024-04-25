@@ -1227,6 +1227,9 @@ class Observatory:
                 plog ("Medium UI Queue: " +str(self.mediumui_queue.qsize()))
                 plog ("Calibration UI Queue: " +str(self.calibrationui_queue.qsize()))
                 plog ("Slow Camera Queue: " +str(self.slow_camera_queue.qsize()))
+                
+                print (print(list(self.slow_camera_queue.queue)))
+                
                 plog ("Platesolve Queue: " +str(self.platesolve_queue.qsize()))
                 plog ("SEP Queue: " +str(self.sep_queue.qsize()))
                 plog ("JPEG Queue: " +str(self.mainjpeg_queue.qsize()))
