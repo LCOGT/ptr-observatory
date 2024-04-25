@@ -2908,6 +2908,9 @@ class Observatory:
                 one_at_a_time = 1
                 slow_process = self.slow_camera_queue.get(block=False)
                 slow_process = slow_process[1]
+                
+                print ("RECEIVED: " + str(slow_process[0]))
+                googtime=time.time()
 
                 # Set up RA and DEC headers
                 # needs to be done AFTER text file is sent up.
@@ -3785,7 +3788,15 @@ class Observatory:
                             time.sleep(10)
                             saverretries = saverretries + 1
 
+                
+                print ("COMPLETED: " + str(slow_process[0]))
+
+                print ("TIME: " +str(time.time()-googtime))
+
                 self.slow_camera_queue.task_done()
+                
+                
+                
                 one_at_a_time = 0
                 time.sleep(1)
 
