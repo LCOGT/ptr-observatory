@@ -1838,7 +1838,8 @@ class Observatory:
                     time.sleep(1)
 
         # Check there isn't sequencer commands to run.
-        if self.status_count > 1:  # Give time for status to form
+        if self.status_count > 1:  # Give time for status to form\
+            
             g_dev["seq"].manager()  # Go see if there is something new to do.
 
 
