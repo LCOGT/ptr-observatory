@@ -1209,12 +1209,12 @@ class Camera:
         try:
             fileList = glob.glob(self.local_calibration_path + "archive/" + self.alias + "/calibmasters/masterFlat*_bin1.npy")
             for file in fileList:
-                if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                    tempflatframe=np.load(file)
-                    self.flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
-                    del tempflatframe
-                else:
-                    self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+                # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                #     tempflatframe=np.load(file)
+                #     self.flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
+                #     del tempflatframe
+                # else:
+                self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
             # To supress occasional flatfield div errors
             np.seterr(divide="ignore")
         except:
@@ -2984,6 +2984,10 @@ class Camera:
                     
                 sub_stacker_array = np.memmap(temporary_substack_directory + '/tempfile', dtype='float32', mode= 'w+', shape = (self.imagesize_x,self.imagesize_y,N_of_substacks))
                 
+                
+                # Load in the flat to be used during sub_stacker_array
+                temporary_flat_in_memory=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
+                
                 #sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
 
 
@@ -3003,10 +3007,10 @@ class Camera:
                     # Flat field sub stack array
                     #plog ("Flatting 0")
                     try:
-                        if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                            sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
-                        else:
-                            sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+                        # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                        #     sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
+                        # else:
+                        sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], temporary_flat_in_memory)
                     except:
                         plog ("couldn't flat field substack")
                         pass
@@ -3080,10 +3084,10 @@ class Camera:
                 # Flat field sub stack array
                 #plog ("Flatting " + str(subexposure-1))
                 try:
-                    if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                        sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
-                    else:
-                        sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+                    # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                    #     sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
+                    # else:
+                    sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], temporary_flat_in_memory)
                 except:
                     plog ("couldn't flat field substack")
                     pass
@@ -5171,10 +5175,10 @@ class Camera:
                     # Quick flat flat frame
                     try:
                         #plog ("FLATTERY")
-                        if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                            outputimg = np.divide(outputimg, g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
-                        else:
-                            outputimg = np.divide(outputimg, np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+                        # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                        #     outputimg = np.divide(outputimg, g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
+                        # else:
+                        outputimg = np.divide(outputimg, np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
 
                     except Exception as e:
                         plog("flatting light frame failed", e)
@@ -6803,10 +6807,10 @@ def post_exposure_process(payload):
             # Quick flat flat frame
             try:
                 #plog ("FLATTERY")
-                if selfconfig['camera'][selfname]['settings']['hold_flats_in_memory']:
-                    hdusmalldata = np.divide(hdusmalldata, g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
-                else:
-                    hdusmalldata = np.divide(hdusmalldata, np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+                # if selfconfig['camera'][selfname]['settings']['hold_flats_in_memory']:
+                #     hdusmalldata = np.divide(hdusmalldata, g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
+                # else:
+                hdusmalldata = np.divide(hdusmalldata, np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
 
             except Exception as e:
                 plog("flatting light frame failed", e)

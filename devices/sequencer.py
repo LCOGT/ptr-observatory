@@ -4426,13 +4426,13 @@ class Sequencer:
                                     plog ("couldn't remove tempflat: " + str(file))
 
                             #for file in fileList:
-                            if self.config['camera'][g_dev['cam'].name]['settings']['hold_flats_in_memory']:
-                                #tempflatframe=np.load(file)
-                                #
-                                g_dev['cam'].flatFiles.update({filtercode: copy.deepcopy(temporaryFlat)})
-                                #del tempflatframe
-                            else:
-                                g_dev['cam'].flatFiles.update({filtercode: g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy'})
+                            # if self.config['camera'][g_dev['cam'].name]['settings']['hold_flats_in_memory']:
+                            #     #tempflatframe=np.load(file)
+                            #     #
+                            #     g_dev['cam'].flatFiles.update({filtercode: copy.deepcopy(temporaryFlat)})
+                            #     #del tempflatframe
+                            # else:
+                            g_dev['cam'].flatFiles.update({filtercode: g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy'})
 
                             g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
                             plog (str(filtercode) + " flat calibration frame created: " +str(time.time()-calibration_timer))
