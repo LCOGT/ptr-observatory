@@ -2986,10 +2986,11 @@ class Camera:
                 
                 
                 # Load in the flat to be used during sub_stacker_array
+                no_flat=False
                 try:
                     temporary_flat_in_memory=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
                 except:
-                    temporary_flat_in_memory=None
+                    no_flat=True
                     plog ("Could not find flat for this substack")
                 #sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
 
@@ -3009,7 +3010,7 @@ class Camera:
                         pass
                     # Flat field sub stack array
                     #plog ("Flatting 0")
-                    if temporary_flat_in_memory!=None:
+                    if not no_flat:
                         try:
                             # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
                             #     sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
