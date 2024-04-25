@@ -618,7 +618,7 @@ class Observatory:
 
 
 
-        self.queue_reporting_period = 600
+        self.queue_reporting_period = 60
         self.queue_reporting_timer = time.time() - (2* self.queue_reporting_period)
 
 
