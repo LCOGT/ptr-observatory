@@ -2965,7 +2965,7 @@ class Camera:
             # If it is the first exposure, then just take the exposure. Same with the second as the first one is the reference.
 
             if subexposure == 0 or subexposure == 1:
-                print ("Collecting subexposure " + str(subexposure+1))
+                plog ("Collecting subexposure " + str(subexposure+1))
 
                 success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                 if subexposure == 0 :
@@ -3155,7 +3155,9 @@ class Camera:
                     plog(traceback.format_exc())
                     breakpoint()
                     
-
+                del tempnan_mask
+                del denan_mask
+                del de_nanned_reference_frame
 
                 # # rolltimer=time.time()
                 # # roll the original array around by the shift
