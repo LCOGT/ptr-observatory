@@ -4615,6 +4615,9 @@ class Camera:
             block_and_focus_check_done=True
 
         pointingfocus_masterdark_done=False
+        check_nudge_after_shutter_closed=False
+
+
         if frame_type[-5:] in ["focus", "probe", "ental"]:
             focus_image = True
         else:
@@ -4623,6 +4626,9 @@ class Camera:
         broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
         narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
         dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
+        
+
+        
 
         while True:
 
@@ -4699,6 +4705,7 @@ class Camera:
                                 intermediate_tempdark=(g_dev['cam'].darkFiles['1'])
                             except:
                                 pass
+                        pointingfocus_masterdark_done=True
 
                 if remaining > 0:
                     if time.time() - self.plog_exposure_time_counter_timer > 10.0:
@@ -4763,10 +4770,24 @@ class Camera:
                             block_and_focus_check_done=True
 
                     # Need to have a time sleep to release the GIL to run the other threads
-                    temp_time_sleep=min(self.completion_time - time.time()+0.00001, initialRemaining * 0.125)
+                    
+                    if time.time() > (start_time_of_observation + exposure_time):
+                        # If the exposure time has passed, then the shutter is closed
+                        g_dev['cam'].shutter_open=False
+                        # Attempt to sneak in a platesolve and nudge during readout time. 
+                        if not check_nudge_after_shutter_closed:
+                            self.wait_for_slew()
+                            g_dev['obs'].check_platesolve_and_nudge()
+                            check_nudge_after_shutter_closed=True
+
+                        temp_time_sleep=min(self.completion_time - time.time()+0.00001, initialRemaining * 0.125)
+                        
+                    else:                                            
+                        temp_time_sleep=min(start_time_of_observation + exposure_time - time.time()+0.00001, initialRemaining * 0.125)
+                        
+                    
                     if temp_time_sleep > 0:
                         time.sleep(temp_time_sleep)
-
 
                 continue
 
