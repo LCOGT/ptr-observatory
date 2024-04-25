@@ -419,8 +419,13 @@ if not is_osc:   #This is the monochrome camera processing path.
 
             imageshift = phase_cross_correlation(de_nanned_reference_frame, tempnan, reference_mask=denan_mask, moving_mask=tempnan_mask)
 
-            #imageshift, error, diffphase
-            imageshiftabs=int(abs(imageshift[0]))
+
+
+            if len(imageshift) == 3:
+                imageshift=imageshift[0]
+                
+            # #imageshift, error, diffphase
+            # imageshiftabs=int(abs(imageshift[0]))
 
 
             #breakpoint()
