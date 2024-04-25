@@ -440,7 +440,7 @@ class Sequencer:
         # print ("at point one")
         # breakpoint()
         # Don't attempt to start a sequence during an exposure OR when a function (usually TPOINT) has taken total control OR if it is doing something else or waiting to readjust.
-        if not self.total_sequencer_control and not g_dev['cam'].exposure_busy and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_recentering_requested_by_platesolve_thread and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+        if not self.total_sequencer_control and not g_dev['cam'].running_an_exposure_set and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_recentering_requested_by_platesolve_thread and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             ###########################################################################
             # While in this part of the sequencer, we need to have manual UI commands
             # turned off.  So that if a sequencer script starts running, we don't get
@@ -527,7 +527,7 @@ class Sequencer:
                 plog("******")
                 plog (events['Observing Begins'] <= ephem_now  < events['Observing Ends'])
                 plog(self.block_guard)
-                plog( g_dev["cam"].exposure_busy)
+                plog( g_dev["cam"].running_an_exposure_set)
                 plog(time.time() - self.project_call_timer > 10)
                 plog(g_dev['obs'].scope_in_manual_mode)
                 plog(g_dev['obs'].open_and_enabled_to_observe)
@@ -646,7 +646,7 @@ class Sequencer:
                 self.clock_focus_latch = False
 
             if  (events['Observing Begins'] <= ephem_now \
-                                       < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].exposure_busy\
+                                       < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].running_an_exposure_set\
                                        and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
 
                 try:
@@ -833,7 +833,7 @@ class Sequencer:
                     # Check that there isn't any activity indicating someone using it...
                     if (time.time() - g_dev['obs'].time_of_last_exposure) > 900 and (time.time() - g_dev['obs'].time_of_last_slew) > 900:
                         # Check no other commands or exposures are happening
-                        if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy:
+                        if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].running_an_exposure_set:
                             # If enclosure is shut for maximum darkness
                             if 'Closed' in enc_status['shutter_status']  or 'closed' in enc_status['shutter_status']:
                                 # Check the temperature is in range
@@ -2703,7 +2703,7 @@ class Sequencer:
 
         if g_dev['cam'].theskyx:
             g_dev['cam'].updates_paused=True
-            g_dev["cam"].exposure_busy=True
+            #g_dev["cam"].running_an_exposure_set=True
 
         os.system("taskkill /IM TheSkyX.exe /F")
         os.system("taskkill /IM TheSky64.exe /F")
@@ -2731,7 +2731,7 @@ class Sequencer:
                     g_dev['cam'].camera_update_reboot=True
                     time.sleep(5)
                     g_dev['cam'].updates_paused=False
-                    g_dev["cam"].exposure_busy=False
+                   # g_dev["cam"].running_an_exposure_set=False
 
 
 

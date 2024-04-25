@@ -549,7 +549,7 @@ class Mount:
                                 
                                 # Don't slew while exposing!
                                 try:
-                                    while g_dev['cam'].exposure_busy:
+                                    while g_dev['cam'].shutter_open:
                                         print ("mount thread waiting for camera")
                                         time.sleep(0.2)
                                 except:

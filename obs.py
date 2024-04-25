@@ -885,12 +885,12 @@ class Observatory:
 
         try:
             g_dev["cam"]._stop_expose()
-            g_dev["cam"].exposure_busy = False
+            g_dev["cam"].running_an_exposure_set = False
 
         except Exception as e:
             plog("Camera is not busy.", e)
             plog(traceback.format_exc())
-            self.exposure_busy = False
+            g_dev['cam'].running_an_exposure_set = False
 
         g_dev["obs"].exposure_halted_indicator = True
         g_dev["obs"].exposure_halted_indicator_timer = time.time()
@@ -1290,11 +1290,11 @@ class Observatory:
                     g_dev["obs"].stop_all_activity = False
 
 
-                # If camera is rebooting, the exposure_busy term can fall out
+                # If camera is rebooting, the.running_an_exposure_set term can fall out
                 if g_dev["cam"].theskyx:
                     while True:
                         try:
-                            g_dev["cam"].exposure_busy
+                            g_dev["cam"].running_an_exposure_set
                             #plog ("theskyx camera check")
                             break
                         except:
@@ -1304,7 +1304,7 @@ class Observatory:
 
                 # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
                 if not self.mountless_operation:
-                    if not g_dev["cam"].exposure_busy and not g_dev['seq'].block_guard and not g_dev['seq'].total_sequencer_control:
+                    if not g_dev["cam"].running_an_exposure_set and not g_dev['seq'].block_guard and not g_dev['seq'].total_sequencer_control:
                         self.check_platesolve_and_nudge()
 
 
@@ -1315,7 +1315,7 @@ class Observatory:
                     self.time_of_last_pulse = max(self.time_of_last_slew, self.time_of_last_pulse)
                     if (time.time() - self.time_of_last_pulse) > 300 and not g_dev['mnt'].currently_slewing:
                         # Check no other commands or exposures are happening
-                        if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy and not g_dev['cam'].currently_in_smartstack_loop and not g_dev["seq"].focussing:
+                        if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].running_an_exposure_set and not g_dev['cam'].currently_in_smartstack_loop and not g_dev["seq"].focussing:
                             if not g_dev['mnt'].rapid_park_indicator and not g_dev['mnt'].return_slewing() and g_dev['mnt'].return_tracking() :
                                 # Don't do it if the roof isn't open etc.
                                 if (g_dev['obs'].open_and_enabled_to_observe==True ) or g_dev['obs'].scope_in_manual_mode:
@@ -1329,7 +1329,7 @@ class Observatory:
                                         meridianra=g_dev['mnt'].return_right_ascension()
                                         meridiandec=g_dev['mnt'].return_declination()
                                         g_dev['mnt'].slew_async_directly(ra=meridianra, dec=meridiandec)
-                                        print ("Meridian Pulse")
+                                        plog ("Meridian Pulse")
                                         wait_for_slew()
                                         self.time_of_last_pulse=time.time()
 
@@ -1393,7 +1393,7 @@ class Observatory:
                 # Adjust focus on a not-too-frequent period for temperature
                 #print ("preadj")
                 if not self.mountless_operation:
-                    if not g_dev["cam"].exposure_busy and not g_dev["seq"].focussing and self.open_and_enabled_to_observe and not g_dev['mnt'].currently_slewing and not g_dev['foc'].focuser_is_moving:
+                    if not g_dev["cam"].running_an_exposure_set and not g_dev["seq"].focussing and self.open_and_enabled_to_observe and not g_dev['mnt'].currently_slewing and not g_dev['foc'].focuser_is_moving:
                         g_dev['foc'].adjust_focus()
 
 
@@ -1810,9 +1810,9 @@ class Observatory:
         """
 
         # Check that there isn't individual commands to be run
-        if (not g_dev["cam"].exposure_busy) and not g_dev['seq'].total_sequencer_control and (not self.stop_processing_command_requests) and not g_dev['mnt'].currently_slewing and not self.pointing_recentering_requested_by_platesolve_thread and self.pointing_correction_requested_by_platesolve_thread:
+        if (not g_dev["cam"].running_an_exposure_set) and not g_dev['seq'].total_sequencer_control and (not self.stop_processing_command_requests) and not g_dev['mnt'].currently_slewing and not self.pointing_recentering_requested_by_platesolve_thread and self.pointing_correction_requested_by_platesolve_thread:
             while self.cmd_queue.qsize() > 0:
-                if not self.stop_processing_command_requests and not g_dev["cam"].exposure_busy and not g_dev['seq'].block_guard and not g_dev['seq'].total_sequencer_control and not g_dev['mnt'].currently_slewing and not self.pointing_recentering_requested_by_platesolve_thread and self.pointing_correction_requested_by_platesolve_thread:  # This is to stop multiple commands running over the top of each other.
+                if not self.stop_processing_command_requests and not g_dev["cam"].running_an_exposure_set and not g_dev['seq'].block_guard and not g_dev['seq'].total_sequencer_control and not g_dev['mnt'].currently_slewing and not self.pointing_recentering_requested_by_platesolve_thread and self.pointing_correction_requested_by_platesolve_thread:  # This is to stop multiple commands running over the top of each other.
                     self.stop_processing_command_requests = True
                     cmd = self.cmd_queue.get()
 
