@@ -3171,8 +3171,7 @@ class Camera:
                     breakpoint()
                     
                 del tempnan_mask
-                del denan_mask
-                del de_nanned_reference_frame
+                
 
                 # # rolltimer=time.time()
                 # # roll the original array around by the shift
@@ -3241,6 +3240,8 @@ class Camera:
 
             #sub_stacker_array[:,:,subexposure] = self._getImageArray()
 
+        del denan_mask
+        del de_nanned_reference_frame
 
         # Once collected and done, nanmedian the array into the single image
 

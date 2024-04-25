@@ -283,7 +283,7 @@ class Observatory:
         except:
             pass
         if not os.path.exists(self.local_calibration_path + "substacks"):
-            os.makedirs(self.local_calibration_path + "subsstacks")
+            os.makedirs(self.local_calibration_path + "substacks")
 
         # Orphan and Broken paths
         self.orphan_path=self.config['archive_path'] +'/' + self.name + '/' + 'orphans/'
