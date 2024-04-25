@@ -6428,7 +6428,7 @@ class Sequencer:
                             try:
                                 fitted_focus_position=crit_points[2]
                             except:
-                                print ("focus fit didn't work dunno y yet.")
+                                print ("crit points didn't work dunno y yet.")
                                 plog(traceback.format_exc())
                                 fit_failed=True
                                 #breakpoint()
