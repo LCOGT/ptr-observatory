@@ -2986,8 +2986,11 @@ class Camera:
                 
                 
                 # Load in the flat to be used during sub_stacker_array
-                temporary_flat_in_memory=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
-                
+                try:
+                    temporary_flat_in_memory=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
+                except:
+                    temporary_flat_in_memory=None
+                    plog ("Could not find flat for this substack")
                 #sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
 
 
@@ -3006,12 +3009,16 @@ class Camera:
                         pass
                     # Flat field sub stack array
                     #plog ("Flatting 0")
-                    try:
-                        # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                        #     sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
-                        # else:
-                        sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], temporary_flat_in_memory)
-                    except:
+                    if temporary_flat_in_memory!=None:
+                        try:
+                            # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                            #     sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
+                            # else:
+                            sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], temporary_flat_in_memory)
+                        except:
+                            plog ("couldn't flat field substack")
+                            pass
+                    else:
                         plog ("couldn't flat field substack")
                         pass
                     # Bad pixel map sub stack array
