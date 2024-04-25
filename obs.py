@@ -1209,7 +1209,7 @@ class Observatory:
             self.time_since_safety_checks = time.time()
 
 
-            if False and ((time.time() - self.queue_reporting_timer) > self.queue_reporting_period):
+            if True and ((time.time() - self.queue_reporting_timer) > self.queue_reporting_period):
                 self.queue_reporting_timer=time.time()
                 plog ("Queue Reports - hunting for ram leak")
 
@@ -2676,8 +2676,8 @@ class Observatory:
                             # print("Last DEC requested: " + str(g_dev["mnt"].last_dec_requested))
 
                             if g_dev['seq'].block_guard and not g_dev["seq"].focussing:
-                                print ("Block RA: " +str(g_dev['seq'].block_ra))
-                                print ("Block DEC: " + str(g_dev['seq'].block_dec))
+                                #print ("Block RA: " +str(g_dev['seq'].block_ra))
+                                #print ("Block DEC: " + str(g_dev['seq'].block_dec))
                                 target_ra = g_dev['seq'].block_ra
                                 target_dec = g_dev['seq'].block_dec
 
