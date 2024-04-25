@@ -2666,8 +2666,8 @@ class Observatory:
                             try:
                                 plog(
                                     "PW Solves: ",
-                                    solve["ra_j2000_hours"],
-                                    solve["dec_j2000_degrees"],
+                                    round(solve["ra_j2000_hours"], 5),
+                                    round(solve["dec_j2000_degrees"], 4)
                                 )
                             except:
                                 plog ("couldn't print PW solves.... why?")
@@ -2689,7 +2689,7 @@ class Observatory:
                             solved_ra = solve["ra_j2000_hours"]
                             solved_dec = solve["dec_j2000_degrees"]
                             solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                            plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel )))
+                            plog("1x1 pixelscale solved: " + str(round(solved_arcsecperpixel, 3 )))
                             # If this is the first pixelscalle gotten, then it is the pixelscale!
                             if g_dev['cam'].pixscale == None:
                                 g_dev['cam'].pixscale = solved_arcsecperpixel
@@ -2730,7 +2730,7 @@ class Observatory:
                                 err_ha = err_ha + 24
                                 plog(err_ha)
 
-                            plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
+                            plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 1)) + " & dec: " + str (round(err_dec * 3600, 1)) + " asec")
 
                             self.last_platesolved_ra = solve["ra_j2000_hours"]
                             self.last_platesolved_dec = solve["dec_j2000_degrees"]
