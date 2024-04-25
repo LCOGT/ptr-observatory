@@ -3120,36 +3120,41 @@ class Camera:
                 #print ("Shift: " + str(time.time()-rolltimer))
                 #del tempnan
                 #print (imageshift)
+                
+                if len(imageshift) == 3:
+                    imageshift=imageshift[0]
 
+                try:
+                    if abs(imageshift[0]) > 0:
+                        # print ("X shifter")
+                        #if imageshift[0]
+                        imageshiftabs=int(abs(imageshift[0]))
+                        if imageshift[0] > 0:
+                            imageshiftsign = 1
+                        else:
+                            imageshiftsign = -1
+    
+                        sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=0)
+                        # print ("Roll: " + str(time.time()-rolltimer))
+    
+                    # rolltimer=time.time()
+                    if abs(imageshift[1]) > 0:
+                        # print ("Y shifter")
+                        # print (int(imageshift[1]))
+    
+                        imageshiftabs=int(abs(imageshift[1]))
+                        if imageshift[1] > 0:
+                            imageshiftsign = 1
+                        else:
+                            imageshiftsign = -1
+    
+    
+                        sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=1)
 
-                if abs(imageshift[0]) > 0:
-                    # print ("X shifter")
-                    # print (int(imageshift[0]))
-                    #if imageshift[0]
-                    imageshiftabs=int(abs(imageshift[0]))
-                    if imageshift[0] > 0:
-                        imageshiftsign = 1
-                    else:
-                        imageshiftsign = -1
-
-                    sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=0)
-                    # print ("Roll: " + str(time.time()-rolltimer))
-
-                # rolltimer=time.time()
-                if abs(imageshift[1]) > 0:
-                    # print ("Y shifter")
-                    # print (int(imageshift[1]))
-
-                    imageshiftabs=int(abs(imageshift[1]))
-                    if imageshift[1] > 0:
-                        imageshiftsign = 1
-                    else:
-                        imageshiftsign = -1
-
-
-                    sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=1)
-
-
+                except:
+                    plog(traceback.format_exc())
+                    breakpoint()
+                    
 
 
                 # # rolltimer=time.time()
@@ -5797,7 +5802,8 @@ class Camera:
 
                 if remaining < -15:
                     #breakpoint()
-                    plog ("Camera overtime: " + str(remaining))
+                    if remaining > -16:
+                        plog ("Camera overtime: " + str(remaining))
 
 
                     g_dev['obs'].request_scan_requests()

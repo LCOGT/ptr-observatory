@@ -1810,9 +1810,9 @@ class Observatory:
         """
 
         # Check that there isn't individual commands to be run
-        if (not g_dev["cam"].running_an_exposure_set) and not g_dev['seq'].total_sequencer_control and (not self.stop_processing_command_requests) and not g_dev['mnt'].currently_slewing and not self.pointing_recentering_requested_by_platesolve_thread and self.pointing_correction_requested_by_platesolve_thread:
+        if (not g_dev["cam"].running_an_exposure_set) and not g_dev['seq'].total_sequencer_control and (not self.stop_processing_command_requests) and not g_dev['mnt'].currently_slewing and not self.pointing_recentering_requested_by_platesolve_thread and not self.pointing_correction_requested_by_platesolve_thread:
             while self.cmd_queue.qsize() > 0:
-                if not self.stop_processing_command_requests and not g_dev["cam"].running_an_exposure_set and not g_dev['seq'].block_guard and not g_dev['seq'].total_sequencer_control and not g_dev['mnt'].currently_slewing and not self.pointing_recentering_requested_by_platesolve_thread and self.pointing_correction_requested_by_platesolve_thread:  # This is to stop multiple commands running over the top of each other.
+                if not self.stop_processing_command_requests and not g_dev["cam"].running_an_exposure_set and not g_dev['seq'].block_guard and not g_dev['seq'].total_sequencer_control and not g_dev['mnt'].currently_slewing and not self.pointing_recentering_requested_by_platesolve_thread and not self.pointing_correction_requested_by_platesolve_thread:  # This is to stop multiple commands running over the top of each other.
                     self.stop_processing_command_requests = True
                     cmd = self.cmd_queue.get()
 
