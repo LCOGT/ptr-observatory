@@ -2931,10 +2931,12 @@ class Camera:
         readout_estimate_holder=[]
         N_of_substacks = int(exposure_time / exp_of_substacks)
         readouts=0
-        sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
+        
+        
 
         self.sub_stacker_midpoints=[]
 
+        
 
         #print ("subexposing")
         for subexposure in range(N_of_substacks+1):
@@ -2974,6 +2976,15 @@ class Camera:
                 qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
                 exposure_timer=time.time()
 
+
+                # if during first exposure, create memmap disk array
+                temporary_substack_directory=self.local_calibration_path + "subsstacks/" + str(time.time()).replace('.','')
+                if not os.path.exists(temporary_substack_directory):
+                    os.makedirs(temporary_substack_directory)
+                    
+                sub_stacker_array = np.memmap(temporary_substack_directory + '/tempfile', dtype='float32', mode= 'w+', shape = (self.imagesize_x,self.imagesize_y,N_of_substacks))
+                
+                #sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
 
 
                 if subexposure == 1:

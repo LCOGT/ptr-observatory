@@ -277,6 +277,14 @@ class Observatory:
         if not os.path.exists(self.local_calibration_path + "smartstacks"):
             os.makedirs(self.local_calibration_path + "smartstacks")
 
+        # Clear out smartstacks directory
+        try:
+            shutil.rmtree(self.local_calibration_path + "substacks")
+        except:
+            pass
+        if not os.path.exists(self.local_calibration_path + "substacks"):
+            os.makedirs(self.local_calibration_path + "subsstacks")
+
         # Orphan and Broken paths
         self.orphan_path=self.config['archive_path'] +'/' + self.name + '/' + 'orphans/'
         if not os.path.exists(self.orphan_path):
