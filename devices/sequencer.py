@@ -7522,7 +7522,7 @@ class Sequencer:
                     return
                 pass
 
-        plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
+        # plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
         #
 
 
@@ -7607,7 +7607,7 @@ class Sequencer:
                         plog('stop_all_activity cancelling out of centering')
                         return
                     pass
-            plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
+            # plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
 
             if not (g_dev['obs'].last_platesolved_ra != np.nan and str(g_dev['obs'].last_platesolved_ra) != 'nan'):
 
@@ -7664,7 +7664,7 @@ class Sequencer:
                             plog('stop_all_activity cancelling out of centering')
                             return
                         pass
-                plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
+                # plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
 
 
 
