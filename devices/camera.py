@@ -1063,7 +1063,7 @@ class Camera:
         self.biasFiles = {}
         self.darkFiles = {}
         self.flatFiles = {}
-        self.hotFiles = {}
+        #self.hotFiles = {}
         self.bpmFiles = {}
 
 
@@ -1076,7 +1076,7 @@ class Camera:
                                       + "/" + tempfrontcalib + "BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
             self.biasFiles.update({'1': tempbiasframe})
-            del tempbiasframe
+            del tempbiasframe            
         except:
             plog("Bias frame for Binning 1 not available")
 
@@ -4199,6 +4199,25 @@ class Camera:
                                 if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat" and not frame_type=='pointing':
                                     if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
                                         self.substacker=True
+                                        
+                            # If it is meant to be a substacker image
+                            # Make sure there is actually a bias, dark, flat and bpm
+                            # otherwise a substack is pointless.
+                            if self.substacker:
+                                self.substacker=False
+                                # Must have a biasdark
+                                if 'tensec_exposure_biasdark' in self.darkFiles:
+                                    if this_exposure_filter.lower() in self.flatFiles:
+                                        if '1' in self.bpmFiles:
+                                            self.substacker=True
+                                        else:
+                                            plog ("Could not engage substacking as the bad pixel mask is missing")
+                                    else:
+                                        plog ("Could not engage substacking as the filter requested has no flat")
+                                else:
+                                    plog ("Could not engage substacking as the appropriate biasdark")
+                            
+                                            
 
                             # Adjust pointing exposure time relative to known focus
                             if not g_dev['seq'].focussing and frame_type=='pointing':
