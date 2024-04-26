@@ -280,6 +280,21 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfs = np.nan
     sepsky = np.nan
     pickle.dump([], open(im_path + text_name.replace('.txt', '.sep'),'wb'))
+    
+    sources = [0]
+    rfp = np.nan
+    rfr = np.nan
+    rfs = np.nan
+    sepsky = np.nan
+    fwhm_file={}
+    fwhm_file['rfp']=str(rfp)
+    fwhm_file['rfr']=str(rfr)
+    fwhm_file['rfs']=str(rfs)
+    fwhm_file['sky']=str(sepsky)
+    fwhm_file['sources']=str(len(sources))
+    # dump the settings files into the temp directory
+    with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
+        json.dump(fwhm_file, f)
 
 else:
 
