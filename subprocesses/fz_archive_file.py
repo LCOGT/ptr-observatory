@@ -26,7 +26,7 @@ import datetime
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
 #input_sep_info=pickle.load(sys.stdin.buffer)
-#input_sep_info=pickle.load(open('testfz17141141966139522','rb'))
+#input_sep_info=pickle.load(open('testfz1714133591386061','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
 
 print ("HERE IS THE INCOMING. ")
@@ -161,8 +161,9 @@ else:  # Is an OSC
             # self.enqueue_for_PTRarchive(
             #     26000000, '', tempfilename.replace('-EX', 'R1-EX')
             # )
-            hdufz.close()
-            os.rename(tempfilename.replace('-EX', 'R1-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'R1-EX'))
+            #hdufz.close()
+            #os.rename(tempfilename.replace('-EX', 'R1-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'R1-EX'))
+            os.rename(tempfilename.replace('-EX', 'R1-EX').replace('.fits','.tempfits'), tempfilename.replace('-EX', 'R1-EX') )
 
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
             hdu = fits.PrimaryHDU(np.array(newhdured, dtype=np.float32), temphduheader)
@@ -170,7 +171,7 @@ else:  # Is an OSC
             hdu.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
             )
-            hdu.close()
+            #hdu.close()
             os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
             # self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME'])), block=False)
 
@@ -192,7 +193,7 @@ else:  # Is an OSC
             # self.enqueue_for_PTRarchive(
             #     26000000, '', tempfilename.replace('-EX', 'G1-EX')
             # )
-            hdufz.close()
+            #hdufz.close()
             os.rename(tempfilename.replace('-EX', 'G1-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'G1-EX'))
 
             
@@ -203,7 +204,7 @@ else:  # Is an OSC
             hdu.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
             )
-            hdu.close()
+            #hdu.close()
             os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
             # self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME'])), block=False)
         del GTRonly
@@ -224,7 +225,7 @@ else:  # Is an OSC
             
             )  # Save full fz file locally
             
-            hdufz.close()
+            #hdufz.close()
             os.rename(tempfilename.replace('-EX', 'G2-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'G2-EX'))
 
             
@@ -238,7 +239,7 @@ else:  # Is an OSC
             hdu.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
             )
-            hdu.close()
+            #hdu.close()
             os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
             # self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME'])), block=False)
 
@@ -259,7 +260,7 @@ else:  # Is an OSC
                 tempfilename.replace('-EX', 'B1-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
             )  # Save full fz file locally
             
-            hdufz.close()
+            #hdufz.close()
             os.rename(tempfilename.replace('-EX', 'B1-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'B1-EX'))
 
             # self.enqueue_for_PTRarchive(
@@ -272,7 +273,7 @@ else:  # Is an OSC
             hdu.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'), overwrite=True
             )
-            hdu.close()
+            #hdu.close()
             os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
             # self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME'])), block=False)
         del newhdublue
@@ -294,10 +295,10 @@ else:  # Is an OSC
                 np.array(clearV, dtype=np.float32), temphduheader
             )
             hdufz.writeto(
-                tempfilename.replace('-EX', 'CV-EX'), overwrite=True#, output_verify='silentfix'
+                tempfilename.replace('-EX', 'CV-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
             )
             
-            hdufz.close()
+            #hdufz.close()
             os.rename(tempfilename.replace('-EX', 'CV-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'CV-EX'))
 
             # self.enqueue_for_PTRarchive(
@@ -310,7 +311,7 @@ else:  # Is an OSC
             hdu.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'), overwrite=True
             )
-            hdu.close()
+            #hdu.close()
             os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
             # self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME'])), block=False)
         del clearV
