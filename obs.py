@@ -3002,8 +3002,8 @@ class Observatory:
                 slow_process = self.slow_camera_queue.get(block=False)
                 slow_process = slow_process[1]
 
-                print ("RECEIVED: " + str(slow_process[0]))
-                googtime=time.time()
+                # print ("RECEIVED: " + str(slow_process[0]))
+                # googtime=time.time()
 
                 # Set up RA and DEC headers
                 # needs to be done AFTER text file is sent up.
@@ -3495,366 +3495,366 @@ class Observatory:
                             # time.sleep(10)
                             # saverretries = saverretries + 1
 
-                if slow_process[0] == 'fz_and_send':
+                # if slow_process[0] == 'fz_and_send':
 
                     
 
 
 
 
-                    picklepayload=(temphduheader,copy.deepcopy(self.config),g_dev['cam'].name, slow_process)
+                #     picklepayload=(temphduheader,copy.deepcopy(self.config),g_dev['cam'].name, slow_process)
                     
-                    #if True :
-                    picklefilename='testlocalred'+str(time.time()).replace('.','')
-                    #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
-                    pickle.dump(picklepayload, open(self.local_calibration_path + 'smartstacks/'+picklefilename,'wb'))
-                    #breakpoint()
+                #     #if True :
+                #     picklefilename='testlocalred'+str(time.time()).replace('.','')
+                #     #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
+                #     pickle.dump(picklepayload, open(self.local_calibration_path + 'smartstacks/'+picklefilename,'wb'))
+                #     #breakpoint()
 
 
-                    # if sskcounter >0:
-                    #breakpoint()
+                #     # if sskcounter >0:
+                #     #breakpoint()
 
-                    # print (picklefilename)
+                #     # print (picklefilename)
                     
-                    # print(slow_process[1])
+                #     # print(slow_process[1])
 
-                    subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=self.local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-                    
-                    
-                    #goog_subprocess.communicate()
-                    #breakpoint()
-
-                    # try:
-                    #     pickle.dump(picklepayload, smartstack_subprocess.stdin)
-                    # except:
-                    #     plog ("Problem in the smartstack pickle dump")
-                    #     plog(traceback.format_exc())
+                #     subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=self.local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                     
                     
+                #     #goog_subprocess.communicate()
+                #     #breakpoint()
 
-                    # # Create the fz file ready for PTR Archive
-                    # # Note that even though the raw file is int16,
-                    # # The compression and a few pieces of software require float32
-                    # # BUT it actually compresses to the same size either way
-                    # temphduheader["BZERO"] = 0  # Make sure there is no integer scaling left over
-                    # temphduheader["BSCALE"] = 1  # Make sure there is no integer scaling left over
-                    if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-
-
-                        pipefolder = self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(temphduheader['DAY-OBS']) +'/'+ str(temphduheader['INSTRUME'])
-                        # if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying']+'/'+ str(temphduheader['DAY-OBS'])):
-                        #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(temphduheader['DAY-OBS']))
-
-                        # if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(temphduheader['DAY-OBS']) +'/'+ str(temphduheader['INSTRUME'])):
-                        #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(temphduheader['DAY-OBS']) +'/'+ str(temphduheader['INSTRUME']))
-
-
-
-                    if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-
-
-                        # # This routine saves the file ready for uploading to AWS
-                        # # It usually works perfectly 99.9999% of the time except
-                        # # when there is an astropy cache error. It is likely that
-                        # # the cache will need to be cleared when it fails, but
-                        # # I am still waiting for it to fail again (rare)
-                        # saver = 0
-                        # saverretries = 0
-                        # while saver == 0 and saverretries < 10:
-                        #     try:
-                        #         if self.config['ingest_raws_directly_to_archive']:
-                        #             hdufz = fits.CompImageHDU(
-                        #                 np.array(slow_process[2], dtype=np.float32), temphduheader
-                        #             )
-                        #             hdufz.writeto(
-                        #                 slow_process[1], overwrite=True
-                        #             )  # Save full fz file locally
-                        #             try:
-                        #                 hdufz.close()
-                        #             except:
-                        #                 pass
-                        #             del hdufz  # remove file from memory now that we are doing with it
-
-                        #         if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-
-                        #             hdu = fits.PrimaryHDU(np.array(slow_process[2], dtype=np.float32), temphduheader)
-
-
-                        #             #plog ("gonna pipe folder")
-                        #             #plog (pipefolder + '/' + str(temphduheader['ORIGNAME']))
-                        #             hdu.writeto(
-                        #                 pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.fits'), overwrite=True
-                        #             )
-                        #             try:
-                        #                 hdu.close()
-                        #             except:
-                        #                 pass
-                        #             del hdu  # remove file from memory now that we are doing with it
-
-                                    #(filename,dayobs,instrume) = fileinfo
-                        if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-
-                            self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.fits')),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
-                                    #hdufz.writeto(
-                                    #    slow_process[1], overwrite=True
-                                    #)  # Save full fz file locally
-                            #     saver = 1
-                            # except Exception as e:
-                            #     plog("Failed to write raw fz file: ", e)
-                            #     if "requested" in e and "written" in e:
-                            #         plog(check_download_cache())
-                            #     plog(traceback.format_exc())
-                            #     time.sleep(10)
-                            #     saverretries = saverretries + 1
-
-
-                        # Send this file up to ptrarchive
-                        if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-                            self.enqueue_for_PTRarchive(
-                                26000000, '', slow_process[1]
-                            )
-
-                    else:  # Is an OSC
-
-                        if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
-
-                            # newhdured = slow_process[2][::2, ::2]
-                            # GTRonly = slow_process[2][::2, 1::2]
-                            # GBLonly = slow_process[2][1::2, ::2]
-                            # newhdublue = slow_process[2][1::2, 1::2]
-                            # clearV = (block_reduce(slow_process[2],2))
-
-                            # oscmatchcode = (datetime.datetime.now().strftime("%d%m%y%H%M%S"))
-
-                            #temphduheader["OSCMATCH"] = oscmatchcode
-                            #temphduheader['OSCSEP'] = 'yes'
-                            # temphduheader['NAXIS1'] = float(temphduheader['NAXIS1'])/2
-                            # temphduheader['NAXIS2'] = float(temphduheader['NAXIS2'])/2
-                            # temphduheader['CRPIX1'] = float(temphduheader['CRPIX1'])/2
-                            # temphduheader['CRPIX2'] = float(temphduheader['CRPIX2'])/2
-                            try:
-                                temphduheader['PIXSCALE'] = float(temphduheader['PIXSCALE'])*2
-                            except:
-                                pass
-                            temphduheader['CDELT1'] = float(temphduheader['CDELT1'])*2
-                            temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
-                            tempfilter = temphduheader['FILTER']
-                            tempfilename = slow_process[1]
-
-
-
-                            # Save and send R1
-                            temphduheader['FILTER'] = tempfilter + '_R1'
-                            temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('-EX', 'R1-EX')
-
-
-
-                            if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-                                # hdufz = fits.CompImageHDU(
-                                #     np.array(newhdured, dtype=np.float32), temphduheader
-                                # )
-                                # hdufz.writeto(
-                                #     tempfilename.replace('-EX', 'R1-EX'), overwrite=True#, output_verify='silentfix'
-                                # )  # Save full fz file locally
-                                self.enqueue_for_PTRarchive(
-                                    26000000, '', tempfilename.replace('-EX', 'R1-EX')
-                                )
-
-                            if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-                                # hdu = fits.PrimaryHDU(np.array(newhdured, dtype=np.float32), temphduheader)
-                                temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
-                                # hdu.writeto(
-                                #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
-                                # )
-                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
-
-                            # del newhdured
-
-                            # Save and send G1
-                            temphduheader['FILTER'] = tempfilter + '_G1'
-                            temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('R1-EX', 'G1-EX')
-
-
-
-                            if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-                                # hdufz = fits.CompImageHDU(
-                                #     np.array(GTRonly, dtype=np.float32), temphduheader
-                                # )
-                                # hdufz.writeto(
-                                #     tempfilename.replace('-EX', 'G1-EX'), overwrite=True#, output_verify='silentfix'
-                                # )  # Save full fz file locally
-                                self.enqueue_for_PTRarchive(
-                                    26000000, '', tempfilename.replace('-EX', 'G1-EX')
-                                )
-                            if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-                                # hdu = fits.PrimaryHDU(np.array(GTRonly, dtype=np.float32), temphduheader)
-                                temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
-
-                                # hdu.writeto(
-                                #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
-                                # )
-                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
-                            # del GTRonly
-
-                            # Save and send G2
-                            temphduheader['FILTER'] = tempfilter + '_G2'
-                            temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('G1-EX', 'G2-EX')
-
-
-
-
-                            if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-                                # hdufz = fits.CompImageHDU(
-                                #     np.array(GBLonly, dtype=np.float32), temphduheader
-                                # )
-                                # hdufz.writeto(
-                                #     tempfilename.replace('-EX', 'G2-EX'), overwrite=True#, output_verify='silentfix'
-                                # )  # Save full fz file locally
-                                self.enqueue_for_PTRarchive(
-                                    26000000, '', tempfilename.replace('-EX', 'G2-EX')
-                                )
-                            if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-                                # hdu = fits.PrimaryHDU(np.array(GBLonly, dtype=np.float32), temphduheader)
-                                temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
-
-                                # hdu.writeto(
-                                #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
-                                # )
-                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
-
-                            # del GBLonly
-
-                            # Save and send B1
-                            temphduheader['FILTER'] = tempfilter + '_B1'
-                            temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('G2-EX', 'B1-EX')
-
-
-
-
-                            if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-                                # hdufz = fits.CompImageHDU(
-                                #     np.array(newhdublue, dtype=np.float32), temphduheader
-                                # )
-                                # hdufz.writeto(
-                                #     tempfilename.replace('-EX', 'B1-EX'), overwrite=True#, output_verify='silentfix'
-                                # )  # Save full fz file locally
-                                self.enqueue_for_PTRarchive(
-                                    26000000, '', tempfilename.replace('-EX', 'B1-EX')
-                                )
-                            if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-                                # hdu = fits.PrimaryHDU(np.array(newhdublue, dtype=np.float32), temphduheader)
-                                temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
-
-                                # hdu.writeto(
-                                #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
-                                # )
-                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
-                            # del newhdublue
-
-                            # Save and send clearV
-                            temphduheader['FILTER'] = tempfilter + '_clearV'
-                            temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('B1-EX', 'CV-EX')
-
-                            # temphduheader['SATURATE']=float(temphduheader['SATURATE']) * 4
-                            # temphduheader['FULLWELL']=float(temphduheader['FULLWELL']) * 4
-                            # temphduheader['MAXLIN']=float(temphduheader['MAXLIN']) * 4
-
-
-
-
-
-                            if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-                                # hdufz = fits.CompImageHDU(
-                                #     np.array(clearV, dtype=np.float32), temphduheader
-                                # )
-                                # hdufz.writeto(
-                                #     tempfilename.replace('-EX', 'CV-EX'), overwrite=True#, output_verify='silentfix'
-                                # )
-                                self.enqueue_for_PTRarchive(
-                                    26000000, '', tempfilename.replace('-EX', 'CV-EX')
-                                )
-                            if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-                                # hdu = fits.PrimaryHDU(np.array(clearV, dtype=np.float32), temphduheader)
-                                # temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
-
-                                # hdu.writeto(
-                                #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
-                                # )
-                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
-                            # del clearV
-
-
-                        else:
-                            plog("this bayer grid not implemented yet")
-
-                if slow_process[0] == 'reduced':# or slow_process[0] == 'reduced_alt_path':
+                #     # try:
+                #     #     pickle.dump(picklepayload, smartstack_subprocess.stdin)
+                #     # except:
+                #     #     plog ("Problem in the smartstack pickle dump")
+                #     #     plog(traceback.format_exc())
                     
                     
-                    # Make  sure the alt paths exist
-                    if self.config["save_to_alt_path"] == "yes":
-                        os.makedirs(
-                            self.alt_path + g_dev["day"], exist_ok=True
-                        )
-                        os.makedirs(
-                            self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
-                        )
-                        os.makedirs(
-                            self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
-                        )
-                        os.makedirs(
-                            self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
+
+                #     # # Create the fz file ready for PTR Archive
+                #     # # Note that even though the raw file is int16,
+                #     # # The compression and a few pieces of software require float32
+                #     # # BUT it actually compresses to the same size either way
+                #     # temphduheader["BZERO"] = 0  # Make sure there is no integer scaling left over
+                #     # temphduheader["BSCALE"] = 1  # Make sure there is no integer scaling left over
+                #     if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+
+
+                #         pipefolder = self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(temphduheader['DAY-OBS']) +'/'+ str(temphduheader['INSTRUME'])
+                #         # if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying']+'/'+ str(temphduheader['DAY-OBS'])):
+                #         #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(temphduheader['DAY-OBS']))
+
+                #         # if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(temphduheader['DAY-OBS']) +'/'+ str(temphduheader['INSTRUME'])):
+                #         #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(temphduheader['DAY-OBS']) +'/'+ str(temphduheader['INSTRUME']))
+
+
+
+                #     if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+
+
+                #         # # This routine saves the file ready for uploading to AWS
+                #         # # It usually works perfectly 99.9999% of the time except
+                #         # # when there is an astropy cache error. It is likely that
+                #         # # the cache will need to be cleared when it fails, but
+                #         # # I am still waiting for it to fail again (rare)
+                #         # saver = 0
+                #         # saverretries = 0
+                #         # while saver == 0 and saverretries < 10:
+                #         #     try:
+                #         #         if self.config['ingest_raws_directly_to_archive']:
+                #         #             hdufz = fits.CompImageHDU(
+                #         #                 np.array(slow_process[2], dtype=np.float32), temphduheader
+                #         #             )
+                #         #             hdufz.writeto(
+                #         #                 slow_process[1], overwrite=True
+                #         #             )  # Save full fz file locally
+                #         #             try:
+                #         #                 hdufz.close()
+                #         #             except:
+                #         #                 pass
+                #         #             del hdufz  # remove file from memory now that we are doing with it
+
+                #         #         if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+
+                #         #             hdu = fits.PrimaryHDU(np.array(slow_process[2], dtype=np.float32), temphduheader)
+
+
+                #         #             #plog ("gonna pipe folder")
+                #         #             #plog (pipefolder + '/' + str(temphduheader['ORIGNAME']))
+                #         #             hdu.writeto(
+                #         #                 pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.fits'), overwrite=True
+                #         #             )
+                #         #             try:
+                #         #                 hdu.close()
+                #         #             except:
+                #         #                 pass
+                #         #             del hdu  # remove file from memory now that we are doing with it
+
+                #                     #(filename,dayobs,instrume) = fileinfo
+                #         if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+
+                #             self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.fits')),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
+                #                     #hdufz.writeto(
+                #                     #    slow_process[1], overwrite=True
+                #                     #)  # Save full fz file locally
+                #             #     saver = 1
+                #             # except Exception as e:
+                #             #     plog("Failed to write raw fz file: ", e)
+                #             #     if "requested" in e and "written" in e:
+                #             #         plog(check_download_cache())
+                #             #     plog(traceback.format_exc())
+                #             #     time.sleep(10)
+                #             #     saverretries = saverretries + 1
+
+
+                #         # Send this file up to ptrarchive
+                #         if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                #             self.enqueue_for_PTRarchive(
+                #                 26000000, '', slow_process[1]
+                #             )
+
+                #     else:  # Is an OSC
+
+                #         if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
+
+                #             # newhdured = slow_process[2][::2, ::2]
+                #             # GTRonly = slow_process[2][::2, 1::2]
+                #             # GBLonly = slow_process[2][1::2, ::2]
+                #             # newhdublue = slow_process[2][1::2, 1::2]
+                #             # clearV = (block_reduce(slow_process[2],2))
+
+                #             # oscmatchcode = (datetime.datetime.now().strftime("%d%m%y%H%M%S"))
+
+                #             #temphduheader["OSCMATCH"] = oscmatchcode
+                #             #temphduheader['OSCSEP'] = 'yes'
+                #             # temphduheader['NAXIS1'] = float(temphduheader['NAXIS1'])/2
+                #             # temphduheader['NAXIS2'] = float(temphduheader['NAXIS2'])/2
+                #             # temphduheader['CRPIX1'] = float(temphduheader['CRPIX1'])/2
+                #             # temphduheader['CRPIX2'] = float(temphduheader['CRPIX2'])/2
+                #             try:
+                #                 temphduheader['PIXSCALE'] = float(temphduheader['PIXSCALE'])*2
+                #             except:
+                #                 pass
+                #             temphduheader['CDELT1'] = float(temphduheader['CDELT1'])*2
+                #             temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
+                #             tempfilter = temphduheader['FILTER']
+                #             tempfilename = slow_process[1]
+
+
+
+                #             # Save and send R1
+                #             temphduheader['FILTER'] = tempfilter + '_R1'
+                #             temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('-EX', 'R1-EX')
+
+
+
+                #             if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                #                 # hdufz = fits.CompImageHDU(
+                #                 #     np.array(newhdured, dtype=np.float32), temphduheader
+                #                 # )
+                #                 # hdufz.writeto(
+                #                 #     tempfilename.replace('-EX', 'R1-EX'), overwrite=True#, output_verify='silentfix'
+                #                 # )  # Save full fz file locally
+                #                 self.enqueue_for_PTRarchive(
+                #                     26000000, '', tempfilename.replace('-EX', 'R1-EX')
+                #                 )
+
+                #             if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+                #                 # hdu = fits.PrimaryHDU(np.array(newhdured, dtype=np.float32), temphduheader)
+                #                 temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
+                #                 # hdu.writeto(
+                #                 #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
+                #                 # )
+                #                 self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
+
+                #             # del newhdured
+
+                #             # Save and send G1
+                #             temphduheader['FILTER'] = tempfilter + '_G1'
+                #             temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('R1-EX', 'G1-EX')
+
+
+
+                #             if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                #                 # hdufz = fits.CompImageHDU(
+                #                 #     np.array(GTRonly, dtype=np.float32), temphduheader
+                #                 # )
+                #                 # hdufz.writeto(
+                #                 #     tempfilename.replace('-EX', 'G1-EX'), overwrite=True#, output_verify='silentfix'
+                #                 # )  # Save full fz file locally
+                #                 self.enqueue_for_PTRarchive(
+                #                     26000000, '', tempfilename.replace('-EX', 'G1-EX')
+                #                 )
+                #             if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+                #                 # hdu = fits.PrimaryHDU(np.array(GTRonly, dtype=np.float32), temphduheader)
+                #                 temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
+
+                #                 # hdu.writeto(
+                #                 #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
+                #                 # )
+                #                 self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
+                #             # del GTRonly
+
+                #             # Save and send G2
+                #             temphduheader['FILTER'] = tempfilter + '_G2'
+                #             temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('G1-EX', 'G2-EX')
+
+
+
+
+                #             if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                #                 # hdufz = fits.CompImageHDU(
+                #                 #     np.array(GBLonly, dtype=np.float32), temphduheader
+                #                 # )
+                #                 # hdufz.writeto(
+                #                 #     tempfilename.replace('-EX', 'G2-EX'), overwrite=True#, output_verify='silentfix'
+                #                 # )  # Save full fz file locally
+                #                 self.enqueue_for_PTRarchive(
+                #                     26000000, '', tempfilename.replace('-EX', 'G2-EX')
+                #                 )
+                #             if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+                #                 # hdu = fits.PrimaryHDU(np.array(GBLonly, dtype=np.float32), temphduheader)
+                #                 temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
+
+                #                 # hdu.writeto(
+                #                 #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
+                #                 # )
+                #                 self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
+
+                #             # del GBLonly
+
+                #             # Save and send B1
+                #             temphduheader['FILTER'] = tempfilter + '_B1'
+                #             temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('G2-EX', 'B1-EX')
+
+
+
+
+                #             if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                #                 # hdufz = fits.CompImageHDU(
+                #                 #     np.array(newhdublue, dtype=np.float32), temphduheader
+                #                 # )
+                #                 # hdufz.writeto(
+                #                 #     tempfilename.replace('-EX', 'B1-EX'), overwrite=True#, output_verify='silentfix'
+                #                 # )  # Save full fz file locally
+                #                 self.enqueue_for_PTRarchive(
+                #                     26000000, '', tempfilename.replace('-EX', 'B1-EX')
+                #                 )
+                #             if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+                #                 # hdu = fits.PrimaryHDU(np.array(newhdublue, dtype=np.float32), temphduheader)
+                #                 temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
+
+                #                 # hdu.writeto(
+                #                 #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
+                #                 # )
+                #                 self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
+                #             # del newhdublue
+
+                #             # Save and send clearV
+                #             temphduheader['FILTER'] = tempfilter + '_clearV'
+                #             temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('B1-EX', 'CV-EX')
+
+                #             # temphduheader['SATURATE']=float(temphduheader['SATURATE']) * 4
+                #             # temphduheader['FULLWELL']=float(temphduheader['FULLWELL']) * 4
+                #             # temphduheader['MAXLIN']=float(temphduheader['MAXLIN']) * 4
+
+
+
+
+
+                #             if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                #                 # hdufz = fits.CompImageHDU(
+                #                 #     np.array(clearV, dtype=np.float32), temphduheader
+                #                 # )
+                #                 # hdufz.writeto(
+                #                 #     tempfilename.replace('-EX', 'CV-EX'), overwrite=True#, output_verify='silentfix'
+                #                 # )
+                #                 self.enqueue_for_PTRarchive(
+                #                     26000000, '', tempfilename.replace('-EX', 'CV-EX')
+                #                 )
+                #             if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+                #                 # hdu = fits.PrimaryHDU(np.array(clearV, dtype=np.float32), temphduheader)
+                #                 # temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
+
+                #                 # hdu.writeto(
+                #                 #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
+                #                 # )
+                #                 self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
+                #             # del clearV
+
+
+                #         else:
+                #             plog("this bayer grid not implemented yet")
+
+                # if slow_process[0] == 'reduced':# or slow_process[0] == 'reduced_alt_path':
+                    
+                    
+                #     # Make  sure the alt paths exist
+                #     if self.config["save_to_alt_path"] == "yes":
+                #         os.makedirs(
+                #             self.alt_path + g_dev["day"], exist_ok=True
+                #         )
+                #         os.makedirs(
+                #             self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
+                #         )
+                #         os.makedirs(
+                #             self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
+                #         )
+                #         os.makedirs(
+                #             self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
                         
                         
                         
-                        altpath=copy.deepcopy(self.alt_path)
-                    else:
-                        altpath='no'
+                #         altpath=copy.deepcopy(self.alt_path)
+                #     else:
+                #         altpath='no'
                         
                     
-                    picklepayload=(temphduheader,copy.deepcopy(self.config),g_dev['cam'].name, slow_process, altpath)
+                #     picklepayload=(temphduheader,copy.deepcopy(self.config),g_dev['cam'].name, slow_process, altpath)
                     
-                    #if True :
-                    picklefilename='testfz'+str(time.time()).replace('.','')
-                    #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
-                    pickle.dump(picklepayload, open(self.local_calibration_path + 'smartstacks/'+picklefilename,'wb'))
-                    #breakpoint()
+                #     #if True :
+                #     picklefilename='testfz'+str(time.time()).replace('.','')
+                #     #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
+                #     pickle.dump(picklepayload, open(self.local_calibration_path + 'smartstacks/'+picklefilename,'wb'))
+                #     #breakpoint()
 
 
-                    # if sskcounter >0:
-                    #breakpoint()
+                #     # if sskcounter >0:
+                #     #breakpoint()
 
-                    #print (picklefilename)
+                #     #print (picklefilename)
 
-                    subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=self.local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                #     subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=self.local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                     
                     
-                    if self.config["save_to_alt_path"] == "yes":
-                        # #breakpoint()
-                        # hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-                        #)  # Save full raw file locally
-                        self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1]),time.time()), block=False)
+                #     if self.config["save_to_alt_path"] == "yes":
+                #         # #breakpoint()
+                #         # hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                #         #)  # Save full raw file locally
+                #         self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1]),time.time()), block=False)
                     
                     
-                    # # saver = 0
-                    # # saverretries = 0
-                    # # while saver == 0 and saverretries < 10:
+                #     # # saver = 0
+                #     # # saverretries = 0
+                #     # # while saver == 0 and saverretries < 10:
 
 
                         
-                    #         saver = 1
-                    #     except Exception as e:
-                    #         plog("Failed to write raw file: ", e)
-                    #         if "requested" in e and "written" in e:
+                #     #         saver = 1
+                #     #     except Exception as e:
+                #     #         plog("Failed to write raw file: ", e)
+                #     #         if "requested" in e and "written" in e:
 
-                    #             plog(check_download_cache())
-                    #         plog(traceback.format_exc())
-                    #         time.sleep(10)
-                    #         saverretries = saverretries + 1
+                #     #             plog(check_download_cache())
+                #     #         plog(traceback.format_exc())
+                #     #         time.sleep(10)
+                #     #         saverretries = saverretries + 1
 
 
-                print ("COMPLETED: " + str(slow_process[0]))
+                # print ("COMPLETED: " + str(slow_process[0]))
 
-                print ("TIME: " +str(time.time()-googtime))
+                # print ("TIME: " +str(time.time()-googtime))
 
                 self.slow_camera_queue.task_done()
 
