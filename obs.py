@@ -1227,9 +1227,9 @@ class Observatory:
                 plog ("Medium UI Queue: " +str(self.mediumui_queue.qsize()))
                 plog ("Calibration UI Queue: " +str(self.calibrationui_queue.qsize()))
                 plog ("Slow Camera Queue: " +str(self.slow_camera_queue.qsize()))
-                
+
                 # print (print(list(self.slow_camera_queue.queue)))
-                
+
                 plog ("Platesolve Queue: " +str(self.platesolve_queue.qsize()))
                 plog ("SEP Queue: " +str(self.sep_queue.qsize()))
                 plog ("JPEG Queue: " +str(self.mainjpeg_queue.qsize()))
@@ -1850,7 +1850,7 @@ class Observatory:
 
         # Check there isn't sequencer commands to run.
         if self.status_count > 1:  # Give time for status to form\
-            
+
             g_dev["seq"].manager()  # Go see if there is something new to do.
 
 
@@ -2788,7 +2788,7 @@ class Observatory:
                                 #     plog ("Not recentering as this is the first frame of a smartstack.")
                                 #     self.pointing_correction_requested_by_platesolve_thread = False
 
-                                if (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
+                                if (abs(err_ha * 15 * 3600) > 15400) or (abs(err_dec * 3600) > 15400):
                                     err_ha = 0
                                     err_dec = 0
                                     plog("Platesolve has found that the current suggested pointing is way off!")
@@ -2908,7 +2908,7 @@ class Observatory:
                 one_at_a_time = 1
                 slow_process = self.slow_camera_queue.get(block=False)
                 slow_process = slow_process[1]
-                
+
                 print ("RECEIVED: " + str(slow_process[0]))
                 googtime=time.time()
 
@@ -3788,15 +3788,15 @@ class Observatory:
                             time.sleep(10)
                             saverretries = saverretries + 1
 
-                
+
                 print ("COMPLETED: " + str(slow_process[0]))
 
                 print ("TIME: " +str(time.time()-googtime))
 
                 self.slow_camera_queue.task_done()
-                
-                
-                
+
+
+
                 one_at_a_time = 0
                 time.sleep(1)
 
