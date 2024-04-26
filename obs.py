@@ -3489,7 +3489,7 @@ class Observatory:
 
                     subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=self.local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                     
-                    breakpoint()
+                    #breakpoint()
 
                     # try:
                     #     pickle.dump(picklepayload, smartstack_subprocess.stdin)
