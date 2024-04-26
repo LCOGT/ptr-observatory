@@ -1883,6 +1883,38 @@ class Observatory:
             # Here we parse the file, set up and send to AWS
             filename = pri_image[1][1]
             filepath = pri_image[1][0] + filename  # Full path to file on disk
+            
+            time_put_in_queue=pri_image[1][2]
+            
+            # Check it is there
+            if not os.path.exists(filepath):
+                if (time.time() - time_put_in_queue) < 43200:
+                    plog (filepath + " not there yet, chucking it back in the queue.")
+                    self.enqueue_for_PTRarchive(
+                        26000000, '', filepath
+                    )
+                else:
+                    plog ("WAITED TOO LONG! " + filepath + " never turned up!")
+                
+                return ''
+            
+            # Check it is no small
+            if os.stat(filepath).st_size < 100:
+                if (time.time() - time_put_in_queue) < 43200:
+                    plog (filepath + " is there but still small - likely still writing out, chucking it back in the queue.")
+                    self.enqueue_for_PTRarchive(
+                        26000000, '', filepath
+                    )
+                else:
+                    plog ("WAITED TOO LONG! " + filepath + " never turned up!")
+                
+                return ''
+            
+            
+            
+            
+                
+            
 
             # Only ingest new large fits.fz files to the PTR archive.
             try:
@@ -1995,7 +2027,7 @@ class Observatory:
 
         upload_timer=time.time()
 
-        (filename,dayobs,instrume) = fileinfo
+        (filename,dayobs,instrume,time_put_in_queue) = fileinfo
 
 
         # Check folder exists
@@ -2012,6 +2044,35 @@ class Observatory:
             plog("Got an empty entry in pipearchive_queue.")
 
         else:
+
+            # Check it is there
+            if not os.path.exists(filename):
+                if (time.time() - time_put_in_queue) < 43200:
+                    plog (filename + " not there yet, chucking it back in the queue.")
+                    self.pipearchive_queue.put((filename,dayobs,instrume,time_put_in_queue), block=False)
+                        
+                    # self.enqueue_for_PTRarchive(
+                    #     26000000, '', filepath
+                    # )
+                else:
+                    plog ("WAITED TOO LONG! " + filename + " never turned up!")
+                
+                return ''
+            
+            # Check it is no small
+            if os.stat(filename).st_size < 100:
+                if (time.time() - time_put_in_queue) < 43200:
+                    plog (filename + " is there but still small - likely still writing out, chucking it back in the queue.")
+                    
+                    self.pipearchive_queue.put((filename,dayobs,instrume,time_put_in_queue), block=False)
+                    # self.enqueue_for_PTRarchive(
+                    #     26000000, '', filepath
+                    # )
+                else:
+                    plog ("WAITED TOO LONG! " + filename + " never turned up!")
+                
+                return ''            
+
 
             # Only ingest new large fits.fz files to the PTR archive.
             try:
@@ -3498,7 +3559,7 @@ class Observatory:
                         #             del hdu  # remove file from memory now that we are doing with it
 
                                     #(filename,dayobs,instrume) = fileinfo
-                        self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.fits')),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME'])), block=False)
+                        self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.fits')),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
                                     #hdufz.writeto(
                                     #    slow_process[1], overwrite=True
                                     #)  # Save full fz file locally
@@ -3570,7 +3631,7 @@ class Observatory:
                                 # hdu.writeto(
                                 #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
                                 # )
-                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME'])), block=False)
+                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
 
                             # del newhdured
 
@@ -3597,7 +3658,7 @@ class Observatory:
                                 # hdu.writeto(
                                 #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
                                 # )
-                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME'])), block=False)
+                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
                             # del GTRonly
 
                             # Save and send G2
@@ -3624,7 +3685,7 @@ class Observatory:
                                 # hdu.writeto(
                                 #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
                                 # )
-                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME'])), block=False)
+                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
 
                             # del GBLonly
 
@@ -3652,7 +3713,7 @@ class Observatory:
                                 # hdu.writeto(
                                 #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
                                 # )
-                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME'])), block=False)
+                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
                             # del newhdublue
 
                             # Save and send clearV
@@ -3684,7 +3745,7 @@ class Observatory:
                                 # hdu.writeto(
                                 #     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
                                 # )
-                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME'])), block=False)
+                                self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME'])),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
                             # del clearV
 
 
@@ -4207,7 +4268,7 @@ class Observatory:
                 # Put file back into copy queue
                 for file in fileList:
                     dayobs=file.split('-')[2]
-                    self.pipearchive_queue.put((copy.deepcopy(file),copy.deepcopy(dayobs),copy.deepcopy(instrume)), block=False)
+                    self.pipearchive_queue.put((copy.deepcopy(file),copy.deepcopy(dayobs),copy.deepcopy(instrume),time.time()), block=False)
 
 
     def smartstack_image(self):
@@ -4610,7 +4671,7 @@ class Observatory:
         return aws_weather_status
 
     def enqueue_for_PTRarchive(self, priority, im_path, name):
-        image = (im_path, name)
+        image = (im_path, name, time.time())
         self.ptrarchive_queue.put((priority, image), block=False)
 
     def enqueue_for_fastUI(self, priority, im_path, name):
