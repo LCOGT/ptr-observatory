@@ -1213,7 +1213,7 @@ class Observatory:
             self.time_since_safety_checks = time.time()
 
 
-            if True and ((time.time() - self.queue_reporting_timer) > self.queue_reporting_period):
+            if False and ((time.time() - self.queue_reporting_timer) > self.queue_reporting_period):
                 self.queue_reporting_timer=time.time()
                 plog ("Queue Reports - hunting for ram leak")
 
