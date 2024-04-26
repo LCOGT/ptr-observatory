@@ -5528,6 +5528,16 @@ class Camera:
                         hdusmallheader["NSTARS"] = ( str(fwhm_dict['sources']), 'Number of star-like sources in image')
                     except:
                         hdusmallheader["NSTARS"] = ( -99, 'Number of star-like sources in image')
+                        
+                        
+                    
+                    if self.config['keep_focus_images_on_disk']:
+                        g_dev['obs'].to_slow_process(1000, ('focus', cal_path + cal_name, outputimg, hdusmallheader,
+                                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+                        if self.config["save_to_alt_path"] == "yes":
+                            g_dev['obs'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, outputimg, hdusmallheader,
+                                                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
 
                     #breakpoint()
