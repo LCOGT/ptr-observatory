@@ -3600,6 +3600,7 @@ class Camera:
             if g_dev['obs'].open_and_enabled_to_observe==False :
                 g_dev['obs'].send_to_user("Refusing exposure request as the observatory is not enabled to observe.")
                 plog("Refusing exposure request as the observatory is not enabled to observe.")
+                self.running_an_exposure_set = False
                 return
 
         # Need to pick up exposure time here
@@ -4147,6 +4148,7 @@ class Camera:
                                                  plog ("stop_all_activity cancelling out of camera exposure")
                                                  self.currently_in_smartstack_loop=False
                                                  self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+                                                 self.running_an_exposure_set = False
                                                  return
 
 
