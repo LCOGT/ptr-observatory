@@ -76,7 +76,7 @@ site_config = {
     'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/mrc1/',  # place where night logs can be found.
-    'save_to_alt_path': 'yes',
+    'save_to_alt_path': 'no',
     'archive_age': 7,  # Number of days to keep files in the local archive before deletion. Negative means never delete
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
