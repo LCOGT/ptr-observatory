@@ -277,7 +277,10 @@ class Observatory:
         if not os.path.exists(self.local_calibration_path + "smartstacks"):
             os.makedirs(self.local_calibration_path + "smartstacks")
 
-        # Clear out smartstacks directory
+        # Copy in the latest fz_archive subprocess file to the smartstacks folder
+        shutil.copy('subprocesses/fz_archive_file.py',self.local_calibration_path + "smartstacks/fz_archive_file.py")
+
+        # Clear out substacks directory
         try:
             shutil.rmtree(self.local_calibration_path + "substacks")
         except:
@@ -3413,15 +3416,17 @@ class Observatory:
                     
                     #if True :
                     picklefilename='testfz'+str(time.time()).replace('.','')
-                    pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
-
+                    #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
+                    pickle.dump(picklepayload, open(self.local_calibration_path + 'smartstacks/testfz'+str(time.time()).replace('.',''),'wb'))
                     #breakpoint()
 
 
                     # if sskcounter >0:
                     #breakpoint()
 
-                    subprocess.Popen(['python','subprocesses/fz_archive_file.py',picklefilename],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                    print (picklefilename)
+
+                    subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=self.local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                     
                     breakpoint()
 

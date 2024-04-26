@@ -25,11 +25,13 @@ import warnings
 import datetime
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
-input_sep_info=pickle.load(sys.stdin.buffer)
-#input_jpeg_info=pickle.load(open('testseppickle','rb'))
+#input_sep_info=pickle.load(sys.stdin.buffer)
+#input_sep_info=pickle.load(open('testfz17141141966139522','rb'))
+input_sep_info=pickle.load(open(sys.argv[1],'rb'))
 
 print ("HERE IS THE INCOMING. ")
-print (input_sep_info)
+#print (input_sep_info)
+#breakpoint()
 
 
 temphduheader=input_sep_info[0]
@@ -294,6 +296,14 @@ else:  # Is an OSC
         print("this bayer grid not implemented yet")
 
 
+
+print ("TIME: " + str(time.time()-googtime))
+
+
+try:
+    os.remove(sys.argv[1])
+except:
+    pass
 
 sys.exit()
 
