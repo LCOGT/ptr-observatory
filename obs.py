@@ -1912,6 +1912,8 @@ class Observatory:
             
             
             
+            plog ("doing " + str(filepath))
+            
             
                 
             
@@ -2348,16 +2350,16 @@ class Observatory:
         The second item is also a tuple containing im_path and name.
         """
 
-        one_at_a_time = 0
+        #one_at_a_time = 0
 
         number_of_simultaneous_uploads= self.config['number_of_simultaneous_ptrarchive_streams']
 
         while True:
 
-            if (not self.ptrarchive_queue.empty()) and one_at_a_time == 0:
+            if (not self.ptrarchive_queue.empty()):# and one_at_a_time == 0:
 
 
-                one_at_a_time = 1
+                #one_at_a_time = 1
 
                 items=[]
                 for q in range(min(number_of_simultaneous_uploads,self.ptrarchive_queue.qsize()) ):
@@ -2368,8 +2370,8 @@ class Observatory:
                         self.ptrarchive_queue.task_done()
                         #plog (result)
 
-                one_at_a_time = 0
-                time.sleep(2)
+                #one_at_a_time = 0
+                #time.sleep(2)
 
 
             else:
@@ -2630,16 +2632,6 @@ class Observatory:
                 # # We actually don't need to wait until the subprocess is fully complete.
                 # while not os.path.exists(im_path + text_name.replace('.txt', '.fwhm')):
                 #     time.sleep(0.05)
-
-
-
-                if self.config['keep_focus_images_on_disk']:
-                    g_dev['obs'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
-                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
-                    if self.config["save_to_alt_path"] == "yes":
-                        g_dev['obs'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
-                                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                 self.enqueue_for_fastUI(10, im_path, text_name)
 
