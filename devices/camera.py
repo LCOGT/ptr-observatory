@@ -2931,7 +2931,10 @@ class Camera:
         exp_of_substacks = 10
         readout_estimate_holder=[]
         N_of_substacks = int(exposure_time / exp_of_substacks)
-        readouts=0
+        #readouts=0
+        
+        
+        is_osc=self.config["camera"][self.name]["settings"]['is_osc']
         
         
 
@@ -3039,12 +3042,23 @@ class Camera:
 
 
                     de_nanned_reference_frame=copy.deepcopy(sub_stacker_array[:,:,0])
+                    if is_osc:
+                        # Wipe out red channel
+                        de_nanned_reference_frame[::2, ::2]=np.nan
+                        # Wipe out blue channel
+                        de_nanned_reference_frame[1::2, 1::2]=np.nan
+                    
+                    
                     # Cut down image to central thousand by thousand patch to align
                     fx, fy = de_nanned_reference_frame.shape
                     crop_x= int(0.5*fx) -500
-
                     crop_y= int(0.5*fy) -500
                     de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
+                    
+                    
+                    
+                    
+                    
                     imageMode=bn.nanmedian(de_nanned_reference_frame)
 
                     #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
@@ -3120,6 +3134,14 @@ class Camera:
                 # Using the nan'ed file, calculate the shift
                 #rolltimer=time.time()
                 tempnan_mask=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
+                
+                if is_osc:
+                    # Wipe out red channel
+                    tempnan_mask[::2, ::2]=np.nan
+                    # Wipe out blue channel
+                    tempnan_mask[1::2, 1::2]=np.nan
+                
+                
                 # Cut down image to central thousand by thousand patch to align
                 tempnan_mask= tempnan_mask[crop_x:-crop_x, crop_y:-crop_y]
                 #imageMode=bn.nanmedian(tempnan)
@@ -3152,7 +3174,13 @@ class Camera:
                     if abs(imageshift[0]) > 0:
                         # print ("X shifter")
                         #if imageshift[0]
-                        imageshiftabs=int(abs(imageshift[0]))
+                        imageshiftabs=int(abs(imageshift[0]))                        
+                        # If it is an OSC, it needs to be an even number
+                        if is_osc:
+                            if (imageshiftabs & 0x1) == 1:
+                                imageshiftabs=imageshiftabs+1
+                        
+                        
                         if imageshift[0] > 0:
                             imageshiftsign = 1
                         else:
@@ -3167,6 +3195,12 @@ class Camera:
                         # print (int(imageshift[1]))
     
                         imageshiftabs=int(abs(imageshift[1]))
+                        
+                        # If it is an OSC, it needs to be an even number
+                        if is_osc:
+                            if (imageshiftabs & 0x1) == 1:
+                                imageshiftabs=imageshiftabs+1
+                        
                         if imageshift[1] > 0:
                             imageshiftsign = 1
                         else:
