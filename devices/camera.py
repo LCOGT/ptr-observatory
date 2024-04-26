@@ -180,6 +180,84 @@ def mid_stretch_jpeg(data):
 
     return data
 
+# Note this is a thread!
+def write_raw_file_out(packet):
+    
+    (raw, raw_name, hdudata, hduheader, frame_type, current_icrs_ra, current_icrs_dec,altpath,altfolder) = packet
+    
+    #print ("RAW RECEIVED: " + str(raw_name) )
+    
+    
+    # Make sure normal paths exist
+    os.makedirs(
+        g_dev['cam'].camera_path + g_dev["day"], exist_ok=True
+    )
+    os.makedirs(
+        g_dev['cam'].camera_path + g_dev["day"] + "/raw/", exist_ok=True
+    )
+    os.makedirs(
+        g_dev['cam'].camera_path + g_dev["day"] + "/reduced/", exist_ok=True
+    )
+    os.makedirs(
+        g_dev['cam'].camera_path + g_dev["day"] + "/calib/", exist_ok=True)
+
+
+    # Make  sure the alt paths exist
+    if raw == 'raw_alt_path':
+        os.makedirs(
+            altpath + g_dev["day"], exist_ok=True
+        )
+        os.makedirs(
+            altpath + g_dev["day"] + "/raw/", exist_ok=True
+        )
+        os.makedirs(
+            altpath + g_dev["day"] + "/reduced/", exist_ok=True
+        )
+        os.makedirs(
+            altpath + g_dev["day"] + "/calib/", exist_ok=True)
+
+        # altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
+        # if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
+        #     os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
+
+
+    
+    hdu = fits.PrimaryHDU()
+    hdu.data = hdudata
+    hdu.header = hduheader
+    hdu.header["DATE"] = (
+        datetime.date.strftime(
+            datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
+        ),
+        "Date FITS file was written",
+    )
+    if raw == 'raw_alt_path':# or slow_process[0] == 'reduced_alt_path':
+        #breakpoint()
+        hdu.writeto( altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+        )  # Save full raw file locally
+        #self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE'])),copy.deepcopy(raw_name),time.time()), block=False)
+    else:
+        hdu.writeto(
+            raw_name.replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+        )  # Save full raw file locally
+    try:
+        hdu.close()
+    except:
+        pass
+    del hdu
+    #     saver = 1
+
+    # except Exception as e:
+    #     plog("Failed to write raw file: ", e)
+    #     plog(traceback.format_exc())
+    #         # if "requested" in e and "written" in e:
+    #         #     plog(check_download_cache())
+    #         # plog(traceback.format_exc())
+    #         # time.sleep(10)
+    #         # saverretries = saverretries + 1
+    
+    #print ("RAW PROCESSED: " + str(raw_name) )
+
 def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-((x - mean) / 4 / stddev)**2)
 
@@ -1776,83 +1854,83 @@ class Camera:
             self.darkslide_state = 'Closed'
             
             
-    # Note this is a thread!
-    def write_raw_file_out(self,packet):
+    # # Note this is a thread!
+    # def write_raw_file_out(self,packet):
         
-        (raw, raw_name, hdudata, hduheader, frame_type, current_icrs_ra, current_icrs_dec) = packet
+    #     (raw, raw_name, hdudata, hduheader, frame_type, current_icrs_ra, current_icrs_dec,altpath,altfolder) = packet
         
-        print ("RAW RECEIVED: " + str(raw_name) )
+    #     print ("RAW RECEIVED: " + str(raw_name) )
         
         
-        # Make sure normal paths exist
-        os.makedirs(
-            g_dev['cam'].camera_path + g_dev["day"], exist_ok=True
-        )
-        os.makedirs(
-            g_dev['cam'].camera_path + g_dev["day"] + "/raw/", exist_ok=True
-        )
-        os.makedirs(
-            g_dev['cam'].camera_path + g_dev["day"] + "/reduced/", exist_ok=True
-        )
-        os.makedirs(
-            g_dev['cam'].camera_path + g_dev["day"] + "/calib/", exist_ok=True)
+    #     # Make sure normal paths exist
+    #     os.makedirs(
+    #         g_dev['cam'].camera_path + g_dev["day"], exist_ok=True
+    #     )
+    #     os.makedirs(
+    #         g_dev['cam'].camera_path + g_dev["day"] + "/raw/", exist_ok=True
+    #     )
+    #     os.makedirs(
+    #         g_dev['cam'].camera_path + g_dev["day"] + "/reduced/", exist_ok=True
+    #     )
+    #     os.makedirs(
+    #         g_dev['cam'].camera_path + g_dev["day"] + "/calib/", exist_ok=True)
 
 
-        # Make  sure the alt paths exist
-        if raw == 'raw_alt_path':
-            os.makedirs(
-                self.alt_path + g_dev["day"], exist_ok=True
-            )
-            os.makedirs(
-                self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
-            )
-            os.makedirs(
-                self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
-            )
-            os.makedirs(
-                self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
+    #     # Make  sure the alt paths exist
+    #     if raw == 'raw_alt_path':
+    #         os.makedirs(
+    #             altpath + g_dev["day"], exist_ok=True
+    #         )
+    #         os.makedirs(
+    #             altpath + g_dev["day"] + "/raw/", exist_ok=True
+    #         )
+    #         os.makedirs(
+    #             altpath + g_dev["day"] + "/reduced/", exist_ok=True
+    #         )
+    #         os.makedirs(
+    #             altpath + g_dev["day"] + "/calib/", exist_ok=True)
 
-            altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
-            if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
-                os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
+    #         # altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
+    #         # if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
+    #         #     os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
 
 
         
-        hdu = fits.PrimaryHDU()
-        hdu.data = hdudata
-        hdu.header = hduheader
-        hdu.header["DATE"] = (
-            datetime.date.strftime(
-                datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
-            ),
-            "Date FITS file was written",
-        )
-        if raw == 'raw_alt_path':# or slow_process[0] == 'reduced_alt_path':
-            #breakpoint()
-            hdu.writeto( altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-            )  # Save full raw file locally
-            self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE'])),copy.deepcopy(raw_name),time.time()), block=False)
-        else:
-            hdu.writeto(
-                raw_name.replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-            )  # Save full raw file locally
-        try:
-            hdu.close()
-        except:
-            pass
-        del hdu
-        #     saver = 1
+    #     hdu = fits.PrimaryHDU()
+    #     hdu.data = hdudata
+    #     hdu.header = hduheader
+    #     hdu.header["DATE"] = (
+    #         datetime.date.strftime(
+    #             datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
+    #         ),
+    #         "Date FITS file was written",
+    #     )
+    #     if raw == 'raw_alt_path':# or slow_process[0] == 'reduced_alt_path':
+    #         #breakpoint()
+    #         hdu.writeto( altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+    #         )  # Save full raw file locally
+    #         self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE'])),copy.deepcopy(raw_name),time.time()), block=False)
+    #     else:
+    #         hdu.writeto(
+    #             raw_name.replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+    #         )  # Save full raw file locally
+    #     try:
+    #         hdu.close()
+    #     except:
+    #         pass
+    #     del hdu
+    #     #     saver = 1
 
-        # except Exception as e:
-        #     plog("Failed to write raw file: ", e)
-        #     plog(traceback.format_exc())
-        #         # if "requested" in e and "written" in e:
-        #         #     plog(check_download_cache())
-        #         # plog(traceback.format_exc())
-        #         # time.sleep(10)
-        #         # saverretries = saverretries + 1
+    #     # except Exception as e:
+    #     #     plog("Failed to write raw file: ", e)
+    #     #     plog(traceback.format_exc())
+    #     #         # if "requested" in e and "written" in e:
+    #     #         #     plog(check_download_cache())
+    #     #         # plog(traceback.format_exc())
+    #     #         # time.sleep(10)
+    #     #         # saverretries = saverretries + 1
         
-        print ("RAW PROCESSED: " + str(raw_name) )
+    #     print ("RAW PROCESSED: " + str(raw_name) )
 
     def in_line_quick_focus(self, hdufocusdata, im_path, text_name):
 
@@ -5262,11 +5340,31 @@ class Camera:
                         else:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, None, None))
 
+                    
+                    # Make  sure the alt paths exist
+                    if g_dev['obs'].config["save_to_alt_path"] == "yes":
+                        os.makedirs(
+                            g_dev['obs'].alt_path + g_dev["day"], exist_ok=True
+                        )
+                        os.makedirs(
+                            g_dev['obs'].alt_path + g_dev["day"] + "/raw/", exist_ok=True
+                        )
+                        os.makedirs(
+                            g_dev['obs'].alt_path + g_dev["day"] + "/reduced/", exist_ok=True
+                        )
+                        os.makedirs(
+                            g_dev['obs'].alt_path + g_dev["day"] + "/calib/", exist_ok=True)
+                        
+                        
+                        
+                        altpath=copy.deepcopy(g_dev['obs'].alt_path)
+                    else:
+                        altpath='no'
 
                     # Similarly to the above. This saves the RAW file to disk
                     if self.config['save_raw_to_disk']:
                        #g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                       threading.Thread(target=g_dev['cam'].write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec)))
+                       threading.Thread(target=write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,self.config['temporary_local_alt_archive_to_hold_files_while_copying']),)).start()
                        
 
                     # For sites that have "save_to_alt_path" enabled, this routine
@@ -5280,8 +5378,8 @@ class Camera:
                         #                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                         
                         
-                        threading.Thread(target=g_dev['cam'].write_raw_file_out, args=(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
-                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec)))
+                        threading.Thread(target=write_raw_file_out, args=(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,self.config['temporary_local_alt_archive_to_hold_files_while_copying']),)).start()
                         
 
                     del hdu
@@ -5933,7 +6031,7 @@ class Camera:
                         if self.config['save_raw_to_disk']:
                         
                            #g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                           threading.Thread(target=g_dev['cam'].write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec)))
+                           threading.Thread(target=write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,self.config['temporary_local_alt_archive_to_hold_files_while_copying']),)).start()
                            
 
                         # For sites that have "save_to_alt_path" enabled, this routine
@@ -5948,8 +6046,8 @@ class Camera:
                             # g_dev['obs'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                             #                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
-                            threading.Thread(target=g_dev['cam'].write_raw_file_out, args=(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
-                                                           frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec)))
+                            threading.Thread(target=write_raw_file_out, args=(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                                                           frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,self.config['temporary_local_alt_archive_to_hold_files_while_copying']),)).start()
                             
                             
                                 # if "hdusmalldata" in locals():
@@ -7522,10 +7620,13 @@ def post_exposure_process(payload):
             # it works 99.9999% of the time.
             if selfconfig['save_raw_to_disk']:
                 
-                
-                threading.Thread(target=g_dev['cam'].write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec)))
-                
-                                 
+                #breakpoint()
+                # print ("first")
+                # try:
+                threading.Thread(target=write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,selfconfig['temporary_local_alt_archive_to_hold_files_while_copying']),)).start()
+                    
+                # except:
+                #     breakpoint()                     
                 
                 #g_dev['obs'].to_slow_process(1000,)
                 
@@ -7533,10 +7634,12 @@ def post_exposure_process(payload):
                     selfalt_path = selfconfig[
                         "alt_path"
                     ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
-                    
-                    threading.Thread(target=g_dev['cam'].write_raw_file_out, args=(('raw_alt_path', selfalt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
-                                                   frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec)))
-                    
+                    # print ("second")
+                    # try:
+                    threading.Thread(target=write_raw_file_out, args=(('raw_alt_path', selfalt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,selfconfig['temporary_local_alt_archive_to_hold_files_while_copying']),)).start()
+                    # except:
+                    #     breakpoint()
                  
                     # g_dev['obs'].to_slow_process(1000,('raw_alt_path', selfalt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                     #                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
