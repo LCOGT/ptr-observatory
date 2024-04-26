@@ -1781,6 +1781,8 @@ class Camera:
         
         (raw, raw_name, hdudata, hduheader, frame_type, current_icrs_ra, current_icrs_dec) = packet
         
+        print ("RAW RECEIVED: " + str(raw_name) )
+        
         
         # Make sure normal paths exist
         os.makedirs(
@@ -1849,6 +1851,8 @@ class Camera:
         #         # plog(traceback.format_exc())
         #         # time.sleep(10)
         #         # saverretries = saverretries + 1
+        
+        print ("RAW PROCESSED: " + str(raw_name) )
 
     def in_line_quick_focus(self, hdufocusdata, im_path, text_name):
 
@@ -5261,8 +5265,9 @@ class Camera:
 
                     # Similarly to the above. This saves the RAW file to disk
                     if self.config['save_raw_to_disk']:
-                       g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
+                       #g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                       threading.Thread(target=g_dev['cam'].write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec)))
+                       
 
                     # For sites that have "save_to_alt_path" enabled, this routine
                     # Saves the raw and reduced fits files out to the provided directories
@@ -5271,8 +5276,13 @@ class Camera:
                             "alt_path"
                         ]  +'/' + self.config['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
 
-                        g_dev['obs'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
-                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                        # g_dev['obs'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                        #                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                        
+                        
+                        threading.Thread(target=g_dev['cam'].write_raw_file_out, args=(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec)))
+                        
 
                     del hdu
                     #self.running_an_exposure_set = False
@@ -5921,9 +5931,10 @@ class Camera:
 
                         # Similarly to the above. This saves the RAW file to disk
                         if self.config['save_raw_to_disk']:
-
-                           g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
+                        
+                           #g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                           threading.Thread(target=g_dev['cam'].write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec)))
+                           
 
                         # For sites that have "save_to_alt_path" enabled, this routine
                         # Saves the raw and reduced fits files out to the provided directories
@@ -5932,9 +5943,16 @@ class Camera:
                                 "alt_path"
                             ]  +'/' + self.config['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
 
-                            g_dev['obs'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
-                                                           frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                            # if "hdusmalldata" in locals():
+                            
+
+                            # g_dev['obs'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                            #                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+                            threading.Thread(target=g_dev['cam'].write_raw_file_out, args=(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                                                           frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec)))
+                            
+                            
+                                # if "hdusmalldata" in locals():
                             #     g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, hdusmalldata, hdusmallheader, \
                             #                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 

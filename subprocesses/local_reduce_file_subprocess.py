@@ -144,6 +144,10 @@ else:
         slow_process[1], overwrite=True, output_verify='silentfix'
     )  # Save flash reduced file locally
 
+try:
+    os.remove(sys.argv[1])
+except:
+    pass
 
 sys.exit()
 
