@@ -1890,7 +1890,8 @@ class Observatory:
             # Check it is there
             if not os.path.exists(filepath):
                 if (time.time() - time_put_in_queue) < 43200:
-                    plog (filepath + " not there yet, chucking it back in the queue.")
+                    if (time.time() - time_put_in_queue) > 600:
+                        plog (filepath + " not there yet, chucking it back in the queue.")
                     self.enqueue_for_PTRarchive(
                         26000000, '', filepath
                     )
@@ -1902,7 +1903,8 @@ class Observatory:
             # Check it is no small
             if os.stat(filepath).st_size < 100:
                 if (time.time() - time_put_in_queue) < 43200:
-                    plog (filepath + " is there but still small - likely still writing out, chucking it back in the queue.")
+                    if (time.time() - time_put_in_queue) > 600:
+                        plog (filepath + " is there but still small - likely still writing out, chucking it back in the queue.")
                     self.enqueue_for_PTRarchive(
                         26000000, '', filepath
                     )
@@ -1913,7 +1915,7 @@ class Observatory:
             
             
             
-            plog ("doing " + str(filepath))
+            #plog ("doing " + str(filepath))
             
             
                 
@@ -2051,7 +2053,8 @@ class Observatory:
             # Check it is there
             if not os.path.exists(filename):
                 if (time.time() - time_put_in_queue) < 43200:
-                    plog (filename + " not there yet, chucking it back in the queue.")
+                    if (time.time() - time_put_in_queue) > 600:
+                        plog (filename + " not there yet, chucking it back in the queue.")
                     self.pipearchive_queue.put((filename,dayobs,instrume,time_put_in_queue), block=False)
                         
                     # self.enqueue_for_PTRarchive(
@@ -2065,7 +2068,8 @@ class Observatory:
             # Check it is no small
             if os.stat(filename).st_size < 100:
                 if (time.time() - time_put_in_queue) < 43200:
-                    plog (filename + " is there but still small - likely still writing out, chucking it back in the queue.")
+                    if (time.time() - time_put_in_queue) > 600:
+                        plog (filename + " is there but still small - likely still writing out, chucking it back in the queue.")
                     
                     self.pipearchive_queue.put((filename,dayobs,instrume,time_put_in_queue), block=False)
                     # self.enqueue_for_PTRarchive(
@@ -2122,7 +2126,8 @@ class Observatory:
         # Check it is there
         if not os.path.exists(fromfile):
             if (time.time() - time_put_in_queue) < 43200:
-                plog (fromfile + " not there yet, chucking it back in the queue.")
+                if (time.time() - time_put_in_queue) > 600:
+                    plog (fromfile + " not there yet, chucking it back in the queue.")
                 self.altarchive_queue.put((fromfile,tofile,time_put_in_queue), block=False)
                     
                 # self.enqueue_for_PTRarchive(
@@ -2136,7 +2141,8 @@ class Observatory:
         # Check it is no small
         if os.stat(fromfile).st_size < 100:
             if (time.time() - time_put_in_queue) < 43200:
-                plog (fromfile + " is there but still small - likely still writing out, chucking it back in the queue.")
+                if (time.time() - time_put_in_queue) > 600:
+                    plog (fromfile + " is there but still small - likely still writing out, chucking it back in the queue.")
                 
                 self.altarchive_queue.put((fromfile,tofile,time_put_in_queue), block=False)
                 # self.enqueue_for_PTRarchive(
@@ -3508,10 +3514,14 @@ class Observatory:
                     # if sskcounter >0:
                     #breakpoint()
 
-                    print (picklefilename)
+                    # print (picklefilename)
+                    
+                    # print(slow_process[1])
 
                     subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=self.local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                     
+                    
+                    #goog_subprocess.communicate()
                     #breakpoint()
 
                     # try:
@@ -3582,7 +3592,9 @@ class Observatory:
                         #             del hdu  # remove file from memory now that we are doing with it
 
                                     #(filename,dayobs,instrume) = fileinfo
-                        self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.fits')),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
+                        if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+
+                            self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.fits')),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
                                     #hdufz.writeto(
                                     #    slow_process[1], overwrite=True
                                     #)  # Save full fz file locally
@@ -3780,22 +3792,21 @@ class Observatory:
                     
                     # Make  sure the alt paths exist
                     if self.config["save_to_alt_path"] == "yes":
-                        if slow_process[0] == 'reduced_alt_path':
-                            os.makedirs(
-                                self.alt_path + g_dev["day"], exist_ok=True
-                            )
-                            os.makedirs(
-                                self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
-                            )
-                            os.makedirs(
-                                self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
-                            )
-                            os.makedirs(
-                                self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
-                            
-                            
-                            
-                            altpath=copy.deepcopy(self.alt_path)
+                        os.makedirs(
+                            self.alt_path + g_dev["day"], exist_ok=True
+                        )
+                        os.makedirs(
+                            self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
+                        )
+                        os.makedirs(
+                            self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
+                        )
+                        os.makedirs(
+                            self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
+                        
+                        
+                        
+                        altpath=copy.deepcopy(self.alt_path)
                     else:
                         altpath='no'
                         
@@ -3812,7 +3823,7 @@ class Observatory:
                     # if sskcounter >0:
                     #breakpoint()
 
-                    print (picklefilename)
+                    #print (picklefilename)
 
                     subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=self.local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                     
