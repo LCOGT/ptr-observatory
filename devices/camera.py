@@ -6983,8 +6983,28 @@ def post_exposure_process(payload):
 
                 if smartstackid == 'no':
                     if selfconfig['keep_reduced_on_disk']:
+                        
+                        # if selfconfig["save_to_alt_path"] == "yes":
+                        #     selfalt_path = selfconfig[
+                        #         "alt_path"
+                        #     ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
+
+                        #     if "reduced_hdusmalldata" in locals():
+
+
+                        #         g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
+                        #                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                        
+                        if selfconfig["save_to_alt_path"] == "yes":
+                            selfalt_path = selfconfig[
+                                "alt_path"
+                            ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
+                        else:
+                            selfalt_path = 'no'
+
+                        
                         g_dev['obs'].to_slow_process(1000,('reduced', red_path + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
-                                               frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
+                                               frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure,selfalt_path))
 
 
                 # This puts the file into the smartstack queue
@@ -7067,22 +7087,19 @@ def post_exposure_process(payload):
             # it works 99.9999% of the time.
             if selfconfig['save_raw_to_disk']:
                g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+               
+               if selfconfig["save_to_alt_path"] == "yes":
+                   selfalt_path = selfconfig[
+                       "alt_path"
+                   ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
+
+                   g_dev['obs'].to_slow_process(1000,('raw_alt_path', selfalt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                                                  frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
 
             # For sites that have "save_to_alt_path" enabled, this routine
             # Saves the raw and reduced fits files out to the provided directories
-            if selfconfig["save_to_alt_path"] == "yes":
-                selfalt_path = selfconfig[
-                    "alt_path"
-                ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
-
-                g_dev['obs'].to_slow_process(1000,('raw_alt_path', selfalt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
-                                               frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                if "reduced_hdusmalldata" in locals():
-
-
-                    g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
-                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+            
 
 
             # remove file from memory

@@ -279,6 +279,7 @@ class Observatory:
 
         # Copy in the latest fz_archive subprocess file to the smartstacks folder
         shutil.copy('subprocesses/fz_archive_file.py',self.local_calibration_path + "smartstacks/fz_archive_file.py")
+        shutil.copy('subprocesses/local_reduce_file_subprocess.py',self.local_calibration_path + "smartstacks/local_reduce_file_subprocess.py")
 
         # Clear out substacks directory
         try:
@@ -2115,7 +2116,37 @@ class Observatory:
 
         upload_timer=time.time()
 
-        (fromfile,tofile) = fileinfo
+        (fromfile,tofile,time_put_in_queue) = fileinfo
+        
+        
+        # Check it is there
+        if not os.path.exists(fromfile):
+            if (time.time() - time_put_in_queue) < 43200:
+                plog (fromfile + " not there yet, chucking it back in the queue.")
+                self.altarchive_queue.put((fromfile,tofile,time_put_in_queue), block=False)
+                    
+                # self.enqueue_for_PTRarchive(
+                #     26000000, '', filepath
+                # )
+            else:
+                plog ("WAITED TOO LONG! " + fromfile + " never turned up!")
+            
+            return ''
+        
+        # Check it is no small
+        if os.stat(fromfile).st_size < 100:
+            if (time.time() - time_put_in_queue) < 43200:
+                plog (fromfile + " is there but still small - likely still writing out, chucking it back in the queue.")
+                
+                self.altarchive_queue.put((fromfile,tofile,time_put_in_queue), block=False)
+                # self.enqueue_for_PTRarchive(
+                #     26000000, '', filepath
+                # )
+            else:
+                plog ("WAITED TOO LONG! " + fromfile + " never turned up!")
+            
+            return ''            
+        
 
         # Only ingest new large fits.fz files to the PTR archive.
         try:
@@ -3433,11 +3464,11 @@ class Observatory:
                             ),
                             "Date FITS file was written",
                         )
-                        if slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
+                        if slow_process[0] == 'raw_alt_path':# or slow_process[0] == 'reduced_alt_path':
                             #breakpoint()
                             hdu.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
                             )  # Save full raw file locally
-                            self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1])), block=False)
+                            self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1]),time.time()), block=False)
                         else:
                             hdu.writeto(
                                 slow_process[1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
@@ -3468,9 +3499,9 @@ class Observatory:
                     picklepayload=(temphduheader,copy.deepcopy(self.config),g_dev['cam'].name, slow_process)
                     
                     #if True :
-                    picklefilename='testfz'+str(time.time()).replace('.','')
+                    picklefilename='testlocalred'+str(time.time()).replace('.','')
                     #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
-                    pickle.dump(picklepayload, open(self.local_calibration_path + 'smartstacks/testfz'+str(time.time()).replace('.',''),'wb'))
+                    pickle.dump(picklepayload, open(self.local_calibration_path + 'smartstacks/'+picklefilename,'wb'))
                     #breakpoint()
 
 
@@ -3744,135 +3775,70 @@ class Observatory:
                         else:
                             plog("this bayer grid not implemented yet")
 
-                if slow_process[0] == 'reduced' or slow_process[0] == 'reduced_alt_path':
-                    saver = 0
-                    saverretries = 0
-                    while saver == 0 and saverretries < 10:
-
-
-                        # Make  sure the alt paths exist
-                        if self.config["save_to_alt_path"] == "yes":
-                            if slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
-                                os.makedirs(
-                                    self.alt_path + g_dev["day"], exist_ok=True
-                                )
-                                os.makedirs(
-                                    self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
-                                )
-                                os.makedirs(
-                                    self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
-                                )
-                                os.makedirs(
-                                    self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
-
-                            altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
-                            if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
-                                os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
-
-                        try:
-                            hdureduced = fits.PrimaryHDU()
-                            hdureduced.data = slow_process[2]
-                            hdureduced.header = temphduheader
-                            hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
-                            hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
-                            hdureduced.header["DATE"] = (
-                                datetime.date.strftime(
-                                    datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
-                                ),
-                                "Date FITS file was written",
+                if slow_process[0] == 'reduced':# or slow_process[0] == 'reduced_alt_path':
+                    
+                    
+                    # Make  sure the alt paths exist
+                    if self.config["save_to_alt_path"] == "yes":
+                        if slow_process[0] == 'reduced_alt_path':
+                            os.makedirs(
+                                self.alt_path + g_dev["day"], exist_ok=True
                             )
-                            hdureduced.data = hdureduced.data.astype("float32")
+                            os.makedirs(
+                                self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
+                            )
+                            os.makedirs(
+                                self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
+                            )
+                            os.makedirs(
+                                self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
+                            
+                            
+                            
+                            altpath=copy.deepcopy(self.alt_path)
+                    else:
+                        altpath='no'
+                        
+                    
+                    picklepayload=(temphduheader,copy.deepcopy(self.config),g_dev['cam'].name, slow_process, altpath)
+                    
+                    #if True :
+                    picklefilename='testfz'+str(time.time()).replace('.','')
+                    #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
+                    pickle.dump(picklepayload, open(self.local_calibration_path + 'smartstacks/'+picklefilename,'wb'))
+                    #breakpoint()
 
 
-                            int_array_flattened=hdureduced.data.astype(int).ravel()
-                            unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-                            m=counts.argmax()
-                            imageMode=unique[m]
+                    # if sskcounter >0:
+                    #breakpoint()
 
-                            # Remove nans
-                            x_size=hdureduced.data.shape[0]
-                            y_size=hdureduced.data.shape[1]
-                            # this is actually faster than np.nanmean
-                            edgefillvalue=imageMode
-                            # List the coordinates that are nan in the array
-                            nan_coords=np.argwhere(np.isnan(hdureduced.data))
+                    print (picklefilename)
 
-                            # For each coordinate try and find a non-nan-neighbour and steal its value
-                            for nancoord in nan_coords:
-                                x_nancoord=nancoord[0]
-                                y_nancoord=nancoord[1]
-                                done=False
-
-                                # Because edge pixels can tend to form in big clumps
-                                # Masking the array just with the mean at the edges
-                                # makes this MUCH faster to no visible effect for humans.
-                                # Also removes overscan
-                                if x_nancoord < 100:
-                                    hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
-                                    done=True
-                                elif x_nancoord > (x_size-100):
-                                    hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
-
-                                    done=True
-                                elif y_nancoord < 100:
-                                    hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
-
-                                    done=True
-                                elif y_nancoord > (y_size-100):
-                                    hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
-                                    done=True
-
-                                # left
-                                if not done:
-                                    if x_nancoord != 0:
-                                        value_here=hdureduced.data[x_nancoord-1,y_nancoord]
-                                        if not np.isnan(value_here):
-                                            hdureduced.data[x_nancoord,y_nancoord]=value_here
-                                            done=True
-                                # right
-                                if not done:
-                                    if x_nancoord != (x_size-1):
-                                        value_here=hdureduced.data[x_nancoord+1,y_nancoord]
-                                        if not np.isnan(value_here):
-                                            hdureduced.data[x_nancoord,y_nancoord]=value_here
-                                            done=True
-                                # below
-                                if not done:
-                                    if y_nancoord != 0:
-                                        value_here=hdureduced.data[x_nancoord,y_nancoord-1]
-                                        if not np.isnan(value_here):
-                                            hdureduced.data[x_nancoord,y_nancoord]=value_here
-                                            done=True
-                                # above
-                                if not done:
-                                    if y_nancoord != (y_size-1):
-                                        value_here=hdureduced.data[x_nancoord,y_nancoord+1]
-                                        if not np.isnan(value_here):
-                                            hdureduced.data[x_nancoord,y_nancoord]=value_here
-                                            done=True
-
-                            # Mop up any remaining nans
-                            hdureduced.data[np.isnan(hdureduced.data)] =edgefillvalue
+                    subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=self.local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                    
+                    
+                    if self.config["save_to_alt_path"] == "yes":
+                        # #breakpoint()
+                        # hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                        #)  # Save full raw file locally
+                        self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1]),time.time()), block=False)
+                    
+                    
+                    # # saver = 0
+                    # # saverretries = 0
+                    # # while saver == 0 and saverretries < 10:
 
 
-                            if slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
-                                #breakpoint()
-                                hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-                                )  # Save full raw file locally
-                                self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1])), block=False)
-                            else:
-                                hdureduced.writeto(
-                                    slow_process[1], overwrite=True, output_verify='silentfix'
-                                )  # Save flash reduced file locally
-                            saver = 1
-                        except Exception as e:
-                            plog("Failed to write raw file: ", e)
-                            if "requested" in e and "written" in e:
+                        
+                    #         saver = 1
+                    #     except Exception as e:
+                    #         plog("Failed to write raw file: ", e)
+                    #         if "requested" in e and "written" in e:
 
-                                plog(check_download_cache())
-                            plog(traceback.format_exc())
-                            time.sleep(10)
-                            saverretries = saverretries + 1
+                    #             plog(check_download_cache())
+                    #         plog(traceback.format_exc())
+                    #         time.sleep(10)
+                    #         saverretries = saverretries + 1
 
 
                 print ("COMPLETED: " + str(slow_process[0]))
