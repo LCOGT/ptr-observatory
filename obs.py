@@ -3424,76 +3424,76 @@ class Observatory:
                             time.sleep(10)
                             saverretries = saverretries + 1
 
-                if slow_process[0] == 'raw' or slow_process[0] == 'raw_alt_path':# or slow_process[0] == 'reduced_alt_path':
+                # if slow_process[0] == 'raw' or slow_process[0] == 'raw_alt_path':# or slow_process[0] == 'reduced_alt_path':
 
-                    # Make sure normal paths exist
-                    os.makedirs(
-                        g_dev['cam'].camera_path + g_dev["day"], exist_ok=True
-                    )
-                    os.makedirs(
-                        g_dev['cam'].camera_path + g_dev["day"] + "/raw/", exist_ok=True
-                    )
-                    os.makedirs(
-                        g_dev['cam'].camera_path + g_dev["day"] + "/reduced/", exist_ok=True
-                    )
-                    os.makedirs(
-                        g_dev['cam'].camera_path + g_dev["day"] + "/calib/", exist_ok=True)
-
-
-                    # Make  sure the alt paths exist
-                    if self.config["save_to_alt_path"] == "yes":
-                        if slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
-                            os.makedirs(
-                                self.alt_path + g_dev["day"], exist_ok=True
-                            )
-                            os.makedirs(
-                                self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
-                            )
-                            os.makedirs(
-                                self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
-                            )
-                            os.makedirs(
-                                self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
-
-                        altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
-                        if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
-                            os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
+                #     # Make sure normal paths exist
+                #     os.makedirs(
+                #         g_dev['cam'].camera_path + g_dev["day"], exist_ok=True
+                #     )
+                #     os.makedirs(
+                #         g_dev['cam'].camera_path + g_dev["day"] + "/raw/", exist_ok=True
+                #     )
+                #     os.makedirs(
+                #         g_dev['cam'].camera_path + g_dev["day"] + "/reduced/", exist_ok=True
+                #     )
+                #     os.makedirs(
+                #         g_dev['cam'].camera_path + g_dev["day"] + "/calib/", exist_ok=True)
 
 
-                    try:
-                        hdu = fits.PrimaryHDU()
-                        hdu.data = slow_process[2]
-                        hdu.header = temphduheader
-                        hdu.header["DATE"] = (
-                            datetime.date.strftime(
-                                datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
-                            ),
-                            "Date FITS file was written",
-                        )
-                        if slow_process[0] == 'raw_alt_path':# or slow_process[0] == 'reduced_alt_path':
-                            #breakpoint()
-                            hdu.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-                            )  # Save full raw file locally
-                            self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1]),time.time()), block=False)
-                        else:
-                            hdu.writeto(
-                                slow_process[1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-                            )  # Save full raw file locally
-                        try:
-                            hdu.close()
-                        except:
-                            pass
-                        del hdu
-                        saver = 1
+                #     # Make  sure the alt paths exist
+                #     if self.config["save_to_alt_path"] == "yes":
+                #         if slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
+                #             os.makedirs(
+                #                 self.alt_path + g_dev["day"], exist_ok=True
+                #             )
+                #             os.makedirs(
+                #                 self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
+                #             )
+                #             os.makedirs(
+                #                 self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
+                #             )
+                #             os.makedirs(
+                #                 self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
 
-                    except Exception as e:
-                        plog("Failed to write raw file: ", e)
-                        plog(traceback.format_exc())
-                            # if "requested" in e and "written" in e:
-                            #     plog(check_download_cache())
-                            # plog(traceback.format_exc())
-                            # time.sleep(10)
-                            # saverretries = saverretries + 1
+                #         altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
+                #         if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
+                #             os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
+
+
+                #     try:
+                #         hdu = fits.PrimaryHDU()
+                #         hdu.data = slow_process[2]
+                #         hdu.header = temphduheader
+                #         hdu.header["DATE"] = (
+                #             datetime.date.strftime(
+                #                 datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
+                #             ),
+                #             "Date FITS file was written",
+                #         )
+                #         if slow_process[0] == 'raw_alt_path':# or slow_process[0] == 'reduced_alt_path':
+                #             #breakpoint()
+                #             hdu.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                #             )  # Save full raw file locally
+                #             self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1]),time.time()), block=False)
+                #         else:
+                #             hdu.writeto(
+                #                 slow_process[1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                #             )  # Save full raw file locally
+                #         try:
+                #             hdu.close()
+                #         except:
+                #             pass
+                #         del hdu
+                #         saver = 1
+
+                #     except Exception as e:
+                #         plog("Failed to write raw file: ", e)
+                #         plog(traceback.format_exc())
+                #             # if "requested" in e and "written" in e:
+                #             #     plog(check_download_cache())
+                #             # plog(traceback.format_exc())
+                #             # time.sleep(10)
+                #             # saverretries = saverretries + 1
 
                 # if slow_process[0] == 'fz_and_send':
 
