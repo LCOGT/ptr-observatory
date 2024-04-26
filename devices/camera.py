@@ -4246,7 +4246,7 @@ class Camera:
                                 self.substacker=False
                                 # Must have a biasdark
                                 if 'tensec_exposure_biasdark' in self.darkFiles:
-                                    if this_exposure_filter.lower() in self.flatFiles:
+                                    if this_exposure_filter in self.flatFiles:
                                         if '1' in self.bpmFiles:
                                             self.substacker=True
                                         else:
