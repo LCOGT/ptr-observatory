@@ -3592,7 +3592,9 @@ class Observatory:
                         #             del hdu  # remove file from memory now that we are doing with it
 
                                     #(filename,dayobs,instrume) = fileinfo
-                        self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.fits')),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
+                        if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+
+                            self.pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.fits')),copy.deepcopy(temphduheader['DAY-OBS']),copy.deepcopy(temphduheader['INSTRUME']),time.time()), block=False)
                                     #hdufz.writeto(
                                     #    slow_process[1], overwrite=True
                                     #)  # Save full fz file locally
