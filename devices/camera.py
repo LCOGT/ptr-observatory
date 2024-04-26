@@ -1222,6 +1222,7 @@ class Camera:
 
 
         self.shutter_open = False # Initialise
+        self.substacker = False # Initialise
 
         """
         This section connects the appropriate methods for various
@@ -3681,15 +3682,15 @@ class Camera:
         self.smartstack = required_params.get('smartstack', True)
         if imtype.lower() in ["pointing", "focus"]:
             self.smartstack=False
-        self.longstack = required_params.get('longstackswitch', False)
+        self.substacker = required_params.get('subStack', False)
 
 
-        if self.longstack == 'no':
-            LongStackID ='no'
-        elif not 'longstackname' in required_params:
-            LongStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
-        else:
-            LongStackID = required_params['longstackname']
+        # if self.longstack == 'no':
+        #     LongStackID ='no'
+        # elif not 'longstackname' in required_params:
+        #     LongStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
+        # else:
+        #     LongStackID = required_params['longstackname']
 
         self.pane = optional_params.get("pane", None)
 
@@ -4192,13 +4193,15 @@ class Camera:
 
 
                             # Sort out if it is a substack
-                            self.substacker=False
-                            broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
-                            narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
-                            if self.config['camera']['camera_1_1']['settings']['substack']:
-                                if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat" and not frame_type=='pointing':
-                                    if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
-                                        self.substacker=True
+                            # If request actually requested a substack
+                            if self.substacker:    
+                                self.substacker=False
+                                broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
+                                narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
+                                if self.config['camera']['camera_1_1']['settings']['substack']:
+                                    if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat" and not frame_type=='pointing':
+                                        if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
+                                            self.substacker=True
                                         
                             # If it is meant to be a substacker image
                             # Make sure there is actually a bias, dark, flat and bpm
@@ -4357,7 +4360,7 @@ class Camera:
                             opt=opt,
                             solve_it=solve_it,
                             smartstackid=SmartStackID,
-                            longstackid=LongStackID,
+                            #longstackid=LongStackID,
                             sskcounter=sskcounter,
                             Nsmartstack=Nsmartstack,
                             this_exposure_filter=this_exposure_filter,
@@ -4505,7 +4508,7 @@ class Camera:
         opt=None,
         solve_it=False,
         smartstackid='no',
-        longstackid='no',
+        #longstackid='no',
         sskcounter=0,
         Nsmartstack=1,
         this_exposure_filter=None,
@@ -5168,7 +5171,7 @@ class Camera:
                     focus_position=g_dev['foc'].current_focus_position
 
 
-                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time, sub_stacker_midpoints)), block=False)
+                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time, sub_stacker_midpoints)), block=False)
 
 
                 # If this is a pointing or a focus frame, we need to do an
@@ -6539,8 +6542,8 @@ def post_exposure_process(payload):
         hdu.header["SMARTSTK"] = smartstackid # ID code for an individual smart stack group
         hdu.header["SSTKNUM"] = sskcounter
         hdu.header['SSTKLEN'] = Nsmartstack
-        hdu.header["LONGSTK"] = longstackid # Is this a member of a longer stack - to be replaced by
-                                            #   longstack code soon
+        # hdu.header["LONGSTK"] = longstackid # Is this a member of a longer stack - to be replaced by
+        #                                     #   longstack code soon
 
         hdu.header["SUBSTACK"] = substack
         hdu.header["PEDESTAL"] = (0.0, "This value has been added to the data")

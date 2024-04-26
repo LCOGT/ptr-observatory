@@ -1224,7 +1224,7 @@ class Sequencer:
                 user_id = block_specification['creator_id']
                 user_roles = ['project']
 
-                longstackname=block_specification['project']['created_at'].replace('-','').replace(':','') # If longstack is to be used.
+                #longstackname=block_specification['project']['created_at'].replace('-','').replace(':','') # If longstack is to be used.
 
             except Exception as e:
                 plog ("Could not execute project due to poorly formatted or corrupt project")
@@ -1305,17 +1305,19 @@ class Sequencer:
                 except:
                     pass
 
-            # Input the global smartstack and longstack request from the project
+            # Input the global smartstack and substack request from the project
             # Into the individual exposure requests
             try:
                 try:
                     # This is the "proper" way of doing things.
                     do_sub_stack=block['project']['project_constraints']['sub_stack']
+                    plog ("Picked up project substack properly")
                 except:
                     # This is the old way for old projects
                     do_sub_stack=block['project']['exposures'][0]['substack']
             except:
                 do_sub_stack=True
+            
             try:
                 # This is the "proper" way of doing things.
                 do_smart_stack=block['project']['project_constraints']['smart_stack']
