@@ -7417,16 +7417,16 @@ def post_exposure_process(payload):
                         subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=g_dev['obs'].local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                         
                         
-                        if g_dev['obs'].config["save_to_alt_path"] == "yes":
+                        # if g_dev['obs'].config["save_to_alt_path"] == "yes":
                             
-                            altfolder = g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying']
-                            if not os.path.exists(g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying']):
-                                os.makedirs(g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying'] )
+                        #     altfolder = g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying']
+                        #     if not os.path.exists(g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying']):
+                        #         os.makedirs(g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying'] )
                                 
-                            # #breakpoint()
-                            # hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-                            #)  # Save full raw file locally
-                            g_dev['obs'].altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+reduced_hdusmallheader['OBSTYPE'])),copy.deepcopy(slow_process[1]),time.time()), block=False)
+                        #     # #breakpoint()
+                        #     # hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                        #     #)  # Save full raw file locally
+                        #     g_dev['obs'].altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+reduced_hdusmallheader['OBSTYPE'])),copy.deepcopy(slow_process[1]),time.time()), block=False)
                         
 
 
