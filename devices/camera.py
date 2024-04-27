@@ -231,15 +231,18 @@ def write_raw_file_out(packet):
         ),
         "Date FITS file was written",
     )
-    if raw == 'raw_alt_path':# or slow_process[0] == 'reduced_alt_path':
-        #breakpoint()
-        hdu.writeto( altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-        )  # Save full raw file locally
-        #self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE'])),copy.deepcopy(raw_name),time.time()), block=False)
-    else:
-        hdu.writeto(
-            raw_name.replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-        )  # Save full raw file locally
+    # if raw == 'raw_alt_path':# or slow_process[0] == 'reduced_alt_path':
+    #     #breakpoint()
+    #     hdu.writeto( altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+    #     )  # Save full raw file locally
+    #     #self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE'])),copy.deepcopy(raw_name),time.time()), block=False)
+    # else:
+    #     hdu.writeto(
+    #         raw_name.replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+    #     )  # Save full raw file locally
+    
+    hdu.writeto( altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix')
+    
     try:
         hdu.close()
     except:

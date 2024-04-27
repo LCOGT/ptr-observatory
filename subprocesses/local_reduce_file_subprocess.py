@@ -68,6 +68,32 @@ unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], ret
 m=counts.argmax()
 imageMode=unique[m]
 
+histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+#Do some fiddle faddling to figure out the value that goes to zero less
+zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+breaker=1
+counter=0
+while (breaker != 0):
+    counter=counter+1
+    if not (imageMode-counter) in zeroValueArray[:,0]:
+        if not (imageMode-counter-1) in zeroValueArray[:,0]:
+            if not (imageMode-counter-2) in zeroValueArray[:,0]:
+                if not (imageMode-counter-3) in zeroValueArray[:,0]:
+                    if not (imageMode-counter-4) in zeroValueArray[:,0]:
+                        if not (imageMode-counter-5) in zeroValueArray[:,0]:
+                            if not (imageMode-counter-6) in zeroValueArray[:,0]:
+                                if not (imageMode-counter-7) in zeroValueArray[:,0]:
+                                    if not (imageMode-counter-8) in zeroValueArray[:,0]:
+                                        if not (imageMode-counter-9) in zeroValueArray[:,0]:
+                                            if not (imageMode-counter-10) in zeroValueArray[:,0]:
+                                                if not (imageMode-counter-11) in zeroValueArray[:,0]:
+                                                    if not (imageMode-counter-12) in zeroValueArray[:,0]:
+                                                        zeroValue=(imageMode-counter)
+                                                        breaker =0
+
+hdureduced.data[hdureduced.data < zeroValue] = np.nan
+
+
 # Remove nans
 x_size=hdureduced.data.shape[0]
 y_size=hdureduced.data.shape[1]
@@ -133,16 +159,18 @@ for nancoord in nan_coords:
 # Mop up any remaining nans
 hdureduced.data[np.isnan(hdureduced.data)] =edgefillvalue
 
+hdureduced.writeto(
+    slow_process[1], overwrite=True, output_verify='silentfix'
+)  # Save flash reduced file locally
 
-if slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
+
+if selfconfig["save_to_alt_path"] == "yes":
     #breakpoint()
     hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
     )  # Save full raw file locally
     #self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1])), block=False)
-else:
-    hdureduced.writeto(
-        slow_process[1], overwrite=True, output_verify='silentfix'
-    )  # Save flash reduced file locally
+#else:
+    
 
 try:
     os.remove(sys.argv[1])
