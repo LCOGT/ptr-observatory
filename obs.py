@@ -4450,7 +4450,7 @@ class Observatory:
             # If the platesolve requests such a thing.
             if self.pointing_correction_requested_by_platesolve_thread: # and not g_dev['cam'].currently_in_smartstack_loop:
 
-                # Check it hasn't slewed since request, although ignore this if in smartstack_loop due to dithering.
+                # Check it hasn't slewed since request, although ignore this check if in smartstack_loop due to dithering.
                 if (self.pointing_correction_request_time > self.time_of_last_slew) or g_dev['cam'].currently_in_smartstack_loop:
 
                     plog("Re-centering Telescope Slightly.")

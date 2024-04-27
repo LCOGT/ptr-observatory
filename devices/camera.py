@@ -3410,6 +3410,10 @@ class Camera:
                 while (time.time() - exposure_timer) < exp_of_substacks:
                     #print ("Watiing for exposure to finish")
                     time.sleep(0.005)
+                    
+                # If this is the last exposure of the set of subexposures, then report shutter closed
+                if subexposure == (N_of_substacks-1):
+                    self.shutter_open=False
 
             #if not subexposure == (N_of_substacks):
                 # READOUT FROM THE QHY
@@ -3434,6 +3438,9 @@ class Camera:
 
 
                 sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+                
+                
+                
 
                 #print ("Collected " +str(subexposure+1))
 
@@ -4919,8 +4926,8 @@ class Camera:
 
                 # FOR POINTING AND FOCUS EXPOSURES, CONSTRUCT THE SCALED MASTERDARK WHILE
                 # THE EXPOSURE IS RUNNING
-                if frame_type=='pointing' or focus_image == True and not pointingfocus_masterdark_done and  smartstackid == 'no':
-
+                if (frame_type=='pointing' or focus_image == True) and not pointingfocus_masterdark_done and smartstackid == 'no':
+                    plog ("constructing scaled masterdark during exposure")
                     if not self.substacker:
                         try:
                             # Sort out an intermediate dark
@@ -5020,18 +5027,74 @@ class Camera:
                     # Need to have a time sleep to release the GIL to run the other threads
                     
                     if time.time() > (start_time_of_observation + exposure_time):
-                        # If the exposure time has passed, then the shutter is closed
-                        g_dev['cam'].shutter_open=False
+                        # If the exposure time has passed, then the shutter is closed for normal exposures
+                        # The substacker thread reports the shutter_open(/closed). Other methods may not.
+                        if not self.substacker:
+                            g_dev['cam'].shutter_open=False
+                        #else:
+                            
+                    # If the shutter has closed but there is still time, then nudge the scope while reading out
+                    if not g_dev['cam'].shutter_open:
                         # Attempt to sneak in a platesolve and nudge during readout time. 
-                        if not check_nudge_after_shutter_closed:
-                            self.wait_for_slew()
-                            g_dev['obs'].check_platesolve_and_nudge()
+                        if not check_nudge_after_shutter_closed:                            
+                            
+                            #self.running_an_exposure_set=False
+                            # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
+                            if not g_dev['obs'].mountless_operation:
+                                
+                                if self.pointing_recentering_requested_by_platesolve_thread or self.pointing_correction_requested_by_platesolve_thread:
+                                    self.wait_for_slew()
+                                    g_dev['obs'].check_platesolve_and_nudge()
+
+                                # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
+                                elif self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+                                    if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
+                                        #breakpoint()
+                                        if (self.pixscale == None):
+                                            ra_random_dither=(((random.randint(0,50)-25) * 0.75 / 3600 ) / 15)
+                                            dec_random_dither=((random.randint(0,50)-25) * 0.75 /3600 )
+                                        else:
+                                            ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
+                                            dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
+                                        try:
+                                            self.wait_for_slew()
+                                            g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra + ra_random_dither, dec=self.initial_smartstack_dec + dec_random_dither)
+                                            # no wait for slew here as we start downloading the image. the wait_for_slew is after that
+
+                                        except Exception as e:
+                                            plog (traceback.format_exc())
+                                            if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+
+                                                plog("The SkyX had an error.")
+                                                plog("Usually this is because of a broken connection.")
+                                                plog("Killing then waiting 60 seconds then reconnecting")
+                                                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+
+                                    # Otherwise immediately nudge scope back to initial pointing in smartstack after the last frame of the smartstack
+                                    # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
+                                    elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
+                                        try:
+                                            self.wait_for_slew()
+                                            g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra, dec=self.initial_smartstack_dec)
+                                            # no wait for slew here as we start downloading the image. the wait_for_slew is after that
+
+                                        except Exception as e:
+                                            plog (traceback.format_exc())
+                                            if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+
+                                                plog("The SkyX had an error.")
+                                                plog("Usually this is because of a broken connection.")
+                                                plog("Killing then waiting 60 seconds then reconnecting")
+                                                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+                            
+                            
                             check_nudge_after_shutter_closed=True
 
                         temp_time_sleep=min(self.completion_time - time.time()+0.00001, initialRemaining * 0.125)
                         
-                    else:                                            
-                        temp_time_sleep=min(start_time_of_observation + exposure_time - time.time()+0.00001, initialRemaining * 0.125)
+                    else:
+                        if time.time() < (start_time_of_observation + exposure_time):
+                            temp_time_sleep=min(start_time_of_observation + exposure_time - time.time()+0.00001, initialRemaining * 0.125)
                         
                     
                     if temp_time_sleep > 0:
@@ -5043,6 +5106,9 @@ class Camera:
 
 
                 self.shutter_open=False
+                
+                plog ("Exposure Complete")
+                g_dev["obs"].send_to_user("Exposure Complete")
 
                 if self.theskyx:
                     self.readout_estimate= time.time()-start_time_of_observation-exposure_time
@@ -5056,58 +5122,6 @@ class Camera:
                     expected_endpoint_of_substack_exposure=None
                     substack_start_time=None
                     sub_stacker_midpoints=None
-
-
-
-
-
-
-                #self.running_an_exposure_set=False
-                # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
-                if not g_dev['obs'].mountless_operation:
-
-                    # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
-                    if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
-                        if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
-                            #breakpoint()
-                            if (self.pixscale == None):
-                                ra_random_dither=(((random.randint(0,50)-25) * 0.75 / 3600 ) / 15)
-                                dec_random_dither=((random.randint(0,50)-25) * 0.75 /3600 )
-                            else:
-                                ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
-                                dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
-                            try:
-                                self.wait_for_slew()
-                                g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra + ra_random_dither, dec=self.initial_smartstack_dec + dec_random_dither)
-                                # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-
-                            except Exception as e:
-                                plog (traceback.format_exc())
-                                if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-
-                                    plog("The SkyX had an error.")
-                                    plog("Usually this is because of a broken connection.")
-                                    plog("Killing then waiting 60 seconds then reconnecting")
-                                    g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-
-                        # Otherwise immediately nudge scope back to initial pointing in smartstack after the last frame of the smartstack
-                        # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
-                        elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
-                            try:
-                                self.wait_for_slew()
-                                g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra, dec=self.initial_smartstack_dec)
-                                # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-
-                            except Exception as e:
-                                plog (traceback.format_exc())
-                                if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-
-                                    plog("The SkyX had an error.")
-                                    plog("Usually this is because of a broken connection.")
-                                    plog("Killing then waiting 60 seconds then reconnecting")
-                                    g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-
-
 
                 # If you are shooting for short exposure times, the overhead
                 # becomes a large fraction of the actual exposure time,
@@ -5646,9 +5660,8 @@ class Camera:
                     #g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
 
                     #reported=0
-                    temptimer=time.time()
-                    plog ("Exposure Complete")
-                    g_dev["obs"].send_to_user("Exposure Complete")
+                    #temptimer=time.time()
+                    
                     # while True:
                     #     if g_dev['obs'].sep_processing==False and g_dev['obs'].sep_queue.empty():
                     #         break
