@@ -5106,7 +5106,9 @@ class Camera:
             elif self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
 
 
-                self.shutter_open=False
+                if self.shutter_open:
+                    self.shutter_open=False
+                    plog ("Shutter Closed.")
                 
                 plog ("Exposure Complete")
                 g_dev["obs"].send_to_user("Exposure Complete")
