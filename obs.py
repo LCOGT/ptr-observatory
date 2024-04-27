@@ -541,11 +541,11 @@ class Observatory:
             self.ptrarchive_queue_thread.start()
 
 
-        if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-            self.pipearchive_queue = queue.Queue(maxsize=0)
-            self.pipearchive_queue_thread = threading.Thread(target=self.copy_to_pipearchive, args=())
-            self.pipearchive_queue_thread.daemon = True
-            self.pipearchive_queue_thread.start()
+        # if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+        #     self.pipearchive_queue = queue.Queue(maxsize=0)
+        #     self.pipearchive_queue_thread = threading.Thread(target=self.copy_to_pipearchive, args=())
+        #     self.pipearchive_queue_thread.daemon = True
+        #     self.pipearchive_queue_thread.start()
 
         # if self.config['save_to_alt_path'] == 'yes':
 
@@ -1221,8 +1221,8 @@ class Observatory:
                     plog ("PTR Archive Queue: " +str(self.ptrarchive_queue.qsize()))
 
 
-                if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-                    plog ("Pipe Archive Queue: " +str(self.pipearchive_queue.qsize()))
+                # if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+                #     plog ("Pipe Archive Queue: " +str(self.pipearchive_queue.qsize()))
 
                 # if self.config['save_to_alt_path'] == 'yes':
                 #     plog ("Alt Archive Queue: " +str(self.altarchive_queue.qsize()))
@@ -2028,93 +2028,93 @@ class Observatory:
 
             return ( str(filepath.split('/')[-1]) + " sent to archive. Queue Size: " + str(self.ptrarchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
 
-    def pipearchive_copier(self, fileinfo):
+    # def pipearchive_copier(self, fileinfo):
 
-        upload_timer=time.time()
+    #     upload_timer=time.time()
 
-        (filename,dayobs,instrume,time_put_in_queue) = fileinfo
-
-
-        # Check folder exists
-
-        pipefolder = self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs)
-        if not os.path.exists(self.config['pipe_archive_folder_path'] + str(instrume)):
-            os.makedirs(self.config['pipe_archive_folder_path'] + str(instrume))
-
-        if not os.path.exists(self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs)):
-            os.makedirs(self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs))
+    #     (filename,dayobs,instrume,time_put_in_queue) = fileinfo
 
 
-        if filename is None:
-            plog("Got an empty entry in pipearchive_queue.")
+    #     # Check folder exists
 
-        else:
+    #     pipefolder = self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs)
+    #     if not os.path.exists(self.config['pipe_archive_folder_path'] + str(instrume)):
+    #         os.makedirs(self.config['pipe_archive_folder_path'] + str(instrume))
 
-            # Check it is there
-            if not os.path.exists(filename):
-                if (time.time() - time_put_in_queue) < 43200:
-                    if (time.time() - time_put_in_queue) > 600:
-                        plog (filename + " not there yet, chucking it back in the queue.")
-                    self.pipearchive_queue.put((filename,dayobs,instrume,time_put_in_queue), block=False)
+    #     if not os.path.exists(self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs)):
+    #         os.makedirs(self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs))
+
+
+    #     if filename is None:
+    #         plog("Got an empty entry in pipearchive_queue.")
+
+    #     else:
+
+    #         # Check it is there
+    #         if not os.path.exists(filename):
+    #             if (time.time() - time_put_in_queue) < 43200:
+    #                 if (time.time() - time_put_in_queue) > 600:
+    #                     plog (filename + " not there yet, chucking it back in the queue.")
+    #                 self.pipearchive_queue.put((filename,dayobs,instrume,time_put_in_queue), block=False)
                         
-                    # self.enqueue_for_PTRarchive(
-                    #     26000000, '', filepath
-                    # )
-                else:
-                    plog ("WAITED TOO LONG! " + filename + " never turned up!")
+    #                 # self.enqueue_for_PTRarchive(
+    #                 #     26000000, '', filepath
+    #                 # )
+    #             else:
+    #                 plog ("WAITED TOO LONG! " + filename + " never turned up!")
                 
-                return ''
+    #             return ''
             
-            # Check it is no small
-            if os.stat(filename).st_size < 100:
-                if (time.time() - time_put_in_queue) < 43200:
-                    if (time.time() - time_put_in_queue) > 600:
-                        plog (filename + " is there but still small - likely still writing out, chucking it back in the queue.")
+    #         # Check it is no small
+    #         if os.stat(filename).st_size < 100:
+    #             if (time.time() - time_put_in_queue) < 43200:
+    #                 if (time.time() - time_put_in_queue) > 600:
+    #                     plog (filename + " is there but still small - likely still writing out, chucking it back in the queue.")
                     
-                    self.pipearchive_queue.put((filename,dayobs,instrume,time_put_in_queue), block=False)
-                    # self.enqueue_for_PTRarchive(
-                    #     26000000, '', filepath
-                    # )
-                else:
-                    plog ("WAITED TOO LONG! " + filename + " never turned up!")
+    #                 self.pipearchive_queue.put((filename,dayobs,instrume,time_put_in_queue), block=False)
+    #                 # self.enqueue_for_PTRarchive(
+    #                 #     26000000, '', filepath
+    #                 # )
+    #             else:
+    #                 plog ("WAITED TOO LONG! " + filename + " never turned up!")
                 
-                return ''            
+    #             return ''            
 
 
-            # Only ingest new large fits.fz files to the PTR archive.
-            try:
-                broken = 0
-                try:
-                    shutil.copy(filename, pipefolder +'/'+ filename.split('/')[-1])
-                except:
-                    plog(traceback.format_exc())
-                    plog ("Couldn't copy " + str(filename) + ". Broken.")
-                    broken =1
+    #         # Only ingest new large fits.fz files to the PTR archive.
+    #         try:
+    #             broken = 0
+    #             try:
+    #                 shutil.copy(filename, pipefolder +'/'+ filename.split('/')[-1])
+    #             except:
+    #                 plog(traceback.format_exc())
+    #                 plog ("Couldn't copy " + str(filename) + ". Broken.")
+    #                 broken =1
 
-                try:
-                    os.remove(filename)
-                except:
-                    self.laterdelete_queue.put(filename, block=False)
-
-
-                if broken == 1:
-                    try:
-                        shutil.move(filename, self.broken_path + filename.split('/')[-1])
-                    except:
-                        plog ("Couldn't move " + str(filename) + " to broken folder.")
-
-                        self.laterdelete_queue.put(filename, block=False)
-                    return str(filename) + " broken."
-            except Exception as e:
-                plog(traceback.format_exc())
-                plog ("something strange in the pipearchive copier", e)
-                return 'something strange in the pipearchive copier'
+    #             try:
+    #                 os.remove(filename)
+    #             except:
+    #                 self.laterdelete_queue.put(filename, block=False)
 
 
-            upload_timer=time.time() - upload_timer
-            hours_to_go = (self.pipearchive_queue.qsize() * upload_timer/60/60) / int(self.config['number_of_simultaneous_pipearchive_streams'])
+    #             if broken == 1:
+    #                 try:
+    #                     shutil.move(filename, self.broken_path + filename.split('/')[-1])
+    #                 except:
+    #                     plog ("Couldn't move " + str(filename) + " to broken folder.")
 
-            return ( str(filename.split('/')[-1]) + " sent to local pipe archive. Queue Size: " + str(self.pipearchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
+    #                     self.laterdelete_queue.put(filename, block=False)
+    #                 return str(filename) + " broken."
+    #         except Exception as e:
+    #             plog(traceback.format_exc())
+    #             plog ("something strange in the pipearchive copier", e)
+    #             return 'something strange in the pipearchive copier'
+
+
+    #         upload_timer=time.time() - upload_timer
+    #         hours_to_go = (self.pipearchive_queue.qsize() * upload_timer/60/60) / int(self.config['number_of_simultaneous_pipearchive_streams'])
+
+    #         return ( str(filename.split('/')[-1]) + " sent to local pipe archive. Queue Size: " + str(self.pipearchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
 
     # def altarchive_copier(self, fileinfo):
 
@@ -2233,46 +2233,46 @@ class Observatory:
     #             time.sleep(2)
 
 
-    # Note this is a thread!
-    def copy_to_pipearchive(self):
-        """Sends queued files to AWS.
+    # # Note this is a thread!
+    # def copy_to_pipearchive(self):
+    #     """Sends queued files to AWS.
 
-        Large fpacked fits are uploaded using the ocs-ingester, which
-        adds the image to the PTR archive database.
+    #     Large fpacked fits are uploaded using the ocs-ingester, which
+    #     adds the image to the PTR archive database.
 
-        This is intended to transfer slower files not needed for UI responsiveness
+    #     This is intended to transfer slower files not needed for UI responsiveness
 
-        The pri_image is a tuple, smaller first item has priority.
-        The second item is also a tuple containing im_path and name.
-        """
+    #     The pri_image is a tuple, smaller first item has priority.
+    #     The second item is also a tuple containing im_path and name.
+    #     """
 
-        one_at_a_time = 0
+    #     one_at_a_time = 0
 
-        number_of_simultaneous_uploads= self.config['number_of_simultaneous_pipearchive_streams']
+    #     number_of_simultaneous_uploads= self.config['number_of_simultaneous_pipearchive_streams']
 
-        while True:
+    #     while True:
 
-            if (not self.pipearchive_queue.empty()) and one_at_a_time == 0:
-
-
-                one_at_a_time = 1
-
-                items=[]
-                for q in range(min(number_of_simultaneous_uploads,self.pipearchive_queue.qsize()) ):
-                    items.append(self.pipearchive_queue.get(block=False))
-
-                with ThreadPool(processes=number_of_simultaneous_uploads) as pool:
-                    for result in pool.map(self.pipearchive_copier, items):
-                        self.pipearchive_queue.task_done()
-                        plog (result)
-
-                one_at_a_time = 0
-                time.sleep(2)
+    #         if (not self.pipearchive_queue.empty()) and one_at_a_time == 0:
 
 
-            else:
-                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                time.sleep(2)
+    #             one_at_a_time = 1
+
+    #             items=[]
+    #             for q in range(min(number_of_simultaneous_uploads,self.pipearchive_queue.qsize()) ):
+    #                 items.append(self.pipearchive_queue.get(block=False))
+
+    #             with ThreadPool(processes=number_of_simultaneous_uploads) as pool:
+    #                 for result in pool.map(self.pipearchive_copier, items):
+    #                     self.pipearchive_queue.task_done()
+    #                     plog (result)
+
+    #             one_at_a_time = 0
+    #             time.sleep(2)
+
+
+    #         else:
+    #             # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+    #             time.sleep(2)
 
 
 
@@ -4211,33 +4211,33 @@ class Observatory:
 
         self.sendtouser_queue.put((p_log, p_level),block=False)
 
-    # Note this is another thread!
-    def reconstitute_pipe_copy_queue(self):
+    # # Note this is another thread!
+    # def reconstitute_pipe_copy_queue(self):
 
 
-        copydirectories = [d for d in os.listdir(self.config['temporary_local_pipe_archive_to_hold_files_while_copying']) if os.path.isdir(os.path.join(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'], d))]
+    #     copydirectories = [d for d in os.listdir(self.config['temporary_local_pipe_archive_to_hold_files_while_copying']) if os.path.isdir(os.path.join(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'], d))]
 
-        instrume = g_dev['cam'].alias
+    #     instrume = g_dev['cam'].alias
 
-        for copydir in copydirectories:
+    #     for copydir in copydirectories:
 
-            fileList=glob.glob(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/' +copydir + '/' + instrume +'/*.fi*')
+    #         fileList=glob.glob(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/' +copydir + '/' + instrume +'/*.fi*')
 
-            if len(fileList) == 0:
-                try:
-                    os.rmdir(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/' +copydir + '/' + instrume)
-                except:
-                    pass
+    #         if len(fileList) == 0:
+    #             try:
+    #                 os.rmdir(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/' +copydir + '/' + instrume)
+    #             except:
+    #                 pass
 
-                # Check parent directory isn't empty, if empty remove
-                if len(os.listdir(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/' +copydir)) == 0:
-                    os.rmdir(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/' +copydir)
-            else:
+    #             # Check parent directory isn't empty, if empty remove
+    #             if len(os.listdir(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/' +copydir)) == 0:
+    #                 os.rmdir(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/' +copydir)
+    #         else:
 
-                # Put file back into copy queue
-                for file in fileList:
-                    dayobs=file.split('-')[2]
-                    self.pipearchive_queue.put((copy.deepcopy(file),copy.deepcopy(dayobs),copy.deepcopy(instrume),time.time()), block=False)
+    #             # Put file back into copy queue
+    #             for file in fileList:
+    #                 dayobs=file.split('-')[2]
+    #                 self.pipearchive_queue.put((copy.deepcopy(file),copy.deepcopy(dayobs),copy.deepcopy(instrume),time.time()), block=False)
 
 
     def smartstack_image(self):
