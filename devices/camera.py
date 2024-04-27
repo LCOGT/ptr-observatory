@@ -1581,24 +1581,46 @@ class Camera:
         # Figure out pixelscale from own observations
         # Or use the config value if there hasn't been enough
         # observations yet.
-        self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
         try:
-            pixelscale_list=self.pixelscale_shelf['pixelscale_list']
-        except:
-            pixelscale_list=[]
-
-        self.pixelscale_shelf.close()
-
-        if len(pixelscale_list) > 5:
+            self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
+            try:
+                pixelscale_list=self.pixelscale_shelf['pixelscale_list']
+            except:
+                pixelscale_list=[]
+    
+            self.pixelscale_shelf.close()
+    
+            #if len(pixelscale_list) > 5:
             self.pixscale = bn.nanmedian(pixelscale_list)
-        else:
+            # else:
+            #     self.pixscale = None
+                # SUPER TEMPORARY HACK SO  MTF CAN GO DEBUG SOMETHING
+                #self.pixscale=0.288
+                #self.pixscale = 0.198
+    
+            plog('1x1 pixel scale: ' + str(self.pixscale))
+        except:
+            plog ("ALERT: PIXELSCALE SHELF CORRUPTED. WIPING AND STARTING AGAIN")
             self.pixscale = None
-            # SUPER TEMPORARY HACK SO  MTF CAN GO DEBUG SOMETHING
-            #self.pixscale=0.288
-            #self.pixscale = 0.198
+            plog(traceback.format_exc())
+            try:
+                if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.dat'):
+                    os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.dat')
+                if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.dir'):
+                    os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.dir')
+                if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.bak'):
+                    os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.bak')
+           
+                # self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                # pixelscale_list=[]
+                # self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
+                # self.pixelscale_shelf.close()
+            
+            except:
+                plog(traceback.format_exc())                
+                breakpoint()
 
-        plog('1x1 pixel scale: ' + str(self.pixscale))
-
+        #breakpoint()
 
         """
         TheSkyX runs on a file mode approach to images rather
@@ -1790,23 +1812,43 @@ class Camera:
 
 
         # Load in previous estimates of readout_time
-        self.readout_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'readout' + g_dev['cam'].alias + str(g_dev['obs'].name))
         try:
-            readout_list=self.readout_shelf['readout_list']
-        except:
-            readout_list=[]
-
-        self.readout_shelf.close()
-
-        if len(readout_list) > 0:
-            self.readout_time = bn.nanmedian(readout_list)
-        else:
-            self.readout_time = 0 # if it is zero, thats fine, it will estimate the readout time on the first readout.
-
-        plog ("Currently estimated readout time: " + str(self.readout_time))
+            self.readout_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'readout' + g_dev['cam'].alias + str(g_dev['obs'].name))
+            try:
+                readout_list=self.readout_shelf['readout_list']
+            except:
+                readout_list=[]
+    
+            self.readout_shelf.close()
+    
+            if len(readout_list) > 0:
+                self.readout_time = bn.nanmedian(readout_list)
+            else:
+                self.readout_time = 0 # if it is zero, thats fine, it will estimate the readout time on the first readout.
+    
+            plog ("Currently estimated readout time: " + str(self.readout_time))
         #self.readout_time=0
 
-
+        except:
+            plog ("ALERT: READOUT SHELF CORRUPTED. WIPING AND STARTING AGAIN")
+            self.pixscale = None
+            plog(traceback.format_exc())
+            try:
+                if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'readout' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.dat'):
+                    os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'readout' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.dat')
+                if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'readout' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.dir'):
+                    os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +'readout' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.dir')
+                if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'readout' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.bak'):
+                    os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'readout' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.bak')
+           
+                # self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                # pixelscale_list=[]
+                # self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
+                # self.pixelscale_shelf.close()
+            
+            except:
+                plog(traceback.format_exc())                
+                breakpoint()
 
 
 
