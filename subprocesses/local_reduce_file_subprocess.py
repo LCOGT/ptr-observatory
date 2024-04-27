@@ -171,7 +171,7 @@ if selfconfig["save_to_alt_path"] == "yes":
     # altfolder +'/' + g_dev["day"] + "/raw/" + raw_name00
     
     
-    hdureduced.writeto( selfconfig['alt_path'] +'/' +temphduheader['DAY-OBS'] + "/reduced/" + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+    hdureduced.writeto( selfconfig['alt_path'] +'/' +temphduheader['OBSID'] +'/' +temphduheader['DAY-OBS'] + "/reduced/" + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
     )  # Save full raw file locally
 
 
