@@ -6247,7 +6247,7 @@ class Camera:
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
                     try:
                         im_type = "EX"
-                        expresult["real_time_filename"] =  self.config["obs_id"]+ "-"+ self.alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)+ "-"+ g_dev["day"]+ "-"+ next_seq+ "-"+ im_type+ "00.fits"
+                        expresult["real_time_filename"] =  self.config["obs_id"]+ "-"+ self.alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)+ "-"+ g_dev["day"]+ "-"+ next_seq+ "-"+ im_type+ "00.fits.fz"
                     except:
                         plog(traceback.format_exc())
 
