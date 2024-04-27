@@ -4858,6 +4858,8 @@ class Camera:
                     p_level="INFO",
                 )
 
+        count=int(opt['count'])
+
         self.status_time = time.time() + 10
         self.post_mnt = []
         self.post_rot = []
@@ -5137,7 +5139,10 @@ class Camera:
                             # Then get ready for the next set of exposures by changing the filter and adjusting the focus
                             # Hopefully this occurs while the slew occurs
                             # If there is a block guard, there is a running block
-                            if g_dev['seq'].block_guard:
+                            print ('seq and count')
+                            print (seq)
+                            print (count)
+                            if g_dev['seq'].block_guard and seq==count:
                                 plog ("Running block....")
                                 plog (Nsmartstack)
                                 plog (sskcounter)

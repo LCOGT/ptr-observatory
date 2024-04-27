@@ -1410,15 +1410,19 @@ class Sequencer:
                     
                     plog ("Filter for this exposure set: " + str(filter_requested))
                     
+                    # Try next block in sequence
                     try:
-                        self.block_next_filter_requested=block['project']['exposures'][block_exposure_counter+1]
-                    except:
+                        if not block_exposure_counter==len(['project']['exposures']):                        
+                            self.block_next_filter_requested=block['project']['exposures'][block_exposure_counter+1]
+                        else:
+                            self.block_next_filter_requested=block['project']['exposures'][0]
+                    except: 
                         self.block_next_filter_requested='None'     
                         
                     plog ("Filter for the NEXT block: " + str(self.block_next_filter))
                     
                     exp_time =  float(exposure['exposure'])
-                    count = int(exposure['count'])
+                    #count = int(exposure['count'])
                     #  We should add a frame repeat count
                     imtype = exposure['imtype']
 
