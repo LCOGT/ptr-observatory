@@ -7542,10 +7542,10 @@ def post_exposure_process(payload):
                 # # BUT it actually compresses to the same size either way
                 # hdu.header["BZERO"] = 0  # Make sure there is no integer scaling left over
                 # hdu.header["BSCALE"] = 1  # Make sure there is no integer scaling left over
-                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                # if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
 
 
-                    pipefolder = g_dev['obs'].config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(hdu.header['DAY-OBS']) +'/'+ str(hdu.header['INSTRUME'])
+                #     pipefolder = g_dev['obs'].config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(hdu.header['DAY-OBS']) +'/'+ str(hdu.header['INSTRUME'])
                     # if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying']+'/'+ str(hdu.header['DAY-OBS'])):
                     #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(hdu.header['DAY-OBS']))
 
