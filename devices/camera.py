@@ -5184,6 +5184,27 @@ class Camera:
                                         plog("Usually this is because of a broken connection.")
                                         plog("Killing then waiting 60 seconds then reconnecting")
                                         g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+                    # If this is the last set of something in an execute_block from the sequence (project calendar)
+                    # Then get ready for the next set of exposures by changing the filter and adjusting the focus
+                    # Hopefully this occurs while the slew occurs
+                    # If there is a block guard, there is a running block
+                    if g_dev['seq'].block_guard:
+                        plog ("Running block....")
+                        plog (Nsmartstack)
+                        plog (sskcounter)
+                        # If this is the end of a smartstack set or it is a single shot then check the filter and change
+                        if Nsmartstack==1 or (Nsmartstack == sskcounter+1):
+                            plog ("end of sstack run, checking filter")
+                            plog ("Requested filter: " + str(g_dev['seq'].block_next_filter_requested))
+                            plog ("Current filter: " + str(self.current_Filter))
+                            if not g_dev['seq'].block_next_filter_requested=='None':
+                                # Check if filter needs changing, if so, change.
+                                self.current_filter= g_dev['fil'].filter_selected                                        
+                                if not self.current_filter == g_dev['seq'].block_next_filter_requested:
+                                    plog ("Changing filter")
+                                    self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
+                                        {"filter": g_dev['seq'].block_next_filter_requested}, {}
+                                    )
                 
 
                 if self.theskyx:
