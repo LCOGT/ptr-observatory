@@ -5035,6 +5035,7 @@ class Camera:
                             
                     # If the shutter has closed but there is still time, then nudge the scope while reading out
                     if not g_dev['cam'].shutter_open:
+                        plog ("Shutter Closed.")
                         # Attempt to sneak in a platesolve and nudge during readout time. 
                         if not check_nudge_after_shutter_closed:                            
                             
