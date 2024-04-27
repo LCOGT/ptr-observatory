@@ -43,10 +43,10 @@ googtime=time.time()
 
 
 
-if selfconfig["save_to_alt_path"] == "yes":
-    altfolder = selfconfig['temporary_local_alt_archive_to_hold_files_while_copying']
-    if not os.path.exists(selfconfig['temporary_local_alt_archive_to_hold_files_while_copying']):
-        os.makedirs(selfconfig['temporary_local_alt_archive_to_hold_files_while_copying'] )
+
+    # altfolder = selfconfig['temporary_local_alt_archive_to_hold_files_while_copying']
+    # if not os.path.exists(selfconfig['temporary_local_alt_archive_to_hold_files_while_copying']):
+    #     os.makedirs(selfconfig['temporary_local_alt_archive_to_hold_files_while_copying'] )
 
 
 hdureduced = fits.PrimaryHDU()
@@ -166,7 +166,12 @@ hdureduced.writeto(
 
 if selfconfig["save_to_alt_path"] == "yes":
     #breakpoint()
-    hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+    
+    
+    # altfolder +'/' + g_dev["day"] + "/raw/" + raw_name00
+    
+    
+    hdureduced.writeto( selfconfig['alt_path'] +'/' +temphduheader['DAY-OBS'] + "/reduced/" + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
     )  # Save full raw file locally
 
 
