@@ -168,9 +168,7 @@ if selfconfig["save_to_alt_path"] == "yes":
     #breakpoint()
     hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
     )  # Save full raw file locally
-    #self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1])), block=False)
-#else:
-    
+
 
 try:
     os.remove(sys.argv[1])
