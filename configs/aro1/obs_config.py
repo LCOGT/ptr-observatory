@@ -86,12 +86,12 @@ site_config = {
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
-    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
+    #'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # LINKS FOR OBS FOLDERS
     'client_hostname':"ARO-0m30",     # Generic place for this host to stash.
     'archive_path': 'F:/ptr/',
     'alt_path': 'Q:/ptr/',
-    'temporary_local_alt_archive_to_hold_files_while_copying' : 'F:/tempfolderforaltpath',
+    #'temporary_local_alt_archive_to_hold_files_while_copying' : 'F:/tempfolderforaltpath',
 
     'save_to_alt_path' : 'yes',
     'local_calibration_path': 'F:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files

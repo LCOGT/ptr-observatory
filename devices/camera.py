@@ -182,12 +182,12 @@ def mid_stretch_jpeg(data):
 
 # Note this is a thread!
 def write_raw_file_out(packet):
-    
+
     (raw, raw_name, hdudata, hduheader, frame_type, current_icrs_ra, current_icrs_dec,altpath,altfolder) = packet
-    
+
     #print ("RAW RECEIVED: " + str(raw_name) )
-    
-    
+
+
     # Make sure normal paths exist
     os.makedirs(
         g_dev['cam'].camera_path + g_dev["day"], exist_ok=True
@@ -221,7 +221,7 @@ def write_raw_file_out(packet):
         #     os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
 
 
-    
+
     hdu = fits.PrimaryHDU()
     hdu.data = hdudata
     hdu.header = hduheader
@@ -240,10 +240,10 @@ def write_raw_file_out(packet):
     #     hdu.writeto(
     #         raw_name.replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
     #     )  # Save full raw file locally
-    
+
     #hdu.writeto( altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix')
     hdu.writeto( raw_name, overwrite=True, output_verify='silentfix')
-    
+
     try:
         hdu.close()
     except:
@@ -259,7 +259,7 @@ def write_raw_file_out(packet):
     #         # plog(traceback.format_exc())
     #         # time.sleep(10)
     #         # saverretries = saverretries + 1
-    
+
     #print ("RAW PROCESSED: " + str(raw_name) )
 
 def gaussian(x, amplitude, mean, stddev):
@@ -1160,7 +1160,7 @@ class Camera:
                                       + "/" + tempfrontcalib + "BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
             self.biasFiles.update({'1': tempbiasframe})
-            del tempbiasframe            
+            del tempbiasframe
         except:
             plog("Bias frame for Binning 1 not available")
 
@@ -1591,9 +1591,9 @@ class Camera:
                 pixelscale_list=self.pixelscale_shelf['pixelscale_list']
             except:
                 pixelscale_list=[]
-    
+
             self.pixelscale_shelf.close()
-    
+
             #if len(pixelscale_list) > 5:
             self.pixscale = bn.nanmedian(pixelscale_list)
             # else:
@@ -1601,7 +1601,7 @@ class Camera:
                 # SUPER TEMPORARY HACK SO  MTF CAN GO DEBUG SOMETHING
                 #self.pixscale=0.288
                 #self.pixscale = 0.198
-    
+
             plog('1x1 pixel scale: ' + str(self.pixscale))
         except:
             plog ("ALERT: PIXELSCALE SHELF CORRUPTED. WIPING AND STARTING AGAIN")
@@ -1614,14 +1614,14 @@ class Camera:
                     os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.dir')
                 if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.bak'):
                     os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.bak')
-           
+
                 # self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
                 # pixelscale_list=[]
                 # self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
                 # self.pixelscale_shelf.close()
-            
+
             except:
-                plog(traceback.format_exc())                
+                plog(traceback.format_exc())
                 breakpoint()
 
         #breakpoint()
@@ -1825,14 +1825,14 @@ class Camera:
                 readout_list=self.readout_shelf['readout_list']
             except:
                 readout_list=[]
-    
+
             self.readout_shelf.close()
-    
+
             if len(readout_list) > 0:
                 self.readout_time = bn.nanmedian(readout_list)
             else:
                 self.readout_time = 0 # if it is zero, thats fine, it will estimate the readout time on the first readout.
-    
+
             plog ("Currently estimated readout time: " + str(self.readout_time))
         #self.readout_time=0
 
@@ -1847,14 +1847,14 @@ class Camera:
                     os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +'readout' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.dir')
                 if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'readout' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.bak'):
                     os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'readout' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.bak')
-           
+
                 # self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
                 # pixelscale_list=[]
                 # self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
                 # self.pixelscale_shelf.close()
-            
+
             except:
-                plog(traceback.format_exc())                
+                plog(traceback.format_exc())
                 breakpoint()
 
 
@@ -1901,16 +1901,16 @@ class Camera:
 
             self.darkslide_open = False
             self.darkslide_state = 'Closed'
-            
-            
+
+
     # # Note this is a thread!
     # def write_raw_file_out(self,packet):
-        
+
     #     (raw, raw_name, hdudata, hduheader, frame_type, current_icrs_ra, current_icrs_dec,altpath,altfolder) = packet
-        
+
     #     print ("RAW RECEIVED: " + str(raw_name) )
-        
-        
+
+
     #     # Make sure normal paths exist
     #     os.makedirs(
     #         g_dev['cam'].camera_path + g_dev["day"], exist_ok=True
@@ -1944,7 +1944,7 @@ class Camera:
     #         #     os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
 
 
-        
+
     #     hdu = fits.PrimaryHDU()
     #     hdu.data = hdudata
     #     hdu.header = hduheader
@@ -1978,7 +1978,7 @@ class Camera:
     #     #         # plog(traceback.format_exc())
     #     #         # time.sleep(10)
     #     #         # saverretries = saverretries + 1
-        
+
     #     print ("RAW PROCESSED: " + str(raw_name) )
 
     def in_line_quick_focus(self, hdufocusdata, im_path, text_name):
@@ -3140,15 +3140,15 @@ class Camera:
         readout_estimate_holder=[]
         N_of_substacks = int(exposure_time / exp_of_substacks)
         #readouts=0
-        
-        
+
+
         is_osc=self.config["camera"][self.name]["settings"]['is_osc']
-        
-        
+
+
 
         self.sub_stacker_midpoints=[]
 
-        
+
 
         #print ("subexposing")
         for subexposure in range(N_of_substacks+1):
@@ -3193,10 +3193,10 @@ class Camera:
                 temporary_substack_directory=self.local_calibration_path + "subsstacks/" + str(time.time()).replace('.','')
                 if not os.path.exists(temporary_substack_directory):
                     os.makedirs(temporary_substack_directory)
-                    
+
                 sub_stacker_array = np.memmap(temporary_substack_directory + '/tempfile', dtype='float32', mode= 'w+', shape = (self.imagesize_x,self.imagesize_y,N_of_substacks))
-                
-                
+
+
                 # Load in the flat to be used during sub_stacker_array
                 no_flat=False
                 try:
@@ -3255,18 +3255,18 @@ class Camera:
                         de_nanned_reference_frame[::2, ::2]=np.nan
                         # Wipe out blue channel
                         de_nanned_reference_frame[1::2, 1::2]=np.nan
-                    
-                    
+
+
                     # Cut down image to central thousand by thousand patch to align
                     fx, fy = de_nanned_reference_frame.shape
                     crop_x= int(0.5*fx) -500
                     crop_y= int(0.5*fy) -500
                     de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
-                    
-                    
-                    
-                    
-                    
+
+
+
+
+
                     imageMode=bn.nanmedian(de_nanned_reference_frame)
 
                     #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
@@ -3342,14 +3342,14 @@ class Camera:
                 # Using the nan'ed file, calculate the shift
                 #rolltimer=time.time()
                 tempnan_mask=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
-                
+
                 if is_osc:
                     # Wipe out red channel
                     tempnan_mask[::2, ::2]=np.nan
                     # Wipe out blue channel
                     tempnan_mask[1::2, 1::2]=np.nan
-                
-                
+
+
                 # Cut down image to central thousand by thousand patch to align
                 tempnan_mask= tempnan_mask[crop_x:-crop_x, crop_y:-crop_y]
                 #imageMode=bn.nanmedian(tempnan)
@@ -3374,7 +3374,7 @@ class Camera:
                 #print ("Shift: " + str(time.time()-rolltimer))
                 #del tempnan
                 #print (imageshift)
-                
+
                 if len(imageshift) == 3:
                     imageshift=imageshift[0]
 
@@ -3382,47 +3382,47 @@ class Camera:
                     if abs(imageshift[0]) > 0:
                         # print ("X shifter")
                         #if imageshift[0]
-                        imageshiftabs=int(abs(imageshift[0]))                        
+                        imageshiftabs=int(abs(imageshift[0]))
                         # If it is an OSC, it needs to be an even number
                         if is_osc:
                             if (imageshiftabs & 0x1) == 1:
                                 imageshiftabs=imageshiftabs+1
-                        
-                        
+
+
                         if imageshift[0] > 0:
                             imageshiftsign = 1
                         else:
                             imageshiftsign = -1
-    
+
                         sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=0)
                         # print ("Roll: " + str(time.time()-rolltimer))
-    
+
                     # rolltimer=time.time()
                     if abs(imageshift[1]) > 0:
                         # print ("Y shifter")
                         # print (int(imageshift[1]))
-    
+
                         imageshiftabs=int(abs(imageshift[1]))
-                        
+
                         # If it is an OSC, it needs to be an even number
                         if is_osc:
                             if (imageshiftabs & 0x1) == 1:
                                 imageshiftabs=imageshiftabs+1
-                        
+
                         if imageshift[1] > 0:
                             imageshiftsign = 1
                         else:
                             imageshiftsign = -1
-    
-    
+
+
                         sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=1)
 
                 except:
                     plog(traceback.format_exc())
                     breakpoint()
-                    
+
                 del tempnan_mask
-                
+
 
                 # # rolltimer=time.time()
                 # # roll the original array around by the shift
@@ -3459,7 +3459,7 @@ class Camera:
                 while (time.time() - exposure_timer) < exp_of_substacks:
                     #print ("Watiing for exposure to finish")
                     time.sleep(0.005)
-                    
+
                 # If this is the last exposure of the set of subexposures, then report shutter closed
                 if subexposure == (N_of_substacks-1):
                     self.shutter_open=False
@@ -3487,9 +3487,9 @@ class Camera:
 
 
                 sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-                
-                
-                
+
+
+
 
                 #print ("Collected " +str(subexposure+1))
 
@@ -3732,7 +3732,7 @@ class Camera:
                 manually_requested_calibration=False
 
             self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'], user_roles=command['user_roles'], quick=False, manually_requested_calibration=manually_requested_calibration)
-            
+
             self.active_script = None
 
         elif action == "darkslide_close":
@@ -4445,7 +4445,7 @@ class Camera:
 
                             # Sort out if it is a substack
                             # If request actually requested a substack
-                            if self.substacker:    
+                            if self.substacker:
                                 self.substacker=False
                                 broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
                                 narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
@@ -4453,7 +4453,7 @@ class Camera:
                                     if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat" and not frame_type=='pointing':
                                         if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
                                             self.substacker=True
-                                        
+
                             # If it is meant to be a substacker image
                             # Make sure there is actually a bias, dark, flat and bpm
                             # otherwise a substack is pointless.
@@ -4470,8 +4470,8 @@ class Camera:
                                         plog ("Could not engage substacking as the filter requested has no flat")
                                 else:
                                     plog ("Could not engage substacking as the appropriate biasdark")
-                            
-                                            
+
+
 
                             # Adjust pointing exposure time relative to known focus
                             if not g_dev['seq'].focussing and frame_type=='pointing':
@@ -4520,7 +4520,7 @@ class Camera:
                                     else:
                                         plog("Detecting focuser still changing.")
                                         tempfocposition=copy.deepcopy(nowfocposition)
-                                
+
 
 
 
@@ -4936,9 +4936,9 @@ class Camera:
         broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
         narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
         dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
-        
 
-        
+
+
 
         while True:
 
@@ -5080,24 +5080,24 @@ class Camera:
                             block_and_focus_check_done=True
 
                     # Need to have a time sleep to release the GIL to run the other threads
-                    
+
                     if time.time() > (start_time_of_observation + exposure_time):
                         # If the exposure time has passed, then the shutter is closed for normal exposures
                         # The substacker thread reports the shutter_open(/closed). Other methods may not.
                         if not self.substacker:
                             g_dev['cam'].shutter_open=False
                         #else:
-                            
+
                     # If the shutter has closed but there is still time, then nudge the scope while reading out
                     if not g_dev['cam'].shutter_open:
                         plog ("Shutter Closed.")
-                        # Attempt to sneak in a platesolve and nudge during readout time. 
-                        if not check_nudge_after_shutter_closed:      
-                            
+                        # Attempt to sneak in a platesolve and nudge during readout time.
+                        if not check_nudge_after_shutter_closed:
+
                             #self.running_an_exposure_set=False
                             # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
                             if not g_dev['obs'].mountless_operation:
-                                
+
                                 if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread or g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
                                     self.wait_for_slew()
                                     g_dev['obs'].check_platesolve_and_nudge()
@@ -5142,7 +5142,7 @@ class Camera:
                                                 plog("Usually this is because of a broken connection.")
                                                 plog("Killing then waiting 60 seconds then reconnecting")
                                                 g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-                            
+
                             # If this is the last set of something in an execute_block from the sequence (project calendar)
                             # Then get ready for the next set of exposures by changing the filter and adjusting the focus
                             # Hopefully this occurs while the slew occurs
@@ -5161,7 +5161,7 @@ class Camera:
                                     plog ("Current filter: " + str(self.current_Filter))
                                     if not g_dev['seq'].block_next_filter_requested=='None':
                                         # Check if filter needs changing, if so, change.
-                                        self.current_filter= g_dev['fil'].filter_selected                                        
+                                        self.current_filter= g_dev['fil'].filter_selected
                                         if not self.current_filter == g_dev['seq'].block_next_filter_requested:
                                             plog ("Changing filter")
                                             self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
@@ -5171,12 +5171,12 @@ class Camera:
                             check_nudge_after_shutter_closed=True
 
                         temp_time_sleep=min(self.completion_time - time.time()+0.00001, initialRemaining * 0.125)
-                        
+
                     else:
                         if time.time() < (start_time_of_observation + exposure_time):
                             temp_time_sleep=min(start_time_of_observation + exposure_time - time.time()+0.00001, initialRemaining * 0.125)
-                        
-                    
+
+
                     if temp_time_sleep > 0:
                         time.sleep(temp_time_sleep)
 
@@ -5188,16 +5188,16 @@ class Camera:
                 if self.shutter_open:
                     self.shutter_open=False
                     plog ("Shutter Closed.")
-                
+
                 plog ("Exposure Complete")
                 g_dev["obs"].send_to_user("Exposure Complete")
-                
+
                 # If the nudge wasn't done during the readout, then nudge it now
                 if not check_nudge_after_shutter_closed:
                     #self.running_an_exposure_set=False
                     # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
                     if not g_dev['obs'].mountless_operation:
-                        
+
                         if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread or g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
                             self.wait_for_slew()
                             g_dev['obs'].check_platesolve_and_nudge()
@@ -5257,13 +5257,13 @@ class Camera:
                             plog ("Current filter: " + str(self.current_Filter))
                             if not g_dev['seq'].block_next_filter_requested=='None':
                                 # Check if filter needs changing, if so, change.
-                                self.current_filter= g_dev['fil'].filter_selected                                        
+                                self.current_filter= g_dev['fil'].filter_selected
                                 if not self.current_filter == g_dev['seq'].block_next_filter_requested:
                                     plog ("Changing filter")
                                     self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
                                         {"filter": g_dev['seq'].block_next_filter_requested}, {}
                                     )
-                
+
 
                 if self.theskyx:
                     self.readout_estimate= time.time()-start_time_of_observation-exposure_time
@@ -5406,8 +5406,8 @@ class Camera:
                     next_seq = next_sequence(self.config["camera"][self.name]["name"])
                 except:
                     next_seq = reset_sequence(self.config["camera"][self.name]["name"])
-                
-                
+
+
                 self.next_seq= next_seq
 
 
@@ -5514,7 +5514,7 @@ class Camera:
                         else:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, None, None))
 
-                    
+
                     # Make  sure the alt paths exist
                     if g_dev['obs'].config["save_to_alt_path"] == "yes":
                         os.makedirs(
@@ -5528,9 +5528,9 @@ class Camera:
                         )
                         os.makedirs(
                             g_dev['obs'].alt_path + g_dev["day"] + "/calib/", exist_ok=True)
-                        
-                        
-                        
+
+
+
                         altpath=copy.deepcopy(g_dev['obs'].alt_path)
                     else:
                         altpath='no'
@@ -5539,7 +5539,7 @@ class Camera:
                     if self.config['save_raw_to_disk']:
                        #g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                        threading.Thread(target=write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,self.config['temporary_local_alt_archive_to_hold_files_while_copying']),)).start()
-                       
+
 
                     # For sites that have "save_to_alt_path" enabled, this routine
                     # Saves the raw and reduced fits files out to the provided directories
@@ -5550,11 +5550,11 @@ class Camera:
 
                         # g_dev['obs'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                         #                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                        
-                        
+
+
                         threading.Thread(target=write_raw_file_out, args=(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,self.config['temporary_local_alt_archive_to_hold_files_while_copying']),)).start()
-                        
+
 
                     del hdu
                     #self.running_an_exposure_set = False
@@ -5824,7 +5824,7 @@ class Camera:
 
                     #reported=0
                     #temptimer=time.time()
-                    
+
                     # while True:
                     #     if g_dev['obs'].sep_processing==False and g_dev['obs'].sep_queue.empty():
                     #         break
@@ -5889,9 +5889,9 @@ class Camera:
                         hdusmallheader["NSTARS"] = ( str(fwhm_dict['sources']), 'Number of star-like sources in image')
                     except:
                         hdusmallheader["NSTARS"] = ( -99, 'Number of star-like sources in image')
-                        
-                        
-                    
+
+
+
                     if self.config['keep_focus_images_on_disk']:
                         g_dev['obs'].to_slow_process(1000, ('focus', cal_path + cal_name, outputimg, hdusmallheader,
                                                             frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
@@ -6205,10 +6205,10 @@ class Camera:
 
                         # Similarly to the above. This saves the RAW file to disk
                         if self.config['save_raw_to_disk']:
-                        
+
                            #g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                            threading.Thread(target=write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,self.config['temporary_local_alt_archive_to_hold_files_while_copying']),)).start()
-                           
+
 
                         # For sites that have "save_to_alt_path" enabled, this routine
                         # Saves the raw and reduced fits files out to the provided directories
@@ -6217,15 +6217,15 @@ class Camera:
                                 "alt_path"
                             ]  +'/' + self.config['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
 
-                            
+
 
                             # g_dev['obs'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                             #                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                             threading.Thread(target=write_raw_file_out, args=(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,self.config['temporary_local_alt_archive_to_hold_files_while_copying']),)).start()
-                            
-                            
+
+
                                 # if "hdusmalldata" in locals():
                             #     g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, hdusmalldata, hdusmallheader, \
                             #                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
@@ -7335,7 +7335,7 @@ def post_exposure_process(payload):
                     g_dev["day"],
                     "Date at start of observing night"
                 )
-                
+
                 # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
                 # Focus images use it for focus, Normal images also report their focus.
                 # IMMEDIATELY SEND TO SEP QUEUE
@@ -7360,7 +7360,7 @@ def post_exposure_process(payload):
 
                 if smartstackid == 'no':
                     if selfconfig['keep_reduced_on_disk']:
-                        
+
                         # if selfconfig["save_to_alt_path"] == "yes":
                         #     selfalt_path = selfconfig[
                         #         "alt_path"
@@ -7371,7 +7371,7 @@ def post_exposure_process(payload):
 
                         #         g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
                         #                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                        
+
                         if selfconfig["save_to_alt_path"] == "yes":
                             selfalt_path = selfconfig[
                                 "alt_path"
@@ -7379,13 +7379,13 @@ def post_exposure_process(payload):
                         else:
                             selfalt_path = 'no'
 
-                        
+
                         # g_dev['obs'].to_slow_process(1000,('reduced', red_path + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
                         #                        frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure,selfalt_path))
-                            
+
                         slow_process=('reduced', red_path + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
                                                frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure,selfalt_path)
-                            
+
                         # Make  sure the alt paths exist
                         if g_dev['obs'].config["save_to_alt_path"] == "yes":
                             os.makedirs(
@@ -7399,16 +7399,16 @@ def post_exposure_process(payload):
                             )
                             os.makedirs(
                                 g_dev['obs'].alt_path + g_dev["day"] + "/calib/", exist_ok=True)
-                            
-                            
-                            
+
+
+
                             altpath=copy.deepcopy(g_dev['obs'].alt_path)
                         else:
                             altpath='no'
-                            
-                        
+
+
                         picklepayload=(reduced_hdusmallheader,copy.deepcopy(g_dev['obs'].config),g_dev['cam'].name, slow_process, altpath)
-                        
+
                         #if True :
                         picklefilename='testred'+str(time.time()).replace('.','')
                         #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
@@ -7422,19 +7422,19 @@ def post_exposure_process(payload):
                         #print (picklefilename)
 
                         subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=g_dev['obs'].local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-                        
-                        
+
+
                         # if g_dev['obs'].config["save_to_alt_path"] == "yes":
-                            
+
                         #     altfolder = g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying']
                         #     if not os.path.exists(g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying']):
                         #         os.makedirs(g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying'] )
-                                
+
                         #     # #breakpoint()
                         #     # hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
                         #     #)  # Save full raw file locally
                         #     g_dev['obs'].altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+reduced_hdusmallheader['OBSTYPE'])),copy.deepcopy(slow_process[1]),time.time()), block=False)
-                        
+
 
 
                 # This puts the file into the smartstack queue
@@ -7511,10 +7511,10 @@ def post_exposure_process(payload):
                 "pointing"
                 ]) and not a_dark_exposure:
                 #g_dev['obs'].to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
-                
+
                 #slow_process=('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure)
                 picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(g_dev['obs'].config),g_dev['cam'].name, ('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
-                
+
                 #if True :
                 picklefilename='testlocalred'+str(time.time()).replace('.','')
                 #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
@@ -7526,12 +7526,12 @@ def post_exposure_process(payload):
                 #breakpoint()
 
                 # print (picklefilename)
-                
+
                 # print(slow_process[1])
 
                 subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=g_dev['obs'].local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-                
-                
+
+
                 #goog_subprocess.communicate()
                 #breakpoint()
 
@@ -7540,8 +7540,8 @@ def post_exposure_process(payload):
                 # except:
                 #     plog ("Problem in the smartstack pickle dump")
                 #     plog(traceback.format_exc())
-                
-                
+
+
 
                 # # Create the fz file ready for PTR Archive
                 # # Note that even though the raw file is int16,
@@ -7621,7 +7621,7 @@ def post_exposure_process(payload):
 
                     # Send this file up to ptrarchive
                     if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-                        
+
                         #print ("INGESTERING " + raw_name00)
                         g_dev['obs'].enqueue_for_PTRarchive(
                             26000000, '', raw_path + raw_name00 +'.fz'
@@ -7799,23 +7799,23 @@ def post_exposure_process(payload):
 
                     else:
                         plog("this bayer grid not implemented yet")
-                
+
 
 
             # Similarly to the above. This saves the RAW file to disk
             # it works 99.9999% of the time.
             if selfconfig['save_raw_to_disk']:
-                
+
                 #breakpoint()
                 # print ("first")
                 # try:
-                threading.Thread(target=write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,selfconfig['temporary_local_alt_archive_to_hold_files_while_copying']),)).start()
-                    
+                threading.Thread(target=write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,'thisisdeprecated'),)).start()
+
                 # except:
-                #     breakpoint()                     
-                
+                #     breakpoint()
+
                 #g_dev['obs'].to_slow_process(1000,)
-                
+
                 if selfconfig["save_to_alt_path"] == "yes":
                     selfalt_path = selfconfig[
                         "alt_path"
@@ -7826,14 +7826,14 @@ def post_exposure_process(payload):
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,selfconfig['temporary_local_alt_archive_to_hold_files_while_copying']),)).start()
                     # except:
                     #     breakpoint()
-                 
+
                     # g_dev['obs'].to_slow_process(1000,('raw_alt_path', selfalt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                     #                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
 
             # For sites that have "save_to_alt_path" enabled, this routine
             # Saves the raw and reduced fits files out to the provided directories
-            
+
 
 
             # remove file from memory

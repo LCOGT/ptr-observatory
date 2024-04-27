@@ -653,8 +653,8 @@ class Observatory:
         if self.config['ingest_raws_directly_to_archive']:
             #breakpoint()
             g_dev['seq'].collect_and_queue_neglected_fits()
-        if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-            self.reconstitute_pipe_copy_queue()
+        # if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+        #     self.reconstitute_pipe_copy_queue()
 
         # Inform UI of reboot
         self.send_to_user("Observatory code has been rebooted. Manually queued commands have been flushed.")
@@ -1884,9 +1884,9 @@ class Observatory:
             # Here we parse the file, set up and send to AWS
             filename = pri_image[1][1]
             filepath = pri_image[1][0] + filename  # Full path to file on disk
-            
+
             time_put_in_queue=pri_image[1][2]
-            
+
             # Check it is there
             if not os.path.exists(filepath):
                 if (time.time() - time_put_in_queue) < 43200:
@@ -1897,9 +1897,9 @@ class Observatory:
                     )
                 else:
                     plog ("WAITED TOO LONG! " + filepath + " never turned up!")
-                
+
                 return ''
-            
+
             # Check it is no small
             if os.stat(filepath).st_size < 100:
                 if (time.time() - time_put_in_queue) < 43200:
@@ -1910,16 +1910,16 @@ class Observatory:
                     )
                 else:
                     plog ("WAITED TOO LONG! " + filepath + " never turned up!")
-                
+
                 return ''
-            
-            
-            
+
+
+
             #plog ("doing " + str(filepath))
-            
-            
-                
-            
+
+
+
+
 
             # Only ingest new large fits.fz files to the PTR archive.
             try:
@@ -1983,9 +1983,9 @@ class Observatory:
                             plog ("Couldn't upload to PTR archive: " + str(filepath))
                             broken=1
                         except Exception as e:
-                            
+
                             plog(traceback.format_exc())
-                            
+
                             if 'list index out of range' in str(e):
                                 # This error is thrown when there is a corrupt file
                                 broken=1
@@ -2061,29 +2061,29 @@ class Observatory:
     #                 if (time.time() - time_put_in_queue) > 600:
     #                     plog (filename + " not there yet, chucking it back in the queue.")
     #                 self.pipearchive_queue.put((filename,dayobs,instrume,time_put_in_queue), block=False)
-                        
+
     #                 # self.enqueue_for_PTRarchive(
     #                 #     26000000, '', filepath
     #                 # )
     #             else:
     #                 plog ("WAITED TOO LONG! " + filename + " never turned up!")
-                
+
     #             return ''
-            
+
     #         # Check it is no small
     #         if os.stat(filename).st_size < 100:
     #             if (time.time() - time_put_in_queue) < 43200:
     #                 if (time.time() - time_put_in_queue) > 600:
     #                     plog (filename + " is there but still small - likely still writing out, chucking it back in the queue.")
-                    
+
     #                 self.pipearchive_queue.put((filename,dayobs,instrume,time_put_in_queue), block=False)
     #                 # self.enqueue_for_PTRarchive(
     #                 #     26000000, '', filepath
     #                 # )
     #             else:
     #                 plog ("WAITED TOO LONG! " + filename + " never turned up!")
-                
-    #             return ''            
+
+    #             return ''
 
 
     #         # Only ingest new large fits.fz files to the PTR archive.
@@ -2126,38 +2126,38 @@ class Observatory:
     #     upload_timer=time.time()
 
     #     (fromfile,tofile,time_put_in_queue) = fileinfo
-        
-        
+
+
     #     # Check it is there
     #     if not os.path.exists(fromfile):
     #         if (time.time() - time_put_in_queue) < 43200:
     #             if (time.time() - time_put_in_queue) > 600:
     #                 plog (fromfile + " not there yet, chucking it back in the queue.")
     #             self.altarchive_queue.put((fromfile,tofile,time_put_in_queue), block=False)
-                    
+
     #             # self.enqueue_for_PTRarchive(
     #             #     26000000, '', filepath
     #             # )
     #         else:
     #             plog ("WAITED TOO LONG! " + fromfile + " never turned up!")
-            
+
     #         return ''
-        
+
     #     # Check it is no small
     #     if os.stat(fromfile).st_size < 100:
     #         if (time.time() - time_put_in_queue) < 43200:
     #             if (time.time() - time_put_in_queue) > 600:
     #                 plog (fromfile + " is there but still small - likely still writing out, chucking it back in the queue.")
-                
+
     #             self.altarchive_queue.put((fromfile,tofile,time_put_in_queue), block=False)
     #             # self.enqueue_for_PTRarchive(
     #             #     26000000, '', filepath
     #             # )
     #         else:
     #             plog ("WAITED TOO LONG! " + fromfile + " never turned up!")
-            
-    #         return ''            
-        
+
+    #         return ''
+
 
     #     # Only ingest new large fits.fz files to the PTR archive.
     #     try:
@@ -3504,13 +3504,13 @@ class Observatory:
 
                 # if slow_process[0] == 'fz_and_send':
 
-                    
+
 
 
 
 
                 #     picklepayload=(temphduheader,copy.deepcopy(self.config),g_dev['cam'].name, slow_process)
-                    
+
                 #     #if True :
                 #     picklefilename='testlocalred'+str(time.time()).replace('.','')
                 #     #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
@@ -3522,12 +3522,12 @@ class Observatory:
                 #     #breakpoint()
 
                 #     # print (picklefilename)
-                    
+
                 #     # print(slow_process[1])
 
                 #     subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=self.local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-                    
-                    
+
+
                 #     #goog_subprocess.communicate()
                 #     #breakpoint()
 
@@ -3536,8 +3536,8 @@ class Observatory:
                 #     # except:
                 #     #     plog ("Problem in the smartstack pickle dump")
                 #     #     plog(traceback.format_exc())
-                    
-                    
+
+
 
                 #     # # Create the fz file ready for PTR Archive
                 #     # # Note that even though the raw file is int16,
@@ -3795,8 +3795,8 @@ class Observatory:
                 #             plog("this bayer grid not implemented yet")
 
                 # if slow_process[0] == 'reduced':# or slow_process[0] == 'reduced_alt_path':
-                    
-                    
+
+
                 #     # Make  sure the alt paths exist
                 #     if self.config["save_to_alt_path"] == "yes":
                 #         os.makedirs(
@@ -3810,16 +3810,16 @@ class Observatory:
                 #         )
                 #         os.makedirs(
                 #             self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
-                        
-                        
-                        
+
+
+
                 #         altpath=copy.deepcopy(self.alt_path)
                 #     else:
                 #         altpath='no'
-                        
-                    
+
+
                 #     picklepayload=(temphduheader,copy.deepcopy(self.config),g_dev['cam'].name, slow_process, altpath)
-                    
+
                 #     #if True :
                 #     picklefilename='testfz'+str(time.time()).replace('.','')
                 #     #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
@@ -3833,21 +3833,21 @@ class Observatory:
                 #     #print (picklefilename)
 
                 #     subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=self.local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-                    
-                    
+
+
                 #     if self.config["save_to_alt_path"] == "yes":
                 #         # #breakpoint()
                 #         # hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
                 #         #)  # Save full raw file locally
                 #         self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1]),time.time()), block=False)
-                    
-                    
+
+
                 #     # # saver = 0
                 #     # # saverretries = 0
                 #     # # while saver == 0 and saverretries < 10:
 
 
-                        
+
                 #     #         saver = 1
                 #     #     except Exception as e:
                 #     #         plog("Failed to write raw file: ", e)
