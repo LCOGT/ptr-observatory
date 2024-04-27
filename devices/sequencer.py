@@ -1412,7 +1412,7 @@ class Sequencer:
                     
                     # Try next block in sequence
                     try:
-                        if not block_exposure_counter==len(['project']['exposures']):                        
+                        if not block_exposure_counter==len(block['project']['exposures']):                        
                             self.block_next_filter_requested=block['project']['exposures'][block_exposure_counter+1]
                         else:
                             self.block_next_filter_requested=block['project']['exposures'][0]
