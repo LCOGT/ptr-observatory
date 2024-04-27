@@ -1355,7 +1355,7 @@ class Sequencer:
             mosaic_pointing_already_done=True
 
             while left_to_do > 0 and not ended:
-
+                block_exposure_counter=0
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do not remultiply by 4
                 for exposure in block['project']['exposures']:
 
@@ -1407,6 +1407,16 @@ class Sequencer:
                         filter_requested = exposure['filter']
                     except:
                         filter_requested = 'None'
+                    
+                    plog ("Filter for this exposure set: " + str(filter_requested))
+                    
+                    try:
+                        self.block_next_filter_requested=block['project']['exposures'][block_exposure_counter+1]
+                    except:
+                        self.block_next_filter_requested='None'     
+                        
+                    plog ("Filter for the NEXT block: " + str(self.block_next_filter))
+                    
                     exp_time =  float(exposure['exposure'])
                     count = int(exposure['count'])
                     #  We should add a frame repeat count
@@ -1786,7 +1796,7 @@ class Sequencer:
 
 
                         pane += 1
-
+                    block_exposure_counter=block_exposure_counter+1
                 #count -= 1
                 #exposure['count'] = count
                 left_to_do -= 1

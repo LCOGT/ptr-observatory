@@ -388,6 +388,10 @@ class FilterWheel:
 
                             self.filter_offset = float(self.filter_data[self.filt_pointer][2])
 
+                        if self.wait_time_after_filter_change != 0:
+                            #plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
+                            time.sleep(self.wait_time_after_filter_change)
+
                         self.filter_changing=False
 
                     self.filterwheel_updates=self.filterwheel_updates+1
@@ -556,6 +560,9 @@ class FilterWheel:
             self.filter_changing=False
             return None, None, None
 
+        # Send in the filter change request
+        self.filter_change_requested=True
+        # Then force the focus adjustment to the right offset position for the filter
         try:
             if not g_dev['seq'].focussing:
                 g_dev['foc'].adjust_focus(force_change=True)
@@ -566,8 +573,8 @@ class FilterWheel:
         # make sure focusser is adjusted every filter change
         #g_dev['foc'].adjust_focus()
 
-        self.filter_change_requested=True
-        self.wait_for_filterwheel_update()
+        # Not sure whether we need to wait for this? Look into that...
+        #self.wait_for_filterwheel_update()
 
 # <<<<<<< Updated upstream
 # =======
@@ -583,9 +590,9 @@ class FilterWheel:
 # >>>>>>> Stashed changes
 
 
-        if self.wait_time_after_filter_change != 0:
-            #plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
-            time.sleep(self.wait_time_after_filter_change)
+        # if self.wait_time_after_filter_change != 0:
+        #     #plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
+        #     time.sleep(self.wait_time_after_filter_change)
 
 
         self.previous_filter_name=filter_name
