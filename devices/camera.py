@@ -7596,9 +7596,9 @@ def post_exposure_process(payload):
                     #             del hdu  # remove file from memory now that we are doing with it
 
                                 #(filename,dayobs,instrume) = fileinfo
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                    # if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
 
-                        g_dev['obs'].pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(hdu.header['ORIGNAME']).replace('.fits.fz','.fits')),copy.deepcopy(hdu.header['DAY-OBS']),copy.deepcopy(hdu.header['INSTRUME']),time.time()), block=False)
+                    #     g_dev['obs'].pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(hdu.header['ORIGNAME']).replace('.fits.fz','.fits')),copy.deepcopy(hdu.header['DAY-OBS']),copy.deepcopy(hdu.header['INSTRUME']),time.time()), block=False)
                                 #hdufz.writeto(
                                 #    slow_process[1], overwrite=True
                                 #)  # Save full fz file locally
@@ -7614,8 +7614,10 @@ def post_exposure_process(payload):
 
                     # Send this file up to ptrarchive
                     if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
+                        
+                        #print ("INGESTERING " + raw_name00)
                         g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', raw_path + raw_name00
+                            26000000, '', raw_path + raw_name00 +'.fz'
                         )
 
                 else:  # Is an OSC
@@ -7661,16 +7663,16 @@ def post_exposure_process(payload):
                             #     tempfilename.replace('-EX', 'R1-EX'), overwrite=True#, output_verify='silentfix'
                             # )  # Save full fz file locally
                             g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'R1-EX')
+                                26000000, '', tempfilename.replace('-EX', 'R1-EX') + '.fz'
                             )
 
-                        if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                            # hdu = fits.PrimaryHDU(np.array(newhdured, dtype=np.float32), hdu.header)
-                            hdu.header['ORIGNAME']=hdu.header['ORIGNAME'].replace('.fits.fz','.fits')
-                            # hdu.writeto(
-                            #     pipefolder + '/' + str(hdu.header['ORIGNAME']), overwrite=True
-                            # )
-                            g_dev['obs'].pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(hdu.header['ORIGNAME'])),copy.deepcopy(hdu.header['DAY-OBS']),copy.deepcopy(hdu.header['INSTRUME']),time.time()), block=False)
+                        # if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                        #     # hdu = fits.PrimaryHDU(np.array(newhdured, dtype=np.float32), hdu.header)
+                        #     hdu.header['ORIGNAME']=hdu.header['ORIGNAME'].replace('.fits.fz','.fits')
+                        #     # hdu.writeto(
+                        #     #     pipefolder + '/' + str(hdu.header['ORIGNAME']), overwrite=True
+                        #     # )
+                        #     g_dev['obs'].pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(hdu.header['ORIGNAME'])),copy.deepcopy(hdu.header['DAY-OBS']),copy.deepcopy(hdu.header['INSTRUME']),time.time()), block=False)
 
                         # del newhdured
 
@@ -7688,17 +7690,17 @@ def post_exposure_process(payload):
                             #     tempfilename.replace('-EX', 'G1-EX'), overwrite=True#, output_verify='silentfix'
                             # )  # Save full fz file locally
                             g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'G1-EX')
+                                26000000, '', tempfilename.replace('-EX', 'G1-EX')+ '.fz'
                             )
-                        if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                            # hdu = fits.PrimaryHDU(np.array(GTRonly, dtype=np.float32), hdu.header)
-                            hdu.header['ORIGNAME']=hdu.header['ORIGNAME'].replace('.fits.fz','.fits')
+                        # if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                        #     # hdu = fits.PrimaryHDU(np.array(GTRonly, dtype=np.float32), hdu.header)
+                        #     hdu.header['ORIGNAME']=hdu.header['ORIGNAME'].replace('.fits.fz','.fits')
 
-                            # hdu.writeto(
-                            #     pipefolder + '/' + str(hdu.header['ORIGNAME']), overwrite=True
-                            # )
-                            g_dev['obs'].pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(hdu.header['ORIGNAME'])),copy.deepcopy(hdu.header['DAY-OBS']),copy.deepcopy(hdu.header['INSTRUME']),time.time()), block=False)
-                        # del GTRonly
+                        #     # hdu.writeto(
+                        #     #     pipefolder + '/' + str(hdu.header['ORIGNAME']), overwrite=True
+                        #     # )
+                        #     g_dev['obs'].pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(hdu.header['ORIGNAME'])),copy.deepcopy(hdu.header['DAY-OBS']),copy.deepcopy(hdu.header['INSTRUME']),time.time()), block=False)
+                        # # del GTRonly
 
                         # Save and send G2
                         hdu.header['FILTER'] = tempfilter + '_G2'
@@ -7715,16 +7717,16 @@ def post_exposure_process(payload):
                             #     tempfilename.replace('-EX', 'G2-EX'), overwrite=True#, output_verify='silentfix'
                             # )  # Save full fz file locally
                             g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'G2-EX')
+                                26000000, '', tempfilename.replace('-EX', 'G2-EX')+ '.fz'
                             )
-                        if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                            # hdu = fits.PrimaryHDU(np.array(GBLonly, dtype=np.float32), hdu.header)
-                            hdu.header['ORIGNAME']=hdu.header['ORIGNAME'].replace('.fits.fz','.fits')
+                        # if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                        #     # hdu = fits.PrimaryHDU(np.array(GBLonly, dtype=np.float32), hdu.header)
+                        #     hdu.header['ORIGNAME']=hdu.header['ORIGNAME'].replace('.fits.fz','.fits')
 
-                            # hdu.writeto(
-                            #     pipefolder + '/' + str(hdu.header['ORIGNAME']), overwrite=True
-                            # )
-                            g_dev['obs'].pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(hdu.header['ORIGNAME'])),copy.deepcopy(hdu.header['DAY-OBS']),copy.deepcopy(hdu.header['INSTRUME']),time.time()), block=False)
+                        #     # hdu.writeto(
+                        #     #     pipefolder + '/' + str(hdu.header['ORIGNAME']), overwrite=True
+                        #     # )
+                        #     g_dev['obs'].pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(hdu.header['ORIGNAME'])),copy.deepcopy(hdu.header['DAY-OBS']),copy.deepcopy(hdu.header['INSTRUME']),time.time()), block=False)
 
                         # del GBLonly
 
@@ -7743,17 +7745,17 @@ def post_exposure_process(payload):
                             #     tempfilename.replace('-EX', 'B1-EX'), overwrite=True#, output_verify='silentfix'
                             # )  # Save full fz file locally
                             g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'B1-EX')
+                                26000000, '', tempfilename.replace('-EX', 'B1-EX')+ '.fz'
                             )
-                        if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                            # hdu = fits.PrimaryHDU(np.array(newhdublue, dtype=np.float32), hdu.header)
-                            hdu.header['ORIGNAME']=hdu.header['ORIGNAME'].replace('.fits.fz','.fits')
+                        # if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                        #     # hdu = fits.PrimaryHDU(np.array(newhdublue, dtype=np.float32), hdu.header)
+                        #     hdu.header['ORIGNAME']=hdu.header['ORIGNAME'].replace('.fits.fz','.fits')
 
-                            # hdu.writeto(
-                            #     pipefolder + '/' + str(hdu.header['ORIGNAME']), overwrite=True
-                            # )
-                            g_dev['obs'].pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(hdu.header['ORIGNAME'])),copy.deepcopy(hdu.header['DAY-OBS']),copy.deepcopy(hdu.header['INSTRUME']),time.time()), block=False)
-                        # del newhdublue
+                        #     # hdu.writeto(
+                        #     #     pipefolder + '/' + str(hdu.header['ORIGNAME']), overwrite=True
+                        #     # )
+                        #     g_dev['obs'].pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(hdu.header['ORIGNAME'])),copy.deepcopy(hdu.header['DAY-OBS']),copy.deepcopy(hdu.header['INSTRUME']),time.time()), block=False)
+                        # # del newhdublue
 
                         # Save and send clearV
                         hdu.header['FILTER'] = tempfilter + '_clearV'
@@ -7775,17 +7777,17 @@ def post_exposure_process(payload):
                             #     tempfilename.replace('-EX', 'CV-EX'), overwrite=True#, output_verify='silentfix'
                             # )
                             g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'CV-EX')
+                                26000000, '', tempfilename.replace('-EX', 'CV-EX')+ '.fz'
                             )
-                        if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                            # hdu = fits.PrimaryHDU(np.array(clearV, dtype=np.float32), hdu.header)
-                            # hdu.header['ORIGNAME']=hdu.header['ORIGNAME'].replace('.fits.fz','.fits')
+                        # if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                        #     # hdu = fits.PrimaryHDU(np.array(clearV, dtype=np.float32), hdu.header)
+                        #     # hdu.header['ORIGNAME']=hdu.header['ORIGNAME'].replace('.fits.fz','.fits')
 
-                            # hdu.writeto(
-                            #     pipefolder + '/' + str(hdu.header['ORIGNAME']), overwrite=True
-                            # )
-                            g_dev['obs'].pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(hdu.header['ORIGNAME'])),copy.deepcopy(hdu.header['DAY-OBS']),copy.deepcopy(hdu.header['INSTRUME']),time.time()), block=False)
-                        # del clearV
+                        #     # hdu.writeto(
+                        #     #     pipefolder + '/' + str(hdu.header['ORIGNAME']), overwrite=True
+                        #     # )
+                        #     g_dev['obs'].pipearchive_queue.put((copy.deepcopy(pipefolder + '/' + str(hdu.header['ORIGNAME'])),copy.deepcopy(hdu.header['DAY-OBS']),copy.deepcopy(hdu.header['INSTRUME']),time.time()), block=False)
+                        # # del clearV
 
 
                     else:

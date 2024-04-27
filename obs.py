@@ -1962,7 +1962,9 @@ class Observatory:
                             # Get header explicitly out to send up
                             # This seems to be necessary
                             tempheader=fits.open(filepath)
+                            # try:
                             tempheader=tempheader[1].header
+                            # except:
                             headerdict = {}
                             for entry in tempheader.keys():
                                 headerdict[entry] = tempheader[entry]
@@ -1981,6 +1983,9 @@ class Observatory:
                             plog ("Couldn't upload to PTR archive: " + str(filepath))
                             broken=1
                         except Exception as e:
+                            
+                            plog(traceback.format_exc())
+                            
                             if 'list index out of range' in str(e):
                                 # This error is thrown when there is a corrupt file
                                 broken=1
