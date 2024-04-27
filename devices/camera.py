@@ -7320,7 +7320,15 @@ def post_exposure_process(payload):
                 hdusmalldata=hdusmalldata+200.0
                 hdusmallheader['PEDESTAL']=200
 
+                hdusmallheader["OBSID"] = (
+                    selfconfig["obs_id"].replace("-", "").replace("_", "")
+                )
 
+                hdusmallheader["DAY-OBS"] = (
+                    g_dev["day"],
+                    "Date at start of observing night"
+                )
+                
                 # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
                 # Focus images use it for focus, Normal images also report their focus.
                 # IMMEDIATELY SEND TO SEP QUEUE
