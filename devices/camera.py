@@ -1695,7 +1695,10 @@ class Camera:
         self.camera_known_readnoise=70000.0
         self.camera_known_readnoise_stdev=70000.0
 
-        next_seq = next_sequence(self.config["camera"][self.name]["name"])
+        try:
+            next_seq = next_sequence(self.config["camera"][self.name]["name"])
+        except:
+            next_seq = reset_sequence(self.config["camera"][self.name]["name"])
         self.next_seq= next_seq
 
         #breakpoint()
@@ -5344,7 +5347,12 @@ class Camera:
 
 
 
-                next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                try:
+                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                except:
+                    next_seq = reset_sequence(self.config["camera"][self.name]["name"])
+                
+                
                 self.next_seq= next_seq
 
 
