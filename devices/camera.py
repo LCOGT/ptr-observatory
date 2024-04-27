@@ -4520,7 +4520,7 @@ class Camera:
                                     else:
                                         plog("Detecting focuser still changing.")
                                         tempfocposition=copy.deepcopy(nowfocposition)
-                                time.sleep(g_dev['foc'].focuser_settle_time)
+                                
 
 
 
@@ -4535,14 +4535,16 @@ class Camera:
 
                             # After sending the exposure command, the camera is exposing
                             # So commands placed here are essentially "cost-free" in terms of overhead.
+                            # As long as they don't take longer than the actual exposure time
 
                             # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
                             # But not so important if you aren't platesovling - e.g. short exposures
+                            # where time is of the essence and we aren't platesolving anyway
                             googtime=time.time()
                             if not g_dev['obs'].mountless_operation:
                                 if exposure_time >= 1:
                                     ra_at_time_of_exposure , dec_at_time_of_exposure = g_dev["mnt"].get_mount_coordinates_after_next_update()
-                                else
+                                else:
                                     ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
                                     dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
                             else:

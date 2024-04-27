@@ -241,6 +241,9 @@ class Focuser:
                 except:
                     plog("AF Guarded move failed.")
                     plog (traceback.format_exc())
+
+                time.sleep(g_dev['foc'].focuser_settle_time)            
+
                 try:
                     g_dev["obs"].send_to_user("Focus Movement Complete")
 
@@ -248,6 +251,8 @@ class Focuser:
                 except:
                     # first time booting up this won't work.
                     pass
+
+
 
                 self.focuser_is_moving=False
                 self.guarded_move_requested=False
