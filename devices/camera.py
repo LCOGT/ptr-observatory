@@ -5094,7 +5094,7 @@ class Camera:
                             # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
                             if not g_dev['obs'].mountless_operation:
                                 
-                                if self.pointing_recentering_requested_by_platesolve_thread or self.pointing_correction_requested_by_platesolve_thread:
+                                if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread or g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
                                     self.wait_for_slew()
                                     g_dev['obs'].check_platesolve_and_nudge()
 
@@ -5146,7 +5146,7 @@ class Camera:
                             print ('seq and count')
                             print (seq)
                             print (count)
-                            if g_dev['seq'].block_guard and seq==count:
+                            if g_dev['seq'].block_guard and seq==count and not g_dev['seq'].focussing and not frame_type=='pointing':
                                 plog ("Running block....")
                                 plog (Nsmartstack)
                                 plog (sskcounter)
@@ -5242,12 +5242,12 @@ class Camera:
                     # Then get ready for the next set of exposures by changing the filter and adjusting the focus
                     # Hopefully this occurs while the slew occurs
                     # If there is a block guard, there is a running block
-                    if g_dev['seq'].block_guard:
+                    if g_dev['seq'].block_guard and not g_dev['seq'].focussing and not frame_type=='pointing':
                         plog ("Running block....")
                         plog (Nsmartstack)
                         plog (sskcounter)
                         # If this is the end of a smartstack set or it is a single shot then check the filter and change
-                        if Nsmartstack==1 or (Nsmartstack == sskcounter+1):
+                        if (Nsmartstack==1 or (Nsmartstack == sskcounter+1)) :#and not g_dev['seq'].focussing and not frame_type=='pointing':
                             plog ("end of sstack run, checking filter")
                             plog ("Requested filter: " + str(g_dev['seq'].block_next_filter_requested))
                             plog ("Current filter: " + str(self.current_Filter))
@@ -5697,7 +5697,10 @@ class Camera:
                         os.makedirs(im_path_r+ g_dev["day"]+ "/to_AWS")
 
                     hdu = fits.PrimaryHDU()
-                    hdu.header['PIXSCALE']=self.pixscale
+                    if np.isnan(self.pixscale) or self.pixscale==None:
+                        plog ("no pixelscale available")
+                    else:
+                        hdu.header['PIXSCALE']=self.pixscale
 
                     hdu.header['OBSTYPE']='pointing'
                     hdusmallheader=copy.deepcopy(hdu.header)

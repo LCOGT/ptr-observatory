@@ -503,6 +503,11 @@ pointvalues=pointvalues[pointvalues[:,2].argsort()[::-1]]
 fwhmlist=[]
 sources=[]
 #radius_of_radialprofile=(20)
+#breakpoint()
+
+if np.isnan(pixscale):
+    pixscale = None
+
 if pixscale == None:
     radius_of_radialprofile=50
 else:
