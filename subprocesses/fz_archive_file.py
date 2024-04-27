@@ -51,12 +51,12 @@ temphduheader["BSCALE"] = 1  # Make sure there is no integer scaling left over
 if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
 
 
-    pipefolder = selfconfig['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(temphduheader['DAY-OBS']) +'/'+ str(temphduheader['INSTRUME'])
-    if not os.path.exists(selfconfig['temporary_local_pipe_archive_to_hold_files_while_copying']+'/'+ str(temphduheader['DAY-OBS'])):
-        os.makedirs(selfconfig['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(temphduheader['DAY-OBS']))
+    pipefolder = selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['DAY-OBS']) +'/'+ str(temphduheader['INSTRUME'])
+    if not os.path.exists(selfconfig['pipe_archive_folder_path']+'/'+ str(temphduheader['DAY-OBS'])):
+        os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['DAY-OBS']))
 
-    if not os.path.exists(selfconfig['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(temphduheader['DAY-OBS']) +'/'+ str(temphduheader['INSTRUME'])):
-        os.makedirs(selfconfig['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(temphduheader['DAY-OBS']) +'/'+ str(temphduheader['INSTRUME']))
+    if not os.path.exists(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['DAY-OBS']) +'/'+ str(temphduheader['INSTRUME'])):
+        os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['DAY-OBS']) +'/'+ str(temphduheader['INSTRUME']))
 
 
 
