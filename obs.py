@@ -547,12 +547,12 @@ class Observatory:
             self.pipearchive_queue_thread.daemon = True
             self.pipearchive_queue_thread.start()
 
-        if self.config['save_to_alt_path'] == 'yes':
+        # if self.config['save_to_alt_path'] == 'yes':
 
-            self.altarchive_queue = queue.Queue(maxsize=0)
-            self.altarchive_queue_thread = threading.Thread(target=self.copy_to_altarchive, args=())
-            self.altarchive_queue_thread.daemon = True
-            self.altarchive_queue_thread.start()
+        #     self.altarchive_queue = queue.Queue(maxsize=0)
+        #     self.altarchive_queue_thread = threading.Thread(target=self.copy_to_altarchive, args=())
+        #     self.altarchive_queue_thread.daemon = True
+        #     self.altarchive_queue_thread.start()
 
         self.fast_queue = queue.PriorityQueue(maxsize=0)
         self.fast_queue_thread = threading.Thread(target=self.fast_to_ui, args=())
@@ -1224,8 +1224,8 @@ class Observatory:
                 if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
                     plog ("Pipe Archive Queue: " +str(self.pipearchive_queue.qsize()))
 
-                if self.config['save_to_alt_path'] == 'yes':
-                    plog ("Alt Archive Queue: " +str(self.altarchive_queue.qsize()))
+                # if self.config['save_to_alt_path'] == 'yes':
+                #     plog ("Alt Archive Queue: " +str(self.altarchive_queue.qsize()))
 
                 plog ("Fast UI Queue: " +str(self.fast_queue.qsize()))
                 plog ("Medium UI Queue: " +str(self.mediumui_queue.qsize()))
@@ -2116,121 +2116,121 @@ class Observatory:
 
             return ( str(filename.split('/')[-1]) + " sent to local pipe archive. Queue Size: " + str(self.pipearchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
 
-    def altarchive_copier(self, fileinfo):
+    # def altarchive_copier(self, fileinfo):
 
-        upload_timer=time.time()
+    #     upload_timer=time.time()
 
-        (fromfile,tofile,time_put_in_queue) = fileinfo
+    #     (fromfile,tofile,time_put_in_queue) = fileinfo
         
         
-        # Check it is there
-        if not os.path.exists(fromfile):
-            if (time.time() - time_put_in_queue) < 43200:
-                if (time.time() - time_put_in_queue) > 600:
-                    plog (fromfile + " not there yet, chucking it back in the queue.")
-                self.altarchive_queue.put((fromfile,tofile,time_put_in_queue), block=False)
+    #     # Check it is there
+    #     if not os.path.exists(fromfile):
+    #         if (time.time() - time_put_in_queue) < 43200:
+    #             if (time.time() - time_put_in_queue) > 600:
+    #                 plog (fromfile + " not there yet, chucking it back in the queue.")
+    #             self.altarchive_queue.put((fromfile,tofile,time_put_in_queue), block=False)
                     
-                # self.enqueue_for_PTRarchive(
-                #     26000000, '', filepath
-                # )
-            else:
-                plog ("WAITED TOO LONG! " + fromfile + " never turned up!")
+    #             # self.enqueue_for_PTRarchive(
+    #             #     26000000, '', filepath
+    #             # )
+    #         else:
+    #             plog ("WAITED TOO LONG! " + fromfile + " never turned up!")
             
-            return ''
+    #         return ''
         
-        # Check it is no small
-        if os.stat(fromfile).st_size < 100:
-            if (time.time() - time_put_in_queue) < 43200:
-                if (time.time() - time_put_in_queue) > 600:
-                    plog (fromfile + " is there but still small - likely still writing out, chucking it back in the queue.")
+    #     # Check it is no small
+    #     if os.stat(fromfile).st_size < 100:
+    #         if (time.time() - time_put_in_queue) < 43200:
+    #             if (time.time() - time_put_in_queue) > 600:
+    #                 plog (fromfile + " is there but still small - likely still writing out, chucking it back in the queue.")
                 
-                self.altarchive_queue.put((fromfile,tofile,time_put_in_queue), block=False)
-                # self.enqueue_for_PTRarchive(
-                #     26000000, '', filepath
-                # )
-            else:
-                plog ("WAITED TOO LONG! " + fromfile + " never turned up!")
+    #             self.altarchive_queue.put((fromfile,tofile,time_put_in_queue), block=False)
+    #             # self.enqueue_for_PTRarchive(
+    #             #     26000000, '', filepath
+    #             # )
+    #         else:
+    #             plog ("WAITED TOO LONG! " + fromfile + " never turned up!")
             
-            return ''            
+    #         return ''            
         
 
-        # Only ingest new large fits.fz files to the PTR archive.
-        try:
-            broken = 0
-            try:
-                shutil.copy(fromfile,tofile)
-            except:
-                plog(traceback.format_exc())
-                plog ("Couldn't copy " + str(fromfile) + ". Broken.")
-                broken =1
+    #     # Only ingest new large fits.fz files to the PTR archive.
+    #     try:
+    #         broken = 0
+    #         try:
+    #             shutil.copy(fromfile,tofile)
+    #         except:
+    #             plog(traceback.format_exc())
+    #             plog ("Couldn't copy " + str(fromfile) + ". Broken.")
+    #             broken =1
 
-            try:
-                os.remove(fromfile)
-            except:
-                self.laterdelete_queue.put(fromfile, block=False)
-
-
-            if broken == 1:
-                try:
-                    shutil.move(fromfile, self.broken_path + fromfile.split('/')[-1])
-                except:
-                    plog(traceback.format_exc())
-                    plog ("Couldn't move " + str(fromfile) + " to broken folder.")
-
-                    self.laterdelete_queue.put(fromfile, block=False)
-                return str(fromfile) + " broken."
-        except Exception as e:
-            plog(traceback.format_exc())
-            plog ("something strange in the altarchive copier", e)
-            return 'something strange in the altarchive copier'
+    #         try:
+    #             os.remove(fromfile)
+    #         except:
+    #             self.laterdelete_queue.put(fromfile, block=False)
 
 
-        upload_timer=time.time() - upload_timer
-        hours_to_go = (self.altarchive_queue.qsize() * upload_timer/60/60) / int(self.config['number_of_simultaneous_altarchive_streams'])
-        return ( str(fromfile.split('/')[-1]) + " sent to altpath archive. Queue Size: " + str(self.altarchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
+    #         if broken == 1:
+    #             try:
+    #                 shutil.move(fromfile, self.broken_path + fromfile.split('/')[-1])
+    #             except:
+    #                 plog(traceback.format_exc())
+    #                 plog ("Couldn't move " + str(fromfile) + " to broken folder.")
+
+    #                 self.laterdelete_queue.put(fromfile, block=False)
+    #             return str(fromfile) + " broken."
+    #     except Exception as e:
+    #         plog(traceback.format_exc())
+    #         plog ("something strange in the altarchive copier", e)
+    #         return 'something strange in the altarchive copier'
+
+
+    #     upload_timer=time.time() - upload_timer
+    #     hours_to_go = (self.altarchive_queue.qsize() * upload_timer/60/60) / int(self.config['number_of_simultaneous_altarchive_streams'])
+    #     return ( str(fromfile.split('/')[-1]) + " sent to altpath archive. Queue Size: " + str(self.altarchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
 
 
 
-    # Note this is a thread!
-    def copy_to_altarchive(self):
-        """Sends queued files to AWS.
+    # # Note this is a thread!
+    # def copy_to_altarchive(self):
+    #     """Sends queued files to AWS.
 
-        Large fpacked fits are uploaded using the ocs-ingester, which
-        adds the image to the PTR archive database.
+    #     Large fpacked fits are uploaded using the ocs-ingester, which
+    #     adds the image to the PTR archive database.
 
-        This is intended to transfer slower files not needed for UI responsiveness
+    #     This is intended to transfer slower files not needed for UI responsiveness
 
-        The pri_image is a tuple, smaller first item has priority.
-        The second item is also a tuple containing im_path and name.
-        """
+    #     The pri_image is a tuple, smaller first item has priority.
+    #     The second item is also a tuple containing im_path and name.
+    #     """
 
-        one_at_a_time = 0
+    #     one_at_a_time = 0
 
-        number_of_simultaneous_uploads= self.config['number_of_simultaneous_altarchive_streams']
+    #     number_of_simultaneous_uploads= self.config['number_of_simultaneous_altarchive_streams']
 
-        while True:
+    #     while True:
 
-            if (not self.altarchive_queue.empty()) and one_at_a_time == 0:
-
-
-                one_at_a_time = 1
-
-                items=[]
-                for q in range(min(number_of_simultaneous_uploads,self.altarchive_queue.qsize()) ):
-                    items.append(self.altarchive_queue.get(block=False))
-
-                with ThreadPool(processes=number_of_simultaneous_uploads) as pool:
-                    for result in pool.map(self.altarchive_copier, items):
-                        self.altarchive_queue.task_done()
-                        #plog (result)
-
-                one_at_a_time = 0
-                time.sleep(5)
+    #         if (not self.altarchive_queue.empty()) and one_at_a_time == 0:
 
 
-            else:
-                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                time.sleep(2)
+    #             one_at_a_time = 1
+
+    #             items=[]
+    #             for q in range(min(number_of_simultaneous_uploads,self.altarchive_queue.qsize()) ):
+    #                 items.append(self.altarchive_queue.get(block=False))
+
+    #             with ThreadPool(processes=number_of_simultaneous_uploads) as pool:
+    #                 for result in pool.map(self.altarchive_copier, items):
+    #                     self.altarchive_queue.task_done()
+    #                     #plog (result)
+
+    #             one_at_a_time = 0
+    #             time.sleep(5)
+
+
+    #         else:
+    #             # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+    #             time.sleep(2)
 
 
     # Note this is a thread!
