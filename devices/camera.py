@@ -4537,12 +4537,14 @@ class Camera:
                             # So commands placed here are essentially "cost-free" in terms of overhead.
 
                             # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
+                            # But not so important if you aren't platesovling - e.g. short exposures
                             googtime=time.time()
                             if not g_dev['obs'].mountless_operation:
-                                ra_at_time_of_exposure , dec_at_time_of_exposure = g_dev["mnt"].get_mount_coordinates_after_next_update()
-
-                                # ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
-                                # dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
+                                if exposure_time >= 1:
+                                    ra_at_time_of_exposure , dec_at_time_of_exposure = g_dev["mnt"].get_mount_coordinates_after_next_update()
+                                else
+                                    ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
+                                    dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
                             else:
                                 ra_at_time_of_exposure = 99.9
                                 dec_at_time_of_exposure = 99.9
