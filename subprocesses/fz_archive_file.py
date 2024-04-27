@@ -72,17 +72,20 @@ if not selfconfig["camera"][camname]["settings"]["is_osc"]:
     # saverretries = 0
     # while saver == 0 and saverretries < 10:
     #     try:
+        
+    hdufz = fits.CompImageHDU(
+        np.array(slow_process[2], dtype=np.float32), temphduheader
+    )
+    
     if selfconfig['ingest_raws_directly_to_archive']:
-        hdufz = fits.CompImageHDU(
-            np.array(slow_process[2], dtype=np.float32), temphduheader
-        )
+        
         hdufz.writeto(
             slow_process[1].replace('.fits','.tempfits'), overwrite=True
         )  # Save full fz file locally
-        try:
-            hdufz.close()
-        except:
-            pass
+        # try:
+        #     hdufz.close()
+        # except:
+        #     pass
         del hdufz  # remove file from memory now that we are doing with it
         #try:
         os.rename(slow_process[1].replace('.fits','.tempfits'), slow_process[1])
@@ -91,21 +94,21 @@ if not selfconfig["camera"][camname]["settings"]["is_osc"]:
 
     if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
 
-        hdu = fits.PrimaryHDU(np.array(slow_process[2], dtype=np.float32), temphduheader)
+        #hdu = fits.PrimaryHDU(np.array(slow_process[2], dtype=np.float32), temphduheader)
 
 
         #print ("gonna pipe folder")
         #print (pipefolder + '/' + str(temphduheader['ORIGNAME']))
-        hdu.writeto(
-            pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits'), overwrite=True
+        hdufz.writeto(
+            pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), overwrite=True
         )
-        try:
-            hdu.close()
-        except:
-            pass
+        # try:
+        #     hdu.close()
+        # except:
+        #     pass
         del hdu  # remove file from memory now that we are doing with it
         
-        os.rename(str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits'), str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits').rename('.tempfits','.fits'))
+        os.rename(str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').rename('.tempfits.fz','.fits.fz'))
 
 
 
@@ -141,20 +144,20 @@ else:  # Is an OSC
         temphduheader['CDELT1'] = float(temphduheader['CDELT1'])*2
         temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
         tempfilter = temphduheader['FILTER']
-        tempfilename = slow_process[1]
+        tempfilename = slow_process[1] + '.fz'
 
 
 
         # Save and send R1
         temphduheader['FILTER'] = tempfilter + '_R1'
-        temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('-EX', 'R1-EX')
+        temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('-EX', 'R1-EX') + '.fz'
 
-
+        hdufz = fits.CompImageHDU(
+            np.array(newhdured, dtype=np.float32), temphduheader
+        )
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
-            hdufz = fits.CompImageHDU(
-                np.array(newhdured, dtype=np.float32), temphduheader
-            )
+            
             hdufz.writeto(
                 tempfilename.replace('-EX', 'R1-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
             )  # Save full fz file locally
@@ -166,9 +169,9 @@ else:  # Is an OSC
             os.rename(tempfilename.replace('-EX', 'R1-EX').replace('.fits','.tempfits'), tempfilename.replace('-EX', 'R1-EX') )
 
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
-            hdu = fits.PrimaryHDU(np.array(newhdured, dtype=np.float32), temphduheader)
-            temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
-            hdu.writeto(
+            # hdu = fits.PrimaryHDU(np.array(newhdured, dtype=np.float32), temphduheader)
+            # temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
+            hdufz.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
             )
             #hdu.close()
@@ -181,12 +184,12 @@ else:  # Is an OSC
         temphduheader['FILTER'] = tempfilter + '_G1'
         temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('R1-EX', 'G1-EX')
 
-
+        hdufz = fits.CompImageHDU(
+            np.array(GTRonly, dtype=np.float32), temphduheader
+        )
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
-            hdufz = fits.CompImageHDU(
-                np.array(GTRonly, dtype=np.float32), temphduheader
-            )
+            
             hdufz.writeto(
                 tempfilename.replace('-EX', 'G1-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
             )  # Save full fz file locally
@@ -198,10 +201,10 @@ else:  # Is an OSC
 
             
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
-            hdu = fits.PrimaryHDU(np.array(GTRonly, dtype=np.float32), temphduheader)
-            temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
+            # hdu = fits.PrimaryHDU(np.array(GTRonly, dtype=np.float32), temphduheader)
+            # temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
 
-            hdu.writeto(
+            hdufz.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
             )
             #hdu.close()
@@ -214,12 +217,12 @@ else:  # Is an OSC
         temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('G1-EX', 'G2-EX')
 
 
-
+        hdufz = fits.CompImageHDU(
+            np.array(GBLonly, dtype=np.float32), temphduheader
+        )
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
-            hdufz = fits.CompImageHDU(
-                np.array(GBLonly, dtype=np.float32), temphduheader
-            )
+            
             hdufz.writeto(
                 tempfilename.replace('-EX', 'G2-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
             
@@ -233,10 +236,10 @@ else:  # Is an OSC
             #     26000000, '', tempfilename.replace('-EX', 'G2-EX')
             # )
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
-            hdu = fits.PrimaryHDU(np.array(GBLonly, dtype=np.float32), temphduheader)
-            temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
+            # hdu = fits.PrimaryHDU(np.array(GBLonly, dtype=np.float32), temphduheader)
+            # temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
 
-            hdu.writeto(
+            hdufz.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
             )
             #hdu.close()
@@ -250,12 +253,12 @@ else:  # Is an OSC
         temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('G2-EX', 'B1-EX')
 
 
-
+        hdufz = fits.CompImageHDU(
+            np.array(newhdublue, dtype=np.float32), temphduheader
+        )
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
-            hdufz = fits.CompImageHDU(
-                np.array(newhdublue, dtype=np.float32), temphduheader
-            )
+            
             hdufz.writeto(
                 tempfilename.replace('-EX', 'B1-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
             )  # Save full fz file locally
@@ -267,10 +270,10 @@ else:  # Is an OSC
             #     26000000, '', tempfilename.replace('-EX', 'B1-EX')
             # )
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
-            hdu = fits.PrimaryHDU(np.array(newhdublue, dtype=np.float32), temphduheader)
-            temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
+            # hdu = fits.PrimaryHDU(np.array(newhdublue, dtype=np.float32), temphduheader)
+            # temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
 
-            hdu.writeto(
+            hdufz.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'), overwrite=True
             )
             #hdu.close()
@@ -287,13 +290,13 @@ else:  # Is an OSC
         temphduheader['MAXLIN']=float(temphduheader['MAXLIN']) * 4
 
 
-
+        hdufz = fits.CompImageHDU(
+            np.array(clearV, dtype=np.float32), temphduheader
+        )
 
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
-            hdufz = fits.CompImageHDU(
-                np.array(clearV, dtype=np.float32), temphduheader
-            )
+            
             hdufz.writeto(
                 tempfilename.replace('-EX', 'CV-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
             )
@@ -305,10 +308,10 @@ else:  # Is an OSC
             #     26000000, '', tempfilename.replace('-EX', 'CV-EX')
             # )
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
-            hdu = fits.PrimaryHDU(np.array(clearV, dtype=np.float32), temphduheader)
-            temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
+            # hdu = fits.PrimaryHDU(np.array(clearV, dtype=np.float32), temphduheader)
+            # temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
 
-            hdu.writeto(
+            hdufz.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'), overwrite=True
             )
             #hdu.close()
