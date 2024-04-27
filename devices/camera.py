@@ -241,7 +241,8 @@ def write_raw_file_out(packet):
     #         raw_name.replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
     #     )  # Save full raw file locally
     
-    hdu.writeto( altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix')
+    #hdu.writeto( altfolder +'/' + raw_name.split('/')[-1].replace('EX00','EX00-'+hduheader['OBSTYPE']), overwrite=True, output_verify='silentfix')
+    hdu.writeto( raw_name, overwrite=True, output_verify='silentfix')
     
     try:
         hdu.close()
@@ -5193,7 +5194,7 @@ class Camera:
                     # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
                     if not g_dev['obs'].mountless_operation:
                         
-                        if self.pointing_recentering_requested_by_platesolve_thread or self.pointing_correction_requested_by_platesolve_thread:
+                        if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread or g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
                             self.wait_for_slew()
                             g_dev['obs'].check_platesolve_and_nudge()
 
@@ -6124,8 +6125,8 @@ class Camera:
                         expresult["patch"] = central_median
                         # self.running_an_exposure_set = False
                         # self.shutter_open=False
-                        plog("Exposure Complete")
-                        g_dev["obs"].send_to_user("Exposure Complete")
+                        # plog("Exposure Complete")
+                        # g_dev["obs"].send_to_user("Exposure Complete")
 
 
                         # Save good flat
@@ -6243,8 +6244,8 @@ class Camera:
                     except:
                         plog(traceback.format_exc())
 
-                plog("Exposure Complete")
-                g_dev["obs"].send_to_user("Exposure Complete")
+                # plog("Exposure Complete")
+                # g_dev["obs"].send_to_user("Exposure Complete")
                 # self.running_an_exposure_set = False
                 return copy.deepcopy(expresult)
 
