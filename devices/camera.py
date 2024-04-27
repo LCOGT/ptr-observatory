@@ -5109,6 +5109,58 @@ class Camera:
                 
                 plog ("Exposure Complete")
                 g_dev["obs"].send_to_user("Exposure Complete")
+                
+                # If the nudge wasn't done during the readout, then nudge it now
+                if not check_nudge_after_shutter_closed:
+                    #self.running_an_exposure_set=False
+                    # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
+                    if not g_dev['obs'].mountless_operation:
+                        
+                        if self.pointing_recentering_requested_by_platesolve_thread or self.pointing_correction_requested_by_platesolve_thread:
+                            self.wait_for_slew()
+                            g_dev['obs'].check_platesolve_and_nudge()
+
+                        # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
+                        elif self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+                            if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
+                                #breakpoint()
+                                if (self.pixscale == None):
+                                    ra_random_dither=(((random.randint(0,50)-25) * 0.75 / 3600 ) / 15)
+                                    dec_random_dither=((random.randint(0,50)-25) * 0.75 /3600 )
+                                else:
+                                    ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
+                                    dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
+                                try:
+                                    self.wait_for_slew()
+                                    g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra + ra_random_dither, dec=self.initial_smartstack_dec + dec_random_dither)
+                                    # no wait for slew here as we start downloading the image. the wait_for_slew is after that
+
+                                except Exception as e:
+                                    plog (traceback.format_exc())
+                                    if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+
+                                        plog("The SkyX had an error.")
+                                        plog("Usually this is because of a broken connection.")
+                                        plog("Killing then waiting 60 seconds then reconnecting")
+                                        g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+
+                            # Otherwise immediately nudge scope back to initial pointing in smartstack after the last frame of the smartstack
+                            # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
+                            elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
+                                try:
+                                    self.wait_for_slew()
+                                    g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra, dec=self.initial_smartstack_dec)
+                                    # no wait for slew here as we start downloading the image. the wait_for_slew is after that
+
+                                except Exception as e:
+                                    plog (traceback.format_exc())
+                                    if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+
+                                        plog("The SkyX had an error.")
+                                        plog("Usually this is because of a broken connection.")
+                                        plog("Killing then waiting 60 seconds then reconnecting")
+                                        g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+                
 
                 if self.theskyx:
                     self.readout_estimate= time.time()-start_time_of_observation-exposure_time
