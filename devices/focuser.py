@@ -82,6 +82,7 @@ class Focuser:
 
         self.focuser_update_period=15   #WER changed from 3 20231214
         self.focuser_updates=0
+        self.focuser_settle_time= 0 #initialise
         self.guarded_move_requested=False
         self.guarded_move_to_focus=20000
 
@@ -242,7 +243,7 @@ class Focuser:
                     plog("AF Guarded move failed.")
                     plog (traceback.format_exc())
 
-                time.sleep(g_dev['foc'].focuser_settle_time)            
+                time.sleep(self.focuser_settle_time)            
 
                 try:
                     g_dev["obs"].send_to_user("Focus Movement Complete")
