@@ -6330,6 +6330,11 @@ class Sequencer:
                         for entry in focus_spots:
                             minimumfind.append(entry[1])
                         minimum_index=minimumfind.index(min(minimumfind))
+                        
+                        minimum_value=min(minimumfind)
+                        
+                        # First check if the minimum is too close to the edge
+                        
                         if minimum_index == 0 or minimum_index == 1:
                             plog ("Minimum too close to the sampling edge, getting another dot")
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
@@ -6401,8 +6406,56 @@ class Sequencer:
                         #elif len(focus_spots) > 4:
 
 
+                        # Then check whether the values on the edge are high enough. 
 
+                        # If left side is too low get another dot
+                        elif focus_spots[0][1] < (minimum_value * 1.5):
+                            
+                            plog ("Left hand side of curve is too low for a good fit, getting another dot")
+                            new_focus_position_to_attempt=focus_spots[0][0] - throw
+                            #breakpoint()
+                            #print ("Attempting: " + str(new_focus_position_to_attempt))
+                            # plt.scatter(x,y)
+                            # plt.show()
 
+                            # Weird way to convert plt to pil image, overlay and close
+                            img_buf = io.BytesIO()
+                            plt.scatter(x,y)
+                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            pltim = Image.open(img_buf)
+                            #im.show(title="My Image")
+                            #box = (500, 500)
+                            g_dev['cam'].current_focus_jpg.paste(pltim)#), box )
+                            g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                            img_buf.close()
+
+                            # Fling the jpeg up
+                            g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+
+                        # If right hand side is too low get another dot 
+                        elif focus_spots[0][1] < (minimum_value * 1.5):
+                            plog ("Right hand side of curve is too low for a good fit, getting another dot")
+                            new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
+                            #breakpoint()
+                            #print ("Attempting: " + str(new_focus_position_to_attempt))
+                            # plt.scatter(x,y)
+                            # plt.show()
+
+                            # Weird way to convert plt to pil image, overlay and close
+                            img_buf = io.BytesIO()
+                            plt.scatter(x,y)
+                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            pltim = Image.open(img_buf)
+                            #im.show(title="My Image")
+                            box = (500, 500)
+                            g_dev['cam'].current_focus_jpg.paste(pltim)#), box )
+                            g_dev['cam'].current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                            img_buf.close()
+
+                            # Fling the jpeg up
+                            g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+
+                        # Otherwise if it seems vaguely plausible to get a fit... give it a shot
                         else:
 
 
