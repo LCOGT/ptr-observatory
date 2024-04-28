@@ -5254,7 +5254,7 @@ class Camera:
                         if (Nsmartstack==1 or (Nsmartstack == sskcounter+1)) :#and not g_dev['seq'].focussing and not frame_type=='pointing':
                             plog ("end of sstack run, checking filter")
                             plog ("Requested filter: " + str(g_dev['seq'].block_next_filter_requested))
-                            plog ("Current filter: " + str(self.current_Filter))
+                            plog ("Current filter: " + str(self.current_filter))
                             if not g_dev['seq'].block_next_filter_requested=='None':
                                 # Check if filter needs changing, if so, change.
                                 self.current_filter= g_dev['fil'].filter_selected
@@ -6207,7 +6207,7 @@ class Camera:
                         if self.config['save_raw_to_disk']:
 
                            #g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                           threading.Thread(target=write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,'deprecated'),)).start()
+                           threading.Thread(target=write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','deprecated'),)).start()
 
 
                         # For sites that have "save_to_alt_path" enabled, this routine
@@ -6223,7 +6223,7 @@ class Camera:
                             #                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                             threading.Thread(target=write_raw_file_out, args=(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
-                                                           frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,'deprecated'),)).start()
+                                                           frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','deprecated'),)).start()
 
 
                                 # if "hdusmalldata" in locals():
@@ -7809,7 +7809,7 @@ def post_exposure_process(payload):
                 #breakpoint()
                 # print ("first")
                 # try:
-                threading.Thread(target=write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,'thisisdeprecated'),)).start()
+                threading.Thread(target=write_raw_file_out, args=(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','thisisdeprecated'),)).start()
 
                 # except:
                 #     breakpoint()
@@ -7823,7 +7823,7 @@ def post_exposure_process(payload):
                     # print ("second")
                     # try:
                     threading.Thread(target=write_raw_file_out, args=(('raw_alt_path', selfalt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
-                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,'deprecated'),)).start()
+                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','deprecated'),)).start()
                     # except:
                     #     breakpoint()
 
