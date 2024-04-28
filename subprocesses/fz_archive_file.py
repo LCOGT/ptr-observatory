@@ -51,7 +51,7 @@ temphduheader["BSCALE"] = 1  # Make sure there is no integer scaling left over
 if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
 
 
-    pipefolder = selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS']) 
+    pipefolder = selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])
     if not os.path.exists(selfconfig['pipe_archive_folder_path']+'/'+ str(temphduheader['INSTRUME'])):
         os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']))
 
@@ -72,13 +72,13 @@ if not selfconfig["camera"][camname]["settings"]["is_osc"]:
     # saverretries = 0
     # while saver == 0 and saverretries < 10:
     #     try:
-        
+
     hdufz = fits.CompImageHDU(
         np.array(slow_process[2], dtype=np.float32), temphduheader
     )
-    
+
     if selfconfig['ingest_raws_directly_to_archive']:
-        
+
         hdufz.writeto(
             slow_process[1].replace('.fits','.tempfits'), overwrite=True
         )  # Save full fz file locally
@@ -90,7 +90,7 @@ if not selfconfig["camera"][camname]["settings"]["is_osc"]:
         #try:
         os.rename(slow_process[1].replace('.fits','.tempfits'), slow_process[1])
         #except:
-            
+
 
     if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
 
@@ -106,9 +106,9 @@ if not selfconfig["camera"][camname]["settings"]["is_osc"]:
         #     hdu.close()
         # except:
         #     pass
-        del hdu  # remove file from memory now that we are doing with it
-        
-        os.rename(str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').rename('.tempfits.fz','.fits.fz'))
+        #del hdu  # remove file from memory now that we are doing with it
+
+        os.rename(pipefolder + '/' +str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'),pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').replace('.tempfits.fz','.fits.fz'))
 
 
 
@@ -157,7 +157,7 @@ else:  # Is an OSC
         )
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
-            
+
             hdufz.writeto(
                 tempfilename.replace('-EX', 'R1-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
             )  # Save full fz file locally
@@ -189,7 +189,7 @@ else:  # Is an OSC
         )
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
-            
+
             hdufz.writeto(
                 tempfilename.replace('-EX', 'G1-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
             )  # Save full fz file locally
@@ -199,7 +199,7 @@ else:  # Is an OSC
             #hdufz.close()
             os.rename(tempfilename.replace('-EX', 'G1-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'G1-EX'))
 
-            
+
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
             # hdu = fits.PrimaryHDU(np.array(GTRonly, dtype=np.float32), temphduheader)
             # temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
@@ -222,16 +222,16 @@ else:  # Is an OSC
         )
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
-            
+
             hdufz.writeto(
                 tempfilename.replace('-EX', 'G2-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
-            
+
             )  # Save full fz file locally
-            
+
             #hdufz.close()
             os.rename(tempfilename.replace('-EX', 'G2-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'G2-EX'))
 
-            
+
             # self.enqueue_for_PTRarchive(
             #     26000000, '', tempfilename.replace('-EX', 'G2-EX')
             # )
@@ -258,11 +258,11 @@ else:  # Is an OSC
         )
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
-            
+
             hdufz.writeto(
                 tempfilename.replace('-EX', 'B1-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
             )  # Save full fz file locally
-            
+
             #hdufz.close()
             os.rename(tempfilename.replace('-EX', 'B1-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'B1-EX'))
 
@@ -296,11 +296,11 @@ else:  # Is an OSC
 
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
-            
+
             hdufz.writeto(
                 tempfilename.replace('-EX', 'CV-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
             )
-            
+
             #hdufz.close()
             os.rename(tempfilename.replace('-EX', 'CV-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'CV-EX'))
 
@@ -506,36 +506,36 @@ sys.exit()
 # pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
 # counter=0
 # for point in list_of_local_maxima:
-    
+
 #     pointvalues[counter][0]=point[0]
 #     pointvalues[counter][1]=point[1]
 #     pointvalues[counter][2]=np.nan
 #     in_range=False
 #     if (point[0] > fx*0.1) and (point[1] > fy*0.1) and (point[0] < fx*0.9) and (point[1] < fy*0.9):
 #         in_range=True
-    
-#     if in_range:                
+
+#     if in_range:
 #         value_at_point=hdufocusdata[point[0],point[1]]
 #         try:
 #             value_at_neighbours=(hdufocusdata[point[0]-1,point[1]]+hdufocusdata[point[0]+1,point[1]]+hdufocusdata[point[0],point[1]-1]+hdufocusdata[point[0],point[1]+1])/4
 #         except:
 #             print(traceback.format_exc())
 #             breakpoint()
-            
+
 #         # Check it isn't just a dot
 #         if value_at_neighbours < (0.6*value_at_point):
 #             #print ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
-#             pointvalues[counter][2]=np.nan                       
-        
+#             pointvalues[counter][2]=np.nan
+
 #         # If not saturated and far away from the edge
 #         elif value_at_point < 0.8*image_saturation_level:
 #             pointvalues[counter][2]=value_at_point
-        
+
 #         else:
 #             pointvalues[counter][2]=np.nan
-            
+
 #     counter=counter+1
-    
+
 
 
 # # Trim list to remove things that have too many other things close to them.
