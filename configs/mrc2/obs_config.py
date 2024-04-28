@@ -449,7 +449,7 @@ site_config = {
             'driver': 'ASCOM.OptecGemini.Focuser',
             'com_port': None,
 
-            'focuser_movement_settle_time': 8,
+            'focuser_movement_settle_time': 0,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 3.0, # highest value to consider as being in "good focus". Used to select last good focus value
