@@ -2798,14 +2798,14 @@ class Observatory:
                                 g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
                                 
 
-                            if (g_dev['cam'].pixscale * 0.9) < float(solved_arcsecperpixel) < (g_dev['cam'].pixscale * 1.1):
+                            if (g_dev['cam'].pixscale * 0.9) < float(abs(solved_arcsecperpixel)) < (g_dev['cam'].pixscale * 1.1):
                                 self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
                                 try:
                                     pixelscale_list=self.pixelscale_shelf['pixelscale_list']
                                 except:
                                     pixelscale_list=[]
 
-                                pixelscale_list.append(float(solved_arcsecperpixel))
+                                pixelscale_list.append(float(abs(solved_arcsecperpixel)))
 
                                 too_long=True
                                 while too_long:
