@@ -2792,7 +2792,11 @@ class Observatory:
                             plog("1x1 pixelscale solved: " + str(round(solved_arcsecperpixel, 3 )))
                             # If this is the first pixelscalle gotten, then it is the pixelscale!
                             if g_dev['cam'].pixscale == None:
-                                g_dev['cam'].pixscale = solved_arcsecperpixel
+                                g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
+                            
+                            if np.isnan(g_dev['cam'].pixscale) :
+                                g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
+                                
 
                             if (g_dev['cam'].pixscale * 0.9) < float(solved_arcsecperpixel) < (g_dev['cam'].pixscale * 1.1):
                                 self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))

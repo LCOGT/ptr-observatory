@@ -884,7 +884,10 @@ def multiprocess_fast_gaussian_photometry(package):
         upperbin=math.floor(max(radprofile[:,0]))
         lowerbin=math.ceil(min(radprofile[:,0]))
         # Only need a quarter of an arcsecond bin.
-        arcsecond_length_radial_profile = (upperbin-lowerbin)*pixscale
+        if np.isnan(pixscale) or pixscale == None:
+            arcsecond_length_radial_profile = (upperbin-lowerbin)*8
+        else:
+            arcsecond_length_radial_profile = (upperbin-lowerbin)*pixscale
         number_of_bins=int(arcsecond_length_radial_profile/0.25)
 
         s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
@@ -2128,7 +2131,7 @@ class Camera:
         try:
             radius_of_radialprofile=int(12/self.pixscale)
         except:
-            # if pixelscale is not defined make it ibig
+            # if pixelscale is not defined make it big
             radius_of_radialprofile=int(12/0.1)
         
         # Round up to nearest odd number to make a symmetrical array
