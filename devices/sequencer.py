@@ -1413,9 +1413,9 @@ class Sequencer:
                     # Try next block in sequence
                     try:
                         if not block_exposure_counter==len(block['project']['exposures']):                        
-                            self.block_next_filter_requested=block['project']['exposures'][block_exposure_counter+1]
+                            self.block_next_filter_requested=block['project']['exposures'][block_exposure_counter+1]['filter']
                         else:
-                            self.block_next_filter_requested=block['project']['exposures'][0]
+                            self.block_next_filter_requested=block['project']['exposures'][0]['filter']
                     except: 
                         self.block_next_filter_requested='None'     
                         
