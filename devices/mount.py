@@ -2559,10 +2559,16 @@ class Mount:
 
 
     def get_flip_reference(self):
-        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
-        delta_ra = mnt_shelf['flip_ra_cal_offset'] + self.east_flip_ra_correction
-        delta_dec = mnt_shelf['flip_dec_cal_offset'] + self.east_flip_dec_correction
-        mnt_shelf.close()
+        try:
+            mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+            delta_ra = mnt_shelf['flip_ra_cal_offset'] + self.east_flip_ra_correction
+            delta_dec = mnt_shelf['flip_dec_cal_offset'] + self.east_flip_dec_correction
+            mnt_shelf.close()
+        except:
+            self.reset_mount_reference()
+            delta_ra = 0.0
+            delta_dec = 0.0
+        
         return delta_ra, delta_dec
 
     def reset_mount_reference(self):
@@ -2573,6 +2579,7 @@ class Mount:
         mnt_shelf['flip_ra_cal_offset'] = 0.000
         mnt_shelf['flip_dec_cal_offset'] = 0.000
         mnt_shelf.close()
+        
         return
 
 if __name__ == '__main__':

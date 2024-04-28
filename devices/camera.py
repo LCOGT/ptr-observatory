@@ -5761,7 +5761,10 @@ class Camera:
 
 
                     hdu = fits.PrimaryHDU()
-                    hdu.header['PIXSCALE']=self.pixscale
+                    try:
+                        hdu.header['PIXSCALE']=self.pixscale
+                    except:
+                        hdu.header['PIXSCALE']=-99
                     hdu.header['EXPTIME']=exposure_time
 
                     hdu.header['OBSTYPE']='focus'
