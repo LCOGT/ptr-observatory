@@ -1412,11 +1412,15 @@ class Sequencer:
                     
                     # Try next block in sequence
                     try:
-                        if not block_exposure_counter==len(block['project']['exposures']):                        
+                        if not (block_exposure_counter + 1) ==len(block['project']['exposures']):                        
                             self.block_next_filter_requested=block['project']['exposures'][block_exposure_counter+1]['filter']
                         else:
                             self.block_next_filter_requested=block['project']['exposures'][0]['filter']
                     except: 
+                        plog(traceback.format_exc())
+                        breakpoint()
+                        
+                        
                         self.block_next_filter_requested='None'     
                         
                     plog ("Filter for the NEXT block: " + str(self.block_next_filter_requested))
