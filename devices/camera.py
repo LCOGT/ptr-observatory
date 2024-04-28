@@ -1139,6 +1139,7 @@ class Camera:
 
         # Just need to initialise this filter thing
         self.current_offset  = 0
+        self.current_filter= None
 
 
         self.updates_paused=False
@@ -5166,7 +5167,7 @@ class Camera:
                                 if Nsmartstack==1 or (Nsmartstack == sskcounter+1):
                                     plog ("end of sstack run, checking filter")
                                     plog ("Requested filter: " + str(g_dev['seq'].block_next_filter_requested))
-                                    plog ("Current filter: " + str(self.current_Filter))
+                                    plog ("Current filter: " + str(self.current_filter))
                                     if not g_dev['seq'].block_next_filter_requested=='None':
                                         # Check if filter needs changing, if so, change.
                                         self.current_filter= g_dev['fil'].filter_selected
