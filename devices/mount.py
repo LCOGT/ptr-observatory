@@ -264,8 +264,13 @@ class Mount:
         self.theskyx_tracking_rescues = 0
 
 
-
-
+        self.last_mount_reference_time=time.time() - 86400
+        self.last_flip_reference_time=time.time() - 86400
+        
+        self.last_mount_reference_ra = 0.0
+        self.last_mount_reference_dec = 0.0
+        self.last_flip_reference_ra = 0.0
+        self.last_flip_reference_dec = 0.0
 
 
         # NEED to initialise these variables here in case the mount isn't slewed
@@ -2499,7 +2504,7 @@ class Mount:
         '''
 
 
-    def  adjust_mount_reference(self, err_ha, err_dec):
+    def  adjust_mount_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
 
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
         try:
@@ -2514,9 +2519,15 @@ class Mount:
         mnt_shelf['dec_cal_offset'] = init_dec + err_dec
         plog("final:  ", mnt_shelf['ra_cal_offset'], mnt_shelf['dec_cal_offset'])
         mnt_shelf.close()
+        
+        
+        self.last_mount_reference_time=time.time()
+        self.last_mount_reference_ra = pointing_ra 
+        self.last_mount_reference_dec = pointing_dec 
+        
         return
 
-    def  adjust_flip_reference(self, err_ha, err_dec):
+    def  adjust_flip_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         try:
             init_ra = mnt_shelf['flip_ra_cal_offset']
@@ -2527,6 +2538,11 @@ class Mount:
         mnt_shelf['flip_ra_cal_offset'] = init_ra + err_ha    #NB NB NB maybe best to reverse signs here??
         mnt_shelf['flip_dec_cal_offset'] = init_dec + err_dec
         mnt_shelf.close()
+        
+        self.last_flip_reference_time=time.time()
+        self.last_flip_reference_ra = pointing_ra 
+        self.last_flip_reference_dec = pointing_dec 
+        
         return
 
     def set_mount_reference(self, delta_ra, delta_dec):
@@ -2534,6 +2550,13 @@ class Mount:
         mnt_shelf['ra_cal_offset'] = delta_ra
         mnt_shelf['dec_cal_offset'] = delta_dec
         mnt_shelf.close()
+        
+        self.last_mount_reference_time=time.time()
+        self.last_mount_reference_ra = 0.0
+        self.last_mount_reference_dec = 0.0
+        self.last_flip_reference_ra = 0.0
+        self.last_flip_reference_dec = 0.0
+        
         return
 
     def set_flip_reference(self, delta_ra, delta_dec):
@@ -2541,6 +2564,13 @@ class Mount:
         mnt_shelf['flip_ra_cal_offset'] = delta_ra
         mnt_shelf['flip_dec_cal_offset'] = delta_dec
         mnt_shelf.close()
+        
+        self.last_flip_reference_time=time.time()
+        self.last_mount_reference_ra = 0.0
+        self.last_mount_reference_dec = 0.0
+        self.last_flip_reference_ra = 0.0
+        self.last_flip_reference_dec = 0.0
+        
         return
 
     def get_mount_reference(self):
@@ -2579,6 +2609,13 @@ class Mount:
         mnt_shelf['flip_ra_cal_offset'] = 0.000
         mnt_shelf['flip_dec_cal_offset'] = 0.000
         mnt_shelf.close()
+        
+        self.last_mount_reference_time=time.time() -86400
+        self.last_flip_reference_time=time.time() -86400
+        self.last_mount_reference_ra = 0.0
+        self.last_mount_reference_dec = 0.0
+        self.last_flip_reference_ra = 0.0
+        self.last_flip_reference_dec = 0.0
         
         return
 
