@@ -6356,10 +6356,16 @@ class Sequencer:
                     # plt.show()
 
                     # Weird way to convert plt to pil image, overlay and close
+                    plog ("time taken to plot bits of focus jpeg")
+                    googtime=time.time()
                     img_buf = io.BytesIO()
+                    plog ("Make img buf: " + str(time.time()-googtime))
+                    googtime=time.time()
                     plt.scatter(x,y)
+                    plog ("scatter plt: " + str(time.time()-googtime))
+                    googtime=time.time()
                     plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-
+                    plog ("savefig: " + str(time.time()-googtime))
                     # fig1 = px.scatter(x=x, y=y)
                     # #fig2 = px.line(x=x, y=f(x))
                     # #plt.plot(x,f(x), color = 'green')
@@ -6377,14 +6383,22 @@ class Sequencer:
                     # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
                     # fig3 = go.Figure(data=fig1.data, layout=layout)
                     # fig3.write_image(img_buf)
-
+                    googtime=time.time()
                     pltim = Image.open(img_buf)
+                    plog ("Image open: " + str(time.time()-googtime))
                     #im.show(title="My Image")
                     #box = (500, 500)
                     #box=
+                    googtime=time.time()
                     current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
+                    plog ("grab jpeg: " + str(time.time()-googtime))
+                    googtime=time.time()
                     current_focus_jpg.paste(pltim)#, box )
+                    plog ("paste jpeg: " + str(time.time()-googtime))
+                    googtime=time.time()
                     current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                    plog ("save jpeg: " + str(time.time()-googtime))
+                    
                     #img_buf.close()
 
                     # Fling the jpeg up

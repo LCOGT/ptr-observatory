@@ -2314,23 +2314,41 @@ class Camera:
         #draw.text((0, 0), str('MEANT TO BE FOCUS POSITION'), (255))
 
 
+        # # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
+        # if self.config["camera"][selfname]["settings"]["transpose_jpeg"]:
+        #     final_image = final_image.transpose(Image.Transpose.TRANSPOSE)
+        # if self.config["camera"][selfname]["settings"]['flipx_jpeg']:
+        #     final_image = final_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+        # if self.config["camera"][selfname]["settings"]['flipy_jpeg']:
+        #     final_image = final_image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+        # if self.config["camera"][selfname]["settings"]['rotate180_jpeg']:
+        #     final_image = final_image.transpose(Image.Transpose.ROTATE_180)
+        # if self.config["camera"][selfname]["settings"]['rotate90_jpeg']:
+        #     final_image = final_image.transpose(Image.Transpose.ROTATE_90)
+        # if self.config["camera"][selfname]["settings"]['rotate270_jpeg']:
+        #     final_image = final_image.transpose(Image.Transpose.ROTATE_270)
+
+
         if iy == ix:
             final_image = final_image.resize(
                 (900, 900)
             )
         else:
-            if g_dev['obs'].config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
-                final_image = final_image.resize(
+            # if g_dev['obs'].config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
+            #     final_image = final_image.resize(
 
-                    (int(900 * iy / ix), 900)
+            #         (int(900 * iy / ix), 900)
 
-                )
-            else:
-                final_image = final_image.resize(
+            #     )
+            # else:
+                
+            # There is no axis that is preferred?    
+            
+            final_image = final_image.resize(
 
-                    (900, int(900 * iy / ix))
+                (900, int(900 * iy / ix))
 
-                )
+            )
 
         g_dev['cam'].current_focus_jpg=copy.deepcopy(final_image)
 
@@ -5099,9 +5117,10 @@ class Camera:
 
                     # If the shutter has closed but there is still time, then nudge the scope while reading out
                     if not g_dev['cam'].shutter_open:
-                        plog ("Shutter Closed.")
+                        
                         # Attempt to sneak in a platesolve and nudge during readout time.
                         if not check_nudge_after_shutter_closed:
+                            plog ("Shutter Closed.")
 
                             #self.running_an_exposure_set=False
                             # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.

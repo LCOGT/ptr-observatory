@@ -30,7 +30,7 @@ from astropy.coordinates import SkyCoord, get_sun, AltAz
 from astropy.time import Time
 from astropy import units as u
 #from astropy.table import Table
-
+import bottleneck as bn
 from astropy.nddata import block_reduce
 from dotenv import load_dotenv
 import numpy as np
@@ -3439,10 +3439,18 @@ class Observatory:
                                         self.laterdelete_queue.put(oldest_file, block=False)
 
                             # Save the file as an uncompressed numpy binary
-                            np.save(
-                                tempfilename,
-                                np.array(slow_process[2], dtype=np.float32)
-                            )
+                            
+                            temparray=np.array(slow_process[2], dtype=np.float32)
+                            tempmedian=bn.nanmedian(temparray)
+                            if tempmedian > 30 and tempmedian < 58000:
+                            
+                                np.save(
+                                    tempfilename,
+                                    np.array(slow_process[2], dtype=np.float32)
+                                )
+                            else:
+                                plog ("Odd median: " + str(tempmedian))
+                                plog ("Not saving this calibration file: " + str(tempfilename))
 
                             saver = 1
 
@@ -3963,7 +3971,7 @@ class Observatory:
 
                                     g_dev["foc"].focus_tracker.pop(0)
                                     g_dev["foc"].focus_tracker.append((self.fwhmresult["mean_focus"],g_dev["foc"].current_focus_temperature,self.fwhmresult["exp_time"],self.fwhmresult["filter"], self.fwhmresult["airmass"] ,round(rfr, 3)))
-                                    plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker))# + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+                                    plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker))# + " Median: " + str(bn.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
 
                                     #self.mega_tracker.append((self.fwhmresult["mean_focus"],self.fwhmresult["exp_time"] ,round(rfr, 3)))
 
@@ -3974,14 +3982,14 @@ class Observatory:
                                     else:
                                         # Very dumb focus slip deteector
                                         # if (
-                                        #     np.nanmedian(g_dev["foc"].focus_tracker)
+                                        #     bn.nanmedian(g_dev["foc"].focus_tracker)
                                         #     > g_dev["foc"].last_focus_fwhm
                                         #     + self.config["focus_trigger"]
                                         # ):
                                         #     g_dev["foc"].focus_needed = True
                                         #     g_dev["obs"].send_to_user(
                                         #         "FWHM has drifted to:  "
-                                        #         + str(round(np.nanmedian(g_dev["foc"].focus_tracker),2))
+                                        #         + str(round(bn.nanmedian(g_dev["foc"].focus_tracker),2))
                                         #         + " from "
                                         #         + str(g_dev["foc"].last_focus_fwhm)
                                         #         + ".",
