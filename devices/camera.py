@@ -2130,10 +2130,10 @@ class Camera:
         # The radius should be related to arcseconds on sky
         # And a reasonable amount - 12'
         try:
-            radius_of_radialprofile=int(12/self.pixscale)
+            radius_of_radialprofile=int(24/self.pixscale)
         except:
             # if pixelscale is not defined make it big
-            radius_of_radialprofile=int(12/0.1)
+            radius_of_radialprofile=int(24/0.1)
         
         # Round up to nearest odd number to make a symmetrical array
         radius_of_radialprofile=int(radius_of_radialprofile // 2 *2 +1)
