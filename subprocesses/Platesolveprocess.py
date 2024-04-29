@@ -155,6 +155,7 @@ print ("Zero Threshing Image: " +str(time.time()-googtime))
 
 #breakpoint()
 
+googtime=time.time()
 
 #Check there are no nans in the image upon receipt
 # This is necessary as nans aren't interpolated in the main thread.
@@ -228,6 +229,8 @@ for nancoord in nan_coords:
 hdufocusdata[np.isnan(hdufocusdata)] = edgefillvalue
     #num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
 
+print ("Denan Image: " +str(time.time()-googtime))
+googtime=time.time()
 #if not is_osc:
 bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
 bkg.subfrom(hdufocusdata)
@@ -427,6 +430,9 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
 
     return np.argwhere(adjacentmax & diagonalmax)
 
+
+print ("Just before fake Image: " +str(time.time()-googtime))
+googtime=time.time()
 
 fx, fy = hdufocusdata.shape
 #hdufocusdata[np.isnan(hdufocusdata)] = imageMode
@@ -729,8 +735,8 @@ if len(sources) >= 5:
         #     except Exception as e:
         #         print (e)
         #         #breakpoint()
-        
-        
+
+
 
         # Add bullseye stars to blank image
         for addingstar in sources:
@@ -841,7 +847,7 @@ if len(sources) >= 5:
                 exit_code = process.wait() # Wait for process to complete and obtain the exit code
                 time.sleep(1)
                 process.kill()
-                
+
                 print (stdout)
                 print (stderr)
 
@@ -853,7 +859,7 @@ if len(sources) >= 5:
 
                 pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
                 os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
-                
+
                 pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
                 os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
@@ -939,11 +945,11 @@ if len(sources) >= 5:
                 wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
                                                         image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=5.0,
                                                         solve_timeout=60)
-            
-            
+
+
             print (wcs_header)
             print (len(wcs_header))
-            
+
             if wcs_header=={}:
                 solve = 'error'
                 pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
@@ -958,8 +964,8 @@ if len(sources) >= 5:
                 except:
                     pass
                 sys.exit()
-                
-            
+
+
             solve={}
             solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
             solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
@@ -969,8 +975,8 @@ if len(sources) >= 5:
                 solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
             elif binnedthree:
                 solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-                
-            
+
+
             pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
             os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
@@ -1090,8 +1096,8 @@ if len(sources) >= 5:
 
 
 
-    
-    
+
+
 else:
     solve = 'error'
     pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
