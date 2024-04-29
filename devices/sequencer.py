@@ -6415,6 +6415,8 @@ class Sequencer:
                         new_focus_position_to_attempt=max(spots_tried) + throw
                 else:
 
+                    
+                    
 
 
                     # Check that from the minimum value, each of the points always increases in both directions.
@@ -6425,9 +6427,23 @@ class Sequencer:
                     for entry in focus_spots:
                         minimumfind.append(entry[1])
                     minimum_index=minimumfind.index(min(minimumfind))
+                    minimum_value=min(minimumfind)
+                    
+                    # Check that after five successful measurements
+                    # If the seeing is too bad, just run with the expected
+                    
+                    if len(focus_spots) >=5:                       
+                        
+                        if minimum_value > 3.0:
+                            plog ("Minimum value: " + str(minimum_value) + " is too high to bother focussing, just going with the estimated value from previous focus")
+                            g_dev['foc'].set_initial_best_guess_for_focus()
+                            self.total_sequencer_control = False
+                            self.focussing=False
+                            return
+                            
 
                     # If there is only two or three throw out from the lowest edge
-                    if len(focus_spots) == 2 or len(focus_spots) == 3:
+                    elif len(focus_spots) == 2 or len(focus_spots) == 3:
                         if focus_spots[0][1] < focus_spots[-1][1]:
                             plog ("smaller focus spot has lower fwhm value, trying out a spot out there")
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
@@ -6441,12 +6457,12 @@ class Sequencer:
 
                     else:
                         # If the minimum is at one of the two points on the side of the v curve take another point beyond that point, otherwise try to fit a parabola
-                        minimumfind=[]
-                        for entry in focus_spots:
-                            minimumfind.append(entry[1])
-                        minimum_index=minimumfind.index(min(minimumfind))
+                        # minimumfind=[]
+                        # for entry in focus_spots:
+                        #     minimumfind.append(entry[1])
+                        # minimum_index=minimumfind.index(min(minimumfind))
 
-                        minimum_value=min(minimumfind)
+                        # minimum_value=min(minimumfind)
 
                         # First check if the minimum is too close to the edge
 
