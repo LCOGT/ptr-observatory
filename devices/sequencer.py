@@ -1346,8 +1346,42 @@ class Sequencer:
             # Quick pointing check and re_seek at the start of each project block
             # Otherwise everyone will get slightly off-pointing images
             # Necessary
-            plog ("Taking a quick pointing check and re_seek for new project block")
-            result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True, calendar_event_id=calendar_event_id)
+            
+            
+            plog ("Checking whether the pointing reference is nearby. If so, we can skip the centering exposure...")
+            skip_centering=False
+            HAtemp=self.sidereal_time=dest_ra
+            if g_dev['mnt'].rapid_pier_indicator == 0:
+                distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_mount_reference_ha - HAtemp)
+                distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_mount_reference_dec- dest_dec)
+                print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+                absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5) 
+                print ("absolute_distance: " + str(round(absolute_distance,2)))
+                if absolute_distance < 15:
+                    plog ("close enough, skipping centering exposure")
+                    skip_centering=True
+                # self.last_mount_reference_ha = 0.0
+                # self.last_mount_reference_dec = 0.0
+            
+            else:
+                distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_flip_reference_ha - HAtemp)
+                distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_flip_reference_dec- dest_dec)
+                print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+                absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5) 
+                print ("absolute_distance: " + str(round(absolute_distance,2)))
+                if absolute_distance < 15:
+                    plog ("close enough, skipping centering exposure")
+                    skip_centering=True
+                
+                
+                # self.last_flip_reference_ha = 0.0
+                # self.last_flip_reference_dec = 0.0
+                
+            if not skip_centering:
+                plog ("Taking a quick pointing check and re_seek for new project block")
+                result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True, calendar_event_id=calendar_event_id)
+                
+            # It may be the case that reference pointing isn't quite good enough for mosaics? We shall find out. 
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
             # Don't do a second repointing in the first pane of a mosaic
