@@ -2716,6 +2716,13 @@ class Observatory:
                     plog("Too bright to consider platesolving!")
                 else:
                     try:
+                        
+                        try:
+                            os.remove(self.local_calibration_path + 'platesolve.pickle')
+                            os.remove(self.local_calibration_path + 'platesolve.temppickle')
+                        except:
+                            pass
+                        
                         platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
                         # THESE ARE ALL DEPRECATED. Waiting for a cleanup

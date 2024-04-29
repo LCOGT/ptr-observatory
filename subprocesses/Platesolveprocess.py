@@ -83,6 +83,7 @@ input_psolve_info=pickle.load(sys.stdin.buffer)
 #input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
 
 
+
 hdufocusdata=input_psolve_info[0]
 hduheader=input_psolve_info[1]
 cal_path=input_psolve_info[2]
@@ -102,6 +103,11 @@ is_osc=input_psolve_info[15]
 useastrometrynet=input_psolve_info[16]
 #useastrometrynet=True
 
+try:
+    os.remove(cal_path + 'platesolve.temppickle')
+    os.remove(cal_path + 'platesolve.pickle')
+except:
+    pass
 
 #breakpoint()
 
@@ -781,6 +787,9 @@ if len(sources) >= 5:
             time.sleep(1)
             process.kill()
 
+            print (stdout)
+            print (stderr)
+
             solve = parse_platesolve_output(output_file_path)
 
             #breakpoint()
@@ -832,6 +841,9 @@ if len(sources) >= 5:
                 exit_code = process.wait() # Wait for process to complete and obtain the exit code
                 time.sleep(1)
                 process.kill()
+                
+                print (stdout)
+                print (stderr)
 
                 solve = parse_platesolve_output(output_file_path)
                 if binnedtwo:
@@ -926,7 +938,28 @@ if len(sources) >= 5:
             else:
                 wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
                                                         image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=5.0,
-                                                        solve_timeout=600)
+                                                        solve_timeout=60)
+            
+            
+            print (wcs_header)
+            print (len(wcs_header))
+            
+            if wcs_header=={}:
+                solve = 'error'
+                pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+                os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+
+                try:
+                    os.remove(cal_path + 'platesolvetemp.fits')
+                except:
+                    pass
+                try:
+                    os.remove(output_file_path)
+                except:
+                    pass
+                sys.exit()
+                
+            
             solve={}
             solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
             solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
