@@ -3778,7 +3778,7 @@ class Sequencer:
                                 os.remove(file)
                                 inputList.remove(file)
                             
-                            elif tempmedian < 30 or tempmedian > 55000: 
+                            elif tempmedian < 1000 or tempmedian > 55000: 
                                 plog ("flat file with strange median skipped: " + str(file))
                                 os.remove(file)
                                 inputList.remove(file)

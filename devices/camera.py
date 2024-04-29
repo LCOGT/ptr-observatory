@@ -5043,6 +5043,9 @@ class Camera:
                             except:
                                 pass
                         pointingfocus_masterdark_done=True
+                        
+                    plog ("grabbing masterflat during exposure")
+                    intermediate_tempflat=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
 
                 if remaining > 0:
                     if time.time() - self.plog_exposure_time_counter_timer > 10.0:
@@ -5632,8 +5635,9 @@ class Camera:
                         # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
                         #     outputimg = np.divide(outputimg, g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
                         # else:
-                        outputimg = np.divide(outputimg, np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
-
+                        #outputimg = np.divide(outputimg, np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+                        outputimg = np.divide(outputimg, intermediate_tempflat)
+                        #intermediate_tempflat
                     except Exception as e:
                         plog("flatting light frame failed", e)
 
