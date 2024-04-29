@@ -2648,12 +2648,12 @@ class Mount:
         HA = self.current_sidereal - pointing_ra
         distance_from_current_reference_in_ha = abs(self.last_flip_reference_ha - HA)
         distance_from_current_reference_in_dec = abs(self.last_flip_reference_dec- pointing_dec)
-        print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "   Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
-        absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5)
+        print ("Dist in HA: " + str(round(distance_from_current_reference_in_ha,2)) + "   Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+        absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(pointing_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
 
-        print ("Time since last reference: " + str(self.last_flip_reference_time - time.time() ))
+        print ("Hours since last reference: " + str((time.time() - self.last_flip_reference_time)/3600))
 
-        print ("absolute difference in position: " + str(absolute_distance))
+        print ("radial difference in requested position to reference position: " + str(round(absolute_distance,2)) + " degrees.")
 
         if  absolute_distance < 15:
             plog ("recent reference nearby, using current reference")
@@ -2683,12 +2683,12 @@ class Mount:
         HA = self.current_sidereal - pointing_ra
         distance_from_current_reference_in_ha = abs(self.last_flip_reference_ha - HA)
         distance_from_current_reference_in_dec = abs(self.last_flip_reference_dec- pointing_dec)
-        print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
-        absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5)
+        print ("Dist in HA: " + str(round(distance_from_current_reference_in_ha,2)) + "   Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+        absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(pointing_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
 
-        print ("Time since last reference: " + str(self.last_flip_reference_time - time.time() ))
+        print ("Hours since last reference: " + str((time.time() - self.last_flip_reference_time)/3600))
 
-
+        print ("radial difference in requested position to reference position: " + str(round(absolute_distance,2))+ " degrees.")
         #if (time.time()-self.last_flip_reference_time) < 43100:
 
         if  absolute_distance < 15:
