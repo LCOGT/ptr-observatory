@@ -1448,7 +1448,7 @@ class Sequencer:
                     except:
                         filter_requested = 'None'
 
-                    plog ("Filter for this exposure set: " + str(filter_requested))
+                    #plog ("Filter for this exposure set: " + str(filter_requested))
 
                     # Try next block in sequence
                     try:
@@ -1463,7 +1463,7 @@ class Sequencer:
 
                         self.block_next_filter_requested='None'
 
-                    plog ("Filter for the NEXT block: " + str(self.block_next_filter_requested))
+                    #plog ("Filter for the NEXT block: " + str(self.block_next_filter_requested))
 
                     exp_time =  float(exposure['exposure'])
                     #count = int(exposure['count'])
