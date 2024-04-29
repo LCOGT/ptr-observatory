@@ -788,16 +788,16 @@ if len(sources) >= 5:
 
             pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
             os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
-            # try:
-            #     os.remove(cal_path + 'platesolvetemp.fits')
-            # except:
-            #     pass
-            # try:
-            #     os.remove(output_file_path)
-            # except:
-            #     pass
 
-            # sys.exit()
+            try:
+                os.remove(cal_path + 'platesolvetemp.fits')
+            except:
+                pass
+            try:
+                os.remove(output_file_path)
+            except:
+                pass
+            sys.exit()
 
 
         except:
@@ -837,6 +837,19 @@ if len(sources) >= 5:
 
                 pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
                 os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+                
+                pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+                os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+
+                try:
+                    os.remove(cal_path + 'platesolvetemp.fits')
+                except:
+                    pass
+                try:
+                    os.remove(output_file_path)
+                except:
+                    pass
+                sys.exit()
 
                 # try:
                 #     os.remove(cal_path + 'platesolvetemp.fits')
@@ -853,10 +866,11 @@ if len(sources) >= 5:
                 print(traceback.format_exc())
                 failed=True
                 process.kill()
-                solve = 'error'
+                #solve = 'error'
 
     # if unknown pixelscale do a search
-    #print (failed)
+    print ("failed?")
+    print (failed)
     if failed or pixscale == None:#) and useastrometrynet:
 
 
@@ -918,10 +932,37 @@ if len(sources) >= 5:
                 solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
             elif binnedthree:
                 solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+                
+            
+            pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+            os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+
+            try:
+                os.remove(cal_path + 'platesolvetemp.fits')
+            except:
+                pass
+            try:
+                os.remove(output_file_path)
+            except:
+                pass
+            sys.exit()
 
         except:
             print(traceback.format_exc())
+
             solve = 'error'
+            pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+            os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+
+            try:
+                os.remove(cal_path + 'platesolvetemp.fits')
+            except:
+                pass
+            try:
+                os.remove(output_file_path)
+            except:
+                pass
+            sys.exit()
             #breakpoint()
 
         #breakpoint()
@@ -1012,17 +1053,8 @@ if len(sources) >= 5:
 
 
 
-    pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
-    os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
-
-    try:
-        os.remove(cal_path + 'platesolvetemp.fits')
-    except:
-        pass
-    try:
-        os.remove(output_file_path)
-    except:
-        pass
+    
+    
 else:
     solve = 'error'
     pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
@@ -1036,15 +1068,25 @@ else:
         os.remove(output_file_path)
     except:
         pass
+    sys.exit()
 
 
-pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
-os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+# pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+# os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
 
 print (solve)
 print ("solver: " +str(time.time()-googtime))
 
+# try:
+#     os.remove(cal_path + 'platesolvetemp.fits')
+# except:
+#     pass
+# try:
+#     os.remove(output_file_path)
+# except:
+#     pass
+# sys.exit()
 
 #breakpoint()
 
