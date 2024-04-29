@@ -2653,7 +2653,7 @@ class Mount:
 
         print ("Hours since last reference: " + str((time.time() - self.last_flip_reference_time)/3600))
 
-        print ("radial difference in requested position to reference position: " + str(round(absolute_distance,2)) + " degrees.")
+        print ("radial difference in requested position to location where reference was created: " + str(round(absolute_distance,2)) + " degrees.")
 
         if  absolute_distance < 15:
             plog ("recent reference nearby, using current reference")
@@ -2688,7 +2688,7 @@ class Mount:
 
         print ("Hours since last reference: " + str((time.time() - self.last_flip_reference_time)/3600))
 
-        print ("radial difference in requested position to reference position: " + str(round(absolute_distance,2))+ " degrees.")
+        print ("radial difference in requested position to location where reference was created: " + str(round(absolute_distance,2))+ " degrees.")
         #if (time.time()-self.last_flip_reference_time) < 43100:
 
         if  absolute_distance < 15:

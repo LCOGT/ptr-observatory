@@ -2740,12 +2740,19 @@ class Observatory:
                         del hdufocusdata
                         #breakpoint()
                         # Essentially wait until the subprocess is complete
-                        platesolve_subprocess.communicate()
-
+                        #platesolve_subprocess.communicate()
+                        
+                        while not os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
+                            time.sleep(0.5)                            
+                            
+                            
                         if os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
                             solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))
                         else:
                             solve= 'Platesove error, Pickle file not available'
+                            
+                        platesolve_subprocess.kill()
+                        
                         try:
                             os.remove(self.local_calibration_path + 'platesolve.pickle')
                         except:
@@ -2758,6 +2765,7 @@ class Observatory:
                             self.last_platesolved_ra_err = np.nan
                             self.last_platesolved_dec_err = np.nan
                             self.platesolve_errors_in_a_row=self.platesolve_errors_in_a_row+1
+                            self.platesolve_is_processing = False
 
 
 

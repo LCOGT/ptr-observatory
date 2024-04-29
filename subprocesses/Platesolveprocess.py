@@ -786,8 +786,8 @@ if len(sources) >= 5:
             elif binnedthree:
                 solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
 
-            pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
-
+            pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+            os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
             # try:
             #     os.remove(cal_path + 'platesolvetemp.fits')
             # except:
@@ -835,7 +835,8 @@ if len(sources) >= 5:
                 elif binnedthree:
                     solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
 
-                pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
+                pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+                os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
                 # try:
                 #     os.remove(cal_path + 'platesolvetemp.fits')
@@ -1011,7 +1012,8 @@ if len(sources) >= 5:
 
 
 
-    pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
+    pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+    os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
     try:
         os.remove(cal_path + 'platesolvetemp.fits')
@@ -1023,7 +1025,9 @@ if len(sources) >= 5:
         pass
 else:
     solve = 'error'
-    pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
+    pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+    os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+
     try:
         os.remove(cal_path + 'platesolvetemp.fits')
     except:
@@ -1032,6 +1036,10 @@ else:
         os.remove(output_file_path)
     except:
         pass
+
+
+pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
 
 print (solve)
