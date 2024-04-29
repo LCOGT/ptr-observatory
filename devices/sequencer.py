@@ -2832,7 +2832,7 @@ class Sequencer:
         return
 
 
-    def make_scaled_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder, requesttype):
+    def make_scaled_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder, requesttype, temp_bias_level_min):
 
 
 
@@ -2860,7 +2860,7 @@ class Sequencer:
                         os.remove(file)
                         inputList.remove(file)
                         
-                    elif tempmedian < 30 or tempmedian > 55000: 
+                    elif tempmedian < max(30, temp_bias_level_min) or tempmedian > 55000: 
                         plog ("dark file with strange median skipped: " + str(file))
                         os.remove(file)
                         inputList.remove(file)    
@@ -3018,7 +3018,7 @@ class Sequencer:
 
             return masterDark
 
-    def make_bias_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder,requesttype):
+    def make_bias_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder,requesttype,temp_bias_level_min):
 
 
             # CLEAR OUT OLD TEMPFILES
@@ -3049,7 +3049,7 @@ class Sequencer:
                         os.remove(file)
                         inputList.remove(file)
                         
-                    elif tempmedian < 30 or tempmedian > 55000:  
+                    elif tempmedian < max(30, temp_bias_level_min) or tempmedian > 55000:  
                         plog ("dark file with strange median skipped: " + str(file))
                         os.remove(file)
                         inputList.remove(file)    
@@ -3491,6 +3491,10 @@ class Sequencer:
                 #         counter=counter+1
 
                 masterBias=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
+                
+                temp_bias_level_median=bn.nanmedian(masterBias)
+                temp_bias_level_max=bn.nanmax(masterBias)
+                temp_bias_level_min=bn.nanmin(masterBias)
                 #breakpoint()
                 del finalImage
                 del holder
@@ -3663,7 +3667,7 @@ class Sequencer:
 
 
 
-                processedDark = self.make_scaled_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder,requesttype)
+                processedDark = self.make_scaled_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder,requesttype,temp_bias_level_min)
 
                 try:
                     g_dev['cam'].darkFiles.update({entry[2]: processedDark.astype(np.float32)})
@@ -3673,7 +3677,7 @@ class Sequencer:
 
             for entry in bias_darklist:
 
-                processedDark = self.make_bias_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder,requesttype)
+                processedDark = self.make_bias_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder,requesttype,temp_bias_level_min)
 
 
                 if entry[2] ==  'broadband_ss_biasdark' or entry[2] == 'narrowband_ss_biasdark':
@@ -3778,7 +3782,7 @@ class Sequencer:
                                 os.remove(file)
                                 inputList.remove(file)
                             
-                            elif tempmedian < 1000 or tempmedian > 55000: 
+                            elif tempmedian < max(1000, temp_bias_level_min) or tempmedian > 55000: 
                                 plog ("flat file with strange median skipped: " + str(file))
                                 os.remove(file)
                                 inputList.remove(file)
