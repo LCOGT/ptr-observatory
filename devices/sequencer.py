@@ -3396,7 +3396,7 @@ class Sequencer:
                 # finalImage array
                 finalImage=np.zeros(shapeImage, dtype=np.float32)
 
-
+                
 
                 try:
 
