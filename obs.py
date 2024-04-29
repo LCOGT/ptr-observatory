@@ -2731,14 +2731,14 @@ class Observatory:
                             plog(traceback.format_exc())
 
                         # yet another pickle debugger.
-                        if False:
+                        if True:
                             pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
                              pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet], open('subprocesses/testplatesolvepickle','wb'))
 
                         #breakpoint()
 
                         del hdufocusdata
-
+                        #breakpoint()
                         # Essentially wait until the subprocess is complete
                         platesolve_subprocess.communicate()
 
@@ -2793,10 +2793,10 @@ class Observatory:
                             # If this is the first pixelscalle gotten, then it is the pixelscale!
                             if g_dev['cam'].pixscale == None:
                                 g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
-                            
+
                             if np.isnan(g_dev['cam'].pixscale) :
                                 g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
-                                
+
 
                             if (g_dev['cam'].pixscale * 0.9) < float(abs(solved_arcsecperpixel)) < (g_dev['cam'].pixscale * 1.1):
                                 self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
@@ -2964,7 +2964,7 @@ class Observatory:
                                                          g_dev["mnt"].adjust_mount_reference(
                                                              err_ha, err_dec, pointing_ra, pointing_dec
                                                          )
-                                                         
+
                                                      except Exception as e:
                                                          plog("Something is up in the mount reference adjustment code ", e)
                                                  else:
