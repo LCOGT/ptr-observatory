@@ -6320,10 +6320,26 @@ class Sequencer:
 
                     # Weird way to convert plt to pil image, overlay and close
                     img_buf = io.BytesIO()
-                    plt.scatter(x,y)
-                    plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                    # plt.scatter(x,y)
+                    # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
                     
-                    
+                    fig1 = px.scatter(x=x, y=y)
+                    #fig2 = px.line(x=x, y=f(x))
+                    #plt.plot(x,f(x), color = 'green')
+
+                    layout = go.Layout(
+                        autosize=False,
+                        width=450,
+                        height=320,
+                        # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                        # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                         margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                    )
+
+
+                    #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                    fig3 = go.Figure(data=fig1.data, layout=layout)
+                    fig3.write_image(img_buf)
                     
                     pltim = Image.open(img_buf)
                     #im.show(title="My Image")
@@ -6392,8 +6408,30 @@ class Sequencer:
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
-                            plt.scatter(x,y)
-                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            # plt.scatter(x,y)
+                            # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            
+                            # plt.scatter(x,y)
+                            # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            
+                            fig1 = px.scatter(x=x, y=y)
+                            #fig2 = px.line(x=x, y=f(x))
+                            #plt.plot(x,f(x), color = 'green')
+
+                            layout = go.Layout(
+                                autosize=False,
+                                width=450,
+                                height=320,
+                                # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                                # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                                 margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                            )
+
+
+                            #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                            fig3 = go.Figure(data=fig1.data, layout=layout)
+                            fig3.write_image(img_buf)
+                            
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             #box = (500, 500)
@@ -6426,8 +6464,30 @@ class Sequencer:
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
-                            plt.scatter(x,y)
-                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            # plt.scatter(x,y)
+                            # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            
+                            # plt.scatter(x,y)
+                            # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            
+                            fig1 = px.scatter(x=x, y=y)
+                            #fig2 = px.line(x=x, y=f(x))
+                            #plt.plot(x,f(x), color = 'green')
+
+                            layout = go.Layout(
+                                autosize=False,
+                                width=450,
+                                height=320,
+                                # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                                # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                                 margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                            )
+
+
+                            #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                            fig3 = go.Figure(data=fig1.data, layout=layout)
+                            fig3.write_image(img_buf)
+                            
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
@@ -6467,8 +6527,30 @@ class Sequencer:
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
-                            plt.scatter(x,y)
-                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            # plt.scatter(x,y)
+                            # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            
+                            # plt.scatter(x,y)
+                            # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            
+                            fig1 = px.scatter(x=x, y=y)
+                            #fig2 = px.line(x=x, y=f(x))
+                            #plt.plot(x,f(x), color = 'green')
+
+                            layout = go.Layout(
+                                autosize=False,
+                                width=450,
+                                height=320,
+                                # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                                # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                                 margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                            )
+
+
+                            #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                            fig3 = go.Figure(data=fig1.data, layout=layout)
+                            fig3.write_image(img_buf)
+                            
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             #box = (500, 500)
@@ -6490,8 +6572,30 @@ class Sequencer:
 
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
-                            plt.scatter(x,y)
-                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            # plt.scatter(x,y)
+                            # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            
+                            # plt.scatter(x,y)
+                            # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                            
+                            fig1 = px.scatter(x=x, y=y)
+                            #fig2 = px.line(x=x, y=f(x))
+                            #plt.plot(x,f(x), color = 'green')
+
+                            layout = go.Layout(
+                                autosize=False,
+                                width=450,
+                                height=320,
+                                # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                                # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                                 margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                            )
+
+
+                            #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                            fig3 = go.Figure(data=fig1.data, layout=layout)
+                            fig3.write_image(img_buf)
+                            
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
@@ -6567,8 +6671,28 @@ class Sequencer:
 
                                     # Weird way to convert plt to pil image, overlay and close
                                     img_buf = io.BytesIO()
-                                    plt.scatter(x,y)
-                                    plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                                    # plt.scatter(x,y)
+                                    # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                                    # plt.scatter(x,y)
+                                    # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                                    
+                                    fig1 = px.scatter(x=x, y=y)
+                                    #fig2 = px.line(x=x, y=f(x))
+                                    #plt.plot(x,f(x), color = 'green')
+
+                                    layout = go.Layout(
+                                        autosize=False,
+                                        width=450,
+                                        height=320,
+                                        # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                                        # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                                         margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                                    )
+
+
+                                    #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                                    fig3 = go.Figure(data=fig1.data, layout=layout)
+                                    fig3.write_image(img_buf)
                                     pltim = Image.open(img_buf)
                                     #im.show(title="My Image")
                                     box = (500, 500)
@@ -6602,8 +6726,30 @@ class Sequencer:
 
                                     # Weird way to convert plt to pil image, overlay and close
                                     img_buf = io.BytesIO()
-                                    plt.scatter(x,y)
-                                    plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                                    # plt.scatter(x,y)
+                                    # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                                    
+                                    # plt.scatter(x,y)
+                                    # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                                    
+                                    fig1 = px.scatter(x=x, y=y)
+                                    #fig2 = px.line(x=x, y=f(x))
+                                    #plt.plot(x,f(x), color = 'green')
+
+                                    layout = go.Layout(
+                                        autosize=False,
+                                        width=450,
+                                        height=320,
+                                        # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                                        # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                                         margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                                    )
+
+
+                                    #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                                    fig3 = go.Figure(data=fig1.data, layout=layout)
+                                    fig3.write_image(img_buf)
+                                    
                                     pltim = Image.open(img_buf)
                                     #im.show(title="My Image")
                                     box = (500, 500)
@@ -6625,10 +6771,33 @@ class Sequencer:
 
                                 # Weird way to convert plt to pil image, overlay and close
                                 img_buf = io.BytesIO()
-                                plt.scatter(x,y)
-                                plt.plot(x,f(x), color = 'green')
-                                plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red', marker = 'X')
-                                plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                                # plt.scatter(x,y)
+                                # plt.plot(x,f(x), color = 'green')
+                                # plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red', marker = 'X')
+                                # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                                
+                                # plt.scatter(x,y)
+                                # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                                
+                                fig1 = px.scatter(x=x, y=y)
+                                fig2 = px.line(x=x, y=f(x))
+                                #plt.plot(x,f(x), color = 'green')
+
+                                layout = go.Layout(
+                                    autosize=False,
+                                    width=450,
+                                    height=320,
+                                    # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                                    # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                                     margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                                )
+
+
+                                fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                                #fig3 = go.Figure(data=fig1.data, layout=layout)
+                                fig3.write_image(img_buf)
+                                
+                                
                                 pltim = Image.open(img_buf)
                                 #im.show(title="My Image")
                                 #box = (500, 500)
