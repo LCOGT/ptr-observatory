@@ -23,6 +23,12 @@ from numpy import inf
 import os
 import gc
 import bottleneck as bn
+
+
+import plotly.express as px
+import plotly.graph_objects as go
+
+
 from PIL import Image
 #from pyowm import OWM
 #from pyowm.utils import config
@@ -6316,6 +6322,9 @@ class Sequencer:
                     img_buf = io.BytesIO()
                     plt.scatter(x,y)
                     plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                    
+                    
+                    
                     pltim = Image.open(img_buf)
                     #im.show(title="My Image")
                     #box = (500, 500)

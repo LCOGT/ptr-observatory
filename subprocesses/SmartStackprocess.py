@@ -93,6 +93,7 @@ imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'
 # Really need to thresh the incoming image
 googtime=time.time()
 int_array_flattened=imgdata.astype(int).ravel()
+int_array_flattened=int_array_flattened[int_array_flattened > -10000]
 unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
 m=counts.argmax()
 imageMode=unique[m]
@@ -101,6 +102,7 @@ print ("Calculating Mode: " +str(time.time()-googtime))
 # Zerothreshing image
 googtime=time.time()
 histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+histogramdata[histogramdata[:,0] > -10000]
 #Do some fiddle faddling to figure out the value that goes to zero less
 zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
 breaker=1
