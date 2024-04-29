@@ -2006,6 +2006,7 @@ class Observatory:
                                 return str(filepath.split('/')[-1]) + " got an odd error, but retrying."
 
                             else:
+                                plog (filepath)
                                 plog("couldn't send to PTR archive for some reason: ", e)
 
                                 # And give it a little sleep
@@ -2749,10 +2750,12 @@ class Observatory:
                         if os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
                             solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))
                         else:
-                            solve= 'Platesove error, Pickle file not available'
-                            
-                        platesolve_subprocess.kill()
+   
+                        #platesolve_subprocess.kill()
                         
+
+                            solve= 'Platesolve error, Pickle file not available'
+
                         try:
                             os.remove(self.local_calibration_path + 'platesolve.pickle')
                         except:
