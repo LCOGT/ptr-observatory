@@ -5156,16 +5156,16 @@ class Camera:
                             # Then get ready for the next set of exposures by changing the filter and adjusting the focus
                             # Hopefully this occurs while the slew occurs
                             # If there is a block guard, there is a running block
-                            print ('seq and count')
-                            print (seq)
-                            print (count)
+                            # print ('seq and count')
+                            # print (seq)
+                            # print (count)
                             if g_dev['seq'].block_guard and seq==count and not g_dev['seq'].focussing and not frame_type=='pointing':
                                 # plog ("Running block....")
                                 # plog (Nsmartstack)
                                 # plog (sskcounter)
                                 # If this is the end of a smartstack set or it is a single shot then check the filter and change
                                 if Nsmartstack==1 or (Nsmartstack == sskcounter+1):
-                                    plog ("end of sstack run, checking filter")
+                                    # plog ("end of sstack run, checking filter")
                                     plog ("Next filter in project: " + str(g_dev['seq'].block_next_filter_requested))
                                     plog ("Current filter: " + str(self.current_filter))
                                     if not g_dev['seq'].block_next_filter_requested=='None':
