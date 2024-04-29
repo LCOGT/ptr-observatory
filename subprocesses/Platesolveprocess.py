@@ -683,6 +683,8 @@ googtime=time.time()
 #breakpoint()
 #breakpoint()
 failed=False
+
+#breakpoint()
 if len(sources) >= 5:
 
     if not pixscale == None:
@@ -721,6 +723,8 @@ if len(sources) >= 5:
         #     except Exception as e:
         #         print (e)
         #         #breakpoint()
+        
+        
 
         # Add bullseye stars to blank image
         for addingstar in sources:
