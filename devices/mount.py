@@ -2596,7 +2596,7 @@ class Mount:
         # We need to store time, HA, Dec, HA offset, Dec offset.
         HA=self.current_sidereal - pointing_ra
         self.longterm_storage_of_flip_references.append([time.time(),HA,pointing_dec,init_ra + err_ha, init_dec + err_dec])
-        mnt_shelf['longterm_storage_of_flip_references']=self.longterm_storage_of_mount_references
+        mnt_shelf['longterm_storage_of_flip_references']=self.longterm_storage_of_flip_references
         mnt_shelf.close()
 
         return
