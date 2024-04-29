@@ -828,7 +828,7 @@ class Sequencer:
                     with open(runNightToken, 'w') as f:
                         f.write('Night Completed')
                     image = (g_dev['obs'].obsid_path + 'tokens/', self.config['obs_id'] + g_dev["day"] + '.token', time.time())
-                    g_dev['obs'].ptrarchive_queue.put((30000000000, image), block=False)
+                    g_dev['obs'].ptrarchive_queue.put((56000001, image), block=False)
                     g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
 
             #Here is where observatories who do their biases at night... well.... do their biases!
