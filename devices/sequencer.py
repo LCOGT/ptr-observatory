@@ -3470,6 +3470,7 @@ class Sequencer:
                 #         counter=counter+1
 
                 masterBias=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
+                #breakpoint()
                 del finalImage
                 del holder
                 #del PLDrive
@@ -6330,7 +6331,7 @@ class Sequencer:
                     img_buf = io.BytesIO()
                     plt.scatter(x,y)
                     plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                    
+
                     # fig1 = px.scatter(x=x, y=y)
                     # #fig2 = px.line(x=x, y=f(x))
                     # #plt.plot(x,f(x), color = 'green')
@@ -6348,16 +6349,16 @@ class Sequencer:
                     # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
                     # fig3 = go.Figure(data=fig1.data, layout=layout)
                     # fig3.write_image(img_buf)
-                    
+
                     pltim = Image.open(img_buf)
                     #im.show(title="My Image")
                     #box = (500, 500)
                     #box=
-                    current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)                    
+                    current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
                     current_focus_jpg.paste(pltim)#, box )
                     current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                     #img_buf.close()
-    
+
                     # Fling the jpeg up
                     g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
 
@@ -6419,10 +6420,10 @@ class Sequencer:
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
                             plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                            
+
                             # plt.scatter(x,y)
                             # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                            
+
                             # fig1 = px.scatter(x=x, y=y)
                             # #fig2 = px.line(x=x, y=f(x))
                             # #plt.plot(x,f(x), color = 'green')
@@ -6440,11 +6441,11 @@ class Sequencer:
                             # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
                             # fig3 = go.Figure(data=fig1.data, layout=layout)
                             # fig3.write_image(img_buf)
-                            
+
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             #box = (500, 500)
-                            current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)                    
+                            current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
                             current_focus_jpg.paste(pltim)#, box )
                             current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
@@ -6476,10 +6477,10 @@ class Sequencer:
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
                             plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                            
+
                             # plt.scatter(x,y)
                             # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                            
+
                             # fig1 = px.scatter(x=x, y=y)
                             # #fig2 = px.line(x=x, y=f(x))
                             # #plt.plot(x,f(x), color = 'green')
@@ -6497,11 +6498,11 @@ class Sequencer:
                             # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
                             # fig3 = go.Figure(data=fig1.data, layout=layout)
                             # fig3.write_image(img_buf)
-                            
+
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
-                            current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)                    
+                            current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
                             current_focus_jpg.paste(pltim)#, box )
                             current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
@@ -6540,10 +6541,10 @@ class Sequencer:
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
                             plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                            
+
                             # plt.scatter(x,y)
                             # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                            
+
                             # fig1 = px.scatter(x=x, y=y)
                             # #fig2 = px.line(x=x, y=f(x))
                             # #plt.plot(x,f(x), color = 'green')
@@ -6561,11 +6562,11 @@ class Sequencer:
                             # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
                             # fig3 = go.Figure(data=fig1.data, layout=layout)
                             # fig3.write_image(img_buf)
-                            
+
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             #box = (500, 500)
-                            current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)                    
+                            current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
                             current_focus_jpg.paste(pltim)#, box )
                             current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
@@ -6586,10 +6587,10 @@ class Sequencer:
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
                             plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                            
+
                             # plt.scatter(x,y)
                             # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                            
+
                             # fig1 = px.scatter(x=x, y=y)
                             # #fig2 = px.line(x=x, y=f(x))
                             # #plt.plot(x,f(x), color = 'green')
@@ -6607,11 +6608,11 @@ class Sequencer:
                             # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
                             # fig3 = go.Figure(data=fig1.data, layout=layout)
                             # fig3.write_image(img_buf)
-                            
+
                             pltim = Image.open(img_buf)
                             #im.show(title="My Image")
                             box = (500, 500)
-                            current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)                    
+                            current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
                             current_focus_jpg.paste(pltim)#, box )
                             current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             img_buf.close()
@@ -6688,7 +6689,7 @@ class Sequencer:
                                     # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
                                     plt.scatter(x,y)
                                     plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                                    
+
                                     # fig1 = px.scatter(x=x, y=y)
                                     # #fig2 = px.line(x=x, y=f(x))
                                     # #plt.plot(x,f(x), color = 'green')
@@ -6709,7 +6710,7 @@ class Sequencer:
                                     pltim = Image.open(img_buf)
                                     #im.show(title="My Image")
                                     box = (500, 500)
-                                    current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)                    
+                                    current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
                                     current_focus_jpg.paste(pltim)#, box )
                                     current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                                     img_buf.close()
@@ -6742,10 +6743,10 @@ class Sequencer:
                                     img_buf = io.BytesIO()
                                     # plt.scatter(x,y)
                                     # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                                    
+
                                     plt.scatter(x,y)
                                     plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                                    
+
                                     # fig1 = px.scatter(x=x, y=y)
                                     # #fig2 = px.line(x=x, y=f(x))
                                     # #plt.plot(x,f(x), color = 'green')
@@ -6763,11 +6764,11 @@ class Sequencer:
                                     # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
                                     # fig3 = go.Figure(data=fig1.data, layout=layout)
                                     # fig3.write_image(img_buf)
-                                    
+
                                     pltim = Image.open(img_buf)
                                     #im.show(title="My Image")
                                     box = (500, 500)
-                                    current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)                    
+                                    current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
                                     current_focus_jpg.paste(pltim)#, box )
                                     current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                                     img_buf.close()
@@ -6790,10 +6791,10 @@ class Sequencer:
                                 plt.plot(x,f(x), color = 'green')
                                 plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red', marker = 'X')
                                 plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                                
+
                                 # plt.scatter(x,y)
                                 # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                                
+
                                 # fig1 = px.scatter(x=x, y=y)
                                 # fig2 = px.line(x=x, y=f(x))
                                 # #plt.plot(x,f(x), color = 'green')
@@ -6811,12 +6812,12 @@ class Sequencer:
                                 # fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
                                 # #fig3 = go.Figure(data=fig1.data, layout=layout)
                                 # fig3.write_image(img_buf)
-                                
-                                
+
+
                                 pltim = Image.open(img_buf)
                                 #im.show(title="My Image")
                                 #box = (500, 500)
-                                current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)                    
+                                current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
                                 current_focus_jpg.paste(pltim)#, box )
                                 current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                                 img_buf.close()
