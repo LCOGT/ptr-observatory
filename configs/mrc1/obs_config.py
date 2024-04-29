@@ -56,7 +56,7 @@ site_config = {
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
     'scope_in_manual_mode': False,
-    'mount_reference_model_off': True,
+    'mount_reference_model_off': False,
     'sun_checks_on': True,
     'moon_checks_on': True,
     'altitude_checks_on': True,

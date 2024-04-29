@@ -209,6 +209,9 @@ class Mount:
         self.settle_time_after_unpark = config['mount']['mount1']['settle_time_after_unpark']
         self.settle_time_after_park = config['mount']['mount1']['settle_time_after_park']
 
+
+        
+
         self.refraction = 0
         self.target_az = 0   #Degrees Azimuth
         self.ha_corr = 0
@@ -239,24 +242,24 @@ class Mount:
             plog("No mount ref found.")
             pass
 
-        #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
-        if self.has_paddle:
-            self._paddle = serial.Serial('COM28', timeout=0.1)
-            self._paddle.write(b'ver\n')
-            plog(self._paddle.read(13).decode()[-8:])
+    #     #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
+    #     if self.has_paddle:
+    #         self._paddle = serial.Serial('COM28', timeout=0.1)
+    #         self._paddle.write(b'ver\n')
+    #         plog(self._paddle.read(13).decode()[-8:])
 
-    #        self._paddle.write(b"gpio iodir 00ff\n")
-    #        self._paddle.write(b"gpio readall\n")
-            self.paddleing = True
-    #        plog('a:',self._paddle.read(20).decode())
-    #        plog('b:',self._paddle.read(20).decode())
-    #        plog('c:',self._paddle.read(20).decode())
-    #        plog("Paddle  not operational??")
-            self._paddle.close()
-        else:
-            self.paddeling = False
-            #self.paddle_thread = threading.Thread(target=self.paddle, args=())
-            #self.paddle_thread.start()
+    # #        self._paddle.write(b"gpio iodir 00ff\n")
+    # #        self._paddle.write(b"gpio readall\n")
+    #         self.paddleing = True
+    # #        plog('a:',self._paddle.read(20).decode())
+    # #        plog('b:',self._paddle.read(20).decode())
+    # #        plog('c:',self._paddle.read(20).decode())
+    # #        plog("Paddle  not operational??")
+    #         self._paddle.close()
+    #     else:
+    #         self.paddeling = False
+    #         #self.paddle_thread = threading.Thread(target=self.paddle, args=())
+    #         #self.paddle_thread.start()
         self.obs = ephem.Observer()
         self.obs.long = g_dev['evnt'].wema_config['longitude']*DTOR
         self.obs.lat = g_dev['evnt'].wema_config['latitude']*DTOR
@@ -264,14 +267,33 @@ class Mount:
         self.theskyx_tracking_rescues = 0
 
 
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
+        try:
+            self.longterm_storage_of_mount_references=mnt_shelf['longterm_storage_of_mount_references']
+            self.longterm_storage_of_flip_references=mnt_shelf['longterm_storage_of_flip_references']
+        except:      
+            self.longterm_storage_of_mount_references=[]
+            self.longterm_storage_of_flip_references=[]
+        mnt_shelf.close()
+        
+        print ("MTF test:")
+        print (self.longterm_storage_of_mount_references)
+        print (self.longterm_storage_of_flip_references)
+
         self.last_mount_reference_time=time.time() - 86400
         self.last_flip_reference_time=time.time() - 86400
         
-        self.last_mount_reference_ra = 0.0
+        self.last_mount_reference_ha = 0.0
         self.last_mount_reference_dec = 0.0
-        self.last_flip_reference_ra = 0.0
+        self.last_flip_reference_ha = 0.0
         self.last_flip_reference_dec = 0.0
-
+        
+        self.last_flip_reference_ha_offset = 0.0
+        self.last_flip_reference_dec_offset = 0.0
+        self.last_mount_reference_ha_offset = 0.0
+        self.last_mount_reference_dec_offset = 0.0
+        
+        
 
         # NEED to initialise these variables here in case the mount isn't slewed
         # before exposures after bootup
@@ -2493,18 +2515,18 @@ class Mount:
                     self.wait_for_slew()
             self.parking_or_homing=False
 
-    def paddle(self):
-        return
-        '''
-        The real way this should work is monitor if a speed button is pushed, then log the time and
-        start the thread.  If no button pushed for say 30 seconds, stop thread and re-join.  That way
-        image operations are minimally disrupted.
+    # def paddle(self):
+    #     return
+    #     '''
+    #     The real way this should work is monitor if a speed button is pushed, then log the time and
+    #     start the thread.  If no button pushed for say 30 seconds, stop thread and re-join.  That way
+    #     image operations are minimally disrupted.
 
-        Normally this will never be started, unless we are operating locally in the observatory.
-        '''
+    #     Normally this will never be started, unless we are operating locally in the observatory.
+    #     '''
 
 
-    def  adjust_mount_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
+    def adjust_mount_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
 
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
         try:
@@ -2514,20 +2536,40 @@ class Mount:
             init_ra = 0.0
             init_dec =0.0
 
-        plog("initial:  ", init_ra, init_dec)
+        HA=self.sidereal_time - pointing_ra
+
+        #plog("initial:  ", init_ra, init_dec)
         mnt_shelf['ra_cal_offset'] = init_ra + err_ha
         mnt_shelf['dec_cal_offset'] = init_dec + err_dec
-        plog("final:  ", mnt_shelf['ra_cal_offset'], mnt_shelf['dec_cal_offset'])
-        mnt_shelf.close()
+        mnt_shelf['last_mount_reference_time']=time.time()
+        mnt_shelf['last_mount_reference_ha']= HA
+        mnt_shelf['last_mount_reference_dec']= pointing_dec
+        #plog("final:  ", mnt_shelf['ra_cal_offset'], mnt_shelf['dec_cal_offset'])
+        
         
         
         self.last_mount_reference_time=time.time()
-        self.last_mount_reference_ra = pointing_ra 
+        self.last_mount_reference_ha = HA
         self.last_mount_reference_dec = pointing_dec 
+        self.last_mount_reference_ha_offset = init_ra + err_ha
+        self.last_mount_reference_dec_offset = init_dec + err_dec
+        
+        
+        # Add in latest point to the list of mount references
+        # This has to be done in terms of hour angle due to changes over time.       
+        # We need to store time, HA, Dec, HA offset, Dec offset.
+        HA=self.current_sidereal - pointing_ra
+        self.longterm_storage_of_mount_references.append([time.time(),HA,pointing_dec,init_ra + err_ha, init_dec + err_dec])       
+        mnt_shelf['longterm_storage_of_mount_references']=self.longterm_storage_of_mount_references     
+        mnt_shelf.close()
         
         return
 
-    def  adjust_flip_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
+    def adjust_flip_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
+        
+        
+        HA=self.sidereal_time - pointing_ra
+        
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         try:
             init_ra = mnt_shelf['flip_ra_cal_offset']
@@ -2537,69 +2579,134 @@ class Mount:
             init_dec =0.0
         mnt_shelf['flip_ra_cal_offset'] = init_ra + err_ha    #NB NB NB maybe best to reverse signs here??
         mnt_shelf['flip_dec_cal_offset'] = init_dec + err_dec
-        mnt_shelf.close()
+        mnt_shelf['last_flip_reference_time']=time.time()
+        mnt_shelf['last_flip_reference_ha']= HA
+        mnt_shelf['last_flip_reference_dec']= pointing_dec
+        
         
         self.last_flip_reference_time=time.time()
-        self.last_flip_reference_ra = pointing_ra 
+        self.last_flip_reference_ha = HA
         self.last_flip_reference_dec = pointing_dec 
+        self.last_flip_reference_ha_offset = init_ra + err_ha
+        self.last_flip_reference_dec_offset = init_dec + err_dec
+        
+        
+        # Add in latest point to the list of mount references
+        # This has to be done in terms of hour angle due to changes over time.  
+        # We need to store time, HA, Dec, HA offset, Dec offset.
+        HA=self.current_sidereal - pointing_ra
+        self.longterm_storage_of_flip_references.append([time.time(),HA,pointing_dec,init_ra + err_ha, init_dec + err_dec])
+        mnt_shelf['longterm_storage_of_flip_references']=self.longterm_storage_of_mount_references
+        mnt_shelf.close()
         
         return
 
-    def set_mount_reference(self, delta_ra, delta_dec):
+    def set_mount_reference(self, delta_ra, delta_dec, pointing_ra, pointing_dec):
+        
+        HA=self.sidereal_time - pointing_ra
+        
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = delta_ra
         mnt_shelf['dec_cal_offset'] = delta_dec
+        mnt_shelf['last_mount_reference_time']=time.time()
+        mnt_shelf['last_mount_reference_ha']= HA
+        mnt_shelf['last_mount_reference_dec']= pointing_dec
         mnt_shelf.close()
         
         self.last_mount_reference_time=time.time()
-        self.last_mount_reference_ra = 0.0
-        self.last_mount_reference_dec = 0.0
-        self.last_flip_reference_ra = 0.0
-        self.last_flip_reference_dec = 0.0
+        self.last_mount_reference_ha = HA
+        self.last_mount_reference_dec =  pointing_dec
+        self.last_mount_reference_ha_offset = delta_ra
+        self.last_mount_reference_dec_offset =  delta_dec
         
         return
 
-    def set_flip_reference(self, delta_ra, delta_dec):
+    def set_flip_reference(self, delta_ra, delta_dec, pointing_ra, pointing_dec):
+        
+        HA=self.sidereal_time - pointing_ra
+        
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['flip_ra_cal_offset'] = delta_ra
         mnt_shelf['flip_dec_cal_offset'] = delta_dec
+        mnt_shelf['last_flip_reference_time']=time.time()
+        mnt_shelf['last_flip_reference_ha']= HA
+        mnt_shelf['last_flip_reference_dec']= pointing_dec
+        
         mnt_shelf.close()
         
         self.last_flip_reference_time=time.time()
-        self.last_mount_reference_ra = 0.0
-        self.last_mount_reference_dec = 0.0
-        self.last_flip_reference_ra = 0.0
-        self.last_flip_reference_dec = 0.0
+        self.last_flip_reference_ha = HA
+        self.last_flip_reference_dec = pointing_dec
+        self.last_flip_reference_ha_offset = delta_ra
+        self.last_flip_reference_dec_offset = delta_dec
         
         return
 
-    def get_mount_reference(self):
-        try:
-            mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
-            delta_ra = mnt_shelf['ra_cal_offset'] + self.west_clutch_ra_correction   #Note set up at initialize time.
-            delta_dec = mnt_shelf['dec_cal_offset'] +  self.west_clutch_dec_correction
-            mnt_shelf.close()
-        except:
-            self.reset_mount_reference()
-            delta_ra = 0.0
-            delta_dec = 0.0
-
-
-        return delta_ra, delta_dec
-
-
-    def get_flip_reference(self):
-        try:
-            mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
-            delta_ra = mnt_shelf['flip_ra_cal_offset'] + self.east_flip_ra_correction
-            delta_dec = mnt_shelf['flip_dec_cal_offset'] + self.east_flip_dec_correction
-            mnt_shelf.close()
-        except:
-            self.reset_mount_reference()
-            delta_ra = 0.0
-            delta_dec = 0.0
+    def get_mount_reference(self, pointing_ra, pointing_dec):
         
-        return delta_ra, delta_dec
+        print ("Calculating Mount Reference (temp MTF reporting)")
+        HA = self.sidereal_time - pointing_ra
+        distance_from_current_reference_in_ha = abs(self.last_flip_reference_ha - HA)
+        distance_from_current_reference_in_dec = abs(self.last_flip_reference_dec- pointing_dec)
+        print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+        absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5)
+        
+        print ("Time since last reference: " + str(self.last_flip_reference_time - time.time() ))
+        
+        if  absolute_distance < 15:
+            plog ("recent reference nearby, using current reference")
+            return self.last_mount_reference_ha_offset, self.last_mount_reference_dec_offset    
+        else:
+            plog ("reference not nearby - in future will go and get a nearby reference from the catalogue")
+            return 0.0,0.0
+        
+        # try:
+        #     mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        #     delta_ra = mnt_shelf['ra_cal_offset'] + self.west_clutch_ra_correction   #Note set up at initialize time.
+        #     delta_dec = mnt_shelf['dec_cal_offset'] +  self.west_clutch_dec_correction
+        #     mnt_shelf.close()
+        # except:
+        #     self.reset_mount_reference()
+        #     delta_ra = 0.0
+        #     delta_dec = 0.0
+
+
+        # return delta_ra, delta_dec
+
+
+    def get_flip_reference(self, pointing_ra, pointing_dec):
+        
+        
+        print ("Calculating Flip Reference (temp MTF reporting)")
+        HA = self.sidereal_time - pointing_ra
+        distance_from_current_reference_in_ha = abs(self.last_flip_reference_ha - HA)
+        distance_from_current_reference_in_dec = abs(self.last_flip_reference_dec- pointing_dec)
+        print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+        absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5)
+        
+        print ("Time since last reference: " + str(self.last_flip_reference_time - time.time() ))
+        
+        
+        #if (time.time()-self.last_flip_reference_time) < 43100:
+         
+        if  absolute_distance < 15:
+            plog ("recent reference nearby, using current reference")
+            return self.last_flip_reference_ha_offset, self.last_flip_reference_dec_offset
+        else:
+            plog ("reference not nearby - in future will go and get a nearby reference from the catalogue")
+            return 0.0,0.0
+        
+        # try:
+        #     mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        #     delta_ra = mnt_shelf['flip_ra_cal_offset'] + self.east_flip_ra_correction
+        #     delta_dec = mnt_shelf['flip_dec_cal_offset'] + self.east_flip_dec_correction
+        #     mnt_shelf.close()
+        # except:
+        #     self.reset_mount_reference()
+        #     delta_ra = 0.0
+        #     delta_dec = 0.0
+        
+        # return delta_ra, delta_dec
 
     def reset_mount_reference(self):
 
@@ -2612,10 +2719,14 @@ class Mount:
         
         self.last_mount_reference_time=time.time() -86400
         self.last_flip_reference_time=time.time() -86400
-        self.last_mount_reference_ra = 0.0
+        self.last_mount_reference_ha = 0.0
         self.last_mount_reference_dec = 0.0
-        self.last_flip_reference_ra = 0.0
+        self.last_flip_reference_ha = 0.0
         self.last_flip_reference_dec = 0.0
+        self.last_mount_reference_ha_offset = 0.0
+        self.last_mount_reference_dec_offset = 0.0
+        self.last_flip_reference_ha_offset = 0.0
+        self.last_flip_reference_dec_offset = 0.0
         
         return
 
