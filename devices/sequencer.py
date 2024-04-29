@@ -2854,10 +2854,17 @@ class Sequencer:
                 try:
                     tempy=np.load(file, mmap_mode='r')
                     tempy=np.load(file)
+                    tempmedian=bn.nanmedian(tempy)
                     if tempy.size < 1000:
                         plog ("corrupt dark skipped: " + str(file))
                         os.remove(file)
                         inputList.remove(file)
+                        
+                    elif tempmedian < 30 or tempmedian > 55000: 
+                        plog ("dark file with strange median skipped: " + str(file))
+                        os.remove(file)
+                        inputList.remove(file)    
+                    
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     os.remove(file)
@@ -3035,10 +3042,17 @@ class Sequencer:
                     tempy=np.load(file, mmap_mode='r')
 
                     tempy=np.load(file)
+                    tempmedian=bn.nanmedian(tempy)
+                    
                     if tempy.size < 1000:
                         plog ("corrupt dark skipped: " + str(file))
                         os.remove(file)
                         inputList.remove(file)
+                        
+                    elif tempmedian < 30 or tempmedian > 55000:  
+                        plog ("dark file with strange median skipped: " + str(file))
+                        os.remove(file)
+                        inputList.remove(file)    
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     os.remove(file)
@@ -3312,10 +3326,17 @@ class Sequencer:
             try:
                 tempy=np.load(file, mmap_mode='r')
                 tempy=np.load(file)
+                tempmedian=bn.nanmedian(tempy)
                 if tempy.size < 1000:
-                    plog ("corrupt bias skipped: " + str(file))
+                    plog ("tiny bias file skipped: " + str(file))
                     os.remove(file)
                     inputList.remove(file)
+                    
+                elif tempmedian < 30 or tempmedian > 3000: 
+                    plog ("bias file with strange median skipped: " + str(file))
+                    os.remove(file)
+                    inputList.remove(file)
+                    
             except:
                 plog ("corrupt bias skipped: " + str(file))
                 os.remove(file)
@@ -3742,6 +3763,7 @@ class Sequencer:
                         try:
                             hdu1data = np.load(file, mmap_mode='r')
                             hdu1data = np.load(file)
+                            tempmedian=bn.nanmedian(hdu1data)
                             if hdu1data.size < 1000:
                                 plog ("corrupt flat skipped: " + str(file))
 
@@ -3755,6 +3777,12 @@ class Sequencer:
 
                                 os.remove(file)
                                 inputList.remove(file)
+                            
+                            elif tempmedian < 30 or tempmedian > 55000: 
+                                plog ("flat file with strange median skipped: " + str(file))
+                                os.remove(file)
+                                inputList.remove(file)
+                            
 
                         except:
                             plog ("corrupt flat skipped: " + str(file))
