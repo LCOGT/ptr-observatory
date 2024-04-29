@@ -4485,9 +4485,13 @@ class Sequencer:
                                 cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
                                 plog ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
 
-                                estimated_flat_gain.append(cge_gain)
+                                if cge_median > 0:
 
-                                single_filter_camera_gains.append(cge_gain)
+                                    estimated_flat_gain.append(cge_gain)
+    
+                                    single_filter_camera_gains.append(cge_gain)
+                                else:
+                                    plog ("Something weird and fishy..... a negative median?")
 
                             single_filter_camera_gains=np.array(single_filter_camera_gains)
                             single_filter_camera_gains = sigma_clip(single_filter_camera_gains, masked=False, axis=None)
