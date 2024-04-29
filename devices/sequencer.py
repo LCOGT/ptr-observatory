@@ -256,9 +256,9 @@ class Sequencer:
 
             if (not self.master_restack_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
-                self.master_restack_queue.get(block=False)
+                requesttype=self.master_restack_queue.get(block=False)
 
-                self.regenerate_local_masters()
+                self.regenerate_local_masters(requesttype)
 
                 self.master_restack_queue.task_done()
 
@@ -347,7 +347,7 @@ class Sequencer:
         elif action == "run" and script == 'collectSkyFlats':
             self.sky_flat_script(req, opt)
         elif action == "run" and script == 'restackLocalCalibrations':
-            self.master_restack_queue.put( 'g0', block=False)
+            self.master_restack_queue.put( 'force', block=False)
             #self.regenerate_local_masters()
         elif action == "run" and script in ['pointingRun']:
 
@@ -2832,7 +2832,7 @@ class Sequencer:
         return
 
 
-    def make_scaled_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder):
+    def make_scaled_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder, requesttype):
 
 
 
@@ -2912,7 +2912,7 @@ class Sequencer:
 
 
             plog ("Inspecting dark set: " +str(filename_start))
-            if latestfile < latestcalib:
+            if latestfile < latestcalib and requesttype != 'force':
                 plog ("There are no new darks since last super-dark was made. Skipping construction")
                 masterDark=fits.open(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
                 masterDark= np.array(masterDark[0].data, dtype=np.float32)
@@ -3009,7 +3009,7 @@ class Sequencer:
 
             return masterDark
 
-    def make_bias_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder):
+    def make_bias_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder,requesttype):
 
 
             # CLEAR OUT OLD TEMPFILES
@@ -3088,7 +3088,7 @@ class Sequencer:
             latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
 
             plog ("Inspecting dark set: " +str(filename_start))
-            if latestfile < latestcalib:
+            if latestfile < latestcalib and requesttype != 'force':
                 plog ("There are no new darks since last super-dark was made. Skipping construction")
                 masterDark=fits.open(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
                 masterDark= np.array(masterDark[0].data, dtype=np.float32)
@@ -3185,7 +3185,7 @@ class Sequencer:
 
 
 
-    def regenerate_local_masters(self):
+    def regenerate_local_masters(self, requesttype):
 
 
         #self.total_sequencer_control = True
@@ -3367,7 +3367,7 @@ class Sequencer:
             latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
 
             plog ("Inpecting bias set")
-            if latestfile < latestcalib:
+            if latestfile < latestcalib and requesttype != 'force':
                 plog ("There are no new biases since last super-bias was made. Skipping construction")
                 masterBias=fits.open(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
                 masterBias= np.array(masterBias[0].data, dtype=np.float32)
@@ -3635,7 +3635,7 @@ class Sequencer:
 
 
 
-                processedDark = self.make_scaled_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder)
+                processedDark = self.make_scaled_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder,requesttype)
 
                 try:
                     g_dev['cam'].darkFiles.update({entry[2]: processedDark.astype(np.float32)})
@@ -3645,7 +3645,7 @@ class Sequencer:
 
             for entry in bias_darklist:
 
-                processedDark = self.make_bias_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder)
+                processedDark = self.make_bias_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder,requesttype)
 
 
                 if entry[2] ==  'broadband_ss_biasdark' or entry[2] == 'narrowband_ss_biasdark':
@@ -3776,7 +3776,7 @@ class Sequencer:
                         latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy')
 
                         plog ("Inspecting flats for filter: " + str(filtercode))
-                        if latestfile < latestcalib:
+                        if latestfile < latestcalib and requesttype != 'force':
                             plog ("There are no new flats since last super-flat was made. Skipping construction")
                             temporaryFlat=np.load(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy')
                             # Bad pixel accumulator
