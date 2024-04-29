@@ -1350,7 +1350,7 @@ class Sequencer:
 
             plog ("Checking whether the pointing reference is nearby. If so, we can skip the centering exposure...")
             skip_centering=False
-            HAtemp=self.sidereal_time-dest_ra
+            HAtemp=g_dev['mnt'].current_sidereal-dest_ra
             if g_dev['mnt'].rapid_pier_indicator == 0:
                 distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_mount_reference_ha - HAtemp)
                 distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_mount_reference_dec- dest_dec)
@@ -1585,35 +1585,35 @@ class Sequencer:
                         self.mosaic_center_dec=g_dev['mnt'].return_declination()
 
 
-                    if result == 'blockend':
-                        plog ("End of Block, exiting project block.")
-                        self.blockend = None
-                        self.currently_mosaicing = False
-                        self.total_sequencer_control=False
-                        return block_specification
+                        if result == 'blockend':
+                            plog ("End of Block, exiting project block.")
+                            self.blockend = None
+                            self.currently_mosaicing = False
+                            self.total_sequencer_control=False
+                            return block_specification
 
-                    if result == 'calendarend':
-                        plog ("Calendar Item containing block removed from calendar")
-                        plog ("Site bailing out of running project")
-                        self.blockend = None
-                        self.currently_mosaicing = False
-                        self.total_sequencer_control=False
-                        return block_specification
+                        if result == 'calendarend':
+                            plog ("Calendar Item containing block removed from calendar")
+                            plog ("Site bailing out of running project")
+                            self.blockend = None
+                            self.currently_mosaicing = False
+                            self.total_sequencer_control=False
+                            return block_specification
 
 
-                    if result == 'roofshut':
-                        plog ("Roof Shut, Site bailing out of Project")
-                        self.blockend = None
-                        self.currently_mosaicing = False
-                        self.total_sequencer_control=False
-                        return block_specification
+                        if result == 'roofshut':
+                            plog ("Roof Shut, Site bailing out of Project")
+                            self.blockend = None
+                            self.currently_mosaicing = False
+                            self.total_sequencer_control=False
+                            return block_specification
 
-                    if result == 'outsideofnighttime':
-                        plog ("Outside of Night Time. Site bailing out of Project")
-                        self.blockend = None
-                        self.currently_mosaicing = False
-                        self.total_sequencer_control=False
-                        return block_specification
+                        if result == 'outsideofnighttime':
+                            plog ("Outside of Night Time. Site bailing out of Project")
+                            self.blockend = None
+                            self.currently_mosaicing = False
+                            self.total_sequencer_control=False
+                            return block_specification
 
                     if g_dev["obs"].stop_all_activity:
                         plog('stop_all_activity cancelling out of Project')

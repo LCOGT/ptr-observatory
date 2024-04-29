@@ -2892,7 +2892,7 @@ class Observatory:
                                 #     plog ("Not recentering as this is the first frame of a smartstack.")
                                 #     self.pointing_correction_requested_by_platesolve_thread = False
 
-                                if (abs(err_ha * 15 * 3600) > 15400) or (abs(err_dec * 3600) > 15400):
+                                if (abs(err_ha * 15 * 3600) > 25400) or (abs(err_dec * 3600) > 25400):
                                     err_ha = 0
                                     err_dec = 0
                                     plog("Platesolve has found that the current suggested pointing is way off!")
