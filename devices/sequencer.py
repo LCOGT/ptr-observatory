@@ -2908,8 +2908,10 @@ class Sequencer:
                 if filetime > latestfile:
                     latestfile=copy.deepcopy(filetime)
 
-            latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
-
+            try:
+                latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
+            except:
+                latestcalib=time.time()-10000000000
 
             plog ("Inspecting dark set: " +str(filename_start))
             if latestfile < latestcalib and requesttype != 'force':
@@ -3084,8 +3086,10 @@ class Sequencer:
                 filetime=os.path.getmtime(tem)
                 if filetime > latestfile:
                     latestfile=copy.deepcopy(filetime)
-
-            latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
+            try:
+                latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits')
+            except:
+                latestcalib=time.time()-10000000000
 
             plog ("Inspecting dark set: " +str(filename_start))
             if latestfile < latestcalib and requesttype != 'force':
@@ -3363,8 +3367,10 @@ class Sequencer:
                 filetime=os.path.getmtime(tem)
                 if filetime > latestfile:
                     latestfile=copy.deepcopy(filetime)
-
-            latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
+            try:
+                latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
+            except:
+                latestcalib=time.time()-10000000000
 
             plog ("Inpecting bias set")
             if latestfile < latestcalib and requesttype != 'force':
@@ -3772,8 +3778,10 @@ class Sequencer:
                             filetime=os.path.getmtime(tem)
                             if filetime > latestfile:
                                 latestfile=copy.deepcopy(filetime)
-
-                        latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy')
+                        try:
+                            latestcalib=os.path.getmtime(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy')
+                        except:
+                            latestcalib=time.time()-10000000000
 
                         plog ("Inspecting flats for filter: " + str(filtercode))
                         if latestfile < latestcalib and requesttype != 'force':
