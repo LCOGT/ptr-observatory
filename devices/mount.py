@@ -210,7 +210,7 @@ class Mount:
         self.settle_time_after_park = config['mount']['mount1']['settle_time_after_park']
 
 
-        
+
 
         self.refraction = 0
         self.target_az = 0   #Degrees Azimuth
@@ -234,13 +234,13 @@ class Mount:
         self.ra_offset = 0.0
         self.dec_offset = 0.0
         self.move_time = 0
-        try:
-            ra1, dec1 = self.get_mount_reference()
-            ra2, dec2 = self.get_flip_reference()
-            plog("Mount references & flip (Look East):  ", ra1, dec1, ra2, dec2 )
-        except:
-            plog("No mount ref found.")
-            pass
+        # try:
+        #     ra1, dec1 = self.get_mount_reference(ra,dec)
+        #     ra2, dec2 = self.get_flip_reference(ra,dec)
+        #     plog("Mount references & flip (Look East):  ", ra1, dec1, ra2, dec2 )
+        # except:
+        #     plog("No mount ref found.")
+        #     pass
 
     #     #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
     #     if self.has_paddle:
@@ -271,29 +271,29 @@ class Mount:
         try:
             self.longterm_storage_of_mount_references=mnt_shelf['longterm_storage_of_mount_references']
             self.longterm_storage_of_flip_references=mnt_shelf['longterm_storage_of_flip_references']
-        except:      
+        except:
             self.longterm_storage_of_mount_references=[]
             self.longterm_storage_of_flip_references=[]
         mnt_shelf.close()
-        
+
         print ("MTF test:")
         print (self.longterm_storage_of_mount_references)
         print (self.longterm_storage_of_flip_references)
 
         self.last_mount_reference_time=time.time() - 86400
         self.last_flip_reference_time=time.time() - 86400
-        
+
         self.last_mount_reference_ha = 0.0
         self.last_mount_reference_dec = 0.0
         self.last_flip_reference_ha = 0.0
         self.last_flip_reference_dec = 0.0
-        
+
         self.last_flip_reference_ha_offset = 0.0
         self.last_flip_reference_dec_offset = 0.0
         self.last_mount_reference_ha_offset = 0.0
         self.last_mount_reference_dec_offset = 0.0
-        
-        
+
+
 
         # NEED to initialise these variables here in case the mount isn't slewed
         # before exposures after bootup
@@ -573,7 +573,7 @@ class Mount:
                                 #print ("attempting to slew")
                                 #breakpoint()  #Here is a place close to the mount to deal with Model, etc
                                 #self.mount_update_wincom.DeclinationRate = 5 #gets reset on the slew
-                                
+
                                 # Don't slew while exposing!
                                 try:
                                     while g_dev['cam'].shutter_open:
@@ -886,7 +886,7 @@ class Mount:
 
         #return copy.deepcopy(self.current_icrs_ra, self.current_icrs_dec)
         return self.current_icrs_ra, self.current_icrs_dec
-    
+
     def get_mount_coordinates_after_next_update(self):
         #global loop_count
         '''
@@ -1368,7 +1368,7 @@ class Mount:
             if g_dev['obs'].open_and_enabled_to_observe:
                 plog (command)
                 try:
-    
+
                     # Need to convert image fraction into offset
                     image_y = req['image_x']
                     image_x = req['image_y']
@@ -1379,35 +1379,35 @@ class Mount:
                     # Calculate the RA and Dec of the pointing
                     center_image_ra=float(req['header_rahrs'])
                     center_image_dec=float(req['header_decdeg'])
-    
+
                     # y pixel seems to be RA
                     # x pixel seems to be DEC
                     # negative for dec
-    
+
                     x_center= int(g_dev['cam'].imagesize_x/2)
                     y_center= int(g_dev['cam'].imagesize_y/2)
-    
+
                     #x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
                     #y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
                     x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
                     y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
                     plog ("X pixel shift: " + str(x_pixel_shift))
                     plog ("Y pixel shift: " + str(y_pixel_shift))
-    
+
                     gora=center_image_ra + (y_pixel_shift * pixscale_hours)
                     godec=center_image_dec - (x_pixel_shift * pixscale_degrees)
-    
+
                     plog ("X centre shift (asec): " + str((x_pixel_shift * pixscale)))
                     plog ("Y centre shift (asec): " + str(((y_pixel_shift * pixscale))))
-    
+
                     plog ("X centre shift (hours): " + str((x_pixel_shift * pixscale_hours)))
                     plog ("Y centre shift (degrees): " + str(((y_pixel_shift * pixscale_degrees))))
                     #plog ("New RA: " + str(req['ra']))
                     #plog ("New DEC: " + str(req['dec']))
-    
+
                     #plog ("New RA - Old RA = "+ str(float(req['ra'])-center_image_ra))
                     #plog ("New dec - Old dec = "+ str(float(req['dec'])-center_image_dec))
-    
+
                     self.wait_for_slew()
                     # mount command #
                     # while self.mount_busy:
@@ -1426,7 +1426,7 @@ class Mount:
                     # end mount command #
                     self.wait_for_slew()
                     self.get_mount_coordinates()
-    
+
                     #breakpoint()
                     #self.go_command(ra=gora, dec=godec)#, offset=True, calibrate=False)
                 except:
@@ -1679,10 +1679,10 @@ class Mount:
                 # end mount command #
                 if len(self.new_pierside) > 1:
                     if self.new_pierside[0] == 0:
-                        delta_ra, delta_dec = self.get_mount_reference()
+                        delta_ra, delta_dec = self.get_mount_reference(ra,dec)
 
                     else:
-                        delta_ra, delta_dec = self.get_flip_reference()
+                        delta_ra, delta_dec = self.get_flip_reference(ra,dec)
 
             except:
                 try:
@@ -1700,22 +1700,22 @@ class Mount:
 
                     self.wait_for_mount_update()
                     if self.new_pierside == 0:
-                        delta_ra, delta_dec = self.get_mount_reference()
+                        delta_ra, delta_dec = self.get_mount_reference(ra,dec)
 
                     else:
-                        delta_ra, delta_dec = self.get_flip_reference()
+                        delta_ra, delta_dec = self.get_flip_reference(ra,dec)
 
                 except:
                     self.mount_busy=False
-                    delta_ra, delta_dec = self.get_mount_reference()
+                    delta_ra, delta_dec = self.get_mount_reference(ra,dec)
 
 
         else:
             if self.previous_pier_side == 0:
-                delta_ra, delta_dec = self.get_mount_reference()
+                delta_ra, delta_dec = self.get_mount_reference(ra,dec)
 
             else:
-                delta_ra, delta_dec = self.get_flip_reference()
+                delta_ra, delta_dec = self.get_flip_reference(ra,dec)
 
         if g_dev['obs'].mount_reference_model_off:
             pass
@@ -1988,10 +1988,10 @@ class Mount:
                 # end mount command #
                 if len(self.new_pierside) > 1:
                     if self.new_pierside[0] == 0:
-                        delta_ra, delta_dec = self.get_mount_reference()
+                        delta_ra, delta_dec = self.get_mount_reference(ra,dec)
                         pier_east = 1
                     else:
-                        delta_ra, delta_dec = self.get_flip_reference()
+                        delta_ra, delta_dec = self.get_flip_reference(ra,dec)
                         pier_east = 0
             except:
                 try:
@@ -2010,14 +2010,14 @@ class Mount:
 
                     # end mount command #
                     if self.new_pierside == 0:
-                        delta_ra, delta_dec = self.get_mount_reference()
+                        delta_ra, delta_dec = self.get_mount_reference(ra,dec)
                         pier_east = 1
                     else:
-                        delta_ra, delta_dec = self.get_flip_reference()
+                        delta_ra, delta_dec = self.get_flip_reference(ra,dec)
                         pier_east = 0
                 except:
                     self.mount_busy=False
-                    delta_ra, delta_dec = self.get_mount_reference()
+                    delta_ra, delta_dec = self.get_mount_reference(ra,dec)
                     pier_east = 1
         except Exception as e:
             self.mount_busy=False
@@ -2398,7 +2398,7 @@ class Mount:
             except:
                 pass
             self.parking_or_homing=False
-            
+
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''
 
@@ -2536,7 +2536,7 @@ class Mount:
             init_ra = 0.0
             init_dec =0.0
 
-        HA=self.sidereal_time - pointing_ra
+        HA=self.current_sidereal - pointing_ra
 
         #plog("initial:  ", init_ra, init_dec)
         mnt_shelf['ra_cal_offset'] = init_ra + err_ha
@@ -2545,31 +2545,31 @@ class Mount:
         mnt_shelf['last_mount_reference_ha']= HA
         mnt_shelf['last_mount_reference_dec']= pointing_dec
         #plog("final:  ", mnt_shelf['ra_cal_offset'], mnt_shelf['dec_cal_offset'])
-        
-        
-        
+
+
+
         self.last_mount_reference_time=time.time()
         self.last_mount_reference_ha = HA
-        self.last_mount_reference_dec = pointing_dec 
+        self.last_mount_reference_dec = pointing_dec
         self.last_mount_reference_ha_offset = init_ra + err_ha
         self.last_mount_reference_dec_offset = init_dec + err_dec
-        
-        
+
+
         # Add in latest point to the list of mount references
-        # This has to be done in terms of hour angle due to changes over time.       
+        # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.
         HA=self.current_sidereal - pointing_ra
-        self.longterm_storage_of_mount_references.append([time.time(),HA,pointing_dec,init_ra + err_ha, init_dec + err_dec])       
-        mnt_shelf['longterm_storage_of_mount_references']=self.longterm_storage_of_mount_references     
+        self.longterm_storage_of_mount_references.append([time.time(),HA,pointing_dec,init_ra + err_ha, init_dec + err_dec])
+        mnt_shelf['longterm_storage_of_mount_references']=self.longterm_storage_of_mount_references
         mnt_shelf.close()
-        
+
         return
 
     def adjust_flip_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
-        
-        
-        HA=self.sidereal_time - pointing_ra
-        
+
+
+        HA=self.current_sidereal - pointing_ra
+
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         try:
             init_ra = mnt_shelf['flip_ra_cal_offset']
@@ -2582,29 +2582,29 @@ class Mount:
         mnt_shelf['last_flip_reference_time']=time.time()
         mnt_shelf['last_flip_reference_ha']= HA
         mnt_shelf['last_flip_reference_dec']= pointing_dec
-        
-        
+
+
         self.last_flip_reference_time=time.time()
         self.last_flip_reference_ha = HA
-        self.last_flip_reference_dec = pointing_dec 
+        self.last_flip_reference_dec = pointing_dec
         self.last_flip_reference_ha_offset = init_ra + err_ha
         self.last_flip_reference_dec_offset = init_dec + err_dec
-        
-        
+
+
         # Add in latest point to the list of mount references
-        # This has to be done in terms of hour angle due to changes over time.  
+        # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.
         HA=self.current_sidereal - pointing_ra
         self.longterm_storage_of_flip_references.append([time.time(),HA,pointing_dec,init_ra + err_ha, init_dec + err_dec])
         mnt_shelf['longterm_storage_of_flip_references']=self.longterm_storage_of_mount_references
         mnt_shelf.close()
-        
+
         return
 
     def set_mount_reference(self, delta_ra, delta_dec, pointing_ra, pointing_dec):
-        
-        HA=self.sidereal_time - pointing_ra
-        
+
+        HA=self.current_sidereal - pointing_ra
+
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = delta_ra
         mnt_shelf['dec_cal_offset'] = delta_dec
@@ -2612,54 +2612,56 @@ class Mount:
         mnt_shelf['last_mount_reference_ha']= HA
         mnt_shelf['last_mount_reference_dec']= pointing_dec
         mnt_shelf.close()
-        
+
         self.last_mount_reference_time=time.time()
         self.last_mount_reference_ha = HA
         self.last_mount_reference_dec =  pointing_dec
         self.last_mount_reference_ha_offset = delta_ra
         self.last_mount_reference_dec_offset =  delta_dec
-        
+
         return
 
     def set_flip_reference(self, delta_ra, delta_dec, pointing_ra, pointing_dec):
-        
-        HA=self.sidereal_time - pointing_ra
-        
+
+        HA=self.current_sidereal - pointing_ra
+
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['flip_ra_cal_offset'] = delta_ra
         mnt_shelf['flip_dec_cal_offset'] = delta_dec
         mnt_shelf['last_flip_reference_time']=time.time()
         mnt_shelf['last_flip_reference_ha']= HA
         mnt_shelf['last_flip_reference_dec']= pointing_dec
-        
+
         mnt_shelf.close()
-        
+
         self.last_flip_reference_time=time.time()
         self.last_flip_reference_ha = HA
         self.last_flip_reference_dec = pointing_dec
         self.last_flip_reference_ha_offset = delta_ra
         self.last_flip_reference_dec_offset = delta_dec
-        
+
         return
 
     def get_mount_reference(self, pointing_ra, pointing_dec):
-        
+
         print ("Calculating Mount Reference (temp MTF reporting)")
-        HA = self.sidereal_time - pointing_ra
+        HA = self.current_sidereal - pointing_ra
         distance_from_current_reference_in_ha = abs(self.last_flip_reference_ha - HA)
         distance_from_current_reference_in_dec = abs(self.last_flip_reference_dec- pointing_dec)
-        print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+        print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "   Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
         absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5)
-        
+
         print ("Time since last reference: " + str(self.last_flip_reference_time - time.time() ))
-        
+
+        print ("absolute difference in position: " + str(absolute_distance))
+
         if  absolute_distance < 15:
             plog ("recent reference nearby, using current reference")
-            return self.last_mount_reference_ha_offset, self.last_mount_reference_dec_offset    
+            return self.last_mount_reference_ha_offset, self.last_mount_reference_dec_offset
         else:
             plog ("reference not nearby - in future will go and get a nearby reference from the catalogue")
             return 0.0,0.0
-        
+
         # try:
         #     mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         #     delta_ra = mnt_shelf['ra_cal_offset'] + self.west_clutch_ra_correction   #Note set up at initialize time.
@@ -2675,27 +2677,27 @@ class Mount:
 
 
     def get_flip_reference(self, pointing_ra, pointing_dec):
-        
-        
+
+
         print ("Calculating Flip Reference (temp MTF reporting)")
-        HA = self.sidereal_time - pointing_ra
+        HA = self.current_sidereal - pointing_ra
         distance_from_current_reference_in_ha = abs(self.last_flip_reference_ha - HA)
         distance_from_current_reference_in_dec = abs(self.last_flip_reference_dec- pointing_dec)
         print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
         absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5)
-        
+
         print ("Time since last reference: " + str(self.last_flip_reference_time - time.time() ))
-        
-        
+
+
         #if (time.time()-self.last_flip_reference_time) < 43100:
-         
+
         if  absolute_distance < 15:
             plog ("recent reference nearby, using current reference")
             return self.last_flip_reference_ha_offset, self.last_flip_reference_dec_offset
         else:
             plog ("reference not nearby - in future will go and get a nearby reference from the catalogue")
             return 0.0,0.0
-        
+
         # try:
         #     mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         #     delta_ra = mnt_shelf['flip_ra_cal_offset'] + self.east_flip_ra_correction
@@ -2705,7 +2707,7 @@ class Mount:
         #     self.reset_mount_reference()
         #     delta_ra = 0.0
         #     delta_dec = 0.0
-        
+
         # return delta_ra, delta_dec
 
     def reset_mount_reference(self):
@@ -2716,7 +2718,7 @@ class Mount:
         mnt_shelf['flip_ra_cal_offset'] = 0.000
         mnt_shelf['flip_dec_cal_offset'] = 0.000
         mnt_shelf.close()
-        
+
         self.last_mount_reference_time=time.time() -86400
         self.last_flip_reference_time=time.time() -86400
         self.last_mount_reference_ha = 0.0
@@ -2727,7 +2729,7 @@ class Mount:
         self.last_mount_reference_dec_offset = 0.0
         self.last_flip_reference_ha_offset = 0.0
         self.last_flip_reference_dec_offset = 0.0
-        
+
         return
 
 if __name__ == '__main__':

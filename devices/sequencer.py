@@ -1317,7 +1317,7 @@ class Sequencer:
                     do_sub_stack=block['project']['exposures'][0]['substack']
             except:
                 do_sub_stack=True
-            
+
             try:
                 # This is the "proper" way of doing things.
                 do_smart_stack=block['project']['project_constraints']['smart_stack']
@@ -1346,42 +1346,42 @@ class Sequencer:
             # Quick pointing check and re_seek at the start of each project block
             # Otherwise everyone will get slightly off-pointing images
             # Necessary
-            
-            
+
+
             plog ("Checking whether the pointing reference is nearby. If so, we can skip the centering exposure...")
             skip_centering=False
-            HAtemp=self.sidereal_time=dest_ra
+            HAtemp=self.sidereal_time-dest_ra
             if g_dev['mnt'].rapid_pier_indicator == 0:
                 distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_mount_reference_ha - HAtemp)
                 distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_mount_reference_dec- dest_dec)
                 print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
-                absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5) 
+                absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5)
                 print ("absolute_distance: " + str(round(absolute_distance,2)))
                 if absolute_distance < 15:
                     plog ("close enough, skipping centering exposure")
                     skip_centering=True
                 # self.last_mount_reference_ha = 0.0
                 # self.last_mount_reference_dec = 0.0
-            
+
             else:
                 distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_flip_reference_ha - HAtemp)
                 distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_flip_reference_dec- dest_dec)
                 print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
-                absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5) 
+                absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5)
                 print ("absolute_distance: " + str(round(absolute_distance,2)))
                 if absolute_distance < 15:
                     plog ("close enough, skipping centering exposure")
                     skip_centering=True
-                
-                
+
+
                 # self.last_flip_reference_ha = 0.0
                 # self.last_flip_reference_dec = 0.0
-                
+
             if not skip_centering:
                 plog ("Taking a quick pointing check and re_seek for new project block")
                 result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True, calendar_event_id=calendar_event_id)
-                
-            # It may be the case that reference pointing isn't quite good enough for mosaics? We shall find out. 
+
+            # It may be the case that reference pointing isn't quite good enough for mosaics? We shall find out.
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
             # Don't do a second repointing in the first pane of a mosaic
@@ -1441,24 +1441,24 @@ class Sequencer:
                         filter_requested = exposure['filter']
                     except:
                         filter_requested = 'None'
-                    
+
                     plog ("Filter for this exposure set: " + str(filter_requested))
-                    
+
                     # Try next block in sequence
                     try:
-                        if not (block_exposure_counter + 1) ==len(block['project']['exposures']):                        
+                        if not (block_exposure_counter + 1) ==len(block['project']['exposures']):
                             self.block_next_filter_requested=block['project']['exposures'][block_exposure_counter+1]['filter']
                         else:
                             self.block_next_filter_requested=block['project']['exposures'][0]['filter']
-                    except: 
+                    except:
                         plog(traceback.format_exc())
                         breakpoint()
-                        
-                        
-                        self.block_next_filter_requested='None'     
-                        
+
+
+                        self.block_next_filter_requested='None'
+
                     plog ("Filter for the NEXT block: " + str(self.block_next_filter_requested))
-                    
+
                     exp_time =  float(exposure['exposure'])
                     #count = int(exposure['count'])
                     #  We should add a frame repeat count
@@ -6368,11 +6368,11 @@ class Sequencer:
                         for entry in focus_spots:
                             minimumfind.append(entry[1])
                         minimum_index=minimumfind.index(min(minimumfind))
-                        
+
                         minimum_value=min(minimumfind)
-                        
+
                         # First check if the minimum is too close to the edge
-                        
+
                         if minimum_index == 0 or minimum_index == 1:
                             plog ("Minimum too close to the sampling edge, getting another dot")
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
@@ -6444,11 +6444,11 @@ class Sequencer:
                         #elif len(focus_spots) > 4:
 
 
-                        # Then check whether the values on the edge are high enough. 
+                        # Then check whether the values on the edge are high enough.
 
                         # If left side is too low get another dot
                         elif focus_spots[0][1] < (minimum_value * 1.5):
-                            
+
                             plog ("Left hand side of curve is too low for a good fit, getting another dot")
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
                             #breakpoint()
@@ -6470,7 +6470,7 @@ class Sequencer:
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
 
-                        # If right hand side is too low get another dot 
+                        # If right hand side is too low get another dot
                         elif focus_spots[0][1] < (minimum_value * 1.5):
                             plog ("Right hand side of curve is too low for a good fit, getting another dot")
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
