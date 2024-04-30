@@ -3503,6 +3503,9 @@ class Sequencer:
                 plog ("There are no new biases since last super-bias was made. Skipping construction")
                 masterBias=fits.open(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
                 masterBias= np.array(masterBias[0].data, dtype=np.float32)
+                temp_bias_level_median=bn.nanmedian(masterBias)
+                temp_bias_level_max=bn.nanmax(masterBias)
+                temp_bias_level_min=bn.nanmin(masterBias)
 
             else:
                 plog ("There is a new bias frame since the last super-bias was made")
