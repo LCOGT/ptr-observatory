@@ -2757,19 +2757,28 @@ class Observatory:
                         #breakpoint()
                         # Essentially wait until the subprocess is complete
                         #platesolve_subprocess.communicate()
-
-                        while not os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
+                        platesolve_timeout_timer=time.time()
+                        while not os.path.exists(self.local_calibration_path + 'platesolve.pickle') and (time.time() - platesolve_timeout_timer) < 120:
                             time.sleep(0.5)
 
+                        if (time.time() - platesolve_timeout_timer) > 120:
+                            plog ("platesolve timed out")
+                            solve = 'error'
+                            platesolve_subprocess.kill()
+                            
+                            try:
+                                os.system('taskkill /IM ps3cli.exe /F')
+                            except:
+                                pass
 
-                        if os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
+                        elif os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
                             solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))
                         else:
 
                         #platesolve_subprocess.kill()
 
-
-                            solve= 'Platesolve error, Pickle file not available'
+                            solve = 'error'
+                            #solve= 'Platesolve error, Pickle file not available'
 
                         try:
                             os.remove(self.local_calibration_path + 'platesolve.pickle')

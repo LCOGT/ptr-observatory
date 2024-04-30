@@ -6363,30 +6363,40 @@ class Sequencer:
                     # plt.scatter(x,y)
                     # plt.show()
 
-                    # Weird way to convert plt to pil image, overlay and close
-                    plog ("time taken to plot bits of focus jpeg")
-                    googtime=time.time()
-                    img_buf = io.BytesIO()
-                    plog ("Make img buf: " + str(time.time()-googtime))
-                    googtime=time.time()
-                    plt.scatter(x,y)
-                    plog ("scatter plt: " + str(time.time()-googtime))
+                    # # Weird way to convert plt to pil image, overlay and close
+                    # plog ("time taken to plot bits of focus jpeg")
+                    # googtime=time.time()
+                    # img_buf = io.BytesIO()
+                    # plog ("Make img buf: " + str(time.time()-googtime))
+                    # googtime=time.time()
+                    # plt.scatter(x,y)
+                    # plog ("scatter plt: " + str(time.time()-googtime))
+                    
+                    # # breakpoint()
+                    # googtime=time.time()
+                    # plt.ioff()
+                    # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                    # plog ("savefig: " + str(time.time()-googtime))
                     
                     # breakpoint()
+                    
+                    
+                    
                     googtime=time.time()
+                    # plt.clf()
+                    fig,ax=plt.subplots(1, figsize=(5.5, 4), dpi=100)
                     plt.ioff()
-                    plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                    plog ("savefig: " + str(time.time()-googtime))
+                    #ax.plot([1, 3, 5, 8, 4, 2])
+                    
+                    ax.scatter(x,y)
                     
                     
-                    
-                    
-                    # fig,ax=plt.subplots(1, figsize=(4, 4), dpi=300)
-                    # ax.plot([1, 3, 5, 8, 4, 2])
-                    # fig.canvas.draw()
-                    # temp_canvas = fig.canvas
-                    # plt.close()
-                    
+                    #fig.ioff()
+                    fig.canvas.draw()
+                    temp_canvas = fig.canvas
+                    plt.close()
+                    pil_image=Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_rgb())
+                    plog ("savefigcanvas: " + str(time.time()-googtime))
                     # fig1 = px.scatter(x=x, y=y)
                     # #fig2 = px.line(x=x, y=f(x))
                     # #plt.plot(x,f(x), color = 'green')
@@ -6404,9 +6414,11 @@ class Sequencer:
                     # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
                     # fig3 = go.Figure(data=fig1.data, layout=layout)
                     # fig3.write_image(img_buf)
-                    googtime=time.time()
-                    pltim = Image.open(img_buf)
-                    plog ("Image open: " + str(time.time()-googtime))
+                    
+                    # googtime=time.time()
+                    # pltim = Image.open(img_buf)
+                    # plog ("Image open: " + str(time.time()-googtime))
+                    
                     #im.show(title="My Image")
                     #box = (500, 500)
                     #box=
@@ -6414,7 +6426,8 @@ class Sequencer:
                     current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
                     plog ("grab jpeg: " + str(time.time()-googtime))
                     googtime=time.time()
-                    current_focus_jpg.paste(pltim)#, box )
+                    #current_focus_jpg.paste(pltim)#, box )
+                    current_focus_jpg.paste(pil_image)
                     plog ("paste jpeg: " + str(time.time()-googtime))
                     googtime=time.time()
                     current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
