@@ -2949,23 +2949,23 @@ class Sequencer:
                         plog ("corrupt dark skipped: " + str(file))
                         del tempy
                         os.remove(file)
-                        time.sleep(0.2)
+                        #time.sleep(0.2)
                         inputList.remove(file)
                         
                     elif tempmedian < max(30, temp_bias_level_min) or tempmedian > 55000: 
                         plog ("dark file with strange median skipped: " + str(file))
                         del tempy
                         os.remove(file)
-                        time.sleep(0.2)
+                        #time.sleep(0.2)
                         inputList.remove(file)    
                     
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     os.remove(file)
-                    time.sleep(0.2)
+                    #time.sleep(0.2)
                     inputList.remove(file)
 
-
+            time.sleep(10)
 
             # # Array to hold loaded images
             # PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
@@ -3159,7 +3159,7 @@ class Sequencer:
                     inputList.remove(file)
 
 
-
+            time.sleep(10)
 
             # # Array to hold loaded images
             # PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
@@ -3449,7 +3449,7 @@ class Sequencer:
 
 
 
-
+        time.sleep(10)
 
         # have to remove flats from memory to make room for.... flats!
         # try:
@@ -3902,6 +3902,8 @@ class Sequencer:
                             
                             os.remove(file)
                             inputList.remove(file)
+
+                    time.sleep(10)
 
                     inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.n*'))
 
