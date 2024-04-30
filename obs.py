@@ -2757,11 +2757,17 @@ class Observatory:
                         #breakpoint()
                         # Essentially wait until the subprocess is complete
                         #platesolve_subprocess.communicate()
+                        
+                        if np.isnan(pixscale) or pixscale == None:
+                            timeout_time = 1200
+                        else:
+                            timeout_time = 120
+                        
                         platesolve_timeout_timer=time.time()
-                        while not os.path.exists(self.local_calibration_path + 'platesolve.pickle') and (time.time() - platesolve_timeout_timer) < 120:
+                        while not os.path.exists(self.local_calibration_path + 'platesolve.pickle') and (time.time() - platesolve_timeout_timer) < timeout_time:
                             time.sleep(0.5)
 
-                        if (time.time() - platesolve_timeout_timer) > 120:
+                        if (time.time() - platesolve_timeout_timer) > timeout_time:
                             plog ("platesolve timed out")
                             solve = 'error'
                             platesolve_subprocess.kill()
