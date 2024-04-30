@@ -24,7 +24,7 @@ import os
 import gc
 import bottleneck as bn
 
-
+from math import cos, radians
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -1361,7 +1361,7 @@ class Sequencer:
                 distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_mount_reference_ha - HAtemp)
                 distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_mount_reference_dec- dest_dec)
                 print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
-                absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5)
+                absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(distance_from_current_reference_in_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
                 print ("absolute_distance: " + str(round(absolute_distance,2)))
                 if absolute_distance < 15:
                     plog ("close enough, skipping centering exposure")
@@ -1373,7 +1373,7 @@ class Sequencer:
                 distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_flip_reference_ha - HAtemp)
                 distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_flip_reference_dec- dest_dec)
                 print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
-                absolute_distance=pow(pow(distance_from_current_reference_in_ha,2)+pow(distance_from_current_reference_in_ha,2),0.5)
+                absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(distance_from_current_reference_in_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
                 print ("absolute_distance: " + str(round(absolute_distance,2)))
                 if absolute_distance < 15:
                     plog ("close enough, skipping centering exposure")
