@@ -247,6 +247,95 @@ class Sequencer:
         self.master_restack_thread.daemon = True
         self.master_restack_thread.start()
 
+    
+
+    def construct_focus_jpeg_and_save(self, packet):
+        
+        (x, y, f, current_focus_jpg, jpeg_name, fitted_focus_position,fitted_focus_fwhm) = packet
+        
+        # Just plot and fling up the jpeg
+        # plt.scatter(x,y)
+        # plt.show()
+
+        # # Weird way to convert plt to pil image, overlay and close
+        # plog ("time taken to plot bits of focus jpeg")
+        # googtime=time.time()
+        # img_buf = io.BytesIO()
+        # plog ("Make img buf: " + str(time.time()-googtime))
+        # googtime=time.time()
+        # plt.scatter(x,y)
+        # plog ("scatter plt: " + str(time.time()-googtime))
+        
+        # # breakpoint()
+        # googtime=time.time()
+        # plt.ioff()
+        # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+        # plog ("savefig: " + str(time.time()-googtime))
+        
+        # breakpoint()
+        
+        
+        
+        googtime=time.time()
+        # plt.clf()
+        fig,ax=plt.subplots(1, figsize=(5.5, 4), dpi=100)
+        plt.ioff()
+        #ax.plot([1, 3, 5, 8, 4, 2])
+        
+        ax.scatter(x,y)
+        
+        if f:
+            ax.plot(x,f(x), color = 'green')
+            ax.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red', marker = 'X')
+        
+        
+        #fig.ioff()
+        fig.canvas.draw()
+        temp_canvas = fig.canvas
+        plt.close()
+        pil_image=Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_rgb())
+        plog ("savefigcanvas: " + str(time.time()-googtime))
+        # fig1 = px.scatter(x=x, y=y)
+        # #fig2 = px.line(x=x, y=f(x))
+        # #plt.plot(x,f(x), color = 'green')
+
+        # layout = go.Layout(
+        #     autosize=False,
+        #     width=450,
+        #     height=320,
+        #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+        #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+        #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+        # )
+
+
+        # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+        # fig3 = go.Figure(data=fig1.data, layout=layout)
+        # fig3.write_image(img_buf)
+        
+        # googtime=time.time()
+        # pltim = Image.open(img_buf)
+        # plog ("Image open: " + str(time.time()-googtime))
+        
+        #im.show(title="My Image")
+        #box = (500, 500)
+        #box=
+        # googtime=time.time()
+        # current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
+        # plog ("grab jpeg: " + str(time.time()-googtime))
+        # googtime=time.time()
+        #current_focus_jpg.paste(pltim)#, box )
+        current_focus_jpg.paste(pil_image)
+        # plog ("paste jpeg: " + str(time.time()-googtime))
+        # googtime=time.time()
+        current_focus_jpg.save(jpeg_name)
+        plog ("save jpeg: " + str(time.time()-googtime))
+        
+        #img_buf.close()
+        
+        
+        
+
     # Note this is a thread!
     def master_restack(self):
         """
@@ -6380,81 +6469,8 @@ class Sequencer:
 
             if position_counter < 5:
                 if len(focus_spots) > 0:
-                    # Just plot and fling up the jpeg
-                    # plt.scatter(x,y)
-                    # plt.show()
-
-                    # # Weird way to convert plt to pil image, overlay and close
-                    # plog ("time taken to plot bits of focus jpeg")
-                    # googtime=time.time()
-                    # img_buf = io.BytesIO()
-                    # plog ("Make img buf: " + str(time.time()-googtime))
-                    # googtime=time.time()
-                    # plt.scatter(x,y)
-                    # plog ("scatter plt: " + str(time.time()-googtime))
                     
-                    # # breakpoint()
-                    # googtime=time.time()
-                    # plt.ioff()
-                    # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                    # plog ("savefig: " + str(time.time()-googtime))
-                    
-                    # breakpoint()
-                    
-                    
-                    
-                    googtime=time.time()
-                    # plt.clf()
-                    fig,ax=plt.subplots(1, figsize=(5.5, 4), dpi=100)
-                    plt.ioff()
-                    #ax.plot([1, 3, 5, 8, 4, 2])
-                    
-                    ax.scatter(x,y)
-                    
-                    
-                    #fig.ioff()
-                    fig.canvas.draw()
-                    temp_canvas = fig.canvas
-                    plt.close()
-                    pil_image=Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_rgb())
-                    plog ("savefigcanvas: " + str(time.time()-googtime))
-                    # fig1 = px.scatter(x=x, y=y)
-                    # #fig2 = px.line(x=x, y=f(x))
-                    # #plt.plot(x,f(x), color = 'green')
-
-                    # layout = go.Layout(
-                    #     autosize=False,
-                    #     width=450,
-                    #     height=320,
-                    #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
-                    #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
-                    #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
-                    # )
-
-
-                    # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
-                    # fig3 = go.Figure(data=fig1.data, layout=layout)
-                    # fig3.write_image(img_buf)
-                    
-                    # googtime=time.time()
-                    # pltim = Image.open(img_buf)
-                    # plog ("Image open: " + str(time.time()-googtime))
-                    
-                    #im.show(title="My Image")
-                    #box = (500, 500)
-                    #box=
-                    googtime=time.time()
-                    current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
-                    plog ("grab jpeg: " + str(time.time()-googtime))
-                    googtime=time.time()
-                    #current_focus_jpg.paste(pltim)#, box )
-                    current_focus_jpg.paste(pil_image)
-                    plog ("paste jpeg: " + str(time.time()-googtime))
-                    googtime=time.time()
-                    current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-                    plog ("save jpeg: " + str(time.time()-googtime))
-                    
-                    #img_buf.close()
+                    threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
 
                     # Fling the jpeg up
                     g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
@@ -6536,40 +6552,44 @@ class Sequencer:
                             # plt.scatter(x,y)
                             # plt.show()
 
-                            # Weird way to convert plt to pil image, overlay and close
-                            img_buf = io.BytesIO()
-                            plt.scatter(x,y)
-                            plt.ioff()
-                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-
+                            # # Weird way to convert plt to pil image, overlay and close
+                            # img_buf = io.BytesIO()
                             # plt.scatter(x,y)
+                            # plt.ioff()
                             # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
-                            # fig1 = px.scatter(x=x, y=y)
-                            # #fig2 = px.line(x=x, y=f(x))
-                            # #plt.plot(x,f(x), color = 'green')
+                            # # plt.scatter(x,y)
+                            # # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
-                            # layout = go.Layout(
-                            #     autosize=False,
-                            #     width=450,
-                            #     height=320,
-                            #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
-                            #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
-                            #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
-                            # )
+                            # # fig1 = px.scatter(x=x, y=y)
+                            # # #fig2 = px.line(x=x, y=f(x))
+                            # # #plt.plot(x,f(x), color = 'green')
+
+                            # # layout = go.Layout(
+                            # #     autosize=False,
+                            # #     width=450,
+                            # #     height=320,
+                            # #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                            # #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                            # #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                            # # )
 
 
-                            # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
-                            # fig3 = go.Figure(data=fig1.data, layout=layout)
-                            # fig3.write_image(img_buf)
+                            # # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                            # # fig3 = go.Figure(data=fig1.data, layout=layout)
+                            # # fig3.write_image(img_buf)
 
-                            pltim = Image.open(img_buf)
-                            #im.show(title="My Image")
-                            #box = (500, 500)
-                            current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
-                            current_focus_jpg.paste(pltim)#, box )
-                            current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-                            img_buf.close()
+                            # pltim = Image.open(img_buf)
+                            # #im.show(title="My Image")
+                            # #box = (500, 500)
+                            # current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
+                            # current_focus_jpg.paste(pltim)#, box )
+                            # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                            # img_buf.close()
+                            
+                            threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+
+                            
 
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
@@ -6594,40 +6614,43 @@ class Sequencer:
                             # plt.scatter(x,y)
                             # plt.show()
 
-                            # Weird way to convert plt to pil image, overlay and close
-                            img_buf = io.BytesIO()
-                            plt.scatter(x,y)
-                            plt.ioff()
-                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-
+                            # # Weird way to convert plt to pil image, overlay and close
+                            # img_buf = io.BytesIO()
                             # plt.scatter(x,y)
+                            # plt.ioff()
                             # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
-                            # fig1 = px.scatter(x=x, y=y)
-                            # #fig2 = px.line(x=x, y=f(x))
-                            # #plt.plot(x,f(x), color = 'green')
+                            # # plt.scatter(x,y)
+                            # # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
-                            # layout = go.Layout(
-                            #     autosize=False,
-                            #     width=450,
-                            #     height=320,
-                            #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
-                            #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
-                            #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
-                            # )
+                            # # fig1 = px.scatter(x=x, y=y)
+                            # # #fig2 = px.line(x=x, y=f(x))
+                            # # #plt.plot(x,f(x), color = 'green')
+
+                            # # layout = go.Layout(
+                            # #     autosize=False,
+                            # #     width=450,
+                            # #     height=320,
+                            # #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                            # #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                            # #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                            # # )
 
 
-                            # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
-                            # fig3 = go.Figure(data=fig1.data, layout=layout)
-                            # fig3.write_image(img_buf)
+                            # # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                            # # fig3 = go.Figure(data=fig1.data, layout=layout)
+                            # # fig3.write_image(img_buf)
 
-                            pltim = Image.open(img_buf)
-                            #im.show(title="My Image")
-                            box = (500, 500)
-                            current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
-                            current_focus_jpg.paste(pltim)#, box )
-                            current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-                            img_buf.close()
+                            # pltim = Image.open(img_buf)
+                            # #im.show(title="My Image")
+                            # box = (500, 500)
+                            # current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
+                            # current_focus_jpg.paste(pltim)#, box )
+                            # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                            # img_buf.close()
+                            
+                            threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+
 
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
@@ -6659,40 +6682,43 @@ class Sequencer:
                             # plt.scatter(x,y)
                             # plt.show()
 
-                            # Weird way to convert plt to pil image, overlay and close
-                            img_buf = io.BytesIO()
-                            plt.scatter(x,y)
-                            plt.ioff()
-                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-
+                            # # Weird way to convert plt to pil image, overlay and close
+                            # img_buf = io.BytesIO()
                             # plt.scatter(x,y)
+                            # plt.ioff()
                             # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
-                            # fig1 = px.scatter(x=x, y=y)
-                            # #fig2 = px.line(x=x, y=f(x))
-                            # #plt.plot(x,f(x), color = 'green')
+                            # # plt.scatter(x,y)
+                            # # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
-                            # layout = go.Layout(
-                            #     autosize=False,
-                            #     width=450,
-                            #     height=320,
-                            #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
-                            #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
-                            #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
-                            # )
+                            # # fig1 = px.scatter(x=x, y=y)
+                            # # #fig2 = px.line(x=x, y=f(x))
+                            # # #plt.plot(x,f(x), color = 'green')
+
+                            # # layout = go.Layout(
+                            # #     autosize=False,
+                            # #     width=450,
+                            # #     height=320,
+                            # #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                            # #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                            # #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                            # # )
 
 
-                            # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
-                            # fig3 = go.Figure(data=fig1.data, layout=layout)
-                            # fig3.write_image(img_buf)
+                            # # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                            # # fig3 = go.Figure(data=fig1.data, layout=layout)
+                            # # fig3.write_image(img_buf)
 
-                            pltim = Image.open(img_buf)
-                            #im.show(title="My Image")
-                            #box = (500, 500)
-                            current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
-                            current_focus_jpg.paste(pltim)#, box )
-                            current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-                            img_buf.close()
+                            # pltim = Image.open(img_buf)
+                            # #im.show(title="My Image")
+                            # #box = (500, 500)
+                            # current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
+                            # current_focus_jpg.paste(pltim)#, box )
+                            # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                            # img_buf.close()
+                            
+                            threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+
 
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
@@ -6706,40 +6732,43 @@ class Sequencer:
                             # plt.scatter(x,y)
                             # plt.show()
 
-                            # Weird way to convert plt to pil image, overlay and close
-                            img_buf = io.BytesIO()
-                            plt.scatter(x,y)
-                            plt.ioff()
-                            plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-
+                            # # Weird way to convert plt to pil image, overlay and close
+                            # img_buf = io.BytesIO()
                             # plt.scatter(x,y)
+                            # plt.ioff()
                             # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
-                            # fig1 = px.scatter(x=x, y=y)
-                            # #fig2 = px.line(x=x, y=f(x))
-                            # #plt.plot(x,f(x), color = 'green')
+                            # # plt.scatter(x,y)
+                            # # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
-                            # layout = go.Layout(
-                            #     autosize=False,
-                            #     width=450,
-                            #     height=320,
-                            #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
-                            #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
-                            #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
-                            # )
+                            # # fig1 = px.scatter(x=x, y=y)
+                            # # #fig2 = px.line(x=x, y=f(x))
+                            # # #plt.plot(x,f(x), color = 'green')
+
+                            # # layout = go.Layout(
+                            # #     autosize=False,
+                            # #     width=450,
+                            # #     height=320,
+                            # #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                            # #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                            # #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                            # # )
 
 
-                            # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
-                            # fig3 = go.Figure(data=fig1.data, layout=layout)
-                            # fig3.write_image(img_buf)
+                            # # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                            # # fig3 = go.Figure(data=fig1.data, layout=layout)
+                            # # fig3.write_image(img_buf)
 
-                            pltim = Image.open(img_buf)
-                            #im.show(title="My Image")
-                            box = (500, 500)
-                            current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
-                            current_focus_jpg.paste(pltim)#, box )
-                            current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-                            img_buf.close()
+                            # pltim = Image.open(img_buf)
+                            # #im.show(title="My Image")
+                            # box = (500, 500)
+                            # current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
+                            # current_focus_jpg.paste(pltim)#, box )
+                            # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                            # img_buf.close()
+                            
+                            threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+
 
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
@@ -6807,38 +6836,41 @@ class Sequencer:
                                     # plt.show()
 
 
-                                    # Weird way to convert plt to pil image, overlay and close
-                                    img_buf = io.BytesIO()
+                                    # # Weird way to convert plt to pil image, overlay and close
+                                    # img_buf = io.BytesIO()
+                                    # # plt.scatter(x,y)
+                                    # # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
                                     # plt.scatter(x,y)
+                                    # plt.ioff()
                                     # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-                                    plt.scatter(x,y)
-                                    plt.ioff()
-                                    plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
-                                    # fig1 = px.scatter(x=x, y=y)
-                                    # #fig2 = px.line(x=x, y=f(x))
-                                    # #plt.plot(x,f(x), color = 'green')
+                                    # # fig1 = px.scatter(x=x, y=y)
+                                    # # #fig2 = px.line(x=x, y=f(x))
+                                    # # #plt.plot(x,f(x), color = 'green')
 
-                                    # layout = go.Layout(
-                                    #     autosize=False,
-                                    #     width=450,
-                                    #     height=320,
-                                    #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
-                                    #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
-                                    #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
-                                    # )
+                                    # # layout = go.Layout(
+                                    # #     autosize=False,
+                                    # #     width=450,
+                                    # #     height=320,
+                                    # #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                                    # #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                                    # #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                                    # # )
 
 
-                                    # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
-                                    # fig3 = go.Figure(data=fig1.data, layout=layout)
-                                    # fig3.write_image(img_buf)
-                                    pltim = Image.open(img_buf)
-                                    #im.show(title="My Image")
-                                    box = (500, 500)
-                                    current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
-                                    current_focus_jpg.paste(pltim)#, box )
-                                    current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-                                    img_buf.close()
+                                    # # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                                    # # fig3 = go.Figure(data=fig1.data, layout=layout)
+                                    # # fig3.write_image(img_buf)
+                                    # pltim = Image.open(img_buf)
+                                    # #im.show(title="My Image")
+                                    # box = (500, 500)
+                                    # current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
+                                    # current_focus_jpg.paste(pltim)#, box )
+                                    # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                                    # img_buf.close()
+                                    
+                                    threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+
 
                                     # Fling the jpeg up
                                     g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
@@ -6864,40 +6896,43 @@ class Sequencer:
                                     # plt.scatter(x,y)
                                     # plt.show()
 
-                                    # Weird way to convert plt to pil image, overlay and close
-                                    img_buf = io.BytesIO()
+                                    # # Weird way to convert plt to pil image, overlay and close
+                                    # img_buf = io.BytesIO()
+                                    # # plt.scatter(x,y)
+                                    # # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+
                                     # plt.scatter(x,y)
+                                    # plt.ioff()
                                     # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
-                                    plt.scatter(x,y)
-                                    plt.ioff()
-                                    plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
+                                    # # fig1 = px.scatter(x=x, y=y)
+                                    # # #fig2 = px.line(x=x, y=f(x))
+                                    # # #plt.plot(x,f(x), color = 'green')
 
-                                    # fig1 = px.scatter(x=x, y=y)
-                                    # #fig2 = px.line(x=x, y=f(x))
-                                    # #plt.plot(x,f(x), color = 'green')
-
-                                    # layout = go.Layout(
-                                    #     autosize=False,
-                                    #     width=450,
-                                    #     height=320,
-                                    #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
-                                    #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
-                                    #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
-                                    # )
+                                    # # layout = go.Layout(
+                                    # #     autosize=False,
+                                    # #     width=450,
+                                    # #     height=320,
+                                    # #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                                    # #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                                    # #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                                    # # )
 
 
-                                    # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
-                                    # fig3 = go.Figure(data=fig1.data, layout=layout)
-                                    # fig3.write_image(img_buf)
+                                    # # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                                    # # fig3 = go.Figure(data=fig1.data, layout=layout)
+                                    # # fig3.write_image(img_buf)
 
-                                    pltim = Image.open(img_buf)
-                                    #im.show(title="My Image")
-                                    box = (500, 500)
-                                    current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
-                                    current_focus_jpg.paste(pltim)#, box )
-                                    current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-                                    img_buf.close()
+                                    # pltim = Image.open(img_buf)
+                                    # #im.show(title="My Image")
+                                    # box = (500, 500)
+                                    # current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
+                                    # current_focus_jpg.paste(pltim)#, box )
+                                    # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                                    # img_buf.close()
+
+                                    threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+
 
                                     # Fling the jpeg up
                                     g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
@@ -6911,44 +6946,47 @@ class Sequencer:
 
                                 # plt.show()
 
-                                # Weird way to convert plt to pil image, overlay and close
-                                img_buf = io.BytesIO()
-                                plt.scatter(x,y)
-                                plt.plot(x,f(x), color = 'green')
-                                plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red', marker = 'X')
-                                plt.ioff()
-                                plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
-
+                                # # Weird way to convert plt to pil image, overlay and close
+                                # img_buf = io.BytesIO()
                                 # plt.scatter(x,y)
+                                # plt.plot(x,f(x), color = 'green')
+                                # plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red', marker = 'X')
+                                # plt.ioff()
                                 # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
-                                # fig1 = px.scatter(x=x, y=y)
-                                # fig2 = px.line(x=x, y=f(x))
-                                # #plt.plot(x,f(x), color = 'green')
+                                # # plt.scatter(x,y)
+                                # # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
-                                # layout = go.Layout(
-                                #     autosize=False,
-                                #     width=450,
-                                #     height=320,
-                                #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
-                                #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
-                                #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
-                                # )
+                                # # fig1 = px.scatter(x=x, y=y)
+                                # # fig2 = px.line(x=x, y=f(x))
+                                # # #plt.plot(x,f(x), color = 'green')
 
-
-                                # fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
-                                # #fig3 = go.Figure(data=fig1.data, layout=layout)
-                                # fig3.write_image(img_buf)
+                                # # layout = go.Layout(
+                                # #     autosize=False,
+                                # #     width=450,
+                                # #     height=320,
+                                # #     # xaxis=go.layout.XAxis(linecolor="black", linewidth=1, mirror=True),
+                                # #     # yaxis=go.layout.YAxis(linecolor="black", linewidth=1, mirror=True),
+                                # #      margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+                                # # )
 
 
-                                pltim = Image.open(img_buf)
-                                #im.show(title="My Image")
-                                #box = (500, 500)
-                                current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
-                                current_focus_jpg.paste(pltim)#, box )
-                                current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-                                img_buf.close()
-                                plt.clf()
+                                # # fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
+                                # # #fig3 = go.Figure(data=fig1.data, layout=layout)
+                                # # fig3.write_image(img_buf)
+
+
+                                # pltim = Image.open(img_buf)
+                                # #im.show(title="My Image")
+                                # #box = (500, 500)
+                                # current_focus_jpg=copy.deepcopy(g_dev['cam'].current_focus_jpg)
+                                # current_focus_jpg.paste(pltim)#, box )
+                                # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+                                # img_buf.close()
+                                # plt.clf()
+                                
+                                threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, f, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),fitted_focus_position,fitted_focus_fwhm),))).start()
+
 
                                 # Fling the jpeg up
                                 g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
