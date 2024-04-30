@@ -1885,11 +1885,15 @@ class Camera:
     def openDarkslide(self):
         if self.darkslide_state != 'Open':
             if self.darkslide_type is not None:
-                self.darkslide_instance.openDarkslide()
+                opened=self.darkslide_instance.openDarkslide()
             elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
                 self.camera.Action('SetShutter', 'open')
-            self.darkslide_open = True
-            self.darkslide_state = 'Open'
+            if opened:
+                self.darkslide_open = True
+                self.darkslide_state = 'Open'
+                return False
+            else:
+                return True
 
 
 
@@ -1899,12 +1903,15 @@ class Camera:
     def closeDarkslide(self):
         if self.darkslide_state != 'Closed':
             if self.darkslide_type is not None:
-                self.darkslide_instance.closeDarkslide()
+                closed=self.darkslide_instance.closeDarkslide()
             elif self.darkslide_type=='ASCOM_FLI_Kepler':    #NB NB this logic is faulty wer
                 self.camera.Action('SetShutter', 'close')
-
-            self.darkslide_open = False
-            self.darkslide_state = 'Closed'
+            if closed:
+                self.darkslide_open = False
+                self.darkslide_state = 'Closed'
+                return False
+            else:
+                return True
 
 
     # # Note this is a thread!
@@ -4321,7 +4328,12 @@ class Camera:
                             if self.has_darkslide and bias_dark_or_light_type_frame == 'light':
                                 if self.darkslide_state != 'Open':
                                     if self.darkslide_type=='COM':
-                                        self.darkslide_instance.openDarkslide()
+                                        if not self.darkslide_instance.openDarkslide():
+                                            self.currently_in_smartstack_loop=False
+                                            self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+                                            self.running_an_exposure_set = False
+                                            plog ("Darkslide Failed. Cancelling exposure")
+                                            return 'darkslidefail'
                                     elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
                                         self.camera.Action('SetShutter', 'open')
                                     self.darkslide_open = True
@@ -4329,7 +4341,13 @@ class Camera:
                             elif self.has_darkslide and (bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark'):
                                 if self.darkslide_state != 'Closed':
                                     if self.darkslide_type=='COM':
-                                        self.darkslide_instance.closeDarkslide()
+                                        if not self.darkslide_instance.closeDarkslide():
+                                            self.currently_in_smartstack_loop=False
+                                            self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+                                            self.running_an_exposure_set = False
+                                            plog ("Darkslide Failed. Cancelling exposure")
+                                            return 'darkslidefail'
+                                        # self.darkslide_instance.closeDarkslide()
                                     elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
                                         self.camera.Action('SetShutter', 'close')
 
