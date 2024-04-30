@@ -5720,9 +5720,9 @@ class Sequencer:
 
                                 if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
 
-                                    # Check the first image is not unnaturally low
+                                    # Check the first image is not unnaturally low (during non-commissioning with a known filter)
                                     # and wait again
-                                    if bright < 0.3 * flat_saturation_level and number_of_exposures_so_far == 1:
+                                    if bright < 0.3 * flat_saturation_level and number_of_exposures_so_far == 1 and self.current_filter_last_camera_gain < 200:
                                         plog("Got an abnormally low value on the first shot")
                                         plog("Retrying again after a little wait to check the filter is in place")
                                         new_throughput_value=copy.deepcopy(old_throughput_value)

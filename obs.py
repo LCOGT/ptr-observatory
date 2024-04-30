@@ -1328,25 +1328,29 @@ class Observatory:
                     # a slew and sends a slew command to the exact coordinates it is already pointing on
                     # at least a 5 minute basis.
                     self.time_of_last_pulse = max(self.time_of_last_slew, self.time_of_last_pulse)
-                    if (time.time() - self.time_of_last_pulse) > 300 and not g_dev['mnt'].currently_slewing:
-                        # Check no other commands or exposures are happening
-                        if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].running_an_exposure_set and not g_dev['cam'].currently_in_smartstack_loop and not g_dev["seq"].focussing:
-                            if not g_dev['mnt'].rapid_park_indicator and not g_dev['mnt'].return_slewing() and g_dev['mnt'].return_tracking() :
-                                # Don't do it if the roof isn't open etc.
-                                if (g_dev['obs'].open_and_enabled_to_observe==True ) or g_dev['obs'].scope_in_manual_mode:
-                                    ra = g_dev['mnt'].return_right_ascension()
-                                    dec = g_dev['mnt'].return_declination()
-                                    temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
-                                    temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
-                                    alt = temppointingaltaz.alt.degree
-                                    if alt > 25:
-                                        wait_for_slew()
-                                        meridianra=g_dev['mnt'].return_right_ascension()
-                                        meridiandec=g_dev['mnt'].return_declination()
-                                        g_dev['mnt'].slew_async_directly(ra=meridianra, dec=meridiandec)
-                                        plog ("Meridian Pulse")
-                                        wait_for_slew()
-                                        self.time_of_last_pulse=time.time()
+                    try:
+                        if (time.time() - self.time_of_last_pulse) > 300 and not g_dev['mnt'].currently_slewing:
+                            # Check no other commands or exposures are happening
+                            if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].running_an_exposure_set and not g_dev['cam'].currently_in_smartstack_loop and not g_dev["seq"].focussing:
+                                if not g_dev['mnt'].rapid_park_indicator and not g_dev['mnt'].return_slewing() and g_dev['mnt'].return_tracking() :
+                                    # Don't do it if the roof isn't open etc.
+                                    if (g_dev['obs'].open_and_enabled_to_observe==True ) or g_dev['obs'].scope_in_manual_mode:
+                                        ra = g_dev['mnt'].return_right_ascension()
+                                        dec = g_dev['mnt'].return_declination()
+                                        temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+                                        temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
+                                        alt = temppointingaltaz.alt.degree
+                                        if alt > 25:
+                                            wait_for_slew()
+                                            meridianra=g_dev['mnt'].return_right_ascension()
+                                            meridiandec=g_dev['mnt'].return_declination()
+                                            g_dev['mnt'].slew_async_directly(ra=meridianra, dec=meridiandec)
+                                            plog ("Meridian Pulse")
+                                            wait_for_slew()
+                                            self.time_of_last_pulse=time.time()
+                    except:
+                        plog ("perhaps theskyx is restarting????")
+                        plog(traceback.format_exc())
 
                 # Send up the obs settings status - basically the current safety settings
                 if (
