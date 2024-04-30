@@ -6412,7 +6412,7 @@ class Sequencer:
                     # Fling the jpeg up
                     g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
 
-            elif position_counter >=5:
+            else:
 
                 if len(focus_spots) == 0:
                     plog ("Sheesh, not one spot found yet!")
