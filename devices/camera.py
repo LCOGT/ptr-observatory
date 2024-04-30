@@ -5009,7 +5009,7 @@ class Camera:
                 # FOR POINTING AND FOCUS EXPOSURES, CONSTRUCT THE SCALED MASTERDARK WHILE
                 # THE EXPOSURE IS RUNNING
                 if (frame_type=='pointing' or focus_image == True) and not pointingfocus_masterdark_done and smartstackid == 'no':
-                    plog ("constructing scaled masterdark during exposure")
+                    #plog ("constructing scaled masterdark during exposure")
                     if not self.substacker:
                         try:
                             # Sort out an intermediate dark
@@ -5044,7 +5044,7 @@ class Camera:
                                 pass
                         pointingfocus_masterdark_done=True
                         
-                    plog ("grabbing masterflat during exposure")
+                    #plog ("grabbing masterflat during exposure")
                     intermediate_tempflat=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
 
                 if remaining > 0:
