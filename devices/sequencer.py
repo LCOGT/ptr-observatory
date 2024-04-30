@@ -35,6 +35,7 @@ from PIL import Image
 #from scipy import interpolate
 import warnings
 import matplotlib.pyplot as plt
+plt.ioff()
 import queue
 import threading
 import io
@@ -2857,17 +2858,22 @@ class Sequencer:
                     tempmedian=bn.nanmedian(tempy)
                     if tempy.size < 1000:
                         plog ("corrupt dark skipped: " + str(file))
+                        del tempy
                         os.remove(file)
+                        time.sleep(0.2)
                         inputList.remove(file)
                         
                     elif tempmedian < max(30, temp_bias_level_min) or tempmedian > 55000: 
                         plog ("dark file with strange median skipped: " + str(file))
+                        del tempy
                         os.remove(file)
+                        time.sleep(0.2)
                         inputList.remove(file)    
                     
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     os.remove(file)
+                    time.sleep(0.2)
                     inputList.remove(file)
 
 
@@ -3046,16 +3052,21 @@ class Sequencer:
                     
                     if tempy.size < 1000:
                         plog ("corrupt dark skipped: " + str(file))
+                        del tempy
                         os.remove(file)
+                        time.sleep(0.2)
                         inputList.remove(file)
                         
                     elif tempmedian < max(30, temp_bias_level_min) or tempmedian > 55000:  
                         plog ("dark file with strange median skipped: " + str(file))
+                        del tempy
                         os.remove(file)
+                        time.sleep(0.2)
                         inputList.remove(file)    
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     os.remove(file)
+                    time.sleep(0.2)
                     inputList.remove(file)
 
 
@@ -3329,17 +3340,22 @@ class Sequencer:
                 tempmedian=bn.nanmedian(tempy)
                 if tempy.size < 1000:
                     plog ("tiny bias file skipped: " + str(file))
+                    del tempy
                     os.remove(file)
+                    time.sleep(0.2)
                     inputList.remove(file)
                     
                 elif tempmedian < 30 or tempmedian > 3000: 
                     plog ("bias file with strange median skipped: " + str(file))
+                    del tempy
                     os.remove(file)
+                    time.sleep(0.2)
                     inputList.remove(file)
                     
             except:
                 plog ("corrupt bias skipped: " + str(file))
                 os.remove(file)
+                time.sleep(0.2)
                 inputList.remove(file)
 
 
@@ -3771,25 +3787,30 @@ class Sequencer:
                             if hdu1data.size < 1000:
                                 plog ("corrupt flat skipped: " + str(file))
 
-
+                                del hdu1data
                                 os.remove(file)
+                                time.sleep(0.2)
                                 inputList.remove(file)
 
                             elif os.stat(file).st_size < 5000:
                                 plog ("corrupt flat skipped: " + str(file))
 
-
+                                del hdu1data
                                 os.remove(file)
+                                time.sleep(0.2)
                                 inputList.remove(file)
                             
                             elif tempmedian < max(1000, temp_bias_level_median+200) or tempmedian > 55000: 
                                 plog ("flat file with strange median skipped: " + str(file))
+                                del hdu1data
                                 os.remove(file)
+                                time.sleep(0.2)
                                 inputList.remove(file)
                             
 
                         except:
                             plog ("corrupt flat skipped: " + str(file))
+                            
                             os.remove(file)
                             inputList.remove(file)
 
