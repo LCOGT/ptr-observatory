@@ -276,7 +276,7 @@ class Sequencer:
         
         
         
-        googtime=time.time()
+        #googtime=time.time()
         # plt.clf()
         fig,ax=plt.subplots(1, figsize=(5.5, 4), dpi=100)
         plt.ioff()
@@ -294,7 +294,7 @@ class Sequencer:
         temp_canvas = fig.canvas
         plt.close()
         pil_image=Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_rgb())
-        plog ("savefigcanvas: " + str(time.time()-googtime))
+        #plog ("savefigcanvas: " + str(time.time()-googtime))
         # fig1 = px.scatter(x=x, y=y)
         # #fig2 = px.line(x=x, y=f(x))
         # #plt.plot(x,f(x), color = 'green')
@@ -329,7 +329,7 @@ class Sequencer:
         # plog ("paste jpeg: " + str(time.time()-googtime))
         # googtime=time.time()
         current_focus_jpg.save(jpeg_name)
-        plog ("save jpeg: " + str(time.time()-googtime))
+        #plog ("save jpeg: " + str(time.time()-googtime))
         
         #img_buf.close()
         
