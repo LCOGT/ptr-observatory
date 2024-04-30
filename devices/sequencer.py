@@ -6470,7 +6470,7 @@ class Sequencer:
             if position_counter < 5:
                 if len(focus_spots) > 0:
                     
-                    threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+                    threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
                     # Fling the jpeg up
                     g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
@@ -6587,7 +6587,7 @@ class Sequencer:
                             # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             # img_buf.close()
                             
-                            threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+                            threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
                             
 
@@ -6649,7 +6649,7 @@ class Sequencer:
                             # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             # img_buf.close()
                             
-                            threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+                            threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
 
                             # Fling the jpeg up
@@ -6717,7 +6717,7 @@ class Sequencer:
                             # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             # img_buf.close()
                             
-                            threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+                            threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
 
                             # Fling the jpeg up
@@ -6767,7 +6767,7 @@ class Sequencer:
                             # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             # img_buf.close()
                             
-                            threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+                            threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
 
                             # Fling the jpeg up
@@ -6869,7 +6869,7 @@ class Sequencer:
                                     # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                                     # img_buf.close()
                                     
-                                    threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+                                    threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
 
                                     # Fling the jpeg up
@@ -6931,7 +6931,7 @@ class Sequencer:
                                     # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                                     # img_buf.close()
 
-                                    threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))),))).start()
+                                    threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
 
                                     # Fling the jpeg up
