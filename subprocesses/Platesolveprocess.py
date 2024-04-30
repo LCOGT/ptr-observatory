@@ -527,7 +527,7 @@ if np.isnan(pixscale):
 if pixscale == None:
     radius_of_radialprofile=50
 else:
-    radius_of_radialprofile=int(12/pixscale)
+    radius_of_radialprofile=int(24/pixscale)
 # Round up to nearest odd number to make a symmetrical array
 radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
 centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
@@ -773,61 +773,64 @@ if len(sources) >= 5:
 
 
 
+
+        args = [
+            PS3CLI_EXE,
+            cal_path + 'platesolvetemp.fits',
+            str(pixscale),
+            output_file_path,
+            catalog_path
+        ]
+
+        process = Popen(
+                args,
+                stdout=None,
+                stderr=PIPE
+                )
+        (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
+        exit_code = process.wait() # Wait for process to complete and obtain the exit code
+        failed = False
+        time.sleep(1)
+        process.kill()
+
+        print (stdout)
+        print (stderr)
+
+        solve = parse_platesolve_output(output_file_path)
+
+        #breakpoint()
+
+        if binnedtwo:
+            solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
+        elif binnedthree:
+            solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
+
+        pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
         try:
-            args = [
-                PS3CLI_EXE,
-                cal_path + 'platesolvetemp.fits',
-                str(pixscale),
-                output_file_path,
-                catalog_path
-            ]
-
-            process = Popen(
-                    args,
-                    stdout=None,
-                    stderr=PIPE
-                    )
-            (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
-            exit_code = process.wait() # Wait for process to complete and obtain the exit code
-            failed = False
-            time.sleep(1)
-            process.kill()
-
-            print (stdout)
-            print (stderr)
-
-            solve = parse_platesolve_output(output_file_path)
-
-            #breakpoint()
-
-            if binnedtwo:
-                solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
-            elif binnedthree:
-                solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
-
-            pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
-            try:
-                os.remove(cal_path + 'platesolve.pickle')
-            except:
-                pass
-            os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
-
-            try:
-                os.remove(cal_path + 'platesolvetemp.fits')
-            except:
-                pass
-            try:
-                os.remove(output_file_path)
-            except:
-                pass
-            sys.exit()
-
-
+            os.remove(cal_path + 'platesolve.pickle')
         except:
-            print(traceback.format_exc())
-            #breakpoint()
-            failed = True
-            process.kill()
+            pass
+        os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+
+        try:
+            os.remove(cal_path + 'platesolvetemp.fits')
+        except:
+            pass
+        try:
+            os.remove(output_file_path)
+        except:
+            pass
+        failed=False
+
+        #breakpoint()()
+        #sys.exit()
+
+
+        # except:
+        #     print(traceback.format_exc())
+        #     #breakpoint()
+        #     failed = True
+        #     process.kill()
 
         if failed:
             failed=False
@@ -1121,7 +1124,7 @@ if len(sources) >= 5:
 else:
     solve = 'error'
     pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
-    
+
     try:
         os.remove(cal_path + 'platesolve.pickle')
     except:

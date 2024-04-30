@@ -2716,13 +2716,13 @@ class Observatory:
                     plog("Too bright to consider platesolving!")
                 else:
                     try:
-                        
+
                         try:
                             os.remove(self.local_calibration_path + 'platesolve.pickle')
                             os.remove(self.local_calibration_path + 'platesolve.temppickle')
                         except:
                             pass
-                        
+
                         platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
                         # THESE ARE ALL DEPRECATED. Waiting for a cleanup
@@ -2731,12 +2731,6 @@ class Observatory:
                         #bin_for_platesolve= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']
                         #platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
 
-                        try:
-                            pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc, useastronometrynet], platesolve_subprocess.stdin)
-                        except:
-                            plog ("Problem in the platesolve pickle dump")
-                            plog(traceback.format_exc())
 
                         # yet another pickle debugger.
                         if True:
@@ -2745,21 +2739,35 @@ class Observatory:
 
                         #breakpoint()
 
+                        try:
+                            pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
+                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc, useastronometrynet], platesolve_subprocess.stdin)
+                        except:
+                            plog ("Problem in the platesolve pickle dump")
+                            plog(traceback.format_exc())
+
+                        # # yet another pickle debugger.
+                        # if True:
+                        #     pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
+                        #      pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet], open('subprocesses/testplatesolvepickle','wb'))
+
+                        # breakpoint()
+
                         del hdufocusdata
                         #breakpoint()
                         # Essentially wait until the subprocess is complete
                         #platesolve_subprocess.communicate()
-                        
+
                         while not os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
-                            time.sleep(0.5)                            
-                            
-                            
+                            time.sleep(0.5)
+
+
                         if os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
                             solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))
                         else:
-   
+
                         #platesolve_subprocess.kill()
-                        
+
 
                             solve= 'Platesolve error, Pickle file not available'
 
@@ -3439,11 +3447,11 @@ class Observatory:
                                         self.laterdelete_queue.put(oldest_file, block=False)
 
                             # Save the file as an uncompressed numpy binary
-                            
+
                             temparray=np.array(slow_process[2], dtype=np.float32)
                             tempmedian=bn.nanmedian(temparray)
                             if tempmedian > 30 and tempmedian < 58000:
-                            
+
                                 np.save(
                                     tempfilename,
                                     np.array(slow_process[2], dtype=np.float32)
