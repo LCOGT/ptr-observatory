@@ -6371,9 +6371,22 @@ class Sequencer:
                     googtime=time.time()
                     plt.scatter(x,y)
                     plog ("scatter plt: " + str(time.time()-googtime))
+                    
+                    # breakpoint()
                     googtime=time.time()
+                    plt.ioff()
                     plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
                     plog ("savefig: " + str(time.time()-googtime))
+                    
+                    
+                    
+                    
+                    # fig,ax=plt.subplots(1, figsize=(4, 4), dpi=300)
+                    # ax.plot([1, 3, 5, 8, 4, 2])
+                    # fig.canvas.draw()
+                    # temp_canvas = fig.canvas
+                    # plt.close()
+                    
                     # fig1 = px.scatter(x=x, y=y)
                     # #fig2 = px.line(x=x, y=f(x))
                     # #plt.plot(x,f(x), color = 'green')
@@ -6492,6 +6505,7 @@ class Sequencer:
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
+                            plt.ioff()
                             plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
                             # plt.scatter(x,y)
@@ -6549,6 +6563,7 @@ class Sequencer:
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
+                            plt.ioff()
                             plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
                             # plt.scatter(x,y)
@@ -6613,6 +6628,7 @@ class Sequencer:
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
+                            plt.ioff()
                             plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
                             # plt.scatter(x,y)
@@ -6659,6 +6675,7 @@ class Sequencer:
                             # Weird way to convert plt to pil image, overlay and close
                             img_buf = io.BytesIO()
                             plt.scatter(x,y)
+                            plt.ioff()
                             plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
                             # plt.scatter(x,y)
@@ -6761,6 +6778,7 @@ class Sequencer:
                                     # plt.scatter(x,y)
                                     # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
                                     plt.scatter(x,y)
+                                    plt.ioff()
                                     plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
                                     # fig1 = px.scatter(x=x, y=y)
@@ -6818,6 +6836,7 @@ class Sequencer:
                                     # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
                                     plt.scatter(x,y)
+                                    plt.ioff()
                                     plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
                                     # fig1 = px.scatter(x=x, y=y)
@@ -6863,6 +6882,7 @@ class Sequencer:
                                 plt.scatter(x,y)
                                 plt.plot(x,f(x), color = 'green')
                                 plt.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red', marker = 'X')
+                                plt.ioff()
                                 plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
 
                                 # plt.scatter(x,y)

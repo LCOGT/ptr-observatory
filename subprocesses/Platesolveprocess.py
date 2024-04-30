@@ -958,15 +958,18 @@ if len(sources) >= 5:
         # If searching for the first pixelscale,
         # Then wait for a LONG time to get it.
         # with a wider range
-        if pixscale == None or np.isnan(pixscale):
-            wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
-                                                    image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=15.0,
-                                                    solve_timeout=1200)
-        else:
-            wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
-                                                    image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=5.0,
-                                                    solve_timeout=60)
-
+        try:
+            if pixscale == None or np.isnan(pixscale):
+                wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
+                                                        image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=30.0,
+                                                        solve_timeout=1200)
+            else:
+                wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
+                                                        image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=12.0,
+                                                        solve_timeout=60)
+        except:
+            print ("a.net timed out or failed")
+            wcs_header={}
 
         print (wcs_header)
         print (len(wcs_header))
