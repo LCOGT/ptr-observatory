@@ -806,6 +806,10 @@ if len(sources) >= 5:
                 solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
 
             pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+            try:
+                os.remove(cal_path + 'platesolve.pickle')
+            except:
+                pass
             os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
             try:
@@ -858,10 +862,14 @@ if len(sources) >= 5:
                     solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
 
                 pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+                try:
+                    os.remove(cal_path + 'platesolve.pickle')
+                except:
+                    pass
                 os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
-                pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
-                os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+                # pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+                # os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
                 try:
                     os.remove(cal_path + 'platesolvetemp.fits')
@@ -953,6 +961,10 @@ if len(sources) >= 5:
             if wcs_header=={}:
                 solve = 'error'
                 pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+                try:
+                    os.remove(cal_path + 'platesolve.pickle')
+                except:
+                    pass
                 os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
                 try:
@@ -978,6 +990,10 @@ if len(sources) >= 5:
 
 
             pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+            try:
+                os.remove(cal_path + 'platesolve.pickle')
+            except:
+                pass
             os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
             try:
@@ -995,6 +1011,10 @@ if len(sources) >= 5:
 
             solve = 'error'
             pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+            try:
+                os.remove(cal_path + 'platesolve.pickle')
+            except:
+                pass
             os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
             try:
@@ -1101,6 +1121,11 @@ if len(sources) >= 5:
 else:
     solve = 'error'
     pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+    
+    try:
+        os.remove(cal_path + 'platesolve.pickle')
+    except:
+        pass
     os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
     try:
