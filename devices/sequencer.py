@@ -6414,7 +6414,7 @@ class Sequencer:
 
             else:
 
-                if len(focus_spots) == 0:
+                if len(focus_spots) == 0 or len(focus_spots) == 1:
                     plog ("Sheesh, not one spot found yet!")
                     plog ("Having a crack at a further spot")
                     if position_counter & 1:
@@ -6440,7 +6440,28 @@ class Sequencer:
                     # Check that after five successful measurements
                     # If the seeing is too bad, just run with the expected
                     
-                    if len(focus_spots) >=5:                       
+                    
+                    # If there is only two or three throw out from the lowest edge
+                    if len(focus_spots) == 2 or len(focus_spots) == 3:
+                        if focus_spots[0][1] < focus_spots[-1][1]:
+                            plog ("smaller focus spot has lower fwhm value, trying out a spot out there")
+                            new_focus_position_to_attempt=focus_spots[0][0] - throw
+                        else:
+                            plog ("higher focus spot has lower fwhm value, trying out a spot out there")
+                            new_focus_position_to_attempt=focus_spots[-1][0] + throw
+                    
+                    # if len(focus_spots) >=5:                       
+                        
+                        
+                            
+
+                    
+
+
+
+
+
+                    else:
                         
                         if minimum_value > 3.0:
                             plog ("Minimum value: " + str(minimum_value) + " is too high to bother focussing, just going with the estimated value from previous focus")
@@ -6448,22 +6469,8 @@ class Sequencer:
                             self.total_sequencer_control = False
                             self.focussing=False
                             return
-                            
-
-                    # If there is only two or three throw out from the lowest edge
-                    elif len(focus_spots) == 2 or len(focus_spots) == 3:
-                        if focus_spots[0][1] < focus_spots[-1][1]:
-                            plog ("smaller focus spot has lower fwhm value, trying out a spot out there")
-                            new_focus_position_to_attempt=focus_spots[0][0] - throw
-                        else:
-                            plog ("higher focus spot has lower fwhm value, trying out a spot out there")
-                            new_focus_position_to_attempt=focus_spots[-1][0] + throw
-
-
-
-
-
-                    else:
+                        
+                        
                         # If the minimum is at one of the two points on the side of the v curve take another point beyond that point, otherwise try to fit a parabola
                         # minimumfind=[]
                         # for entry in focus_spots:
