@@ -2816,6 +2816,7 @@ class Observatory:
                             solved_dec = solve["dec_j2000_degrees"]
                             solved_arcsecperpixel = solve["arcsec_per_pixel"]
                             plog("1x1 pixelscale solved: " + str(round(solved_arcsecperpixel, 3 )))
+                            #breakpoint()
                             # If this is the first pixelscalle gotten, then it is the pixelscale!
                             if g_dev['cam'].pixscale == None:
                                 g_dev['cam'].pixscale = abs(solved_arcsecperpixel)

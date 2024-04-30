@@ -790,18 +790,19 @@ if len(sources) >= 5:
                 )
         (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
         exit_code = process.wait() # Wait for process to complete and obtain the exit code
-        
+
         time.sleep(1)
         process.kill()
 
         # print (stdout)
         # print (stderr)
 
-        solve = parse_platesolve_output(output_file_path)
+
 
         #breakpoint()
         try:
-            print (solve['arcsec_per_pixel'])    
+            solve = parse_platesolve_output(output_file_path)
+            print (solve['arcsec_per_pixel'])
             if binnedtwo:
                 solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
             elif binnedthree:
@@ -838,7 +839,7 @@ if len(sources) >= 5:
 
         if failed:
             failed=False
-            
+
             # Try again with a lower pixelscale... yes it makes no sense
             # But I didn't write PS3.exe ..... but it works (MTF)
             args = [
@@ -862,8 +863,9 @@ if len(sources) >= 5:
             print (stdout)
             print (stderr)
 
-            solve = parse_platesolve_output(output_file_path)
+
             try:
+                solve = parse_platesolve_output(output_file_path)
                 print (solve['arcsec_per_pixel'])
                 if binnedtwo:
                     solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
@@ -952,7 +954,7 @@ if len(sources) >= 5:
 
         image_width = fx
         image_height = fy
-       
+
         # If searching for the first pixelscale,
         # Then wait for a LONG time to get it.
         # with a wider range
@@ -1132,12 +1134,12 @@ if len(sources) >= 5:
 
 else:
     solve = 'error'
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
 pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
 
 try:
