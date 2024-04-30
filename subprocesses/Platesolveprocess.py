@@ -608,8 +608,8 @@ for i in range(len(pointvalues)):
             number_of_bins=int(arcsecond_length_radial_profile/0.25)
             s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
 
-            max_value=np.nanmax(s)
-            min_value=np.nanmin(s)
+            max_value=bn.nanmax(s)
+            min_value=bn.nanmin(s)
             threshold_value=(0.05*(max_value-min_value)) + min_value
 
             actualprofile=[]
@@ -694,12 +694,12 @@ googtime=time.time()
 #breakpoint()
 #breakpoint()
 #breakpoint()
-failed=False
+failed=True
 
 #breakpoint()
 if len(sources) >= 5:
 
-    if not pixscale == None:
+    if not pixscale == None or np.isnan(pixscale):
         # Get size of original image
         xpixelsize = hdufocusdata.shape[0]
         ypixelsize = hdufocusdata.shape[1]
@@ -773,7 +773,8 @@ if len(sources) >= 5:
 
 
 
-
+        # First try with normal pixscale
+        failed = False
         args = [
             PS3CLI_EXE,
             cal_path + 'platesolvetemp.fits',
@@ -789,38 +790,41 @@ if len(sources) >= 5:
                 )
         (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
         exit_code = process.wait() # Wait for process to complete and obtain the exit code
-        failed = False
+        
         time.sleep(1)
         process.kill()
 
-        print (stdout)
-        print (stderr)
+        # print (stdout)
+        # print (stderr)
 
         solve = parse_platesolve_output(output_file_path)
 
         #breakpoint()
-
-        if binnedtwo:
-            solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
-        elif binnedthree:
-            solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
-
-        pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
         try:
-            os.remove(cal_path + 'platesolve.pickle')
+            print (solve['arcsec_per_pixel'])    
+            if binnedtwo:
+                solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
+            elif binnedthree:
+                solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
         except:
-            pass
-        os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+            failed=True
 
-        try:
-            os.remove(cal_path + 'platesolvetemp.fits')
-        except:
-            pass
-        try:
-            os.remove(output_file_path)
-        except:
-            pass
-        failed=False
+        # pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+        # try:
+        #     os.remove(cal_path + 'platesolve.pickle')
+        # except:
+        #     pass
+        # os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+
+        # try:
+        #     os.remove(cal_path + 'platesolvetemp.fits')
+        # except:
+        #     pass
+        # try:
+        #     os.remove(output_file_path)
+        # except:
+        #     pass
+        # failed=False
 
         #breakpoint()()
         #sys.exit()
@@ -834,55 +838,59 @@ if len(sources) >= 5:
 
         if failed:
             failed=False
+            
+            # Try again with a lower pixelscale... yes it makes no sense
+            # But I didn't write PS3.exe ..... but it works (MTF)
+            args = [
+                PS3CLI_EXE,
+                cal_path + 'platesolvetemp.fits',
+                str(float(pixscale)/2.0),
+                output_file_path,
+                catalog_path
+            ]
+
+            process = Popen(
+                    args,
+                    stdout=None,
+                    stderr=PIPE
+                    )
+            (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
+            exit_code = process.wait() # Wait for process to complete and obtain the exit code
+            time.sleep(1)
+            process.kill()
+
+            print (stdout)
+            print (stderr)
+
+            solve = parse_platesolve_output(output_file_path)
             try:
-                # Try again with a lower pixelscale... yes it makes no sense
-                # But I didn't write PS3.exe ..... but it works (MTF)
-                args = [
-                    PS3CLI_EXE,
-                    cal_path + 'platesolvetemp.fits',
-                    str(float(pixscale)/2.0),
-                    output_file_path,
-                    catalog_path
-                ]
-
-                process = Popen(
-                        args,
-                        stdout=None,
-                        stderr=PIPE
-                        )
-                (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
-                exit_code = process.wait() # Wait for process to complete and obtain the exit code
-                time.sleep(1)
-                process.kill()
-
-                print (stdout)
-                print (stderr)
-
-                solve = parse_platesolve_output(output_file_path)
+                print (solve['arcsec_per_pixel'])
                 if binnedtwo:
                     solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
                 elif binnedthree:
                     solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
+            except:
+                failed=True
 
-                pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
-                try:
-                    os.remove(cal_path + 'platesolve.pickle')
-                except:
-                    pass
-                os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+            # pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+            # try:
+            #     os.remove(cal_path + 'platesolve.pickle')
+            # except:
+            #     pass
+            # os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
-                # pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
-                # os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+            # # pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+            # # os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
-                try:
-                    os.remove(cal_path + 'platesolvetemp.fits')
-                except:
-                    pass
-                try:
-                    os.remove(output_file_path)
-                except:
-                    pass
-                sys.exit()
+            # try:
+            #     os.remove(cal_path + 'platesolvetemp.fits')
+            # except:
+            #     pass
+            # try:
+            #     os.remove(output_file_path)
+            # except:
+            #     pass
+            # sys.exit()
 
                 # try:
                 #     os.remove(cal_path + 'platesolvetemp.fits')
@@ -895,16 +903,16 @@ if len(sources) >= 5:
 
                 # sys.exit()
 
-            except:
-                print(traceback.format_exc())
-                failed=True
-                process.kill()
-                #solve = 'error'
+            # except:
+            #     print(traceback.format_exc())
+            #     failed=True
+            #     process.kill()
+            #     #solve = 'error'
 
     # if unknown pixelscale do a search
     print ("failed?")
     print (failed)
-    if failed or pixscale == None:#) and useastrometrynet:
+    if failed or pixscale == None or np.isnan(pixscale):#) and useastrometrynet:
 
 
         #from astropy.table import Table
@@ -927,7 +935,7 @@ if len(sources) >= 5:
         #sources=sources[:,200]
 
 
-        if pixscale == None:
+        if pixscale == None or np.isnan(pixscale):
             scale_lower=0.04
             scale_upper=8.0
         elif binnedtwo:
@@ -944,41 +952,42 @@ if len(sources) >= 5:
 
         image_width = fx
         image_height = fy
-        try:
-            # If searching for the first pixelscale,
-            # Then wait for a LONG time to get it.
-            # with a wider range
-            if pixscale == None:
-                wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
-                                                        image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=15.0,
-                                                        solve_timeout=1200)
-            else:
-                wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
-                                                        image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=5.0,
-                                                        solve_timeout=60)
+       
+        # If searching for the first pixelscale,
+        # Then wait for a LONG time to get it.
+        # with a wider range
+        if pixscale == None or np.isnan(pixscale):
+            wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
+                                                    image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=15.0,
+                                                    solve_timeout=1200)
+        else:
+            wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
+                                                    image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=5.0,
+                                                    solve_timeout=60)
 
 
-            print (wcs_header)
-            print (len(wcs_header))
+        print (wcs_header)
+        print (len(wcs_header))
 
-            if wcs_header=={}:
-                solve = 'error'
-                pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
-                try:
-                    os.remove(cal_path + 'platesolve.pickle')
-                except:
-                    pass
-                os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+        if wcs_header=={}:
+            solve = 'error'
+            # pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+            # try:
+            #     os.remove(cal_path + 'platesolve.pickle')
+            # except:
+            #     pass
+            # os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
-                try:
-                    os.remove(cal_path + 'platesolvetemp.fits')
-                except:
-                    pass
-                try:
-                    os.remove(output_file_path)
-                except:
-                    pass
-                sys.exit()
+            # try:
+            #     os.remove(cal_path + 'platesolvetemp.fits')
+            # except:
+            #     pass
+            # try:
+            #     os.remove(output_file_path)
+            # except:
+            #     pass
+            # sys.exit()
+        else:
 
 
             solve={}
@@ -992,44 +1001,44 @@ if len(sources) >= 5:
                 solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
 
 
-            pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
-            try:
-                os.remove(cal_path + 'platesolve.pickle')
-            except:
-                pass
-            os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+        # pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+        # try:
+        #     os.remove(cal_path + 'platesolve.pickle')
+        # except:
+        #     pass
+        # os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
-            try:
-                os.remove(cal_path + 'platesolvetemp.fits')
-            except:
-                pass
-            try:
-                os.remove(output_file_path)
-            except:
-                pass
-            sys.exit()
+        # try:
+        #     os.remove(cal_path + 'platesolvetemp.fits')
+        # except:
+        #     pass
+        # try:
+        #     os.remove(output_file_path)
+        # except:
+        #     pass
+        # sys.exit()
 
-        except:
-            print(traceback.format_exc())
+        # except:
+        #     print(traceback.format_exc())
 
-            solve = 'error'
-            pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
-            try:
-                os.remove(cal_path + 'platesolve.pickle')
-            except:
-                pass
-            os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+        #     solve = 'error'
+        #     pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+        #     try:
+        #         os.remove(cal_path + 'platesolve.pickle')
+        #     except:
+        #         pass
+        #     os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
-            try:
-                os.remove(cal_path + 'platesolvetemp.fits')
-            except:
-                pass
-            try:
-                os.remove(output_file_path)
-            except:
-                pass
-            sys.exit()
-            #breakpoint()
+        #     try:
+        #         os.remove(cal_path + 'platesolvetemp.fits')
+        #     except:
+        #         pass
+        #     try:
+        #         os.remove(output_file_path)
+        #     except:
+        #         pass
+        #     sys.exit()
+        #     #breakpoint()
 
         #breakpoint()
 
@@ -1123,23 +1132,28 @@ if len(sources) >= 5:
 
 else:
     solve = 'error'
-    pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+    
+    
+    
+    
+    
+    
+pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
 
-    try:
-        os.remove(cal_path + 'platesolve.pickle')
-    except:
-        pass
-    os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
+try:
+    os.remove(cal_path + 'platesolve.pickle')
+except:
+    pass
+os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
-    try:
-        os.remove(cal_path + 'platesolvetemp.fits')
-    except:
-        pass
-    try:
-        os.remove(output_file_path)
-    except:
-        pass
-    sys.exit()
+try:
+    os.remove(cal_path + 'platesolvetemp.fits')
+except:
+    pass
+try:
+    os.remove(output_file_path)
+except:
+    pass
 
 
 # pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
