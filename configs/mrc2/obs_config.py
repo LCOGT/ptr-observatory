@@ -185,11 +185,11 @@ site_config = {
 
     # Turn on and off various automated calibrations at different times.
     'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat':False,
+    'auto_eve_sky_flat':True,
     
     'time_to_wait_after_roof_opens_to_take_flats': 30,   #sec Just imposing a minimum in case of a restart.
-    'auto_midnight_moonless_bias_dark': False,
-    'auto_morn_sky_flat': False,
+    'auto_midnight_moonless_bias_dark': True,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     
     # FOCUS OPTIONS
