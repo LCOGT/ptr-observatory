@@ -6169,7 +6169,7 @@ class Sequencer:
 
 
 
-        sim = False
+        #sim = False
         start_ra = g_dev['mnt'].return_right_ascension()   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].return_declination()
         #focus_start = g_dev['foc'].current_focus_position
@@ -6248,7 +6248,7 @@ class Sequencer:
             if extensive_focus == None:
                 g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
 
-                result = self.centering_exposure(no_confirmation=True, try_hard=True)#), try_forever=True)
+                self.centering_exposure(no_confirmation=True, try_hard=True)#), try_forever=True)
                 # Wait for platesolve
                 reported=0
                 temptimer=time.time()
@@ -6294,7 +6294,20 @@ class Sequencer:
         #g_dev["obs"].request_full_update()
 
         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
-        req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+        
+        focus_exposure_time=self.config['focus_exposure_time']        
+        
+        # Boost broadband        
+        if filter_choice.lower() in [ "blue", "b", "jb", "bb", "pb","green", "jv", "bv", "pg","red", "r", "br", "r", "pr", "rc", "rp","i", "ic", "ip", "bi","gp", "g"]:
+            focus_exposure_time=focus_exposure_time*2
+        
+        # Boost Narrowband and low throughput broadband
+        if filter_choice.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
+            focus_exposure_time=focus_exposure_time*3       
+        
+        
+        
+        req = {'time': focus_exposure_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
 
         opt = { 'count': 1, 'filter': filter_choice}
 
@@ -6385,55 +6398,69 @@ class Sequencer:
             elif position_counter>5:
                 focus_position_this_loop=new_focus_position_to_attempt
 
-            #  If more than 25 attempts, fail and bail out.
-            if position_counter > 25:
+            #  If more than 15 attempts, fail and bail out.
+            if position_counter > 15:
+                
+                g_dev['foc'].set_initial_best_guess_for_focus()
+                
+                if not dont_return_scope:
 
-                if extensive_focus == None:
+                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+                    self.wait_for_slew()
+                    
+                
+                self.focussing=False
+                self.total_sequencer_control = False
+                return np.nan, np.nan
 
-                    plog('Autofocus quadratic equation did not converge. Moving back to starting focus:  ', focus_start)
-                    plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
-                    g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus routine')
+                # if extensive_focus == None:
 
-                    req2 = {'target': 'near_tycho_star', 'image_type': 'focus'}
-                    opt = {'filter': filter_choice}
-                    g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope, begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
-                    if not dont_return_scope:
+                #     plog('Autofocus quadratic equation did not converge. Moving back to starting focus:  ', focus_start)
+                #     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                #     g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus routine')
 
-                        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                        self.wait_for_slew()
-                    self.focussing=False
-                    self.total_sequencer_control = False
-                    return np.nan, np.nan
-                else:
-                    plog('Autofocus quadratic equation did not converge. Moving back to extensive focus:  ', extensive_focus)
-                    g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ' + str(extensive_focus))
+                #     req2 = {'target': 'near_tycho_star', 'image_type': 'focus'}
+                #     opt = {'filter': filter_choice}
+                #     g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope, begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
+                #     if not dont_return_scope:
 
-                    g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
+                #         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                #         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                #         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+                #         self.wait_for_slew()
+                #     self.focussing=False
+                #     self.total_sequencer_control = False
+                #     return np.nan, np.nan
+                # else:
+                #     plog('Autofocus quadratic equation did not converge. Moving back to extensive focus:  ', extensive_focus)
+                #     g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ' + str(extensive_focus))
 
-                    g_dev['foc'].last_known_focus=(extensive_focus)
-                    #g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+                #     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
+
+                #     g_dev['foc'].last_known_focus=(extensive_focus)
+                #     #g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
 
 
-                    self.af_guard = False
-                    if not dont_return_scope:
+                #     self.af_guard = False
+                #     if not dont_return_scope:
 
-                        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)   #NB NB Does this really take us back to starting point?
-                        self.wait_for_slew()
+                #         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                #         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                #         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)   #NB NB Does this really take us back to starting point?
+                #         self.wait_for_slew()
 
-                    self.af_guard = False
-                    self.focussing=False
-                    self.total_sequencer_control = False
-                    return np.nan, np.nan
+                #     self.af_guard = False
+                #     self.focussing=False
+                #     self.total_sequencer_control = False
+                #     return np.nan, np.nan
 
 
             spot=np.nan
             retry_attempts=0
             spots_tried.append(focus_position_this_loop)
-            while np.isnan(spot) and retry_attempts < 3:
+            while retry_attempts < 3:
 
                 retry_attempts=retry_attempts+1
 
@@ -6493,6 +6520,7 @@ class Sequencer:
                 if not np.isnan(spot):
                     if spot < 30.0:
                         focus_spots.append((foc_pos,spot))
+                        break
                 else:
                     plog ("retying this position - could not get a FWHM ")
                     #focus_fwhms.append(spot)
@@ -7178,283 +7206,283 @@ class Sequencer:
 
 
 
-    def extensive_focus_script(self, req, opt, throw=None, begin_at=None, no_auto_after_solve=False, dont_return_scope=False, skip_timer_check=False, dont_log_focus=False, skip_pointing=False,  filter_choice='focus'):
-        '''
-        This is an extensive focus that covers a wide berth of central values
-        and throws.
+    # def extensive_focus_script(self, req, opt, throw=None, begin_at=None, no_auto_after_solve=False, dont_return_scope=False, skip_timer_check=False, dont_log_focus=False, skip_pointing=False,  filter_choice='focus'):
+    #     '''
+    #     This is an extensive focus that covers a wide berth of central values
+    #     and throws.
 
-        It first trys 6 throws inwards, 6 throws outwards
+    #     It first trys 6 throws inwards, 6 throws outwards
 
-        then moves to the minimum focus found there
+    #     then moves to the minimum focus found there
 
-        and runs a normal focus
+    #     and runs a normal focus
 
-        '''
-        self.focussing=True
-        if throw==None:
-            throw= self.config['focuser']['focuser1']['throw']
+    #     '''
+    #     self.focussing=True
+    #     if throw==None:
+    #         throw= self.config['focuser']['focuser1']['throw']
 
-        if (ephem.now() < g_dev['events']['End Eve Bias Dark'] ) or \
-            (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
-
-
-            plog ("NOT DOING EXTENSIVE FOCUS -- IT IS THE DAYTIME!!")
-            g_dev["obs"].send_to_user("An extensive focus was rejected as it is during the daytime.")
-            self.focussing=False
-            return
+    #     if (ephem.now() < g_dev['events']['End Eve Bias Dark'] ) or \
+    #         (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
 
 
-        plog('AF entered with:  ', req, opt)
-
-        self.af_guard = True
-        sim = False
-        # Reset focus tracker
-        #breakpoint()
-        if begin_at is None:
-            foc_start = g_dev['foc'].current_focus_position
-        else:
-            foc_start = begin_at  #In this case we start at a place close to a 3 point minimum.
-            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-
-        start_ra = g_dev['mnt'].return_right_ascension()
-        start_dec = g_dev['mnt'].return_declination()
-        plog("Saved ra, dec, focus:  ", start_ra, start_dec, foc_start)
-
-        if not skip_pointing:
-
-            # Trim catalogue so that only fields 45 degrees altitude are in there.
-            self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
-            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
-            self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)
-            above_altitude_patches=[]
-
-            for ctr in range(len(self.focus_catalogue_altitudes)):
-                if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
-                    above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
-            above_altitude_patches=np.asarray(above_altitude_patches)
-            self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)
-
-            # d2d of the closest field.
-            teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
-            idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
-
-            focus_patch_ra=above_altitude_patches[idx,0] /15
-            focus_patch_dec=above_altitude_patches[idx,1]
-            focus_patch_n=above_altitude_patches[idx,2]
+    #         plog ("NOT DOING EXTENSIVE FOCUS -- IT IS THE DAYTIME!!")
+    #         g_dev["obs"].send_to_user("An extensive focus was rejected as it is during the daytime.")
+    #         self.focussing=False
+    #         return
 
 
-            #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
+    #     plog('AF entered with:  ', req, opt)
 
-            g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
-            g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
-            #breakpoint()
-            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+    #     self.af_guard = True
+    #     sim = False
+    #     # Reset focus tracker
+    #     #breakpoint()
+    #     if begin_at is None:
+    #         foc_start = g_dev['foc'].current_focus_position
+    #     else:
+    #         foc_start = begin_at  #In this case we start at a place close to a 3 point minimum.
+    #         g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
 
+    #     start_ra = g_dev['mnt'].return_right_ascension()
+    #     start_dec = g_dev['mnt'].return_declination()
+    #     plog("Saved ra, dec, focus:  ", start_ra, start_dec, foc_start)
 
-            if self.stop_script_called:
-                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                self.focussing=False
-                return
-            if not g_dev['obs'].open_and_enabled_to_observe:
-                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                self.focussing=False
-                return
+    #     if not skip_pointing:
 
-            # If no auto_focus has been done, centre the focus field.
-            if no_auto_after_solve == False:
-                g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
+    #         # Trim catalogue so that only fields 45 degrees altitude are in there.
+    #         self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
+    #         aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+    #         self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)
+    #         above_altitude_patches=[]
 
-                result = self.centering_exposure(no_confirmation=True, try_hard=True)#), try_forever=True)
-                # Wait for platesolve
-                #queue_clear_time = time.time()
-                reported=0
-                temptimer=time.time()
-                while True:
-                    if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                        #plog ("we are free from platesolving!")
-                        break
-                    else:
-                        if reported ==0:
-                            plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
-                            reported=1
-                        if (time.time() - temptimer) > 20:
-                            #g_dev["obs"].request_full_update()
-                            temptimer=time.time()
-                        if self.stop_script_called:
-                            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                            self.focussing=False
-                            return
-                        if not g_dev['obs'].open_and_enabled_to_observe:
-                            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                            self.focussing=False
-                            return
-                        pass
+    #         for ctr in range(len(self.focus_catalogue_altitudes)):
+    #             if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
+    #                 above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
+    #         above_altitude_patches=np.asarray(above_altitude_patches)
+    #         self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)
 
-                g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+    #         # d2d of the closest field.
+    #         teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
+    #         idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
 
-            if self.stop_script_called:
-                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                self.focussing=False
-                return
-            if not g_dev['obs'].open_and_enabled_to_observe:
-                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                self.focussing=False
-                return
+    #         focus_patch_ra=above_altitude_patches[idx,0] /15
+    #         focus_patch_dec=above_altitude_patches[idx,1]
+    #         focus_patch_n=above_altitude_patches[idx,2]
 
 
-        foc_pos0 = foc_start
-        result = {}
-        plog('Autofocus Starting at:  ', round(foc_pos0, 1), '\n\n')
+    #         #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
 
-        # In extensive focus, we widen the throw as we are searching a wider range
-        throw=throw*1.5
+    #         g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
+    #         g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
+    #         #breakpoint()
+    #         g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
 
-        extensive_focus=[]
-        for ctr in range(4):
-            g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)
 
-            if not sim:
-                g_dev['obs'].request_scan_requests()
-                req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                opt = {'count': 1, 'filter': filter_choice}
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                    self.focussing=False
-                    return
-                if not g_dev['obs'].open_and_enabled_to_observe:
-                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                    self.focussing=False
-                    return
-            else:
-                try:
-                    g_dev['obs'].fwhmresult['FWHM'] = 4
-                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
-                except:
-                    plog(traceback.format_exc())
-                    #
-            try:
-                spot = g_dev['obs'].fwhmresult['FWHM']
-                lsources = g_dev['obs'].fwhmresult['No_of_sources']
-                if np.isnan(lsources):
-                    spot=False
+    #         if self.stop_script_called:
+    #             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+    #             self.focussing=False
+    #             return
+    #         if not g_dev['obs'].open_and_enabled_to_observe:
+    #             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+    #             self.focussing=False
+    #             return
 
-                foc_pos = (foc_pos0 - (ctr+0)*throw)
+    #         # If no auto_focus has been done, centre the focus field.
+    #         if no_auto_after_solve == False:
+    #             g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
 
-            except:
-                spot = False
-                foc_pos = False
-                lsources=0
-                plog ("spot failed on extensive focus script")
-                plog(traceback.format_exc())
+    #             result = self.centering_exposure(no_confirmation=True, try_hard=True)#), try_forever=True)
+    #             # Wait for platesolve
+    #             #queue_clear_time = time.time()
+    #             reported=0
+    #             temptimer=time.time()
+    #             while True:
+    #                 if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+    #                     #plog ("we are free from platesolving!")
+    #                     break
+    #                 else:
+    #                     if reported ==0:
+    #                         plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+    #                         reported=1
+    #                     if (time.time() - temptimer) > 20:
+    #                         #g_dev["obs"].request_full_update()
+    #                         temptimer=time.time()
+    #                     if self.stop_script_called:
+    #                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+    #                         self.focussing=False
+    #                         return
+    #                     if not g_dev['obs'].open_and_enabled_to_observe:
+    #                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+    #                         self.focussing=False
+    #                         return
+    #                     pass
 
-            g_dev['obs'].send_to_user("Extensive focus position " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
+    #             g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
 
-            if spot != False:
-                extensive_focus.append([foc_pos, spot, lsources])
+    #         if self.stop_script_called:
+    #             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+    #             self.focussing=False
+    #             return
+    #         if not g_dev['obs'].open_and_enabled_to_observe:
+    #             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+    #             self.focussing=False
+    #             return
 
-            plog("Extensive focus so far (pos, fwhm, sources): "+ str(extensive_focus))
 
-        for ctr in range(3):
-            g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps)
-            #g_dev["obs"].request_full_update()
-            if not sim:
-                g_dev['obs'].request_scan_requests()
-                req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                opt = { 'count': 1, 'filter': filter_choice}
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                    self.focussing=False
-                    return
-                if not g_dev['obs'].open_and_enabled_to_observe:
-                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                    self.focussing=False
-                    return
-            else:
-                g_dev['obs'].fwhmresult['FWHM'] = 4
-                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
-            try:
-                spot = g_dev['obs'].fwhmresult['FWHM']
-                lsources = g_dev['obs'].fwhmresult['No_of_sources']
-                if np.isnan(lsources):
-                    spot=False
+    #     foc_pos0 = foc_start
+    #     result = {}
+    #     plog('Autofocus Starting at:  ', round(foc_pos0, 1), '\n\n')
 
-                foc_pos = (foc_pos0 + (ctr+1)*throw)
+    #     # In extensive focus, we widen the throw as we are searching a wider range
+    #     throw=throw*1.5
 
-            except:
-                spot = False
-                foc_pos = False
-                lsources=0
-                plog ("spot failed on extensive focus script")
-                plog(traceback.format_exc())
+    #     extensive_focus=[]
+    #     for ctr in range(4):
+    #         g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)
 
-            g_dev['obs'].send_to_user("Extensive focus position " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
-            extensive_focus.append([foc_pos, spot, lsources])
-            plog(extensive_focus)
+    #         if not sim:
+    #             g_dev['obs'].request_scan_requests()
+    #             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+    #             opt = {'count': 1, 'filter': filter_choice}
+    #             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
+    #             if self.stop_script_called:
+    #                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+    #                 self.focussing=False
+    #                 return
+    #             if not g_dev['obs'].open_and_enabled_to_observe:
+    #                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+    #                 self.focussing=False
+    #                 return
+    #         else:
+    #             try:
+    #                 g_dev['obs'].fwhmresult['FWHM'] = 4
+    #                 g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+    #             except:
+    #                 plog(traceback.format_exc())
+    #                 #
+    #         try:
+    #             spot = g_dev['obs'].fwhmresult['FWHM']
+    #             lsources = g_dev['obs'].fwhmresult['No_of_sources']
+    #             if np.isnan(lsources):
+    #                 spot=False
 
-        minimumFWHM = 100.0
+    #             foc_pos = (foc_pos0 - (ctr+0)*throw)
 
-        # Remove Faulty measurements
-        trimmed_list=[]
-        for focentry in extensive_focus:
-            if focentry[1] != False:
-                trimmed_list.append(focentry)
+    #         except:
+    #             spot = False
+    #             foc_pos = False
+    #             lsources=0
+    #             plog ("spot failed on extensive focus script")
+    #             plog(traceback.format_exc())
 
-        extensive_focus=trimmed_list
+    #         g_dev['obs'].send_to_user("Extensive focus position " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
 
-        # Find the maximum number of sources detected
-        # if it fails, it fails.... usually fails because there are no sources detected in any images
-        try:
-            maxsources=max(np.asarray(extensive_focus)[:,2])
-        except:
-            maxsources=1
+    #         if spot != False:
+    #             extensive_focus.append([foc_pos, spot, lsources])
 
-        for focentry in extensive_focus:
-            # Has to have detected a FWHM as well as have a lot of sources
-            if focentry[1] != False and focentry[2] > 0.2 * maxsources:
-                if focentry[1] < minimumFWHM:
-                    solved_pos = focentry[0]
-                    minimumFWHM = focentry[1]
-        try:
-            try:
-                plog (extensive_focus)
-                plog (solved_pos)
-                plog (minimumFWHM)
-                g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
-                g_dev['foc'].last_known_focus=(solved_pos)
-                g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+    #         plog("Extensive focus so far (pos, fwhm, sources): "+ str(extensive_focus))
 
-            except:
-                plog ("extensive focus failed :(")
-            if not no_auto_after_solve:
-                self.auto_focus_script(None,None, dont_return_scope=dont_return_scope,skip_timer_check=True, extensive_focus=solved_pos)
-            else:
-                try:
-                    if not dont_log_focus:
-                        g_dev['foc'].af_log(solved_pos,minimumFWHM, minimumFWHM)
-                except:
-                    plog ("Likely no focus positions were found in the extensive focus routine. Investigate if this isn't true.")
-                    #plog(traceback.format_exc())
-                    plog ("Moving back to the starting focus")
-                    g_dev['obs'].send_to_user("Extensive focus attempt failed. Returning to initial focus.")
-                    g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-        except:
-            plog ("Something went wrong in the extensive focus routine")
-            plog(traceback.format_exc())
-            plog ("Moving back to the starting focus")
-            g_dev['obs'].send_to_user("Extensive focus attempt failed. Returning to initial focus.")
-            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+    #     for ctr in range(3):
+    #         g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps)
+    #         #g_dev["obs"].request_full_update()
+    #         if not sim:
+    #             g_dev['obs'].request_scan_requests()
+    #             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+    #             opt = { 'count': 1, 'filter': filter_choice}
+    #             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
+    #             if self.stop_script_called:
+    #                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+    #                 self.focussing=False
+    #                 return
+    #             if not g_dev['obs'].open_and_enabled_to_observe:
+    #                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+    #                 self.focussing=False
+    #                 return
+    #         else:
+    #             g_dev['obs'].fwhmresult['FWHM'] = 4
+    #             g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
+    #         try:
+    #             spot = g_dev['obs'].fwhmresult['FWHM']
+    #             lsources = g_dev['obs'].fwhmresult['No_of_sources']
+    #             if np.isnan(lsources):
+    #                 spot=False
 
-        if not dont_return_scope:
+    #             foc_pos = (foc_pos0 + (ctr+1)*throw)
 
-            plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-            g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-            g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-            self.wait_for_slew()
+    #         except:
+    #             spot = False
+    #             foc_pos = False
+    #             lsources=0
+    #             plog ("spot failed on extensive focus script")
+    #             plog(traceback.format_exc())
 
-        self.af_guard = False
-        self.focussing = False
+    #         g_dev['obs'].send_to_user("Extensive focus position " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
+    #         extensive_focus.append([foc_pos, spot, lsources])
+    #         plog(extensive_focus)
+
+    #     minimumFWHM = 100.0
+
+    #     # Remove Faulty measurements
+    #     trimmed_list=[]
+    #     for focentry in extensive_focus:
+    #         if focentry[1] != False:
+    #             trimmed_list.append(focentry)
+
+    #     extensive_focus=trimmed_list
+
+    #     # Find the maximum number of sources detected
+    #     # if it fails, it fails.... usually fails because there are no sources detected in any images
+    #     try:
+    #         maxsources=max(np.asarray(extensive_focus)[:,2])
+    #     except:
+    #         maxsources=1
+
+    #     for focentry in extensive_focus:
+    #         # Has to have detected a FWHM as well as have a lot of sources
+    #         if focentry[1] != False and focentry[2] > 0.2 * maxsources:
+    #             if focentry[1] < minimumFWHM:
+    #                 solved_pos = focentry[0]
+    #                 minimumFWHM = focentry[1]
+    #     try:
+    #         try:
+    #             plog (extensive_focus)
+    #             plog (solved_pos)
+    #             plog (minimumFWHM)
+    #             g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
+    #             g_dev['foc'].last_known_focus=(solved_pos)
+    #             g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+
+    #         except:
+    #             plog ("extensive focus failed :(")
+    #         if not no_auto_after_solve:
+    #             self.auto_focus_script(None,None, dont_return_scope=dont_return_scope,skip_timer_check=True, extensive_focus=solved_pos)
+    #         else:
+    #             try:
+    #                 if not dont_log_focus:
+    #                     g_dev['foc'].af_log(solved_pos,minimumFWHM, minimumFWHM)
+    #             except:
+    #                 plog ("Likely no focus positions were found in the extensive focus routine. Investigate if this isn't true.")
+    #                 #plog(traceback.format_exc())
+    #                 plog ("Moving back to the starting focus")
+    #                 g_dev['obs'].send_to_user("Extensive focus attempt failed. Returning to initial focus.")
+    #                 g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+    #     except:
+    #         plog ("Something went wrong in the extensive focus routine")
+    #         plog(traceback.format_exc())
+    #         plog ("Moving back to the starting focus")
+    #         g_dev['obs'].send_to_user("Extensive focus attempt failed. Returning to initial focus.")
+    #         g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+
+    #     if not dont_return_scope:
+
+    #         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+    #         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+    #         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+    #         self.wait_for_slew()
+
+    #     self.af_guard = False
+    #     self.focussing = False
 
     def equatorial_pointing_run(self, max_pointings=15, alt_minimum=30):
 

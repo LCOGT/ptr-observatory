@@ -739,10 +739,23 @@ class Focuser:
 
     def guarded_move(self, to_focus):
 
-        self.guarded_move_requested=True
-        self.focuser_is_moving=True
-        self.guarded_move_to_focus=to_focus
-        self.wait_for_focuser_update()
+        
+        while self.focuser_is_moving:
+            plog ("guarded_move focuser wait")
+            time.sleep(0.2)
+
+        # Check that the guarded_move is even necessary
+        # If it is roughly in the right space, the guarded_move
+        # Just adds overhead for no benefit
+        
+        if self.current_focus_position > to_focus-35 and self.current_focus_position < to_focus+35:
+            plog ("Not moving focus, focus already close to requested position")
+        else:
+
+            self.guarded_move_requested=True
+            self.focuser_is_moving=True
+            self.guarded_move_to_focus=to_focus
+            self.wait_for_focuser_update()
 
 
         # try:

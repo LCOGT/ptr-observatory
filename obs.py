@@ -502,6 +502,8 @@ class Observatory:
         self.last_platesolved_dec_err =np.nan
         self.platesolve_errors_in_a_row=0
 
+        self.worst_potential_pointing_in_arcseconds=25400
+
         # Rotator vs mount vs camera sync stuff
         self.rotator_has_been_checked_since_last_slew = False
 
