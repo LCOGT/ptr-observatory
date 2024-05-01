@@ -3113,10 +3113,64 @@ class Observatory:
                     saverretries = 0
                     while saver == 0 and saverretries < 10:
                         try:
+                            
+                            if not os.path.exists(self.local_dark_folder + "/localcalibrations"):
+                                os.makedirs(self.local_dark_folder + "/localcalibrations")
+                            
+                            if 'dark' in slow_process[4]:
+                                if not os.path.exists(self.local_dark_folder ):
+                                    os.makedirs(self.local_dark_folder )
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/narrowbanddarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/narrowbanddarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/broadbanddarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/broadbanddarks")
+
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/pointzerozerofourfivedarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/pointzerozerofourfivedarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/onepointfivepercentdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/onepointfivepercentdarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/fivepercentdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/fivepercentdarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/tenpercentdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/tenpercentdarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/quartersecdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/quartersecdarks")
+
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/halfsecdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/halfsecdarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/sevenfivepercentdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/sevenfivepercentdarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/onesecdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/onesecdarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/oneandahalfsecdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/oneandahalfsecdarks")
+
+
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/twosecdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/twosecdarks")
+
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/threepointfivesecdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/threepointfivesecdarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/fivesecdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/fivesecdarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/sevenpointfivesecdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/sevenpointfivesecdarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/tensecdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/tensecdarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/fifteensecdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/fifteensecdarks")
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/twentysecdarks"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/twentysecdarks")
+                                
+                            if 'flat' in slow_process[4]:
+                                if not os.path.exists(self.local_flat_folder ):
+                                    os.makedirs(self.local_flat_folder )
 
                             # Figure out which folder to send the calibration file to
                             # and delete any old files over the maximum amount to store
                             if slow_process[4] == 'bias':
+                                if not os.path.exists(self.local_bias_folder ):
+                                    os.makedirs(self.local_bias_folder )
                                 tempfilename = self.local_bias_folder + slow_process[1].replace('.fits', '.npy')
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_bias_to_store']
                                 n_files = len(glob.glob(self.local_bias_folder + '*.n*'))
