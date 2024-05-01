@@ -190,7 +190,7 @@ class Focuser:
 
                 try:
                     while g_dev['cam'].shutter_open:
-                        print ("Focuser waiting for Exposure to finish.")
+                        #print ("Focuser waiting for Exposure to finish.")
                         time.sleep(0.5)
                 except:
                     print ("Exposure focuser wait failed. ")
@@ -703,15 +703,15 @@ class Focuser:
                 #plog ("Focus different by: " + str((self.last_known_focus + adjust) - current_focus_micron) +'. Sending adjust command.')
                 #plog ("Filter offset: " + str(g_dev["fil"].filter_offset))
                 #plog ("Temperature difference: " + str(temp_delta))
-                if self.current_focus_temperature is not None:
-                    try:
-                        plog ("Temperature focus difference: " + str(round(temp_delta * float(self.focus_temp_slope), 1)))
-                    except:
-                        pass
+                # if self.current_focus_temperature is not None:
+                #     try:
+                #         plog ("Temperature focus difference: " + str(round(temp_delta * float(self.focus_temp_slope), 1)))
+                #     except:
+                #         pass
                 #req = {"position": self.last_known_focus + adjust}
                 #opt = {}
                 self.focuser_is_moving=True
-                plog ("adjusting focus to: " + str(self.last_known_focus + adjust))
+                plog ("Adjusting focus to: " + str(self.last_known_focus + adjust))
                 #self.move_absolute_command(req, opt)
                 #breakpoint()
                 self.guarded_move((self.last_known_focus + adjust)*self.micron_to_steps)
