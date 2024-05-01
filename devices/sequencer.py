@@ -328,7 +328,8 @@ class Sequencer:
         current_focus_jpg.paste(pil_image)
         # plog ("paste jpeg: " + str(time.time()-googtime))
         # googtime=time.time()
-        current_focus_jpg.save(jpeg_name)
+        current_focus_jpg.save(jpeg_name.replace('.jpg','.tempjpg'))
+        os.rename(jpeg_name.replace('.jpg','.tempjpg'),jpeg_name)
         #plog ("save jpeg: " + str(time.time()-googtime))
         
         #img_buf.close()
@@ -6487,7 +6488,7 @@ class Sequencer:
 
                 g_dev['obs'].send_to_user("Focus position: " + str(focus_position_this_loop) + " FWHM: " + str(round(spot,2)), p_level='INFO')
 
-                plog ("spot measurement: " + str(round(spot,2)))
+                #plog ("spot measurement: " + str(round(spot,2)))
 
                 if not np.isnan(spot):
                     if spot < 30.0:
