@@ -2737,7 +2737,7 @@ class Observatory:
 
 
                         # yet another pickle debugger.
-                        if True:
+                        if False:
                             pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
                              pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet], open('subprocesses/testplatesolvepickle','wb'))
 
@@ -2896,25 +2896,25 @@ class Observatory:
                             # self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
                             # self.drift_tracker_dec=self.drift_tracker_dec + err_dec
 
-                            if self.drift_tracker_counter == 0:
-                                plog ("not calculating drift on first platesolve of drift set. Using deviation as the zeropoint in time and space.")
-                                self.drift_tracker_first_offset_ra = err_ha  * 15 * 3600
-                                self.drift_tracker_first_offset_dec = err_dec   * 3600
-                                self.drift_tracker_timer=time.time()
+                            # if self.drift_tracker_counter == 0:
+                            #     #plog ("not calculating drift on first platesolve of drift set. Using deviation as the zeropoint in time and space.")
+                            #     self.drift_tracker_first_offset_ra = err_ha  * 15 * 3600
+                            #     self.drift_tracker_first_offset_dec = err_dec   * 3600
+                            #     self.drift_tracker_timer=time.time()
 
-                            else:
+                            # else:
 
-                                drift_timespan= time.time() - self.drift_tracker_timer
-                                if drift_timespan < 300:
-                                    plog ("Drift calculations unreliable as yet because drift timescale < 300s.")
-                                plog ("Solve in drift set: " +str(self.drift_tracker_counter))
-                                plog ("Drift Timespan " + str(drift_timespan))
-                                self.drift_tracker_ra_arcsecperhour=  ((err_ha * 15 * 3600 ) - self.drift_tracker_first_offset_ra) / (drift_timespan / 3600)
-                                self.drift_tracker_dec_arcsecperhour= ((err_dec *3600) - self.drift_tracker_first_offset_dec) / (drift_timespan / 3600)
-                                if drift_timespan < 300:
-                                    plog ("Not calculating drift on a timescale under 5 minutes.")
-                                else:
-                                    plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
+                            #     drift_timespan= time.time() - self.drift_tracker_timer
+                            #     # if drift_timespan < 180:
+                            #     #     plog ("Drift calculations unreliable as yet because drift timescale < 180s.")
+                            #     # plog ("Solve in drift set: " +str(self.drift_tracker_counter))
+                            #     # plog ("Drift Timespan " + str(drift_timespan))
+                            #     self.drift_tracker_ra_arcsecperhour=  ((err_ha * 15 * 3600 ) - self.drift_tracker_first_offset_ra) / (drift_timespan / 3600)
+                            #     self.drift_tracker_dec_arcsecperhour= ((err_dec *3600) - self.drift_tracker_first_offset_dec) / (drift_timespan / 3600)
+                            #     if drift_timespan > 180:
+                            #     #     plog ("Not calculating drift on a timescale under 5 minutes.")
+                            #     # else:
+                            #         plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
 
 
                             self.drift_tracker_counter=self.drift_tracker_counter+1
@@ -2938,7 +2938,7 @@ class Observatory:
                                 #     plog ("Not recentering as this is the first frame of a smartstack.")
                                 #     self.pointing_correction_requested_by_platesolve_thread = False
 
-                                if (abs(err_ha * 15 * 3600) > 25400) or (abs(err_dec * 3600) > 25400):
+                                if (abs(err_ha * 15 * 3600) > self.worst_potential_pointing_in_arcseconds) or (abs(err_dec * 3600) > self.worst_potential_pointing_in_arcseconds):
                                     err_ha = 0
                                     err_dec = 0
                                     plog("Platesolve has found that the current suggested pointing is way off!")
@@ -2989,11 +2989,11 @@ class Observatory:
 
                                      drift_timespan= time.time() - self.drift_tracker_timer
 
-                                     plog ("Drift Timespan " + str(drift_timespan))
+                                     #plog ("Drift Timespan " + str(drift_timespan))
 
-                                     if drift_timespan < 300:
-                                         plog ("Not calculating drift on a timescale under 5 minutes.")
-                                     else:
+                                     if drift_timespan >180:
+                                     #     plog ("Not calculating drift on a timescale under 5 minutes.")
+                                     # else:
                                          self.drift_arcsec_ra_arcsecperhour= (err_ha * 15 * 3600 ) / (drift_timespan / 3600)
                                          self.drift_arcsec_dec_arcsecperhour=  (err_dec *3600) / (drift_timespan / 3600)
                                          plog ("Drift calculations in arcsecs per hour, RA: " + str(round(self.drift_arcsec_ra_arcsecperhour,6)) + " DEC: " + str(round(self.drift_arcsec_dec_arcsecperhour,6)) )
@@ -3001,33 +3001,36 @@ class Observatory:
 
                                      if not g_dev['obs'].mount_reference_model_off:
                                          if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
-                                             try:
-                                                 #plog ("updating mount reference")
-                                                 g_dev['mnt'].last_slew_was_pointing_slew = False
-
-                                                 #plog ("adjustment: " + str(err_ha) +' ' +str(err_dec))
-                                                 if g_dev["mnt"].pier_side == 0:
-                                                     try:
-                                                         #plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
-                                                         g_dev["mnt"].adjust_mount_reference(
-                                                             err_ha, err_dec, pointing_ra, pointing_dec
-                                                         )
-
-                                                     except Exception as e:
-                                                         plog("Something is up in the mount reference adjustment code ", e)
-                                                 else:
-                                                     try:
-                                                         #plog ("current references: " + str ( g_dev['mnt'].get_flip_reference()))
-                                                         g_dev["mnt"].adjust_flip_reference(
-                                                             err_ha, err_dec, pointing_ra, pointing_dec
-                                                         )
-                                                     except Exception as e:
-                                                         plog("Something is up in the mount reference adjustment code ", e)
-                                                 #plog ("final references: " + str ( g_dev['mnt'].get_mount_reference()))
-
-                                             except:
-                                                 plog("This mount doesn't report pierside")
-                                                 plog(traceback.format_exc())
+                                             
+                                             # The mount reference should only be updated if it is less than a third of the worst potential pointing in arcseconds.....
+                                             if (abs(err_ha * 15 * 3600) < (self.worst_potential_pointing_in_arcseconds/3)) or (abs(err_dec * 3600) < (self.worst_potential_pointing_in_arcseconds/3)):
+                                                 try:
+                                                     #plog ("updating mount reference")
+                                                     g_dev['mnt'].last_slew_was_pointing_slew = False
+    
+                                                     #plog ("adjustment: " + str(err_ha) +' ' +str(err_dec))
+                                                     if g_dev["mnt"].pier_side == 0:
+                                                         try:
+                                                             #plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
+                                                             g_dev["mnt"].adjust_mount_reference(
+                                                                 err_ha, err_dec, pointing_ra, pointing_dec
+                                                             )
+    
+                                                         except Exception as e:
+                                                             plog("Something is up in the mount reference adjustment code ", e)
+                                                     else:
+                                                         try:
+                                                             #plog ("current references: " + str ( g_dev['mnt'].get_flip_reference()))
+                                                             g_dev["mnt"].adjust_flip_reference(
+                                                                 err_ha, err_dec, pointing_ra, pointing_dec
+                                                             )
+                                                         except Exception as e:
+                                                             plog("Something is up in the mount reference adjustment code ", e)
+                                                     #plog ("final references: " + str ( g_dev['mnt'].get_mount_reference()))
+    
+                                                 except:
+                                                     plog("This mount doesn't report pierside")
+                                                     plog(traceback.format_exc())
                                 # else:
                                 #     self.pointing_correction_requested_by_platesolve_thread = False
                                 #     plog ("pointing too good to recenter")
