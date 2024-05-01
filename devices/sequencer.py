@@ -632,8 +632,7 @@ class Sequencer:
 
                 #print ()
 
-            if (time.time() - g_dev['seq'].time_roof_last_opened > \
-                   self.config['time_to_wait_after_roof_opens_to_take_flats'] ) and \
+            if ((time.time() - g_dev['seq'].time_roof_last_opened > self.config['time_to_wait_after_roof_opens_to_take_flats'] ) or g_dev['obs'].assume_roof_open) and \
                    not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and \
                    (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                    and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and\
@@ -866,7 +865,7 @@ class Sequencer:
 
 
 
-            if (time.time() - g_dev['seq'].time_roof_last_opened > 1200 ) and not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
+            if ((time.time() - g_dev['seq'].time_roof_last_opened > self.config['time_to_wait_after_roof_opens_to_take_flats'] ) or g_dev['obs'].assume_roof_open) and not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
                     self.config['auto_morn_sky_flat'])  and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
 
                 self.morn_sky_flat_latch = True
