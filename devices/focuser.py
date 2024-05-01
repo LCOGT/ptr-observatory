@@ -621,8 +621,12 @@ class Focuser:
 
         # Hack to stop focus during commissioning
         #return
+        
+        if g_dev['seq'].flats_being_collected:
+            plog ("adjusting focus disabled during focussing")
+            return
 
-        if not force_change: # If the filter is changed, then a force change is necessary.
+        if not force_change  : # If the filter is changed, then a force change is necessary.
             try:
                 if g_dev['seq'].focussing or self.focuser_is_moving or g_dev['seq'].measuring_focus_offsets:
                     return
@@ -692,7 +696,7 @@ class Focuser:
             current_focus_micron=self.current_focus_position#*self.steps_to_micron
 
             #breakpoint()
-            if abs((self.last_known_focus + adjust) - current_focus_micron) > 10:
+            if abs((self.last_known_focus + adjust) - current_focus_micron) > 50:
                 #plog ('adjusting focus by ' + str(adjust))
                 #self.last_filter_offset = g_dev["fil"].filter_offset
                 #plog ("Current focus: " +str(current_focus_micron))
