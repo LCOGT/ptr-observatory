@@ -3012,7 +3012,7 @@ class Observatory:
                                                      if g_dev["mnt"].pier_side == 0:
                                                          try:
                                                              #plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
-                                                             g_dev["mnt"].adjust_mount_reference(
+                                                             g_dev["mnt"].record_mount_reference(
                                                                  err_ha, err_dec, pointing_ra, pointing_dec
                                                              )
     
@@ -3021,7 +3021,7 @@ class Observatory:
                                                      else:
                                                          try:
                                                              #plog ("current references: " + str ( g_dev['mnt'].get_flip_reference()))
-                                                             g_dev["mnt"].adjust_flip_reference(
+                                                             g_dev["mnt"].record_flip_reference(
                                                                  err_ha, err_dec, pointing_ra, pointing_dec
                                                              )
                                                          except Exception as e:

@@ -2529,24 +2529,27 @@ class Mount:
     
 
 
-    def adjust_mount_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
+    def record_mount_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
 
+        
+
+        # The HA is for the actual requested HA, NOT the solved ra
+        HA=self.current_sidereal - pointing_ra + err_ha
+        
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
-        try:
-            init_ra = mnt_shelf['ra_cal_offset']
-            init_dec = mnt_shelf['dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
-        except:
-            init_ra = 0.0
-            init_dec =0.0
-
-        HA=self.current_sidereal - pointing_ra
+        # try:
+        #     init_ra = mnt_shelf['ra_cal_offset']
+        #     init_dec = mnt_shelf['dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
+        # except:
+        #     init_ra = 0.0
+        #     init_dec =0.0
 
         #plog("initial:  ", init_ra, init_dec)
-        mnt_shelf['ra_cal_offset'] = init_ra + err_ha
-        mnt_shelf['dec_cal_offset'] = init_dec + err_dec
+        mnt_shelf['ra_cal_offset'] = err_ha
+        mnt_shelf['dec_cal_offset'] = err_dec
         mnt_shelf['last_mount_reference_time']=time.time()
         mnt_shelf['last_mount_reference_ha']= HA
-        mnt_shelf['last_mount_reference_dec']= pointing_dec
+        mnt_shelf['last_mount_reference_dec']= pointing_dec + err_dec
         #plog("final:  ", mnt_shelf['ra_cal_offset'], mnt_shelf['dec_cal_offset'])
 
 
@@ -2554,96 +2557,96 @@ class Mount:
         self.last_mount_reference_time=time.time()
         self.last_mount_reference_ha = HA
         self.last_mount_reference_dec = pointing_dec
-        self.last_mount_reference_ha_offset = init_ra + err_ha
-        self.last_mount_reference_dec_offset = init_dec + err_dec
+        self.last_mount_reference_ha_offset =  err_ha
+        self.last_mount_reference_dec_offset =  err_dec
 
 
         # Add in latest point to the list of mount references
         # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.
         HA=self.current_sidereal - pointing_ra
-        self.longterm_storage_of_mount_references.append([time.time(),HA,pointing_dec,init_ra + err_ha, init_dec + err_dec])
+        self.longterm_storage_of_mount_references.append([time.time(),HA,pointing_dec + err_dec , err_ha,  err_dec])
         mnt_shelf['longterm_storage_of_mount_references']=self.longterm_storage_of_mount_references
         mnt_shelf.close()
 
         return
 
-    def adjust_flip_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
+    def record_flip_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
 
-
-        HA=self.current_sidereal - pointing_ra
+        # The HA is for the actual requested HA, NOT the solved ra
+        HA=self.current_sidereal - pointing_ra + err_ha
 
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
-        try:
-            init_ra = mnt_shelf['flip_ra_cal_offset']
-            init_dec = mnt_shelf['flip_dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
-        except:
-            init_ra = 0.0
-            init_dec =0.0
-        mnt_shelf['flip_ra_cal_offset'] = init_ra + err_ha    #NB NB NB maybe best to reverse signs here??
-        mnt_shelf['flip_dec_cal_offset'] = init_dec + err_dec
+        # try:
+        #     init_ra = mnt_shelf['flip_ra_cal_offset']
+        #     init_dec = mnt_shelf['flip_dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
+        # except:
+        #     init_ra = 0.0
+        #     init_dec =0.0
+        mnt_shelf['flip_ra_cal_offset'] = err_ha    #NB NB NB maybe best to reverse signs here??
+        mnt_shelf['flip_dec_cal_offset'] = err_dec
         mnt_shelf['last_flip_reference_time']=time.time()
         mnt_shelf['last_flip_reference_ha']= HA
-        mnt_shelf['last_flip_reference_dec']= pointing_dec
+        mnt_shelf['last_flip_reference_dec']= pointing_dec + err_dec
 
 
         self.last_flip_reference_time=time.time()
         self.last_flip_reference_ha = HA
         self.last_flip_reference_dec = pointing_dec
-        self.last_flip_reference_ha_offset = init_ra + err_ha
-        self.last_flip_reference_dec_offset = init_dec + err_dec
+        self.last_flip_reference_ha_offset =  err_ha
+        self.last_flip_reference_dec_offset =  err_dec
 
 
         # Add in latest point to the list of mount references
         # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.
         HA=self.current_sidereal - pointing_ra
-        self.longterm_storage_of_flip_references.append([time.time(),HA,pointing_dec,init_ra + err_ha, init_dec + err_dec])
+        self.longterm_storage_of_flip_references.append([time.time(),HA,pointing_dec + err_dec, err_ha,  err_dec])
         mnt_shelf['longterm_storage_of_flip_references']=self.longterm_storage_of_flip_references
         mnt_shelf.close()
 
         return
 
-    def set_mount_reference(self, delta_ra, delta_dec, pointing_ra, pointing_dec):
+    # def set_mount_reference(self, delta_ra, delta_dec, pointing_ra, pointing_dec):
 
-        HA=self.current_sidereal - pointing_ra
+    #     HA=self.current_sidereal - pointing_ra
 
-        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
-        mnt_shelf['ra_cal_offset'] = delta_ra
-        mnt_shelf['dec_cal_offset'] = delta_dec
-        mnt_shelf['last_mount_reference_time']=time.time()
-        mnt_shelf['last_mount_reference_ha']= HA
-        mnt_shelf['last_mount_reference_dec']= pointing_dec
-        mnt_shelf.close()
+    #     mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+    #     mnt_shelf['ra_cal_offset'] = delta_ra
+    #     mnt_shelf['dec_cal_offset'] = delta_dec
+    #     mnt_shelf['last_mount_reference_time']=time.time()
+    #     mnt_shelf['last_mount_reference_ha']= HA
+    #     mnt_shelf['last_mount_reference_dec']= pointing_dec
+    #     mnt_shelf.close()
 
-        self.last_mount_reference_time=time.time()
-        self.last_mount_reference_ha = HA
-        self.last_mount_reference_dec =  pointing_dec
-        self.last_mount_reference_ha_offset = delta_ra
-        self.last_mount_reference_dec_offset =  delta_dec
+    #     self.last_mount_reference_time=time.time()
+    #     self.last_mount_reference_ha = HA
+    #     self.last_mount_reference_dec =  pointing_dec
+    #     self.last_mount_reference_ha_offset = delta_ra
+    #     self.last_mount_reference_dec_offset =  delta_dec
 
-        return
+    #     return
 
-    def set_flip_reference(self, delta_ra, delta_dec, pointing_ra, pointing_dec):
+    # def set_flip_reference(self, delta_ra, delta_dec, pointing_ra, pointing_dec):
 
-        HA=self.current_sidereal - pointing_ra
+    #     HA=self.current_sidereal - pointing_ra
 
-        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
-        mnt_shelf['flip_ra_cal_offset'] = delta_ra
-        mnt_shelf['flip_dec_cal_offset'] = delta_dec
-        mnt_shelf['last_flip_reference_time']=time.time()
-        mnt_shelf['last_flip_reference_ha']= HA
-        mnt_shelf['last_flip_reference_dec']= pointing_dec
+    #     mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+    #     mnt_shelf['flip_ra_cal_offset'] = delta_ra
+    #     mnt_shelf['flip_dec_cal_offset'] = delta_dec
+    #     mnt_shelf['last_flip_reference_time']=time.time()
+    #     mnt_shelf['last_flip_reference_ha']= HA
+    #     mnt_shelf['last_flip_reference_dec']= pointing_dec
 
-        mnt_shelf.close()
+    #     mnt_shelf.close()
 
-        self.last_flip_reference_time=time.time()
-        self.last_flip_reference_ha = HA
-        self.last_flip_reference_dec = pointing_dec
-        self.last_flip_reference_ha_offset = delta_ra
-        self.last_flip_reference_dec_offset = delta_dec
+    #     self.last_flip_reference_time=time.time()
+    #     self.last_flip_reference_ha = HA
+    #     self.last_flip_reference_dec = pointing_dec
+    #     self.last_flip_reference_ha_offset = delta_ra
+    #     self.last_flip_reference_dec_offset = delta_dec
 
-        return
+    #     return
 
     def get_mount_reference(self, pointing_ra, pointing_dec):
 
