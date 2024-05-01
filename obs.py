@@ -2946,6 +2946,8 @@ class Observatory:
                                     plog("This is more than a simple nudge, so not nudging the scope.")
                                     g_dev["obs"].send_to_user("Platesolve detects pointing far out, RA: " + str(round(err_ha * 15 * 3600, 2)) + " DEC: " +str (round(err_dec * 3600, 2)))
 
+                                    breakpoint()
+
                                     #self.drift_tracker_ra=0
                                     #self.drift_tracker_dec=0
                                     #g_dev['obs'].drift_tracker_timer=0

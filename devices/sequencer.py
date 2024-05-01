@@ -8013,7 +8013,7 @@ class Sequencer:
 
         #breakpoint()
 
-        if g_dev['cam'].pixscale == None:
+        if g_dev['cam'].pixscale == None or np.isnan(g_dev['cam'].pixscale):
             plog ("Finding pixelscale for the first time. This could take a whilE!")
             g_dev["obs"].send_to_user("Finding pixelscale for the first time. This could take a whilE!")
             req = {'time': 180,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
