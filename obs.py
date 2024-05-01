@@ -2761,12 +2761,12 @@ class Observatory:
                         #breakpoint()
                         # Essentially wait until the subprocess is complete
                         #platesolve_subprocess.communicate()
-                        
+
                         if np.isnan(pixscale) or pixscale == None:
                             timeout_time = 1200
                         else:
                             timeout_time = 120
-                        
+
                         platesolve_timeout_timer=time.time()
                         while not os.path.exists(self.local_calibration_path + 'platesolve.pickle') and (time.time() - platesolve_timeout_timer) < timeout_time:
                             time.sleep(0.5)
@@ -2775,7 +2775,7 @@ class Observatory:
                             plog ("platesolve timed out")
                             solve = 'error'
                             platesolve_subprocess.kill()
-                            
+
                             try:
                                 os.system('taskkill /IM ps3cli.exe /F')
                             except:
@@ -2946,7 +2946,7 @@ class Observatory:
                                     plog("This is more than a simple nudge, so not nudging the scope.")
                                     g_dev["obs"].send_to_user("Platesolve detects pointing far out, RA: " + str(round(err_ha * 15 * 3600, 2)) + " DEC: " +str (round(err_dec * 3600, 2)))
 
-                                    breakpoint()
+                                    #breakpoint()
 
                                     #self.drift_tracker_ra=0
                                     #self.drift_tracker_dec=0

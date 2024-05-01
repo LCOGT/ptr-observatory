@@ -247,12 +247,12 @@ class Sequencer:
         self.master_restack_thread.daemon = True
         self.master_restack_thread.start()
 
-    
+
 
     def construct_focus_jpeg_and_save(self, packet):
-        
+
         (x, y, f, current_focus_jpg, jpeg_name, fitted_focus_position,fitted_focus_fwhm) = packet
-        
+
         # Just plot and fling up the jpeg
         # plt.scatter(x,y)
         # plt.show()
@@ -265,30 +265,30 @@ class Sequencer:
         # googtime=time.time()
         # plt.scatter(x,y)
         # plog ("scatter plt: " + str(time.time()-googtime))
-        
+
         # # breakpoint()
         # googtime=time.time()
         # plt.ioff()
         # plt.savefig(img_buf, format='png', bbox_inches='tight', pad_inches=0,dpi=110)
         # plog ("savefig: " + str(time.time()-googtime))
-        
+
         # breakpoint()
-        
-        
-        
+
+
+
         #googtime=time.time()
         # plt.clf()
         fig,ax=plt.subplots(1, figsize=(5.5, 4), dpi=100)
         plt.ioff()
         #ax.plot([1, 3, 5, 8, 4, 2])
-        
+
         ax.scatter(x,y)
-        
+
         if f:
             ax.plot(x,f(x), color = 'green')
             ax.scatter(fitted_focus_position,fitted_focus_fwhm,  color = 'red', marker = 'X')
-        
-        
+
+
         #fig.ioff()
         fig.canvas.draw()
         temp_canvas = fig.canvas
@@ -312,11 +312,11 @@ class Sequencer:
         # #fig3 = go.Figure(data=fig1.data + fig2.data, layout=layout)
         # fig3 = go.Figure(data=fig1.data, layout=layout)
         # fig3.write_image(img_buf)
-        
+
         # googtime=time.time()
         # pltim = Image.open(img_buf)
         # plog ("Image open: " + str(time.time()-googtime))
-        
+
         #im.show(title="My Image")
         #box = (500, 500)
         #box=
@@ -328,14 +328,14 @@ class Sequencer:
         current_focus_jpg.paste(pil_image)
         # plog ("paste jpeg: " + str(time.time()-googtime))
         # googtime=time.time()
-        current_focus_jpg.save(jpeg_name.replace('.jpg','.tempjpg'))
-        os.rename(jpeg_name.replace('.jpg','.tempjpg'),jpeg_name)
+        current_focus_jpg.save(jpeg_name.replace('.jpg','temp.jpg'))
+        os.rename(jpeg_name.replace('.jpg','temp.jpg'),jpeg_name)
         #plog ("save jpeg: " + str(time.time()-googtime))
-        
+
         #img_buf.close()
-        
-        
-        
+
+
+
 
     # Note this is a thread!
     def master_restack(self):
@@ -2954,15 +2954,15 @@ class Sequencer:
                         os.remove(file)
                         #time.sleep(0.2)
                         inputList.remove(file)
-                        
-                    elif tempmedian < max(30, temp_bias_level_min) or tempmedian > 55000: 
+
+                    elif tempmedian < max(30, temp_bias_level_min) or tempmedian > 55000:
                         plog ("dark file with strange median skipped: " + str(file))
                         notcorrupt=False
                         del tempy
                         os.remove(file)
                         #time.sleep(0.2)
-                        inputList.remove(file)    
-                    
+                        inputList.remove(file)
+
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     notcorrupt=False
@@ -2970,10 +2970,10 @@ class Sequencer:
                     #time.sleep(0.2)
                     inputList.remove(file)
 
-            
 
-            
-            
+
+
+
             if not notcorrupt:
                 time.sleep(10)
                 #breakpoint()
@@ -3150,7 +3150,7 @@ class Sequencer:
 
                     tempy=np.load(file)
                     tempmedian=bn.nanmedian(tempy)
-                    
+
                     if tempy.size < 1000:
                         plog ("corrupt dark skipped: " + str(file))
                         del tempy
@@ -3158,14 +3158,14 @@ class Sequencer:
                         os.remove(file)
                         time.sleep(0.2)
                         inputList.remove(file)
-                        
-                    elif tempmedian < max(30, temp_bias_level_min) or tempmedian > 55000:  
+
+                    elif tempmedian < max(30, temp_bias_level_min) or tempmedian > 55000:
                         plog ("dark file with strange median skipped: " + str(file))
                         del tempy
                         notcorrupt=False
                         os.remove(file)
                         time.sleep(0.2)
-                        inputList.remove(file)    
+                        inputList.remove(file)
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     os.remove(file)
@@ -3174,7 +3174,7 @@ class Sequencer:
                     inputList.remove(file)
 
 
-            
+
             if not notcorrupt:
                 time.sleep(10)
 
@@ -3452,15 +3452,15 @@ class Sequencer:
                     notcorrupt=False
                     time.sleep(0.2)
                     inputList.remove(file)
-                    
-                elif tempmedian < 30 or tempmedian > 3000: 
+
+                elif tempmedian < 30 or tempmedian > 3000:
                     plog ("bias file with strange median skipped: " + str(file))
                     del tempy
                     os.remove(file)
                     notcorrupt=False
                     time.sleep(0.2)
                     inputList.remove(file)
-                    
+
             except:
                 plog ("corrupt bias skipped: " + str(file))
                 os.remove(file)
@@ -3537,12 +3537,12 @@ class Sequencer:
                 i=0
                 for file in inputList:
                     #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
-                    
+
                     PLDrive[i] = np.load(file, mmap_mode='r')
-                    
+
                     # tempmedian=bn.nanmedian(PLDrive[i])
                     # # Last line of defence against dodgy images sneaking through.
-                    # if tempmedian < max(1000, temp_bias_level_median+200) or tempmedian > 55000:                     
+                    # if tempmedian < max(1000, temp_bias_level_median+200) or tempmedian > 55000:
                     i=i+1
 
                 #breakpoint()
@@ -3552,7 +3552,7 @@ class Sequencer:
                 # finalImage array
                 finalImage=np.zeros(shapeImage, dtype=np.float32)
 
-                
+
 
                 try:
 
@@ -3626,7 +3626,7 @@ class Sequencer:
                 #         counter=counter+1
 
                 masterBias=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-                
+
                 temp_bias_level_median=bn.nanmedian(masterBias)
                 temp_bias_level_max=bn.nanmax(masterBias)
                 temp_bias_level_min=bn.nanmin(masterBias)
@@ -3921,19 +3921,19 @@ class Sequencer:
                                 notcorrupt=False
                                 time.sleep(0.2)
                                 inputList.remove(file)
-                            
-                            elif tempmedian < max(1000, temp_bias_level_median+200) or tempmedian > 55000: 
+
+                            elif tempmedian < max(1000, temp_bias_level_median+200) or tempmedian > 55000:
                                 plog ("flat file with strange median skipped: " + str(file))
                                 del hdu1data
                                 os.remove(file)
                                 notcorrupt=False
                                 time.sleep(0.2)
                                 inputList.remove(file)
-                            
+
 
                         except:
                             plog ("corrupt flat skipped: " + str(file))
-                            
+
                             os.remove(file)
                             inputList.remove(file)
 
@@ -4011,29 +4011,29 @@ class Sequencer:
                                         #PLDrive[i] = np.load(file, mmap_mode='r')
                                         tempmedian=bn.nanmedian(hdu1data)
                                         # Last line of defence against dodgy images sneaking through.
-                                        if tempmedian < max(1000, temp_bias_level_median+200) or tempmedian > 55000: 
+                                        if tempmedian < max(1000, temp_bias_level_median+200) or tempmedian > 55000:
 
                                             a = np.empty((shapeImage[0],shapeImage[1]))
                                             a[:] = np.nan
                                             PLDrive[i] = copy.deepcopy(a)
-                                            plog ("failed on a flat component. Placing an nan array. ")                                            
+                                            plog ("failed on a flat component. Placing an nan array. ")
 
-                                        else:                                            
+                                        else:
 
                                             hdu1exp=float(file.split('_')[-2])
                                             #plog ("EXP")
                                             #plog (hdu1exp)
                                             fraction_through_range=0
-    
-    
-    
+
+
+
             #g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy'
-    
-    
+
+
                                             # This try/except is here because if there is a missing dark
                                             # we can always just revert to using the long dark.
                                             try:
-    
+
                                                 if hdu1exp == 0.0045 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy'):
                                                     flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy')
                                                     #print("five percent")
@@ -4119,14 +4119,14 @@ class Sequencer:
                                                     flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['narrowband_ss_dark']*hdu1exp)
                                                 else:
                                                     flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['1']*hdu1exp)
-    
+
                                             except:
                                                 flatdebiaseddedarked=(hdu1data-masterBias)-(g_dev['cam'].darkFiles['1']*hdu1exp)
-    
+
                                             #plog ("Fraction through range")
                                             #plog (fraction_through_range)
                                             del hdu1data
-    
+
                                             # Normalising flat file
                                             if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                                                 normalising_factor=bn.nanmedian(flatdebiaseddedarked)
@@ -4137,27 +4137,27 @@ class Sequencer:
                                                 # Rescaling median once nan'ed
                                                 flatdebiaseddedarked = flatdebiaseddedarked/bn.nanmedian(flatdebiaseddedarked)
                                             else:
-    
+
                                                 debayered=[]
                                                 max_median=0
-    
+
                                                 debayered.append(flatdebiaseddedarked[::2, ::2])
                                                 debayered.append(flatdebiaseddedarked[::2, 1::2])
                                                 debayered.append(flatdebiaseddedarked[1::2, ::2])
                                                 debayered.append(flatdebiaseddedarked[1::2, 1::2])
-    
+
                                                 osc_normalising_factor=[]
                                                 # crop each of the images to the central region
-    
+
                                                 for oscimage in debayered:
                                                     cropx = int( (oscimage.shape[0] -500)/2)
                                                     cropy = int((oscimage.shape[1] -500) /2)
                                                     oscimage=oscimage[cropx:-cropx, cropy:-cropy]
                                                     oscmedian=bn.nanmedian(oscimage)
                                                     osc_normalising_factor.append(oscmedian)
-    
+
                                                 del debayered
-    
+
                                                 flatdebiaseddedarked[::2, ::2]=flatdebiaseddedarked[::2, ::2]/osc_normalising_factor[0]
                                                 flatdebiaseddedarked[::2, 1::2]=flatdebiaseddedarked[::2, 1::2]/osc_normalising_factor[1]
                                                 flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
@@ -4167,20 +4167,20 @@ class Sequencer:
                                                 flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
                                                 # Rescaling median once nan'ed
                                                 flatdebiaseddedarked = flatdebiaseddedarked/bn.nanmedian(flatdebiaseddedarked)
-    
+
                                             #PLDrive[:,:,i] = copy.deepcopy(flatdebiaseddedarked)
-    
+
                                             #breakpoint()
                                             # Make new filename
                                             tempfile=file.replace('\\','/').split('/')
                                             tempfile[-1]='tempcali_' + tempfile[-1]
                                             tempfile="/".join(tempfile)
-    
+
                                             np.save(tempfile, flatdebiaseddedarked)
                                             del flatdebiaseddedarked
                                             temp_flat_file_list.append(tempfile)
                                             PLDrive[i] = np.load(tempfile, mmap_mode='r')
-    
+
                                             i=i+1
                                     except:
                                         a = np.empty((shapeImage[0],shapeImage[1]))
@@ -4645,7 +4645,7 @@ class Sequencer:
                                 if cge_median > 0:
 
                                     estimated_flat_gain.append(cge_gain)
-    
+
                                     single_filter_camera_gains.append(cge_gain)
                                 else:
                                     plog ("Something weird and fishy..... a negative median?")
@@ -6516,7 +6516,7 @@ class Sequencer:
 
             if position_counter < 5:
                 if len(focus_spots) > 0:
-                    
+
                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
                     # Fling the jpeg up
@@ -6533,8 +6533,8 @@ class Sequencer:
                         new_focus_position_to_attempt=max(spots_tried) + throw
                 else:
 
-                    
-                    
+
+
 
 
                     # Check that from the minimum value, each of the points always increases in both directions.
@@ -6546,11 +6546,11 @@ class Sequencer:
                         minimumfind.append(entry[1])
                     minimum_index=minimumfind.index(min(minimumfind))
                     minimum_value=min(minimumfind)
-                    
+
                     # Check that after five successful measurements
                     # If the seeing is too bad, just run with the expected
-                    
-                    
+
+
                     # If there is only two or three throw out from the lowest edge
                     if len(focus_spots) == 2 or len(focus_spots) == 3:
                         if focus_spots[0][1] < focus_spots[-1][1]:
@@ -6559,31 +6559,31 @@ class Sequencer:
                         else:
                             plog ("higher focus spot has lower fwhm value, trying out a spot out there")
                             new_focus_position_to_attempt=focus_spots[-1][0] + throw
-                    
-                    # if len(focus_spots) >=5:                       
-                        
-                        
-                            
 
-                    
+                    # if len(focus_spots) >=5:
+
+
+
+
+
 
 
 
 
 
                     else:
-                        
+
                         if minimum_value > 3.0:
                             plog ("Minimum value: " + str(minimum_value) + " is too high to bother focussing, just going with the estimated value from previous focus")
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
-                            
+
                             g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
                             g_dev['foc'].set_initial_best_guess_for_focus()
                             self.total_sequencer_control = False
                             self.focussing=False
                             return
-                        
-                        
+
+
                         # If the minimum is at one of the two points on the side of the v curve take another point beyond that point, otherwise try to fit a parabola
                         # minimumfind=[]
                         # for entry in focus_spots:
@@ -6636,10 +6636,10 @@ class Sequencer:
                             # current_focus_jpg.paste(pltim)#, box )
                             # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             # img_buf.close()
-                            
+
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
-                            
+
 
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
@@ -6698,7 +6698,7 @@ class Sequencer:
                             # current_focus_jpg.paste(pltim)#, box )
                             # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             # img_buf.close()
-                            
+
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
 
@@ -6766,7 +6766,7 @@ class Sequencer:
                             # current_focus_jpg.paste(pltim)#, box )
                             # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             # img_buf.close()
-                            
+
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
 
@@ -6816,7 +6816,7 @@ class Sequencer:
                             # current_focus_jpg.paste(pltim)#, box )
                             # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                             # img_buf.close()
-                            
+
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
 
@@ -6918,7 +6918,7 @@ class Sequencer:
                                     # current_focus_jpg.paste(pltim)#, box )
                                     # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                                     # img_buf.close()
-                                    
+
                                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
 
@@ -7034,7 +7034,7 @@ class Sequencer:
                                 # current_focus_jpg.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
                                 # img_buf.close()
                                 # plt.clf()
-                                
+
                                 threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, f, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),fitted_focus_position,fitted_focus_fwhm),))).start()
 
 
