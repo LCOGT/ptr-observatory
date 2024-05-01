@@ -5566,17 +5566,17 @@ class Camera:
 
                     # Make  sure the alt paths exist
                     if g_dev['obs'].config["save_to_alt_path"] == "yes":
-                        os.makedirs(
-                            g_dev['obs'].alt_path + g_dev["day"], exist_ok=True
-                        )
-                        os.makedirs(
-                            g_dev['obs'].alt_path + g_dev["day"] + "/raw/", exist_ok=True
-                        )
-                        os.makedirs(
-                            g_dev['obs'].alt_path + g_dev["day"] + "/reduced/", exist_ok=True
-                        )
-                        os.makedirs(
-                            g_dev['obs'].alt_path + g_dev["day"] + "/calib/", exist_ok=True)
+                        # os.makedirs(
+                        #     g_dev['obs'].alt_path + g_dev["day"], exist_ok=True
+                        # )
+                        # os.makedirs(
+                        #     g_dev['obs'].alt_path + g_dev["day"] + "/raw/", exist_ok=True
+                        # )
+                        # os.makedirs(
+                        #     g_dev['obs'].alt_path + g_dev["day"] + "/reduced/", exist_ok=True
+                        # )
+                        # os.makedirs(
+                        #     g_dev['obs'].alt_path + g_dev["day"] + "/calib/", exist_ok=True)
 
 
 
@@ -5584,10 +5584,24 @@ class Camera:
                     else:
                         altpath='no'
 
+                    
+
                     # Similarly to the above. This saves the RAW file to disk
                     if self.config['save_raw_to_disk']:
-                       #g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                       threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,'deprecated')),)).start()
+                        
+                        # Make sure the raw paths exist
+                        im_path_r = self.camera_path
+                        raw_path = im_path_r + g_dev["day"] + "/raw/"
+                        os.makedirs(
+                            self.camera_path + g_dev["day"], exist_ok=True
+                        )
+                        
+                        os.makedirs(
+                            raw_path, exist_ok=True
+                        )
+                        
+                        #g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                        threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,'deprecated')),)).start()
 
 
                     # For sites that have "save_to_alt_path" enabled, this routine
@@ -5601,6 +5615,17 @@ class Camera:
                         #                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
 
+                        os.makedirs(
+                            self.alt_path , exist_ok=True
+                        )
+                        
+                        os.makedirs(
+                            self.alt_path + g_dev["day"], exist_ok=True
+                        )
+                        
+                        os.makedirs(
+                           self.alt_path + g_dev["day"] + "/raw/" , exist_ok=True
+                        )
                         threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,'deprecated')),)).start()
 
@@ -6258,9 +6283,15 @@ class Camera:
 
                         # Similarly to the above. This saves the RAW file to disk
                         if self.config['save_raw_to_disk']:
-
-                           #g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                           threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','deprecated')),)).start()
+                            os.makedirs(
+                                self.camera_path + g_dev["day"], exist_ok=True
+                            )
+                            
+                            os.makedirs(
+                                raw_path, exist_ok=True
+                            )
+                            #g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                            threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','deprecated')),)).start()
 
 
                         # For sites that have "save_to_alt_path" enabled, this routine
@@ -6270,7 +6301,17 @@ class Camera:
                                 "alt_path"
                             ]  +'/' + self.config['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
 
-
+                            os.makedirs(
+                                self.alt_path , exist_ok=True
+                            )
+                            
+                            os.makedirs(
+                                self.alt_path + g_dev["day"], exist_ok=True
+                            )
+                            
+                            os.makedirs(
+                               self.alt_path + g_dev["day"] + "/raw/" , exist_ok=True
+                            )
 
                             # g_dev['obs'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                             #                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
@@ -7862,6 +7903,13 @@ def post_exposure_process(payload):
                 #breakpoint()
                 # print ("first")
                 # try:
+                # os.makedirs(
+                #     self.camera_path + g_dev["day"], exist_ok=True
+                # )
+                
+                os.makedirs(
+                    raw_path, exist_ok=True
+                )
                 threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','thisisdeprecated')),)).start()
 
                 # except:
@@ -7875,6 +7923,18 @@ def post_exposure_process(payload):
                     ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
                     # print ("second")
                     # try:
+                        
+                    os.makedirs(
+                        selfalt_path , exist_ok=True
+                    )
+                    
+                    os.makedirs(
+                        selfalt_path + g_dev["day"], exist_ok=True
+                    )
+                    
+                    os.makedirs(
+                       selfalt_path + g_dev["day"] + "/raw/" , exist_ok=True
+                    )
                     threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', selfalt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','deprecated')),)).start()
                     # except:
