@@ -5312,12 +5312,12 @@ class Camera:
                     # Hopefully this occurs while the slew occurs
                     # If there is a block guard, there is a running block
                     if g_dev['seq'].block_guard and not g_dev['seq'].focussing and not frame_type=='pointing':
-                        # plog ("Running block....")
-                        # plog (Nsmartstack)
-                        # plog (sskcounter)
+                        plog ("Running block....")
+                        plog (Nsmartstack)
+                        plog (sskcounter)
                         # If this is the end of a smartstack set or it is a single shot then check the filter and change
                         if (Nsmartstack==1 or (Nsmartstack == sskcounter+1)) :#and not g_dev['seq'].focussing and not frame_type=='pointing':
-                            # plog ("end of sstack run, checking filter")
+                            plog ("end of sstack run, checking filter")
                             plog ("Requested filter: " + str(g_dev['seq'].block_next_filter_requested))
                             plog ("Current filter: " + str(self.current_filter))
                             if not g_dev['seq'].block_next_filter_requested=='None':
