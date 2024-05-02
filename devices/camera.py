@@ -3294,8 +3294,8 @@ class Camera:
 
                     # Cut down image to central thousand by thousand patch to align
                     fx, fy = de_nanned_reference_frame.shape
-                    crop_x= int(0.5*fx) -500
-                    crop_y= int(0.5*fy) -500
+                    crop_x= int(0.5*fx) -750
+                    crop_y= int(0.5*fy) -750
                     # crop_x=100
                     # crop_y=100
                     de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
@@ -3307,7 +3307,7 @@ class Camera:
                     denan_mask=copy.deepcopy(de_nanned_reference_frame)
                     #denan_median=bn.nanmedian(denan_mask)
                     #imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
-                    imageMode=np.percentile(denan_mask, 90)
+                    imageMode=np.percentile(denan_mask, 70)
                     denan_mask[np.isnan(denan_mask)] = False
                     denan_mask[denan_mask <= imageMode] = False
                     denan_mask[denan_mask > imageMode] = True
@@ -3393,7 +3393,7 @@ class Camera:
 
                 #tempnan_mask=copy.deepcopy(tempnan)
                 #tempnan_mode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
-                tempnan_mode=np.percentile(tempnan_mask, 90)
+                tempnan_mode=np.percentile(tempnan_mask, 70)
                 tempnan_mask[np.isnan(tempnan_mask)] = False
                 tempnan_mask[tempnan_mask <= tempnan_mode] = False
                 tempnan_mask[tempnan_mask > tempnan_mode] = True
