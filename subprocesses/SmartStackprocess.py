@@ -309,8 +309,8 @@ if not is_osc:   #This is the monochrome camera processing path.
             tempnan=copy.deepcopy(imgdata)
             # Cut down image to central thousand by thousand patch to align
             fx, fy = de_nanned_reference_frame.shape
-            crop_x= int(0.5*fx) -2000
-            crop_y= int(0.5*fy) -2000
+            crop_x= int(0.5*fx) -1250
+            crop_y= int(0.5*fy) -1250
             # crop_x= 100
             # crop_y= 100
             de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
