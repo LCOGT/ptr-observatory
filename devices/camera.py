@@ -3218,6 +3218,14 @@ class Camera:
                 success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                 if subexposure == 0 :
                     self.substack_start_time=time.time()
+                    # Load in the flat to be used during sub_stacker_array
+                    no_flat=False
+                    try:
+                        temporary_flat_in_memory=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
+                    except:
+                        no_flat=True
+                        plog ("Could not find flat for this substack")
+                    #sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
                 self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
                 qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
                 exposure_timer=time.time()
@@ -3231,14 +3239,7 @@ class Camera:
                 sub_stacker_array = np.memmap(temporary_substack_directory + '/tempfile', dtype='float32', mode= 'w+', shape = (self.imagesize_x,self.imagesize_y,N_of_substacks))
 
 
-                # Load in the flat to be used during sub_stacker_array
-                no_flat=False
-                try:
-                    temporary_flat_in_memory=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
-                except:
-                    no_flat=True
-                    plog ("Could not find flat for this substack")
-                #sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
+                
 
 
                 if subexposure == 1:
@@ -3293,10 +3294,10 @@ class Camera:
 
                     # Cut down image to central thousand by thousand patch to align
                     fx, fy = de_nanned_reference_frame.shape
-                    # crop_x= int(0.5*fx) -500
-                    # crop_y= int(0.5*fy) -500
-                    crop_x=100
-                    crop_y=100
+                    crop_x= int(0.5*fx) -1000
+                    crop_y= int(0.5*fy) -1000
+                    # crop_x=100
+                    # crop_y=100
                     de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
                     
 
@@ -3407,8 +3408,8 @@ class Camera:
                 # denan_mask=denan_mask.astype('bool')
                 
 
-                #imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y], reference_mask=denan_mask, moving_mask=tempnan_mask)
-                imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][100:-100, 100:-100], reference_mask=denan_mask, moving_mask=tempnan_mask)
+                imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y], reference_mask=denan_mask, moving_mask=tempnan_mask)
+                #imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][100:-100, 100:-100], reference_mask=denan_mask, moving_mask=tempnan_mask)
 
 
 
