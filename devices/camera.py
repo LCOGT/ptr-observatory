@@ -3293,8 +3293,10 @@ class Camera:
 
                     # Cut down image to central thousand by thousand patch to align
                     fx, fy = de_nanned_reference_frame.shape
-                    crop_x= int(0.5*fx) -500
-                    crop_y= int(0.5*fy) -500
+                    # crop_x= int(0.5*fx) -500
+                    # crop_y= int(0.5*fy) -500
+                    crop_x=100
+                    crop_y=100
                     de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
 
 
@@ -3400,14 +3402,15 @@ class Camera:
 
                 #breakpoint()
 
-                imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y], reference_mask=denan_mask, moving_mask=tempnan_mask)
+                #imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y], reference_mask=denan_mask, moving_mask=tempnan_mask)
+                imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][100:-100, 100:-100], reference_mask=denan_mask, moving_mask=tempnan_mask)
 
 
 
                 #imageshift, error, diffphase = phase_cross_correlation(de_nanned_reference_frame, tempnan)
                 #print ("Shift: " + str(time.time()-rolltimer))
                 #del tempnan
-                #print (imageshift)
+                print (imageshift)
 
                 if len(imageshift) == 3:
                     imageshift=imageshift[0]
