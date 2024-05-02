@@ -751,11 +751,11 @@ class Focuser:
         # Just adds overhead for no benefit
         
         print ("MTF")
-        print (self.current_focus_position)
+        print (self.current_focus_position*self.micron_to_steps)
         print (to_focus)
                
         
-        if self.current_focus_position > to_focus-35 and self.current_focus_position < to_focus+35:
+        if (self.current_focus_position*self.micron_to_steps) > to_focus-35 and (self.current_focus_position*self.micron_to_steps) < to_focus+35:
             plog ("Not moving focus, focus already close to requested position")
         else:
 
