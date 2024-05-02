@@ -309,8 +309,8 @@ if not is_osc:   #This is the monochrome camera processing path.
             tempnan=copy.deepcopy(imgdata)
             # Cut down image to central thousand by thousand patch to align
             fx, fy = de_nanned_reference_frame.shape
-            crop_x= int(0.5*fx) -500
-            crop_y= int(0.5*fy) -500
+            crop_x= int(0.5*fx) -1000
+            crop_y= int(0.5*fy) -1000
             # crop_x= 100
             # crop_y= 100
             de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
@@ -326,107 +326,105 @@ if not is_osc:   #This is the monochrome camera processing path.
             # UNLESS the median is lower than the sky background offset... then use that... that 
             # can happen when there is not much signal.
             denan_mask=copy.deepcopy(de_nanned_reference_frame)
-            denan_median=np.percentile(denan_mask, 90)
-            # denan_median=2.5 * bn.nanmedian(denan_mask) - 1.5 * bn.nanmean(denan_mask)
+            denan_median=2.5 * bn.nanmedian(denan_mask) - 1.5 * bn.nanmean(denan_mask)
             
-            # # Calculating the edge of the sky distribution            
-            # int_array_flattened=denan_mask.astype(int).ravel()
-            # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-            # m=counts.argmax()
-            # denanMode=unique[m]
-            # # Zerothreshing image            
-            # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-            # #Do some fiddle faddling to figure out the value that goes to zero less
-            # zeroValueArray=histogramdata[histogramdata[:,0] < denanMode]
-            # breaker=1
-            # counter=0
-            # while (breaker != 0):
-            #     counter=counter+1
-            #     if not (denanMode-counter) in zeroValueArray[:,0]:
-            #         if not (denanMode-counter-1) in zeroValueArray[:,0]:
-            #             if not (denanMode-counter-2) in zeroValueArray[:,0]:
-            #                 if not (denanMode-counter-3) in zeroValueArray[:,0]:
-            #                     if not (denanMode-counter-4) in zeroValueArray[:,0]:
-            #                         if not (denanMode-counter-5) in zeroValueArray[:,0]:
-            #                             if not (denanMode-counter-6) in zeroValueArray[:,0]:
-            #                                 if not (denanMode-counter-7) in zeroValueArray[:,0]:
-            #                                     if not (denanMode-counter-8) in zeroValueArray[:,0]:
-            #                                         if not (denanMode-counter-9) in zeroValueArray[:,0]:
-            #                                             if not (denanMode-counter-10) in zeroValueArray[:,0]:
-            #                                                 if not (denanMode-counter-11) in zeroValueArray[:,0]:
-            #                                                     if not (denanMode-counter-12) in zeroValueArray[:,0]:
-            #                                                         denan_zeroValue=(denanMode-counter)
-            #                                                         denan_top_of_sky_background_value=denanMode+counter
-            #                                                         breaker =0
+            # Calculating the edge of the sky distribution            
+            int_array_flattened=denan_mask.astype(int).ravel()
+            unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+            m=counts.argmax()
+            denanMode=unique[m]
+            # Zerothreshing image            
+            histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+            #Do some fiddle faddling to figure out the value that goes to zero less
+            zeroValueArray=histogramdata[histogramdata[:,0] < denanMode]
+            breaker=1
+            counter=0
+            while (breaker != 0):
+                counter=counter+1
+                if not (denanMode-counter) in zeroValueArray[:,0]:
+                    if not (denanMode-counter-1) in zeroValueArray[:,0]:
+                        if not (denanMode-counter-2) in zeroValueArray[:,0]:
+                            if not (denanMode-counter-3) in zeroValueArray[:,0]:
+                                if not (denanMode-counter-4) in zeroValueArray[:,0]:
+                                    if not (denanMode-counter-5) in zeroValueArray[:,0]:
+                                        if not (denanMode-counter-6) in zeroValueArray[:,0]:
+                                            if not (denanMode-counter-7) in zeroValueArray[:,0]:
+                                                if not (denanMode-counter-8) in zeroValueArray[:,0]:
+                                                    if not (denanMode-counter-9) in zeroValueArray[:,0]:
+                                                        if not (denanMode-counter-10) in zeroValueArray[:,0]:
+                                                            if not (denanMode-counter-11) in zeroValueArray[:,0]:
+                                                                if not (denanMode-counter-12) in zeroValueArray[:,0]:
+                                                                    denan_zeroValue=(denanMode-counter)
+                                                                    denan_top_of_sky_background_value=denanMode+counter
+                                                                    breaker =0
             
-            # # if denan_top_of_sky_background_value > denan_median:
-            # #     median_used=True
             # if denan_top_of_sky_background_value > denan_median:
             #     median_used=True
+            if denan_top_of_sky_background_value > denan_median:
+                median_used=True
             
             
             # Do the same for the new image
             tempnan_mask=copy.deepcopy(tempnan)
-            tempnan_median=np.percentile(tempnan_mask, 90)
-            # tempnan_median=2.5 * bn.nanmedian(tempnan_mask) - 1.5 * bn.nanmean(tempnan_mask)
+            tempnan_median=2.5 * bn.nanmedian(tempnan_mask) - 1.5 * bn.nanmean(tempnan_mask)
             
-            # # Calculating the edge of the sky distribution            
-            # int_array_flattened=tempnan_mask.astype(int).ravel()
-            # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-            # m=counts.argmax()
-            # tempnanMode=unique[m]
-            # # Zerothreshing image            
-            # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-            # #Do some fiddle faddling to figure out the value that goes to zero less
-            # zeroValueArray=histogramdata[histogramdata[:,0] < tempnanMode]
-            # breaker=1
-            # counter=0
-            # while (breaker != 0):
-            #     counter=counter+1
-            #     if not (tempnanMode-counter) in zeroValueArray[:,0]:
-            #         if not (tempnanMode-counter-1) in zeroValueArray[:,0]:
-            #             if not (tempnanMode-counter-2) in zeroValueArray[:,0]:
-            #                 if not (tempnanMode-counter-3) in zeroValueArray[:,0]:
-            #                     if not (tempnanMode-counter-4) in zeroValueArray[:,0]:
-            #                         if not (tempnanMode-counter-5) in zeroValueArray[:,0]:
-            #                             if not (tempnanMode-counter-6) in zeroValueArray[:,0]:
-            #                                 if not (tempnanMode-counter-7) in zeroValueArray[:,0]:
-            #                                     if not (tempnanMode-counter-8) in zeroValueArray[:,0]:
-            #                                         if not (tempnanMode-counter-9) in zeroValueArray[:,0]:
-            #                                             if not (tempnanMode-counter-10) in zeroValueArray[:,0]:
-            #                                                 if not (tempnanMode-counter-11) in zeroValueArray[:,0]:
-            #                                                     if not (tempnanMode-counter-12) in zeroValueArray[:,0]:
-            #                                                         tempnan_zeroValue=(tempnanMode-counter)
-            #                                                         tempnan_top_of_sky_background_value=tempnanMode+counter
-            #                                                         breaker =0
+            # Calculating the edge of the sky distribution            
+            int_array_flattened=tempnan_mask.astype(int).ravel()
+            unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+            m=counts.argmax()
+            tempnanMode=unique[m]
+            # Zerothreshing image            
+            histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+            #Do some fiddle faddling to figure out the value that goes to zero less
+            zeroValueArray=histogramdata[histogramdata[:,0] < tempnanMode]
+            breaker=1
+            counter=0
+            while (breaker != 0):
+                counter=counter+1
+                if not (tempnanMode-counter) in zeroValueArray[:,0]:
+                    if not (tempnanMode-counter-1) in zeroValueArray[:,0]:
+                        if not (tempnanMode-counter-2) in zeroValueArray[:,0]:
+                            if not (tempnanMode-counter-3) in zeroValueArray[:,0]:
+                                if not (tempnanMode-counter-4) in zeroValueArray[:,0]:
+                                    if not (tempnanMode-counter-5) in zeroValueArray[:,0]:
+                                        if not (tempnanMode-counter-6) in zeroValueArray[:,0]:
+                                            if not (tempnanMode-counter-7) in zeroValueArray[:,0]:
+                                                if not (tempnanMode-counter-8) in zeroValueArray[:,0]:
+                                                    if not (tempnanMode-counter-9) in zeroValueArray[:,0]:
+                                                        if not (tempnanMode-counter-10) in zeroValueArray[:,0]:
+                                                            if not (tempnanMode-counter-11) in zeroValueArray[:,0]:
+                                                                if not (tempnanMode-counter-12) in zeroValueArray[:,0]:
+                                                                    tempnan_zeroValue=(tempnanMode-counter)
+                                                                    tempnan_top_of_sky_background_value=tempnanMode+counter
+                                                                    breaker =0
             
-            # if tempnan_top_of_sky_background_value > tempnan_median:
-            #     median_used=True
+            if tempnan_top_of_sky_background_value > tempnan_median:
+                median_used=True
             
             
             denan_mask[np.isnan(denan_mask)] = False
             tempnan_mask[np.isnan(tempnan_mask)] = False
             
-            # if median_used:                
-            denan_mask[denan_mask <= denan_median] = False
-            denan_mask[denan_mask > denan_median] = True
-            denan_mask=denan_mask.astype('bool')            
-            tempnan_mask[tempnan_mask <= tempnan_median] = False 
-            tempnan_mask[tempnan_mask > tempnan_median] = True
-            tempnan_mask=tempnan_mask.astype('bool')
-            # else:
-                # denan_mask[denan_mask <= denan_top_of_sky_background_value] = False
-                # denan_mask[denan_mask > denan_top_of_sky_background_value] = True
-                # denan_mask=denan_mask.astype('bool')            
-                # tempnan_mask[tempnan_mask <= tempnan_top_of_sky_background_value] = False 
-                # tempnan_mask[tempnan_mask > tempnan_top_of_sky_background_value] = True
-                # tempnan_mask=tempnan_mask.astype('bool')
+            if median_used:                
+                denan_mask[denan_mask <= denan_median] = False
+                denan_mask[denan_mask > denan_median] = True
+                denan_mask=denan_mask.astype('bool')            
+                tempnan_mask[tempnan_mask <= tempnan_median] = False 
+                tempnan_mask[tempnan_mask > tempnan_median] = True
+                tempnan_mask=tempnan_mask.astype('bool')
+            else:
+                denan_mask[denan_mask <= denan_top_of_sky_background_value] = False
+                denan_mask[denan_mask > denan_top_of_sky_background_value] = True
+                denan_mask=denan_mask.astype('bool')            
+                tempnan_mask[tempnan_mask <= tempnan_top_of_sky_background_value] = False 
+                tempnan_mask[tempnan_mask > tempnan_top_of_sky_background_value] = True
+                tempnan_mask=tempnan_mask.astype('bool')
                 
             #breakpoint()
 
             imageshift = phase_cross_correlation(de_nanned_reference_frame, tempnan, reference_mask=denan_mask, moving_mask=tempnan_mask)
 
-        
+
 
             if len(imageshift) == 3:
                 imageshift=imageshift[0]
