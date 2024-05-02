@@ -4885,7 +4885,7 @@ class Sequencer:
             alt=g_dev['mnt'].flatspot_alt
             #az=g_dev['mnt'].flatspot_az
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
-                plog ('zenith distance: ' + str(90-alt))
+                #plog ('zenith distance: ' + str(90-alt))
                 if abs(90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
                     parkalt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
                     plog ("waiting for the flat spot to move through the zenith")
