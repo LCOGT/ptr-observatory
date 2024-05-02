@@ -750,6 +750,11 @@ class Focuser:
         # If it is roughly in the right space, the guarded_move
         # Just adds overhead for no benefit
         
+        print ("MTF")
+        print (self.current_focus_position)
+        print (to_focus)
+               
+        
         if self.current_focus_position > to_focus-35 and self.current_focus_position < to_focus+35:
             plog ("Not moving focus, focus already close to requested position")
         else:
