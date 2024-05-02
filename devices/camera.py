@@ -3307,7 +3307,7 @@ class Camera:
                     denan_mask=copy.deepcopy(de_nanned_reference_frame)
                     #denan_median=bn.nanmedian(denan_mask)
                     #imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
-                    imageMode=np.nanpercentile(denan_mask, 60)
+                    imageMode=np.nanpercentile(denan_mask, 70)
                     print ("percent")
                     print (imageMode)
                     print (bn.nanmedian(denan_mask))
@@ -3397,7 +3397,7 @@ class Camera:
 
                 #tempnan_mask=copy.deepcopy(tempnan)
                 #tempnan_mode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
-                tempnan_mode=np.nanpercentile(tempnan_mask, 60)
+                tempnan_mode=np.nanpercentile(tempnan_mask, 70)
                 tempnan_mask[np.isnan(tempnan_mask)] = False
                 tempnan_mask[tempnan_mask <= tempnan_mode] = False
                 tempnan_mask[tempnan_mask > tempnan_mode] = True
