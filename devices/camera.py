@@ -5319,7 +5319,7 @@ class Camera:
                             if not g_dev['seq'].block_next_filter_requested=='None':
                                 # Check if filter needs changing, if so, change.
                                 self.current_filter= g_dev['fil'].filter_selected
-                                if not self.current_filter == g_dev['seq'].block_next_filter_requested:
+                                if not self.current_filter.lower() == g_dev['seq'].block_next_filter_requested.lower():
                                     plog ("Changing filter")
                                     self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
                                         {"filter": g_dev['seq'].block_next_filter_requested}, {}
