@@ -2141,7 +2141,7 @@ class Camera:
         except:
             # if pixelscale is not defined make it big
             radius_of_radialprofile=int(24/0.1)
-        
+
         # Round up to nearest odd number to make a symmetrical array
         radius_of_radialprofile=int(radius_of_radialprofile // 2 *2 +1)
         halfradius_of_radialprofile=math.ceil(0.5*radius_of_radialprofile)
@@ -2348,9 +2348,9 @@ class Camera:
 
             #     )
             # else:
-                
-            # There is no axis that is preferred?    
-            
+
+            # There is no axis that is preferred?
+
             final_image = final_image.resize(
 
                 (900, int(900 * iy / ix))
@@ -4506,7 +4506,7 @@ class Camera:
                                 self.substacker=False
                                 # Must have a biasdark
                                 if 'tensec_exposure_biasdark' in self.darkFiles:
-                                    if this_exposure_filter in self.flatFiles:
+                                    if this_exposure_filter.lower() in self.flatFiles:
                                         if '1' in self.bpmFiles:
                                             self.substacker=True
                                         else:
@@ -5061,7 +5061,7 @@ class Camera:
                             except:
                                 pass
                         pointingfocus_masterdark_done=True
-                        
+
                     #plog ("grabbing masterflat during exposure")
                     intermediate_tempflat=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
 
@@ -5138,7 +5138,7 @@ class Camera:
 
                     # If the shutter has closed but there is still time, then nudge the scope while reading out
                     if not g_dev['cam'].shutter_open:
-                        
+
                         # Attempt to sneak in a platesolve and nudge during readout time.
                         if not check_nudge_after_shutter_closed:
                             plog ("Shutter Closed.")
@@ -5210,7 +5210,7 @@ class Camera:
                                     plog ("Current filter: " + str(self.current_filter))
                                     if not g_dev['seq'].block_next_filter_requested=='None':
                                         # Check if filter needs changing, if so, change.
-                                        self.current_filter= g_dev['fil'].filter_selected                                        
+                                        self.current_filter= g_dev['fil'].filter_selected
                                         if not self.current_filter == g_dev['seq'].block_next_filter_requested:
                                             plog ("Changing filter")
                                             self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
@@ -5584,22 +5584,22 @@ class Camera:
                     else:
                         altpath='no'
 
-                    
+
 
                     # Similarly to the above. This saves the RAW file to disk
                     if self.config['save_raw_to_disk']:
-                        
+
                         # Make sure the raw paths exist
                         im_path_r = self.camera_path
                         raw_path = im_path_r + g_dev["day"] + "/raw/"
                         os.makedirs(
                             self.camera_path + g_dev["day"], exist_ok=True
                         )
-                        
+
                         os.makedirs(
                             raw_path, exist_ok=True
                         )
-                        
+
                         #g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                         threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,altpath,'deprecated')),)).start()
 
@@ -5618,11 +5618,11 @@ class Camera:
                         os.makedirs(
                             self.alt_path , exist_ok=True
                         )
-                        
+
                         os.makedirs(
                             self.alt_path + g_dev["day"], exist_ok=True
                         )
-                        
+
                         os.makedirs(
                            self.alt_path + g_dev["day"] + "/raw/" , exist_ok=True
                         )
@@ -6286,7 +6286,7 @@ class Camera:
                             os.makedirs(
                                 self.camera_path + g_dev["day"], exist_ok=True
                             )
-                            
+
                             os.makedirs(
                                 raw_path, exist_ok=True
                             )
@@ -6304,11 +6304,11 @@ class Camera:
                             os.makedirs(
                                 self.alt_path , exist_ok=True
                             )
-                            
+
                             os.makedirs(
                                 self.alt_path + g_dev["day"], exist_ok=True
                             )
-                            
+
                             os.makedirs(
                                self.alt_path + g_dev["day"] + "/raw/" , exist_ok=True
                             )
@@ -7906,7 +7906,7 @@ def post_exposure_process(payload):
                 # os.makedirs(
                 #     self.camera_path + g_dev["day"], exist_ok=True
                 # )
-                
+
                 os.makedirs(
                     raw_path, exist_ok=True
                 )
@@ -7923,15 +7923,15 @@ def post_exposure_process(payload):
                     ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
                     # print ("second")
                     # try:
-                        
+
                     os.makedirs(
                         selfalt_path , exist_ok=True
                     )
-                    
+
                     os.makedirs(
                         selfalt_path + g_dev["day"], exist_ok=True
                     )
-                    
+
                     os.makedirs(
                        selfalt_path + g_dev["day"] + "/raw/" , exist_ok=True
                     )
