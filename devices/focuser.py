@@ -625,7 +625,7 @@ class Focuser:
         #return
         
         if g_dev['seq'].flats_being_collected:
-            plog ("adjusting focus disabled during focussing")
+            #plog ("adjusting focus disabled during flatfield collection.")
             return
 
         if not force_change  : # If the filter is changed, then a force change is necessary.
