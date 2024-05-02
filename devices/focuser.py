@@ -122,6 +122,8 @@ class Focuser:
         self.focus_temp_slope = None
         self.focus_temp_intercept = None
         self.best_previous_focus_point = None
+        
+        self.focuser_is_moving=False
 
 
         #self.update_focuser_temperature()
