@@ -3239,7 +3239,7 @@ class Camera:
                 sub_stacker_array = np.memmap(temporary_substack_directory + '/tempfile', dtype='float32', mode= 'w+', shape = (self.imagesize_x,self.imagesize_y,N_of_substacks))
 
 
-                
+
 
 
                 if subexposure == 1:
@@ -3299,7 +3299,7 @@ class Camera:
                     # crop_x=100
                     # crop_y=100
                     de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
-                    
+
 
                     #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
                     #de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
@@ -3404,7 +3404,7 @@ class Camera:
                 tempnan_mask=tempnan_mask.astype('bool')
 
                 #breakpoint()
-                
+
                 # denan_mask=copy.deepcopy(de_nanned_reference_frame)
                 # #denan_median=bn.nanmedian(denan_mask)
                 # imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
@@ -3412,7 +3412,7 @@ class Camera:
                 # denan_mask[denan_mask <= imageMode] = False
                 # denan_mask[denan_mask > imageMode] = True
                 # denan_mask=denan_mask.astype('bool')
-                
+
 
                 imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y], reference_mask=denan_mask, moving_mask=tempnan_mask)
                 #imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][100:-100, 100:-100], reference_mask=denan_mask, moving_mask=tempnan_mask)
@@ -3981,8 +3981,10 @@ class Camera:
         self.smartstack = required_params.get('smartstack', True)
         if imtype.lower() in ["pointing", "focus"]:
             self.smartstack=False
-        self.substacker = required_params.get('substack', False)
 
+        if required_params.get('substack', False) or required_params.get('subStack', False):
+            self.substacker = True
+        #breakpoint()
 
         # if self.longstack == 'no':
         #     LongStackID ='no'
