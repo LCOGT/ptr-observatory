@@ -2650,22 +2650,22 @@ class Mount:
 
     def get_mount_reference(self, pointing_ra, pointing_dec):
 
-        print ("Calculating Mount Reference (temp MTF reporting)")
+        #print ("Calculating Mount Reference (temp MTF reporting)")
         HA = self.current_sidereal - pointing_ra
         distance_from_current_reference_in_ha = abs(self.last_mount_reference_ha - HA)
         distance_from_current_reference_in_dec = abs(self.last_mount_reference_dec- pointing_dec)
-        print ("Dist in HA: " + str(round(distance_from_current_reference_in_ha,2)) + "   Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+        #print ("Dist in HA: " + str(round(distance_from_current_reference_in_ha,2)) + "   Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
         absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(pointing_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
 
-        print ("Hours since last reference: " + str((time.time() - self.last_mount_reference_time)/3600))
+        #print ("Hours since last reference: " + str((time.time() - self.last_mount_reference_time)/3600))
 
-        print ("radial difference in requested position to location where reference was created: " + str(round(absolute_distance,2)) + " degrees.")
+        #print ("radial difference in requested position to location where reference was created: " + str(round(absolute_distance,2)) + " degrees.")
 
         if  absolute_distance < 15:
-            plog ("recent reference nearby, using current reference")
+            #plog ("recent reference nearby, using current reference")
             return self.last_mount_reference_ha_offset, self.last_mount_reference_dec_offset
         else:
-            plog ("reference not nearby - in future will go and get a nearby reference from the catalogue")
+            #plog ("reference not nearby - in future will go and get a nearby reference from the catalogue")
             return 0.0,0.0
 
         # try:
@@ -2685,23 +2685,23 @@ class Mount:
     def get_flip_reference(self, pointing_ra, pointing_dec):
 
 
-        print ("Calculating Flip Reference (temp MTF reporting)")
+        #print ("Calculating Flip Reference (temp MTF reporting)")
         HA = self.current_sidereal - pointing_ra
         distance_from_current_reference_in_ha = abs(self.last_flip_reference_ha - HA)
         distance_from_current_reference_in_dec = abs(self.last_flip_reference_dec- pointing_dec)
-        print ("Dist in HA: " + str(round(distance_from_current_reference_in_ha,2)) + "   Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+        #print ("Dist in HA: " + str(round(distance_from_current_reference_in_ha,2)) + "   Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
         absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(pointing_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
 
-        print ("Hours since last reference: " + str((time.time() - self.last_flip_reference_time)/3600))
+        #print ("Hours since last reference: " + str((time.time() - self.last_flip_reference_time)/3600))
 
-        print ("radial difference in requested position to location where reference was created: " + str(round(absolute_distance,2))+ " degrees.")
+        #print ("radial difference in requested position to location where reference was created: " + str(round(absolute_distance,2))+ " degrees.")
         #if (time.time()-self.last_flip_reference_time) < 43100:
 
         if  absolute_distance < 15:
-            plog ("recent reference nearby, using current reference")
+            #plog ("recent reference nearby, using current reference")
             return self.last_flip_reference_ha_offset, self.last_flip_reference_dec_offset
         else:
-            plog ("reference not nearby - in future will go and get a nearby reference from the catalogue")
+            #plog ("reference not nearby - in future will go and get a nearby reference from the catalogue")
             return 0.0,0.0
 
         # try:
