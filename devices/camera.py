@@ -3298,21 +3298,17 @@ class Camera:
                     crop_x=100
                     crop_y=100
                     de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
-
-
-
-
-
-                    imageMode=bn.nanmedian(de_nanned_reference_frame)
+                    
 
                     #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
-                    de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
+                    #de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
 
                     denan_mask=copy.deepcopy(de_nanned_reference_frame)
-                    denan_median=bn.nanmedian(denan_mask)
+                    #denan_median=bn.nanmedian(denan_mask)
+                    imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
                     denan_mask[np.isnan(denan_mask)] = False
-                    denan_mask[denan_mask <= denan_median] = False
-                    denan_mask[denan_mask > denan_median] = True
+                    denan_mask[denan_mask <= imageMode] = False
+                    denan_mask[denan_mask > imageMode] = True
                     denan_mask=denan_mask.astype('bool')
 
             # For each further exposure, align the previous subexposure while exposing the next exposure
@@ -3394,13 +3390,22 @@ class Camera:
                 #de_nanned_reference_frame[de_nanned_reference_frame < bn.nanmedian(de_nanned_reference_frame)] = np.nan
 
                 #tempnan_mask=copy.deepcopy(tempnan)
-                tempnan_median=bn.nanmedian(tempnan_mask)
+                tempnan_mode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
                 tempnan_mask[np.isnan(tempnan_mask)] = False
-                tempnan_mask[tempnan_mask <= tempnan_median] = False
-                tempnan_mask[tempnan_mask > tempnan_median] = True
+                tempnan_mask[tempnan_mask <= tempnan_mode] = False
+                tempnan_mask[tempnan_mask > tempnan_mode] = True
                 tempnan_mask=tempnan_mask.astype('bool')
 
                 #breakpoint()
+                
+                # denan_mask=copy.deepcopy(de_nanned_reference_frame)
+                # #denan_median=bn.nanmedian(denan_mask)
+                # imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
+                # denan_mask[np.isnan(denan_mask)] = False
+                # denan_mask[denan_mask <= imageMode] = False
+                # denan_mask[denan_mask > imageMode] = True
+                # denan_mask=denan_mask.astype('bool')
+                
 
                 #imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y], reference_mask=denan_mask, moving_mask=tempnan_mask)
                 imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][100:-100, 100:-100], reference_mask=denan_mask, moving_mask=tempnan_mask)
