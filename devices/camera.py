@@ -3966,7 +3966,7 @@ class Camera:
         self.smartstack = required_params.get('smartstack', True)
         if imtype.lower() in ["pointing", "focus"]:
             self.smartstack=False
-        self.substacker = required_params.get('subStack', False)
+        self.substacker = required_params.get('substack', False)
 
 
         # if self.longstack == 'no':

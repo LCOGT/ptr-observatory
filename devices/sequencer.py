@@ -1805,9 +1805,16 @@ class Sequencer:
                                 smartstackswitch='yes'
                             else:
                                 smartstackswitch='no'
+                                
+                            if exposure['substack'] == False:
+                                substackswitch=False
+                            elif exposure['substack'] == True:
+                                substackswitch=True
+                            else:
+                                substackswitch=True
 
                             # Set up options for exposure and take exposure.
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch,  'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'substack': substackswitch, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
                             opt = {'count': 1, 'filter': filter_requested, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane, 'zoom': zoom_factor}
                             plog('Seq Blk sent to camera:  ', req, opt)
