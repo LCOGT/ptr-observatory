@@ -4516,7 +4516,8 @@ class Camera:
                                 else:
                                     plog ("Could not engage substacking as the appropriate biasdark")
 
-
+                            plog ("SUBSTACK: " +str(self.substacker))
+                            #breakpoint()
 
                             # Adjust pointing exposure time relative to known focus
                             if not g_dev['seq'].focussing and frame_type=='pointing':
