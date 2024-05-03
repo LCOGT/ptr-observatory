@@ -3276,6 +3276,7 @@ class Camera:
                     # hdufocus.writeto('referenceframe.fits', overwrite=True, output_verify='silentfix')
                     try:
                         if exp_of_substacks == 10:
+                            plog ("Dedarking 0")
                             sub_stacker_array[:,:,0]=sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
                         else:
                             sub_stacker_array[:,:,0]=sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['thirtysec_exposure_biasdark']
@@ -3368,6 +3369,7 @@ class Camera:
                 #rolltimer=time.time()
                 try:
                     # De-biasdark sub_stack array
+                    plog ("Dedarking " + str(subexposure-1))
                     sub_stacker_array[:,:,subexposure-1]=sub_stacker_array[:,:,subexposure-1] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
                 except:
                     plog ("couldn't biasdark substack")
@@ -4565,7 +4567,7 @@ class Camera:
                                 else:
                                     plog ("Could not engage substacking as the appropriate biasdark")
 
-                            plog ("SUBSTACK: " +str(self.substacker))
+                            #plog ("SUBSTACK: " +str(self.substacker))
                             #breakpoint()
 
                             # Adjust pointing exposure time relative to known focus
