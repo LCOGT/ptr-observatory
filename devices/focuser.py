@@ -741,10 +741,14 @@ class Focuser:
 
     def guarded_move(self, to_focus):
 
+        focuser_was_moving=False
+        while self.focuser_is_moving:
+            focuser_was_moving=True
+            plog ("guarded_move focuser wait")
+            time.sleep(0.2)
         
-        # while self.focuser_is_moving:
-        #     plog ("guarded_move focuser wait")
-        #     time.sleep(0.2)
+        if focuser_was_moving:
+            self.wait_for_focuser_update()
 
         # Check that the guarded_move is even necessary
         # If it is roughly in the right space, the guarded_move
