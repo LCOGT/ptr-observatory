@@ -1051,6 +1051,17 @@ class Sequencer:
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
                                                 return
+                                            
+                                            # COLLECTING A THIRTY SECOND EXPOSURE DARK FRAME
+                                            plog("Expose " + str(2*stride) +" 1x1 30 second exposure dark frames.")
+                                            req = {'time': 30,  'script': 'True', 'image_type': 'thirtysec_exposure_dark'}
+                                            opt = {'count': min_to_do,  \
+                                                   'filter': 'dark'}
+                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                            g_dev['obs'].request_scan_requests()
+                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                return
 
                                             # COLLECTING A BROADBAND SMARTSTACK BIASDARK FRAME
                                             plog("Expose " + str(stride) +" 1x1 broadband smstack biasdark frames.")
@@ -2209,6 +2220,29 @@ class Sequencer:
                 # COLLECTING A TWENTY SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(2*stride) +" 1x1 20 second exposure dark frames.")
                 req = {'time': 20,  'script': 'True', 'image_type': 'twentysec_exposure_dark'}
+                opt = {'count': min_to_do,  \
+                       'filter': 'dark'}
+
+                # Check it is in the park position and not pointing at the sky.
+                # It can be pointing at the sky if cool down open is triggered during the biasdark process
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].park_command({}, {})
+
+                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+                    self.bias_dark_latch = False
+                    return
+                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                    self.bias_dark_latch = False
+                    break
+                g_dev['obs'].request_scan_requests()
+                
+                # COLLECTING A THIRTY SECOND EXPOSURE DARK FRAME
+                plog("Expose " + str(2*stride) +" 1x1 30 second exposure dark frames.")
+                req = {'time': 30,  'script': 'True', 'image_type': 'thirtysec_exposure_dark'}
                 opt = {'count': min_to_do,  \
                        'filter': 'dark'}
 
@@ -3757,6 +3791,7 @@ class Sequencer:
                 [g_dev['obs'].local_dark_folder+ 'tensecdarks/','tensecBIASDARK', 'tensec' ],
                 [g_dev['obs'].local_dark_folder+ 'fifteensecdarks/', 'fifteensecBIASDARK','fifteensec' ],
                 [g_dev['obs'].local_dark_folder+ 'twentysecdarks/', 'twentysecBIASDARK', 'twentysec'],
+                [g_dev['obs'].local_dark_folder+ 'thirtysecdarks/', 'thirtysecBIASDARK', 'thirtysec'],
                 [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssBIASDARK', 'broadband_ss_biasdark']
 
                 ]
@@ -4087,6 +4122,9 @@ class Sequencer:
                                                     #plog("fiveteen sec")
                                                 elif hdu1exp == 20.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'twentysec' +'tempbiasdark.npy'):
                                                     flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'twentysec' +'tempbiasdark.npy')
+                                                    #plog("twenty sec")
+                                                elif hdu1exp == 30.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'thirtysec' +'tempbiasdark.npy'):
+                                                    flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'thirtysec' +'tempbiasdark.npy')
                                                     #plog("twenty sec")
                                                 elif hdu1exp == broadband_ss_biasdark_exp_time:
                                                     flatdebiaseddedarked=hdu1data -g_dev['cam'].darkFiles['broadband_ss_biasdark']
