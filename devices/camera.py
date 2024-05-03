@@ -3456,6 +3456,11 @@ class Camera:
                 print (str(round(-yoff*3)) + " " + str(round(-xoff*3)))
 
                 imageshift=[round(-yoff*3),round(-xoff*3)]
+
+                if imageshift[0] > 100 or imageshift[1] > 100:
+                    imageshift = [0,0]
+
+
                 #breakpoint()
 
                 # googtime=time.time()
@@ -3516,28 +3521,28 @@ class Camera:
 #                 nanmax=0
 #                 for xrange in range(11):
 #                     for yrange in range(11):
-#                         # count the number of nans in an overlap 
+#                         # count the number of nans in an overlap
 #                         rollx=xrange-5
-#                         #print ("rollx: " + str(rollx))                        
+#                         #print ("rollx: " + str(rollx))
 #                         rolly=yrange-5
 #                         #print ("rolly: " + str(rolly))
 #                         #nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
 #                         #nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
 #                         #nan_counts = bn.nansum(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1))
-                        
+
 #                         googtime=time.time()
 #                         rolled_frame=np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)
 #                         print ("rolltime: " +str(time.time()-googtime))
 #                         googtime=time.time()
-#                         subtracted_frame=np.subtract(referenceFrame , rolled_frame)                        
+#                         subtracted_frame=np.subtract(referenceFrame , rolled_frame)
 #                         print ("subtime: " +str(time.time()-googtime))
-                        
+
 #                         summedframe = bn.nansum(subtracted_frame)
-                        
+
 #                         per_pixel_difference=summedframe/ np.count_nonzero(np.isnan(subtractedframe))
-                        
+
 #                         nan_counts=per_pixel_difference
-                        
+
 #                         if nan_counts > nanmax:
 #                             #print ('nanmax')
 #                             nanmaxfound=[rollx,rolly, nan_counts]
@@ -3546,14 +3551,14 @@ class Camera:
 #                             #print ('nanmax')
 #                             nanminfound=[rollx,rolly, nan_counts]
 #                             nanmin=nan_counts
-                            
+
 #                 print ("nanmax: " + str(nanmaxfound))
 #                 print ("nanmin: " + str(nanminfound))
 #                 print ("nanmethod: " + str(time.time()-googtime))
-                        
-                            
-                        
-                                                      
+
+
+
+
 # >>>>>>> Stashed changes
                 # SLOW WAY
                 # googtime=time.time()
@@ -3622,7 +3627,7 @@ class Camera:
                     plog(traceback.format_exc())
                     #breakpoint()
 
-                del tempnan_mask
+                #del tempnan_mask
 
 
                 # # rolltimer=time.time()
@@ -3705,8 +3710,8 @@ class Camera:
 
         #breakpoint()
 
-        del denan_mask
-        del de_nanned_reference_frame
+        # del denan_mask
+        # del de_nanned_reference_frame
 
         # Once collected and done, nanmedian the array into the single image
 
