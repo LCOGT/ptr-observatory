@@ -3448,6 +3448,7 @@ class Camera:
                 # print (str(-yoff) + " " + str(-xoff))
 
                 googtime=time.time()
+
                 xoff, yoff = cross_correlation_shifts(block_reduce(sub_stacker_array[:,:,0],3), block_reduce(sub_stacker_array[:,:,subexposure-1],3),zeromean=False)
                 print (time.time()-googtime)
                 print ("3x")
@@ -3510,6 +3511,50 @@ class Camera:
 
 
 
+# =======
+#                 nanmin=103423952805
+#                 nanmax=0
+#                 for xrange in range(11):
+#                     for yrange in range(11):
+#                         # count the number of nans in an overlap 
+#                         rollx=xrange-5
+#                         #print ("rollx: " + str(rollx))                        
+#                         rolly=yrange-5
+#                         #print ("rolly: " + str(rolly))
+#                         #nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
+#                         #nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
+#                         #nan_counts = bn.nansum(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1))
+                        
+#                         googtime=time.time()
+#                         rolled_frame=np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)
+#                         print ("rolltime: " +str(time.time()-googtime))
+#                         googtime=time.time()
+#                         subtracted_frame=np.subtract(referenceFrame , rolled_frame)                        
+#                         print ("subtime: " +str(time.time()-googtime))
+                        
+#                         summedframe = bn.nansum(subtracted_frame)
+                        
+#                         per_pixel_difference=summedframe/ np.count_nonzero(np.isnan(subtractedframe))
+                        
+#                         nan_counts=per_pixel_difference
+                        
+#                         if nan_counts > nanmax:
+#                             #print ('nanmax')
+#                             nanmaxfound=[rollx,rolly, nan_counts]
+#                             nanmax=nan_counts
+#                         if nan_counts < nanmin:
+#                             #print ('nanmax')
+#                             nanminfound=[rollx,rolly, nan_counts]
+#                             nanmin=nan_counts
+                            
+#                 print ("nanmax: " + str(nanmaxfound))
+#                 print ("nanmin: " + str(nanminfound))
+#                 print ("nanmethod: " + str(time.time()-googtime))
+                        
+                            
+                        
+                                                      
+# >>>>>>> Stashed changes
                 # SLOW WAY
                 # googtime=time.time()
                 # imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y], reference_mask=denan_mask, moving_mask=tempnan_mask)
