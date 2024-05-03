@@ -3439,9 +3439,11 @@ class Camera:
                         if nan_counts > nanmax:
                             print ('nanmax')
                             nanmaxfound=[rollx,rolly, nan_counts]
+                            nanmax=nan_counts
                         if nan_counts < nanmin:
                             print ('nanmax')
                             nanminfound=[rollx,rolly, nan_counts]
+                            nanmin=nancounts
                             
                 print ("nanmax: " + str(nanmaxfound))
                 print ("nanmin: " + str(nanminfound))
