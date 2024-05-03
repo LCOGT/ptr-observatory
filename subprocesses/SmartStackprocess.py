@@ -309,8 +309,14 @@ if not is_osc:   #This is the monochrome camera processing path.
             tempnan=copy.deepcopy(imgdata)
             # Cut down image to central thousand by thousand patch to align
             fx, fy = de_nanned_reference_frame.shape
-            crop_x= int(0.5*fx) -1250
-            crop_y= int(0.5*fy) -1250
+            
+            if ssfilter.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
+            
+                crop_x= 200
+                crop_y= 200
+            else:
+                crop_x= int(0.5*fx) -1250
+                crop_y= int(0.5*fy) -1250
             # crop_x= 100
             # crop_y= 100
             de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
@@ -326,7 +332,7 @@ if not is_osc:   #This is the monochrome camera processing path.
             # UNLESS the median is lower than the sky background offset... then use that... that 
             # can happen when there is not much signal.
             denan_mask=copy.deepcopy(de_nanned_reference_frame)
-            denan_median=np.nanpercentile(denan_mask, 70)
+            denan_median=np.nanpercentile(denan_mask, 90)
             # denan_median=2.5 * bn.nanmedian(denan_mask) - 1.5 * bn.nanmean(denan_mask)
             
             # # Calculating the edge of the sky distribution            
@@ -367,7 +373,7 @@ if not is_osc:   #This is the monochrome camera processing path.
             
             # Do the same for the new image
             tempnan_mask=copy.deepcopy(tempnan)
-            tempnan_median=np.nanpercentile(tempnan_mask, 70)
+            tempnan_median=np.nanpercentile(tempnan_mask, 90)
             # tempnan_median=2.5 * bn.nanmedian(tempnan_mask) - 1.5 * bn.nanmean(tempnan_mask)
             
             # # Calculating the edge of the sky distribution            

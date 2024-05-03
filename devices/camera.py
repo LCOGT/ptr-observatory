@@ -3179,76 +3179,39 @@ class Camera:
 
     def qhy_substacker_thread(self, exposure_time):
 
-        #N_of_substacks = 10
-
-
         # Boost Narrowband and low throughput broadband
         if g_dev['cam'].current_filter.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
-            #narrowband_substack=True
+            narrowband_stack=True
             exp_of_substacks = 30
             N_of_substacks = int((exposure_time / exp_of_substacks))
         else:
-            #narrowband_substack=False
+            narrowband_stack=False
             exp_of_substacks = 10
             N_of_substacks = int(exposure_time / exp_of_substacks)
 
         readout_estimate_holder=[]
-
-        #readouts=0
-
-
         is_osc=self.config["camera"][self.name]["settings"]['is_osc']
-
-
-
         self.sub_stacker_midpoints=[]
 
-
-
-        #print ("subexposing")
         for subexposure in range(N_of_substacks+1):
-            print ("subexposure: " +str(subexposure))
-
+            
             # Check there hasn't been a cancel sent through
             if g_dev["obs"].stop_all_activity:
-                plog ("stop_all_activity cancelling out of camera exposure")
-                # Nsmartstack=1
-                # sskcounter=2
-                # # expresult["error"] = True
-                # # expresult["stopped"] = True
-                # g_dev["obs"].exposure_halted_indicator =False
-                # self.currently_in_smartstack_loop=False
-                #self.running_an_exposure_set = False
+                plog ("stop_all_activity cancelling out of camera exposure")                
                 self.shutter_open=False
                 return
             if g_dev["obs"].exposure_halted_indicator:
-                # expresult["error"] = True
-                # expresult["stopped"] = True
-                # g_dev["obs"].exposure_halted_indicator =False
-                # plog ("Exposure Halted Indicator On. Cancelling Exposure.")
-                #self.running_an_exposure_set = False
                 self.shutter_open=False
                 return
 
             exposure_timer=time.time()
             # If it is the first exposure, then just take the exposure. Same with the second as the first one is the reference.
-
             if subexposure == 0 or subexposure == 1:
                 plog ("Collecting subexposure " + str(subexposure+1))
 
-                #if subexposure == 0 :
-
-
                 success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                 if subexposure == 0 :
-                    # Load in the flat to be used during sub_stacker_array
-                    # no_flat=False
-                    # try:
                     temporary_flat_in_memory=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
-                    # except:
-                    #     no_flat=True
-                    #     plog ("Could not find flat for this substack")
-                    #sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
                     self.substack_start_time=time.time()
 
                 self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
@@ -3256,35 +3219,13 @@ class Camera:
                 exposure_timer=time.time()
 
                 if subexposure == 0 :
-
                     # if during first exposure, create memmap disk array
                     temporary_substack_directory=self.local_calibration_path + "subsstacks/" + str(time.time()).replace('.','')
                     if not os.path.exists(temporary_substack_directory):
                         os.makedirs(temporary_substack_directory)
-
                     sub_stacker_array = np.memmap(temporary_substack_directory + '/tempfile', dtype='float32', mode= 'w+', shape = (self.imagesize_x,self.imagesize_y,N_of_substacks))
-
-
-
-
-
-
-
-
-
-
-
-
-                if subexposure == 1:
-                    #print ("Flat,DarkBiasing reference frame")
-                    # De-biasdark sub_stack array
-
-                    # hdufocus = fits.PrimaryHDU()
-                    # hdufocus.data = sub_stacker_array[:,:,0]
-                    # #hdufocus.header = googimage[0].header
-                    # hdufocus.writeto('referenceframe.fits', overwrite=True, output_verify='silentfix')
-
-                    #breakpoint()
+                    
+                if subexposure == 1:                    
                     try:
                         if exp_of_substacks == 10:
                             plog ("Dedarking 0")
@@ -3294,32 +3235,18 @@ class Camera:
                     except:
                         plog ("Couldn't biasdark substack")
                         pass
-                    # Flat field sub stack array
-                    #plog ("Flatting 0")
-                    # if not no_flat:
                     try:
-                        # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                        #     sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
-                        # else:
                         sub_stacker_array[:,:,0] = copy.deepcopy(np.divide(sub_stacker_array[:,:,0], temporary_flat_in_memory))
                     except:
                         plog ("couldn't flat field substack")
-                        pass
-                    # else:
-                    #     plog ("couldn't flat field substack")
-                    #     pass
+                        pass                    
                     # Bad pixel map sub stack array
                     try:
                         sub_stacker_array[:,:,0][g_dev['cam'].bpmFiles[str(1)]] = np.nan
                     except:
                         plog ("Couldn't badpixel substack")
                         pass
-
-                    # hdufocus = fits.PrimaryHDU()
-                    # hdufocus.data = sub_stacker_array[:,:,0]
-                    # #hdufocus.header = googimage[0].header
-                    # hdufocus.writeto('referenceframecalibrated.fits', overwrite=True, output_verify='silentfix')
-
+                    
                     de_nanned_reference_frame=copy.deepcopy(sub_stacker_array[:,:,0])
                     if is_osc:
                         # Wipe out red channel
@@ -3330,8 +3257,13 @@ class Camera:
 
                     # Cut down image to central thousand by thousand patch to align
                     fx, fy = de_nanned_reference_frame.shape
-                    crop_x= int(0.5*fx) -750
-                    crop_y= int(0.5*fy) -750
+                    
+                    if narrowband_stack:
+                        crop_x= 100
+                        crop_y= 100
+                    else:                        
+                        crop_x= int(0.5*fx) -1250
+                        crop_y= int(0.5*fy) -1250
                     # crop_x=100
                     # crop_y=100
                     de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
@@ -3352,7 +3284,7 @@ class Camera:
                     #denan_median=bn.nanmedian(denan_mask)
                     #imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
 
-                    imageMode=np.nanpercentile(denan_mask, 80)
+                    imageMode=np.nanpercentile(denan_mask, 90)
 
                     # print ("percent")
                     # print (imageMode)
@@ -3459,7 +3391,7 @@ class Camera:
 
                 #tempnan_mask=copy.deepcopy(tempnan)
                 #tempnan_mode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
-                tempnan_mode=np.nanpercentile(tempnan_mask, 80)
+                tempnan_mode=np.nanpercentile(tempnan_mask, 90)
 
                 # print ("percent")
                 # print (tempnan_mode)
