@@ -754,9 +754,9 @@ class Focuser:
         # If it is roughly in the right space, the guarded_move
         # Just adds overhead for no benefit
         
-        print ("MTF")
-        print (self.current_focus_position*self.micron_to_steps)
-        print (to_focus)
+        # print ("MTF")
+        # print (self.current_focus_position*self.micron_to_steps)
+        # print (to_focus)
                
         
         if (self.current_focus_position*self.micron_to_steps) > to_focus-35 and (self.current_focus_position*self.micron_to_steps) < to_focus+35:
