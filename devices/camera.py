@@ -3194,10 +3194,10 @@ class Camera:
         self.sub_stacker_midpoints=[]
 
         for subexposure in range(N_of_substacks+1):
-            
+
             # Check there hasn't been a cancel sent through
             if g_dev["obs"].stop_all_activity:
-                plog ("stop_all_activity cancelling out of camera exposure")                
+                plog ("stop_all_activity cancelling out of camera exposure")
                 self.shutter_open=False
                 return
             if g_dev["obs"].exposure_halted_indicator:
@@ -3224,8 +3224,8 @@ class Camera:
                     if not os.path.exists(temporary_substack_directory):
                         os.makedirs(temporary_substack_directory)
                     sub_stacker_array = np.memmap(temporary_substack_directory + '/tempfile', dtype='float32', mode= 'w+', shape = (self.imagesize_x,self.imagesize_y,N_of_substacks))
-                    
-                if subexposure == 1:                    
+
+                if subexposure == 1:
                     try:
                         if exp_of_substacks == 10:
                             plog ("Dedarking 0")
@@ -3239,14 +3239,14 @@ class Camera:
                         sub_stacker_array[:,:,0] = copy.deepcopy(np.divide(sub_stacker_array[:,:,0], temporary_flat_in_memory))
                     except:
                         plog ("couldn't flat field substack")
-                        pass                    
+                        pass
                     # Bad pixel map sub stack array
                     try:
                         sub_stacker_array[:,:,0][g_dev['cam'].bpmFiles[str(1)]] = np.nan
                     except:
                         plog ("Couldn't badpixel substack")
                         pass
-                    
+
                     de_nanned_reference_frame=copy.deepcopy(sub_stacker_array[:,:,0])
                     if is_osc:
                         # Wipe out red channel
@@ -3257,11 +3257,11 @@ class Camera:
 
                     # Cut down image to central thousand by thousand patch to align
                     fx, fy = de_nanned_reference_frame.shape
-                    
+
                     if narrowband_stack:
                         crop_x= 100
                         crop_y= 100
-                    else:                        
+                    else:
                         crop_x= int(0.5*fx) -1250
                         crop_y= int(0.5*fy) -1250
                     # crop_x=100
@@ -3423,6 +3423,8 @@ class Camera:
                 #print ("Shift: " + str(time.time()-rolltimer))
                 #del tempnan
                 print (imageshift)
+
+                breakpoint()
 
                 if len(imageshift) == 3:
                     imageshift=imageshift[0]
