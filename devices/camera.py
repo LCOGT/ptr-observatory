@@ -3432,18 +3432,18 @@ class Camera:
                     for yrange in range(11):
                         # count the number of nans in an overlap 
                         rollx=xrange-5
-                        print ("rollx: " + str(rollx))                        
+                        #print ("rollx: " + str(rollx))                        
                         rolly=yrange-5
-                        print ("rolly: " + str(rolly))
+                        #print ("rolly: " + str(rolly))
                         nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
                         if nan_counts > nanmax:
-                            print ('nanmax')
+                            #print ('nanmax')
                             nanmaxfound=[rollx,rolly, nan_counts]
                             nanmax=nan_counts
                         if nan_counts < nanmin:
-                            print ('nanmax')
+                            #print ('nanmax')
                             nanminfound=[rollx,rolly, nan_counts]
-                            nanmin=nancounts
+                            nanmin=nan_counts
                             
                 print ("nanmax: " + str(nanmaxfound))
                 print ("nanmin: " + str(nanminfound))
