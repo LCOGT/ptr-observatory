@@ -1,20 +1,21 @@
-pip install python-dotenv
-pip install colour-science colour_demosaicing
+pip install -U python-dotenv
+pip install -U colour-science colour_demosaicing
 wget https://aka.ms/vs/17/release/vs_BuildTools.exe -O vsBuildTools.exe
 .\vs_BuildTools.exe
 del vsBuildTools.exe
-pip install sep
-pip install Pillow
-pip install func_timeout
-pip install astroalign
-pip install redis
-pip install requests
-pip install ocs_ingester
-pip install astroquery
-pip install ephem
-pip install pyowm
-pip install serial
-pip install matplotlib
-pip install numpy
-pip install scipy
-pip install xmltodict
+pip install -U sep
+pip install -U Pillow
+pip install -U func_timeout
+pip install -U astroalign
+pip install -U redis
+pip install -U requests
+pip install -U ocs_ingester
+pip install -U astroquery
+pip install -U ephem
+pip install -U pyowm
+pip install -U serial
+pip install -U matplotlib
+pip install -U numpy
+pip install -U scipy
+pip install -U xmltodict
+pip install -U image_registration
