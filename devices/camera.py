@@ -3335,8 +3335,13 @@ class Camera:
                     # crop_x=100
                     # crop_y=100
                     de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
-                    
+
+                    # Make a mid-stretched
                     # Make a mid-stretched version
+                    de_nanned_reference_frame=de_nanned_reference_frame+500
+                    medt=bn.nanmedian(de_nanned_reference_frame)
+                    de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] = medt
+                    #tempnan_mask=mid_stretch_jpeg(tempnan_mask)
                     de_nanned_reference_frame=mid_stretch_jpeg(de_nanned_reference_frame)
 
 
@@ -3346,7 +3351,9 @@ class Camera:
                     denan_mask=copy.deepcopy(de_nanned_reference_frame)
                     #denan_median=bn.nanmedian(denan_mask)
                     #imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
-                    imageMode=np.nanpercentile(denan_mask, 70)
+
+                    imageMode=np.nanpercentile(denan_mask, 30)
+
                     # print ("percent")
                     # print (imageMode)
                     # print (bn.nanmedian(denan_mask))
@@ -3430,11 +3437,21 @@ class Camera:
 
                 # Cut down image to central thousand by thousand patch to align
                 tempnan_mask= tempnan_mask[crop_x:-crop_x, crop_y:-crop_y]
-                
+
+
+                #breakpoint()
+
+
                 # Make a mid-stretched version
+                tempnan_mask=tempnan_mask+500
+                medt=bn.nanmedian(tempnan_mask)
+                tempnan_mask[np.isnan(tempnan_mask)] = medt
                 tempnan_mask=mid_stretch_jpeg(tempnan_mask)
-                
-                
+
+
+
+
+
                 #imageMode=bn.nanmedian(tempnan)
                 #tempnan[np.isnan(tempnan)] =imageMode
 
@@ -3442,7 +3459,7 @@ class Camera:
 
                 #tempnan_mask=copy.deepcopy(tempnan)
                 #tempnan_mode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
-                tempnan_mode=np.nanpercentile(tempnan_mask, 70)
+                tempnan_mode=np.nanpercentile(tempnan_mask, 30)
 
                 # print ("percent")
                 # print (tempnan_mode)
@@ -3581,7 +3598,7 @@ class Camera:
                 image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
                 time_after_last_substack_readout=time.time()
 
-                #plog ("reading out " + str(subexposure))
+                plog ("read out " + str(subexposure))
 
                 #plog ("readout time: " + str(time_after_last_substack_readout - time_before_last_substack_readout))
                 readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
