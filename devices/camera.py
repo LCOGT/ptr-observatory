@@ -3186,7 +3186,7 @@ class Camera:
         if g_dev['cam'].current_filter.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
             #narrowband_substack=True
             exp_of_substacks = 30
-            N_of_substacks = int((exposure_time / exp_of_substacks)/3)
+            N_of_substacks = int((exposure_time / exp_of_substacks))
         else:
             #narrowband_substack=False
             exp_of_substacks = 10
