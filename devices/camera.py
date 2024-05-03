@@ -3413,16 +3413,61 @@ class Camera:
                 # denan_mask[denan_mask > imageMode] = True
                 # denan_mask=denan_mask.astype('bool')
 
+                
 
+                # FAST WAY?
+                
+                referenceFrame=copy.deepcopy(de_nanned_reference_frame)
+                ref_mode=np.nanpercentile(referenceFrame,90)
+                referenceFrame[referenceFrame < ref_mode] = np.nan
+                
+                comparisonFrame=copy.deepcopy(sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y])
+                comp_mode=np.nanpercentile(comparisonFrame,90)
+                comparisonFrame[comparisonFrame < comp_mode] = np.nan
+                
+                googtime=time.time()
+                nanmin=103423952805
+                nanmax=0
+                for xrange in range(11):
+                    for yrange in range(11):
+                        # count the number of nans in an overlap 
+                        rollx=xrange-5
+                        print ("rollx: " + str(rollx))                        
+                        rolly=yrange-5
+                        print ("rolly: " + str(rolly))
+                        nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
+                        if nan_counts > nanmax:
+                            print ('nanmax')
+                            nanmaxfound=[rollx,rolly, nan_counts]
+                        if nan_counts < nanmin:
+                            print ('nanmax')
+                            nanminfound=[rollx,rolly, nan_counts]
+                            
+                print ("nanmax: " + str(nanmaxfound))
+                print ("nanmin: " + str(nanminfound))
+                print ("nanmethod: " + str(time.time()-googtime))
+                        
+                            
+                        
+                                                      
+                # SLOW WAY
+                googtime=time.time()
                 imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y], reference_mask=denan_mask, moving_mask=tempnan_mask)
+                print (imageshift)
+                print ("phase cross: " + str(time.time()-googtime))
+                
                 #imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][100:-100, 100:-100], reference_mask=denan_mask, moving_mask=tempnan_mask)
+
+
+
+
 
 
 
                 #imageshift, error, diffphase = phase_cross_correlation(de_nanned_reference_frame, tempnan)
                 #print ("Shift: " + str(time.time()-rolltimer))
                 #del tempnan
-                print (imageshift)
+                
 
                 if len(imageshift) == 3:
                     imageshift=imageshift[0]
