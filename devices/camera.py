@@ -3277,9 +3277,9 @@ class Camera:
                     try:
                         if exp_of_substacks == 10:
                             plog ("Dedarking 0")
-                            sub_stacker_array[:,:,0]=sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
+                            sub_stacker_array[:,:,0]=copy.deepcopy(sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
                         else:
-                            sub_stacker_array[:,:,0]=sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['thirtysec_exposure_biasdark']
+                            sub_stacker_array[:,:,0]=copy.deepcopy(sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['thirtysec_exposure_biasdark'])
                     except:
                         plog ("Couldn't biasdark substack")
                         pass
@@ -3290,7 +3290,7 @@ class Camera:
                         # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
                         #     sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
                         # else:
-                        sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], temporary_flat_in_memory)
+                        sub_stacker_array[:,:,0] = copy.deepcopy(np.divide(sub_stacker_array[:,:,0], temporary_flat_in_memory))
                     except:
                         plog ("couldn't flat field substack")
                         pass
