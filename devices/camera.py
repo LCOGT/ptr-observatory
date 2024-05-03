@@ -3438,7 +3438,7 @@ class Camera:
                         #nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
                         #nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
                         #nan_counts = bn.nansum(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1))
-                        nan_counts = bn.nansum(referenceFrame - np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1))
+                        nan_counts = bn.nansum(np.subtract(referenceFrame - np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
                         
                         
                         if nan_counts > nanmax:
