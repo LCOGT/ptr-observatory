@@ -3248,53 +3248,53 @@ class Camera:
                         plog ("Couldn't badpixel substack")
                         pass
 
-                    de_nanned_reference_frame=copy.deepcopy(sub_stacker_array[:,:,0])
-                    if is_osc:
-                        # Wipe out red channel
-                        de_nanned_reference_frame[::2, ::2]=np.nan
-                        # Wipe out blue channel
-                        de_nanned_reference_frame[1::2, 1::2]=np.nan
+                    # de_nanned_reference_frame=copy.deepcopy(sub_stacker_array[:,:,0])
+                    # if is_osc:
+                    #     # Wipe out red channel
+                    #     de_nanned_reference_frame[::2, ::2]=np.nan
+                    #     # Wipe out blue channel
+                    #     de_nanned_reference_frame[1::2, 1::2]=np.nan
 
 
-                    # Cut down image to central thousand by thousand patch to align
-                    fx, fy = de_nanned_reference_frame.shape
+                    # # Cut down image to central thousand by thousand patch to align
+                    # fx, fy = de_nanned_reference_frame.shape
 
-                    if narrowband_stack:
-                        crop_x= 100
-                        crop_y= 100
-                    else:
-                        crop_x= int(0.5*fx) -1250
-                        crop_y= int(0.5*fy) -1250
-                    # crop_x=100
-                    # crop_y=100
-                    de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
+                    # if narrowband_stack:
+                    #     crop_x= 100
+                    #     crop_y= 100
+                    # else:
+                    #     crop_x= int(0.5*fx) -1250
+                    #     crop_y= int(0.5*fy) -1250
+                    # # crop_x=100
+                    # # crop_y=100
+                    # de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
 
-                    # # Make a mid-stretched
-                    # # Make a mid-stretched version
-                    # de_nanned_reference_frame=de_nanned_reference_frame+500
-                    # medt=bn.nanmedian(de_nanned_reference_frame)
-                    # de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] = medt
-                    # #tempnan_mask=mid_stretch_jpeg(tempnan_mask)
-                    # de_nanned_reference_frame=mid_stretch_jpeg(de_nanned_reference_frame)
+                    # # # Make a mid-stretched
+                    # # # Make a mid-stretched version
+                    # # de_nanned_reference_frame=de_nanned_reference_frame+500
+                    # # medt=bn.nanmedian(de_nanned_reference_frame)
+                    # # de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] = medt
+                    # # #tempnan_mask=mid_stretch_jpeg(tempnan_mask)
+                    # # de_nanned_reference_frame=mid_stretch_jpeg(de_nanned_reference_frame)
 
 
-                    #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
-                    #de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
+                    # #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
+                    # #de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
 
-                    denan_mask=copy.deepcopy(de_nanned_reference_frame)
-                    #denan_median=bn.nanmedian(denan_mask)
-                    #imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
+                    # denan_mask=copy.deepcopy(de_nanned_reference_frame)
+                    # #denan_median=bn.nanmedian(denan_mask)
+                    # #imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
 
-                    imageMode=np.nanpercentile(denan_mask, 90)
+                    # imageMode=np.nanpercentile(denan_mask, 90)
 
-                    # print ("percent")
-                    # print (imageMode)
-                    # print (bn.nanmedian(denan_mask))
-                    # print (2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame))
-                    denan_mask[np.isnan(denan_mask)] = False
-                    denan_mask[denan_mask <= imageMode] = False
-                    denan_mask[denan_mask > imageMode] = True
-                    denan_mask=denan_mask.astype('bool')
+                    # # print ("percent")
+                    # # print (imageMode)
+                    # # print (bn.nanmedian(denan_mask))
+                    # # print (2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame))
+                    # denan_mask[np.isnan(denan_mask)] = False
+                    # denan_mask[denan_mask <= imageMode] = False
+                    # denan_mask[denan_mask > imageMode] = True
+                    # denan_mask=denan_mask.astype('bool')
 
             # For each further exposure, align the previous subexposure while exposing the next exposure
             # Do this through separate threads. The alignment should be faster than the exposure
@@ -3359,17 +3359,17 @@ class Camera:
 
                 # Using the nan'ed file, calculate the shift
                 #rolltimer=time.time()
-                tempnan_mask=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
+                # tempnan_mask=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
 
-                if is_osc:
-                    # Wipe out red channel
-                    tempnan_mask[::2, ::2]=np.nan
-                    # Wipe out blue channel
-                    tempnan_mask[1::2, 1::2]=np.nan
+                # if is_osc:
+                #     # Wipe out red channel
+                #     tempnan_mask[::2, ::2]=np.nan
+                #     # Wipe out blue channel
+                #     tempnan_mask[1::2, 1::2]=np.nan
 
 
                 # Cut down image to central thousand by thousand patch to align
-                tempnan_mask= tempnan_mask[crop_x:-crop_x, crop_y:-crop_y]
+                # tempnan_mask= tempnan_mask[crop_x:-crop_x, crop_y:-crop_y]
 
 
                 #breakpoint()
@@ -3392,17 +3392,17 @@ class Camera:
 
                 #tempnan_mask=copy.deepcopy(tempnan)
                 #tempnan_mode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
-                tempnan_mode=np.nanpercentile(tempnan_mask, 90)
+                # tempnan_mode=np.nanpercentile(tempnan_mask, 90)
 
                 # print ("percent")
                 # print (tempnan_mode)
                 # print (bn.nanmedian(tempnan_mask))
                 # print (2.5 * bn.nanmedian(tempnan_mask) - 1.5 * bn.nanmean(tempnan_mask))
 
-                tempnan_mask[np.isnan(tempnan_mask)] = False
-                tempnan_mask[tempnan_mask <= tempnan_mode] = False
-                tempnan_mask[tempnan_mask > tempnan_mode] = True
-                tempnan_mask=tempnan_mask.astype('bool')
+                # tempnan_mask[np.isnan(tempnan_mask)] = False
+                # tempnan_mask[tempnan_mask <= tempnan_mode] = False
+                # tempnan_mask[tempnan_mask > tempnan_mode] = True
+                # tempnan_mask=tempnan_mask.astype('bool')
 
                 #breakpoint()
 
@@ -3435,10 +3435,10 @@ class Camera:
                 # print (time.time()-googtime)
                 # print (str(xoff) + " " + str(yoff))
 
-                googtime=time.time()
-                xoff, yoff = cross_correlation_shifts(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y],zeromean=False)
-                print (time.time()-googtime)
-                print (str(-yoff) + " " + str(-xoff))
+                # googtime=time.time()
+                # xoff, yoff = cross_correlation_shifts(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y],zeromean=False)
+                # print (time.time()-googtime)
+                # print (str(-yoff) + " " + str(-xoff))
 
 
                 # binned version
@@ -3453,15 +3453,17 @@ class Camera:
                 print ("3x")
                 print (str(-yoff*3) + " " + str(-xoff*3))
                 print (str(round(-yoff*3)) + " " + str(round(-xoff*3)))
+
+                imageshift=[round(-yoff*3),round(-xoff*3)]
                 #breakpoint()
 
-                googtime=time.time()
-                xoff, yoff = cross_correlation_shifts(block_reduce(sub_stacker_array[:,:,0],4), block_reduce(sub_stacker_array[:,:,subexposure-1],4),zeromean=False)
-                print (time.time()-googtime)
-                print ("4x")
-                print (str(-yoff*4) + " " + str(-xoff*4))
-                print (str(round(-yoff*4)) + " " + str(round(-xoff*4)))
-                #breakpoint()
+                # googtime=time.time()
+                # xoff, yoff = cross_correlation_shifts(block_reduce(sub_stacker_array[:,:,0],4), block_reduce(sub_stacker_array[:,:,subexposure-1],4),zeromean=False)
+                # print (time.time()-googtime)
+                # print ("4x")
+                # print (str(-yoff*4) + " " + str(-xoff*4))
+                # print (str(round(-yoff*4)) + " " + str(round(-xoff*4)))
+                # #breakpoint()
 
                 # googtime=time.time()
                 # nanmin=103423952805
@@ -3509,10 +3511,10 @@ class Camera:
 
 
                 # SLOW WAY
-                googtime=time.time()
-                imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y], reference_mask=denan_mask, moving_mask=tempnan_mask)
-                print (imageshift)
-                print ("phase cross: " + str(time.time()-googtime))
+                # googtime=time.time()
+                # imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y], reference_mask=denan_mask, moving_mask=tempnan_mask)
+                # print (imageshift)
+                # print ("phase cross: " + str(time.time()-googtime))
 
                 #imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][100:-100, 100:-100], reference_mask=denan_mask, moving_mask=tempnan_mask)
 
@@ -3529,8 +3531,8 @@ class Camera:
 
                 #breakpoint()
 
-                if len(imageshift) == 3:
-                    imageshift=imageshift[0]
+                # if len(imageshift) == 3:
+                #     imageshift=imageshift[0]
 
                 try:
                     if abs(imageshift[0]) > 0:
