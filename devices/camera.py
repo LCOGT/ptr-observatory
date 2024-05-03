@@ -3352,7 +3352,7 @@ class Camera:
                     #denan_median=bn.nanmedian(denan_mask)
                     #imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
 
-                    imageMode=np.nanpercentile(denan_mask, 30)
+                    imageMode=np.nanpercentile(denan_mask, 80)
 
                     # print ("percent")
                     # print (imageMode)
@@ -3459,7 +3459,7 @@ class Camera:
 
                 #tempnan_mask=copy.deepcopy(tempnan)
                 #tempnan_mode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
-                tempnan_mode=np.nanpercentile(tempnan_mask, 30)
+                tempnan_mode=np.nanpercentile(tempnan_mask, 80)
 
                 # print ("percent")
                 # print (tempnan_mode)
