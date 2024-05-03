@@ -3435,7 +3435,12 @@ class Camera:
                         #print ("rollx: " + str(rollx))                        
                         rolly=yrange-5
                         #print ("rolly: " + str(rolly))
-                        nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
+                        #nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
+                        #nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
+                        #nan_counts = bn.nansum(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1))
+                        nan_counts = bn.nansum(referenceFrame - np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1))
+                        
+                        
                         if nan_counts > nanmax:
                             #print ('nanmax')
                             nanmaxfound=[rollx,rolly, nan_counts]
