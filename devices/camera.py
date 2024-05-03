@@ -3170,9 +3170,20 @@ class Camera:
     def qhy_substacker_thread(self, exposure_time):
 
         #N_of_substacks = 10
-        exp_of_substacks = 10
+        
+        
+        # Boost Narrowband and low throughput broadband
+        if g_dev['cam'].current_filter.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
+            #narrowband_substack=True
+            exp_of_substacks = 30
+            N_of_substacks = int((exposure_time / exp_of_substacks)/3)
+        else:
+            #narrowband_substack=False
+            exp_of_substacks = 10
+            N_of_substacks = int(exposure_time / exp_of_substacks)
+        
         readout_estimate_holder=[]
-        N_of_substacks = int(exposure_time / exp_of_substacks)
+        
         #readouts=0
 
 
