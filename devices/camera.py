@@ -3335,6 +3335,9 @@ class Camera:
                     # crop_x=100
                     # crop_y=100
                     de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
+                    
+                    # Make a mid-stretched version
+                    de_nanned_reference_frame=mid_stretch_jpeg(de_nanned_reference_frame)
 
 
                     #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
@@ -3427,6 +3430,11 @@ class Camera:
 
                 # Cut down image to central thousand by thousand patch to align
                 tempnan_mask= tempnan_mask[crop_x:-crop_x, crop_y:-crop_y]
+                
+                # Make a mid-stretched version
+                tempnan_mask=mid_stretch_jpeg(tempnan_mask)
+                
+                
                 #imageMode=bn.nanmedian(tempnan)
                 #tempnan[np.isnan(tempnan)] =imageMode
 
