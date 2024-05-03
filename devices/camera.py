@@ -1229,7 +1229,7 @@ class Camera:
             del tempdarkframe
         except:
             plog("10.0s Bias Dark frame for Binning 1 not available")
-            
+
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib +  "thirtysecBIASDARK_master_bin1.fits")
@@ -3180,8 +3180,8 @@ class Camera:
     def qhy_substacker_thread(self, exposure_time):
 
         #N_of_substacks = 10
-        
-        
+
+
         # Boost Narrowband and low throughput broadband
         if g_dev['cam'].current_filter.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
             #narrowband_substack=True
@@ -3191,9 +3191,9 @@ class Camera:
             #narrowband_substack=False
             exp_of_substacks = 10
             N_of_substacks = int(exposure_time / exp_of_substacks)
-        
+
         readout_estimate_holder=[]
-        
+
         #readouts=0
 
 
@@ -3235,9 +3235,9 @@ class Camera:
 
             if subexposure == 0 or subexposure == 1:
                 plog ("Collecting subexposure " + str(subexposure+1))
-                
+
                 #if subexposure == 0 :
-                    
+
 
                 success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                 if subexposure == 0 :
@@ -3424,12 +3424,12 @@ class Camera:
                 #tempnan_mask=copy.deepcopy(tempnan)
                 #tempnan_mode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
                 tempnan_mode=np.nanpercentile(tempnan_mask, 70)
-                
+
                 print ("percent")
                 print (tempnan_mode)
                 print (bn.nanmedian(tempnan_mask))
                 print (2.5 * bn.nanmedian(tempnan_mask) - 1.5 * bn.nanmean(tempnan_mask))
-                
+
                 tempnan_mask[np.isnan(tempnan_mask)] = False
                 tempnan_mask[tempnan_mask <= tempnan_mode] = False
                 tempnan_mask[tempnan_mask > tempnan_mode] = True
@@ -3571,7 +3571,7 @@ class Camera:
 
                 sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
-                plog ("median: " + bn.nanmedian(sub_stacker_array[:,:,subexposure]))
+                plog ("median: " + str(bn.nanmedian(sub_stacker_array[:,:,subexposure])))
 
 
                 #print ("Collected " +str(subexposure+1))
@@ -3579,7 +3579,11 @@ class Camera:
 
 
 
+
+
             #sub_stacker_array[:,:,subexposure] = self._getImageArray()
+
+        breakpoint()
 
         del denan_mask
         del de_nanned_reference_frame
@@ -3588,12 +3592,17 @@ class Camera:
 
         self.readout_estimate= np.median(np.array(readout_estimate_holder))
 
+
+
+
         #temptimer=time.time()
         sub_stacker_array=bn.nanmedian(sub_stacker_array, axis=2) * N_of_substacks
         #print ("Stacktime: " + str(time.time()-temptimer))
         self.sub_stack_hold = sub_stacker_array
 
         #self.substack_midpoint_time=(self.substack_start_time + expected_endpoint_of_substack_exposure) / 2
+
+
 
         del sub_stacker_array
         self.substacker_available=True
