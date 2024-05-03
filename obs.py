@@ -4399,22 +4399,22 @@ class Observatory:
                     Nsmartstack, pier_side, zoom_factor
                 ) = self.smartstack_queue.get(block=False)
 
-                if paths is None:
-                    continue
+                # if paths is None:
+                #     continue
 
                 # SmartStack Section
                 if smartstackid != "no":
                     sstack_timer = time.time()
 
-                    if self.config['keep_reduced_on_disk']:
-                        img = fits.open(
-                            paths["red_path"] + paths["red_name01"].replace('.fits','.head'),
-                            ignore_missing_end=True,
-                        )
-                        imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
+                    # if self.config['keep_reduced_on_disk']:
+                    #     img = fits.open(
+                    #         paths["red_path"] + paths["red_name01"].replace('.fits','.head'),
+                    #         ignore_missing_end=True,
+                    #     )
+                    #     imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
 
-                        g_dev['obs'].to_slow_process(1000,('reduced', paths["red_path"] + paths["red_name01"], imgdata, img[0].header, \
-                                               'EXPOSE', g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                    #     g_dev['obs'].to_slow_process(1000,('reduced', paths["red_path"] + paths["red_name01"], imgdata, img[0].header, \
+                    #                            'EXPOSE', g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                     crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
                     yb=self.config["camera"][g_dev['cam'].name]["settings"][
@@ -4516,11 +4516,16 @@ class Observatory:
                     #breakpoint()
 
                     # Essentially wait until the subprocess is complete
-                    smartstack_subprocess.communicate()
+                    #smartstack_subprocess.communicate()
+                    
+                    #  We don't have to wait for the full smartstack process to finish, just until it gets to the stage where 
+                    # It has saved out the next layer to the npy. Beyond this, it is just making a jpeg and the reduced file. 
+                    while not os.path.exists(paths["im_path"] + 'smartstack.pickle'):# and (time.time() - platesolve_timeout_timer) < timeout_time:
+                        time.sleep(0.5)
 
 
                     self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"],time.time())), block=False)
-                    self.fast_queue.put(
+                    self.mediumui_queue.put(
                         (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
 
                     try:

@@ -87,7 +87,7 @@ img = fits.open(
     paths["red_path"] + paths["red_name01"].replace('.fits','.head'),
     ignore_missing_end=True,
 )
-imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
+imgdata = copy.deepcopy(np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy')))
 
 
 
@@ -221,6 +221,10 @@ ssobject = str(img[0].header["OBJECT"]).replace('@','at').replace(':','d').repla
 ssexptime = str(img[0].header["EXPTIME"]).replace('.','d').replace(' ','')
 sspedestal = str(img[0].header["PEDESTAL"]).replace('.','d').replace(' ','')
 imgdata=imgdata-float(sspedestal)
+
+img[0].header["PEDESTAL"]=0
+
+hold_header=copy.deepcopy(img[0].header)
 
 img.close()
 del img
@@ -505,6 +509,9 @@ if not is_osc:   #This is the monochrome camera processing path.
 
     if reprojection_failed == True:  # If we couldn't make a stack send a jpeg of the original image.
         storedsStack = imgdata
+        
+    pickle.dump(reprojection_failed, open(paths["im_path"] + 'smartstack.pickle', 'wb'))
+    
     #breakpoint()
 
      # Resizing the array to an appropriate shape for the jpg and the small fits
@@ -549,8 +556,9 @@ if not is_osc:   #This is the monochrome camera processing path.
 
     # Save BIG version of JPEG.
     final_image.save(
-        paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
+        paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20').replace('.jpg','temp.jpg')
     )
+    os.rename(paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20').replace('.jpg','temp.jpg'),paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20'))
     # Resizing the array to an appropriate shape for the jpg and the small fits
     #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
     print('Zoom factor is:  ', zoom_factor)
@@ -611,9 +619,10 @@ if not is_osc:   #This is the monochrome camera processing path.
 
             )
     final_image.save(
-        paths["im_path"] + paths["jpeg_name10"]
+        paths["im_path"] + paths["jpeg_name10"].replace('.jpg','temp.jpg')
     )
     del final_image
+    os.rename(paths["im_path"] + paths["jpeg_name10"].replace('.jpg','temp.jpg'),paths["im_path"] + paths["jpeg_name10"])
 
 # This is where the OSC smartstack stuff is.
 else:
@@ -773,6 +782,8 @@ else:
                     else:
                         reprojection_failed = True
 
+        pickle.dump(reprojection_failed, open(paths["im_path"] + 'smartstack.pickle', 'wb'))
+
         newhdugreen[np.isnan(newhdugreen)] =imageMode
         newhdured[np.isnan(newhdured)] =imageMode
         newhdublue[np.isnan(newhdublue)] =imageMode
@@ -858,8 +869,9 @@ else:
 
         # Save BIG version of JPEG.
         final_image.save(
-            paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
+            paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20').replace('.jpg','temp.jpg')
         )
+        os.rename(paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20').replace('.jpg','temp.jpg'),paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20'))
 
         # # Resizing the array to an appropriate shape for the jpg and the small fits
         # iy, ix = final_image.size
@@ -1054,24 +1066,13 @@ else:
 
 
         final_image.save(
-            paths["im_path"] + paths["jpeg_name10"]
+            paths["im_path"] + paths["jpeg_name10"].replace('.jpg','temp.jpg')
         )
         del final_image
-
+        os.rename(paths["im_path"] + paths["jpeg_name10"].replace('.jpg','temp.jpg'),paths["im_path"] + paths["jpeg_name10"])
 
         #breakpoint()
 
-
-
-
-try:
-    imgdata.close()
-    # Just in case
-except:
-    pass
-del imgdata
-
-pickle.dump(reprojection_failed, open(paths["im_path"] + 'smartstack.pickle', 'wb'))
 
 
 
@@ -1085,3 +1086,40 @@ try:
     os.remove(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
 except:
     pass
+
+
+
+# Save reduced here.
+
+
+# if selfconfig['keep_reduced_on_disk']:
+
+#     # if selfconfig["save_to_alt_path"] == "yes":
+#     #     selfalt_path = selfconfig[
+#     #         "alt_path"
+#     #     ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
+
+#     #     if "reduced_hdusmalldata" in locals():
+
+
+#     #         g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
+#     #                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+#     if selfconfig["save_to_alt_path"] == "yes":
+#         selfalt_path = selfconfig[
+#             "alt_path"
+#         ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
+#     else:
+#         selfalt_path = 'no'
+
+
+# img[0].header
+
+
+
+try:
+    imgdata.close()
+    # Just in case
+except:
+    pass
+del imgdata

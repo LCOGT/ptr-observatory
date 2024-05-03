@@ -7637,86 +7637,7 @@ def post_exposure_process(payload):
                         saver = 1
                     except Exception as e:
                         plog("Failed to write raw file: ", e)
-
-                if smartstackid == 'no':
-                    if selfconfig['keep_reduced_on_disk']:
-
-                        # if selfconfig["save_to_alt_path"] == "yes":
-                        #     selfalt_path = selfconfig[
-                        #         "alt_path"
-                        #     ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
-
-                        #     if "reduced_hdusmalldata" in locals():
-
-
-                        #         g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
-                        #                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
-                        if selfconfig["save_to_alt_path"] == "yes":
-                            selfalt_path = selfconfig[
-                                "alt_path"
-                            ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
-                        else:
-                            selfalt_path = 'no'
-
-
-                        # g_dev['obs'].to_slow_process(1000,('reduced', red_path + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
-                        #                        frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure,selfalt_path))
-
-                        slow_process=('reduced', red_path + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
-                                               frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure,selfalt_path)
-
-                        # Make  sure the alt paths exist
-                        if g_dev['obs'].config["save_to_alt_path"] == "yes":
-                            os.makedirs(
-                                g_dev['obs'].alt_path + g_dev["day"], exist_ok=True
-                            )
-                            os.makedirs(
-                                g_dev['obs'].alt_path + g_dev["day"] + "/raw/", exist_ok=True
-                            )
-                            os.makedirs(
-                                g_dev['obs'].alt_path + g_dev["day"] + "/reduced/", exist_ok=True
-                            )
-                            os.makedirs(
-                                g_dev['obs'].alt_path + g_dev["day"] + "/calib/", exist_ok=True)
-
-
-
-                            altpath=copy.deepcopy(g_dev['obs'].alt_path)
-                        else:
-                            altpath='no'
-
-
-                        picklepayload=(reduced_hdusmallheader,copy.deepcopy(g_dev['obs'].config),g_dev['cam'].name, slow_process, altpath)
-
-                        #if True :
-                        picklefilename='testred'+str(time.time()).replace('.','')
-                        #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
-                        pickle.dump(picklepayload, open(g_dev['obs'].local_calibration_path + 'smartstacks/'+picklefilename,'wb'))
-                        #breakpoint()
-
-
-                        # if sskcounter >0:
-                        #breakpoint()
-
-                        #print (picklefilename)
-
-                        subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=g_dev['obs'].local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-
-
-                        # if g_dev['obs'].config["save_to_alt_path"] == "yes":
-
-                        #     altfolder = g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying']
-                        #     if not os.path.exists(g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying']):
-                        #         os.makedirs(g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying'] )
-
-                        #     # #breakpoint()
-                        #     # hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-                        #     #)  # Save full raw file locally
-                        #     g_dev['obs'].altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+reduced_hdusmallheader['OBSTYPE'])),copy.deepcopy(slow_process[1]),time.time()), block=False)
-
-
-
+                        
                 # This puts the file into the smartstack queue
                 # And gets it underway ASAP.
 
@@ -7746,9 +7667,90 @@ def post_exposure_process(payload):
                         except:
                             pass
 
-            # Send data off to process jpeg
-            # This is for a non-focus jpeg
-            g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
+                #if smartstackid == 'no':
+                if selfconfig['keep_reduced_on_disk']:
+
+                    # if selfconfig["save_to_alt_path"] == "yes":
+                    #     selfalt_path = selfconfig[
+                    #         "alt_path"
+                    #     ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
+
+                    #     if "reduced_hdusmalldata" in locals():
+
+
+                    #         g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
+                    #                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+                    if selfconfig["save_to_alt_path"] == "yes":
+                        selfalt_path = selfconfig[
+                            "alt_path"
+                        ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
+                    else:
+                        selfalt_path = 'no'
+
+
+                    # g_dev['obs'].to_slow_process(1000,('reduced', red_path + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
+                    #                        frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure,selfalt_path))
+
+                    slow_process=('reduced', red_path + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
+                                           frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure,selfalt_path)
+
+                    # Make  sure the alt paths exist
+                    if g_dev['obs'].config["save_to_alt_path"] == "yes":
+                        os.makedirs(
+                            g_dev['obs'].alt_path + g_dev["day"], exist_ok=True
+                        )
+                        os.makedirs(
+                            g_dev['obs'].alt_path + g_dev["day"] + "/raw/", exist_ok=True
+                        )
+                        os.makedirs(
+                            g_dev['obs'].alt_path + g_dev["day"] + "/reduced/", exist_ok=True
+                        )
+                        os.makedirs(
+                            g_dev['obs'].alt_path + g_dev["day"] + "/calib/", exist_ok=True)
+
+
+
+                        altpath=copy.deepcopy(g_dev['obs'].alt_path)
+                    else:
+                        altpath='no'
+
+
+                    picklepayload=(reduced_hdusmallheader,copy.deepcopy(g_dev['obs'].config),g_dev['cam'].name, slow_process, altpath)
+
+                    #if True :
+                    picklefilename='testred'+str(time.time()).replace('.','')
+                    #pickle.dump(picklepayload, open('subprocesses/testfz'+str(time.time()).replace('.',''),'wb'))
+                    pickle.dump(picklepayload, open(g_dev['obs'].local_calibration_path + 'smartstacks/'+picklefilename,'wb'))
+                    #breakpoint()
+
+
+                    # if sskcounter >0:
+                    #breakpoint()
+
+                    #print (picklefilename)
+
+                    subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=g_dev['obs'].local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+
+
+                    # if g_dev['obs'].config["save_to_alt_path"] == "yes":
+
+                    #     altfolder = g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying']
+                    #     if not os.path.exists(g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying']):
+                    #         os.makedirs(g_dev['obs'].config['temporary_local_alt_archive_to_hold_files_while_copying'] )
+
+                    #     # #breakpoint()
+                    #     # hdureduced.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                    #     #)  # Save full raw file locally
+                    #     g_dev['obs'].altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+reduced_hdusmallheader['OBSTYPE'])),copy.deepcopy(slow_process[1]),time.time()), block=False)
+
+
+
+                
+
+            # Send data off to process jpeg if not a smartstack
+            if smartstackid == 'no':
+                g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
 
 
 
