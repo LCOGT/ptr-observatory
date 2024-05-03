@@ -3250,17 +3250,26 @@ class Camera:
                     #     plog ("Could not find flat for this substack")
                     #sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
                     self.substack_start_time=time.time()
+
                 self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
                 qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
                 exposure_timer=time.time()
 
+                if subexposure == 0 :
 
-                # if during first exposure, create memmap disk array
-                temporary_substack_directory=self.local_calibration_path + "subsstacks/" + str(time.time()).replace('.','')
-                if not os.path.exists(temporary_substack_directory):
-                    os.makedirs(temporary_substack_directory)
+                    # if during first exposure, create memmap disk array
+                    temporary_substack_directory=self.local_calibration_path + "subsstacks/" + str(time.time()).replace('.','')
+                    if not os.path.exists(temporary_substack_directory):
+                        os.makedirs(temporary_substack_directory)
 
-                sub_stacker_array = np.memmap(temporary_substack_directory + '/tempfile', dtype='float32', mode= 'w+', shape = (self.imagesize_x,self.imagesize_y,N_of_substacks))
+                    sub_stacker_array = np.memmap(temporary_substack_directory + '/tempfile', dtype='float32', mode= 'w+', shape = (self.imagesize_x,self.imagesize_y,N_of_substacks))
+
+
+
+
+
+
+
 
 
 
@@ -3274,6 +3283,8 @@ class Camera:
                     # hdufocus.data = sub_stacker_array[:,:,0]
                     # #hdufocus.header = googimage[0].header
                     # hdufocus.writeto('referenceframe.fits', overwrite=True, output_verify='silentfix')
+
+                    #breakpoint()
                     try:
                         if exp_of_substacks == 10:
                             plog ("Dedarking 0")
@@ -3333,10 +3344,10 @@ class Camera:
                     #denan_median=bn.nanmedian(denan_mask)
                     #imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
                     imageMode=np.nanpercentile(denan_mask, 70)
-                    print ("percent")
-                    print (imageMode)
-                    print (bn.nanmedian(denan_mask))
-                    print (2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame))
+                    # print ("percent")
+                    # print (imageMode)
+                    # print (bn.nanmedian(denan_mask))
+                    # print (2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame))
                     denan_mask[np.isnan(denan_mask)] = False
                     denan_mask[denan_mask <= imageMode] = False
                     denan_mask[denan_mask > imageMode] = True
@@ -3425,10 +3436,10 @@ class Camera:
                 #tempnan_mode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
                 tempnan_mode=np.nanpercentile(tempnan_mask, 70)
 
-                print ("percent")
-                print (tempnan_mode)
-                print (bn.nanmedian(tempnan_mask))
-                print (2.5 * bn.nanmedian(tempnan_mask) - 1.5 * bn.nanmean(tempnan_mask))
+                # print ("percent")
+                # print (tempnan_mode)
+                # print (bn.nanmedian(tempnan_mask))
+                # print (2.5 * bn.nanmedian(tempnan_mask) - 1.5 * bn.nanmean(tempnan_mask))
 
                 tempnan_mask[np.isnan(tempnan_mask)] = False
                 tempnan_mask[tempnan_mask <= tempnan_mode] = False
@@ -3500,7 +3511,7 @@ class Camera:
 
                 except:
                     plog(traceback.format_exc())
-                    breakpoint()
+                    #breakpoint()
 
                 del tempnan_mask
 
@@ -3562,16 +3573,16 @@ class Camera:
                 image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
                 time_after_last_substack_readout=time.time()
 
-                plog ("reading out " + str(subexposure))
+                #plog ("reading out " + str(subexposure))
 
-                plog ("readout time: " + str(time_after_last_substack_readout - time_before_last_substack_readout))
+                #plog ("readout time: " + str(time_after_last_substack_readout - time_before_last_substack_readout))
                 readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
 
 
-
+                #print ("plonking readout array in " +str(subexposure))
                 sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
-                plog ("median: " + str(bn.nanmedian(sub_stacker_array[:,:,subexposure])))
+                #plog ("median: " + str(bn.nanmedian(sub_stacker_array[:,:,subexposure])))
 
 
                 #print ("Collected " +str(subexposure+1))
@@ -3583,7 +3594,7 @@ class Camera:
 
             #sub_stacker_array[:,:,subexposure] = self._getImageArray()
 
-        breakpoint()
+        #breakpoint()
 
         del denan_mask
         del de_nanned_reference_frame
