@@ -3336,13 +3336,13 @@ class Camera:
                     # crop_y=100
                     de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
 
-                    # Make a mid-stretched
-                    # Make a mid-stretched version
-                    de_nanned_reference_frame=de_nanned_reference_frame+500
-                    medt=bn.nanmedian(de_nanned_reference_frame)
-                    de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] = medt
-                    #tempnan_mask=mid_stretch_jpeg(tempnan_mask)
-                    de_nanned_reference_frame=mid_stretch_jpeg(de_nanned_reference_frame)
+                    # # Make a mid-stretched
+                    # # Make a mid-stretched version
+                    # de_nanned_reference_frame=de_nanned_reference_frame+500
+                    # medt=bn.nanmedian(de_nanned_reference_frame)
+                    # de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] = medt
+                    # #tempnan_mask=mid_stretch_jpeg(tempnan_mask)
+                    # de_nanned_reference_frame=mid_stretch_jpeg(de_nanned_reference_frame)
 
 
                     #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
@@ -3442,11 +3442,11 @@ class Camera:
                 #breakpoint()
 
 
-                # Make a mid-stretched version
-                tempnan_mask=tempnan_mask+500
-                medt=bn.nanmedian(tempnan_mask)
-                tempnan_mask[np.isnan(tempnan_mask)] = medt
-                tempnan_mask=mid_stretch_jpeg(tempnan_mask)
+                # # Make a mid-stretched version
+                # tempnan_mask=tempnan_mask+500
+                # medt=bn.nanmedian(tempnan_mask)
+                # tempnan_mask[np.isnan(tempnan_mask)] = medt
+                # tempnan_mask=mid_stretch_jpeg(tempnan_mask)
 
 
 
