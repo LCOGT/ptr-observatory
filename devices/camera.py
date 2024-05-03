@@ -3447,12 +3447,12 @@ class Camera:
                 # print (time.time()-googtime)
                 # print (str(-yoff) + " " + str(-xoff))
 
-                googtime=time.time()
+                # googtime=time.time()
 
                 xoff, yoff = cross_correlation_shifts(block_reduce(sub_stacker_array[:,:,0],3), block_reduce(sub_stacker_array[:,:,subexposure-1],3),zeromean=False)
-                print (time.time()-googtime)
-                print ("3x")
-                print (str(-yoff*3) + " " + str(-xoff*3))
+                # print (time.time()-googtime)
+                # print ("3x")
+                # print (str(-yoff*3) + " " + str(-xoff*3))
                 print (str(round(-yoff*3)) + " " + str(round(-xoff*3)))
 
                 imageshift=[round(-yoff*3),round(-xoff*3)]
