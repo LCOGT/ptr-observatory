@@ -1229,6 +1229,16 @@ class Camera:
             del tempdarkframe
         except:
             plog("10.0s Bias Dark frame for Binning 1 not available")
+            
+        try:
+            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
+                                      + "/" + tempfrontcalib +  "thirtysecBIASDARK_master_bin1.fits")
+
+            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+            self.darkFiles.update({'thirtysec_exposure_biasdark': tempdarkframe})
+            del tempdarkframe
+        except:
+            plog("10.0s Bias Dark frame for Binning 1 not available")
 
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
@@ -3265,7 +3275,10 @@ class Camera:
                     # #hdufocus.header = googimage[0].header
                     # hdufocus.writeto('referenceframe.fits', overwrite=True, output_verify='silentfix')
                     try:
-                        sub_stacker_array[:,:,0]=sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
+                        if exp_of_substacks == 10:
+                            sub_stacker_array[:,:,0]=sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
+                        else:
+                            sub_stacker_array[:,:,0]=sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['thirtysec_exposure_biasdark']
                     except:
                         plog ("Couldn't biasdark substack")
                         pass
