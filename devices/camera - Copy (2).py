@@ -3215,8 +3215,8 @@ class Camera:
             if subexposure == 0 or subexposure == 1:
                 plog ("Collecting subexposure " + str(subexposure+1))
                 
-                #if subexposure == 0 :
-                    
+                if subexposure == 0 :
+                    self.substack_start_time=time.time()
 
                 success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                 if subexposure == 0 :
@@ -3228,7 +3228,6 @@ class Camera:
                     #     no_flat=True
                     #     plog ("Could not find flat for this substack")
                     #sub_stacker_array=np.zeros((self.imagesize_x,self.imagesize_y,N_of_substacks), dtype=np.float32)
-                    self.substack_start_time=time.time()
                 self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
                 qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
                 exposure_timer=time.time()
@@ -3260,18 +3259,18 @@ class Camera:
                         pass
                     # Flat field sub stack array
                     #plog ("Flatting 0")
-                    # if not no_flat:
-                    try:
-                        # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                        #     sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
-                        # else:
-                        sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], temporary_flat_in_memory)
-                    except:
+                    if not no_flat:
+                        try:
+                            # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                            #     sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
+                            # else:
+                            sub_stacker_array[:,:,0] = np.divide(sub_stacker_array[:,:,0], temporary_flat_in_memory)
+                        except:
+                            plog ("couldn't flat field substack")
+                            pass
+                    else:
                         plog ("couldn't flat field substack")
                         pass
-                    # else:
-                    #     plog ("couldn't flat field substack")
-                    #     pass
                     # Bad pixel map sub stack array
                     try:
                         sub_stacker_array[:,:,0][g_dev['cam'].bpmFiles[str(1)]] = np.nan
@@ -3283,6 +3282,9 @@ class Camera:
                     # hdufocus.data = sub_stacker_array[:,:,0]
                     # #hdufocus.header = googimage[0].header
                     # hdufocus.writeto('referenceframecalibrated.fits', overwrite=True, output_verify='silentfix')
+
+
+
 
                     de_nanned_reference_frame=copy.deepcopy(sub_stacker_array[:,:,0])
                     if is_osc:
@@ -3536,16 +3538,14 @@ class Camera:
                 image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
                 time_after_last_substack_readout=time.time()
 
-                plog ("reading out " + str(subexposure))
-
-                plog ("readout time: " + str(time_after_last_substack_readout - time_before_last_substack_readout))
+                #plog ("readout time: " + str(time_after_last_substack_readout - time_before_last_substack_readout))
                 readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
 
 
 
                 sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
-                plog ("median: " + bn.nanmedian(sub_stacker_array[:,:,subexposure]))
+
 
 
                 #print ("Collected " +str(subexposure+1))
