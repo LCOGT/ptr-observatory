@@ -5551,10 +5551,19 @@ class Camera:
                         outputimg = self._getImageArray().astype(np.float32)
                         imageCollected = 1
                     except Exception as e:
-                        plog(e)
-                        plog (traceback.format_exc())
-                        if "Image Not Available" in str(e):
-                            plog("Still waiting for file to arrive: ", e)
+                        
+                        if self.theskyx:
+                            if 'No such file or directory' in str(e):
+                                plog ("Found rare theskyx bug in image acquisition, rebooting and killing theskyx.... or the other way around.")
+                                plog(e)
+                                plog (traceback.format_exc())
+                                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].return_right_ascension(),g_dev['mnt'].return_declination())
+                        else:
+                        
+                            plog(e)
+                            plog (traceback.format_exc())
+                            if "Image Not Available" in str(e):
+                                plog("Still waiting for file to arrive: ", e)
                         time.sleep(3)
                         retrycounter = retrycounter + 1
 
