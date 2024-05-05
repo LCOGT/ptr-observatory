@@ -363,6 +363,7 @@ class Observatory:
         self.status_count = 0
         self.status_upload_time = 0.5
         self.time_last_status = time.time() -3000
+
         self.all_device_types = ptr_config["device_types"]  # May not be needed
         self.device_types = ptr_config["device_types"]  # ptr_config['short_status_devices']
 
@@ -504,7 +505,7 @@ class Observatory:
         self.last_platesolved_dec_err =np.nan
         self.platesolve_errors_in_a_row=0
 
-        self.worst_potential_pointing_in_arcseconds=25400
+        self.worst_potential_pointing_in_arcseconds=30000
 
         # Rotator vs mount vs camera sync stuff
         self.rotator_has_been_checked_since_last_slew = False
@@ -744,20 +745,8 @@ class Observatory:
         self.update_status_thread.daemon = True
         self.update_status_thread.start()
 
-        #print(g_dev['obs'].enc_status )
 
-        #breakpoint()
         # Initialisation complete!
-
-        #g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
-
-        #killing this in favor of triggering by using the "Take Lunar Stack" sequencer script.z
-
-        #g_dev['seq'].filter_focus_offset_estimator_script()
-       #breakpoint()
-        #g_dev['seq'].bias_dark_script()
-
-
 
 
 
@@ -1838,7 +1827,7 @@ class Observatory:
                 if not self.stop_processing_command_requests and not g_dev["cam"].running_an_exposure_set and not g_dev['seq'].block_guard and not g_dev['seq'].total_sequencer_control and not g_dev['mnt'].currently_slewing and not self.pointing_recentering_requested_by_platesolve_thread and not self.pointing_correction_requested_by_platesolve_thread:  # This is to stop multiple commands running over the top of each other.
                     self.stop_processing_command_requests = True
                     cmd = self.cmd_queue.get()
-
+                    #breakpoint()
                     device_instance = cmd["deviceInstance"]
                     plog("obs.scan_request: ", cmd)
                     device_type = cmd["deviceType"]
