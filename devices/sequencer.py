@@ -8069,7 +8069,7 @@ class Sequencer:
         a longer project block.
         """
 
-        if not (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']):
+        if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
             plog("Too bright to consider platesolving!")
             plog("Hence too bright to do a centering exposure.")
             g_dev["obs"].send_to_user("Too bright to auto-center the image.")
