@@ -802,6 +802,8 @@ class Sequencer:
                                         plog (str(project_response))
                                         plog (str(project_response.status_code))
                                         plog ("Project failed to be downloaded from Aws")
+                                        plog ("Not attempting to download again.")
+                                        self.append_completes(block['event_id'])
                                         identified_block=None
                                 except:
                                     plog(traceback.format_exc())
