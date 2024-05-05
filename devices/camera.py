@@ -7803,7 +7803,7 @@ def post_exposure_process(payload):
 
             # Send data off to process jpeg if not a smartstack
             if smartstackid == 'no':
-                print (paths)
+                #print (paths)
                 g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
 
 
