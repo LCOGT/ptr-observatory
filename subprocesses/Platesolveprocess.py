@@ -1423,7 +1423,8 @@ if solve != 'error':
     # Get amount of padding to add
     fraction_of_padding=(im.size[0]/im.size[1])/aspect
     padding_added_pixels=int(((fraction_of_padding * im.size[1])- im.size[1])/2)
-    im=add_margin(im,padding_added_pixels,0,padding_added_pixels,0,(0,0,0))
+    if padding_added_pixels > 0:
+        im=add_margin(im,padding_added_pixels,0,padding_added_pixels,0,(0,0,0))
 
     im.save(jpeg_filename.replace('.jpg','temp.jpg'), quality=95)
     os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
