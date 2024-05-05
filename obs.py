@@ -1883,6 +1883,7 @@ class Observatory:
             filepath = pri_image[1][0] + filename  # Full path to file on disk
 
             time_put_in_queue=pri_image[1][2]
+            
 
             # Check it is there
             if not os.path.exists(filepath):
@@ -1898,7 +1899,7 @@ class Observatory:
                 return ''
 
             # Check it is no small
-            if os.stat(filepath).st_size < 100:
+            if 'token' not in filepath and os.stat(filepath).st_size < 100:
                 if (time.time() - time_put_in_queue) < 43200:
                     if (time.time() - time_put_in_queue) > 600:
                         plog (filepath + " is there but still small - likely still writing out, chucking it back in the queue.")
