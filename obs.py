@@ -2715,7 +2715,7 @@ class Observatory:
                 self.platesolve_is_processing = True
 
                 (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
-                 pixscale, pointing_ra, pointing_dec, firstframesmartstack, useastronometrynet) = self.platesolve_queue.get(block=False)
+                 pixscale, pointing_ra, pointing_dec, firstframesmartstack, useastronometrynet, pointing_exposure, jpeg_filename) = self.platesolve_queue.get(block=False)
 
                 is_osc=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
 
@@ -2730,6 +2730,18 @@ class Observatory:
                             os.remove(self.local_calibration_path + 'platesolve.temppickle')
                         except:
                             pass
+                        
+                        target_ra = g_dev["mnt"].last_ra_requested
+                        target_dec = g_dev["mnt"].last_dec_requested
+
+                        # print("Last RA requested: " + str(g_dev["mnt"].last_ra_requested))
+                        # print("Last DEC requested: " + str(g_dev["mnt"].last_dec_requested))
+
+                        if g_dev['seq'].block_guard and not g_dev["seq"].focussing:
+                            #print ("Block RA: " +str(g_dev['seq'].block_ra))
+                            #print ("Block DEC: " + str(g_dev['seq'].block_dec))
+                            target_ra = g_dev['seq'].block_ra
+                            target_dec = g_dev['seq'].block_dec
 
                         platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
@@ -2743,13 +2755,13 @@ class Observatory:
                         # yet another pickle debugger.
                         if False:
                             pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet], open('subprocesses/testplatesolvepickle','wb'))
+                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
 
                         #breakpoint()
 
                         try:
                             pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc, useastronometrynet], platesolve_subprocess.stdin)
+                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc, useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], platesolve_subprocess.stdin)
                         except:
                             plog ("Problem in the platesolve pickle dump")
                             plog(traceback.format_exc())
@@ -2812,6 +2824,14 @@ class Observatory:
 
 
                         else:
+                            
+                            self.enqueue_for_fastUI(
+                                100,'',jpeg_filename
+                            )
+                            # self.enqueue_for_mediumUI(
+                            #     1000, '',jpeg_filename.replace('EX10', 'EX20')
+                            # )
+                            
                             try:
                                 plog(
                                     "PW Solves: ",
@@ -2821,17 +2841,7 @@ class Observatory:
                             except:
                                 plog ("couldn't print PW solves.... why?")
                                 plog (solve)
-                            target_ra = g_dev["mnt"].last_ra_requested
-                            target_dec = g_dev["mnt"].last_dec_requested
-
-                            # print("Last RA requested: " + str(g_dev["mnt"].last_ra_requested))
-                            # print("Last DEC requested: " + str(g_dev["mnt"].last_dec_requested))
-
-                            if g_dev['seq'].block_guard and not g_dev["seq"].focussing:
-                                #print ("Block RA: " +str(g_dev['seq'].block_ra))
-                                #print ("Block DEC: " + str(g_dev['seq'].block_dec))
-                                target_ra = g_dev['seq'].block_ra
-                                target_dec = g_dev['seq'].block_dec
+                            
 
 
 

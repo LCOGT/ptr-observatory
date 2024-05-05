@@ -23,6 +23,7 @@ photometric algorithm they are using they can't fail to accurately measure posit
 
 import sys
 import pickle
+import copy
 from astropy.nddata import block_reduce
 import numpy as np
 import sep
@@ -40,15 +41,19 @@ import warnings
 # from requests import ConnectionError, HTTPError
 import traceback
 import bottleneck as bn
+from math import cos, radians
 # from colour_demosaicing import (
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
 #     # demosaicing_CFA_Bayer_Malvar2004,
 #     demosaicing_CFA_Bayer_Menon2007)
 import matplotlib.pyplot as plt
 import math
-
+from PIL import Image
 from scipy.stats import binned_statistic
-
+from astropy.wcs import WCS
+#from astropy.io import fits
+from astropy import units as u
+from astropy.visualization.wcsaxes import Quadrangle
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
@@ -101,6 +106,10 @@ readnoise=input_psolve_info[13]
 minimum_realistic_seeing=input_psolve_info[14]
 is_osc=input_psolve_info[15]
 useastrometrynet=input_psolve_info[16]
+pointing_exposure=input_psolve_info[17]
+jpeg_filename=input_psolve_info[18]
+target_ra=input_psolve_info[18]
+target_dec=input_psolve_info[18]
 #useastrometrynet=True
 
 try:
@@ -230,6 +239,11 @@ hdufocusdata[np.isnan(hdufocusdata)] = edgefillvalue
     #num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
 
 print ("Denan Image: " +str(time.time()-googtime))
+
+# Keep a copy of the normal image if this is a pointing image
+if pointing_exposure:
+    pointing_image=copy.deepcopy(hdufocusdata)
+
 googtime=time.time()
 #if not is_osc:
 bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
@@ -1179,5 +1193,243 @@ print ("solver: " +str(time.time()-googtime))
 # sys.exit()
 
 #breakpoint()
+
+
+
+def add_margin(pil_img, top, right, bottom, left, color):
+    width, height = pil_img.size
+    new_width = width + right + left
+    new_height = height + top + bottom
+    result = Image.new(pil_img.mode, (new_width, new_height), color)
+    result.paste(pil_img, (left, top))
+    return result
+
+def mid_stretch_jpeg(data):
+    """
+    This product is based on software from the PixInsight project, developed by
+    Pleiades Astrophoto and its contributors (http://pixinsight.com/).
+    
+    And also Tim Beccue with a minor flourishing/speedup by Michael Fitzgerald.
+    """
+    target_bkg=0.25
+    shadows_clip=-1.25
+    
+    """ Stretch the image.
+
+    Args:
+        data (np.array): the original image data array.
+
+    Returns:
+        np.array: the stretched image data
+    """
+
+    try:
+        data = data / np.max(data)
+    except:
+        data = data    #NB this avoids div by 0 is image is a very flat bias    
+    
+    
+    """Return the average deviation from the median.
+
+    Args:
+        data (np.array): array of floats, presumably the image data
+    """
+    median = np.median(data.ravel())
+    n = data.size
+    avg_dev = np.sum( np.absolute(data-median) / n )    
+    c0 = np.clip(median + (shadows_clip * avg_dev), 0, 1)
+    x= median - c0
+    
+    """Midtones Transfer Function
+
+    MTF(m, x) = {
+        0                for x == 0,
+        1/2              for x == m,
+        1                for x == 1,
+
+        (m - 1)x
+        --------------   otherwise.
+        (2m - 1)x - m
+    }
+
+    See the section "Midtones Balance" from
+    https://pixinsight.com/doc/tools/HistogramTransformation/HistogramTransformation.html
+
+    Args:
+        m (float): midtones balance parameter
+                   a value below 0.5 darkens the midtones
+                   a value above 0.5 lightens the midtones
+        x (np.array): the data that we want to copy and transform.
+    """
+    shape = x.shape
+    x = x.ravel()    
+    zeros = x==0
+    halfs = x==target_bkg
+    ones = x==1
+    others = np.logical_xor((x==x), (zeros + halfs + ones))
+    x[zeros] = 0
+    x[halfs] = 0.5
+    x[ones] = 1
+    x[others] = (target_bkg - 1) * x[others] / ((((2 * target_bkg) - 1) * x[others]) - target_bkg)
+    m= x.reshape(shape)
+    
+    stretch_params = {
+        "c0": c0,
+        #"c1": 1,
+        "m": m
+    }  
+    
+    m = stretch_params["m"]
+    c0 = stretch_params["c0"]
+    above = data >= c0
+
+    # Clip everything below the shadows clipping point
+    data[data < c0] = 0   
+    # For the rest of the pixels: apply the midtones transfer function
+    x=(data[above] - c0)/(1 - c0)
+    
+    """Midtones Transfer Function
+
+    MTF(m, x) = {
+        0                for x == 0,
+        1/2              for x == m,
+        1                for x == 1,
+
+        (m - 1)x
+        --------------   otherwise.
+        (2m - 1)x - m
+    }
+
+    See the section "Midtones Balance" from
+    https://pixinsight.com/doc/tools/HistogramTransformation/HistogramTransformation.html
+
+    Args:
+        m (float): midtones balance parameter
+                   a value below 0.5 darkens the midtones
+                   a value above 0.5 lightens the midtones
+        x (np.array): the data that we want to copy and transform.
+    """
+    shape = x.shape
+    x = x.ravel()    
+    zeros = x==0
+    halfs = x==m
+    ones = x==1
+    others = np.logical_xor((x==x), (zeros + halfs + ones))
+    x[zeros] = 0
+    x[halfs] = 0.5
+    x[ones] = 1
+    x[others] = (m - 1) * x[others] / ((((2 * m) - 1) * x[others]) - m)
+    data[above]= x.reshape(shape)  
+    
+    return data
+
+
+if solve != 'error':
+    
+    
+    pointing_image = mid_stretch_jpeg(pointing_image)
+    
+    solved_ra = solve["ra_j2000_hours"]
+    solved_dec = solve["dec_j2000_degrees"]
+    solved_arcsecperpixel = solve["arcsec_per_pixel"]
+    
+    
+
+    RA_where_it_actually_is=solved_ra
+    DEC_where_it_actually_is=solved_dec
+
+    #make a fake header to create the WCS object
+    tempheader = fits.PrimaryHDU()
+    tempheader=tempheader.header
+    tempheader['CTYPE1'] = 'RA---TAN'
+    tempheader['CTYPE2'] = 'DEC--TAN'
+    tempheader['CUNIT1'] = 'deg'
+    tempheader['CUNIT2'] = 'deg'
+    tempheader['CRVAL1'] = RA_where_it_actually_is * 15.0
+    tempheader['CRVAL2'] = DEC_where_it_actually_is 
+    #breakpoint()
+    tempheader['CRPIX1'] = int(pointing_image.shape[0] / 2)
+    tempheader['CRPIX2'] = int(pointing_image.shape[1] / 2)
+    tempheader['NAXIS'] = 2
+    tempheader['CDELT1'] = float(pixscale) / 3600
+    tempheader['CDELT2'] = float(pixscale) / 3600
+
+
+    # Size of field in degrees
+    x_deg_field_size=(float(pixscale) / (3600)) * pointing_image.shape[0]
+    y_deg_field_size=(float(pixscale) / (3600)) * pointing_image.shape[1] / cos(radians(DEC_where_it_actually_is ))
+
+    print (x_deg_field_size)
+    print (y_deg_field_size)
+
+    xfig=9
+    yfig=9*(pointing_image.shape[0]/pointing_image.shape[1])
+    aspect=1/(pointing_image.shape[0]/pointing_image.shape[1])
+    print (pointing_image.shape[0]/pointing_image.shape[1])
+
+    # Create a temporary WCS
+    # Representing where it actually is.
+    wcs=WCS(header=tempheader)
+
+    plt.rcParams["figure.facecolor"] = 'black'
+    plt.rcParams["text.color"] = 'yellow'
+    plt.rcParams["xtick.color"] = 'yellow'
+    plt.rcParams["ytick.color"] = 'yellow'
+    plt.rcParams["axes.labelcolor"] = 'yellow'
+    plt.rcParams["axes.titlecolor"] = 'yellow'
+
+    plt.rcParams['figure.figsize'] = [xfig, yfig]
+    ax = plt.subplot(projection=wcs, facecolor='black')
+
+    #fig.set_facecolor('black')
+    ax.set_facecolor('black')
+    ax.imshow(pointing_image, origin='lower', cmap='gray')
+    ax.grid(color='yellow', ls='solid')
+    ax.set_xlabel('Right Ascension')
+    ax.set_ylabel('Declination')
+
+
+    print ([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is])
+
+    ax.plot([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is],  linestyle='dashed',color='green',
+          linewidth=2, markersize=12,transform=ax.get_transform('fk5'))
+    #ax.set_autoscale_on(False)
+
+    # This should point to the center of the box. 
+    ax.scatter(target_ra * 15, target_dec, transform=ax.get_transform('icrs'), s=300,
+                edgecolor='red', facecolor='none')
+
+
+    # This should point to the center of the current image
+    ax.scatter(RA_where_it_actually_is * 15, DEC_where_it_actually_is, transform=ax.get_transform('icrs'), s=300,
+                edgecolor='white', facecolor='none')
+    
+    # This should point to the where the telescope is reporting it is positioned.
+    ax.scatter(pointing_ra * 15, pointing_dec, transform=ax.get_transform('icrs'), s=300,
+                edgecolor='blue', facecolor='none')
+
+    r = Quadrangle((target_ra * 15 - 0.5 * y_deg_field_size, target_dec - 0.5 * x_deg_field_size)*u.deg, y_deg_field_size*u.deg, x_deg_field_size*u.deg,
+                    edgecolor='red', facecolor='none',
+                    transform=ax.get_transform('icrs'))
+    ax.add_patch(r)
+    # ax.axes.set_aspect(aspect)
+    # plt.axis('scaled')
+    # plt.gca().set_aspect(aspect)
+    plt.savefig(jpeg_filename.replace('.jpg','matplotlib.jpg'), dpi=100, bbox_inches='tight', pad_inches=0)
+
+
+    im = Image.open(jpeg_filename.replace('.jpg','matplotlib.jpg')) 
+
+    # Get amount of padding to add
+    fraction_of_padding=(im.size[0]/im.size[1])/aspect
+    padding_added_pixels=int(((fraction_of_padding * im.size[1])- im.size[1])/2)
+    im=add_margin(im,padding_added_pixels,0,padding_added_pixels,0,(0,0,0))
+
+    im.save(jpeg_filename.replace('.jpg','temp.jpg'), quality=95)
+    os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
+    try:
+        os.remove(jpeg_filename.replace('.jpg','matplotlib.jpg'))
+    except:
+        pass
 
 

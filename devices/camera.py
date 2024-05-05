@@ -5976,6 +5976,21 @@ class Camera:
                         + "00.fits"
                     )
                     cal_path = im_path_r + g_dev["day"] + "/calib/"
+                    
+                    
+                    jpeg_name = (
+                        self.config["obs_id"]
+                        + "-"
+                        + self.config["camera"][self.name]["name"]
+                        + "-"
+                        + g_dev["day"]
+                        + "-"
+                        + next_seq
+                        + "-"
+                        + im_type
+                        + "10.jpg"
+                    )
+                    
 
                     if not os.path.exists(im_path_r):
                         os.makedirs(im_path_r)
@@ -5997,7 +6012,7 @@ class Camera:
                     del hdu
 
                     g_dev['obs'].platesolve_is_processing =True
-                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet))
+                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, jpeg_name))
 
 
 
@@ -7803,7 +7818,7 @@ def post_exposure_process(payload):
                             firstframesmartstack = False
 
 
-                        g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet))
+                        g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, ''))
                         # If it is the last of a set of smartstacks, we actually want to
                         # wait for the platesolve and nudge before starting the next smartstack.
 
