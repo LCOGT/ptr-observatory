@@ -3182,11 +3182,9 @@ class Camera:
 
         # Boost Narrowband and low throughput broadband
         if g_dev['cam'].current_filter.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
-            narrowband_stack=True
             exp_of_substacks = 30
             N_of_substacks = int((exposure_time / exp_of_substacks))
         else:
-            narrowband_stack=False
             exp_of_substacks = 10
             N_of_substacks = int(exposure_time / exp_of_substacks)
 
@@ -3210,7 +3208,7 @@ class Camera:
             if subexposure == 0 or subexposure == 1:
                 plog ("Collecting subexposure " + str(subexposure+1))
 
-                success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
+                qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
                 if subexposure == 0 :
                     temporary_flat_in_memory=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
                     self.substack_start_time=time.time()
@@ -3248,54 +3246,6 @@ class Camera:
                         plog ("Couldn't badpixel substack")
                         pass
 
-                    # de_nanned_reference_frame=copy.deepcopy(sub_stacker_array[:,:,0])
-                    # if is_osc:
-                    #     # Wipe out red channel
-                    #     de_nanned_reference_frame[::2, ::2]=np.nan
-                    #     # Wipe out blue channel
-                    #     de_nanned_reference_frame[1::2, 1::2]=np.nan
-
-
-                    # # Cut down image to central thousand by thousand patch to align
-                    # fx, fy = de_nanned_reference_frame.shape
-
-                    # if narrowband_stack:
-                    #     crop_x= 100
-                    #     crop_y= 100
-                    # else:
-                    #     crop_x= int(0.5*fx) -1250
-                    #     crop_y= int(0.5*fy) -1250
-                    # # crop_x=100
-                    # # crop_y=100
-                    # de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
-
-                    # # # Make a mid-stretched
-                    # # # Make a mid-stretched version
-                    # # de_nanned_reference_frame=de_nanned_reference_frame+500
-                    # # medt=bn.nanmedian(de_nanned_reference_frame)
-                    # # de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] = medt
-                    # # #tempnan_mask=mid_stretch_jpeg(tempnan_mask)
-                    # # de_nanned_reference_frame=mid_stretch_jpeg(de_nanned_reference_frame)
-
-
-                    # #tempnan=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
-                    # #de_nanned_reference_frame[np.isnan(de_nanned_reference_frame)] =imageMode
-
-                    # denan_mask=copy.deepcopy(de_nanned_reference_frame)
-                    # #denan_median=bn.nanmedian(denan_mask)
-                    # #imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
-
-                    # imageMode=np.nanpercentile(denan_mask, 90)
-
-                    # # print ("percent")
-                    # # print (imageMode)
-                    # # print (bn.nanmedian(denan_mask))
-                    # # print (2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame))
-                    # denan_mask[np.isnan(denan_mask)] = False
-                    # denan_mask[denan_mask <= imageMode] = False
-                    # denan_mask[denan_mask > imageMode] = True
-                    # denan_mask=denan_mask.astype('bool')
-
             # For each further exposure, align the previous subexposure while exposing the next exposure
             # Do this through separate threads. The alignment should be faster than the exposure
             # So we don't need to get too funky, just two threads that wait for each other.
@@ -3311,16 +3261,8 @@ class Camera:
                     qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
 
                     exposure_timer=time.time()
+                    
                 # While the exposure is happening prep align and stack the previous exposure.
-                #print ("Processing " +str(subexposure))
-
-
-                # hdufocus = fits.PrimaryHDU()
-                # hdufocus.data = sub_stacker_array[:,:,subexposure-1]
-                # #hdufocus.header = googimage[0].header
-                # hdufocus.writeto(str(subexposure-1) + 'frame.fits', overwrite=True, output_verify='silentfix')
-
-                #rolltimer=time.time()
                 try:
                     # De-biasdark sub_stack array
                     plog ("Dedarking " + str(subexposure-1))
@@ -3331,11 +3273,8 @@ class Camera:
 
 
                 # Flat field sub stack array
-                #plog ("Flatting " + str(subexposure-1))
-                try:
-                    # if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                    #     sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
-                    # else:
+                
+                try:                
                     sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], temporary_flat_in_memory)
                 except:
                     plog ("couldn't flat field substack")
@@ -3348,246 +3287,18 @@ class Camera:
                 except:
                     plog ("couldn't badpixel field substack")
                     pass
-                # hdufocus = fits.PrimaryHDU()
-                # hdufocus.data = sub_stacker_array[:,:,subexposure-1]
-                # #hdufocus.header = googimage[0].header
-                # hdufocus.writeto(str(subexposure-1) + 'framecalibrated.fits', overwrite=True, output_verify='silentfix')
-                #print ("Calibrating: " + str(time.time()-rolltimer))
-
-                # Make a tempfile that has nan's medianed out
-
-
-                # Using the nan'ed file, calculate the shift
-                #rolltimer=time.time()
-                # tempnan_mask=copy.deepcopy(sub_stacker_array[:,:,subexposure-1])
-
-                # if is_osc:
-                #     # Wipe out red channel
-                #     tempnan_mask[::2, ::2]=np.nan
-                #     # Wipe out blue channel
-                #     tempnan_mask[1::2, 1::2]=np.nan
-
-
-                # Cut down image to central thousand by thousand patch to align
-                # tempnan_mask= tempnan_mask[crop_x:-crop_x, crop_y:-crop_y]
-
-
-                #breakpoint()
-
-
-                # # Make a mid-stretched version
-                # tempnan_mask=tempnan_mask+500
-                # medt=bn.nanmedian(tempnan_mask)
-                # tempnan_mask[np.isnan(tempnan_mask)] = medt
-                # tempnan_mask=mid_stretch_jpeg(tempnan_mask)
-
-
-
-
-
-                #imageMode=bn.nanmedian(tempnan)
-                #tempnan[np.isnan(tempnan)] =imageMode
-
-                #de_nanned_reference_frame[de_nanned_reference_frame < bn.nanmedian(de_nanned_reference_frame)] = np.nan
-
-                #tempnan_mask=copy.deepcopy(tempnan)
-                #tempnan_mode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
-                # tempnan_mode=np.nanpercentile(tempnan_mask, 90)
-
-                # print ("percent")
-                # print (tempnan_mode)
-                # print (bn.nanmedian(tempnan_mask))
-                # print (2.5 * bn.nanmedian(tempnan_mask) - 1.5 * bn.nanmean(tempnan_mask))
-
-                # tempnan_mask[np.isnan(tempnan_mask)] = False
-                # tempnan_mask[tempnan_mask <= tempnan_mode] = False
-                # tempnan_mask[tempnan_mask > tempnan_mode] = True
-                # tempnan_mask=tempnan_mask.astype('bool')
-
-                #breakpoint()
-
-                # denan_mask=copy.deepcopy(de_nanned_reference_frame)
-                # #denan_median=bn.nanmedian(denan_mask)
-                # imageMode=2.5 * bn.nanmedian(de_nanned_reference_frame) - 1.5 * bn.nanmean(de_nanned_reference_frame)
-                # denan_mask[np.isnan(denan_mask)] = False
-                # denan_mask[denan_mask <= imageMode] = False
-                # denan_mask[denan_mask > imageMode] = True
-                # denan_mask=denan_mask.astype('bool')
-
-
-
-                # FAST WAY?
-                # googtime=time.time()
-                # referenceFrame=copy.deepcopy(de_nanned_reference_frame)
-                # ref_mode=np.nanpercentile(referenceFrame,90)
-                # referenceFrame[referenceFrame < ref_mode] = np.nan
-
-                # comparisonFrame=copy.deepcopy(sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y])
-                # comp_mode=np.nanpercentile(comparisonFrame,90)
-                # comparisonFrame[comparisonFrame < comp_mode] = np.nan
-                # googtime=time.time()
-                # xoff, yoff, exoff, eyoff = chi2_shift(referenceFrame, comparisonFrame,zeromean=False)
-                # print (time.time()-googtime)
-
-                # print (str(xoff) + " " + str(yoff))
-                # googtime=time.time()
-                # xoff, yoff, exoff, eyoff = chi2_shift(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y],zeromean=False)
-                # print (time.time()-googtime)
-                # print (str(xoff) + " " + str(yoff))
-
-                # googtime=time.time()
-                # xoff, yoff = cross_correlation_shifts(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y],zeromean=False)
-                # print (time.time()-googtime)
-                # print (str(-yoff) + " " + str(-xoff))
-
-
-                # binned version
-                # googtime=time.time()
-                # xoff, yoff = cross_correlation_shifts(block_reduce(de_nanned_reference_frame,3), sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y],zeromean=False)
-                # print (time.time()-googtime)
-                # print (str(-yoff) + " " + str(-xoff))
-
-                # googtime=time.time()
-
-                xoff, yoff = cross_correlation_shifts(block_reduce(sub_stacker_array[:,:,0],3), block_reduce(sub_stacker_array[:,:,subexposure-1],3),zeromean=False)
-                # print (time.time()-googtime)
-                # print ("3x")
-                # print (str(-yoff*3) + " " + str(-xoff*3))
-                print (str(round(-yoff*3)) + " " + str(round(-xoff*3)))
+                
+                xoff, yoff = cross_correlation_shifts(block_reduce(sub_stacker_array[:,:,0],3), block_reduce(sub_stacker_array[:,:,subexposure-1],3),zeromean=False)                
+                #print (str(round(-yoff*3)) + " " + str(round(-xoff*3)))
 
                 imageshift=[round(-yoff*3),round(-xoff*3)]
 
                 if imageshift[0] > 100 or imageshift[1] > 100:
                     imageshift = [0,0]
 
-
-                #breakpoint()
-
-                # googtime=time.time()
-                # xoff, yoff = cross_correlation_shifts(block_reduce(sub_stacker_array[:,:,0],4), block_reduce(sub_stacker_array[:,:,subexposure-1],4),zeromean=False)
-                # print (time.time()-googtime)
-                # print ("4x")
-                # print (str(-yoff*4) + " " + str(-xoff*4))
-                # print (str(round(-yoff*4)) + " " + str(round(-xoff*4)))
-                # #breakpoint()
-
-                # googtime=time.time()
-                # nanmin=103423952805
-                # nanmax=0
-                # for xrange in range(11):
-                #     for yrange in range(11):
-                #         # count the number of nans in an overlap
-                #         rollx=xrange-5
-                #         #print ("rollx: " + str(rollx))
-                #         rolly=yrange-5
-                #         #print ("rolly: " + str(rolly))
-                #         #nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
-                #         #nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
-                #         #nan_counts = bn.nansum(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1))
-                #         #nan_counts = bn.nansum(np.subtract(referenceFrame, np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
-                #         #nan_counts = bn.nansum(pow(np.subtract(referenceFrame , np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)),2))
-
-                #         #googtime=time.time()
-                #         rolled_frame=np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)
-                #         #print ("rolltime: " +str(time.time()-googtime))
-                #         #g#oogtime=time.time()
-                #         subtracted_frame=np.subtract(referenceFrame , rolled_frame)
-                #         #print ("subtime: " +str(time.time()-googtime))
-
-                #         summedframe = bn.nansum(subtracted_frame)
-
-                #         per_pixel_difference=summedframe/ np.count_nonzero(np.isnan(subtracted_frame))
-
-                #         nan_counts=per_pixel_difference
-
-                #         if nan_counts > nanmax:
-                #             #print ('nanmax')
-                #             nanmaxfound=[rollx,rolly, nan_counts]
-                #             nanmax=nan_counts
-                #         if nan_counts < nanmin:
-                #             #print ('nanmax')
-                #             nanminfound=[rollx,rolly, nan_counts]
-                #             nanmin=nan_counts
-
-                # print ("nanmax: " + str(nanmaxfound))
-                # print ("nanmin: " + str(nanminfound))
-                # print ("nanmethod: " + str(time.time()-googtime))
-
-
-
-
-# =======
-#                 nanmin=103423952805
-#                 nanmax=0
-#                 for xrange in range(11):
-#                     for yrange in range(11):
-#                         # count the number of nans in an overlap
-#                         rollx=xrange-5
-#                         #print ("rollx: " + str(rollx))
-#                         rolly=yrange-5
-#                         #print ("rolly: " + str(rolly))
-#                         #nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
-#                         #nan_counts = np.count_nonzero(np.isnan(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)))
-#                         #nan_counts = bn.nansum(referenceFrame + np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1))
-
-#                         googtime=time.time()
-#                         rolled_frame=np.roll(np.roll(comparisonFrame, rollx, axis=0),rolly, axis=1)
-#                         print ("rolltime: " +str(time.time()-googtime))
-#                         googtime=time.time()
-#                         subtracted_frame=np.subtract(referenceFrame , rolled_frame)
-#                         print ("subtime: " +str(time.time()-googtime))
-
-#                         summedframe = bn.nansum(subtracted_frame)
-
-#                         per_pixel_difference=summedframe/ np.count_nonzero(np.isnan(subtractedframe))
-
-#                         nan_counts=per_pixel_difference
-
-#                         if nan_counts > nanmax:
-#                             #print ('nanmax')
-#                             nanmaxfound=[rollx,rolly, nan_counts]
-#                             nanmax=nan_counts
-#                         if nan_counts < nanmin:
-#                             #print ('nanmax')
-#                             nanminfound=[rollx,rolly, nan_counts]
-#                             nanmin=nan_counts
-
-#                 print ("nanmax: " + str(nanmaxfound))
-#                 print ("nanmin: " + str(nanminfound))
-#                 print ("nanmethod: " + str(time.time()-googtime))
-
-
-
-
-# >>>>>>> Stashed changes
-                # SLOW WAY
-                # googtime=time.time()
-                # imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][crop_x:-crop_x, crop_y:-crop_y], reference_mask=denan_mask, moving_mask=tempnan_mask)
-                # print (imageshift)
-                # print ("phase cross: " + str(time.time()-googtime))
-
-                #imageshift = phase_cross_correlation(de_nanned_reference_frame, sub_stacker_array[:,:,subexposure-1][100:-100, 100:-100], reference_mask=denan_mask, moving_mask=tempnan_mask)
-
-
-
-
-
-
-
-                #imageshift, error, diffphase = phase_cross_correlation(de_nanned_reference_frame, tempnan)
-                #print ("Shift: " + str(time.time()-rolltimer))
-                #del tempnan
-
-
-                #breakpoint()
-
-                # if len(imageshift) == 3:
-                #     imageshift=imageshift[0]
-
                 try:
                     if abs(imageshift[0]) > 0:
-                        # print ("X shifter")
-                        #if imageshift[0]
+
                         imageshiftabs=int(abs(imageshift[0]))
                         # If it is an OSC, it needs to be an even number
                         if is_osc:
@@ -3601,12 +3312,8 @@ class Camera:
                             imageshiftsign = -1
 
                         sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=0)
-                        # print ("Roll: " + str(time.time()-rolltimer))
 
-                    # rolltimer=time.time()
                     if abs(imageshift[1]) > 0:
-                        # print ("Y shifter")
-                        # print (int(imageshift[1]))
 
                         imageshiftabs=int(abs(imageshift[1]))
 
@@ -3625,54 +3332,17 @@ class Camera:
 
                 except:
                     plog(traceback.format_exc())
-                    #breakpoint()
 
-                #del tempnan_mask
-
-
-                # # rolltimer=time.time()
-                # # roll the original array around by the shift
-                # if abs(imageshift[0]) > 0:
-                #     # print ("X shifter")
-                #     # print (int(imageshift[0]))
-                #     sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(imageshift[0]), axis=0)
-                #     # print ("Roll: " + str(time.time()-rolltimer))
-
-                # # rolltimer=time.time()
-                # if abs(imageshift[1]) > 0:
-                #     # print ("Y shifter")
-                #     # print (int(imageshift[1]))
-                #     sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], int(imageshift[1]), axis=1)
-                #     # print ("Roll: " + str(time.time()-rolltimer))
-
-                # from scipy.ndimage import shift
-
-                # rolltimer=time.time()
-                # if abs(imageshift[0]) > 0 or abs(imageshift[1]) > 0:
-                #     scipyroll=shift(sub_stacker_array[:,:,subexposure-1])
-
-
-
-                #print ("Time taken for aligning: " + str(time.time()-exposure_timer))
-
-
-            #print ("too many readouts?")
-            #print (subexposure)
-            #print (N_of_substacks)
             if not subexposure == (N_of_substacks):
-                #readouts=readouts+1
-                #print ("readouts " +str(readouts))
                 while (time.time() - exposure_timer) < exp_of_substacks:
-                    #print ("Watiing for exposure to finish")
                     time.sleep(0.005)
 
                 # If this is the last exposure of the set of subexposures, then report shutter closed
                 if subexposure == (N_of_substacks-1):
                     self.shutter_open=False
 
-            #if not subexposure == (N_of_substacks):
+           
                 # READOUT FROM THE QHY
-
                 image_width_byref = c_uint32()
                 image_height_byref = c_uint32()
                 bits_per_pixel_byref = c_uint32()
@@ -3686,82 +3356,35 @@ class Camera:
 
                 image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
                 time_after_last_substack_readout=time.time()
-
-                plog ("read out " + str(subexposure))
-
-                #plog ("readout time: " + str(time_after_last_substack_readout - time_before_last_substack_readout))
+                
                 readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
-
-
-                #print ("plonking readout array in " +str(subexposure))
                 sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
-                #plog ("median: " + str(bn.nanmedian(sub_stacker_array[:,:,subexposure])))
-
-
-                #print ("Collected " +str(subexposure+1))
-
-
-
-
-
-
-            #sub_stacker_array[:,:,subexposure] = self._getImageArray()
-
-        #breakpoint()
-
-        # del denan_mask
-        # del de_nanned_reference_frame
 
         # Once collected and done, nanmedian the array into the single image
-
-        self.readout_estimate= np.median(np.array(readout_estimate_holder))
-
-
-
-
-        #temptimer=time.time()
         sub_stacker_array=bn.nanmedian(sub_stacker_array, axis=2) * N_of_substacks
-        #print ("Stacktime: " + str(time.time()-temptimer))
+        
         self.sub_stack_hold = sub_stacker_array
-
-        #self.substack_midpoint_time=(self.substack_start_time + expected_endpoint_of_substack_exposure) / 2
-
-
-
+        self.readout_estimate= np.median(np.array(readout_estimate_holder))
+        
         del sub_stacker_array
         self.substacker_available=True
         self.shutter_open=False
 
     def _qhyccd_expose(self, exposure_time, bias_dark_or_light_type_frame):
-
-
-
+        
         self.substacker_available=False
-
-        #breakpoint()
-
 
         if bias_dark_or_light_type_frame == 'bias':
             exposure_time = 40 /1000/1000 # shortest requestable exposure time
 
         if not self.substacker:
-            success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
+            qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
             qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
         else:
-
-
             thread=threading.Thread(target=self.qhy_substacker_thread, args=(exposure_time,))
             thread.daemon=True
             thread.start()
-
-
-
-
-
-                    #sub_stacker_array[:,:,subexposure-1]=_qhyccd_special_subthread_align(sub_stacker_array[:,:,0], sub_stacker_array[:,:,subexposure-1])
-
-
 
     def _qhyccd_stop_expose(self):
         expresult = {}
