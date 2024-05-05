@@ -411,11 +411,30 @@ class Sequencer:
         g_dev['cam'].user_id = command['user_id']
         g_dev['cam'].user_name = command['user_name']
         action = command['action']
+        
+        print (command['user_roles'])
+        
         try:
             script = command['required_params']['script']
         except:
             script = None
-        if action == "run" and script == 'focusAuto':
+            
+        if action.lower() in ["stop", "cancel"] or ( action == "run" and script == "stopScript"):
+
+            #A stop script command flags to the running scripts that it is time to stop
+            #activity and return. This period runs for about 30 seconds.
+            g_dev["obs"].send_to_user("A Stop Script has been called. Cancelling out of running scripts over 30 seconds.")
+            self.stop_script_called=True
+            self.stop_script_called_time=time.time()
+            # Cancel out of all running exposures.
+            g_dev['obs'].cancel_all_activity()
+        elif not ("admin" in command['user_roles']) or ("owner" in command['user_roles']):
+            
+            g_dev["obs"].send_to_user("Only admin and Owners can run most script commands.")
+            plog("Ignored script command from non-admin, non-owner.")
+            
+            
+        elif action == "run" and script == 'focusAuto':
             self.auto_focus_script(req, opt, skip_timer_check=True)
         elif action == "run" and script == 'focusExtensive':
              # Autofocus
@@ -448,15 +467,7 @@ class Sequencer:
             self.equatorial_pointing_run(max_pointings=req['points'], alt_minimum=req['minAltitude'])
         elif action == "run" and script in ("collectBiasesAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
-        elif action.lower() in ["stop", "cancel"] or ( action == "run" and script == "stopScript"):
-
-            #A stop script command flags to the running scripts that it is time to stop
-            #activity and return. This period runs for about 30 seconds.
-            g_dev["obs"].send_to_user("A Stop Script has been called. Cancelling out of running scripts over 30 seconds.")
-            self.stop_script_called=True
-            self.stop_script_called_time=time.time()
-            # Cancel out of all running exposures.
-            g_dev['obs'].cancel_all_activity()
+        
 
         elif action == "home":
             g_dev["obs"].send_to_user("Sending the mount to home.")
