@@ -4145,16 +4145,18 @@ class Observatory:
             if (not self.fast_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 pri_image = self.fast_queue.get(block=False)
-                if pri_image is None:
-                    plog("Got an empty entry in fast_queue.")
-                    self.fast_queue.task_done()
-                    one_at_a_time = 0
-                    continue
+                # if pri_image is None:
+                #     plog("Got an empty entry in fast_queue.")
+                #     self.fast_queue.task_done()
+                #     one_at_a_time = 0
+                #     continue
 
                 # Here we parse the file, set up and send to AWS
                 try:
                     filename = pri_image[1][1]
                     filepath = pri_image[1][0] + filename  # Full path to file on disk
+                    
+                    print (filepath)
                     try:
 
                         timesubmitted = pri_image[1][2]
@@ -4233,11 +4235,11 @@ class Observatory:
             if (not self.calibrationui_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 pri_image = self.calibrationui_queue.get(block=False)
-                if pri_image is None:
-                    plog("Got an empty entry in fast_queue.")
-                    self.calibrationui_queue.task_done()
-                    one_at_a_time = 0
-                    continue
+                # if pri_image is None:
+                #     plog("Got an empty entry in fast_queue.")
+                #     self.calibrationui_queue.task_done()
+                #     one_at_a_time = 0
+                #     continue
                 try:
                     # Here we parse the file, set up and send to AWS
                     filename = pri_image[1][1]
@@ -4329,11 +4331,11 @@ class Observatory:
 
                         else:
                             plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in queue.")
-                            self.fast_queue.put((100, pri_image[1]), block=False)
+                            self.mediumui_queue.put((100, pri_image[1]), block=False)
                     # If it has been less than 3 minutes put it back in
                     elif time.time() - timesubmitted < 180:
                         #plog (str(filepath) + " Not there yet, putting back in queue.")
-                        self.fast_queue.put((100, pri_image[1]), block=False)
+                        self.mediumui_queue.put((100, pri_image[1]), block=False)
                     else:
                         plog (str(filepath) + " seemed to never turn up... not putting back in the queue")
 
