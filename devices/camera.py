@@ -4221,7 +4221,6 @@ class Camera:
                         return
 
 
-
                 if self.current_filter == "none" or self.current_filter == None :
                     plog("skipping exposure as no adequate filter match found")
                     g_dev["obs"].send_to_user("Skipping Exposure as no adequate filter found for requested observation")
