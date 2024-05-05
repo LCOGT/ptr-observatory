@@ -5574,6 +5574,12 @@ class Camera:
                                 plog(e)
                                 plog (traceback.format_exc())
                                 g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].return_right_ascension(),g_dev['mnt'].return_declination())
+                                
+                                expresult = {}
+                                expresult["error"] = True
+                                # self.running_an_exposure_set = False
+                                # self.shutter_open=False
+                                return expresult
                         else:
                         
                             plog(e)

@@ -4614,8 +4614,10 @@ class Observatory:
                 # Check it hasn't slewed since request, although ignore this check if in smartstack_loop due to dithering.
                 if (self.pointing_correction_request_time > self.time_of_last_slew) or g_dev['cam'].currently_in_smartstack_loop:
 
-                    plog("Re-centering Telescope Slightly.")
-                    self.send_to_user("Re-centering Telescope Slightly.")
+                    plog("Re-centering Telescope.")
+                    # Don't always need to be reporting every small recenter.                    
+                    if g_dev['cam'].currently_in_smartstack_loop or (abs(g_dev['obs'].pointing_correction_request_ra_err)+abs(g_dev['obs'].pointing_correction_request_dec_err)) < 0.5 :
+                        self.send_to_user("Re-centering Telescope.")
                     # print ("1: " + str(g_dev["mnt"].get_mount_coordinates_after_next_update()))
                     wait_for_slew()
                     #g_dev['mnt'].previous_pier_side=g_dev['mnt'].mount.sideOfPier
