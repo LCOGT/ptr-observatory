@@ -48,7 +48,7 @@ from math import cos, radians
 #     demosaicing_CFA_Bayer_Menon2007)
 import matplotlib.pyplot as plt
 import math
-from PIL import Image
+from PIL import Image, ImageOps 
 from scipy.stats import binned_statistic
 from astropy.wcs import WCS
 #from astropy.io import fits
@@ -108,8 +108,8 @@ is_osc=input_psolve_info[15]
 useastrometrynet=input_psolve_info[16]
 pointing_exposure=input_psolve_info[17]
 jpeg_filename=input_psolve_info[18]
-target_ra=input_psolve_info[18]
-target_dec=input_psolve_info[18]
+target_ra=input_psolve_info[19]
+target_dec=input_psolve_info[20]
 #useastrometrynet=True
 
 try:
@@ -1371,7 +1371,7 @@ if solve != 'error':
     # Representing where it actually is.
     wcs=WCS(header=tempheader)
 
-    plt.rcParams["figure.facecolor"] = 'black'
+    plt.rcParams["figure.facecolor"] = 'dimgrey'
     plt.rcParams["text.color"] = 'yellow'
     plt.rcParams["xtick.color"] = 'yellow'
     plt.rcParams["ytick.color"] = 'yellow'
@@ -1393,11 +1393,18 @@ if solve != 'error':
 
     ax.plot([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is],  linestyle='dashed',color='green',
           linewidth=2, markersize=12,transform=ax.get_transform('fk5'))
-    #ax.set_autoscale_on(False)
+    # #ax.set_autoscale_on(False)
+    
+    # ax.plot([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is],  linestyle='dashed',color='white',
+    #       linewidth=2, markersize=12,transform=ax.get_transform('fk5'))
+    
 
     # This should point to the center of the box. 
     ax.scatter(target_ra * 15, target_dec, transform=ax.get_transform('icrs'), s=300,
                 edgecolor='red', facecolor='none')
+
+    # ax.scatter(target_ra * 15, target_dec, transform=ax.get_transform('icrs'), s=300,
+    #             edgecolor='white', facecolor='none')
 
 
     # This should point to the center of the current image
@@ -1408,9 +1415,15 @@ if solve != 'error':
     ax.scatter(pointing_ra * 15, pointing_dec, transform=ax.get_transform('icrs'), s=300,
                 edgecolor='blue', facecolor='none')
 
+    # r = Quadrangle((target_ra * 15 - 0.5 * y_deg_field_size, target_dec - 0.5 * x_deg_field_size)*u.deg, y_deg_field_size*u.deg, x_deg_field_size*u.deg,
+    #                 edgecolor='red', facecolor='none',
+    #                 transform=ax.get_transform('icrs'))
+    
     r = Quadrangle((target_ra * 15 - 0.5 * y_deg_field_size, target_dec - 0.5 * x_deg_field_size)*u.deg, y_deg_field_size*u.deg, x_deg_field_size*u.deg,
                     edgecolor='red', facecolor='none',
                     transform=ax.get_transform('icrs'))
+    
+    
     ax.add_patch(r)
     # ax.axes.set_aspect(aspect)
     # plt.axis('scaled')
@@ -1425,8 +1438,10 @@ if solve != 'error':
     padding_added_pixels=int(((fraction_of_padding * im.size[1])- im.size[1])/2)
     if padding_added_pixels > 0:
         im=add_margin(im,padding_added_pixels,0,padding_added_pixels,0,(0,0,0))
+        
+    #im=ImageOps.grayscale(im)
 
-    im.save(jpeg_filename.replace('.jpg','temp.jpg'), quality=95)
+    im.save(jpeg_filename.replace('.jpg','temp.jpg'))#, quality=95)
     os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
     try:
         os.remove(jpeg_filename.replace('.jpg','matplotlib.jpg'))

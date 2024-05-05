@@ -5964,6 +5964,14 @@ class Camera:
                 if frame_type=='pointing' and focus_image == False:
 
 
+                    # try:
+                    #     next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                    # except:
+                    #     next_seq = reset_sequence(self.config["camera"][self.name]["name"])
+
+
+                    # self.next_seq= next_seq
+
                     im_path_r = self.camera_path
                     im_type = "EX"
                     f_ext = "-"
@@ -6017,7 +6025,7 @@ class Camera:
                     del hdu
 
                     g_dev['obs'].platesolve_is_processing =True
-                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, jpeg_name))
+                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r+ g_dev["day"]+ "/to_AWS/"+ jpeg_name))
 
 
 

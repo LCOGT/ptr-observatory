@@ -518,7 +518,7 @@ class FilterWheel:
 
             filter_name = str(self.substitute_filter(filter_name)).lower()
             if "none" in filter_name:
-                return "none"
+                return "none", "none", "none"
             for match in range(
                 len(self.filter_data)
             ):
