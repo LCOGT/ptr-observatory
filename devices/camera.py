@@ -5043,9 +5043,7 @@ class Camera:
             filter_ui_info='filterless'
 
         if frame_type in (
-            "flat",
-            "screenflat",
-            "skyflat",
+            
             "dark",
             "bias") or a_dark_exposure:
             g_dev["obs"].send_to_user(
@@ -5056,6 +5054,18 @@ class Camera:
                 + " calibration exposure.",
                 p_level="INFO",
             )
+        elif frame_type in (
+            "flat",
+            "screenflat",
+            "skyflat") :
+            g_dev["obs"].send_to_user(
+                "Taking "
+                + str(exposure_time)
+                + "s "
+                + " flat exposure.",
+                p_level="INFO",
+            )
+            
         elif frame_type in ("focus", "auto_focus"):
             g_dev["obs"].send_to_user(
                 "Starting "
@@ -5423,9 +5433,15 @@ class Camera:
                 if self.shutter_open:
                     self.shutter_open=False
                     plog ("Shutter Closed.")
-
+                
                 plog ("Exposure Complete")
-                g_dev["obs"].send_to_user("Exposure Complete")
+
+                if not frame_type in (
+                        "flat",
+                        "screenflat",
+                        "skyflat"):
+                    
+                    g_dev["obs"].send_to_user("Exposure Complete")
 
                 # If the nudge wasn't done during the readout, then nudge it now
                 if not check_nudge_after_shutter_closed:

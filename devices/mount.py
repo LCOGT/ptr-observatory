@@ -1631,12 +1631,15 @@ class Mount:
         icrs_ra, icrs_dec = self.get_mount_coordinates()    #These are for debugging.
         check_ra_rate, check_dec_rate = self.get_mount_rates()  #These do not appear to be used  20231128 wer
         #breakpoint()
-        if self.object == "":
-            if not silent:
-                g_dev['obs'].send_to_user("Slewing telescope to un-named target!  ",  p_level="INFO")
-        else:
-            if not silent:
-                g_dev['obs'].send_to_user("Slewing telescope to:  " + str( self.object),  p_level="INFO")
+        
+        # During flats the scope is so continuously nudged as to make reporting of nudges meaningless... so don't report.
+        if not skyflatspot:
+            if self.object == "":
+                if not silent:
+                    g_dev['obs'].send_to_user("Slewing telescope to un-named target!  ",  p_level="INFO")
+            else:
+                if not silent:
+                    g_dev['obs'].send_to_user("Slewing telescope to:  " + str( self.object),  p_level="INFO")
 
         self.last_ra_requested = ra
         self.last_dec_requested = dec
@@ -1932,7 +1935,7 @@ class Mount:
         #g_dev['obs'].drift_tracker_dec=0
         g_dev['obs'].drift_tracker_timer=time.time()
 
-        if not silent:
+        if not silent and not skyflatspot::
             g_dev['obs'].send_to_user("Slew Complete.")
 
         if do_centering_routine:
