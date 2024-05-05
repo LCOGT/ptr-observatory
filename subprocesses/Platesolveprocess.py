@@ -1371,7 +1371,7 @@ if solve != 'error':
     # Representing where it actually is.
     wcs=WCS(header=tempheader)
 
-    plt.rcParams["figure.facecolor"] = 'dimgrey'
+    plt.rcParams["figure.facecolor"] = 'black'
     plt.rcParams["text.color"] = 'yellow'
     plt.rcParams["xtick.color"] = 'yellow'
     plt.rcParams["ytick.color"] = 'yellow'
