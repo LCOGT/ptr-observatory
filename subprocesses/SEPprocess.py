@@ -21,6 +21,7 @@ import time
 #import sep
 import traceback
 import math
+import os
 import json
 import sep
 import copy
@@ -281,7 +282,8 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfr = np.nan
     rfs = np.nan
     sepsky = np.nan
-    pickle.dump([], open(im_path + text_name.replace('.txt', '.sep'),'wb'))
+    pickle.dump([], open(im_path + text_name.replace('.txt', '.tempsep'),'wb'))
+    os.rename(im_path + text_name.replace('.txt', '.tempsep'),im_path + text_name.replace('.txt', '.sep'))
     
     sources = [0]
     rfp = np.nan
@@ -295,8 +297,11 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     fwhm_file['sky']=str(sepsky)
     fwhm_file['sources']=str(len(sources))
     # dump the settings files into the temp directory
-    with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
+    with open(im_path + text_name.replace('.txt', '.tempfwhm'), 'w') as f:
         json.dump(fwhm_file, f)
+    os.rename(im_path + text_name.replace('.txt', '.tempfwhm'),im_path + text_name.replace('.txt', '.fwhm'))
+    
+    
 
 else:
 
@@ -801,11 +806,15 @@ else:
         fwhm_file['rfs']=str(rfs)
         fwhm_file['sky']=str(imageMode)
         fwhm_file['sources']=str(len(fwhmlist))
-        with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
+        with open(im_path + text_name.replace('.txt', '.tempfwhm'), 'w') as f:
             json.dump(fwhm_file, f)
+        os.rename(im_path + text_name.replace('.txt', '.tempfwhm'),im_path + text_name.replace('.txt', '.fwhm'))
+        
 
         # This pickled sep file is for internal use - usually used by the smartstack thread to align mono smartstacks.
-        pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.sep'),'wb'))
+        pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.tempsep'),'wb'))
+        os.rename(im_path + text_name.replace('.txt', '.tempsep'),im_path + text_name.replace('.txt', '.sep'))
+        
 
 
         # Grab the central arcminute out of the image.
@@ -1054,15 +1063,19 @@ else:
         fwhm_file['sky']=str(sepsky)
         fwhm_file['sources']=str(len(sources))
         # dump the settings files into the temp directory
-        with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
+        with open(im_path + text_name.replace('.txt', '.tempfwhm'), 'w') as f:
             json.dump(fwhm_file, f)
+        os.rename(im_path + text_name.replace('.txt', '.tempfwhm'),im_path + text_name.replace('.txt', '.fwhm'))
+        
 
         #json_snippets['fwhm']=fwhm_file
         imageinspection_json_snippets['fwhm']=fwhm_file
         starinspection_json_snippets['fwhm']=fwhm_file
 
 
-        pickle.dump([], open(im_path + text_name.replace('.txt', '.sep'),'wb'))
+        pickle.dump([], open(im_path + text_name.replace('.txt', '.tempsep'),'wb'))
+        os.rename(im_path + text_name.replace('.txt', '.tempsep'),im_path + text_name.replace('.txt', '.sep'))
+        
 # Value-added header items for the UI
 #breakpoint()
 
@@ -1175,10 +1188,11 @@ for line in hduheader:
 #breakpoint()
 try:
     text = open(
-        im_path + text_name, "w"
+        im_path + text_name.replace('.txt','.temptxt'), "w"
     )
     text.write(str(hduheader))
     text.close()
+    os.rename(im_path + text_name.replace('.txt','.temptxt'),im_path + text_name)
 except:
     pass
 

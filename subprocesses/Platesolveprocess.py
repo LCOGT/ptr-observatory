@@ -1324,7 +1324,7 @@ def mid_stretch_jpeg(data):
     return data
 
 
-if solve != 'error':
+if solve != 'error' and pointing_exposure:
     
     
     pointing_image = mid_stretch_jpeg(pointing_image)
@@ -1428,10 +1428,20 @@ if solve != 'error':
     # ax.axes.set_aspect(aspect)
     # plt.axis('scaled')
     # plt.gca().set_aspect(aspect)
-    plt.savefig(jpeg_filename.replace('.jpg','matplotlib.jpg'), dpi=100, bbox_inches='tight', pad_inches=0)
+    
+    # breakpoint()
+    # plt.canvas.draw()
+    # temp_canvas = plt.canvas
+    # plt.close()
+    # pil_image=Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_rgb())
+    
+    # pil_image.save(jpeg_filename.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
+    # os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
+    
+    plt.savefig(jpeg_filename.replace('.jpg','matplotlib.png'), dpi=100, bbox_inches='tight', pad_inches=0)
 
 
-    im = Image.open(jpeg_filename.replace('.jpg','matplotlib.jpg')) 
+    im = Image.open(jpeg_filename.replace('.jpg','matplotlib.png')) 
 
     # Get amount of padding to add
     fraction_of_padding=(im.size[0]/im.size[1])/aspect
@@ -1440,8 +1450,10 @@ if solve != 'error':
         im=add_margin(im,padding_added_pixels,0,padding_added_pixels,0,(0,0,0))
         
     #im=ImageOps.grayscale(im)
+    #breakpoint()
+    im=im.convert('RGB')
 
-    im.save(jpeg_filename.replace('.jpg','temp.jpg'))#, quality=95)
+    im.save(jpeg_filename.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
     os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
     try:
         os.remove(jpeg_filename.replace('.jpg','matplotlib.jpg'))

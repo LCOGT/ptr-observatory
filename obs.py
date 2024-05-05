@@ -559,7 +559,7 @@ class Observatory:
         #     self.altarchive_queue_thread.daemon = True
         #     self.altarchive_queue_thread.start()
 
-        self.fast_queue = queue.PriorityQueue(maxsize=0)
+        self.fast_queue = queue.Queue(maxsize=0)
         self.fast_queue_thread = threading.Thread(target=self.fast_to_ui, args=())
         self.fast_queue_thread.daemon = True
         self.fast_queue_thread.start()
@@ -2580,12 +2580,14 @@ class Observatory:
                 # Try saving the jpeg to disk and quickly send up to AWS to present for the user
                 if smartstackid == 'no':
                     try:
+                        #print ("mainjpeg: "+ str(paths["im_path"]), str(paths["jpeg_name10"]))
+                        #breakpoint()
                         self.enqueue_for_fastUI(
-                            100, paths["im_path"], paths["jpeg_name10"]
+                            paths["im_path"], paths["jpeg_name10"]
                         )
-                        self.enqueue_for_mediumUI(
-                            1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
-                        )
+                        # self.enqueue_for_mediumUI(
+                        #     1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
+                        # )
                         plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
                     except:
                         plog(
@@ -2673,7 +2675,7 @@ class Observatory:
                 # while not os.path.exists(im_path + text_name.replace('.txt', '.fwhm')):
                 #     time.sleep(0.05)
 
-                self.enqueue_for_fastUI(10, im_path, text_name)
+                self.enqueue_for_fastUI(im_path, text_name)
 
                 del hdufocusdata
 
@@ -2815,7 +2817,7 @@ class Observatory:
                         else:
                             
                             self.enqueue_for_fastUI(
-                                100,'',jpeg_filename
+                                '',jpeg_filename
                             )
                             # self.enqueue_for_mediumUI(
                             #     1000, '',jpeg_filename.replace('EX10', 'EX20')
@@ -4139,11 +4141,10 @@ class Observatory:
         The second item is also a tuple containing im_path and name.
         """
 
-        one_at_a_time = 0
         while True:
 
-            if (not self.fast_queue.empty()) and one_at_a_time == 0:
-                one_at_a_time = 1
+            if (not self.fast_queue.empty()):
+               
                 pri_image = self.fast_queue.get(block=False)
                 # if pri_image is None:
                 #     plog("Got an empty entry in fast_queue.")
@@ -4153,63 +4154,70 @@ class Observatory:
 
                 # Here we parse the file, set up and send to AWS
                 try:
-                    filename = pri_image[1][1]
-                    filepath = pri_image[1][0] + filename  # Full path to file on disk
+                    filename = pri_image[1]
+                    filepath = pri_image[0] + filename  # Full path to file on disk
                     
-                    print (filepath)
-                    try:
-
-                        timesubmitted = pri_image[1][2]
-                    except:
-                        plog((traceback.format_exc()))
-                        #breakpoint()
-
-
-                    # If the file is there now
-                    if os.path.exists(filepath):
-                        # To the extent it has a size
-                        if os.stat(filepath).st_size > 0:
-                            aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
-
-
-                            with open(filepath, "rb") as fileobj:
-                                files = {"file": (filepath, fileobj)}
-                                #while True:
-                                try:
-                                    reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=10)
-                                except Exception as e:
-                                    if 'timeout' in str(e).lower() or 'SSLWantWriteError' or 'RemoteDisconnected' in str(e):
-                                        plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
-                                        plog(filename)
-                                        #breakpoint()
-                                        if "EX20" in filename:
-                                            try:
-                                                reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
-                                            except:
-                                                plog ("Couldn't upload big jpeg: " + str(filename))
-                                        else:
-                                            self.fast_queue.put((100, pri_image[1]), block=False)
-                                    else:
-                                        plog("Fatal connection glitch for a file posted: " + str(e))
-                                        plog(files)
-                                        plog((traceback.format_exc()))
-
-                        else:
-                            plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in queue.")
-                            self.fast_queue.put((100, pri_image[1]), block=False)
-                    # If it has been less than 3 minutes put it back in
-                    elif time.time() -timesubmitted < 180:
-                        #plog (str(filepath) + " Not there yet, putting back in queue.")
-                        self.fast_queue.put((100, pri_image[1]), block=False)
+                    #print (filepath)
+                    
+                    if filepath=='':
+                        plog ("found an empty thing in the fast_queue? Why? MTF finding out.")
                     else:
-                        plog (str(filepath) + " seemed to never turn up... not putting back in the queue")
-
+                    
+                    
+                        try:
+    
+                            timesubmitted = pri_image[2]
+                        except:
+                            plog((traceback.format_exc()))
+                            #breakpoint()
+    
+    
+                        # If the file is there now
+                        if os.path.exists(filepath) and not "EX20" in filename:
+                            # To the extent it has a size
+                            if os.stat(filepath).st_size > 0:
+                                aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
+    
+    
+                                with open(filepath, "rb") as fileobj:
+                                    files = {"file": (filepath, fileobj)}
+                                    #while True:
+                                    try:
+                                        reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=10)
+                                    except Exception as e:
+                                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' or 'RemoteDisconnected' in str(e):
+                                            plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
+                                            plog(filename)
+                                            #breakpoint()
+                                            # if "EX20" in filename:
+                                            #     plog ('A big jpeg snuck into the fast ui queue somehow!')
+                                            #     # try:
+                                            #     #     reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
+                                            #     # except:
+                                            #     #     plog ("Couldn't upload big jpeg: " + str(filename))
+                                            # else:
+                                            #self.fast_queue.put((100, pri_image[1]), block=False)
+                                            self.fast_queue.put(pri_image, block=False)
+                                        else:
+                                            plog("Fatal connection glitch for a file posted: " + str(e))
+                                            plog(files)
+                                            plog((traceback.format_exc()))
+    
+                            else:
+                                plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in queue.")
+                                self.fast_queue.put(pri_image, block=False)
+                        # If it has been less than 3 minutes put it back in
+                        elif time.time() -timesubmitted < 180:
+                            #plog (str(filepath) + " Not there yet, putting back in queue.")
+                            self.fast_queue.put(pri_image, block=False)
+                        else:
+                            plog (str(filepath) + " seemed to never turn up... not putting back in the queue")
+    
                 except:
                     plog ("something strange in the UI uploader")
                     plog((traceback.format_exc()))
                 self.fast_queue.task_done()
-                one_at_a_time = 0
-                time.sleep(0.1)
+                time.sleep(0.5)
 
             else:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
@@ -4525,9 +4533,9 @@ class Observatory:
                         time.sleep(0.5)
 
 
-                    self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"],time.time())), block=False)
-                    self.mediumui_queue.put(
-                        (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
+                    self.fast_queue.put((paths["im_path"], paths["jpeg_name10"],time.time()), block=False)
+                    # self.mediumui_queue.put(
+                    #     (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
 
                     try:
                         #breakpoint()
@@ -4606,8 +4614,9 @@ class Observatory:
                 if (self.pointing_correction_request_time > self.time_of_last_slew) or g_dev['cam'].currently_in_smartstack_loop:
 
                     plog("Re-centering Telescope.")
-                    # Don't always need to be reporting every small recenter.                    
-                    if g_dev['cam'].currently_in_smartstack_loop or (abs(g_dev['obs'].pointing_correction_request_ra_err)+abs(g_dev['obs'].pointing_correction_request_dec_err)) < 0.5 :
+                    # Don't always need to be reporting every small recenter.       
+                    #breakpoint()
+                    if not g_dev['cam'].currently_in_smartstack_loop and not ((abs(g_dev['obs'].pointing_correction_request_ra_err)+abs(g_dev['obs'].pointing_correction_request_dec_err)) < 0.25) :
                         self.send_to_user("Re-centering Telescope.")
                     # print ("1: " + str(g_dev["mnt"].get_mount_coordinates_after_next_update()))
                     wait_for_slew()
@@ -4797,9 +4806,9 @@ class Observatory:
         image = (im_path, name, time.time())
         self.ptrarchive_queue.put((priority, image), block=False)
 
-    def enqueue_for_fastUI(self, priority, im_path, name):
+    def enqueue_for_fastUI(self, im_path, name):
         image = (im_path, name)
-        self.fast_queue.put((priority, (image[0], image[1], time.time())), block=False)
+        self.fast_queue.put((image[0], image[1], time.time()), block=False)
 
     def enqueue_for_mediumUI(self, priority, im_path, name):
         image = (im_path, name)

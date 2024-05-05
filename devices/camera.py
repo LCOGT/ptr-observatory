@@ -6235,7 +6235,7 @@ class Camera:
                     if os.path.exists(im_path + text_name):
                         try:
                             #g_dev['obs'].enqueue_for_fastUI(10, im_path, text_name)
-                            g_dev['obs'].enqueue_for_fastUI(10, im_path, text_name)
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name)
 
                         except:
                             plog("Failed to send FOCUS TEXT up for some reason")
@@ -7803,6 +7803,7 @@ def post_exposure_process(payload):
 
             # Send data off to process jpeg if not a smartstack
             if smartstackid == 'no':
+                print (paths)
                 g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
 
 

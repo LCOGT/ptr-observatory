@@ -6606,7 +6606,7 @@ class Sequencer:
                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
                     # Fling the jpeg up
-                    g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                    g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
 
             else:
 
@@ -6663,7 +6663,7 @@ class Sequencer:
                             plog ("Minimum value: " + str(minimum_value) + " is too high to bother focussing, just going with the estimated value from previous focus")
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
-                            g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
                             g_dev['foc'].set_initial_best_guess_for_focus()
                             self.total_sequencer_control = False
                             self.focussing=False
@@ -6728,7 +6728,7 @@ class Sequencer:
 
 
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
 
 
                             # im_path_r = g_dev['cam'].camera_path
@@ -6789,7 +6789,7 @@ class Sequencer:
 
 
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
 
 
                             # im_path_r = g_dev['cam'].camera_path
@@ -6857,7 +6857,7 @@ class Sequencer:
 
 
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
 
                         # If right hand side is too low get another dot
                         elif focus_spots[0][1] < (minimum_value * 1.5):
@@ -6907,7 +6907,7 @@ class Sequencer:
 
 
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
 
                         # Otherwise if it seems vaguely plausible to get a fit... give it a shot
                         else:
@@ -7009,7 +7009,7 @@ class Sequencer:
 
 
                                     # Fling the jpeg up
-                                    g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                                    g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
 
 
 
@@ -7071,7 +7071,7 @@ class Sequencer:
 
 
                                     # Fling the jpeg up
-                                    g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                                    g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
 
                             else:
                                 #print (crit_points)
@@ -7125,7 +7125,7 @@ class Sequencer:
 
 
                                 # Fling the jpeg up
-                                g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                                g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
 
 
                                 # Check that the solved minimum focussed position actually fits in between the lowest measured point and
