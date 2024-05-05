@@ -1022,7 +1022,7 @@ class Sequencer:
                                             # COLLECTING A TEN SECOND EXPOSURE DARK FRAME
                                             plog("Expose " + str(2*stride) +" 1x1 ten second exposure dark frames.")
                                             req = {'time': 10,  'script': 'True', 'image_type': 'tensec_exposure_dark'}
-                                            opt = {'count': min_to_do,  \
+                                            opt = {'count': 2*min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -1056,7 +1056,7 @@ class Sequencer:
                                             # COLLECTING A THIRTY SECOND EXPOSURE DARK FRAME
                                             plog("Expose " + str(2*stride) +" 1x1 30 second exposure dark frames.")
                                             req = {'time': 30,  'script': 'True', 'image_type': 'thirtysec_exposure_dark'}
-                                            opt = {'count': min_to_do,  \
+                                            opt = {'count': 2*min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -2244,7 +2244,7 @@ class Sequencer:
                 # COLLECTING A THIRTY SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(2*stride) +" 1x1 30 second exposure dark frames.")
                 req = {'time': 30,  'script': 'True', 'image_type': 'thirtysec_exposure_dark'}
-                opt = {'count': min_to_do,  \
+                opt = {'count': 2*min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.

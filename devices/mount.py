@@ -152,8 +152,8 @@ class Mount:
 
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
-        self.mount_id = win32com.client.pythoncom.CoMarshalInterThreadInterfaceInStream(win32com.client.pythoncom.IID_IDispatch, self.mount)
-
+        #self.mount_id = win32com.client.pythoncom.CoMarshalInterThreadInterfaceInStream(win32com.client.pythoncom.IID_IDispatch, self.mount)
+        #breakpoint()
         try:
             self.mount.Connected = True
         except:
