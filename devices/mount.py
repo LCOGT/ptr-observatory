@@ -1935,7 +1935,7 @@ class Mount:
         #g_dev['obs'].drift_tracker_dec=0
         g_dev['obs'].drift_tracker_timer=time.time()
 
-        if not silent and not skyflatspot::
+        if not silent and not skyflatspot:
             g_dev['obs'].send_to_user("Slew Complete.")
 
         if do_centering_routine:
