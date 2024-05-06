@@ -5165,7 +5165,7 @@ class Sequencer:
             plog (list_of_filters_for_this_run)
             if 'dk' in list_of_filters_for_this_run:
                 list_of_filters_for_this_run.remove('dk')
-            if 'dk' in list_of_filters_for_this_run:
+            if 'dark' in list_of_filters_for_this_run:
                 list_of_filters_for_this_run.remove('dark')
             # Second, check that that all filters have a stored throughput value
             # If not, we will only run on those filters that have yet to get a throughput recorded

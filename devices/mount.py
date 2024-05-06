@@ -2408,7 +2408,7 @@ class Mount:
                     plog("Waiting " + str(self.settle_time_after_park) + " seconds for mount to settle.")
             try:
                 g_dev['fil'].current_filter, _, _ = g_dev["fil"].set_name_command(
-                    {"filter": 'dark'}, {}
+                    {"filter": 'dk'}, {}
                 )
             except:
                 pass
