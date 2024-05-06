@@ -2579,7 +2579,9 @@ class Camera:
         try:
             if g_dev["fil"].null_filterwheel == False:
                 if imtype in ['bias','dark'] or a_dark_exposure:
-                    requested_filter_name = 'dark'
+                    requested_filter_name = 'dk'
+                    #NB NB not here, but we could index the perseus to get the camera
+                    #more out of the beam.
 
                 elif imtype in ['pointing'] and self.config["camera"][self.name]["settings"]['is_osc']:
                     requested_filter_name = 'lum'
