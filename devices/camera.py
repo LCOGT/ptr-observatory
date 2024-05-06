@@ -774,6 +774,7 @@ class Camera:
             self.darkFiles.update({'tensec_exposure_biasdark': tempdarkframe})
             del tempdarkframe
         except:
+            
             plog("10.0s Bias Dark frame for Binning 1 not available")
 
         try:
@@ -784,7 +785,7 @@ class Camera:
             self.darkFiles.update({'thirtysec_exposure_biasdark': tempdarkframe})
             del tempdarkframe
         except:
-            plog("10.0s Bias Dark frame for Binning 1 not available")
+            plog("30.0s Bias Dark frame for Binning 1 not available")
 
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
