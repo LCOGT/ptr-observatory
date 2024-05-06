@@ -776,6 +776,16 @@ class Camera:
         except:
             
             plog("10.0s Bias Dark frame for Binning 1 not available")
+            
+        try:
+            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
+                                      + "/" + tempfrontcalib +  "thirtysecBIASDARK_master_bin1.fits")
+
+            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+            self.darkFiles.update({'thirtysec_exposure_dark': tempdarkframe})
+            del tempdarkframe
+        except:
+            plog("30.0s Dark frame for Binning 1 not available")
 
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
