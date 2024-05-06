@@ -3592,7 +3592,7 @@ class Camera:
                                             g_dev['seq'].scope_already_nudged_by_camera_thread=True
                                             # Swap the filter
                                             if g_dev["fil"].null_filterwheel == False:
-                                                if self.next_filter_in_flat_run != 'none':
+                                                if g_dev['seq'].next_filter_in_flat_run != 'none':
                                                     self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
                                                         {"filter": self.next_filter_in_flat_run }, {}
                                                     )
