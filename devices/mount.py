@@ -2544,12 +2544,12 @@ class Mount:
     
 
 
-    def record_mount_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
+    def record_mount_reference(self, deviation_ha, deviation_dec, pointing_ra, pointing_dec):
 
         
 
         # The HA is for the actual requested HA, NOT the solved ra
-        HA=self.current_sidereal - pointing_ra + err_ha
+        HA=self.current_sidereal - pointing_ra + deviation_ha
         
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
         # try:
@@ -2560,11 +2560,11 @@ class Mount:
         #     init_dec =0.0
 
         #plog("initial:  ", init_ra, init_dec)
-        mnt_shelf['ra_cal_offset'] = err_ha
-        mnt_shelf['dec_cal_offset'] = err_dec
+        mnt_shelf['ra_cal_offset'] = deviation_ha
+        mnt_shelf['dec_cal_offset'] = deviation_dec
         mnt_shelf['last_mount_reference_time']=time.time()
         mnt_shelf['last_mount_reference_ha']= HA
-        mnt_shelf['last_mount_reference_dec']= pointing_dec + err_dec
+        mnt_shelf['last_mount_reference_dec']= pointing_dec + deviation_dec
         #plog("final:  ", mnt_shelf['ra_cal_offset'], mnt_shelf['dec_cal_offset'])
 
 
@@ -2572,24 +2572,34 @@ class Mount:
         self.last_mount_reference_time=time.time()
         self.last_mount_reference_ha = HA
         self.last_mount_reference_dec = pointing_dec
-        self.last_mount_reference_ha_offset =  err_ha
-        self.last_mount_reference_dec_offset =  err_dec
+        self.last_mount_reference_ha_offset =  deviation_ha
+        self.last_mount_reference_dec_offset =  deviation_dec
 
 
         # Add in latest point to the list of mount references
         # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.
-        HA=self.current_sidereal - pointing_ra
-        self.longterm_storage_of_mount_references.append([time.time(),HA,pointing_dec + err_dec , err_ha,  err_dec])
+        HA=self.current_sidereal - pointing_ra + deviation_ha
+        
+        # Removing older references
+        for entry in self.longterm_storage_of_mount_references:
+            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
+            if distance_from_new_reference < 2:
+                plog ("Found and removing an old reference close to new reference: " + str(entry))
+                self.longterm_storage_of_mount_references.remove(entry)
+        
+        plog ("Recording and using new reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )
+        
+        self.longterm_storage_of_mount_references.append([time.time(),HA,pointing_dec + deviation_dec , deviation_ha,  deviation_dec])
         mnt_shelf['longterm_storage_of_mount_references']=self.longterm_storage_of_mount_references
         mnt_shelf.close()
 
         return
 
-    def record_flip_reference(self, err_ha, err_dec, pointing_ra, pointing_dec):
+    def record_flip_reference(self, deviation_ha, deviation_dec, pointing_ra, pointing_dec):
 
         # The HA is for the actual requested HA, NOT the solved ra
-        HA=self.current_sidereal - pointing_ra + err_ha
+        HA=self.current_sidereal - pointing_ra + deviation_ha
 
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         # try:
@@ -2598,25 +2608,34 @@ class Mount:
         # except:
         #     init_ra = 0.0
         #     init_dec =0.0
-        mnt_shelf['flip_ra_cal_offset'] = err_ha    #NB NB NB maybe best to reverse signs here??
-        mnt_shelf['flip_dec_cal_offset'] = err_dec
+        mnt_shelf['flip_ra_cal_offset'] = deviation_ha    #NB NB NB maybe best to reverse signs here??
+        mnt_shelf['flip_dec_cal_offset'] = deviation_dec
         mnt_shelf['last_flip_reference_time']=time.time()
         mnt_shelf['last_flip_reference_ha']= HA
-        mnt_shelf['last_flip_reference_dec']= pointing_dec + err_dec
+        mnt_shelf['last_flip_reference_dec']= pointing_dec + deviation_dec
 
 
         self.last_flip_reference_time=time.time()
         self.last_flip_reference_ha = HA
         self.last_flip_reference_dec = pointing_dec
-        self.last_flip_reference_ha_offset =  err_ha
-        self.last_flip_reference_dec_offset =  err_dec
+        self.last_flip_reference_ha_offset =  deviation_ha
+        self.last_flip_reference_dec_offset =  deviation_dec
 
+        # Removing older references
+        for entry in self.longterm_storage_of_flip_references:
+            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
+            if distance_from_new_reference < 2:
+                plog ("Found and removing an old reference close to new reference: " + str(entry))
+                self.longterm_storage_of_mount_references.remove(entry)
 
+        plog ("Recording and using new reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )
+        
+        
         # Add in latest point to the list of mount references
         # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.
-        HA=self.current_sidereal - pointing_ra
-        self.longterm_storage_of_flip_references.append([time.time(),HA,pointing_dec + err_dec, err_ha,  err_dec])
+        HA=self.current_sidereal - pointing_ra  + deviation_ha
+        self.longterm_storage_of_flip_references.append([time.time(),HA,pointing_dec + deviation_dec, deviation_ha,  deviation_dec])
         mnt_shelf['longterm_storage_of_flip_references']=self.longterm_storage_of_flip_references
         mnt_shelf.close()
 
@@ -2667,6 +2686,37 @@ class Mount:
 
         #print ("Calculating Mount Reference (temp MTF reporting)")
         HA = self.current_sidereal - pointing_ra
+        
+        
+        # Have a look through shelf to find closest reference:
+        
+        #mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        # Removing older references
+        distance_from_closest_reference=180
+        found_close_reference= False
+        
+        for entry in self.longterm_storage_of_flip_references:
+            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec)
+            if distance_from_new_reference < 5:
+                if distance_from_new_reference < distance_from_closest_reference:
+                    found_close_reference=True
+                    close_reference=copy.deepcopy(entry)
+                    
+        if found_close_reference:
+            plog ("Found nearby mount offset in shelf: " + str(close_reference))
+            plog ("Using reference: HA: " + str(close_reference[3] * 15 * 60) + " arcminutes, Dec: " + str(close_reference[4] * 60) + " arcminutes." )
+            
+            
+        
+            self.last_mount_reference_time=close_reference[0]     
+            self.last_mount_reference_ha =close_reference[1]
+            self.last_mount_reference_dec =close_reference[2]       
+            self.last_mount_reference_ha_offset = close_reference[3]
+            self.last_mount_reference_dec_offset = close_reference[4]
+            
+            return close_reference[3], close_reference[4]
+        
+        
         distance_from_current_reference_in_ha = abs(self.last_mount_reference_ha - HA)
         distance_from_current_reference_in_dec = abs(self.last_mount_reference_dec- pointing_dec)
         #print ("Dist in HA: " + str(round(distance_from_current_reference_in_ha,2)) + "   Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
@@ -2676,10 +2726,11 @@ class Mount:
 
         #print ("radial difference in requested position to location where reference was created: " + str(round(absolute_distance,2)) + " degrees.")
 
-        if  absolute_distance < 15:
-            #plog ("recent reference nearby, using current reference")
+        if  absolute_distance < 5:
+            plog ("last reference is nearby, using current reference")
             return self.last_mount_reference_ha_offset, self.last_mount_reference_dec_offset
         else:
+            plog ("No previous deviation reference nearby")
             #plog ("reference not nearby - in future will go and get a nearby reference from the catalogue")
             return 0.0,0.0
 
@@ -2699,9 +2750,33 @@ class Mount:
 
     def get_flip_reference(self, pointing_ra, pointing_dec):
 
+        HA = self.current_sidereal - pointing_ra
+        
+        distance_from_closest_reference=180
+        found_close_reference= False
+        
+        for entry in self.longterm_storage_of_flip_references:
+            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec)
+            if distance_from_new_reference < 5:
+                if distance_from_new_reference < distance_from_closest_reference:
+                    found_close_reference=True
+                    close_reference=copy.deepcopy(entry)
+                    
+        if found_close_reference:
+            plog ("Found nearby mount offset in shelf: " + str(close_reference))
+            plog ("Using reference: HA: " + str(close_reference[3] * 15 * 60) + " arcminutes, Dec: " + str(close_reference[4] * 60) + " arcminutes." )
+            
+            
+            self.last_flip_reference_time=close_reference[0]     
+            self.last_flip_reference_ha =close_reference[1]
+            self.last_flip_reference_dec =close_reference[2]       
+            self.last_flip_reference_ha_offset = close_reference[3]
+            self.last_flip_reference_dec_offset = close_reference[4]
+            
+            return close_reference[3], close_reference[4]
 
         #print ("Calculating Flip Reference (temp MTF reporting)")
-        HA = self.current_sidereal - pointing_ra
+        
         distance_from_current_reference_in_ha = abs(self.last_flip_reference_ha - HA)
         distance_from_current_reference_in_dec = abs(self.last_flip_reference_dec- pointing_dec)
         #print ("Dist in HA: " + str(round(distance_from_current_reference_in_ha,2)) + "   Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
@@ -2712,11 +2787,11 @@ class Mount:
         #print ("radial difference in requested position to location where reference was created: " + str(round(absolute_distance,2))+ " degrees.")
         #if (time.time()-self.last_flip_reference_time) < 43100:
 
-        if  absolute_distance < 15:
-            #plog ("recent reference nearby, using current reference")
+        if  absolute_distance < 5:
+            plog ("last reference is nearby, using current reference")
             return self.last_flip_reference_ha_offset, self.last_flip_reference_dec_offset
         else:
-            #plog ("reference not nearby - in future will go and get a nearby reference from the catalogue")
+            plog ("No previous deviation reference nearby")
             return 0.0,0.0
 
         # try:

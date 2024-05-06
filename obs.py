@@ -2303,6 +2303,10 @@ class Observatory:
 
                             err_ha = target_ra - solved_ra
                             err_dec = target_dec - solved_dec
+                            
+                            mount_deviation_ha = pointing_ra - solved_ra
+                            mount_deviation_dec = pointing_dec - solved_dec                            
+                            
 
                             # Check that the RA doesn't cross over zero, if so, bring it back around
                             if err_ha > 12:
@@ -2436,7 +2440,7 @@ class Observatory:
                                                      if g_dev["mnt"].pier_side == 0:
                                                          try:
                                                              g_dev["mnt"].record_mount_reference(
-                                                                 err_ha, err_dec, pointing_ra, pointing_dec
+                                                                 mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
                                                              )
     
                                                          except Exception as e:
@@ -2444,7 +2448,7 @@ class Observatory:
                                                      else:
                                                          try:
                                                              g_dev["mnt"].record_flip_reference(
-                                                                 err_ha, err_dec, pointing_ra, pointing_dec
+                                                                 mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
                                                              )
                                                          except Exception as e:
                                                              plog("Something is up in the mount reference adjustment code ", e)
