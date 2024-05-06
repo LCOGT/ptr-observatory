@@ -724,7 +724,7 @@ class FilterWheel:
             (["i", "Ic", "ip", "BI"], ["ip", "Ic", "BI"]),  # infrared broadband
             (["z", "zs", "zp"], ["zp", "zs", "z"]),  # NB z broadband  z and zs are different.  Y?  WER
             (["gp", "g"], ["gp"]),  # generic sdss-g
-            (["HA", "H", 'Ha'], ["HA"]),  # generic H
+            (["HA", "H", 'Ha', 'H2'], ["HA"]),  # generic H
             (["O3", "O"], ["O3"]),  # generic O
             (["S2", "S"], ["S2"]),  # generic S
             (["CR", "C"], ["CR"]),  # generic C
