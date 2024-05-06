@@ -272,11 +272,12 @@ class Mount:
             self.longterm_storage_of_mount_references=mnt_shelf['longterm_storage_of_mount_references']
             self.longterm_storage_of_flip_references=mnt_shelf['longterm_storage_of_flip_references']
         except:
+            plog ("Could not load the mount debiations from the shelf, starting again.")
             self.longterm_storage_of_mount_references=[]
             self.longterm_storage_of_flip_references=[]
         mnt_shelf.close()
 
-        print ("MTF test:")
+        print ("Mount deviations, mount then flip:")
         print (self.longterm_storage_of_mount_references)
         print (self.longterm_storage_of_flip_references)
 
@@ -2691,27 +2692,27 @@ class Mount:
 
         # return delta_ra, delta_dec
 
-    def reset_mount_reference(self):
+    # def reset_mount_reference(self):
 
-        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
-        mnt_shelf['ra_cal_offset'] = 0.000
-        mnt_shelf['dec_cal_offset'] = 0.000
-        mnt_shelf['flip_ra_cal_offset'] = 0.000
-        mnt_shelf['flip_dec_cal_offset'] = 0.000
-        mnt_shelf.close()
+    #     mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+    #     mnt_shelf['ra_cal_offset'] = 0.000
+    #     mnt_shelf['dec_cal_offset'] = 0.000
+    #     mnt_shelf['flip_ra_cal_offset'] = 0.000
+    #     mnt_shelf['flip_dec_cal_offset'] = 0.000
+    #     mnt_shelf.close()
 
-        self.last_mount_reference_time=time.time() -86400
-        self.last_flip_reference_time=time.time() -86400
-        self.last_mount_reference_ha = 0.0
-        self.last_mount_reference_dec = 0.0
-        self.last_flip_reference_ha = 0.0
-        self.last_flip_reference_dec = 0.0
-        self.last_mount_reference_ha_offset = 0.0
-        self.last_mount_reference_dec_offset = 0.0
-        self.last_flip_reference_ha_offset = 0.0
-        self.last_flip_reference_dec_offset = 0.0
+    #     self.last_mount_reference_time=time.time() -86400
+    #     self.last_flip_reference_time=time.time() -86400
+    #     self.last_mount_reference_ha = 0.0
+    #     self.last_mount_reference_dec = 0.0
+    #     self.last_flip_reference_ha = 0.0
+    #     self.last_flip_reference_dec = 0.0
+    #     self.last_mount_reference_ha_offset = 0.0
+    #     self.last_mount_reference_dec_offset = 0.0
+    #     self.last_flip_reference_ha_offset = 0.0
+    #     self.last_flip_reference_dec_offset = 0.0
 
-        return
+    #     return
 
 if __name__ == '__main__':
     req = {'time': 1,  'alias': 'ea03', 'frame': 'Light', 'filter': 2}
