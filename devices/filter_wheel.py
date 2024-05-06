@@ -729,7 +729,8 @@ class FilterWheel:
             (["S2", "S"], ["S2"]),  # generic S
             (["CR", "C"], ["CR"]),  # generic C
             (["N2", "N"], ["N2"]),  # generic N
-            (["dark"], ["S2", "O3", "HA", "up", "U", "JU"]),  # generic C
+            #NB NB WE need to be sure a double filter = dark is not being changed to just S2...
+            (["dark", 'drk', 'dk'], ['dk', "S2", "O3", "HA", "up", "U", "JU"]),  # generic C
             (
                 ["Air, air, AIR"],
                 ['air', 'clear', "w",'lum', "Lum", "PL",  'silica'],
