@@ -1474,13 +1474,14 @@ class Sequencer:
             plog ("Checking whether the pointing reference is nearby. If so, we can skip the centering exposure...")
             skip_centering=False
             HAtemp=g_dev['mnt'].current_sidereal-dest_ra
-            if g_dev['mnt'].rapid_pier_indicator == 0:
+            if g_dev['mnt'].rapid_pier_indicator == 0:               
+                
                 distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_mount_reference_ha - HAtemp)
                 distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_mount_reference_dec- dest_dec)
-                print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+                #print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
                 absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(distance_from_current_reference_in_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
                 print ("absolute_distance: " + str(round(absolute_distance,2)))
-                if absolute_distance < 15:
+                if absolute_distance < 10:
                     plog ("close enough, skipping centering exposure")
                     skip_centering=True
                 # self.last_mount_reference_ha = 0.0
@@ -1489,10 +1490,10 @@ class Sequencer:
             else:
                 distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_flip_reference_ha - HAtemp)
                 distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_flip_reference_dec- dest_dec)
-                print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+                #print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
                 absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(distance_from_current_reference_in_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
                 print ("absolute_distance: " + str(round(absolute_distance,2)))
-                if absolute_distance < 15:
+                if absolute_distance < 10:
                     plog ("close enough, skipping centering exposure")
                     skip_centering=True
 

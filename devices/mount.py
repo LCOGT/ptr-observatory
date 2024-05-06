@@ -1508,20 +1508,13 @@ class Mount:
                    tracking_rate_dec =  0, do_centering_routine=False, dont_wait_after_slew=False):
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
-        #breakpoint()
-        if self.model_on:
-            #breakpoint()
-            pass
 
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle.
         try:
             sun_coords=get_sun(Time.now())
-            if skyflatspot != None:
-                #plog("Inserted skip open test, line 1353 in Mount. WER  20231222")
-                #skip_open_test = False
+            if skyflatspot != None:                
                 if not skip_open_test:
-
                     if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
                         not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
                         g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is outside skyflat time")
@@ -1542,7 +1535,6 @@ class Mount:
                 plog ("Moving to requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
 
                 if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
-                    #######breakpoint()
                     if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
                         g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
                         plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
@@ -1617,9 +1609,6 @@ class Mount:
         else:
             self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
 
-
-        #breakpoint()
-
         self.unpark_command()   #can we qualify this?
 
 
@@ -1661,37 +1650,17 @@ class Mount:
 
 
 
-        #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
-        #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
-        #result in a flip.  So first figure out if there will be a flip:
-        # mount command #
-        # while self.mount_busy:
-        #     time.sleep(0.05)
-        # self.mount_busy=True
-        #self.previous_pier_side=self.mount.sideOfPier
+        self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
         self.previous_pier_side=self.rapid_pier_indicator
-        #self.mount_busy=False
-        # end mount command #
 
         if self.can_report_destination_pierside == True:
-            try:                          #  NB NB Might be good to log is flipping on a re-seek.
-                # mount command #
-                # while self.mount_busy:
-                #     time.sleep(0.05)
-                # self.mount_busy=True
-
-                #new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-
+            try:                          
                 self.request_new_pierside=True
                 self.request_new_pierside_ra=ra
                 self.request_new_pierside_dec=dec
-
                 self.wait_for_mount_update()
 
-
-                # self.mount_busy=False
-                # end mount command #
                 if len(self.new_pierside) > 1:
                     if self.new_pierside[0] == 0:
                         delta_ra, delta_dec = self.get_mount_reference(ra,dec)
@@ -1700,15 +1669,7 @@ class Mount:
                         delta_ra, delta_dec = self.get_flip_reference(ra,dec)
 
             except:
-                try:
-                    # self.mount_busy=False
-                    # # mount command #
-                    # while self.mount_busy:
-                    #     time.sleep(0.05)
-                    # self.mount_busy=True
-                    # new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-                    # self.mount_busy=False
-                    # end mount command #
+                try:                   
                     self.request_new_pierside=True
                     self.request_new_pierside_ra=ra
                     self.request_new_pierside_dec=dec
@@ -1716,40 +1677,24 @@ class Mount:
                     self.wait_for_mount_update()
                     if self.new_pierside == 0:
                         delta_ra, delta_dec = self.get_mount_reference(ra,dec)
-
                     else:
                         delta_ra, delta_dec = self.get_flip_reference(ra,dec)
-
                 except:
                     self.mount_busy=False
                     delta_ra, delta_dec = self.get_mount_reference(ra,dec)
-
-
         else:
             if self.previous_pier_side == 0:
                 delta_ra, delta_dec = self.get_mount_reference(ra,dec)
-
             else:
                 delta_ra, delta_dec = self.get_flip_reference(ra,dec)
 
-        if g_dev['obs'].mount_reference_model_off:
-            pass
-        else:
+        if not g_dev['obs'].mount_reference_model_off:            
             try:
 
-                ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
-                dec += delta_dec
+                ra -= delta_ra 
+                dec -= delta_dec
             except:
-                pass
-
-        #plog ("mount references in go_command: " + str(delta_ra) + " " + str(delta_dec))
-        #plog ("difference between request and pointing: " + str(ra - self.last_ra_requested))
-
-
-        self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
-
-
-        #breakpoint()
+                pass       
 
         # First move, then check the pier side
         successful_move=0
@@ -1762,12 +1707,7 @@ class Mount:
                     ra=ra+24
                 if ra > 24:
                     ra=ra-24
-                # mount command #
-
-                # while self.mount_busy:
-                #     time.sleep(0.05)
-                # self.mount_busy=True
-                #self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
+                    
                 #### Slew to CoordinatesAsync block
                 self.slewtoRA = ra
                 self.slewtoDEC = dec
@@ -1778,7 +1718,6 @@ class Mount:
                 ###################################
 
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-                # end mount command #
                 if not dont_wait_after_slew:
                     self.wait_for_slew(wait_after_slew=False)
                 self.get_mount_coordinates()
@@ -1804,11 +1743,6 @@ class Mount:
                                     ra=ra+24
                                 if ra > 24:
                                     ra=ra-24
-                                # mount command #
-                                # while self.mount_busy:
-                                #     time.sleep(0.05)
-                                # self.mount_busy=True
-                                # self.mount.SlewToCoordinatesAsync(ra, dec)
                                 #### Slew to CoordinatesAsync block
                                 self.slewtoRA = ra
                                 self.slewtoDEC = dec
@@ -1816,16 +1750,13 @@ class Mount:
                                 self.wait_for_mount_update()
                                 self.wait_for_slew(wait_after_slew=False)
                                 ###################################
-                                #self.mount_busy=False
                                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-                                # end mount command #
                                 self.wait_for_slew(wait_after_slew=False)
                                 self.get_mount_coordinates()
                                 retry=4
                             else:
 
                                 plog (traceback.format_exc())
-                                ######breakpoint()
                         except:
                             self.mount_busy=False
                             time.sleep(120)
@@ -1833,43 +1764,26 @@ class Mount:
                 except:
                     self.mount_busy=False
                     plog (traceback.format_exc())
-                    #######breakpoint()
 
-            # Make sure the current pier_side variable is set
-            # mount command #
-            # while self.mount_busy:
-            #     time.sleep(0.05)
-            # self.mount_busy=True
-            #g_dev["mnt"].pier_side=self.mount.sideOfPier
+           
             g_dev["mnt"].pier_side=self.rapid_pier_indicator
-            # self.mount_busy=False
-            # # end mount command #
             if self.previous_pier_side == g_dev["mnt"].pier_side or self.can_report_destination_pierside:
                 successful_move=1
             else:
-
-
-
-                if g_dev['obs'].mount_reference_model_off:
-                    pass
-
-                else:
-                    ra=self.last_ra_requested + delta_ra
-                    dec=self.last_dec_requested + delta_dec
+                # if g_dev['obs'].mount_reference_model_off:
+                #     pass
+                # else:
+                #     ra=self.last_ra_requested + delta_ra
+                #     dec=self.last_dec_requested + delta_dec
 
 
                 if ra < 0:
                     ra=ra+24
                 if ra > 24:
                     ra=ra-24
-                plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
+                # plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
                 self.wait_for_slew(wait_after_slew=False)
                 g_dev['mnt'].last_slew_was_pointing_slew = True
-                # mount command #
-                # while self.mount_busy:
-                #     time.sleep(0.05)
-                # self.mount_busy=True
-                #self.mount.SlewToCoordinatesAsync(ra, dec)
                 #### Slew to CoordinatesAsync block
                 self.slewtoRA = ra
                 self.slewtoDEC = dec
@@ -1879,9 +1793,7 @@ class Mount:
                 if not dont_wait_after_slew:
                     self.wait_for_slew(wait_after_slew=False)
                 ###################################
-                #self.mount_busy=False
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-                # end mount command #
                 if not dont_wait_after_slew:
                     self.wait_for_slew(wait_after_slew=False)
                 self.get_mount_coordinates()
@@ -1912,11 +1824,7 @@ class Mount:
                         ra=ra+24
                     if ra > 24:
                         ra=ra-24
-                    # mount command #
-                    # while self.mount_busy:
-                    #     time.sleep(0.05)
-                    # self.mount_busy=True
-                    # self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
+                   
                     #### Slew to CoordinatesAsync block
                     self.slewtoRA = ra
                     self.slewtoDEC = dec
@@ -1924,18 +1832,14 @@ class Mount:
                     self.wait_for_mount_update()
                     self.wait_for_slew(wait_after_slew=False)
                     ###################################
-                    #self.mount_busy=False
                     g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-                    # end mount command #
                     self.wait_for_slew(wait_after_slew=False)
                     self.get_mount_coordinates()
 
                 else:
                     plog (traceback.format_exc())
 
-
         g_dev['obs'].time_of_last_slew=time.time()
-
         g_dev['obs'].time_since_last_slew = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
@@ -1953,14 +1857,8 @@ class Mount:
         if do_centering_routine:
             g_dev['seq'].centering_exposure()
 
-        # Continue to keep track of pierside
-        # mount command #
-        # while self.mount_busy:
-        #     time.sleep(0.05)
-        # self.mount_busy=True
+
         self.previous_pier_side=self.rapid_pier_indicator
-        # self.mount_busy=False
-        # end mount command #
 
     def go_w_model_and_velocity(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
         '''
