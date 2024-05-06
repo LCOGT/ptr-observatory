@@ -241,6 +241,7 @@ class Sequencer:
         #self.blocks=
 
         self.MTF_temporary_flat_timer=time.time()-310
+        self.got_a_flat_this_round=False
 
         self.master_restack_queue = queue.Queue(maxsize=0)
         self.master_restack_thread = threading.Thread(target=self.master_restack, args=())
@@ -5657,6 +5658,7 @@ class Sequencer:
                                     self.next_filter_in_flat_run = 'none'
                                 else:
                                     self.next_filter_in_flat_run = pop_list[1]
+                                
                                 
                                 
                                 fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
