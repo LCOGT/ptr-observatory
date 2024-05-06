@@ -3679,6 +3679,12 @@ class Camera:
                     plog ("Shutter Closed.")
                 
                 plog ("Exposure Complete")
+                
+                try:
+                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                except:
+                    next_seq = reset_sequence(self.config["camera"][self.name]["name"])
+                self.next_seq= next_seq
 
                 if not frame_type in (
                         "flat",
@@ -3740,14 +3746,14 @@ class Camera:
                     if g_dev['seq'].block_guard and not g_dev['seq'].focussing and not frame_type=='pointing':                        
                         # If this is the end of a smartstack set or it is a single shot then check the filter and change
                         if (Nsmartstack==1 or (Nsmartstack == sskcounter+1)) :#and not g_dev['seq'].focussing and not frame_type=='pointing':
-                            plog ("end of sstack run, checking filter")
-                            plog ("Requested filter: " + str(g_dev['seq'].block_next_filter_requested))
-                            plog ("Current filter: " + str(self.current_filter))
+                            # plog ("end of sstack run, checking filter")
+                            # plog ("Requested filter: " + str(g_dev['seq'].block_next_filter_requested))
+                            # plog ("Current filter: " + str(self.current_filter))
                             if not g_dev['seq'].block_next_filter_requested=='None':
                                 # Check if filter needs changing, if so, change.
                                 self.current_filter= g_dev['fil'].filter_selected
                                 if not self.current_filter.lower() == g_dev['seq'].block_next_filter_requested.lower():
-                                    plog ("Changing filter")
+                                    plog ("Changing filter for next smartstack round.")
                                     self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
                                         {"filter": g_dev['seq'].block_next_filter_requested}, {}
                                     )
@@ -3885,11 +3891,7 @@ class Camera:
                                 expresult = {}
                                 expresult["error"] = True
                                 return expresult
-                try:
-                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
-                except:
-                    next_seq = reset_sequence(self.config["camera"][self.name]["name"])
-                self.next_seq= next_seq
+                
 
                 # HERE IS WHERE WE SPIT OUT THE FILES INTO A MULTIPROCESSING FUNCTION
                 if not g_dev['obs'].mountless_operation:
