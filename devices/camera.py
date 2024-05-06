@@ -3594,7 +3594,7 @@ class Camera:
                                             if g_dev["fil"].null_filterwheel == False:
                                                 if g_dev['seq'].next_filter_in_flat_run != 'none':
                                                     self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
-                                                        {"filter": self.next_filter_in_flat_run }, {}
+                                                        {"filter": g_dev['seq'].next_filter_in_flat_run }, {}
                                                     )
                                                     
                                 elif g_dev['obs'].pointing_recentering_requested_by_platesolve_thread or g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
