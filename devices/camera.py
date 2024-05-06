@@ -3592,7 +3592,7 @@ class Camera:
                                             g_dev['seq'].scope_already_nudged_by_camera_thread=True
                                             # Swap the filter
                                             if g_dev["fil"].null_filterwheel == False:
-                                                if g_dev['seq'].next_filter_in_flat_run != 'none':
+                                                if self.next_filter_in_flat_run != 'none':
                                                     self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
                                                         {"filter": self.next_filter_in_flat_run }, {}
                                                     )
@@ -3679,6 +3679,12 @@ class Camera:
                     plog ("Shutter Closed.")
                 
                 plog ("Exposure Complete")
+                
+                try:
+                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                except:
+                    next_seq = reset_sequence(self.config["camera"][self.name]["name"])
+                self.next_seq= next_seq
 
                 if not frame_type in (
                         "flat",
@@ -3747,7 +3753,7 @@ class Camera:
                                 # Check if filter needs changing, if so, change.
                                 self.current_filter= g_dev['fil'].filter_selected
                                 if not self.current_filter.lower() == g_dev['seq'].block_next_filter_requested.lower():
-                                    plog ("Changing filter")
+                                    plog ("Changing filter for next smartstack round.")
                                     self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
                                         {"filter": g_dev['seq'].block_next_filter_requested}, {}
                                     )
@@ -3885,11 +3891,7 @@ class Camera:
                                 expresult = {}
                                 expresult["error"] = True
                                 return expresult
-                try:
-                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
-                except:
-                    next_seq = reset_sequence(self.config["camera"][self.name]["name"])
-                self.next_seq= next_seq
+                
 
                 # HERE IS WHERE WE SPIT OUT THE FILES INTO A MULTIPROCESSING FUNCTION
                 if not g_dev['obs'].mountless_operation:
