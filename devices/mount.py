@@ -1690,7 +1690,7 @@ class Mount:
 
 
         plog ("Reference used for mount deviation in go_command")
-        plog (str(delta_ra*15* 60) + " RA (Arcmins), " + str(delta_dec*60) + " Dec (Arcmins")
+        plog (str(delta_ra*15* 60) + " RA (Arcmins), " + str(delta_dec*60) + " Dec (Arcmins)")
 
         if not g_dev['obs'].mount_reference_model_off:            
 
