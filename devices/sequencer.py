@@ -6423,36 +6423,36 @@ class Sequencer:
             #f_ext = "-"
             im_path = im_path_r + g_dev["day"] + "/to_AWS/"
 
-            try:
-                #plog ("FOCUS NEXT SEQ: " + str(g_dev['cam'].focus_next_seq))
+            # try:
+            #     #plog ("FOCUS NEXT SEQ: " + str(g_dev['cam'].focus_next_seq))
 
-                text_name = (
-                    g_dev['cam'].config["obs_id"]
-                    + "-"
-                    + g_dev['cam'].config["camera"][g_dev['cam'].name]["name"]
-                    + "-"
-                    + g_dev["day"]
-                    + "-"
-                    + g_dev['cam'].focus_next_seq
-                    + "-"
-                    + im_type
-                    + "00.txt"
-                )
-            except:
-                #plog ("CAM NEXT SEQ: " + str(g_dev['cam'].next_seq))
+            #     text_name = (
+            #         g_dev['cam'].config["obs_id"]
+            #         + "-"
+            #         + g_dev['cam'].config["camera"][g_dev['cam'].name]["name"]
+            #         + "-"
+            #         + g_dev["day"]
+            #         + "-"
+            #         + g_dev['cam'].focus_next_seq
+            #         + "-"
+            #         + im_type
+            #         + "00.txt"
+            #     )
+            # except:
+            #     #plog ("CAM NEXT SEQ: " + str(g_dev['cam'].next_seq))
 
-                text_name = (
-                    g_dev['cam'].config["obs_id"]
-                    + "-"
-                    + g_dev['cam'].config["camera"][g_dev['cam'].name]["name"]
-                    + "-"
-                    + g_dev["day"]
-                    + "-"
-                    + g_dev['cam'].next_seq
-                    + "-"
-                    + im_type
-                    + "00.txt"
-                )
+            text_name = (
+                g_dev['cam'].config["obs_id"]
+                + "-"
+                + g_dev['cam'].config["camera"][g_dev['cam'].name]["name"]
+                + "-"
+                + g_dev["day"]
+                + "-"
+                + g_dev['cam'].next_seq
+                + "-"
+                + im_type
+                + "00.txt"
+            )
 
             #print ("TEXTNAME: " + str(text_name))
 

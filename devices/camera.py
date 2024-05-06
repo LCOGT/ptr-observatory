@@ -4246,7 +4246,6 @@ class Camera:
                     # Instead of waiting for the photometry process we quickly measure the FWHM
                     # in-line. Necessary particularly because the photometry subprocess can bank up.
                     fwhm_dict = self.in_line_quick_focus(outputimg, im_path, text_name)
-                    self.focus_next_seq = next_seq
                     focus_image = False
 
                     g_dev['obs'].fwhmresult['FWHM']=float(fwhm_dict['rfr'])

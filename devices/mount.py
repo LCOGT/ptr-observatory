@@ -1629,8 +1629,8 @@ class Mount:
 
         #
 
-        icrs_ra, icrs_dec = self.get_mount_coordinates()    #These are for debugging.
-        check_ra_rate, check_dec_rate = self.get_mount_rates()  #These do not appear to be used  20231128 wer
+        # icrs_ra, icrs_dec = self.get_mount_coordinates()    #These are for debugging.
+        # check_ra_rate, check_dec_rate = self.get_mount_rates()  #These do not appear to be used  20231128 wer
         #breakpoint()
         
         # During flats the scope is so continuously nudged as to make reporting of nudges meaningless... so don't report.
@@ -1688,13 +1688,14 @@ class Mount:
             else:
                 delta_ra, delta_dec = self.get_flip_reference(ra,dec)
 
-        if not g_dev['obs'].mount_reference_model_off:            
-            try:
 
-                ra -= delta_ra 
-                dec -= delta_dec
-            except:
-                pass       
+        plog ("Reference used for mount deviation in go_command")
+        plog (str(delta_ra*15* 60) + " RA (Arcmins), " + str(delta_dec*60) + " Dec (Arcmins")
+
+        if not g_dev['obs'].mount_reference_model_off:            
+
+            ra = ra + delta_ra 
+            dec = dec + delta_dec
 
         # First move, then check the pier side
         successful_move=0
@@ -1883,13 +1884,7 @@ class Mount:
 
         try:
 
-            try:                          #  NB NB Might be good to log is flipping on a re-seek.
-                # mount command #
-                # while self.mount_busy:
-                #     time.sleep(0.05)
-                # self.mount_busy=True
-                # new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-                # self.mount_busy=False
+            try:                          
 
 
                 self.request_new_pierside=True
@@ -1898,7 +1893,6 @@ class Mount:
 
                 self.wait_for_mount_update()
 
-                # end mount command #
                 if len(self.new_pierside) > 1:
                     if self.new_pierside[0] == 0:
                         delta_ra, delta_dec = self.get_mount_reference(ra,dec)
@@ -1908,12 +1902,6 @@ class Mount:
                         pier_east = 0
             except:
                 try:
-                    # mount command #
-                    # while self.mount_busy:
-                    #     time.sleep(0.05)
-                    # self.mount_busy=True
-                    # new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-                    # self.mount_busy=False
 
                     self.request_new_pierside=True
                     self.request_new_pierside_ra=ra
@@ -1921,7 +1909,6 @@ class Mount:
 
                     self.wait_for_mount_update()
 
-                    # end mount command #
                     if self.new_pierside == 0:
                         delta_ra, delta_dec = self.get_mount_reference(ra,dec)
                         pier_east = 1
