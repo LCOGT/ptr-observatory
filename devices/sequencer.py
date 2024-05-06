@@ -364,26 +364,28 @@ class Sequencer:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
                 time.sleep(1)
 
-    def wait_for_slew(self):
+    def wait_for_slew(self, wait_after_slew=True):
         """
         A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
         """
         if not g_dev['obs'].mountless_operation:
             try:
+                actually_slewed=False
                 if not g_dev['mnt'].rapid_park_indicator:
                     movement_reporting_timer = time.time()
                     while g_dev['mnt'].return_slewing():
-                        #g_dev['mnt'].currently_slewing= True
+                        if actually_slewed==False:
+                            actually_slewed=True
                         if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
                             plog('m>')
                             movement_reporting_timer = time.time()
-                            if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                                g_dev['mnt'].get_mount_coordinates()
-                                g_dev['obs'].request_update_status(mount_only=True)#, dont_wait=True)
-                            #g_dev['obs'].update_status(mount_only=True, dont_wait=True)
-                    #g_dev['mnt'].currently_slewing= False
+                        # if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                        g_dev['mnt'].get_mount_coordinates_after_next_update()                
+                        g_dev['obs'].update_status(mount_only=True, dont_wait=True)#, dont_wait=True)
+                           
                     # Then wait for slew_time to settle
-                    time.sleep(g_dev['mnt'].wait_after_slew_time)
+                    if actually_slewed and wait_after_slew:
+                        time.sleep(g_dev['mnt'].wait_after_slew_time)
 
 
             except Exception:
@@ -693,7 +695,7 @@ class Sequencer:
                 if g_dev['cam'].has_darkslide:
                     g_dev['cam'].openDarkslide()
 
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
 
                 # Check it hasn't actually been homed this evening from the rotatorhome shelf
                 homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
@@ -719,7 +721,7 @@ class Sequencer:
                         homerotator_time_shelf.close()
 
                         g_dev['mnt'].go_command(alt=70,az= 70)
-                        self.wait_for_slew()
+                        self.wait_for_slew(wait_after_slew=False)
                         while g_dev['rot'].rotator.IsMoving:
                             plog("home rotator wait")
                             time.sleep(1)
@@ -1387,7 +1389,7 @@ class Sequencer:
                     homerotator_time_shelf.close()
 
                     g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     while g_dev['rot'].rotator.IsMoving:
                         plog("home rotator wait")
                         time.sleep(1)
@@ -1760,7 +1762,7 @@ class Sequencer:
                             new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
                             #g_dev['mnt'].go_command(ra=new_ra, dec=new_dec)
                             try:
-                                self.wait_for_slew()
+                                self.wait_for_slew(wait_after_slew=False)
                                 g_dev['obs'].time_of_last_slew=time.time()
                                 try:
                                     g_dev['mnt'].slew_async_directly(ra=new_ra, dec=new_dec)
@@ -1772,7 +1774,7 @@ class Sequencer:
                                     else:
                                         plog(traceback.format_exc())
                                         #
-                                self.wait_for_slew()
+                                self.wait_for_slew(wait_after_slew=False)
                             except Exception as e:
                                 plog (traceback.format_exc())
                                 if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
@@ -1782,7 +1784,7 @@ class Sequencer:
                                     g_dev['seq'].kill_and_reboot_theskyx(new_ra,new_dec)
 
 
-                            self.wait_for_slew()
+                            self.wait_for_slew(wait_after_slew=False)
 
 
                             if result == 'blockend':
@@ -4982,7 +4984,7 @@ class Sequencer:
 
                             self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=dont_wait_after_slew)
                             if not dont_wait_after_slew:
-                                self.wait_for_slew()
+                                self.wait_for_slew(wait_after_slew=False)
                             while g_dev['rot'].rotator.IsMoving:
                                 plog("home rotator wait")
                                 time.sleep(1)
@@ -5172,7 +5174,7 @@ class Sequencer:
             no_throughputs_filters=[]
             for entry in list_of_filters_for_this_run:
                 if not entry in self.filter_throughput_shelf.keys():
-                    plog (entry + " is not in known throughputs lis. Prioritising collecting this flat.")
+                    plog (entry + " is not in known throughputs list. Prioritising collecting this flat.")
                     no_throughputs_filters.append(entry)
                     all_throughputs_known=False
 
@@ -5235,9 +5237,9 @@ class Sequencer:
             plog('filters by low to high transmission:  ', pop_list)
 
         if morn:
-            ending = g_dev['events']['End Morn Sky Flats']
+            self.flats_ending = g_dev['events']['End Morn Sky Flats']
         else:
-            ending = g_dev['events']['End Eve Sky Flats']
+            self.flats_ending = g_dev['events']['End Eve Sky Flats']
 
         #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         exp_time = 0
@@ -5250,7 +5252,7 @@ class Sequencer:
         if g_dev['mnt'].rapid_park_indicator:
             g_dev['mnt'].unpark_command({}, {})
 
-        self.check_zenith_and_move_to_flat_spot(ending=ending)
+        self.check_zenith_and_move_to_flat_spot(ending=self.flats_ending)
         self.time_of_next_slew = time.time() + 600
 
 
@@ -5279,9 +5281,9 @@ class Sequencer:
                 homerotator_time_shelf['lasthome'] = time.time()
                 homerotator_time_shelf.close()
 
-                self.check_zenith_and_move_to_flat_spot(ending=ending)
+                self.check_zenith_and_move_to_flat_spot(ending=self.flats_ending)
                 self.time_of_next_slew = time.time() + 600
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 while g_dev['rot'].rotator.IsMoving:
                     plog("home rotator wait")
                     time.sleep(1)
@@ -5303,17 +5305,17 @@ class Sequencer:
             #g_dev['cam'].darkslide_state = 'Open'
 
         if time.time() >= self.time_of_next_slew:
-            self.check_zenith_and_move_to_flat_spot(ending=ending)
+            self.check_zenith_and_move_to_flat_spot(ending=self.flats_ending)
             self.time_of_next_slew = time.time() + 600
 
-        while len(pop_list) > 0  and ephem.now() < ending and g_dev['obs'].open_and_enabled_to_observe:
+        while len(pop_list) > 0  and ephem.now() < self.flats_ending and g_dev['obs'].open_and_enabled_to_observe:
 
                 # # This is just a very occasional slew to keep it pointing in the same general vicinity
                 # if time.time() >= self.time_of_next_slew:
                 #     if g_dev['mnt'].rapid_park_indicator:
                 #         g_dev['mnt'].unpark_command({}, {})
 
-                #     self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
+                #     self.check_zenith_and_move_to_flat_spot(self.flats_ending=self.flats_ending, dont_wait_after_slew=True)
                 #     self.time_of_next_slew = time.time() + 45
 
                 #g_dev['obs'].request_scan_requests()
@@ -5431,7 +5433,7 @@ class Sequencer:
                         return
 
                     # Check that Flat time hasn't ended
-                    if ephem.now() > ending:
+                    if ephem.now() > self.flats_ending:
                         plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                         self.filter_throughput_shelf.close()
                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
@@ -5541,7 +5543,7 @@ class Sequencer:
 
                              #self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
-                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
+                                self.check_zenith_and_move_to_flat_spot(ending=self.flats_ending, dont_wait_after_slew=True)
 
                                 self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 5
@@ -5555,7 +5557,7 @@ class Sequencer:
                              #exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
 
                              if time.time() >= self.time_of_next_slew:
-                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
+                                self.check_zenith_and_move_to_flat_spot(ending=self.flats_ending, dont_wait_after_slew=True)
 
                                 self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 5
@@ -5579,12 +5581,12 @@ class Sequencer:
                             # If scope has gone to bed due to inactivity, wake it up!
                             if g_dev['mnt'].rapid_park_indicator:
                                 g_dev['mnt'].unpark_command({}, {})
-                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
+                                self.check_zenith_and_move_to_flat_spot(ending=self.flats_ending, dont_wait_after_slew=True)
                                 self.time_of_next_slew = time.time() + 600
 
                             # If scope has drifted quite a lot from the null spot while waiting, nudge it back up.
                             if time.time() >= (self.time_of_next_slew-270):
-                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
+                                self.check_zenith_and_move_to_flat_spot(ending=self.flats_ending, dont_wait_after_slew=True)
                                 self.time_of_next_slew = time.time() + 600
 
                             if self.stop_script_called:
@@ -5606,14 +5608,14 @@ class Sequencer:
                                 self.total_sequencer_control = False
                                 return
 
-                            req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
+                            req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'skyflat', 'script': 'On'}
 
                             if g_dev["fil"].null_filterwheel == False:
                                 opt = { 'count': 1, 'filter': current_filter}
                             else:
                                 opt = { 'count': 1, }
 
-                            if ephem.now() >= ending:
+                            if ephem.now() >= self.flats_ending:
                                 if morn: # This needs to be here because some scopes do not do morning bias and darks
                                     try:
                                         g_dev['mnt'].park_command({}, {})
@@ -5627,7 +5629,7 @@ class Sequencer:
                                 return
                             try:
                                 # Particularly for AltAz, the slew and rotator rotation must have ended before exposing.
-                                self.wait_for_slew()
+                                self.wait_for_slew(wait_after_slew=False)
                                 try:
                                     while g_dev['rot'].rotator.IsMoving:
                                         plog("flat rotator wait")
@@ -5639,7 +5641,22 @@ class Sequencer:
                                 # to settle down after rotation complete
                                 if g_dev['rot'] != None:
                                     time.sleep(1)
-
+                                
+                                
+                                # Variable to notify the camera thread that its the last of the flat set, so free to nudge
+                                if (acquired_count + 1) == flat_count:
+                                    self.last_image_of_a_filter_flat_set=True
+                                else:
+                                    self.last_image_of_a_filter_flat_set=False
+                                
+                                self.scope_already_nudged_by_camera_thread=False
+                                # Report the next filter in the queue
+                                if len (pop_list) == 1:
+                                    self.next_filter_in_flat_run = 'none'
+                                else:
+                                    self.next_filter_in_flat_run = pop_list[1]
+                                
+                                
                                 fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
                                 number_of_exposures_so_far=number_of_exposures_so_far+1
                                 #breakpoint()
@@ -5747,7 +5764,7 @@ class Sequencer:
                                 self.total_sequencer_control = False
                                 return
 
-                            got_a_flat_this_round=False
+                            self.got_a_flat_this_round=False
                             # If camera has not already rejected taking the image
                             # usually because the temperature isn't cold enough.
                             if not bright == None:
@@ -5787,6 +5804,13 @@ class Sequencer:
                                         new_throughput_value=copy.deepcopy(old_throughput_value)
                                         scale=1
                                         time.sleep(3)
+                                    # Same with unnaturally high                                    
+                                    elif bright > 0.8 * flat_saturation_level and number_of_exposures_so_far == 1 and self.current_filter_last_camera_gain < 200:
+                                        plog("Got an abnormally high value on the first shot")
+                                        plog("Retrying again after a little wait to check the filter is in place")
+                                        new_throughput_value=copy.deepcopy(old_throughput_value)
+                                        scale=1
+                                        time.sleep(3)
 
                                     elif (
                                         bright
@@ -5796,7 +5820,7 @@ class Sequencer:
                                         >= 0.5 * flat_saturation_level
                                     ):
                                         acquired_count += 1
-                                        got_a_flat_this_round=True
+                                        self.got_a_flat_this_round=True
                                         self.filter_throughput_shelf[current_filter]=new_throughput_value
                                         try:
                                             camera_gain_collector.append(fred["camera_gain"])
@@ -5827,7 +5851,7 @@ class Sequencer:
                                         >= 0.25 * flat_saturation_level
                                     ):
                                         acquired_count += 1
-                                        got_a_flat_this_round=True
+                                        self.got_a_flat_this_round=True
                                         self.filter_throughput_shelf[current_filter]=new_throughput_value
                                         try:
                                             camera_gain_collector.append(fred["camera_gain"])
@@ -5848,13 +5872,14 @@ class Sequencer:
                                 acquired_count += 1 # trigger end of loop
 
 
-                            if acquired_count == flat_count or acquired_count > flat_count:
+                            if acquired_count == flat_count or acquired_count > flat_count or (self.last_image_of_a_filter_flat_set and not flat_count == 1):
+                                acquired_count=acquired_count+1
                                 pop_list.pop(0)
                                 scale = 1
-                            elif got_a_flat_this_round: # Only nudge if you got a good flat. No point otherwise.
+                            elif self.got_a_flat_this_round and not self.scope_already_nudged_by_camera_thread: # Only nudge if you got a good flat. No point otherwise.
                                 # Give it a bit of a nudge, not necessary if it is the last shot of the filter.
                                 # There is no reason to wait for it to finish slewing either.
-                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
+                                self.check_zenith_and_move_to_flat_spot(ending=self.flats_ending, dont_wait_after_slew=True)
                                 self.time_of_next_slew = time.time() + 600
 
 
@@ -6466,7 +6491,7 @@ class Sequencer:
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     
                 
                 self.focussing=False
@@ -6487,7 +6512,7 @@ class Sequencer:
                 #         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 #         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 #         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                #         self.wait_for_slew()
+                #         self.wait_for_slew(wait_after_slew=False)
                 #     self.focussing=False
                 #     self.total_sequencer_control = False
                 #     return np.nan, np.nan
@@ -6507,7 +6532,7 @@ class Sequencer:
                 #         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 #         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 #         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)   #NB NB Does this really take us back to starting point?
-                #         self.wait_for_slew()
+                #         self.wait_for_slew(wait_after_slew=False)
 
                 #     self.af_guard = False
                 #     self.focussing=False
@@ -6549,7 +6574,7 @@ class Sequencer:
 
                 g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
 
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
 
                 try:
                     while g_dev['rot'].rotator.IsMoving:
@@ -7178,7 +7203,7 @@ class Sequencer:
                                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                                        self.wait_for_slew()
+                                        self.wait_for_slew(wait_after_slew=False)
 
                                     self.af_guard = False
                                     self.focussing=False
@@ -7537,7 +7562,7 @@ class Sequencer:
     #         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
     #         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
     #         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-    #         self.wait_for_slew()
+    #         self.wait_for_slew(wait_after_slew=False)
 
     #     self.af_guard = False
     #     self.focussing = False
@@ -7636,7 +7661,7 @@ class Sequencer:
                     plog(traceback.format_exc())
                     #
 
-            self.wait_for_slew()
+            self.wait_for_slew(wait_after_slew=False)
 
 
             #g_dev["obs"].request_update_status()
@@ -7926,7 +7951,7 @@ class Sequencer:
                     plog(traceback.format_exc())
                     #
 
-            self.wait_for_slew()
+            self.wait_for_slew(wait_after_slew=False)
 
 
             #g_dev["obs"].request_update_status()
@@ -8213,7 +8238,7 @@ class Sequencer:
             # Wait until pointing correction fixed before moving on
             while g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
                 plog ("waiting for pointing_correction_to_finish")
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 time.sleep(1)
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
@@ -8402,7 +8427,7 @@ class Sequencer:
                 # Try shifting to where it is meant to be pointing
                 # This can sometimes rescue a lost mount.
                 # But most of the time doesn't do anything.
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 g_dev['obs'].time_of_last_slew=time.time()
                 try:
                     g_dev['mnt'].slew_async_directly(ra=g_dev["mnt"].last_ra_requested, dec=g_dev["mnt"].last_dec_requested)
@@ -8414,7 +8439,7 @@ class Sequencer:
                     else:
                         plog(traceback.format_exc())
 
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
 
                 req = {'time': float(self.config['pointing_exposure_time']) * 3,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'pointing'}

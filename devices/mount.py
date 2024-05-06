@@ -550,7 +550,7 @@ class Mount:
 
 
                                     #self.unpark_command()
-                                    #self.wait_for_slew()
+                                    #self.wait_for_slew(wait_after_slew=False)
 
                                     # self.move_time = time.time()
                                     # # mount command #
@@ -661,23 +661,25 @@ class Mount:
 
         #END of Mount Update Thread.  Note it spins on the while True. line 446
 
-    def wait_for_slew(self):
+    def wait_for_slew(self, wait_after_slew=True):
 
         try:
-            if not self.rapid_park_indicator:
-                movement_reporting_timer=time.time()
-                while self.return_slewing():
-                    #self.currently_slewing=True
-                    if time.time() - movement_reporting_timer > 2.0:
-                        plog( 'm>')
-                        movement_reporting_timer=time.time()
-                        g_dev['obs'].time_of_last_slew=time.time()
-                    if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                        self.get_mount_coordinates()
-                        #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
-                        g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+            actually_slewed=False
+            if not g_dev['mnt'].rapid_park_indicator:
+                movement_reporting_timer = time.time()
+                while g_dev['mnt'].return_slewing():
+                    if actually_slewed==False:
+                        actually_slewed=True
+                    if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
+                        plog('m>')
+                        movement_reporting_timer = time.time()
+                    # if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                    g_dev['mnt'].get_mount_coordinates_after_next_update()                
+                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)#, dont_wait=True)
+                       
                 # Then wait for slew_time to settle
-                time.sleep(self.wait_after_slew_time)
+                if actually_slewed and wait_after_slew:
+                    time.sleep(g_dev['mnt'].wait_after_slew_time)
 
 
 
@@ -940,7 +942,7 @@ class Mount:
 
     # This is called directly from the obs code to probe for flips, recenter, etc. Hence "directly"
     def slew_async_directly(self, ra, dec):
-        self.wait_for_slew()
+        self.wait_for_slew(wait_after_slew=False)
         # mount command #
 
 
@@ -951,7 +953,7 @@ class Mount:
         self.slewtoDEC = dec
         self.slewtoAsyncRequested=True
         self.wait_for_mount_update()
-        self.wait_for_slew()
+        self.wait_for_slew(wait_after_slew=False)
         ###################################
 
 
@@ -962,7 +964,7 @@ class Mount:
 
 
         # end mount command #
-        self.wait_for_slew()
+        self.wait_for_slew(wait_after_slew=False)
         self.get_mount_coordinates()
 
     # def get_status(self):
@@ -1393,7 +1395,7 @@ class Mount:
                         #plog ("New RA - Old RA = "+ str(float(req['ra'])-center_image_ra))
                         #plog ("New dec - Old dec = "+ str(float(req['dec'])-center_image_dec))
     
-                        self.wait_for_slew()
+                        self.wait_for_slew(wait_after_slew=False)
                         # mount command #
                         # while self.mount_busy:
                         #     time.sleep(0.05)
@@ -1404,12 +1406,12 @@ class Mount:
                         self.slewtoDEC = godec
                         self.slewtoAsyncRequested=True
                         self.wait_for_mount_update()
-                        self.wait_for_slew()
+                        self.wait_for_slew(wait_after_slew=False)
                         ###################################
                         g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                         # self.mount_busy=False
                         # end mount command #
-                        self.wait_for_slew()
+                        self.wait_for_slew(wait_after_slew=False)
                         self.get_mount_coordinates()
     
                         #breakpoint()
@@ -1753,7 +1755,7 @@ class Mount:
         successful_move=0
         while successful_move==0:
             try:
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 g_dev['obs'].time_of_last_slew=time.time()
                 g_dev['mnt'].last_slew_was_pointing_slew = True
                 if ra < 0:
@@ -1772,13 +1774,13 @@ class Mount:
                 self.slewtoAsyncRequested=True
                 self.wait_for_mount_update()
                 if not dont_wait_after_slew:
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                 ###################################
 
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
                 if not dont_wait_after_slew:
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                 self.get_mount_coordinates()
             except Exception:
                 self.mount_busy=False
@@ -1796,7 +1798,7 @@ class Mount:
                                 plog("Killing then waiting 60 seconds then reconnecting")
                                 g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                                 self.unpark_command()
-                                self.wait_for_slew()
+                                self.wait_for_slew(wait_after_slew=False)
                                 #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                                 if ra < 0:
                                     ra=ra+24
@@ -1812,12 +1814,12 @@ class Mount:
                                 self.slewtoDEC = dec
                                 self.slewtoAsyncRequested=True
                                 self.wait_for_mount_update()
-                                self.wait_for_slew()
+                                self.wait_for_slew(wait_after_slew=False)
                                 ###################################
                                 #self.mount_busy=False
                                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                                 # end mount command #
-                                self.wait_for_slew()
+                                self.wait_for_slew(wait_after_slew=False)
                                 self.get_mount_coordinates()
                                 retry=4
                             else:
@@ -1861,7 +1863,7 @@ class Mount:
                 if ra > 24:
                     ra=ra-24
                 plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 g_dev['mnt'].last_slew_was_pointing_slew = True
                 # mount command #
                 # while self.mount_busy:
@@ -1875,13 +1877,13 @@ class Mount:
                 self.wait_for_mount_update()
 
                 if not dont_wait_after_slew:
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                 ###################################
                 #self.mount_busy=False
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
                 if not dont_wait_after_slew:
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                 self.get_mount_coordinates()
                 successful_move=1
 
@@ -1889,7 +1891,7 @@ class Mount:
         if not self.current_tracking_state:
             try:
                 if not dont_wait_after_slew:
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     self.set_tracking_on()
             except Exception:
                 # Yes, this is an awfully non-elegant way to force a mount to start
@@ -1905,7 +1907,7 @@ class Mount:
                     plog("Killing then waiting 60 seconds then reconnecting")
                     g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                     self.unpark_command()
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     if ra < 0:
                         ra=ra+24
                     if ra > 24:
@@ -1920,12 +1922,12 @@ class Mount:
                     self.slewtoDEC = dec
                     self.slewtoAsyncRequested=True
                     self.wait_for_mount_update()
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     ###################################
                     #self.mount_busy=False
                     g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                     # end mount command #
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     self.get_mount_coordinates()
 
                 else:
@@ -1938,7 +1940,7 @@ class Mount:
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
         if not dont_wait_after_slew:
-            self.wait_for_slew()
+            self.wait_for_slew(wait_after_slew=False)
 
 
         #g_dev['obs'].drift_tracker_ra=0
@@ -2073,7 +2075,7 @@ class Mount:
 
         if not self.current_tracking_state:
             try:
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 self.set_tracking_on()
             except Exception as e:
                 self.mount_busy=False
@@ -2084,9 +2086,9 @@ class Mount:
                     self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
                     self.home_command()
                     self.park_command()
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     self.unpark_command()
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     # mount command #
                     # while self.mount_busy:
                     #     time.sleep(0.05)
@@ -2097,18 +2099,18 @@ class Mount:
                     self.slewtoDEC = self.dec_mech*RTOD
                     self.slewtoAsyncRequested=True
                     self.wait_for_mount_update()
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     ###################################
                     #self.mount_busy=False
                     g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                     # end mount command #
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     self.get_mount_coordinates()
                     print ("this mount may not accept tracking commands")
                 elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
                     print ("theskyx has been rescued one too many times. Just sending it to park.")
                     self.park_command()
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     return
                 else:
                     print ("problem with setting tracking: ", e)
@@ -2119,7 +2121,7 @@ class Mount:
         plog('MODEL HA, DEC, AZ, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, az*RTOD, self.refr_asec)
         self.target_az = az*RTOD
 
-        self.wait_for_slew()
+        self.wait_for_slew(wait_after_slew=False)
         try:
             # mount command #
             # while self.mount_busy:
@@ -2131,12 +2133,12 @@ class Mount:
             self.slewtoDEC = self.dec_mech*RTOD
             self.slewtoAsyncRequested=True
             self.wait_for_mount_update()
-            self.wait_for_slew()
+            self.wait_for_slew(wait_after_slew=False)
             ###################################
             #self.mount_busy=False
             g_dev['obs'].rotator_has_been_checked_since_last_slew=False
             # end mount command #
-            self.wait_for_slew()
+            self.wait_for_slew(wait_after_slew=False)
             self.get_mount_coordinates()
         except Exception as e:
             self.mount_busy=False
@@ -2145,9 +2147,9 @@ class Mount:
             if ('Object reference not set to an instance of an object.' in str(e)):
                 self.home_command()
                 self.park_command()
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 self.unpark_command()
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 # mount command #
                 # while self.mount_busy:
                 #     time.sleep(0.05)
@@ -2158,17 +2160,17 @@ class Mount:
                 self.slewtoDEC = self.dec_mech*RTOD
                 self.slewtoAsyncRequested=True
                 self.wait_for_mount_update()
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 ###################################
                 #self.mount_busy=False
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 self.get_mount_coordinates()
 
         if not self.current_tracking_state:
             try:
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 self.set_tracking_on()
             except Exception as e:
                 self.mount_busy=False
@@ -2178,9 +2180,9 @@ class Mount:
                 if ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues < 5:
                     self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
                     self.park_command()
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     self.unpark_command()
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     # # mount command #
                     # while self.mount_busy:
                     #     time.sleep(0.05)
@@ -2191,19 +2193,19 @@ class Mount:
                     self.slewtoDEC = self.dec_mech*RTOD
                     self.slewtoAsyncRequested=True
                     self.wait_for_mount_update()
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     ###################################
                     #self.mount_busy=False
                     g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                     # end mount command #
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     self.get_mount_coordinates()
 
                     print ("this mount may not accept tracking commands")
                 elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
                     print ("theskyx has been rescued one too many times. Just sending it to park.")
                     self.park_command()
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
                     return
                 else:
                     print ("problem with setting tracking: ", e)
@@ -2211,7 +2213,7 @@ class Mount:
         g_dev['obs'].time_since_last_slew_or_exposure = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
-        self.wait_for_slew()
+        self.wait_for_slew(wait_after_slew=False)
 
 
         ###  figure out velocity  Apparent place is unchanged.
@@ -2312,7 +2314,7 @@ class Mount:
         if reset_solve == True:
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
-        self.wait_for_slew()
+        self.wait_for_slew(wait_after_slew=False)
 
     def stop_command(self, req, opt):
         plog("mount cmd: stopping mount")
@@ -2331,7 +2333,7 @@ class Mount:
 
             g_dev['obs'].rotator_has_been_checked_since_last_slew=False
             # end mount command #
-            self.wait_for_slew()
+            self.wait_for_slew(wait_after_slew=False)
             self.get_mount_coordinates()
 
 
@@ -2343,8 +2345,8 @@ class Mount:
             g_dev['obs'].time_of_last_slew=time.time()
             g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True, skyflatspot=True)
 
-            self.wait_for_slew()
-        self.wait_for_slew()
+            self.wait_for_slew(wait_after_slew=False)
+        self.wait_for_slew(wait_after_slew=False)
         self.parking_or_homing=False
 
     def flat_panel_command(self, req, opt):
@@ -2378,7 +2380,7 @@ class Mount:
                 if g_dev['obs'] is not None:  #THis gets called before obs is created
                     g_dev['obs'].send_to_user("Parking Mount. This can take a moment.")
                 g_dev['obs'].time_of_last_slew=time.time()
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 # # mount command #
                 # while self.mount_busy:
                 #     time.sleep(0.05)
@@ -2400,7 +2402,7 @@ class Mount:
                 # end mount command #
                 self.rapid_park_indicator=True
 
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 if self.settle_time_after_park > 0:
                     time.sleep(self.settle_time_after_park)
                     plog("Waiting " + str(self.settle_time_after_park) + " seconds for mount to settle.")
@@ -2442,7 +2444,7 @@ class Mount:
                 g_dev['obs'].time_of_last_slew=time.time()
                 #breakpoint()
                 #try:
-                #self.wait_for_slew()
+                #self.wait_for_slew(wait_after_slew=False)
                 # mount command #
                 # while self.mount_busy:
                 #     time.sleep(0.05)
@@ -2461,12 +2463,12 @@ class Mount:
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
                 self.rapid_park_indicator=False
-                self.wait_for_slew()
+                self.wait_for_slew(wait_after_slew=False)
                 # except:
                 #     self.mount_busy=False
                 #     if g_dev['mnt'].theskyx:
                 #         g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
-                #         self.wait_for_slew()
+                #         self.wait_for_slew(wait_after_slew=False)
                 #         # mount command #
                 #         while self.mount_busy:
                 #             time.sleep(0.05)
@@ -2476,7 +2478,7 @@ class Mount:
                 #         g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 #         # end mount command #
                 #         self.rapid_park_indicator=False
-                #         self.wait_for_slew()
+                #         self.wait_for_slew(wait_after_slew=False)
 
                 if self.settle_time_after_unpark > 0:
                     time.sleep(self.settle_time_after_unpark)
@@ -2484,7 +2486,7 @@ class Mount:
 
                 if self.home_after_unpark:
                     try:
-                        self.wait_for_slew()
+                        self.wait_for_slew(wait_after_slew=False)
                         # mount command #
                         # while self.mount_busy:
                         #     time.sleep(0.05)
@@ -2495,14 +2497,14 @@ class Mount:
                         # self.mount_busy=False
                         g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                         # end mount command #
-                        self.wait_for_slew()
+                        self.wait_for_slew(wait_after_slew=False)
                     except:
                         try:
                             home_alt = self.settings["home_altitude"]
                             home_az = self.settings["home_azimuth"]
-                            self.wait_for_slew()
+                            self.wait_for_slew(wait_after_slew=False)
                             g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True, skyflatspot=True)
-                            self.wait_for_slew()
+                            self.wait_for_slew(wait_after_slew=False)
                         except:
                             if g_dev['mnt'].theskyx:
 
@@ -2519,13 +2521,13 @@ class Mount:
                                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                                 # end mount command #
                                 self.rapid_park_indicator=False
-                                self.wait_for_slew()
+                                self.wait_for_slew(wait_after_slew=False)
                                 home_alt = self.settings["home_altitude"]
                                 home_az = self.settings["home_azimuth"]
                                 g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True, skyflatspot=True)
                             else:
                                 plog (traceback.format_exc())
-                    self.wait_for_slew()
+                    self.wait_for_slew(wait_after_slew=False)
             self.parking_or_homing=False
 
     # def paddle(self):
