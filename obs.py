@@ -1037,44 +1037,49 @@ class Observatory:
 
         # Wait a bit between status updates otherwise
         # status updates bank up in the queue
-        if dont_wait == True:
-            self.status_interval = self.status_upload_time + 0.25
-        while time.time() < self.time_last_status + self.status_interval:
-            self.currently_updating_status=False
-            return  # Note we are just not sending status, too soon.
+        if not g_dev['mnt'].return_slewing(): # Don't wait while slewing.
+            if dont_wait == True:
+                self.status_interval = self.status_upload_time + 0.25
+                
+            while time.time() < self.time_last_status + self.status_interval:
+                self.currently_updating_status=False
+                return  # Note we are just not sending status, too soon.
 
-        # Send main batch of devices status
-        obsy = self.name
-        if mount_only == True:
-            device_list = ['mount']
-        else:
-            device_list = self.device_types
-        status={}
-        for dev_type in device_list:
-            #  The status that we will send is grouped into lists of
-            #  devices by dev_type.
-            status[dev_type] = {}
-            devices_of_type = self.all_devices.get(dev_type, {})
-            device_names = devices_of_type.keys()
+         # Don't make a new status during a slew unless the queue is empty, otherwise the green crosshairs on the UI lags.
+        if (g_dev['mnt'].return_slewing() and self.send_status_queue.qsize() == 0) or not g_dev['mnt'].return_slewing():
 
-            for device_name in device_names:
-                # Get the actual device object...
-                device = devices_of_type[device_name]
-                result = device.get_status()
-
-                if result is not None:
-                    status[dev_type][device_name] = result
-        
-        status["timestamp"] = round((time.time()) / 2.0, 3)
-        status["send_heartbeat"] = False
-
-        if status is not None:
-            lane = "device"
-            if self.send_status_queue.qsize() < 7:
-                self.send_status_queue.put((obsy, lane, status), block=False)
-
-        self.time_last_status = time.time()
-        self.status_count += 1
+            # Send main batch of devices status
+            obsy = self.name
+            if mount_only == True:
+                device_list = ['mount']
+            else:
+                device_list = self.device_types
+            status={}
+            for dev_type in device_list:
+                #  The status that we will send is grouped into lists of
+                #  devices by dev_type.
+                status[dev_type] = {}
+                devices_of_type = self.all_devices.get(dev_type, {})
+                device_names = devices_of_type.keys()
+    
+                for device_name in device_names:
+                    # Get the actual device object...
+                    device = devices_of_type[device_name]
+                    result = device.get_status()
+    
+                    if result is not None:
+                        status[dev_type][device_name] = result
+            
+            status["timestamp"] = round((time.time()) / 2.0, 3)
+            status["send_heartbeat"] = False
+    
+            if status is not None:
+                lane = "device"
+                if self.send_status_queue.qsize() < 7:
+                    self.send_status_queue.put((obsy, lane, status), block=False)
+    
+            self.time_last_status = time.time()
+            self.status_count += 1
 
         self.currently_updating_status=False
 
@@ -1890,25 +1895,28 @@ class Observatory:
     def update_status_thread(self):
         
         while True:
-            if (not self.update_status_queue.empty()):
-                request = self.update_status_queue.get(block=False)
-                if request == 'mountonly':
-                    self.update_status(mount_only=True, dont_wait=True)
-                else:
+            if not g_dev['mnt'].return_slewing(): # Stop automatic status update while slewing to allow mount full status throughput
+                if (not self.update_status_queue.empty()):
+                    request = self.update_status_queue.get(block=False)
+                    if request == 'mountonly':
+                        self.update_status(mount_only=True, dont_wait=True)
+                    else:
+                        self.update_status()
+                    self.update_status_queue.task_done()
+                    if not request == 'mountonly':
+                        time.sleep(2)
+    
+                # Update status on at lest a 30s period if not requested
+                elif (time.time() - self.time_last_status) > 30:
                     self.update_status()
-                self.update_status_queue.task_done()
-                if not request == 'mountonly':
+                    self.time_last_status=time.time()
                     time.sleep(2)
-
-            # Update status on at lest a 30s period if not requested
-            elif (time.time() - self.time_last_status) > 30:
-                self.update_status()
-                self.time_last_status=time.time()
-                time.sleep(2)
-
+    
+                else:
+                    # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                    time.sleep(0.2)
             else:
-                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                time.sleep(0.2)
+                time.sleep(0.5)
 
 
     # Note this is a thread!
@@ -1947,7 +1955,6 @@ class Observatory:
 
         """
 
-        one_at_a_time = 0
         while True:
             if (not self.send_status_queue.empty()):
                 pre_upload = time.time()
@@ -1959,10 +1966,12 @@ class Observatory:
                 if self.status_interval > 10:
                     self.status_interval = 10
                 self.status_upload_time = upload_time
-                time.sleep(max(2, self.status_interval))
+                if not g_dev['mnt'].return_slewing(): # Don't wait while slewing.
+                    time.sleep(max(2, self.status_interval))
             else:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                time.sleep(max(2, self.status_interval))
+                if not g_dev['mnt'].return_slewing(): # Don't wait while slewing.
+                    time.sleep(max(2, self.status_interval))
 
     def laterdelete_process(self):
         """This is a thread where things that fail to get
@@ -3604,25 +3613,19 @@ class Observatory:
         self.mainjpeg_queue.put( to_sep, block=False)
 
     def request_update_status(self, mount_only=False):
-        if self.config['run_status_update_in_a_thread']:
+        
+        if not g_dev['mnt'].return_slewing(): # Don't glog the update pipes while slewing.
             if not self.currently_updating_status and not mount_only:
                 self.update_status_queue.put( 'normal', block=False)
             elif not self.currently_updating_status and mount_only:
                 self.update_status_queue.put( 'mountonly', block=False)
-        else:
-            if mount_only:
-                self.update_status(mount_only=True, dont_wait=True)
-            else:
-                self.update_status()
 
     def request_scan_requests(self):
-        #if not self.currently_scan_requesting:
         self.scan_request_queue.put( 'normal', block=False)
 
     def request_update_calendar_blocks(self):
         if not self.currently_updating_calendar_blocks:
             self.calendar_block_queue.put( 'normal', block=False)
-
 
     def flush_command_queue(self):
         # So this command reads the commands waiting and just ... ignores them
@@ -3650,9 +3653,8 @@ def wait_for_slew(wait_after_slew=True):
                 if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
                     plog('m>')
                     movement_reporting_timer = time.time()
-                # if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
                 g_dev['mnt'].get_mount_coordinates_after_next_update()                
-                g_dev['obs'].update_status(mount_only=True, dont_wait=True)#, dont_wait=True)
+                g_dev['obs'].update_status(mount_only=True, dont_wait=True)
                    
             # Then wait for slew_time to settle
             if actually_slewed and wait_after_slew:

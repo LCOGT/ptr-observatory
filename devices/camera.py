@@ -5,10 +5,8 @@ Created on Tue Apr 20 22:19:25 2021
 
 """
 
-#import copy
 import datetime
 import os
-#from auto_stretch.stretch import Stretch
 import queue
 #import math
 import shelve
@@ -35,17 +33,11 @@ from astropy.stats import sigma_clip
 import math
 import sep
 import threading
-# from scipy import optimize
-# from scipy.linalg import svd
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 import subprocess
 warnings.simplefilter('ignore', category=AstropyUserWarning)
-# import matplotlib.pyplot as plt
 import matplotlib as mpl
-#%matplotlib inline
-#mpl.use('inline')
-#['GTK3Agg', 'GTK3Cairo', 'MacOSX', 'nbAgg', 'Qt4Agg', 'Qt4Cairo', 'Qt5Agg', 'Qt5Cairo', 'TkAgg', 'TkCairo', 'WebAgg', 'WX', 'WXAgg', 'WXCairo', 'agg', 'cairo', 'pdf', 'pgf', 'ps', 'svg', 'template']
 import matplotlib.style as mplstyle
 mplstyle.use('fast')
 mpl.rcParams['path.simplify'] = True
@@ -57,9 +49,6 @@ from PIL import Image#, ImageDraw
 from global_yard import g_dev
 from ptr_utility import plog
 from ctypes import *
-# from skimage.registration import phase_cross_correlation
-# from multiprocessing.pool import Pool,ThreadPool
-# from scipy._lib._util import getfullargspec_no_self as _getfullargspec
 from scipy.stats import binned_statistic
 
 def mid_stretch_jpeg(data):
@@ -73,7 +62,6 @@ def mid_stretch_jpeg(data):
     shadows_clip=-1.25
 
     """ Stretch the image.
-
     Args:
         data (np.array): the original image data array.
 
@@ -683,21 +671,11 @@ class Camera:
         ])
 
         if not os.path.exists(self.alt_path):
-            os.makedirs(self.alt_path)
-        self.autosave_path = self.camera_path + "autosave/"
-        self.lng_path = self.camera_path + "lng/"
-        self.seq_path = self.camera_path + "seq/"
-        # if not os.path.exists(self.autosave_path):  #obsolete WER 20240106
-        #     os.makedirs(self.autosave_path)
-        # if not os.path.exists(self.lng_path):
-        #     os.makedirs(self.lng_path)
-        # if not os.path.exists(self.seq_path):
-        #     os.makedirs(self.seq_path)
+            os.makedirs(self.alt_path)        
 
         # Just need to initialise this filter thing
         self.current_offset  = 0
         self.current_filter= None
-
 
         self.updates_paused=False
 
@@ -708,9 +686,7 @@ class Camera:
         self.biasFiles = {}
         self.darkFiles = {}
         self.flatFiles = {}
-        #self.hotFiles = {}
         self.bpmFiles = {}
-
 
         g_dev['obs'].obs_id
         g_dev['cam'].alias
@@ -852,7 +828,6 @@ class Camera:
             del tempbpmframe
         except:
             plog("Bad Pixel Mask for Binning 1 not available")
-
 
         try:
             fileList = glob.glob(self.local_calibration_path + "archive/" + self.alias + "/calibmasters/masterFlat*_bin1.npy")
@@ -1036,7 +1011,6 @@ class Camera:
             # Initialise Camera Size here
             self.imagesize_x=int(i_h)
             self.imagesize_y=int(i_w)
-            #breakpoint()
 
         else:
             # NB NB NB Considerputting this up higher.
@@ -1090,9 +1064,7 @@ class Camera:
         self.day_warm = float(self.config["camera"][self.name]["settings"]['day_warm'])
         self.day_warm_degrees = float(self.config["camera"][self.name]["settings"]['day_warm_degrees'])
         self.protect_camera_from_overheating=float(self.config["camera"][self.name]["settings"]['protect_camera_from_overheating'])
-# =============================================================================
-#         # NB NB *** No logic here to manage chillers and water cooling. ***
-# =============================================================================
+
         plog("Cooler setpoint is now:  ", self.setpoint)
         if self.config["camera"][self.name]["settings"][
             "cooler_on"
@@ -1207,8 +1179,7 @@ class Camera:
                 plog("Problem setting up 1x1 binning at startup.")
 
         self.has_darkslide = False
-        self.darkslide_state = "N.A."   #Not Available.
-        #breakpoint()
+        self.darkslide_state = "N.A."  
         if self.config["camera"][self.name]["settings"]["has_darkslide"]:
             self.has_darkslide = True
             self.darkslide_state = 'Unknown'
@@ -1219,11 +1190,8 @@ class Camera:
                 self.darkslide_instance = Darkslide(com_port)
             # As it takes 12seconds to open, make sure it is either Open or Shut at startup
             if self.darkslide_state != 'Open':
-
                 if self.darkslide_type is not None:
                     self.darkslide_instance.openDarkslide()
-                    ####I think we just need to add open and closeDarkslide methods to the camera class and
-                    ####make the calls outlined in the PDF  note lower case open and close strings to the ASCOM driver
                     self.darkslide_open = True
                     self.darkslide_state = 'Open'
                 elif self.darkslide_type=='ASCOM_FLI_KEPLER':
@@ -1256,7 +1224,6 @@ class Camera:
                     stdev_collector.append(singlentry[1])
 
             if len(gain_collector) > 1:
-
                 while True:
                     print (gain_collector)
                     gainmed=bn.nanmedian(gain_collector)
@@ -1277,10 +1244,8 @@ class Camera:
                         self.camera_known_gain=new_gain_pile[0]
                         self.camera_known_gain_stdev=new_gain_pile[0]
                         break
-
                     gain_collector=copy.deepcopy(new_gain_pile)
                     stdev_collector=copy.deepcopy(new_stdev_pile)
-
                 self.camera_known_gain=gainmed
                 self.camera_known_gain_stdev=np.nanstd(gain_collector)
             else:
@@ -1420,8 +1385,7 @@ class Camera:
             if (crop_y % 2) != 0:
                 crop_y = crop_y+1
             hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
-
-     
+            
         if self.is_osc:
 
             # Rapidly interpolate so that it is all one channel
@@ -1439,7 +1403,6 @@ class Camera:
             bilinearfill=np.add(bilinearfill, np.roll(hdufocusdata,1,axis=1))
             bilinearfill=np.add(bilinearfill, np.roll(hdufocusdata,-1,axis=1))
             bilinearfill=np.divide(bilinearfill,4)
-
             hdufocusdata[np.isnan(hdufocusdata)]=0
             bilinearfill[np.isnan(bilinearfill)]=0
             hdufocusdata=hdufocusdata+bilinearfill
@@ -1509,7 +1472,6 @@ class Camera:
                 temp_array=hdufocusdata[cx-halfradius_of_radialprofile:cx+halfradius_of_radialprofile,cy-halfradius_of_radialprofile:cy+halfradius_of_radialprofile]                
             except:
                 print(traceback.format_exc())
-
             #construct radial profile
             cut_x,cut_y=temp_array.shape
             cut_x_center=(cut_x/2)-1
@@ -1529,7 +1491,6 @@ class Camera:
                         brightest_pixel_rdist=r_dist
                         brightest_pixel_value=temp_array[q][t]
                     counter=counter+1
-
             # If the brightest pixel is in the center-ish
             # then put it in contention
             if abs(brightest_pixel_rdist) <  max(3, 3/self.pixscale):
@@ -1612,11 +1573,8 @@ class Camera:
                 (900, 900)
             )
         else:
-            # There is no axis that is preferred?
             final_image = final_image.resize(
-
                 (900, int(900 * iy / ix))
-
             )
 
         g_dev['cam'].current_focus_jpg=copy.deepcopy(final_image)
@@ -1679,8 +1637,6 @@ class Camera:
             else:
                 time.sleep(max(1,self.camera_update_period))
 
-
-
     def post_processing_process(self):
         """
 
@@ -1711,7 +1667,6 @@ class Camera:
         return
 
     # The patches. Note these are essentially getter-setter/property constructs.
-
     def _theskyx_connected(self):
         return self.camera.LinkEnabled
 
@@ -1787,7 +1742,6 @@ class Camera:
 
     def _theskyx_stop_expose(self):
         try:
-            #self.camera.Abort()
             self.theskyx_abort_exposure_trigger=True
         except:
             plog(traceback.format_exc())
@@ -1876,7 +1830,6 @@ class Camera:
         return self.camera.Connected
 
     def _ascom_temperature(self):
-
         try:
             temptemp=self.camera.CCDTemperature
         except:
@@ -1942,7 +1895,6 @@ class Camera:
     def _qhyccd_connect(self, p_connect):
         #self.camera.Connected = p_connect
         #print ("QHY doesn't have an obvious - IS CONNECTED - function")
-
         return True
 
     def _qhyccd_temperature(self):
@@ -1960,9 +1912,7 @@ class Camera:
         return temptemp, humidity, pressure
 
     def _qhyccd_cooler_on(self):
-        #print ("QHY DOESN'T HAVE AN IS COOLER ON METHOD)
-        #breakpoint()
-        #temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(self.setpoint))
+        #print ("QHY DOESN'T HAVE AN IS COOLER ON METHOD)        
         return True
 
     def _qhyccd_set_cooler_on(self):
@@ -1982,7 +1932,6 @@ class Camera:
             temptemp=999.9
         return temptemp
 
-
     def qhy_substacker_thread(self, exposure_time):
 
         # Boost Narrowband and low throughput broadband
@@ -1998,7 +1947,6 @@ class Camera:
         self.sub_stacker_midpoints=[]
 
         for subexposure in range(N_of_substacks+1):
-
             # Check there hasn't been a cancel sent through
             if g_dev["obs"].stop_all_activity:
                 plog ("stop_all_activity cancelling out of camera exposure")
@@ -2076,9 +2024,7 @@ class Camera:
                     plog ("couldn't biasdark substack")
                     pass
 
-
-                # Flat field sub stack array
-                
+                # Flat field sub stack array                
                 try:                
                     sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], temporary_flat_in_memory)
                 except:
@@ -2093,9 +2039,7 @@ class Camera:
                     plog ("couldn't badpixel field substack")
                     pass
                 
-                xoff, yoff = cross_correlation_shifts(block_reduce(sub_stacker_array[:,:,0],3), block_reduce(sub_stacker_array[:,:,subexposure-1],3),zeromean=False)                
-                #print (str(round(-yoff*3)) + " " + str(round(-xoff*3)))
-
+                xoff, yoff = cross_correlation_shifts(block_reduce(sub_stacker_array[:,:,0],3), block_reduce(sub_stacker_array[:,:,subexposure-1],3),zeromean=False)  
                 imageshift=[round(-yoff*3),round(-xoff*3)]
 
                 if imageshift[0] > 100 or imageshift[1] > 100:
@@ -2103,14 +2047,11 @@ class Camera:
 
                 try:
                     if abs(imageshift[0]) > 0:
-
                         imageshiftabs=int(abs(imageshift[0]))
                         # If it is an OSC, it needs to be an even number
                         if is_osc:
                             if (imageshiftabs & 0x1) == 1:
                                 imageshiftabs=imageshiftabs+1
-
-
                         if imageshift[0] > 0:
                             imageshiftsign = 1
                         else:
@@ -2119,34 +2060,27 @@ class Camera:
                         sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=0)
 
                     if abs(imageshift[1]) > 0:
-
                         imageshiftabs=int(abs(imageshift[1]))
-
                         # If it is an OSC, it needs to be an even number
                         if is_osc:
                             if (imageshiftabs & 0x1) == 1:
                                 imageshiftabs=imageshiftabs+1
-
                         if imageshift[1] > 0:
                             imageshiftsign = 1
                         else:
                             imageshiftsign = -1
-
-
                         sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=1)
-
                 except:
                     plog(traceback.format_exc())
 
             if not subexposure == (N_of_substacks):
                 while (time.time() - exposure_timer) < exp_of_substacks:
                     time.sleep(0.005)
-
+                    
                 # If this is the last exposure of the set of subexposures, then report shutter closed
                 if subexposure == (N_of_substacks-1):
                     self.shutter_open=False
-
-           
+                    
                 # READOUT FROM THE QHY
                 image_width_byref = c_uint32()
                 image_height_byref = c_uint32()
@@ -2199,9 +2133,7 @@ class Camera:
             qhycam.so.CancelQHYCCDExposingAndReadout(qhycam.camera_params[qhycam_id]['handle'])
         except:
             plog(traceback.format_exc())
-            #print (success)
-
-
+            
     def _qhyccd_getImageArray(self):
 
         if self.substacker:
@@ -2241,9 +2173,8 @@ class Camera:
                         if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
                             plog('m>')
                             movement_reporting_timer = time.time()
-                        # if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
                         g_dev['mnt'].get_mount_coordinates_after_next_update()                
-                        g_dev['obs'].update_status(mount_only=True, dont_wait=True)#, dont_wait=True)
+                        g_dev['obs'].update_status(mount_only=True, dont_wait=True)
                            
                     # Then wait for slew_time to settle
                     if actually_slewed and wait_after_slew:
@@ -2390,7 +2321,6 @@ class Camera:
             self.darkslide_state = 'Open'
         elif action == "stop":
             self.stop_command(req, opt)
-            #self.running_an_exposure_set = False
             plog("STOP  STOP  STOP received.")
         else:
 
@@ -2439,9 +2369,7 @@ class Camera:
         manually_requested_calibration=False,
         useastrometrynet=False):
 
-
         self.running_an_exposure_set = True
-
 
         # First check that it isn't an exposure that doesn't need a check (e.g. bias, darks etc.)
         if not g_dev['obs'].assume_roof_open and not skip_open_check and not g_dev['obs'].scope_in_manual_mode:
