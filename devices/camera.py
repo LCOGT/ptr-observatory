@@ -2980,7 +2980,6 @@ class Camera:
 
                             if g_dev["fil"].null_filterwheel == False:
                                 while g_dev['fil'].filter_changing:
-                                    #plog ("Waiting for filter_change")
                                     time.sleep(0.05)
 
                             g_dev['foc'].adjust_focus()
@@ -2988,7 +2987,6 @@ class Camera:
                             reporty=0
                             while g_dev['foc'].focuser_is_moving:
                                 if reporty==0:
-                                    #plog ("Waiting for focuser to finish moving")
                                     reporty=1
                                 time.sleep(0.05)
 
@@ -3072,7 +3070,7 @@ class Camera:
                         if not g_dev['obs'].mountless_operation:
                             g_dev["mnt"].get_rapid_exposure_status(
                                 self.pre_mnt
-                            )  # Should do this close to the exposure
+                            )  
 
 
                         # We call below to keep this subroutine a reasonable length, Basically still in Phase 2
@@ -3169,8 +3167,6 @@ class Camera:
                 if not os.path.exists(self.config['pipe_archive_folder_path'] +'/tokens'):
                     os.makedirs(self.config['pipe_archive_folder_path'] +'/tokens')
                 with open(pipetokenfolder + "/" + token_name, 'w') as f:
-                    # indent=2 is not needed but makes the file human-readable
-                    # if the data is nested
                     json.dump(real_time_files, f, indent=2)
 
     def stop_command(self, required_params, optional_params):
@@ -3200,7 +3196,6 @@ class Camera:
         opt=None,
         solve_it=False,
         smartstackid='no',
-        #longstackid='no',
         sskcounter=0,
         Nsmartstack=1,
         this_exposure_filter=None,
@@ -3404,7 +3399,6 @@ class Camera:
 
                 remaining = round(self.completion_time - time.time(), 1)
 
-
                 # FOR POINTING AND FOCUS EXPOSURES, CONSTRUCT THE SCALED MASTERDARK WHILE
                 # THE EXPOSURE IS RUNNING
                 if (frame_type=='pointing' or focus_image == True) and not pointingfocus_masterdark_done and smartstackid == 'no':
@@ -3543,7 +3537,6 @@ class Camera:
                                 # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
                                 elif self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
                                     if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
-                                        #breakpoint()
                                         if (self.pixscale == None):
                                             ra_random_dither=(((random.randint(0,50)-25) * 0.75 / 3600 ) / 15)
                                             dec_random_dither=((random.randint(0,50)-25) * 0.75 /3600 )
@@ -3553,8 +3546,7 @@ class Camera:
                                         try:
                                             self.wait_for_slew(wait_after_slew=False)
                                             g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra + ra_random_dither, dec=self.initial_smartstack_dec + dec_random_dither)
-                                            # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-
+                                            
                                         except Exception as e:
                                             plog (traceback.format_exc())
                                             if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
@@ -3684,10 +3676,7 @@ class Camera:
                     # If there is a block guard, there is a running block
                     if g_dev['seq'].block_guard and not g_dev['seq'].focussing and not frame_type=='pointing':                        
                         # If this is the end of a smartstack set or it is a single shot then check the filter and change
-                        if (Nsmartstack==1 or (Nsmartstack == sskcounter+1)) :#and not g_dev['seq'].focussing and not frame_type=='pointing':
-                            # plog ("end of sstack run, checking filter")
-                            # plog ("Requested filter: " + str(g_dev['seq'].block_next_filter_requested))
-                            # plog ("Current filter: " + str(self.current_filter))
+                        if (Nsmartstack==1 or (Nsmartstack == sskcounter+1)):
                             if not g_dev['seq'].block_next_filter_requested=='None':
                                 # Check if filter needs changing, if so, change.
                                 self.current_filter= g_dev['fil'].filter_selected
@@ -5741,8 +5730,6 @@ def post_exposure_process(payload):
             # Similarly to the above. This saves the RAW file to disk
             # it works 99.9999% of the time.
             if selfconfig['save_raw_to_disk']:
-
-
                 os.makedirs(
                     raw_path, exist_ok=True
                 )
