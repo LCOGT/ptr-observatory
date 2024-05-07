@@ -1139,43 +1139,50 @@ class Mount:
 
         self.previous_pier_side=self.rapid_pier_indicator
 
-        if self.can_report_destination_pierside == True:
-            try:                          
-                self.request_new_pierside=True
-                self.request_new_pierside_ra=ra
-                self.request_new_pierside_dec=dec
-                self.wait_for_mount_update()
-                if len(self.new_pierside) > 1:
-                    if self.new_pierside[0] == 0:
-                        delta_ra, delta_dec = self.get_mount_reference(ra,dec)
-                    else:
-                        delta_ra, delta_dec = self.get_flip_reference(ra,dec)
-            except:
-                try:                   
+
+        # Don't need a mount reference for skyflatspots!
+        if not skyflatspot:
+
+            if self.can_report_destination_pierside == True:
+                try:                          
                     self.request_new_pierside=True
                     self.request_new_pierside_ra=ra
                     self.request_new_pierside_dec=dec
                     self.wait_for_mount_update()
-                    if self.new_pierside == 0:
-                        delta_ra, delta_dec = self.get_mount_reference(ra,dec)
-                    else:
-                        delta_ra, delta_dec = self.get_flip_reference(ra,dec)
+                    if len(self.new_pierside) > 1:
+                        if self.new_pierside[0] == 0:
+                            delta_ra, delta_dec = self.get_mount_reference(ra,dec)
+                        else:
+                            delta_ra, delta_dec = self.get_flip_reference(ra,dec)
                 except:
-                    self.mount_busy=False
-                    delta_ra, delta_dec = self.get_mount_reference(ra,dec)
-        else:
-            if self.previous_pier_side == 0:
-                delta_ra, delta_dec = self.get_mount_reference(ra,dec)
+                    try:                   
+                        self.request_new_pierside=True
+                        self.request_new_pierside_ra=ra
+                        self.request_new_pierside_dec=dec
+                        self.wait_for_mount_update()
+                        if self.new_pierside == 0:
+                            delta_ra, delta_dec = self.get_mount_reference(ra,dec)
+                        else:
+                            delta_ra, delta_dec = self.get_flip_reference(ra,dec)
+                    except:
+                        self.mount_busy=False
+                        delta_ra, delta_dec = self.get_mount_reference(ra,dec)
             else:
-                delta_ra, delta_dec = self.get_flip_reference(ra,dec)
-
-
-        plog ("Reference used for mount deviation in go_command")
-        plog (str(delta_ra*15* 60) + " RA (Arcmins), " + str(delta_dec*60) + " Dec (Arcmins)")
-
-        if not g_dev['obs'].mount_reference_model_off:          
-            ra = ra + delta_ra 
-            dec = dec + delta_dec
+                if self.previous_pier_side == 0:
+                    delta_ra, delta_dec = self.get_mount_reference(ra,dec)
+                else:
+                    delta_ra, delta_dec = self.get_flip_reference(ra,dec)
+    
+    
+            plog ("Reference used for mount deviation in go_command")
+            plog (str(delta_ra*15* 60) + " RA (Arcmins), " + str(delta_dec*60) + " Dec (Arcmins)")
+    
+            if not g_dev['obs'].mount_reference_model_off:          
+                ra = ra + delta_ra 
+                dec = dec + delta_dec
+        else:
+            delta_ra=0
+            delta_dec=0
 
         # First move, then check the pier side
         successful_move=0
