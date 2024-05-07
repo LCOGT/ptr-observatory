@@ -3043,6 +3043,15 @@ class Camera:
 
                                 azimuth_of_observation = 99.9
                                 altitude_of_observation = 99.9
+                                
+                            # The values above are where the mount thinks it is pointing.
+                            # We also need where it IS pointing, which we can't know ahead of time 
+                            # exactly... although we do know we center on the requested RA and DEC
+                            # pretty closely, so we can use that. Thats close enough for our 
+                            # uses in the site code. The pipeline replaces the RA and DEC
+                            # with thorough platesolved versions later on.
+                            corrected_ra_for_header=g_dev["mnt"].last_ra_requested
+                            corrected_dec_for_header=g_dev["mnt"].last_dec_requested
 
                         else:
                             plog("Something terribly wrong, driver not recognized.!")
@@ -3108,7 +3117,9 @@ class Camera:
                             zoom_factor=self.zoom_factor,
                             useastrometrynet=useastrometrynet,
                             a_dark_exposure=a_dark_exposure,
-                            substack=self.substacker
+                            substack=self.substacker,
+                            corrected_ra_for_header=0.0,
+                            corrected_dec_for_header=0.0
                         )  # NB all these parameters are crazy!
 
                         self.retry_camera = 0
@@ -3212,7 +3223,9 @@ class Camera:
         zoom_factor=False,
         useastrometrynet=False,
         a_dark_exposure=False,
-        substack=False
+        substack=False,
+        corrected_ra_for_header=0.0,
+        corrected_dec_for_header=0.0
 
     ):
         
@@ -3975,7 +3988,7 @@ class Camera:
 
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
-                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time, sub_stacker_midpoints)), block=False)
+                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header)), block=False)
 
                 # If this is a pointing or a focus frame, we need to do an
                 # in-line flash reduction
@@ -4589,7 +4602,7 @@ def post_exposure_process(payload):
      dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, \
      ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, \
      camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path, \
-     solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints) = payload
+     solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header) = payload
     post_exposure_process_timer=time.time()
     ix, iy = img.shape
 
@@ -5257,8 +5270,12 @@ def post_exposure_process(payload):
         hdu.header["FILEPATH"] = str(im_path_r) + "to_AWS/"
         hdu.header["ORIGNAME"] = str(raw_name00 + ".fz")
 
-        tempRAdeg = ra_at_time_of_exposure * 15
-        tempDECdeg = dec_at_time_of_exposure
+        # tempRAdeg = ra_at_time_of_exposure * 15
+        # tempDECdeg = dec_at_time_of_exposure       
+        
+        tempRAdeg = corrected_ra_for_header * 15
+        tempDECdeg = corrected_dec_for_header              
+        
         tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
         tempointing=tempointing.to_string("hmsdms").split(' ')
 
@@ -5273,7 +5290,7 @@ def post_exposure_process(payload):
         hdu.header["ORIGRA"] = hdu.header["RA"]
         hdu.header["ORIGDEC"] = hdu.header["DEC"]
         hdu.header["RAhrs"] = (
-            ra_at_time_of_exposure,
+            corrected_ra_for_header,
             "[hrs] Telescope right ascension",
         )
         hdu.header["RADEG"] = tempRAdeg
