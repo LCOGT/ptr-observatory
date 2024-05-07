@@ -1413,7 +1413,7 @@ if solve != 'error' and pointing_exposure:
     
     # This should point to the where the telescope is reporting it is positioned.
     ax.scatter(pointing_ra * 15, pointing_dec, transform=ax.get_transform('icrs'), s=300,
-                edgecolor='blue', facecolor='none')
+                edgecolor='lime', facecolor='none')
 
     # r = Quadrangle((target_ra * 15 - 0.5 * y_deg_field_size, target_dec - 0.5 * x_deg_field_size)*u.deg, y_deg_field_size*u.deg, x_deg_field_size*u.deg,
     #                 edgecolor='red', facecolor='none',
