@@ -495,7 +495,7 @@ site_config = {
                         #['Y',    [6,  0],   "Rubin Y"],      #21
 
 
-                        ['dark', [1,  3],   'dk']],    #22     #Not a real filter.  Total 23
+                        ['dk', [1,  3],   'dk']],    #22     #Not a real filter.  Total 23
 
                 # 'filter_screen_sort':  ['ip'],   # don't use narrow yet,  8, 10, 9], useless to try.
                 # 'filter_sky_sort': ['S2','N2','HA','CR','zs','zp','up','O3','BI','NIR','ip','PR','BR',\
