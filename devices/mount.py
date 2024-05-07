@@ -1025,7 +1025,7 @@ class Mount:
                 ra = altazskycoord.icrs.ra.deg /15
                 dec = altazskycoord.icrs.dec.deg
 
-                plog ("Moving to requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+                plog ("Moving to requested Flat Spot, az: " + str(round(az,1)) + " alt: " + str(round(alt,1)))
 
                 if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                     if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:

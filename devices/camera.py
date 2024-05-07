@@ -4401,15 +4401,15 @@ class Camera:
 
                             elif cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 3 *g_dev['seq'].current_filter_last_camera_gain_stdev):
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain,2)))
-                                plog('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain))
+                                plog('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(round(cge_gain,2)))
 
                             elif (not self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain']):
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Bad Gain: ' + str(round(cge_gain,2)) + ' Flat rejection by gain is off.')
-                                plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejection by gain is off.')
+                                plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(round(cge_gain,2)) + ' Flat rejection by gain is off.')
 
                             else:
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Bad Gain: ' + str(round(cge_gain,2)) + ' Flat rejected.')
-                                plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejected.')
+                                plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(round(cge_gain,2)) + ' Flat rejected.')
                                 expresult={}
                                 expresult["error"] = True
                                 expresult["patch"] = central_median
