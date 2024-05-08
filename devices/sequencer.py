@@ -2742,7 +2742,14 @@ class Sequencer:
                     # Save and upload master bias
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
-                     # Store a version of the bias for the archive too
+                    if ['halfsec_exposure_dark', 'twosec_exposure_dark', 'tensec_exposure_dark', 'broadband_ss_dark', 'narrowband_ss_dark', '1'] in filename_start:
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.npy', copy.deepcopy(masterDark)))
+
+
+                    
+
+
+                    # Store a version of the bias for the archive too
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -2867,6 +2874,12 @@ class Sequencer:
                     
                     # Save and upload master bias
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, tempfrontcalib +filename_start+'_master_bin1.fits' ))
+                    
+                    
+                    if ['tensec','thirtysec'] in filename_start:
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.npy', copy.deepcopy(masterDark)))
+
+
 
                      # Store a version of the bias for the archive too
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
@@ -3033,6 +3046,7 @@ class Sequencer:
                 try:                   
                     # Save and upload master bias
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias), None, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'BIAS_master_bin1.fits' ))
+                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.npy', copy.deepcopy(masterBias)))
 
                      # Store a version of the bias for the archive too
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits' ))

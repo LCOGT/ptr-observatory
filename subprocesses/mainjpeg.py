@@ -32,7 +32,7 @@ else:
     print(input_jpeg_info)
 
 
-hdusmalldata=input_jpeg_info[0]
+mainjpegthread_filename=input_jpeg_info[0]
 smartstackid=input_jpeg_info[1]
 paths=input_jpeg_info[2]
 pier_side=input_jpeg_info[3]
@@ -61,6 +61,18 @@ try:
     print("Mainjpeg received:", zoom_factor)
 except:
     print("Zoom_factor paramater faulted.")
+
+
+
+
+############ WAITER FOR
+mainjpegthread_filename
+
+
+
+
+
+
 
 
 # Really need to thresh the incoming image

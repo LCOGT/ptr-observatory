@@ -1459,5 +1459,10 @@ if solve != 'error' and pointing_exposure:
         os.remove(jpeg_filename.replace('.jpg','matplotlib.jpg'))
     except:
         pass
+    
+    try:
+        os.remove(jpeg_filename.replace('.jpg','matplotlib.png'))
+    except:
+        pass
 
 

@@ -73,7 +73,7 @@ input_sep_info=pickle.load(sys.stdin.buffer)
 #print ("HERE IS THE INCOMING. ")
 #print (input_sep_info)
 
-hdufocusdata=input_sep_info[0]
+septhread_filename=input_sep_info[0]
 pixscale=input_sep_info[1]
 readnoise=input_sep_info[2]
 avg_foc=input_sep_info[3]
@@ -106,6 +106,21 @@ minimum_realistic_seeing=input_sep_info[25]
 #nativebin=input_sep_info[26]
 do_sep=input_sep_info[27]
 exposure_time=input_sep_info[28]
+
+
+
+############ WAITER FOR
+septhread_filename
+
+
+
+
+
+
+
+
+
+
 
 #print (exposure_time)
 #breakpoint()

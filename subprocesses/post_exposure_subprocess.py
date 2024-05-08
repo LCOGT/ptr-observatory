@@ -16,6 +16,12 @@ import datetime
 from astropy.time import Time
 import copy
 import threading
+from astropy.coordinates import SkyCoord
+import os
+from astropy.nddata import block_reduce
+import subprocess
+import traceback
+
 
 payload=pickle.load(sys.stdin.buffer)
 
@@ -30,7 +36,7 @@ payload=pickle.load(sys.stdin.buffer)
  ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, \
  camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path, \
  solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure, \
- substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, substacker_filenames, dayobs, exposure_filter_offset,null_filterwheel, wema_config) = payload
+ substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, substacker_filenames, dayobs, exposure_filter_offset,null_filterwheel, wema_config, smartstackthread_filename, septhread_filename, mainjpegthread_filename) = payload
     
 
     
@@ -466,8 +472,8 @@ try:
         )
         hdu.header["OBJCTDEC"] = (avg_mnt['declination'], "[deg] Object dec")
     except:
-        # plog("problem with the premount?")
-        # plog(traceback.format_exc())
+        # print("problem with the premount?")
+        # print(traceback.format_exc())
         pass
     hdu.header["OBSERVER"] = (
         observer_user_name,
@@ -842,72 +848,80 @@ try:
     dark_exp_time = selfconfig['camera']['camera_1_1']['settings']['dark_exposure']
 
     if not manually_requested_calibration and not substack:
+        
+        
+        localcalibrationdirectory=selfconfig['local_calibration_path'] + selfconfig['obs_id'] + '/'
+        tempfrontcalib=obsname + '_' + camalias +'_'
+        
+        
+        
+        
         try:
             # If not a smartstack use a scaled masterdark
             timetakenquickdark=time.time()
             try:
                 if smartstackid == 'no':
                     # Initially debias the image
-                    hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
+                    hdusmalldata = hdusmalldata - np.load(localcalibrationdirectory + tempfrontcalib + 'BIAS_master_bin1.npy') #g_dev['cam'].biasFiles[str(1)]
                     # Sort out an intermediate dark
                     fraction_through_range=0
                     if exposure_time < 0.5:
-                        hdusmalldata=hdusmalldata-(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
+                        hdusmalldata=hdusmalldata-np.load(localcalibrationdirectory + tempfrontcalib + 'halfsecondDARK_master_bin1.npy')#np.load(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
                     elif exposure_time < 2.0:
                         fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
-                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
+                        tempmasterDark=(fraction_through_range * np.load(localcalibrationdirectory + tempfrontcalib + '2secondDARK_master_bin1.npy')) + ((1-fraction_through_range) * np.load(localcalibrationdirectory + tempfrontcalib + 'halfsecondDARK_master_bin1.npy'))
                         hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
                         del tempmasterDark
                     elif exposure_time < 10.0:
                         fraction_through_range=(exposure_time-2)/(10.0-2.0)
-                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
+                        tempmasterDark=(fraction_through_range * np.load(localcalibrationdirectory + tempfrontcalib + '10secondDARK_master_bin1.npy')) + ((1-fraction_through_range) * np.load(localcalibrationdirectory + tempfrontcalib + '2secondDARK_master_bin1.npy'))
                         hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
                         del tempmasterDark
                     elif exposure_time < broadband_ss_biasdark_exp_time:
                         fraction_through_range=(exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
-                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
+                        tempmasterDark=(fraction_through_range * np.load(localcalibrationdirectory + tempfrontcalib + 'broadbandssDARK_master_bin1.npy')) + ((1-fraction_through_range) * np.load(localcalibrationdirectory + tempfrontcalib + '10secondDARK_master_bin1.npy'))
                         hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
                         del tempmasterDark
                     elif exposure_time < narrowband_ss_biasdark_exp_time:
                         fraction_through_range=(exposure_time-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
-                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
+                        tempmasterDark=(fraction_through_range * np.load(localcalibrationdirectory + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy')) + ((1-fraction_through_range) * np.load(localcalibrationdirectory + tempfrontcalib + 'broadbandssDARK_master_bin1.npy'))
                         hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
                         del tempmasterDark
                     elif dark_exp_time > narrowband_ss_biasdark_exp_time:
                         fraction_through_range=(exposure_time-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
-                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles[str(1)]) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
+                        tempmasterDark=(fraction_through_range * np.load(localcalibrationdirectory + tempfrontcalib + 'DARK_master_bin1.npy')) + ((1-fraction_through_range) * np.load(localcalibrationdirectory + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy'))
                         hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
                         del tempmasterDark
                     else:
-                        hdusmalldata=hdusmalldata-(g_dev['cam'].darkFiles['narrowband_ss_dark']*exposure_time)
+                        hdusmalldata=hdusmalldata-(np.load(localcalibrationdirectory + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy')*exposure_time)
                 elif exposure_time == broadband_ss_biasdark_exp_time:
-                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles['broadband_ss_biasdark'])
+                    hdusmalldata = hdusmalldata - (np.load(localcalibrationdirectory + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.npy'))
                 elif exposure_time == narrowband_ss_biasdark_exp_time:
-                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles['narrowband_ss_biasdark'])
+                    hdusmalldata = hdusmalldata - (np.load(localcalibrationdirectory + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.npy'))
                 else:
-                    plog ("DUNNO WHAT HAPPENED!")
-                    hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
-                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
+                    print ("DUNNO WHAT HAPPENED!")
+                    hdusmalldata = hdusmalldata - np.load(localcalibrationdirectory + tempfrontcalib + 'BIAS_master_bin1.npy')
+                    hdusmalldata = hdusmalldata - (np.load(localcalibrationdirectory + tempfrontcalib + 'DARK_master_bin1.npy') * exposure_time)
             except:
                 try:
-                    hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
-                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
+                    hdusmalldata = hdusmalldata - np.load(localcalibrationdirectory + tempfrontcalib + 'BIAS_master_bin1.npy')
+                    hdusmalldata = hdusmalldata - (np.load(localcalibrationdirectory + tempfrontcalib + 'DARK_master_bin1.npy') * exposure_time)
                 except:
-                    plog ("Could not bias or dark file.")
+                    print ("Could not bias or dark file.")
         except Exception as e:
-            plog("debias/darking light frame failed: ", e)
+            print("debias/darking light frame failed: ", e)
 
         # Quick flat flat frame
         try:                
-            hdusmalldata = np.divide(hdusmalldata, np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+            hdusmalldata = np.divide(hdusmalldata, np.load(localcalibrationdirectory + 'masterFlat_'+this_exposure_filter + "_bin" + str(1)))
         except Exception as e:
-            plog("flatting light frame failed", e)
+            print("flatting light frame failed", e)
 
         try:
-            hdusmalldata[g_dev['cam'].bpmFiles[str(1)]] = np.nan
+            hdusmalldata[np.load(localcalibrationdirectory + tempfrontcalib + 'badpixelmask_bin1.npy')] = np.nan
 
         except Exception as e:
-            plog("Bad Pixel Masking light frame failed: ", e)
+            print("Bad Pixel Masking light frame failed: ", e)
 
     # This saves the REDUCED file to disk
     # If this is for a smartstack, this happens immediately in the camera thread after we have a "reduced" file
@@ -975,7 +989,8 @@ try:
                 "Date at start of observing night"
             )
             
-            g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))
+            #g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))
+            np.save(hdusmalldata, septhread_filename)
 
 
             if smartstackid != 'no':
@@ -988,7 +1003,7 @@ try:
                     hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
                     saver = 1
                 except Exception as e:
-                    plog("Failed to write raw file: ", e)
+                    print("Failed to write raw file: ", e)
                     
             # This puts the file into the smartstack queue
             # And gets it underway ASAP.
@@ -1010,7 +1025,9 @@ try:
                 "focus",
                 "pointing"
             ]) and smartstackid != 'no' and not a_dark_exposure :
-                g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
+                #g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
+                np.save(hdusmalldata, smartstackthread_filename)
+                
             else:
                 if not selfconfig['keep_reduced_on_disk']:
                     try:
@@ -1031,37 +1048,27 @@ try:
                                        frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure,selfalt_path)
 
                 # Make  sure the alt paths exist
-                if g_dev['obs'].config["save_to_alt_path"] == "yes":
-                    os.makedirs(
-                        g_dev['obs'].alt_path + dayobs, exist_ok=True
-                    )
-                    os.makedirs(
-                        g_dev['obs'].alt_path + dayobs + "/raw/", exist_ok=True
-                    )
-                    os.makedirs(
-                        g_dev['obs'].alt_path + dayobs + "/reduced/", exist_ok=True
-                    )
-                    os.makedirs(
-                        g_dev['obs'].alt_path + dayobs + "/calib/", exist_ok=True)
-
-                    altpath=copy.deepcopy(g_dev['obs'].alt_path)
+                if selfconfig["save_to_alt_path"] == "yes":
+                    #altpath=copy.deepcopy(g_dev['obs'].alt_path)
+                    altpath=selfconfig['alt_path'] + selfconfig['obs_id'] + '/'
                 else:
                     altpath='no'
 
 
-                picklepayload=(reduced_hdusmallheader,copy.deepcopy(g_dev['obs'].config),g_dev['cam'].name, slow_process, altpath)
+                picklepayload=(reduced_hdusmallheader,copy.deepcopy(selfconfig),camalias, slow_process, altpath)
 
                 picklefilename='testred'+str(time.time()).replace('.','')
-                pickle.dump(picklepayload, open(g_dev['obs'].local_calibration_path + 'smartstacks/'+picklefilename,'wb'))
+                pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
                
-                subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=g_dev['obs'].local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=localcalibrationdirectory + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
 
                               
 
         # Send data off to process jpeg if not a smartstack
         if smartstackid == 'no':
-            g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
+            #g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
+            np.save(hdusmalldata, mainjpegthread_filename)
 
         if solve_it == True or (not manually_requested_calibration or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
                                    or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.utcnow() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"])):
@@ -1076,7 +1083,7 @@ try:
             if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or sskcounter ==0):
                 image_during_smartstack=True
             if exposure_time < 1.0:
-                plog ("Not doing Platesolve for sub-second exposures.")
+                print ("Not doing Platesolve for sub-second exposures.")
             else:
                 if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
 
@@ -1182,7 +1189,7 @@ try:
                             26000000, '', tempfilename.replace('-EX', 'CV-EX')+ '.fz'
                         )   
                 else:
-                    plog("this bayer grid not implemented yet")
+                    print("this bayer grid not implemented yet")
 
 
 
@@ -1238,4 +1245,4 @@ try:
 
 
 except:
-    plog(traceback.format_exc())
+    print(traceback.format_exc())

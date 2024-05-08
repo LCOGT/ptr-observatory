@@ -38,7 +38,7 @@ print ("HERE IS THE INCOMING. ")
 print (input_sstk_info)
 
 
-paths=input_sstk_info[0]
+smartstackthread_filename=input_sstk_info[0]
 smartstackid=input_sstk_info[1]
 is_osc=input_sstk_info[2]
 obsid_path=input_sstk_info[3]
@@ -74,6 +74,14 @@ try:
 except:
     print("Zoom_factor paramater faulted.")
     zoom_factor=False
+
+
+
+########## wAITER FOR 
+smartstackthread_filename
+
+
+
 
 
 

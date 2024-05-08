@@ -3251,151 +3251,151 @@ class Observatory:
         # everything down each time this was called!
         self.sendtouser_queue.put((p_log, p_level),block=False)
 
-    def smartstack_image(self):
+    # def smartstack_image(self):
 
-        while True:
-            if not self.smartstack_queue.empty():
-                (
-                    paths,
-                    pixscale,
-                    smartstackid,
-                    sskcounter,
-                    Nsmartstack, pier_side, zoom_factor
-                ) = self.smartstack_queue.get(block=False)
+    #     while True:
+    #         if not self.smartstack_queue.empty():
+    #             (
+    #                 paths,
+    #                 pixscale,
+    #                 smartstackid,
+    #                 sskcounter,
+    #                 Nsmartstack, pier_side, zoom_factor
+    #             ) = self.smartstack_queue.get(block=False)
 
-                # SmartStack Section
-                if smartstackid != "no":
-                    sstack_timer = time.time()
+    #             # SmartStack Section
+    #             if smartstackid != "no":
+    #                 sstack_timer = time.time()
                     
-                    crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
-                    yb=self.config["camera"][g_dev['cam'].name]["settings"][
-                        "crop_preview_ybottom"
-                    ]
-                    yt=self.config["camera"][g_dev['cam'].name]["settings"][
-                        "crop_preview_ytop"
-                    ]
-                    xl=self.config["camera"][g_dev['cam'].name]["settings"][
-                        "crop_preview_xleft"
-                    ]
-                    xr=self.config["camera"][g_dev['cam'].name]["settings"][
-                        "crop_preview_xright"
-                    ]
+    #                 crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
+    #                 yb=self.config["camera"][g_dev['cam'].name]["settings"][
+    #                     "crop_preview_ybottom"
+    #                 ]
+    #                 yt=self.config["camera"][g_dev['cam'].name]["settings"][
+    #                     "crop_preview_ytop"
+    #                 ]
+    #                 xl=self.config["camera"][g_dev['cam'].name]["settings"][
+    #                     "crop_preview_xleft"
+    #                 ]
+    #                 xr=self.config["camera"][g_dev['cam'].name]["settings"][
+    #                     "crop_preview_xright"
+    #                 ]
 
-                    if g_dev['cam'].dither_enabled:
-                        crop_preview=True
-                        yb=yb+50
-                        yt=yt+50
-                        xl=xl+50
-                        xr=xr+50
+    #                 if g_dev['cam'].dither_enabled:
+    #                     crop_preview=True
+    #                     yb=yb+50
+    #                     yt=yt+50
+    #                     xl=xl+50
+    #                     xr=xr+50
 
-                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                        picklepayload=[
-                            paths,
-                            smartstackid,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
-                            self.local_calibration_path,
-                            pixscale,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
-                            pier_side,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
-                            self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
-                            g_dev['cam'].native_bin,
-                            g_dev['cam'].camera_known_readnoise,
-                            self.config['minimum_realistic_seeing'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] ,
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'] ,
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'] ,
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'],
-                            crop_preview,yb,yt,xl,xr,
-                            zoom_factor
-                            ]
-                    else:
-                        picklepayload=[
-                            paths,
-                            smartstackid,
-                            False,
-                            self.obsid_path,
-                            pixscale,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
-                            pier_side,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
-                            None,
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
-                            g_dev['cam'].native_bin,
-                            g_dev['cam'].camera_known_readnoise,
-                            self.config['minimum_realistic_seeing'],
-                            0,0,0,0,0,
-                            crop_preview,yb,yt,xl,xr,
-                            zoom_factor
-                            ]
+    #                 if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+    #                     picklepayload=[
+    #                         paths,
+    #                         smartstackid,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
+    #                         self.local_calibration_path,
+    #                         pixscale,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
+    #                         pier_side,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
+    #                         g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
+    #                         g_dev['cam'].native_bin,
+    #                         g_dev['cam'].camera_known_readnoise,
+    #                         self.config['minimum_realistic_seeing'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] ,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'] ,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'] ,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'],
+    #                         crop_preview,yb,yt,xl,xr,
+    #                         zoom_factor
+    #                         ]
+    #                 else:
+    #                     picklepayload=[
+    #                         paths,
+    #                         smartstackid,
+    #                         False,
+    #                         self.obsid_path,
+    #                         pixscale,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
+    #                         pier_side,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
+    #                         None,
+    #                         g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
+    #                         g_dev['cam'].native_bin,
+    #                         g_dev['cam'].camera_known_readnoise,
+    #                         self.config['minimum_realistic_seeing'],
+    #                         0,0,0,0,0,
+    #                         crop_preview,yb,yt,xl,xr,
+    #                         zoom_factor
+    #                         ]
 
-                    # Another pickle debugger
-                    if False :
-                        pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
+    #                 # Another pickle debugger
+    #                 if False :
+    #                     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
-                    smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    #                 smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                    try:
-                        pickle.dump(picklepayload, smartstack_subprocess.stdin)
-                    except:
-                        plog ("Problem in the smartstack pickle dump")
-                        plog(traceback.format_exc())
+    #                 try:
+    #                     pickle.dump(picklepayload, smartstack_subprocess.stdin)
+    #                 except:
+    #                     plog ("Problem in the smartstack pickle dump")
+    #                     plog(traceback.format_exc())
                     
-                    #  We don't have to wait for the full smartstack process to finish, just until it gets to the stage where 
-                    # It has saved out the next layer to the npy. Beyond this, it is just making a jpeg and the reduced file. 
-                    while not os.path.exists(paths["im_path"] + 'smartstack.pickle'):
-                        time.sleep(0.5)
+    #                 #  We don't have to wait for the full smartstack process to finish, just until it gets to the stage where 
+    #                 # It has saved out the next layer to the npy. Beyond this, it is just making a jpeg and the reduced file. 
+    #                 while not os.path.exists(paths["im_path"] + 'smartstack.pickle'):
+    #                     time.sleep(0.5)
 
-                    self.fast_queue.put((paths["im_path"], paths["jpeg_name10"],time.time()), block=False)
-                    # self.mediumui_queue.put(
-                    #     (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
+    #                 self.fast_queue.put((paths["im_path"], paths["jpeg_name10"],time.time()), block=False)
+    #                 # self.mediumui_queue.put(
+    #                 #     (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
 
-                    try:
-                        reprojection_failed=pickle.load(open(paths["im_path"] + 'smartstack.pickle', 'rb'))
-                    except:
-                        plog ("Couldn't find smartstack pickle?")
-                        plog (traceback.format_exc())
-                        reprojection_failed=True
-                    try:
-                        os.remove(paths["im_path"] + 'smartstack.pickle')
-                    except:
-                        pass
+    #                 try:
+    #                     reprojection_failed=pickle.load(open(paths["im_path"] + 'smartstack.pickle', 'rb'))
+    #                 except:
+    #                     plog ("Couldn't find smartstack pickle?")
+    #                     plog (traceback.format_exc())
+    #                     reprojection_failed=True
+    #                 try:
+    #                     os.remove(paths["im_path"] + 'smartstack.pickle')
+    #                 except:
+    #                     pass
 
-                    if reprojection_failed == True:
-                        g_dev["obs"].send_to_user(
-                            "A smartstack failed to stack, the single image has been sent to the GUI.",
-                            p_level="INFO",
-                        )
+    #                 if reprojection_failed == True:
+    #                     g_dev["obs"].send_to_user(
+    #                         "A smartstack failed to stack, the single image has been sent to the GUI.",
+    #                         p_level="INFO",
+    #                     )
 
-                    else:
-                        g_dev["obs"].send_to_user(
-                            "A preview SmartStack, "
-                            + str(sskcounter + 1)
-                            + " out of "
-                            + str(Nsmartstack)
-                            + ", has been sent to the GUI.",
-                            p_level="INFO",
-                        )
-                    plog(datetime.datetime.now())
+    #                 else:
+    #                     g_dev["obs"].send_to_user(
+    #                         "A preview SmartStack, "
+    #                         + str(sskcounter + 1)
+    #                         + " out of "
+    #                         + str(Nsmartstack)
+    #                         + ", has been sent to the GUI.",
+    #                         p_level="INFO",
+    #                     )
+    #                 plog(datetime.datetime.now())
 
-                plog("Smartstack round complete. Time taken: " + str(time.time() - sstack_timer))
+    #             plog("Smartstack round complete. Time taken: " + str(time.time() - sstack_timer))
 
-                self.smartstack_queue.task_done()
-                time.sleep(0.5)
-            else:
-                time.sleep(3)
+    #             self.smartstack_queue.task_done()
+    #             time.sleep(0.5)
+    #         else:
+    #             time.sleep(3)
 
     def check_platesolve_and_nudge(self,no_confirmation=True):
 
