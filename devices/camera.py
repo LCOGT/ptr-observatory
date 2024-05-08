@@ -3388,6 +3388,613 @@ class Camera:
         narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
         dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
 
+        spun_up_subprocesses=False
+        
+        
+        ################################################# SETTING UP COMMON THINGS FOR ALL THREADS AND HEADERS.
+        ################################################# Nothing slow goes here if can be helped.
+            
+        readout_estimate = copy.deepcopy(self.readout_estimate)
+        # If there isn't an estimated readout time shelf yet, use this first one as the estimate to begin with.
+        if self.readout_time==0:
+            self.readout_time=copy.deepcopy(readout_estimate)        
+            
+        if not g_dev['obs'].mountless_operation:
+            avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
+        else:
+            avg_mnt = None
+        try:
+            avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
+        except:
+            pass
+        try:
+            avg_rot = g_dev["rot"].get_average_status(
+                self.pre_rot, self.post_rot
+            )
+        except:
+            avg_rot = None
+
+        object_name='Unknown'
+        object_specf='no'
+
+        if "object_name" in opt:
+            if (
+                opt["object_name"] != "Unspecified"
+                and opt["object_name"] != ""
+            ):
+                object_name = opt["object_name"]
+                object_specf = "yes"
+        elif (
+            g_dev["mnt"].object != "Unspecified"
+            or g_dev["mnt"].object != "empty"
+        ):
+            object_name = (g_dev["mnt"].object, "Object name")
+            object_specf = "yes"
+        else:
+            RAtemp = g_dev["mnt"].current_icrs_ra
+            DECtemp = g_dev["mnt"].current_icrs_dec
+            RAstring = f"{RAtemp:.1f}".replace(".", "h")
+            DECstring = f"{DECtemp:.1f}".replace("-", "n").replace(".", "d")
+            object_name = RAstring + "ra" + DECstring + "dec"
+            object_specf = "no"
+        
+        focus_position=g_dev['foc'].current_focus_position                
+        
+        try:
+            next_seq = next_sequence(self.config["camera"][self.name]["name"])
+        except:
+            next_seq = reset_sequence(self.config["camera"][self.name]["name"])
+            
+        self.next_seq= next_seq
+        
+        # RAW NAMES FOR FOCUS AND POINTING SETUP HERE
+        im_path_r = self.camera_path
+        im_path = im_path_r + g_dev["day"] + "/to_AWS/"
+        im_type = "EX"
+        f_ext = "-"
+        cal_name = (
+            self.config["obs_id"]
+            + "-"
+            + self.config["camera"][self.name]["name"]
+            + "-"
+            + g_dev["day"]
+            + "-"
+            + next_seq
+            + f_ext
+            + "-"
+            + im_type
+            + "00.fits"
+        )
+        cal_path = im_path_r + g_dev["day"] + "/calib/"                    
+        
+        jpeg_name = (
+            self.config["obs_id"]
+            + "-"
+            + self.config["camera"][self.name]["name"]
+            + "-"
+            + g_dev["day"]
+            + "-"
+            + next_seq
+            + "-"
+            + im_type
+            + "10.jpg"
+        )            
+        
+        raw_name00 = (
+            self.config["obs_id"]
+            + "-"
+            + self.config["camera"][self.name]["name"] + '_' + str(frame_type) + '_' + str(this_exposure_filter)
+            + "-"
+            + g_dev["day"]
+            + "-"
+            + next_seq
+            + "-"
+            + im_type
+            + "00.fits"
+        )
+        
+        text_name = (
+                self.config["obs_id"]
+                + "-"
+                + self.config["camera"][self.name]["name"]
+                + "-"
+                + g_dev["day"]
+                + "-"
+                + next_seq
+                + "-"
+                + im_type
+                + "00.txt"
+            )
+        
+        cal_path = im_path_r + g_dev["day"] + "/calib/"
+
+        if not os.path.exists(im_path_r):
+            os.makedirs(im_path_r)
+        if not os.path.exists(im_path_r+ g_dev["day"]):
+            os.makedirs(im_path_r+ g_dev["day"])
+        if not os.path.exists(im_path_r+ g_dev["day"]+ "/calib"):
+            os.makedirs(im_path_r+ g_dev["day"]+ "/calib")
+        if not os.path.exists(im_path_r+ g_dev["day"] + "/to_AWS"):
+            os.makedirs(im_path_r+ g_dev["day"]+ "/to_AWS")
+
+        if self.config["save_to_alt_path"] == "yes":
+            self.alt_path = self.config[
+                "alt_path"
+            ]  +'/' + self.config['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
+
+            os.makedirs(
+                self.alt_path , exist_ok=True
+            )
+
+            os.makedirs(
+                self.alt_path + g_dev["day"], exist_ok=True
+            )
+
+            os.makedirs(
+               self.alt_path + g_dev["day"] + "/raw/" , exist_ok=True
+            )
+            
+            
+        raw_path = im_path_r + g_dev['day'] + "/raw/"
+        
+        
+        
+        # FOR POINTING AND FOCUS EXPOSURES, CONSTRUCT THE SCALED MASTERDARK WHILE
+        # THE EXPOSURE IS RUNNING
+        if (frame_type=='pointing' or focus_image == True) and smartstackid == 'no':
+            if not self.substacker:
+                try:
+                    # Sort out an intermediate dark
+                    fraction_through_range=0
+                    if exposure_time < 0.5:
+                        intermediate_tempdark=(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
+                    elif exposure_time < 2.0:
+                        fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
+                        intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
+
+                    elif exposure_time < 10.0:
+                        fraction_through_range=(exposure_time-2)/(10.0-2.0)
+                        intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
+
+                    elif exposure_time < broadband_ss_biasdark_exp_time:
+                        fraction_through_range=(exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
+                        intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
+
+                    elif exposure_time < narrowband_ss_biasdark_exp_time:
+                        fraction_through_range=(exposure_time-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
+                        intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
+
+                    elif dark_exp_time > narrowband_ss_biasdark_exp_time:
+                        fraction_through_range=(exposure_time-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
+                        intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles[str(1)]) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
+                    else:
+                        intermediate_tempdark=(g_dev['cam'].darkFiles['narrowband_ss_dark'])
+                except:
+                    try:
+                        intermediate_tempdark=(g_dev['cam'].darkFiles['1'])
+                    except:
+                        pass
+                #pointingfocus_masterdark_done=True
+
+            intermediate_tempflat=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
+            
+        
+        ## For traditional exposures, spin up all the subprocesses ready to collect and process the files once they arrive
+        if (not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing'):
+            #spun_up_subprocesses = True
+            
+            ######### Trigger off threads to wait for their respective files
+            # SMARTSTACK THREAD
+            if ( not frame_type.lower() in [
+                "bias",
+                "dark",
+                "flat",
+                "solar",
+                "lunar",
+                "skyflat",
+                "screen",
+                "spectrum",
+                "auto_focus",
+                "focus",
+                "pointing"
+            ]) and smartstackid != 'no' and not a_dark_exposure :
+                
+                smartstackthread_filename=self.local_calibration_path + "smartstacks/smartstack" + time.time().replace('d','') + '.pickle'     
+                
+                
+                    
+                    
+                crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
+                yb=self.config["camera"][g_dev['cam'].name]["settings"][
+                    "crop_preview_ybottom"
+                ]
+                yt=self.config["camera"][g_dev['cam'].name]["settings"][
+                    "crop_preview_ytop"
+                ]
+                xl=self.config["camera"][g_dev['cam'].name]["settings"][
+                    "crop_preview_xleft"
+                ]
+                xr=self.config["camera"][g_dev['cam'].name]["settings"][
+                    "crop_preview_xright"
+                ]
+
+                if g_dev['cam'].dither_enabled:
+                    crop_preview=True
+                    yb=yb+50
+                    yt=yt+50
+                    xl=xl+50
+                    xr=xr+50
+
+                if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                    picklepayload=[
+                        smartstackthread_filename,
+                        smartstackid,
+                        self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
+                        self.local_calibration_path,
+                        self.pixscale,
+                        self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
+                        self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
+                        self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
+                        self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
+                        self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
+                        self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
+                        g_dev["mnt"].pier_side,
+                        self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
+                        self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
+                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
+                        g_dev['cam'].native_bin,
+                        g_dev['cam'].camera_known_readnoise,
+                        self.config['minimum_realistic_seeing'],
+                        self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] ,
+                        self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'] ,
+                        self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'] ,
+                        self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'],
+                        self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'],
+                        crop_preview,yb,yt,xl,xr,
+                        zoom_factor
+                        ]
+                else:
+                    picklepayload=[
+                        smartstackthread_filename,
+                        smartstackid,
+                        False,
+                        self.obsid_path,
+                        self.pixscale,
+                        self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
+                        self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
+                        self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
+                        self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
+                        self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
+                        self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
+                        g_dev["mnt"].pier_side,
+                        self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
+                        None,
+                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
+                        g_dev['cam'].native_bin,
+                        g_dev['cam'].camera_known_readnoise,
+                        self.config['minimum_realistic_seeing'],
+                        0,0,0,0,0,
+                        crop_preview,yb,yt,xl,xr,
+                        zoom_factor
+                        ]
+
+                # Another pickle debugger
+                if False :
+                    pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
+
+                smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                
+                self.camera_path + g_dev['day'] + "/to_AWS/"
+
+                try:
+                    pickle.dump(picklepayload, smartstack_subprocess.stdin)
+                except:
+                    plog ("Problem in the smartstack pickle dump")
+                    plog(traceback.format_exc())
+                
+                # #  We don't have to wait for the full smartstack process to finish, just until it gets to the stage where 
+                # # It has saved out the next layer to the npy. Beyond this, it is just making a jpeg and the reduced file. 
+                # while not os.path.exists(paths["im_path"] + 'smartstack.pickle'):
+                #     time.sleep(0.5)
+
+                self.fast_queue.put((self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name ,time.time()), block=False)
+                # self.mediumui_queue.put(
+                #     (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
+
+                # try:
+                #     reprojection_failed=pickle.load(open(paths["im_path"] + 'smartstack.pickle', 'rb'))
+                # except:
+                #     plog ("Couldn't find smartstack pickle?")
+                #     plog (traceback.format_exc())
+                #     reprojection_failed=True
+                # try:
+                #     os.remove(paths["im_path"] + 'smartstack.pickle')
+                # except:
+                #     pass
+
+                # if reprojection_failed == True:
+                #     g_dev["obs"].send_to_user(
+                #         "A smartstack failed to stack, the single image has been sent to the GUI.",
+                #         p_level="INFO",
+                #     )
+
+                # else:
+                #     g_dev["obs"].send_to_user(
+                #         "A preview SmartStack, "
+                #         + str(sskcounter + 1)
+                #         + " out of "
+                #         + str(Nsmartstack)
+                #         + ", has been sent to the GUI.",
+                #         p_level="INFO",
+                #     )
+                # plog(datetime.datetime.now())
+                    
+                    
+                
+                
+                #g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
+            else:
+                smartstackthread_filename='no'
+                
+            # else:
+            #     if not self.config['keep_reduced_on_disk']:
+            #         try:
+            #             os.remove(red_path + red_name01)
+            #         except:
+            #             pass
+        
+        
+        
+        
+        
+        
+        
+        
+            # SEP THREAD
+            septhread_filename=self.local_calibration_path + "smartstacks/sep" + time.time().replace('d','') + '.pickle'
+            
+            if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
+                do_sep=False
+            else:
+                do_sep=True
+
+            is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+            
+            # These are deprecated, just holding onto it until a cleanup at some stage
+            interpolate_for_focus= False
+            bin_for_focus= False
+            focus_bin_value= 1
+            interpolate_for_sep=False
+            bin_for_sep= False
+            sep_bin_value= 1
+            focus_jpeg_size= 500
+
+            saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+            minimum_realistic_seeing=self.config['minimum_realistic_seeing']
+            sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+
+            # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
+            if False:
+                pickle.dump([septhread_filename, self.pixscale, self.readnoise, avg_foc, focus_image, im_path, text_name, 'hduheader', cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,self.native_bin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
+
+            try:
+
+                pickle.dump([septhread_filename, self.pixscale, self.readnoise, avg_foc, focus_image, im_path, text_name, 'hduheader', cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,self.native_bin,do_sep,exposure_time], sep_subprocess.stdin)
+            except:
+                plog ("Problem in the SEP pickle dump")
+                plog(traceback.format_exc())
+
+            # delete the subprocess connection once the data have been dumped out to the process.
+            del sep_subprocess
+
+            packet=(avg_foc,exposure_time,this_exposure_filter, airmass_of_observation)
+            self.file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
+
+            self.enqueue_for_fastUI(im_path, text_name)
+
+            del hdufocusdata
+
+        
+        
+            
+        
+        
+        
+            # JPEG process
+            if smartstackid == 'no':
+                mainjpegthread_filename=self.local_calibration_path + "smartstacks/mainjpeg" + time.time().replace('d','') + '.pickle'
+                #osc_jpeg_timer_start = time.time()
+                #(hdusmalldata, smartstackid, paths, pier_side, zoom_factor) = self.mainjpeg_queue.get(block=False)
+                is_osc = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+                osc_bayer= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"]
+                if is_osc:
+                    osc_background_cut=self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']
+                    osc_brightness_enhance= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance']
+                    osc_contrast_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance']
+                    osc_colour_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance']
+                    osc_saturation_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance']
+                    osc_sharpness_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance']
+                else:
+                    osc_background_cut=0
+                    osc_brightness_enhance= 0
+                    osc_contrast_enhance=0
+                    osc_colour_enhance=0
+                    osc_saturation_enhance=0
+                    osc_sharpness_enhance=0
+                # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
+                transpose_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]
+                flipx_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']
+                flipy_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']
+                rotate180_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']
+                rotate90_jpeg = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']
+                rotate270_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']
+                crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
+                yb = self.config["camera"][g_dev['cam'].name]["settings"][
+                     "crop_preview_ybottom"
+                 ]
+                yt = self.config["camera"][g_dev['cam'].name]["settings"][
+                     "crop_preview_ytop"
+                 ]
+                xl = self.config["camera"][g_dev['cam'].name]["settings"][
+                     "crop_preview_xleft"
+                 ]
+                xr = self.config["camera"][g_dev['cam'].name]["settings"][
+                     "crop_preview_xright"
+                 ]
+                squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
+
+                # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
+                if False:
+                    #NB set this path to create test pickle for makejpeg routine.
+                    pickle.dump([mainjpegthread_filename, smartstackid, 'paths', g_dev["mnt"].pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+                        osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+                            rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], open('testjpegpickle','wb'))
+
+                jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+
+                try:
+                    pickle.dump([mainjpegthread_filename, smartstackid, 'paths', g_dev["mnt"].pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+                          osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+                              rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
+                except:
+                    plog ("Problem in the jpeg pickle dump")
+                    plog(traceback.format_exc())
+
+                #del hdusmalldata # Get big file out of memory
+
+                # Try saving the jpeg to disk and quickly send up to AWS to present for the user
+                # if smartstackid == 'no':
+                #     try:                        
+                self.enqueue_for_fastUI(
+                    self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name
+                )
+                    #     # self.enqueue_for_mediumUI(
+                    #     #     1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
+                    #     # )
+                    #     plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
+                    # except:
+                    #     plog(
+                    #         "there was an issue saving the preview jpg. Pushing on though"
+                    #     )
+            else:
+                mainjpegthread_filename='no'
+        
+        
+        
+            # Report files to the queues
+            
+            if not self.config["camera"][g_dev['cam'].alias]["settings"]["is_osc"]:                   
+
+                # Send this file up to ptrarchive
+                if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+
+                    #print ("INGESTERING " + raw_name00)
+                    g_dev['obs'].enqueue_for_PTRarchive(
+                        26000000, '', raw_path + raw_name00 +'.fz'
+                    )
+
+            else:  # Is an OSC
+
+                if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
+                    
+                    # try:
+                    #     hdu.header['PIXSCALE'] = float(hdu.header['PIXSCALE'])*2
+                    # except:
+                    #     pass
+                    # hdu.header['CDELT1'] = float(hdu.header['CDELT1'])*2
+                    # hdu.header['CDELT2'] = float(hdu.header['CDELT2'])*2
+                    # tempfilter = hdu.header['FILTER']
+                    tempfilename = raw_path + raw_name00
+                    
+                    # # Save and send R1
+                    # hdu.header['FILTER'] = tempfilter + '_R1'
+                    # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('-EX', 'R1-EX')
+
+                    if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                       
+                        g_dev['obs'].enqueue_for_PTRarchive(
+                            26000000, '', tempfilename.replace('-EX', 'R1-EX') + '.fz'
+                        )                        
+
+                    # # Save and send G1
+                    # hdu.header['FILTER'] = tempfilter + '_G1'
+                    # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('R1-EX', 'G1-EX')
+
+                    if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                        
+                        g_dev['obs'].enqueue_for_PTRarchive(
+                            26000000, '', tempfilename.replace('-EX', 'G1-EX')+ '.fz'
+                        )                        
+
+                    # # Save and send G2
+                    # hdu.header['FILTER'] = tempfilter + '_G2'
+                    # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('G1-EX', 'G2-EX')
+                    
+                    if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                       
+                        g_dev['obs'].enqueue_for_PTRarchive(
+                            26000000, '', tempfilename.replace('-EX', 'G2-EX')+ '.fz'
+                        )
+                    
+                    # # Save and send B1
+                    # hdu.header['FILTER'] = tempfilter + '_B1'
+                    # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('G2-EX', 'B1-EX')
+
+                    if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                       
+                        g_dev['obs'].enqueue_for_PTRarchive(
+                            26000000, '', tempfilename.replace('-EX', 'B1-EX')+ '.fz'
+                        )
+                    
+                    # # Save and send clearV
+                    # hdu.header['FILTER'] = tempfilter + '_clearV'
+                    # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('B1-EX', 'CV-EX')
+
+                    if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                        
+                        g_dev['obs'].enqueue_for_PTRarchive(
+                            26000000, '', tempfilename.replace('-EX', 'CV-EX')+ '.fz'
+                        )   
+                else:
+                    print("this bayer grid not implemented yet")
+                    
+                    
+                
+                if solve_it == True or (not manually_requested_calibration or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
+                                           or g_dev['obs'].images_since_last_solve > self.config["solve_nth_image"] or (datetime.datetime.utcnow() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=self.config["solve_timer"])):
+
+                    cal_name = (
+                        cal_name[:-9] + "F012" + cal_name[-7:]
+                    )
+
+                    # Check this is not an image in a smartstack set.
+                    # No shifts in pointing are wanted in a smartstack set!
+                    image_during_smartstack=False
+                    if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or sskcounter ==0):
+                        image_during_smartstack=True
+                    if exposure_time < 1.0:
+                        print ("Not doing Platesolve for sub-second exposures.")
+                    else:
+                        if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
+
+                            # # Make sure any dither or return nudge has finished before platesolution
+                            if sskcounter == 0 and Nsmartstack > 1:
+                                firstframesmartstack = True
+                            else:
+                                firstframesmartstack = False
+                            platesolvethread_filename=self.local_calibration_path + "smartstacks/platesolve" + time.time().replace('d','') + '.pickle'
+                            
+                            g_dev['obs'].to_platesolve((platesolvethread_filename, 'hdusmallheader', cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, ''))
+                              
+                            
+                        else:
+                            platesolvethread_filename='no'
+        
+        
+        
+        
+
+
         while True:
 
             if (
@@ -3420,44 +4027,10 @@ class Camera:
 
                 remaining = round(self.completion_time - time.time(), 1)
 
-                # FOR POINTING AND FOCUS EXPOSURES, CONSTRUCT THE SCALED MASTERDARK WHILE
-                # THE EXPOSURE IS RUNNING
-                if (frame_type=='pointing' or focus_image == True) and not pointingfocus_masterdark_done and smartstackid == 'no':
-                    if not self.substacker:
-                        try:
-                            # Sort out an intermediate dark
-                            fraction_through_range=0
-                            if exposure_time < 0.5:
-                                intermediate_tempdark=(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
-                            elif exposure_time < 2.0:
-                                fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
-                                intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
-
-                            elif exposure_time < 10.0:
-                                fraction_through_range=(exposure_time-2)/(10.0-2.0)
-                                intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
-
-                            elif exposure_time < broadband_ss_biasdark_exp_time:
-                                fraction_through_range=(exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
-                                intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
-
-                            elif exposure_time < narrowband_ss_biasdark_exp_time:
-                                fraction_through_range=(exposure_time-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
-                                intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
-
-                            elif dark_exp_time > narrowband_ss_biasdark_exp_time:
-                                fraction_through_range=(exposure_time-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
-                                intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles[str(1)]) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
-                            else:
-                                intermediate_tempdark=(g_dev['cam'].darkFiles['narrowband_ss_dark'])
-                        except:
-                            try:
-                                intermediate_tempdark=(g_dev['cam'].darkFiles['1'])
-                            except:
-                                pass
-                        pointingfocus_masterdark_done=True
-
-                    intermediate_tempflat=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
+                
+                
+                
+                
 
                 if remaining > 0:
                     if time.time() - self.plog_exposure_time_counter_timer > 10.0:
@@ -3708,37 +4281,31 @@ class Camera:
                                     )
 
 
-                # If you are shooting for short exposure times, the overhead
-                # becomes a large fraction of the actual exposure time,
-                # sometimes more. So if it is a short exposure, assume nothing changed
-                # much since the beginning.
-                if exposure_time >= 5:
-                    try:
-                        g_dev["rot"].get_quick_status(self.post_rot)
-                    except:
-                        pass
-                    try:
-                        g_dev["foc"].get_quick_status(self.post_foc)
-                    except:
-                        pass
-                    try:
-                        g_dev["mnt"].get_rapid_exposure_status(
-                            self.post_mnt
-                        )  
-                    except:
-                        pass
-                else:
-                    self.post_rot = self.pre_rot
-                    self.post_foc = self.pre_foc
-                    self.post_mnt = self.pre_mnt
+                # # If you are shooting for short exposure times, the overhead
+                # # becomes a large fraction of the actual exposure time,
+                # # sometimes more. So if it is a short exposure, assume nothing changed
+                # # much since the beginning.
+                # if exposure_time >= 5:
+                #     try:
+                #         g_dev["rot"].get_quick_status(self.post_rot)
+                #     except:
+                #         pass
+                #     try:
+                #         g_dev["foc"].get_quick_status(self.post_foc)
+                #     except:
+                #         pass
+                #     try:
+                #         g_dev["mnt"].get_rapid_exposure_status(
+                #             self.post_mnt
+                #         )  
+                #     except:
+                #         pass
+                # else:
+                #     self.post_rot = self.pre_rot
+                #     self.post_foc = self.pre_foc
+                #     self.post_mnt = self.pre_mnt
                     
-                try:
-                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
-                except:
-                    next_seq = reset_sequence(self.config["camera"][self.name]["name"])
-                    
-                self.next_seq= next_seq
-
+                
                 if not frame_type in (
                         "flat",
                         "screenflat",
@@ -3758,54 +4325,6 @@ class Camera:
                     substack_start_time=None
                     sub_stacker_midpoints=None
                     
-                ################################################# SETTING UP COMMON THINGS FOR ALL THREADS AND HEADERS.
-                ################################################# Nothing slow goes here if can be helped.
-                    
-                readout_estimate = copy.deepcopy(self.readout_estimate)
-                # If there isn't an estimated readout time shelf yet, use this first one as the estimate to begin with.
-                if self.readout_time==0:
-                    self.readout_time=copy.deepcopy(readout_estimate)        
-                    
-                if not g_dev['obs'].mountless_operation:
-                    avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
-                else:
-                    avg_mnt = None
-                try:
-                    avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
-                except:
-                    pass
-                try:
-                    avg_rot = g_dev["rot"].get_average_status(
-                        self.pre_rot, self.post_rot
-                    )
-                except:
-                    avg_rot = None
-
-                object_name='Unknown'
-                object_specf='no'
-
-                if "object_name" in opt:
-                    if (
-                        opt["object_name"] != "Unspecified"
-                        and opt["object_name"] != ""
-                    ):
-                        object_name = opt["object_name"]
-                        object_specf = "yes"
-                elif (
-                    g_dev["mnt"].object != "Unspecified"
-                    or g_dev["mnt"].object != "empty"
-                ):
-                    object_name = (g_dev["mnt"].object, "Object name")
-                    object_specf = "yes"
-                else:
-                    RAtemp = g_dev["mnt"].current_icrs_ra
-                    DECtemp = g_dev["mnt"].current_icrs_dec
-                    RAstring = f"{RAtemp:.1f}".replace(".", "h")
-                    DECstring = f"{DECtemp:.1f}".replace("-", "n").replace(".", "d")
-                    object_name = RAstring + "ra" + DECstring + "dec"
-                    object_specf = "no"
-                
-                focus_position=g_dev['foc'].current_focus_position                
                 
                 ########################### HERE WE EITHER GET THE IMAGE ARRAY OR REPORT THE SUBSTACKER ARRAY
                 if self.substacker:
@@ -3842,505 +4361,11 @@ class Camera:
                             time.sleep(3)
                             retrycounter = retrycounter + 1
                 
-                # RAW NAMES FOR FOCUS AND POINTING SETUP HERE
-                im_path_r = self.camera_path
-                im_path = im_path_r + g_dev["day"] + "/to_AWS/"
-                im_type = "EX"
-                f_ext = "-"
-                cal_name = (
-                    self.config["obs_id"]
-                    + "-"
-                    + self.config["camera"][self.name]["name"]
-                    + "-"
-                    + g_dev["day"]
-                    + "-"
-                    + next_seq
-                    + f_ext
-                    + "-"
-                    + im_type
-                    + "00.fits"
-                )
-                cal_path = im_path_r + g_dev["day"] + "/calib/"                    
                 
-                jpeg_name = (
-                    self.config["obs_id"]
-                    + "-"
-                    + self.config["camera"][self.name]["name"]
-                    + "-"
-                    + g_dev["day"]
-                    + "-"
-                    + next_seq
-                    + "-"
-                    + im_type
-                    + "10.jpg"
-                )            
-                
-                raw_name00 = (
-                    self.config["obs_id"]
-                    + "-"
-                    + self.config["camera"][self.name]["name"] + '_' + str(frame_type) + '_' + str(this_exposure_filter)
-                    + "-"
-                    + g_dev["day"]
-                    + "-"
-                    + next_seq
-                    + "-"
-                    + im_type
-                    + "00.fits"
-                )
-                
-                text_name = (
-                        self.config["obs_id"]
-                        + "-"
-                        + self.config["camera"][self.name]["name"]
-                        + "-"
-                        + g_dev["day"]
-                        + "-"
-                        + next_seq
-                        + "-"
-                        + im_type
-                        + "00.txt"
-                    )
-                
-                cal_path = im_path_r + g_dev["day"] + "/calib/"
-
-                if not os.path.exists(im_path_r):
-                    os.makedirs(im_path_r)
-                if not os.path.exists(im_path_r+ g_dev["day"]):
-                    os.makedirs(im_path_r+ g_dev["day"])
-                if not os.path.exists(im_path_r+ g_dev["day"]+ "/calib"):
-                    os.makedirs(im_path_r+ g_dev["day"]+ "/calib")
-                if not os.path.exists(im_path_r+ g_dev["day"] + "/to_AWS"):
-                    os.makedirs(im_path_r+ g_dev["day"]+ "/to_AWS")
-
-                if self.config["save_to_alt_path"] == "yes":
-                    self.alt_path = self.config[
-                        "alt_path"
-                    ]  +'/' + self.config['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
-
-                    os.makedirs(
-                        self.alt_path , exist_ok=True
-                    )
-
-                    os.makedirs(
-                        self.alt_path + g_dev["day"], exist_ok=True
-                    )
-
-                    os.makedirs(
-                       self.alt_path + g_dev["day"] + "/raw/" , exist_ok=True
-                    )
-                    
-                    
-                raw_path = im_path_r + g_dev['day'] + "/raw/"
                             
                 ################################################# CUTOFF FOR THE POSTPROCESSING QUEUE
                 
-                ######### Trigger off threads to wait for their respective files
-                # SMARTSTACK THREAD
-                if ( not frame_type.lower() in [
-                    "bias",
-                    "dark",
-                    "flat",
-                    "solar",
-                    "lunar",
-                    "skyflat",
-                    "screen",
-                    "spectrum",
-                    "auto_focus",
-                    "focus",
-                    "pointing"
-                ]) and smartstackid != 'no' and not a_dark_exposure :
-                    
-                    smartstackthread_filename=self.local_calibration_path + "smartstacks/smartstack" + time.time().replace('d','') + '.pickle'     
-                    
-                    
-                        
-                        
-                    crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
-                    yb=self.config["camera"][g_dev['cam'].name]["settings"][
-                        "crop_preview_ybottom"
-                    ]
-                    yt=self.config["camera"][g_dev['cam'].name]["settings"][
-                        "crop_preview_ytop"
-                    ]
-                    xl=self.config["camera"][g_dev['cam'].name]["settings"][
-                        "crop_preview_xleft"
-                    ]
-                    xr=self.config["camera"][g_dev['cam'].name]["settings"][
-                        "crop_preview_xright"
-                    ]
-
-                    if g_dev['cam'].dither_enabled:
-                        crop_preview=True
-                        yb=yb+50
-                        yt=yt+50
-                        xl=xl+50
-                        xr=xr+50
-
-                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                        picklepayload=[
-                            smartstackthread_filename,
-                            smartstackid,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
-                            self.local_calibration_path,
-                            self.pixscale,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
-                            g_dev["mnt"].pier_side,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
-                            self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
-                            g_dev['cam'].native_bin,
-                            g_dev['cam'].camera_known_readnoise,
-                            self.config['minimum_realistic_seeing'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] ,
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'] ,
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'] ,
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'],
-                            crop_preview,yb,yt,xl,xr,
-                            zoom_factor
-                            ]
-                    else:
-                        picklepayload=[
-                            smartstackthread_filename,
-                            smartstackid,
-                            False,
-                            self.obsid_path,
-                            self.pixscale,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
-                            g_dev["mnt"].pier_side,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
-                            None,
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
-                            g_dev['cam'].native_bin,
-                            g_dev['cam'].camera_known_readnoise,
-                            self.config['minimum_realistic_seeing'],
-                            0,0,0,0,0,
-                            crop_preview,yb,yt,xl,xr,
-                            zoom_factor
-                            ]
-
-                    # Another pickle debugger
-                    if False :
-                        pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
-
-                    smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-                    
-                    self.camera_path + g_dev['day'] + "/to_AWS/"
-
-                    try:
-                        pickle.dump(picklepayload, smartstack_subprocess.stdin)
-                    except:
-                        plog ("Problem in the smartstack pickle dump")
-                        plog(traceback.format_exc())
-                    
-                    # #  We don't have to wait for the full smartstack process to finish, just until it gets to the stage where 
-                    # # It has saved out the next layer to the npy. Beyond this, it is just making a jpeg and the reduced file. 
-                    # while not os.path.exists(paths["im_path"] + 'smartstack.pickle'):
-                    #     time.sleep(0.5)
-
-                    self.fast_queue.put((self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name ,time.time()), block=False)
-                    # self.mediumui_queue.put(
-                    #     (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
-
-                    # try:
-                    #     reprojection_failed=pickle.load(open(paths["im_path"] + 'smartstack.pickle', 'rb'))
-                    # except:
-                    #     plog ("Couldn't find smartstack pickle?")
-                    #     plog (traceback.format_exc())
-                    #     reprojection_failed=True
-                    # try:
-                    #     os.remove(paths["im_path"] + 'smartstack.pickle')
-                    # except:
-                    #     pass
-
-                    # if reprojection_failed == True:
-                    #     g_dev["obs"].send_to_user(
-                    #         "A smartstack failed to stack, the single image has been sent to the GUI.",
-                    #         p_level="INFO",
-                    #     )
-
-                    # else:
-                    #     g_dev["obs"].send_to_user(
-                    #         "A preview SmartStack, "
-                    #         + str(sskcounter + 1)
-                    #         + " out of "
-                    #         + str(Nsmartstack)
-                    #         + ", has been sent to the GUI.",
-                    #         p_level="INFO",
-                    #     )
-                    # plog(datetime.datetime.now())
-                        
-                        
-                    
-                    
-                    #g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
-                else:
-                    smartstackthread_filename='no'
-                    
-                # else:
-                #     if not self.config['keep_reduced_on_disk']:
-                #         try:
-                #             os.remove(red_path + red_name01)
-                #         except:
-                #             pass
-            
-            
-            
-            
-            
-            
-            
-            
-                # SEP THREAD
-                septhread_filename=self.local_calibration_path + "smartstacks/sep" + time.time().replace('d','') + '.pickle'
-                
-                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
-                    do_sep=False
-                else:
-                    do_sep=True
-    
-                is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
-                
-                # These are deprecated, just holding onto it until a cleanup at some stage
-                interpolate_for_focus= False
-                bin_for_focus= False
-                focus_bin_value= 1
-                interpolate_for_sep=False
-                bin_for_sep= False
-                sep_bin_value= 1
-                focus_jpeg_size= 500
-    
-                saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                minimum_realistic_seeing=self.config['minimum_realistic_seeing']
-                sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-    
-                # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                if False:
-                    pickle.dump([septhread_filename, self.pixscale, self.readnoise, avg_foc, focus_image, im_path, text_name, 'hduheader', cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,self.native_bin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
-    
-                try:
-    
-                    pickle.dump([septhread_filename, self.pixscale, self.readnoise, avg_foc, focus_image, im_path, text_name, 'hduheader', cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,self.native_bin,do_sep,exposure_time], sep_subprocess.stdin)
-                except:
-                    plog ("Problem in the SEP pickle dump")
-                    plog(traceback.format_exc())
-    
-                # delete the subprocess connection once the data have been dumped out to the process.
-                del sep_subprocess
-    
-                packet=(avg_foc,exposure_time,this_exposure_filter, airmass_of_observation)
-                self.file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
-    
-                self.enqueue_for_fastUI(im_path, text_name)
-    
-                del hdufocusdata
-
-            
-            
-                
-            
-            
-            
-                # JPEG process
-                if smartstackid == 'no':
-                    mainjpegthread_filename=self.local_calibration_path + "smartstacks/mainjpeg" + time.time().replace('d','') + '.pickle'
-                    #osc_jpeg_timer_start = time.time()
-                    #(hdusmalldata, smartstackid, paths, pier_side, zoom_factor) = self.mainjpeg_queue.get(block=False)
-                    is_osc = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
-                    osc_bayer= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"]
-                    if is_osc:
-                        osc_background_cut=self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']
-                        osc_brightness_enhance= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance']
-                        osc_contrast_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance']
-                        osc_colour_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance']
-                        osc_saturation_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance']
-                        osc_sharpness_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance']
-                    else:
-                        osc_background_cut=0
-                        osc_brightness_enhance= 0
-                        osc_contrast_enhance=0
-                        osc_colour_enhance=0
-                        osc_saturation_enhance=0
-                        osc_sharpness_enhance=0
-                    # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
-                    transpose_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]
-                    flipx_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']
-                    flipy_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']
-                    rotate180_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']
-                    rotate90_jpeg = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']
-                    rotate270_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']
-                    crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
-                    yb = self.config["camera"][g_dev['cam'].name]["settings"][
-                         "crop_preview_ybottom"
-                     ]
-                    yt = self.config["camera"][g_dev['cam'].name]["settings"][
-                         "crop_preview_ytop"
-                     ]
-                    xl = self.config["camera"][g_dev['cam'].name]["settings"][
-                         "crop_preview_xleft"
-                     ]
-                    xr = self.config["camera"][g_dev['cam'].name]["settings"][
-                         "crop_preview_xright"
-                     ]
-                    squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
-    
-                    # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                    if False:
-                        #NB set this path to create test pickle for makejpeg routine.
-                        pickle.dump([mainjpegthread_filename, smartstackid, 'paths', g_dev["mnt"].pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                            osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                                rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], open('testjpegpickle','wb'))
-    
-                    jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-    
-                    try:
-                        pickle.dump([mainjpegthread_filename, smartstackid, 'paths', g_dev["mnt"].pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                              osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                                  rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
-                    except:
-                        plog ("Problem in the jpeg pickle dump")
-                        plog(traceback.format_exc())
-    
-                    #del hdusmalldata # Get big file out of memory
-    
-                    # Try saving the jpeg to disk and quickly send up to AWS to present for the user
-                    # if smartstackid == 'no':
-                    #     try:                        
-                    self.enqueue_for_fastUI(
-                        self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name
-                    )
-                        #     # self.enqueue_for_mediumUI(
-                        #     #     1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
-                        #     # )
-                        #     plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
-                        # except:
-                        #     plog(
-                        #         "there was an issue saving the preview jpg. Pushing on though"
-                        #     )
-                else:
-                    mainjpegthread_filename='no'
-            
-            
-            
-                # Report files to the queues
-                
-                if not self.config["camera"][g_dev['cam'].alias]["settings"]["is_osc"]:                   
-
-                    # Send this file up to ptrarchive
-                    if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-
-                        #print ("INGESTERING " + raw_name00)
-                        g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', raw_path + raw_name00 +'.fz'
-                        )
-
-                else:  # Is an OSC
-
-                    if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
-                        
-                        # try:
-                        #     hdu.header['PIXSCALE'] = float(hdu.header['PIXSCALE'])*2
-                        # except:
-                        #     pass
-                        # hdu.header['CDELT1'] = float(hdu.header['CDELT1'])*2
-                        # hdu.header['CDELT2'] = float(hdu.header['CDELT2'])*2
-                        # tempfilter = hdu.header['FILTER']
-                        tempfilename = raw_path + raw_name00
-                        
-                        # # Save and send R1
-                        # hdu.header['FILTER'] = tempfilter + '_R1'
-                        # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('-EX', 'R1-EX')
-
-                        if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-                           
-                            g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'R1-EX') + '.fz'
-                            )                        
-
-                        # # Save and send G1
-                        # hdu.header['FILTER'] = tempfilter + '_G1'
-                        # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('R1-EX', 'G1-EX')
-
-                        if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-                            
-                            g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'G1-EX')+ '.fz'
-                            )                        
-
-                        # # Save and send G2
-                        # hdu.header['FILTER'] = tempfilter + '_G2'
-                        # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('G1-EX', 'G2-EX')
-                        
-                        if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-                           
-                            g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'G2-EX')+ '.fz'
-                            )
-                        
-                        # # Save and send B1
-                        # hdu.header['FILTER'] = tempfilter + '_B1'
-                        # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('G2-EX', 'B1-EX')
-
-                        if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-                           
-                            g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'B1-EX')+ '.fz'
-                            )
-                        
-                        # # Save and send clearV
-                        # hdu.header['FILTER'] = tempfilter + '_clearV'
-                        # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('B1-EX', 'CV-EX')
-
-                        if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-                            
-                            g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'CV-EX')+ '.fz'
-                            )   
-                    else:
-                        print("this bayer grid not implemented yet")
-                        
-                        
-                    
-                    if solve_it == True or (not manually_requested_calibration or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
-                                               or g_dev['obs'].images_since_last_solve > self.config["solve_nth_image"] or (datetime.datetime.utcnow() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=self.config["solve_timer"])):
-
-                        cal_name = (
-                            cal_name[:-9] + "F012" + cal_name[-7:]
-                        )
-
-                        # Check this is not an image in a smartstack set.
-                        # No shifts in pointing are wanted in a smartstack set!
-                        image_during_smartstack=False
-                        if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or sskcounter ==0):
-                            image_during_smartstack=True
-                        if exposure_time < 1.0:
-                            print ("Not doing Platesolve for sub-second exposures.")
-                        else:
-                            if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
-
-                                # # Make sure any dither or return nudge has finished before platesolution
-                                if sskcounter == 0 and Nsmartstack > 1:
-                                    firstframesmartstack = True
-                                else:
-                                    firstframesmartstack = False
-                                platesolvethread_filename=self.local_calibration_path + "smartstacks/platesolve" + time.time().replace('d','') + '.pickle'
-                                
-                                g_dev['obs'].to_platesolve((platesolvethread_filename, 'hdusmallheader', cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, ''))
-                                  
-                                
-                            else:
-                                platesolvethread_filename='no'
-            
+               
             
             
             

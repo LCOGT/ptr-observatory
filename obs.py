@@ -2204,7 +2204,9 @@ class Observatory:
                         pass
                 else:
 
-                    hdufocusdata=np.load(pickle.load(platesolve_token_filename))                    
+                    imagefilename=pickle.load(platesolve_token_filename)
+                    hdufocusdata=np.load(imagefilename)                 
+                    hduheader = fits.open(imagefilename.replace('.npy','.head'))[0].header
 
 
                     is_osc=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
