@@ -2108,63 +2108,63 @@ class Observatory:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
                 time.sleep(1)
 
-    def sep_process(self):
-        """This is the sep queue that happens in a different process
-        than the main camera thread. SEPs can take 5-10, up to 30 seconds sometimes
-        to run, so it is an overhead we can't have hanging around.
-        """
+    # def sep_process(self):
+    #     """This is the sep queue that happens in a different process
+    #     than the main camera thread. SEPs can take 5-10, up to 30 seconds sometimes
+    #     to run, so it is an overhead we can't have hanging around.
+    #     """
 
-        while True:
-            if (not self.sep_queue.empty()):
-                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, nativebin, exposure_time) = self.sep_queue.get(block=False)
+    #     while True:
+    #         if (not self.sep_queue.empty()):
+    #             (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, nativebin, exposure_time) = self.sep_queue.get(block=False)
 
-                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
-                    do_sep=False
-                else:
-                    do_sep=True
+    #             if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
+    #                 do_sep=False
+    #             else:
+    #                 do_sep=True
 
-                is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+    #             is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
                 
-                # These are deprecated, just holding onto it until a cleanup at some stage
-                interpolate_for_focus= False
-                bin_for_focus= False
-                focus_bin_value= 1
-                interpolate_for_sep=False
-                bin_for_sep= False
-                sep_bin_value= 1
-                focus_jpeg_size= 500
+    #             # These are deprecated, just holding onto it until a cleanup at some stage
+    #             interpolate_for_focus= False
+    #             bin_for_focus= False
+    #             focus_bin_value= 1
+    #             interpolate_for_sep=False
+    #             bin_for_sep= False
+    #             sep_bin_value= 1
+    #             focus_jpeg_size= 500
 
-                saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                minimum_realistic_seeing=self.config['minimum_realistic_seeing']
-                sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    #             saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+    #             minimum_realistic_seeing=self.config['minimum_realistic_seeing']
+    #             sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                if False:
-                    pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
+    #             # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
+    #             if False:
+    #                 pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
 
-                try:
+    #             try:
 
-                    pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep,exposure_time], sep_subprocess.stdin)
-                except:
-                    plog ("Problem in the SEP pickle dump")
-                    plog(traceback.format_exc())
+    #                 pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep,exposure_time], sep_subprocess.stdin)
+    #             except:
+    #                 plog ("Problem in the SEP pickle dump")
+    #                 plog(traceback.format_exc())
 
-                # delete the subprocess connection once the data have been dumped out to the process.
-                del sep_subprocess
+    #             # delete the subprocess connection once the data have been dumped out to the process.
+    #             del sep_subprocess
 
-                packet=(avg_foc,hduheader['EXPTIME'],hduheader['FILTER'], hduheader['AIRMASS'])
-                self.file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
+    #             packet=(avg_foc,hduheader['EXPTIME'],hduheader['FILTER'], hduheader['AIRMASS'])
+    #             self.file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
 
-                self.enqueue_for_fastUI(im_path, text_name)
+    #             self.enqueue_for_fastUI(im_path, text_name)
 
-                del hdufocusdata
+    #             del hdufocusdata
 
-                self.sep_queue.task_done()
-                time.sleep(0.25)
+    #             self.sep_queue.task_done()
+    #             time.sleep(0.25)
 
-            else:
-                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                time.sleep(0.25)
+    #         else:
+    #             # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+    #             time.sleep(0.25)
 
     def platesolve_process(self):
         """This is the platesolve queue that happens in a different process
@@ -3603,14 +3603,14 @@ class Observatory:
     def to_slow_process(self, priority, to_slow):
         self.slow_camera_queue.put((priority, to_slow), block=False)
 
-    def to_platesolve(self, to_platesolve):
-        self.platesolve_queue.put( to_platesolve, block=False)
+    # def to_platesolve(self, to_platesolve):
+    #     self.platesolve_queue.put( to_platesolve, block=False)
 
-    def to_sep(self, to_sep):
-        self.sep_queue.put( to_sep, block=False)
+    # def to_sep(self, to_sep):
+    #     self.sep_queue.put( to_sep, block=False)
 
-    def to_mainjpeg(self, to_sep):
-        self.mainjpeg_queue.put( to_sep, block=False)
+    # def to_mainjpeg(self, to_sep):
+    #     self.mainjpeg_queue.put( to_sep, block=False)
 
     def request_update_status(self, mount_only=False):
         
