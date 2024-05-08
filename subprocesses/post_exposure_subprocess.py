@@ -1099,7 +1099,8 @@ try:
             "pointing"
         ]) and smartstackid != 'no' and not a_dark_exposure :
             #g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
-            np.save(hdusmalldata, smartstackthread_filename)
+            #np.save(hdusmalldata, smartstackthread_filename)
+            pickle.dump(image_filename, open(smartstackthread_filename, 'wb'))
             
         else:
             if not selfconfig['keep_reduced_on_disk']:
@@ -1141,12 +1142,14 @@ try:
         # Send data off to process jpeg if not a smartstack
         if smartstackid == 'no':
             #g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
-            np.save(hdusmalldata, mainjpegthread_filename)
+            # np.save(hdusmalldata, mainjpegthread_filename)
+            pickle.dump(image_filename, open(mainjpegthread_filename, 'wb'))
 
         
 
         if platesolvethread_filename !='no':
-            np.save(hdusmalldata, platesolvethread_filename)
+            # np.save(hdusmalldata, platesolvethread_filename)
+            pickle.dump(image_filename, open(platesolvethread_filename, 'wb'))
            #g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, ''))
                     # If it is the last of a set of smartstacks, we actually want to
                     # wait for the platesolve and nudge before starting the next smartstack.
