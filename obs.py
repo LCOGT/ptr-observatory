@@ -521,20 +521,20 @@ class Observatory:
         self.send_status_queue_thread.daemon = True
         self.send_status_queue_thread.start()
 
-        self.platesolve_queue = queue.Queue(maxsize=0)
-        self.platesolve_queue_thread = threading.Thread(target=self.platesolve_process, args=())
-        self.platesolve_queue_thread.daemon = True
-        self.platesolve_queue_thread.start()
+        # self.platesolve_queue = queue.Queue(maxsize=0)
+        # self.platesolve_queue_thread = threading.Thread(target=self.platesolve_process, args=())
+        # self.platesolve_queue_thread.daemon = True
+        # self.platesolve_queue_thread.start()
 
-        self.sep_queue = queue.Queue(maxsize=0)
-        self.sep_queue_thread = threading.Thread(target=self.sep_process, args=())
-        self.sep_queue_thread.daemon = True
-        self.sep_queue_thread.start()
+        # self.sep_queue = queue.Queue(maxsize=0)
+        # self.sep_queue_thread = threading.Thread(target=self.sep_process, args=())
+        # self.sep_queue_thread.daemon = True
+        # self.sep_queue_thread.start()
 
-        self.mainjpeg_queue = queue.Queue(maxsize=0)
-        self.mainjpeg_queue_thread = threading.Thread(target=self.mainjpeg_process, args=())
-        self.mainjpeg_queue_thread.daemon = True
-        self.mainjpeg_queue_thread.start()
+        # self.mainjpeg_queue = queue.Queue(maxsize=0)
+        # self.mainjpeg_queue_thread = threading.Thread(target=self.mainjpeg_process, args=())
+        # self.mainjpeg_queue_thread.daemon = True
+        # self.mainjpeg_queue_thread.start()
 
         self.laterdelete_queue = queue.Queue(maxsize=0)
         self.laterdelete_queue_thread = threading.Thread(target=self.laterdelete_process, args=())
@@ -546,12 +546,12 @@ class Observatory:
         self.sendtouser_queue_thread.daemon = True
         self.sendtouser_queue_thread.start()
 
-        self.smartstack_queue = queue.Queue(
-            maxsize=0
-        )
-        self.smartstack_queue_thread = threading.Thread(target=self.smartstack_image, args=())
-        self.smartstack_queue_thread.daemon = True
-        self.smartstack_queue_thread.start()
+        # self.smartstack_queue = queue.Queue(
+        #     maxsize=0
+        # )
+        # self.smartstack_queue_thread = threading.Thread(target=self.smartstack_image, args=())
+        # self.smartstack_queue_thread.daemon = True
+        # self.smartstack_queue_thread.start()
 
         self.queue_reporting_period = 60
         self.queue_reporting_timer = time.time() - (2* self.queue_reporting_period)
@@ -2020,93 +2020,93 @@ class Observatory:
             else:
                 time.sleep(0.25)
 
-    def mainjpeg_process(self, zoom_factor=False):
-        """
-        This is the main subprocess where jpegs are created for the UI.
-        """
+    # def mainjpeg_process(self, zoom_factor=False):
+    #     """
+    #     This is the main subprocess where jpegs are created for the UI.
+    #     """
 
-        while True:
-            if (not self.mainjpeg_queue.empty()):
-                osc_jpeg_timer_start = time.time()
-                (hdusmalldata, smartstackid, paths, pier_side, zoom_factor) = self.mainjpeg_queue.get(block=False)
-                is_osc = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
-                osc_bayer= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"]
-                if is_osc:
-                    osc_background_cut=self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']
-                    osc_brightness_enhance= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance']
-                    osc_contrast_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance']
-                    osc_colour_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance']
-                    osc_saturation_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance']
-                    osc_sharpness_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance']
-                else:
-                    osc_background_cut=0
-                    osc_brightness_enhance= 0
-                    osc_contrast_enhance=0
-                    osc_colour_enhance=0
-                    osc_saturation_enhance=0
-                    osc_sharpness_enhance=0
-                # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
-                transpose_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]
-                flipx_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']
-                flipy_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']
-                rotate180_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']
-                rotate90_jpeg = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']
-                rotate270_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']
-                crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
-                yb = self.config["camera"][g_dev['cam'].name]["settings"][
-                     "crop_preview_ybottom"
-                 ]
-                yt = self.config["camera"][g_dev['cam'].name]["settings"][
-                     "crop_preview_ytop"
-                 ]
-                xl = self.config["camera"][g_dev['cam'].name]["settings"][
-                     "crop_preview_xleft"
-                 ]
-                xr = self.config["camera"][g_dev['cam'].name]["settings"][
-                     "crop_preview_xright"
-                 ]
-                squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
+    #     while True:
+    #         if (not self.mainjpeg_queue.empty()):
+    #             osc_jpeg_timer_start = time.time()
+    #             (hdusmalldata, smartstackid, paths, pier_side, zoom_factor) = self.mainjpeg_queue.get(block=False)
+    #             is_osc = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+    #             osc_bayer= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"]
+    #             if is_osc:
+    #                 osc_background_cut=self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']
+    #                 osc_brightness_enhance= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance']
+    #                 osc_contrast_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance']
+    #                 osc_colour_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance']
+    #                 osc_saturation_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance']
+    #                 osc_sharpness_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance']
+    #             else:
+    #                 osc_background_cut=0
+    #                 osc_brightness_enhance= 0
+    #                 osc_contrast_enhance=0
+    #                 osc_colour_enhance=0
+    #                 osc_saturation_enhance=0
+    #                 osc_sharpness_enhance=0
+    #             # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
+    #             transpose_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]
+    #             flipx_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']
+    #             flipy_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']
+    #             rotate180_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']
+    #             rotate90_jpeg = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']
+    #             rotate270_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']
+    #             crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
+    #             yb = self.config["camera"][g_dev['cam'].name]["settings"][
+    #                  "crop_preview_ybottom"
+    #              ]
+    #             yt = self.config["camera"][g_dev['cam'].name]["settings"][
+    #                  "crop_preview_ytop"
+    #              ]
+    #             xl = self.config["camera"][g_dev['cam'].name]["settings"][
+    #                  "crop_preview_xleft"
+    #              ]
+    #             xr = self.config["camera"][g_dev['cam'].name]["settings"][
+    #                  "crop_preview_xright"
+    #              ]
+    #             squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
 
-                # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                if False:
-                    #NB set this path to create test pickle for makejpeg routine.
-                    pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                        osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                            rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], open('testjpegpickle','wb'))
+    #             # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
+    #             if False:
+    #                 #NB set this path to create test pickle for makejpeg routine.
+    #                 pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+    #                     osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+    #                         rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], open('testjpegpickle','wb'))
 
-                jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    #             jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                try:
-                    pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                          osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                              rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
-                except:
-                    plog ("Problem in the jpeg pickle dump")
-                    plog(traceback.format_exc())
+    #             try:
+    #                 pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+    #                       osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+    #                           rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
+    #             except:
+    #                 plog ("Problem in the jpeg pickle dump")
+    #                 plog(traceback.format_exc())
 
-                del hdusmalldata # Get big file out of memory
+    #             del hdusmalldata # Get big file out of memory
 
-                # Try saving the jpeg to disk and quickly send up to AWS to present for the user
-                if smartstackid == 'no':
-                    try:                        
-                        self.enqueue_for_fastUI(
-                            paths["im_path"], paths["jpeg_name10"]
-                        )
-                        # self.enqueue_for_mediumUI(
-                        #     1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
-                        # )
-                        plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
-                    except:
-                        plog(
-                            "there was an issue saving the preview jpg. Pushing on though"
-                        )
+    #             # Try saving the jpeg to disk and quickly send up to AWS to present for the user
+    #             if smartstackid == 'no':
+    #                 try:                        
+    #                     self.enqueue_for_fastUI(
+    #                         paths["im_path"], paths["jpeg_name10"]
+    #                     )
+    #                     # self.enqueue_for_mediumUI(
+    #                     #     1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
+    #                     # )
+    #                     plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
+    #                 except:
+    #                     plog(
+    #                         "there was an issue saving the preview jpg. Pushing on though"
+    #                     )
 
-                self.mainjpeg_queue.task_done()
-                time.sleep(1)
+    #             self.mainjpeg_queue.task_done()
+    #             time.sleep(1)
 
-            else:
-                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                time.sleep(1)
+    #         else:
+    #             # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+    #             time.sleep(1)
 
     # def sep_process(self):
     #     """This is the sep queue that happens in a different process

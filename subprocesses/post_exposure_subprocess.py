@@ -971,148 +971,172 @@ try:
 
         except Exception as e:
             print("Bad Pixel Masking light frame failed: ", e)
+    
+    # else:
+    #     hdusmalldata
 
     # This saves the REDUCED file to disk
     # If this is for a smartstack, this happens immediately in the camera thread after we have a "reduced" file
     # So that the smartstack queue can start on it ASAP as smartstacks
     # are by far the longest task to undertake.
     # If it isn't a smartstack, it gets saved in the slow process queue.
-    if "hdusmalldata" in locals():
-        # Set up reduced header
-        hdusmallheader=copy.deepcopy(hdu.header)
-        if not manually_requested_calibration:
-            #From the reduced data, crop around the edges of the
-            #raw 1x1 image to get rid of overscan and crusty edge bits
-            edge_crop=selfconfig["camera"][selfname]["settings"]['reduced_image_edge_crop']
-            if edge_crop > 0:
-                hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
+    # if "hdusmalldata" in locals():
+    # Set up reduced header
+    hdusmallheader=copy.deepcopy(hdu.header)
+    if not manually_requested_calibration:
+        #From the reduced data, crop around the edges of the
+        #raw 1x1 image to get rid of overscan and crusty edge bits
+        #edge_crop=selfconfig["camera"][selfname]["settings"]['reduced_image_edge_crop']
+        edge_crop=100
+        if edge_crop > 0:
+            hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
 
-                hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
-                hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
-                hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
-                hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
+            hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
+            hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
+            hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
+            hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
-            # bin to native binning
-            if selfnative_bin != 1 and (not pixscale == None):
-                reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
-                reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
-                reduced_hdusmallheader['XBINING']=selfnative_bin
-                reduced_hdusmallheader['YBINING']=selfnative_bin
-                reduced_hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
-                reduced_pixscale=float(hdu.header['PIXSCALE'])
-                reduced_hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
-                reduced_hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / selfnative_bin
-                reduced_hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
-                reduced_hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
-                reduced_hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
-                reduced_hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
-                reduced_hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * selfnative_bin
-                reduced_hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * selfnative_bin
-                reduced_hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * selfnative_bin
-                reduced_hdusmallheader['YPIXSZ']=float(hdu.header['YPIXSZ']) * selfnative_bin
+        # bin to native binning
+        if selfnative_bin != 1 and (not pixscale == None):
+            reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
+            reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
+            reduced_hdusmallheader['XBINING']=selfnative_bin
+            reduced_hdusmallheader['YBINING']=selfnative_bin
+            reduced_hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
+            reduced_pixscale=float(hdu.header['PIXSCALE'])
+            reduced_hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
+            reduced_hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / selfnative_bin
+            reduced_hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
+            reduced_hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
+            reduced_hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
+            reduced_hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
+            reduced_hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * selfnative_bin
+            reduced_hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * selfnative_bin
+            reduced_hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * selfnative_bin
+            reduced_hdusmallheader['YPIXSZ']=float(hdu.header['YPIXSZ']) * selfnative_bin
 
-                reduced_hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( selfnative_bin,2)
-                reduced_hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
-                reduced_hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
+            reduced_hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( selfnative_bin,2)
+            reduced_hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
+            reduced_hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
 
-                reduced_hdusmalldata=hdusmalldata+200.0
-                reduced_hdusmallheader['PEDESTAL']=200
-            else:
-                reduced_hdusmalldata=copy.deepcopy(hdusmalldata)
-                reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
+            reduced_hdusmalldata=hdusmalldata+200.0
+            reduced_hdusmallheader['PEDESTAL']=200
+        else:
+            reduced_hdusmalldata=copy.deepcopy(hdusmalldata)
+            reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
 
 
-            # Add a pedestal to the reduced data
-            # This is important for a variety of reasons
-            # Some functions don't work with arrays with negative values
-            # 200 SHOULD be enough.
-            hdusmalldata=hdusmalldata+200.0
-            hdusmallheader['PEDESTAL']=200
+        # Add a pedestal to the reduced data
+        # This is important for a variety of reasons
+        # Some functions don't work with arrays with negative values
+        # 200 SHOULD be enough.
+        hdusmalldata=hdusmalldata+200.0
+        hdusmallheader['PEDESTAL']=200
 
-            hdusmallheader["OBSID"] = (
-                selfconfig["obs_id"].replace("-", "").replace("_", "")
-            )
+        hdusmallheader["OBSID"] = (
+            selfconfig["obs_id"].replace("-", "").replace("_", "")
+        )
 
-            hdusmallheader["DAY-OBS"] = (
-                dayobs,
-                "Date at start of observing night"
-            )
+        hdusmallheader["DAY-OBS"] = (
+            dayobs,
+            "Date at start of observing night"
+        )
+        
+        
+        # Actually save out ONE reduced file for different threads to use.
+        image_filename=localcalibrationdirectory + "smartstacks/reducedimage" + time.time().replace('d','') + '.npy'
+        
+        # Save numpy array out.
+        np.save(hdusmalldata, image_filename)
+        
+        # Just save astropy header
+        cleanhdu=fits.PrimaryHDU()
+        cleanhdu.data=np.asarray([0])
+        cleanhdu.header=hdusmallheader
+        cleanhdu.writeto(image_filename.replace('.pickle','.head'))
+        
+        
+        
+        
+        
+        
+        
+        #g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))
+        #np.save(hdusmalldata, septhread_filename)
+        pickle.dump(image_filename, open(septhread_filename, 'wb'))
+
+
+        if smartstackid != 'no':
+            try:
+                np.save(red_path + red_name01.replace('.fits','.npy'), hdusmalldata)
+                hdusstack=fits.PrimaryHDU()
+                hdusstack.header=hdusmallheader
+                hdusstack.header["NAXIS1"] = hdusmalldata.shape[0]
+                hdusstack.header["NAXIS2"] = hdusmalldata.shape[1]
+                hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
+                saver = 1
+            except Exception as e:
+                print("Failed to write raw file: ", e)
+                
+        # This puts the file into the smartstack queue
+        # And gets it underway ASAP.
+        if frame_type.lower() in ['fivepercent_exposure_dark','tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark', 'fivesec_exposure_dark', 'tensec_exposure_dark', 'fifteensec_exposure_dark', 'twentysec_exposure_dark', 'thirtysec_exposure_dark', 'broadband_ss_biasdark', 'narrowband_ss_biasdark']:
+            a_dark_exposure=True
+        else:
+            a_dark_exposure=False
+
+        if ( not frame_type.lower() in [
+            "bias",
+            "dark",
+            "flat",
+            "solar",
+            "lunar",
+            "skyflat",
+            "screen",
+            "spectrum",
+            "auto_focus",
+            "focus",
+            "pointing"
+        ]) and smartstackid != 'no' and not a_dark_exposure :
+            #g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
+            np.save(hdusmalldata, smartstackthread_filename)
             
-            #g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))
-            np.save(hdusmalldata, septhread_filename)
-
-
-            if smartstackid != 'no':
+        else:
+            if not selfconfig['keep_reduced_on_disk']:
                 try:
-                    np.save(red_path + red_name01.replace('.fits','.npy'), hdusmalldata)
-                    hdusstack=fits.PrimaryHDU()
-                    hdusstack.header=hdusmallheader
-                    hdusstack.header["NAXIS1"] = hdusmalldata.shape[0]
-                    hdusstack.header["NAXIS2"] = hdusmalldata.shape[1]
-                    hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
-                    saver = 1
-                except Exception as e:
-                    print("Failed to write raw file: ", e)
-                    
-            # This puts the file into the smartstack queue
-            # And gets it underway ASAP.
-            if frame_type.lower() in ['fivepercent_exposure_dark','tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark', 'fivesec_exposure_dark', 'tensec_exposure_dark', 'fifteensec_exposure_dark', 'twentysec_exposure_dark', 'thirtysec_exposure_dark', 'broadband_ss_biasdark', 'narrowband_ss_biasdark']:
-                a_dark_exposure=True
+                    os.remove(red_path + red_name01)
+                except:
+                    pass
+
+        if selfconfig['keep_reduced_on_disk']:
+            
+            if selfconfig["save_to_alt_path"] == "yes":
+                selfalt_path = selfconfig[
+                    "alt_path"
+                ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
             else:
-                a_dark_exposure=False
+                selfalt_path = 'no'
 
-            if ( not frame_type.lower() in [
-                "bias",
-                "dark",
-                "flat",
-                "solar",
-                "lunar",
-                "skyflat",
-                "screen",
-                "spectrum",
-                "auto_focus",
-                "focus",
-                "pointing"
-            ]) and smartstackid != 'no' and not a_dark_exposure :
-                #g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
-                np.save(hdusmalldata, smartstackthread_filename)
-                
+            slow_process=('reduced', red_path + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
+                                   frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure,selfalt_path)
+
+            # Make  sure the alt paths exist
+            if selfconfig["save_to_alt_path"] == "yes":
+                #altpath=copy.deepcopy(g_dev['obs'].alt_path)
+                altpath=selfconfig['alt_path'] + selfconfig['obs_id'] + '/'
             else:
-                if not selfconfig['keep_reduced_on_disk']:
-                    try:
-                        os.remove(red_path + red_name01)
-                    except:
-                        pass
-
-            if selfconfig['keep_reduced_on_disk']:
-                
-                if selfconfig["save_to_alt_path"] == "yes":
-                    selfalt_path = selfconfig[
-                        "alt_path"
-                    ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
-                else:
-                    selfalt_path = 'no'
-
-                slow_process=('reduced', red_path + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
-                                       frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure,selfalt_path)
-
-                # Make  sure the alt paths exist
-                if selfconfig["save_to_alt_path"] == "yes":
-                    #altpath=copy.deepcopy(g_dev['obs'].alt_path)
-                    altpath=selfconfig['alt_path'] + selfconfig['obs_id'] + '/'
-                else:
-                    altpath='no'
+                altpath='no'
 
 
-                picklepayload=(reduced_hdusmallheader,copy.deepcopy(selfconfig),camalias, slow_process, altpath)
+            picklepayload=(reduced_hdusmallheader,copy.deepcopy(selfconfig),camalias, slow_process, altpath)
 
-                picklefilename='testred'+str(time.time()).replace('.','')
-                pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
-               
-                subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=localcalibrationdirectory + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+            picklefilename='testred'+str(time.time()).replace('.','')
+            pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
+           
+            subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=localcalibrationdirectory + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
 
-                              
+                          
 
         # Send data off to process jpeg if not a smartstack
         if smartstackid == 'no':
