@@ -1637,21 +1637,21 @@ class Camera:
             else:
                 time.sleep(max(1,self.camera_update_period))
 
-    def post_processing_process(self):
-        """
+    # def post_processing_process(self):
+    #     """
 
-        This sends images through post-processing through one at a time.
+    #     This sends images through post-processing through one at a time.
 
-        """
+    #     """
 
-        while True:
-            if (not self.post_processing_queue.empty()):                
-                payload = self.post_processing_queue.get(block=False)
-                post_exposure_process(payload)
-                self.post_processing_queue.task_done()
-                time.sleep(2)
-            else:
-                time.sleep(2)
+    #     while True:
+    #         if (not self.post_processing_queue.empty()):                
+    #             payload = self.post_processing_queue.get(block=False)
+    #             post_exposure_process(payload)
+    #             self.post_processing_queue.task_done()
+    #             time.sleep(2)
+    #         else:
+    #             time.sleep(2)
 
     # Patchable methods   NB These could be default ASCOM
     def _connected(self):
@@ -1934,14 +1934,7 @@ class Camera:
 
     def qhy_substacker_thread(self, exposure_time):
 
-        # Boost Narrowband and low throughput broadband
-        if g_dev['cam'].current_filter.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
-            exp_of_substacks = 30
-            N_of_substacks = int((exposure_time / exp_of_substacks))
-        else:
-            exp_of_substacks = 10
-            N_of_substacks = int(exposure_time / exp_of_substacks)
-
+        
         readout_estimate_holder=[]
         is_osc=self.config["camera"][self.name]["settings"]['is_osc']
         self.sub_stacker_midpoints=[]
@@ -2120,8 +2113,23 @@ class Camera:
         if not self.substacker:
             qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
             qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
-        else:
-            thread=threading.Thread(target=self.qhy_substacker_thread, args=(exposure_time,))
+        else:            
+            
+            # Boost Narrowband and low throughput broadband
+            if g_dev['cam'].current_filter.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
+                exp_of_substacks = 30
+                N_of_substacks = int((exposure_time / exp_of_substacks))
+            else:
+                exp_of_substacks = 10
+                N_of_substacks = int(exposure_time / exp_of_substacks)
+            
+            self.substacker_filenames=[]
+            base_tempfile=str(time.time()).replace(".","")
+            for i in range(N_of_substacks):
+                self.substacker_filenames.append(base_tempfile + str(i) + ".npy")           
+            
+            
+            thread=threading.Thread(target=self.qhy_substacker_thread, args=(exp_of_substacks,N_of_substacks,copy.deepcopy(self.substacker_filenames),))
             thread.daemon=True
             thread.start()
 
@@ -3624,17 +3632,17 @@ class Camera:
                 
                 plog ("Exposure Complete")
                 
-                try:
-                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
-                except:
-                    next_seq = reset_sequence(self.config["camera"][self.name]["name"])
-                self.next_seq= next_seq
+                
+################################ STUFF ATTEMPTING TO SQUISH IN JUST AFTER EXPOSURE TIME AND BEFORE READOUT.
+                
+                
+                
 
-                if not frame_type in (
-                        "flat",
-                        "screenflat",
-                        "skyflat"):                    
-                    g_dev["obs"].send_to_user("Exposure Complete")
+                # Good spot to check if we need to nudge the telescope
+                # Allowed to on the last loop of a smartstack
+                # We need to clear the nudge before putting another platesolve in the queue
+                if (Nsmartstack > 1 and (Nsmartstack == sskcounter+1)):
+                    self.currently_in_smartstack_loop=False
 
                 # If the nudge wasn't done during the readout, then nudge it now
                 if not check_nudge_after_shutter_closed:
@@ -3699,17 +3707,6 @@ class Camera:
                                         {"filter": g_dev['seq'].block_next_filter_requested}, {}
                                     )
 
-                if self.theskyx:
-                    self.readout_estimate= time.time()-start_time_of_observation-exposure_time
-
-                if self.substacker:
-                    expected_endpoint_of_substack_exposure=copy.deepcopy(self.expected_endpoint_of_substack_exposure)
-                    substack_start_time=copy.deepcopy(self.substack_start_time)
-                    sub_stacker_midpoints=copy.deepcopy(self.sub_stacker_midpoints)
-                else:
-                    expected_endpoint_of_substack_exposure=None
-                    substack_start_time=None
-                    sub_stacker_midpoints=None
 
                 # If you are shooting for short exposure times, the overhead
                 # becomes a large fraction of the actual exposure time,
@@ -3734,50 +3731,133 @@ class Camera:
                     self.post_rot = self.pre_rot
                     self.post_foc = self.pre_foc
                     self.post_mnt = self.pre_mnt
+                    
+                try:
+                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                except:
+                    next_seq = reset_sequence(self.config["camera"][self.name]["name"])
+                    
+                self.next_seq= next_seq
+
+                if not frame_type in (
+                        "flat",
+                        "screenflat",
+                        "skyflat"):                    
+                    g_dev["obs"].send_to_user("Exposure Complete")
 
 
-                imageCollected = 0
-                retrycounter = 0
-                while imageCollected != 1:
-                    if retrycounter == 8:
-                        expresult = {"error": True}
-                        plog("Retried 8 times and didn't get an image, giving up.")
-                        return expresult
-                    try:
-                        outputimg = self._getImageArray().astype(np.float32)
-                        imageCollected = 1
-                    except Exception as e:
-                        
-                        if self.theskyx:
-                            if 'No such file or directory' in str(e):
-                                plog ("Found rare theskyx bug in image acquisition, rebooting and killing theskyx.... or the other way around.")
-                                plog(e)
-                                plog (traceback.format_exc())
-                                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].return_right_ascension(),g_dev['mnt'].return_declination())
-                                
-                                expresult = {}
-                                expresult["error"] = True
-                                return expresult
-                        else:
-                        
-                            plog(e)
-                            plog (traceback.format_exc())
-                            if "Image Not Available" in str(e):
-                                plog("Still waiting for file to arrive: ", e)
-                        time.sleep(3)
-                        retrycounter = retrycounter + 1
+                if self.theskyx:
+                    self.readout_estimate= time.time()-start_time_of_observation-exposure_time
 
-
+                if self.substacker:
+                    expected_endpoint_of_substack_exposure=copy.deepcopy(self.expected_endpoint_of_substack_exposure)
+                    substack_start_time=copy.deepcopy(self.substack_start_time)
+                    sub_stacker_midpoints=copy.deepcopy(self.sub_stacker_midpoints)
+                else:
+                    expected_endpoint_of_substack_exposure=None
+                    substack_start_time=None
+                    sub_stacker_midpoints=None
+                    
+                ################################################# SETTING UP COMMON THINGS FOR ALL THREADS AND HEADERS.
+                ################################################# Nothing slow goes here if can be helped.
+                    
                 readout_estimate = copy.deepcopy(self.readout_estimate)
                 # If there isn't an estimated readout time shelf yet, use this first one as the estimate to begin with.
                 if self.readout_time==0:
-                    self.readout_time=copy.deepcopy(readout_estimate)
-                # Here is where we wait for any slew left over while async'ing and grabbing image
-                if Nsmartstack > 1:
-                    self.wait_for_slew(wait_after_slew=False)
-                    g_dev['obs'].check_platesolve_and_nudge()
+                    self.readout_time=copy.deepcopy(readout_estimate)        
+                    
+                if not g_dev['obs'].mountless_operation:
+                    avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
+                else:
+                    avg_mnt = None
+                try:
+                    avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
+                except:
+                    pass
+                try:
+                    avg_rot = g_dev["rot"].get_average_status(
+                        self.pre_rot, self.post_rot
+                    )
+                except:
+                    avg_rot = None
 
+                object_name='Unknown'
+                object_specf='no'
 
+                if "object_name" in opt:
+                    if (
+                        opt["object_name"] != "Unspecified"
+                        and opt["object_name"] != ""
+                    ):
+                        object_name = opt["object_name"]
+                        object_specf = "yes"
+                elif (
+                    g_dev["mnt"].object != "Unspecified"
+                    or g_dev["mnt"].object != "empty"
+                ):
+                    object_name = (g_dev["mnt"].object, "Object name")
+                    object_specf = "yes"
+                else:
+                    RAtemp = g_dev["mnt"].current_icrs_ra
+                    DECtemp = g_dev["mnt"].current_icrs_dec
+                    RAstring = f"{RAtemp:.1f}".replace(".", "h")
+                    DECstring = f"{DECtemp:.1f}".replace("-", "n").replace(".", "d")
+                    object_name = RAstring + "ra" + DECstring + "dec"
+                    object_specf = "no"
+                
+                focus_position=g_dev['foc'].current_focus_position                
+                
+                ########################### HERE WE EITHER GET THE IMAGE ARRAY OR REPORT THE SUBSTACKER ARRAY
+                if self.substacker:
+                    outputimg='substacker'
+                else:
+                    imageCollected = 0
+                    retrycounter = 0
+                    while imageCollected != 1:
+                        if retrycounter == 8:
+                            expresult = {"error": True}
+                            plog("Retried 8 times and didn't get an image, giving up.")
+                            return expresult
+                        try:
+                            outputimg = self._getImageArray().astype(np.float32)
+                            imageCollected = 1
+                        except Exception as e:
+                            
+                            if self.theskyx:
+                                if 'No such file or directory' in str(e):
+                                    plog ("Found rare theskyx bug in image acquisition, rebooting and killing theskyx.... or the other way around.")
+                                    plog(e)
+                                    plog (traceback.format_exc())
+                                    g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].return_right_ascension(),g_dev['mnt'].return_declination())
+                                    
+                                    expresult = {}
+                                    expresult["error"] = True
+                                    return expresult
+                            else:
+                            
+                                plog(e)
+                                plog (traceback.format_exc())
+                                if "Image Not Available" in str(e):
+                                    plog("Still waiting for file to arrive: ", e)
+                            time.sleep(3)
+                            retrycounter = retrycounter + 1
+                            
+                ################################################# CUTOFF FOR THE POSTPROCESSING QUEUE
+                
+                if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
+                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"])), block=False)
+                    
+
+                ################################################# HERE IS WHERE IN-LINE STUFF HAPPENS.
+
+                
+# BIAS & DARK VETTING AND DISTRIBUTION AREA.
+
+                # For biases, darks, flats, focus and pointing images, it doesn't go to the subprocess.
+                # It either doesn't buy us any time OR the results of one image relies on the next....
+                # e.g. the next flat exposure relies on the throughput results of the last
+                # or a focus exposure has a logic about whether it has successfully focussed or not
+                # So this is done in the main thread. Whereas normal exposures get done in the subprocess.
                 if (frame_type in ["bias", "dark"]  or a_dark_exposure or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(outputimg))
 
@@ -3831,75 +3911,11 @@ class Camera:
                                 plog ("Reject! This Dark seems to be light affected. ")
                                 expresult = {}
                                 expresult["error"] = True
-                                return expresult
-                
-
-                # HERE IS WHERE WE SPIT OUT THE FILES INTO A MULTIPROCESSING FUNCTION
-                if not g_dev['obs'].mountless_operation:
-                    avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
-                else:
-                    avg_mnt = None
-                try:
-                    avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
-                except:
-                    pass
-                try:
-                    avg_rot = g_dev["rot"].get_average_status(
-                        self.pre_rot, self.post_rot
-                    )
-                except:
-                    avg_rot = None
-
-                object_name='Unknown'
-                object_specf='no'
-
-                if "object_name" in opt:
-                    if (
-                        opt["object_name"] != "Unspecified"
-                        and opt["object_name"] != ""
-                    ):
-                        object_name = opt["object_name"]
-                        object_specf = "yes"
-                elif (
-                    g_dev["mnt"].object != "Unspecified"
-                    or g_dev["mnt"].object != "empty"
-                ):
-                    object_name = (g_dev["mnt"].object, "Object name")
-                    object_specf = "yes"
-                else:
-                    RAtemp = g_dev["mnt"].current_icrs_ra
-                    DECtemp = g_dev["mnt"].current_icrs_dec
-                    RAstring = f"{RAtemp:.1f}".replace(".", "h")
-                    DECstring = f"{DECtemp:.1f}".replace("-", "n").replace(".", "d")
-                    object_name = RAstring + "ra" + DECstring + "dec"
-                    object_specf = "no"
-
-                # If NOT an expose image going into the post-process thread, rotate the fits here.
-                if not(not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"] and not a_dark_exposure and not focus_image and not frame_type=='pointing'):
-                    # Flip flat fits around to correct orientation
-                    if self.config["camera"][self.name]["settings"]["transpose_fits"]:
-                        outputimg=outputimg.transpose().astype('float32')
-                    elif self.config["camera"][self.name]["settings"]["flipx_fits"]:
-                        outputimg=np.fliplr(outputimg.astype('float32')
-                        )
-                    elif self.config["camera"][self.name]["settings"]["flipy_fits"]:
-                        outputimg=np.flipud(outputimg.astype('float32')
-                        )
-                    elif self.config["camera"][self.name]["settings"]["rotate90_fits"]:
-                        outputimg=np.rot90(outputimg.astype('float32')
-                        )
-                    elif self.config["camera"][self.name]["settings"]["rotate180_fits"]:
-                        outputimg=np.rot90(outputimg.astype('float32'),2)
-
-                    elif self.config["camera"][self.name]["settings"]["rotate270_fits"]:
-                        outputimg= np.rot90(outputimg.astype('float32'),3)
-
-                    else:
-                        outputimg=outputimg.astype('float32')
+                                return expresult   
 
                 # Specific dark and bias save area
                 if (frame_type in ["bias", "dark"] or a_dark_exposure) and not manually_requested_calibration:
-                    # Save good flat
+
                     im_path_r = self.camera_path
                     raw_path = im_path_r + g_dev["day"] + "/raw/"
 
@@ -3912,8 +3928,8 @@ class Camera:
                         + "-"
                         + next_seq
                         + "-"
-                        + "skyflat"
-                        + "00.fits"
+                        + "calibration"
+                        + "frame.fits"
                     )
 
                     hdu = fits.PrimaryHDU()
@@ -3922,13 +3938,10 @@ class Camera:
                         )
                     del outputimg
 
-
                     hdu.header['PIXSCALE']=self.pixscale
                     hdu.header['EXPTIME']=exposure_time
-
                     hdu.header['OBSTYPE']='flat'
                     hdu.header['FILTER']=self.current_filter
-
 
                     # If the files are local calibrations, save them out to the local calibration directory
                     if not manually_requested_calibration:
@@ -3936,7 +3949,6 @@ class Camera:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', copy.deepcopy(raw_name00), copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), copy.deepcopy(frame_type), copy.deepcopy(g_dev["mnt"].current_icrs_ra), copy.deepcopy(g_dev["mnt"].current_icrs_dec)))
                         else:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', copy.deepcopy(raw_name00), copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), copy.deepcopy(frame_type), None, None))
-
 
                     # Make  sure the alt paths exist
                     if g_dev['obs'].config["save_to_alt_path"] == "yes":
@@ -3986,9 +3998,7 @@ class Camera:
                     del hdu
                     return copy.deepcopy(expresult)
 
-                if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
-                    focus_position=g_dev['foc'].current_focus_position
-                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header)), block=False)
+########## IN-LINE REDUCED FRAMES (POINTING AND FOCUS) AREA
 
                 # If this is a pointing or a focus frame, we need to do an
                 # in-line flash reduction
@@ -4022,49 +4032,98 @@ class Camera:
                         outputimg[g_dev['cam'].bpmFiles[str(1)]] = np.nan
                     except Exception as e:
                         plog("applying bad pixel mask to light frame failed: ", e)
+                        
+                # RAW NAMES FOR FOCUS AND POINTING SETUP HERE
+                im_path_r = self.camera_path
+                im_path = im_path_r + g_dev["day"] + "/to_AWS/"
+                im_type = "EX"
+                f_ext = "-"
+                cal_name = (
+                    self.config["obs_id"]
+                    + "-"
+                    + self.config["camera"][self.name]["name"]
+                    + "-"
+                    + g_dev["day"]
+                    + "-"
+                    + next_seq
+                    + f_ext
+                    + "-"
+                    + im_type
+                    + "00.fits"
+                )
+                cal_path = im_path_r + g_dev["day"] + "/calib/"                    
+                
+                jpeg_name = (
+                    self.config["obs_id"]
+                    + "-"
+                    + self.config["camera"][self.name]["name"]
+                    + "-"
+                    + g_dev["day"]
+                    + "-"
+                    + next_seq
+                    + "-"
+                    + im_type
+                    + "10.jpg"
+                )            
+                
+                raw_name00 = (
+                    self.config["obs_id"]
+                    + "-"
+                    + self.config["camera"][self.name]["name"] + '_' + str(frame_type) + '_' + str(this_exposure_filter)
+                    + "-"
+                    + g_dev["day"]
+                    + "-"
+                    + next_seq
+                    + "-"
+                    + im_type
+                    + "00.fits"
+                )
+                
+                text_name = (
+                        self.config["obs_id"]
+                        + "-"
+                        + self.config["camera"][self.name]["name"]
+                        + "-"
+                        + g_dev["day"]
+                        + "-"
+                        + next_seq
+                        + "-"
+                        + im_type
+                        + "00.txt"
+                    )
+                
+                cal_path = im_path_r + g_dev["day"] + "/calib/"
+
+                if not os.path.exists(im_path_r):
+                    os.makedirs(im_path_r)
+                if not os.path.exists(im_path_r+ g_dev["day"]):
+                    os.makedirs(im_path_r+ g_dev["day"])
+                if not os.path.exists(im_path_r+ g_dev["day"]+ "/calib"):
+                    os.makedirs(im_path_r+ g_dev["day"]+ "/calib")
+                if not os.path.exists(im_path_r+ g_dev["day"] + "/to_AWS"):
+                    os.makedirs(im_path_r+ g_dev["day"]+ "/to_AWS")
+
+                if self.config["save_to_alt_path"] == "yes":
+                    self.alt_path = self.config[
+                        "alt_path"
+                    ]  +'/' + self.config['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
+
+                    os.makedirs(
+                        self.alt_path , exist_ok=True
+                    )
+
+                    os.makedirs(
+                        self.alt_path + g_dev["day"], exist_ok=True
+                    )
+
+                    os.makedirs(
+                       self.alt_path + g_dev["day"] + "/raw/" , exist_ok=True
+                    )
+
 
                 if frame_type=='pointing' and focus_image == False:
 
-                    im_path_r = self.camera_path
-                    im_type = "EX"
-                    f_ext = "-"
-                    cal_name = (
-                        self.config["obs_id"]
-                        + "-"
-                        + self.config["camera"][self.name]["name"]
-                        + "-"
-                        + g_dev["day"]
-                        + "-"
-                        + next_seq
-                        + f_ext
-                        + "-"
-                        + im_type
-                        + "00.fits"
-                    )
-                    cal_path = im_path_r + g_dev["day"] + "/calib/"                    
                     
-                    jpeg_name = (
-                        self.config["obs_id"]
-                        + "-"
-                        + self.config["camera"][self.name]["name"]
-                        + "-"
-                        + g_dev["day"]
-                        + "-"
-                        + next_seq
-                        + "-"
-                        + im_type
-                        + "10.jpg"
-                    )                    
-
-                    if not os.path.exists(im_path_r):
-                        os.makedirs(im_path_r)
-                    if not os.path.exists(im_path_r+ g_dev["day"]):
-                        os.makedirs(im_path_r+ g_dev["day"])
-                    if not os.path.exists(im_path_r+ g_dev["day"]+ "/calib"):
-                        os.makedirs(im_path_r+ g_dev["day"]+ "/calib")
-                    if not os.path.exists(im_path_r+ g_dev["day"] + "/to_AWS"):
-                        os.makedirs(im_path_r+ g_dev["day"]+ "/to_AWS")
-
                     hdu = fits.PrimaryHDU()
                     if np.isnan(self.pixscale) or self.pixscale==None:
                         plog ("no pixelscale available")
@@ -4078,50 +4137,10 @@ class Camera:
                     g_dev['obs'].platesolve_is_processing =True
                     g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r+ g_dev["day"]+ "/to_AWS/"+ jpeg_name))
 
-
-
                 # If this is a focus image,
                 # FWHM.
                 if focus_image == True:
-                    im_path_r = self.camera_path
-                    im_type = "EX"
-                    f_ext = "-"
-                    text_name = (
-                        self.config["obs_id"]
-                        + "-"
-                        + self.config["camera"][self.name]["name"]
-                        + "-"
-                        + g_dev["day"]
-                        + "-"
-                        + next_seq
-                        + "-"
-                        + im_type
-                        + "00.txt"
-                    )
-                    im_path = im_path_r + g_dev["day"] + "/to_AWS/"
-                    cal_name = (
-                        self.config["obs_id"]
-                        + "-"
-                        + self.config["camera"][self.name]["name"]
-                        + "-"
-                        + g_dev["day"]
-                        + "-"
-                        + next_seq
-                        + f_ext
-                        + "-"
-                        + im_type
-                        + "00.fits"
-                    )
-                    cal_path = im_path_r + g_dev["day"] + "/calib/"
-
-                    if not os.path.exists(im_path_r):
-                        os.makedirs(im_path_r)
-                    if not os.path.exists(im_path_r+ g_dev["day"]):
-                        os.makedirs(im_path_r+ g_dev["day"])
-                    if not os.path.exists(im_path_r+ g_dev["day"]+ "/calib"):
-                        os.makedirs(im_path_r+ g_dev["day"]+ "/calib")
-                    if not os.path.exists(im_path_r+ g_dev["day"] + "/to_AWS"):
-                        os.makedirs(im_path_r+ g_dev["day"]+ "/to_AWS")
+                    
                         
                     hdu = fits.PrimaryHDU()
                     try:
@@ -4137,18 +4156,7 @@ class Camera:
                         g_dev["day"],
                         "Date at start of observing night"
                     )
-                    raw_name00 = (
-                        self.config["obs_id"]
-                        + "-"
-                        + self.config["camera"][self.name]["name"] + '_' + str(frame_type) + '_' + str(this_exposure_filter)
-                        + "-"
-                        + g_dev["day"]
-                        + "-"
-                        + next_seq
-                        + "-"
-                        + im_type
-                        + "00.fits"
-                    )
+                    
                     hdu.header["ORIGNAME"] = str(raw_name00 + ".fz")
                     hdu.header["FILTER"] =g_dev['cam'].current_filter
                     hdu.header["SMARTSTK"] = 'no'
@@ -4235,50 +4243,26 @@ class Camera:
                             g_dev['obs'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, outputimg, hdusmallheader,
                                                                 frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
+                    # try:
+                    text = open(
+                        im_path + text_name, "w"
+                    )
+                    text.write(str(hdusmallheader))
+                    text.close()
+                    # except:
+                    #     plog("Failed to write out focus text up for some reason")
+                    #     plog(traceback.format_exc())
 
-                    try:
-                        text = open(
-                            im_path + text_name, "w"
-                        )
-                        text.write(str(hdusmallheader))
-                        text.close()
-                    except:
-                        plog("Failed to write out focus text up for some reason")
-                        plog(traceback.format_exc())
+                    # if os.path.exists(im_path + text_name):
+                    #     try:
+                    g_dev['obs'].enqueue_for_fastUI( im_path, text_name)
 
-                    if os.path.exists(im_path + text_name):
-                        try:
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name)
-
-                        except:
-                            plog("Failed to send FOCUS TEXT up for some reason")
-                            plog(traceback.format_exc())
+                        # except:
+                        #     plog("Failed to send FOCUS TEXT up for some reason")
+                        #     plog(traceback.format_exc())
                     return expresult
 
-                blockended=False
-                # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
-                if g_dev['seq'].blockend != None: # Only do this check if a block end was provided.
-
-                # Check that the exposure doesn't go over the end of a block
-                    endOfExposure = datetime.datetime.utcnow() + datetime.timedelta(seconds=exposure_time)
-                    now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
-
-                    blockended = now_date_timeZ  >= g_dev['seq'].blockend
-
-                    if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= \
-                        g_dev['events']['End Morn Bias Dark']:
-                        plog ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
-                        plog ("And Cancelling SmartStacks.")
-                        Nsmartstack=1
-                        sskcounter=2
-                        self.currently_in_smartstack_loop=False
-
-                # Good spot to check if we need to nudge the telescope
-                # Allowed to on the last loop of a smartstack
-                # We need to clear the nudge before putting another platesolve in the queue
-                if (Nsmartstack > 1 and (Nsmartstack == sskcounter+1))  :
-                    self.currently_in_smartstack_loop=False
-                g_dev['obs'].check_platesolve_and_nudge()
+###################### FLAT ACQUISITION SECTION                
 
                 if frame_type[-4:] == "flat":
                     image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
@@ -4439,23 +4423,6 @@ class Camera:
                         expresult["error"] = False
                         expresult["patch"] = central_median
 
-
-                        # Save good flat
-                        im_path_r = self.camera_path
-                        raw_path = im_path_r + g_dev["day"] + "/raw/"
-                        raw_name00 = (
-                            self.config["obs_id"]
-                            + "-"
-                            + g_dev['cam'].alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)
-                            + "-"
-                            + g_dev["day"]
-                            + "-"
-                            + next_seq
-                            + "-"
-                            + "skyflat"
-                            + "00.fits"
-                        )
-
                         hdu = fits.PrimaryHDU()
 
                         # Flip flat fits around to correct orientation
@@ -4512,41 +4479,37 @@ class Camera:
 
                         # For sites that have "save_to_alt_path" enabled, this routine
                         # Saves the raw and reduced fits files out to the provided directories
-                        if self.config["save_to_alt_path"] == "yes":
-                            self.alt_path = self.config[
-                                "alt_path"
-                            ]  +'/' + self.config['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
-
-                            os.makedirs(
-                                self.alt_path , exist_ok=True
-                            )
-
-                            os.makedirs(
-                                self.alt_path + g_dev["day"], exist_ok=True
-                            )
-
-                            os.makedirs(
-                               self.alt_path + g_dev["day"] + "/raw/" , exist_ok=True
-                            )
-
-                            
+                        if self.config["save_to_alt_path"] == "yes":                            
                             threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
-                                                           frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','deprecated')),)).start()
-
-
-                          
+                                                           frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','deprecated')),)).start()                          
                         del hdu
-
                         return copy.deepcopy(expresult)
-
 
                 expresult["calc_sky"] = 0  # avg_ocn[7]
                 expresult["temperature"] = 0  # avg_foc[2]
                 expresult["gain"] = 0
                 expresult["filter"] = self.current_filter
                 expresult["error"] = False
-                # filename same as raw_filename00 in post_exposure process
+                
+                blockended=False
+                # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
+                if g_dev['seq'].blockend != None: # Only do this check if a block end was provided.
 
+                # Check that the exposure doesn't go over the end of a block
+                    endOfExposure = datetime.datetime.utcnow() + datetime.timedelta(seconds=exposure_time)
+                    now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
+
+                    blockended = now_date_timeZ  >= g_dev['seq'].blockend
+
+                    if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= \
+                        g_dev['events']['End Morn Bias Dark']:
+                        plog ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
+                        plog ("And Cancelling SmartStacks.")
+                        Nsmartstack=1
+                        sskcounter=2
+                        self.currently_in_smartstack_loop=False
+                
+                # filename same as raw_filename00 in post_exposure process
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
                     try:
                         im_type = "EX"
@@ -4590,1213 +4553,6 @@ class Camera:
                         return expresult
 
 
-def post_exposure_process(payload):
-
-    expresult={}
-    #A long tuple unpack of the payload
-    (img, pier_side, is_osc, frame_type, reject_flat_by_known_gain, avg_mnt, avg_foc, avg_rot, \
-     setpoint, tempccdtemp, ccd_humidity, ccd_pressure, darkslide_state, exposure_time, \
-     this_exposure_filter, exposure_filter_offset, pane,opt, observer_user_name, hint, \
-     azimuth_of_observation, altitude_of_observation, airmass_of_observation, pixscale, \
-     smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, \
-     dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, \
-     ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, \
-     camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path, \
-     solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header) = payload
-    post_exposure_process_timer=time.time()
-    ix, iy = img.shape
-
-    # Update readout time list
-    readout_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'readout' + g_dev['cam'].alias + str(g_dev['obs'].name))
-    try:
-        readout_list=readout_shelf['readout_list']
-    except:
-        readout_list=[]
-
-    readout_list.append(readout_estimate)
-
-    too_long=True
-    while too_long:
-        if len(readout_list) > 100:
-            readout_list.pop(0)
-        else:
-            too_long = False
-
-    readout_shelf['readout_list'] = readout_list
-    readout_shelf.close()
-
-    image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-
-    try:
-        # THIS IS THE SECTION WHERE THE ORIGINAL FITS IMAGES ARE ROTATED
-        # OR TRANSPOSED. THESE ARE ONLY USED TO ORIENTATE THE FITS
-        # IF THERE IS A MAJOR PROBLEM with the original orientation
-        # If you want to change the display on the UI, use the jpeg
-        # alterations later on.
-        if selfconfig["camera"][selfname]["settings"]["transpose_fits"]:
-            hdu = fits.PrimaryHDU(
-                img.transpose().astype('float32'))
-        elif selfconfig["camera"][selfname]["settings"]["flipx_fits"]:
-            hdu = fits.PrimaryHDU(
-                np.fliplr(img.astype('float32'))
-            )
-        elif selfconfig["camera"][selfname]["settings"]["flipy_fits"]:
-            hdu = fits.PrimaryHDU(
-                np.flipud(img.astype('float32'))
-            )
-        elif selfconfig["camera"][selfname]["settings"]["rotate90_fits"]:
-            hdu = fits.PrimaryHDU(
-                np.rot90(img.astype('float32'))
-            )
-        elif selfconfig["camera"][selfname]["settings"]["rotate180_fits"]:
-            hdu = fits.PrimaryHDU(
-                np.rot90(img.astype('float32'),2)
-            )
-        elif selfconfig["camera"][selfname]["settings"]["rotate270_fits"]:
-            hdu = fits.PrimaryHDU(
-                np.rot90(img.astype('float32'),3)
-            )
-        else:
-            hdu = fits.PrimaryHDU(
-                img.astype('float32')
-            )
-        del img
-
-        # assign the keyword values and comment of the keyword as a tuple to write both to header.
-
-        hdu.header["BUNIT"] = ("adu", "Unit of array values")
-        hdu.header["CCDXPIXE"] = (
-            selfconfig["camera"][selfname]["settings"]["x_pixel"],
-            "[um] Size of unbinned pixel, in X",
-        )
-        hdu.header["CCDYPIXE"] = (
-            selfconfig["camera"][selfname]["settings"]["y_pixel"],
-            "[um] Size of unbinned pixel, in Y",
-        )
-        hdu.header["XPIXSZ"] = (
-            round(float(hdu.header["CCDXPIXE"]), 3),
-            "[um] Size of binned pixel",
-        )
-        hdu.header["YPIXSZ"] = (
-            round(float(hdu.header["CCDYPIXE"]), 3),
-            "[um] Size of binned pixel",
-        )
-        hdu.header["XBINING"] = (1, "Pixel binning in x direction")
-        hdu.header["YBINING"] = (1, "Pixel binning in y direction")
-
-        hdu.header['CONFMODE'] = ('default',  'LCO Configuration Mode')
-        hdu.header["DOCOSMIC"] = (
-            selfconfig["camera"][selfname]["settings"]["do_cosmics"],
-            "Header item to indicate whether to do cosmic ray removal",
-        )
-
-        hdu.header["CCDSTEMP"] = (
-            round(setpoint, 2),     #WER fixed.
-            "[C] CCD set temperature",
-        )
-        #hdu.header["COOLERON"] = self._cooler_on()
-        hdu.header["CCDATEMP"] = (
-            round(tempccdtemp, 2),
-            "[C] CCD actual temperature",
-        )
-        hdu.header["CCDHUMID"] = round(ccd_humidity, 1)
-        hdu.header["CCDPRESS"] = round(ccd_pressure, 1)
-        hdu.header["OBSID"] = (
-            selfconfig["obs_id"].replace("-", "").replace("_", "")
-        )
-        hdu.header["SITEID"] = (
-            selfconfig["wema_name"].replace("-", "").replace("_", "")
-        )
-        hdu.header["TELID"] = selfconfig["telescope"]["telescope1"][
-            "telescop"
-        ][:4]
-        hdu.header["TELESCOP"] = selfconfig["telescope"]["telescope1"][
-            "telescop"
-        ][:4]
-        hdu.header["PTRTEL"] = selfconfig["telescope"]["telescope1"][
-            "ptrtel"
-        ]
-        hdu.header["PROPID"] = "ptr-" + selfconfig["obs_id"] + "-001-0001"
-        hdu.header["BLKUID"] = (
-            "1234567890",
-            "Just a placeholder right now. WER",
-        )
-        hdu.header["INSTRUME"] = (selfconfig["camera"][selfname]["name"], "Name of camera")
-        hdu.header["CAMNAME"] = (selfconfig["camera"][selfname]["desc"], "Instrument used")
-        hdu.header["DETECTOR"] = (
-            selfconfig["camera"][selfname]["detector"],
-            "Name of camera detector",
-        )
-        hdu.header["CAMMANUF"] = (
-            selfconfig["camera"][selfname]["manufacturer"],
-            "Name of camera manufacturer",
-        )
-        hdu.header["DARKSLID"] = (darkslide_state, "Darkslide state")
-        hdu.header['SHUTTYPE'] = (selfconfig["camera"][selfname]["settings"]["shutter_type"],
-                                  'Type of shutter')
-        hdu.header["GAIN"] = (
-            camera_known_gain,
-            "[e-/ADU] Pixel gain",
-        )
-        hdu.header["ORIGGAIN"] = (
-            camera_known_gain,
-            "[e-/ADU] Original Pixel gain",
-        )
-        hdu.header["RDNOISE"] = (
-            camera_known_readnoise,
-            "[e-/pixel] Read noise",
-        )
-        hdu.header["OSCCAM"] = (is_osc, "Is OSC camera")
-        hdu.header["OSCMONO"] = (False, "If OSC, is this a mono image or a bayer colour image.")
-
-        hdu.header["FULLWELL"] = (
-            selfconfig["camera"][selfname]["settings"][
-                "fullwell_capacity"
-            ],
-            "Full well capacity",
-        )
-
-        is_cmos=selfconfig["camera"][selfname]["settings"]["is_cmos"]
-        driver=selfconfig["camera"][selfname]["driver"]
-        hdu.header["CMOSCAM"] = (is_cmos, "Is CMOS camera")
-
-        if is_cmos and driver ==  "QHYCCD_Direct_Control":
-            hdu.header["CMOSGAIN"] = (selfconfig["camera"][selfname][
-                "settings"
-            ]['direct_qhy_gain'], "CMOS Camera System Gain")
-
-
-            hdu.header["CMOSOFFS"] = (selfconfig["camera"][selfname][
-                "settings"
-            ]['direct_qhy_offset'], "CMOS Camera System Offset")
-
-            hdu.header["CAMUSBT"] = (selfconfig["camera"][selfname][
-                "settings"
-            ]['direct_qhy_usb_traffic'], "Camera USB traffic")
-            hdu.header["READMODE"] = (selfconfig["camera"][selfname][
-                "settings"
-            ]['direct_qhy_readout_mode'], "QHY Readout Mode")
-
-
-
-        hdu.header["READOUTE"]= (readout_estimate, "Readout time estimated from this exposure")
-        hdu.header["READOUTU"] = (readout_time, "Readout time used for this exposure")
-        hdu.header["OBSTYPE"] = (
-            frame_type.upper(),
-            "Observation type",
-        )  # This report is fixed and it should vary...NEEDS FIXING!
-        if frame_type.upper() == "SKY FLAT":
-           frame_type =="skyflat"
-        hdu.header["IMAGETYP"] = (frame_type.upper(), "Observation type")
-
-        hdu.header["TIMESYS"] = ("UTC", "Time system used")
-
-
-        hdu.header["DAY-OBS"] = (
-            g_dev["day"],
-            "Date at start of observing night"
-        )
-        yesterday = datetime.datetime.now() - datetime.timedelta(1)
-        hdu.header["L1PUBDAT"] = datetime.datetime.strftime(
-            yesterday, "%Y-%m-%dT%H:%M:%S.%fZ"
-        )  # IF THIS DOESN"T WORK, subtract the extra datetime ...
-
-        # There is a significant difference between substack timing and "normal" exposure timing
-        # Also it has impacts on the actual "exposure time" as well.... the exposure time is "longer" but has LESS effective exposure time
-        if substack:
-
-            hdu.header["SUBEXPT"] = (expected_endpoint_of_substack_exposure - substack_start_time, "Time between start and end of subexposure set")
-
-            substack_midexposure=np.mean(np.array(sub_stacker_midpoints))
-
-            hdu.header["DATE"] = (
-                datetime.datetime.isoformat(
-                    datetime.datetime.utcfromtimestamp(substack_start_time)
-                ),
-                "Start date and time of observation"
-            )
-
-            hdu.header["DATE-OBS"] = (
-                datetime.datetime.isoformat(
-                    datetime.datetime.utcfromtimestamp(substack_start_time)
-                ),
-                "Start date and time of observation"
-            )
-
-            hdu.header["MJD-OBS"] = (
-                Time(substack_start_time, format="unix").mjd,
-                "[UTC days] Modified Julian Date start date/time",
-            )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
-            hdu.header["JD-START"] = (
-                Time(substack_start_time, format="unix").jd,
-                "[UTC days] Julian Date at start of exposure",
-            )
-
-            hdu.header["MJD-MID"] = (
-                Time(substack_midexposure, format="unix").mjd,
-                "[UTC days] Modified Julian Date mid exposure date/time",
-            )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
-            hdu.header["JD-MID"] = (
-                Time(substack_midexposure, format="unix").jd,
-                "[UTC days] Julian Date at middle of exposure",
-            )
-
-            hdu.header["EXPTIME"] = (
-                expected_endpoint_of_substack_exposure - substack_start_time,
-                "[s] Actual exposure length",
-            )  # This is the exposure in seconds specified by the user
-            hdu.header["EFFEXPT"] = (
-                exposure_time,
-                "[s] Integrated exposure length",
-            )
-            hdu.header["EFFEXPN"] = (
-                int(exposure_time / 10),
-                "[s] Number of integrated exposures",
-            )
-
-            hdu.header[
-                "EXPOSURE"
-            ] = (
-                expected_endpoint_of_substack_exposure - substack_start_time,
-                "[s] Actual exposure length",
-            )  # Ideally this needs to be calculated from actual times
-
-
-        else:
-
-            hdu.header["DATE"] = (
-                datetime.datetime.isoformat(
-                    datetime.datetime.utcfromtimestamp(start_time_of_observation)
-                ),
-                "Start date and time of observation"
-            )
-
-            hdu.header["DATE-OBS"] = (
-                datetime.datetime.isoformat(
-                    datetime.datetime.utcfromtimestamp(start_time_of_observation)
-                ),
-                "Start date and time of observation"
-            )
-
-            hdu.header["MJD-OBS"] = (
-                Time(start_time_of_observation, format="unix").mjd,
-                "[UTC days] Modified Julian Date start date/time",
-
-            )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
-            hdu.header["JD-START"] = (
-                Time(start_time_of_observation, format="unix").jd,
-                "[UTC days] Julian Date at start of exposure")
-
-            hdu.header["MJD-MID"] = (
-                Time(start_time_of_observation + (0.5 * exposure_time), format="unix").mjd,
-                "[UTC days] Modified Julian Date mid exposure date/time",
-            )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
-            hdu.header["JD-MID"] = (
-                Time(start_time_of_observation+ (0.5 * exposure_time), format="unix").jd,
-
-                "[UTC days] Julian Date at middle of exposure",
-            )
-
-            hdu.header["EXPTIME"] = (
-                exposure_time,
-                "[s] Actual exposure length",
-            )  # This is the exposure in seconds specified by the user
-            hdu.header["EFFEXPT"] = (
-                exposure_time,
-                "[s] Integrated exposure length",
-            )
-            hdu.header["EFFEXPN"] = (
-                1,
-                "[s] Number of integrated exposures",
-            )
-
-            hdu.header[
-                "EXPOSURE"
-            ] = (
-                exposure_time,
-                "[s] Actual exposure length",
-            )  # Ideally this needs to be calculated from actual times
-
-        hdu.header["BUNIT"] = "adu"
-
-        hdu.header["FILTER"] = (
-            this_exposure_filter,
-            "Filter type")
-        if g_dev["fil"].null_filterwheel == False:
-            hdu.header["FILTEROF"] = (exposure_filter_offset, "Filter offset")
-
-            hdu.header["FILTRNUM"] = (
-               "PTR_ADON_HA_0023",
-               "An index into a DB",
-               )
-        else:
-            hdu.header["FILTEROF"] = ("No Filter", "Filter offset")
-            hdu.header["FILTRNUM"] = (
-                "No Filter",
-                "An index into a DB",
-            )  # Get a number from the hardware or via Maxim.  NB NB why not cwl and BW instead, plus P
-
-        # THESE ARE THE RELEVANT FITS HEADER KEYWORDS
-        # FOR OSC MATCHING AT A LATER DATE.
-        # THESE ARE SET TO DEFAULT VALUES FIRST AND
-        # THINGS CHANGE LATER
-        hdu.header["OSCMATCH"] = 'no'
-        hdu.header['OSCSEP'] = 'no'
-
-        hdu.header["SATURATE"] = (
-            float(image_saturation_level),
-            "[ADU] Saturation level",
-        )
-        hdu.header["MAXLIN"] = (
-            float(
-                selfconfig["camera"][selfname]["settings"][
-                    "max_linearity"
-                ]
-            ),
-            "[ADU] Non-linearity level",
-        )
-        if pane is not None:
-            hdu.header["MOSAIC"] = (True, "Is mosaic")
-            hdu.header["PANE"] = pane
-
-        hdu.header["FOCAL"] = (
-            round(
-                float(
-                    selfconfig["telescope"]["telescope1"]["focal_length"]
-                ),
-                2,
-            ),
-            "[mm] Telescope focal length",
-        )
-        hdu.header["APR-DIA"] = (
-            round(
-                float(selfconfig["telescope"]["telescope1"]["aperture"]), 2
-            ),
-            "[mm] Telescope aperture",
-        )
-        hdu.header["APR-AREA"] = (
-            round(
-                float(
-                    selfconfig["telescope"]["telescope1"][
-                        "collecting_area"
-                    ]
-                ),
-                1,
-            ),
-            "[mm^2] Telescope collecting area",
-        )
-        hdu.header["LATITUDE"] = (
-            round(float(g_dev['evnt'].wema_config["latitude"]), 6),
-            "[Deg N] Telescope Latitude",
-        )
-        hdu.header["LONGITUD"] = (
-            round(float(g_dev['evnt'].wema_config["longitude"]), 6),
-            "[Deg E] Telescope Longitude",
-        )
-        hdu.header["HEIGHT"] = (
-            round(float(g_dev['evnt'].wema_config["elevation"]), 2),
-            "[m] Altitude of Telescope above sea level",
-        )
-        hdu.header["MPC-CODE"] = (
-            selfconfig["mpc_code"],
-            "Site code",
-        )  # This is made up for now.
-
-        hdu.header["OBJECT"] =object_name
-        hdu.header["OBJSPECF"] = object_specf
-
-        if not any("OBJECT" in s for s in hdu.header.keys()):
-            RAtemp = ra_at_time_of_exposure
-            DECtemp = dec_at_time_of_exposure
-            RAstring = f"{RAtemp:.1f}".replace(".", "h")
-            DECstring = f"{DECtemp:.1f}".replace("-", "n").replace(".", "d")
-            hdu.header["OBJECT"] = RAstring + "ra" + DECstring + "dec"
-            hdu.header["OBJSPECF"] = "no"
-
-        try:
-            hdu.header["SID-TIME"] = (
-                avg_mnt['sidereal_time'],
-                "[deg] Sidereal time",
-            )
-            hdu.header["OBJCTRA"] = (
-                float(avg_mnt['right_ascension']) * 15,
-                "[deg] Object RA",
-            )
-            hdu.header["OBJCTDEC"] = (avg_mnt['declination'], "[deg] Object dec")
-        except:
-            plog("problem with the premount?")
-            plog(traceback.format_exc())
-
-        hdu.header["OBSERVER"] = (
-            observer_user_name,
-            "Observer name",
-        )
-        hdu.header["OBSNOTE"] = hint[0:54]  # Needs to be truncated.
-
-        hdu.header["DITHER"] = (0, "[] Dither")  #This was intended to inform of a 5x5 pattern number
-        hdu.header["OPERATOR"] = ("WER", "Site operator")
-
-        hdu.header["ENCLIGHT"] = ("Off/White/Red/NIR", "Enclosure lights")
-        hdu.header["ENCRLIGT"] = ("", "Enclosure red lights state")
-        hdu.header["ENCWLIGT"] = ("", "Enclosure white lights state")
-
-        hdu.header["MNT-SIDT"] = (
-            avg_mnt["sidereal_time"],
-            "[hrs] Mount sidereal time",
-        )
-        hdu.header["MNT-RA"] = (
-            float(avg_mnt["right_ascension"]) * 15,
-            "[deg] Mount RA",
-        )
-        ha = avg_mnt["sidereal_time"] - avg_mnt["right_ascension"]
-        while ha >= 12:
-            ha -= 24.0
-        while ha < -12:
-            ha += 24.0
-        hdu.header["MNT-HA"] = (
-            round(ha, 5),
-            "[hrs] Average mount hour angle",
-        )  # Note these are average mount observed values.
-
-        hdu.header["MNT-DEC"] = (
-            avg_mnt["declination"],
-            "[deg] Average mount declination",
-        )
-        hdu.header["MNT-RAV"] = (
-            avg_mnt["tracking_right_ascension_rate"],
-            "[] Mount tracking RA rate",
-        )
-        hdu.header["MNT-DECV"] = (
-            avg_mnt["tracking_declination_rate"],
-            "[] Mount tracking dec rate",
-        )
-        hdu.header["AZIMUTH "] = (
-            azimuth_of_observation,
-            "[deg] Azimuth axis positions",
-        )
-        hdu.header["ALTITUDE"] = (
-            altitude_of_observation,
-            "[deg] Altitude axis position",
-        )
-        hdu.header["ZENITH"] = (90 - altitude_of_observation, "[deg] Zenith")
-        hdu.header["AIRMASS"] = (
-            airmass_of_observation,
-            "Effective mean airmass",
-        )
-        try:
-            hdu.header["REFRACT"] = (
-                round(g_dev["mnt"].refraction_rev, 3),
-                "asec",
-            )
-        except:
-            pass
-        hdu.header["MNTRDSYS"] = (
-            avg_mnt["coordinate_system"],
-            "Mount coordinate system",
-        )
-        hdu.header["POINTINS"] = (avg_mnt["instrument"], "")
-        hdu.header["MNT-PARK"] = (avg_mnt["is_parked"], "Mount is parked")
-        hdu.header["MNT-SLEW"] = (avg_mnt["is_slewing"], "Mount is slewing")
-        hdu.header["MNT-TRAK"] = (
-            avg_mnt["is_tracking"],
-            "Mount is tracking",
-        )
-        try:
-            if pier_side == 0:
-                hdu.header["PIERSIDE"] = ("Look West", "Pier on  East side")
-                hdu.header["IMGFLIP"] = (True, "Is flipped")
-                pier_string = "lw-"
-            elif pier_side == 1:
-                hdu.header["PIERSIDE"] = ("Look East", "Pier on West side")
-                hdu.header["IMGFLIP"] = (False, "Is flipped")
-                pier_string = "le-"
-        except:
-            hdu.header["PIERSIDE"] = "Undefined"
-            pier_string = ""
-
-        try:
-            hdu.header["HACORR"] = (
-                ha_corr,
-                "[deg] Hour angle correction",
-            )  
-            hdu.header["DECCORR"] = (
-                dec_corr,
-                "[deg] Declination correction",
-            )
-        except:
-            pass
-        hdu.header["OTA"] = "Main"
-        hdu.header["SELECTEL"] = ("tel1", "Nominted OTA for pointing")
-        try:
-            hdu.header["ROTATOR"] = (
-                selfconfig["rotator"]["rotator1"]["name"],
-                "Rotator name",
-            )
-            hdu.header["ROTANGLE"] = (avg_rot[1], "[deg] Rotator angle")
-            hdu.header["ROTMOVNG"] = (avg_rot[2], "Rotator is moving")
-        except:
-            pass
-
-        try:
-            hdu.header["FOCUS"] = (
-                selfconfig["focuser"]["focuser1"]["name"],
-                "Focuser name",
-            )
-            hdu.header["FOCUSPOS"] = (avg_foc[1], "[um] Focuser position")
-            hdu.header["FOCUSTMP"] = (avg_foc[2], "[C] Focuser temperature")
-            hdu.header["FOCUSMOV"] = (avg_foc[3], "Focuser is moving")
-        except:
-            plog("There is something fishy in the focuser routine")
-        
-        if pixscale == None:
-            hdu.header["PIXSCALE"] = (
-                'Unknown',
-                "[arcsec/pixel] Nominal pixel scale on sky",
-            )
-        else:
-            hdu.header["PIXSCALE"] = (
-                float(pixscale),
-                "[arcsec/pixel] Nominal pixel scale on sky",
-            )
-
-        hdu.header["DRZPIXSC"] = (selfconfig["camera"][selfname]["settings"]['drizzle_value_for_later_stacking'], 'Target pixel scale for drizzling')
-
-        hdu.header["REQNUM"] = ("00000001", "Request number")
-        hdu.header["ISMASTER"] = (False, "Is master image")
-        current_camera_name = selfconfig["camera"][selfname]["name"]
-
-        hdu.header["FRAMENUM"] = (int(next_seq), "Running frame number")
-        hdu.header["SMARTSTK"] = smartstackid # ID code for an individual smart stack group
-        hdu.header["SSTKNUM"] = sskcounter
-        hdu.header['SSTKLEN'] = Nsmartstack
-
-        hdu.header["SUBSTACK"] = substack
-        hdu.header["PEDESTAL"] = (0.0, "This value has been added to the data")
-        hdu.header["ERRORVAL"] = 0
-
-        hdu.header["USERNAME"] = observer_user_name
-        hdu.header["USERID"] = (
-            str(observer_user_id).replace("-", "").replace("|", "").replace('@','at')
-        )
-
-
-        im_type = "EX"  
-        f_ext = ""
-
-        cal_name = (
-            selfconfig["obs_id"]
-            + "-"
-            + current_camera_name
-            + "-"
-            + g_dev["day"]
-            + "-"
-            + next_seq
-            + f_ext
-            + "-"
-            + im_type
-            + "00.fits"
-        )
-        raw_name00 = (
-            selfconfig["obs_id"]
-            + "-"
-            + current_camera_name + '_' + str(frame_type) + '_' + str(this_exposure_filter)
-            + "-"
-            + g_dev["day"]
-            + "-"
-            + next_seq
-            + "-"
-            + im_type
-            + "00.fits"
-        )
-
-        if selfconfig['save_reduced_file_numberid_first']:
-            red_name01 = (next_seq + "-" +selfconfig["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" +  str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")
-        else:
-            red_name01 = (selfconfig["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")
-
-        red_name01_lcl = (
-            red_name01[:-9]
-            + pier_string + '-'
-            + this_exposure_filter
-            + red_name01[-9:]
-        )
-        if pane is not None:
-            red_name01_lcl = (
-                red_name01_lcl[:-9]
-                + pier_string
-                + "p"
-                + str(abs(pane))
-                + "-"
-                + red_name01_lcl[-9:]
-            )
-        i768sq_name = (
-            selfconfig["obs_id"]
-            + "-"
-            + current_camera_name
-            + "-"
-            + g_dev["day"]
-            + "-"
-            + next_seq
-            + "-"
-            + im_type
-            + "10.fits"
-        )
-        jpeg_name = (
-            selfconfig["obs_id"]
-            + "-"
-            + current_camera_name
-            + "-"
-            + g_dev["day"]
-            + "-"
-            + next_seq
-            + "-"
-            + im_type
-            + "10.jpg"
-        )
-        text_name = (
-            selfconfig["obs_id"]
-            + "-"
-            + current_camera_name
-            + "-"
-            + g_dev["day"]
-            + "-"
-            + next_seq
-            + "-"
-            + im_type
-            + "00.txt"
-        )
-        im_path_r = selfcamera_path
-
-        hdu.header["FILEPATH"] = str(im_path_r) + "to_AWS/"
-        hdu.header["ORIGNAME"] = str(raw_name00 + ".fz")
-
-        # tempRAdeg = ra_at_time_of_exposure * 15
-        # tempDECdeg = dec_at_time_of_exposure       
-        
-        tempRAdeg = corrected_ra_for_header * 15
-        tempDECdeg = corrected_dec_for_header              
-        
-        tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
-        tempointing=tempointing.to_string("hmsdms").split(' ')
-
-        hdu.header["RA"] = (
-            tempointing[0],
-            "[hms] Telescope right ascension",
-        )
-        hdu.header["DEC"] = (
-            tempointing[1],
-            "[dms] Telescope declination",
-        )
-        hdu.header["ORIGRA"] = hdu.header["RA"]
-        hdu.header["ORIGDEC"] = hdu.header["DEC"]
-        hdu.header["RAhrs"] = (
-            corrected_ra_for_header,
-            "[hrs] Telescope right ascension",
-        )
-        hdu.header["RADEG"] = tempRAdeg
-        hdu.header["DECDEG"] = tempDECdeg
-
-        hdu.header["TARG-CHK"] = (
-            (ra_at_time_of_exposure * 15)
-            + dec_at_time_of_exposure,
-            "[deg] Sum of RA and dec",
-        )
-        try:
-            hdu.header["CATNAME"] = (object_name, "Catalog object name")
-        except:
-            hdu.header["CATNAME"] = ('Unknown', "Catalog object name")
-        hdu.header["CAT-RA"] = (
-            tempointing[0],
-            "[hms] Catalog RA of object",
-        )
-        hdu.header["CAT-DEC"] = (
-            tempointing[1],
-            "[dms] Catalog Dec of object",
-        )
-        hdu.header["OFST-RA"] = (
-            tempointing[0],
-            "[hms] Catalog RA of object (for BANZAI only)",
-        )
-        hdu.header["OFST-DEC"] = (
-            tempointing[1],
-            "[dms] Catalog Dec of object",
-        )
-
-
-        hdu.header["TPT-RA"] = (
-            tempointing[0],
-            "[hms] Catalog RA of object (for BANZAI only",
-        )
-        hdu.header["TPT-DEC"] = (
-            tempointing[1],
-            "[dms] Catalog Dec of object",
-        )
-
-        hdu.header["RA-hms"] = tempointing[0]
-        hdu.header["DEC-dms"] = tempointing[1]
-
-        hdu.header["CTYPE1"] = 'RA---TAN'
-        hdu.header["CTYPE2"] = 'DEC--TAN'
-        try:
-            hdu.header["CDELT1"] = pixscale / 3600
-            hdu.header["CDELT2"] = pixscale / 3600
-        except:
-            hdu.header["CDELT1"] = 0.75 / 3600
-            hdu.header["CDELT2"] = 0.75 / 3600
-
-        hdu.header["CRVAL1"] = tempRAdeg
-        hdu.header["CRVAL2"] = tempDECdeg
-        hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
-        hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
-
-        try:  #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
-            os.makedirs(
-                im_path_r + g_dev["day"] + "/to_AWS/", exist_ok=True
-            )
-            os.makedirs(im_path_r + g_dev["day"] + "/raw/", exist_ok=True)
-            os.makedirs(im_path_r + g_dev["day"] + "/calib/", exist_ok=True)
-            os.makedirs(
-                im_path_r + g_dev["day"] + "/reduced/", exist_ok=True
-            )
-            im_path = im_path_r + g_dev["day"] + "/to_AWS/"
-            raw_path = im_path_r + g_dev["day"] + "/raw/"
-            cal_path = im_path_r + g_dev["day"] + "/calib/"
-            red_path = im_path_r + g_dev["day"] + "/reduced/"
-
-        except:
-            pass
-
-        paths = {
-            "im_path": im_path,
-            "raw_path": raw_path,
-            "cal_path": cal_path,
-            "red_path": red_path,
-            "red_path_aux": None,
-            "cal_name": cal_name,
-            "raw_name00": raw_name00,
-            "red_name01": red_name01,
-            "red_name01_lcl": red_name01_lcl,
-            "i768sq_name10": i768sq_name,
-            "i768sq_name11": i768sq_name,
-            "jpeg_name10": jpeg_name,
-            "jpeg_name11": jpeg_name,
-            "text_name00": text_name,
-            "text_name10": text_name,
-            "text_name11": text_name,
-            "frame_type": frame_type,
-        }
-
-        if frame_type[-5:] in ["focus", "probe", "ental"]:
-            focus_image = True
-        else:
-            focus_image = False
-
-        hdusmalldata=copy.deepcopy(hdu.data)
-        # Quick flash bias and dark frame
-        selfnative_bin = selfconfig["camera"][selfname]["settings"]["native_bin"]
-
-        broadband_ss_biasdark_exp_time = selfconfig['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
-        narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * selfconfig['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
-        dark_exp_time = selfconfig['camera']['camera_1_1']['settings']['dark_exposure']
-
-        if not manually_requested_calibration and not substack:
-            try:
-                # If not a smartstack use a scaled masterdark
-                timetakenquickdark=time.time()
-                try:
-                    if smartstackid == 'no':
-                        # Initially debias the image
-                        hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
-                        # Sort out an intermediate dark
-                        fraction_through_range=0
-                        if exposure_time < 0.5:
-                            hdusmalldata=hdusmalldata-(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
-                        elif exposure_time < 2.0:
-                            fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
-                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
-                            hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
-                            del tempmasterDark
-                        elif exposure_time < 10.0:
-                            fraction_through_range=(exposure_time-2)/(10.0-2.0)
-                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
-                            hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
-                            del tempmasterDark
-                        elif exposure_time < broadband_ss_biasdark_exp_time:
-                            fraction_through_range=(exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
-                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
-                            hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
-                            del tempmasterDark
-                        elif exposure_time < narrowband_ss_biasdark_exp_time:
-                            fraction_through_range=(exposure_time-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
-                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
-                            hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
-                            del tempmasterDark
-                        elif dark_exp_time > narrowband_ss_biasdark_exp_time:
-                            fraction_through_range=(exposure_time-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
-                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles[str(1)]) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
-                            hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
-                            del tempmasterDark
-                        else:
-                            hdusmalldata=hdusmalldata-(g_dev['cam'].darkFiles['narrowband_ss_dark']*exposure_time)
-                    elif exposure_time == broadband_ss_biasdark_exp_time:
-                        hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles['broadband_ss_biasdark'])
-                    elif exposure_time == narrowband_ss_biasdark_exp_time:
-                        hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles['narrowband_ss_biasdark'])
-                    else:
-                        plog ("DUNNO WHAT HAPPENED!")
-                        hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
-                        hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
-                except:
-                    try:
-                        hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
-                        hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
-                    except:
-                        plog ("Could not bias or dark file.")
-            except Exception as e:
-                plog("debias/darking light frame failed: ", e)
-
-            # Quick flat flat frame
-            try:                
-                hdusmalldata = np.divide(hdusmalldata, np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
-            except Exception as e:
-                plog("flatting light frame failed", e)
-
-            try:
-                hdusmalldata[g_dev['cam'].bpmFiles[str(1)]] = np.nan
-
-            except Exception as e:
-                plog("Bad Pixel Masking light frame failed: ", e)
-
-        # This saves the REDUCED file to disk
-        # If this is for a smartstack, this happens immediately in the camera thread after we have a "reduced" file
-        # So that the smartstack queue can start on it ASAP as smartstacks
-        # are by far the longest task to undertake.
-        # If it isn't a smartstack, it gets saved in the slow process queue.
-        if "hdusmalldata" in locals():
-            # Set up reduced header
-            hdusmallheader=copy.deepcopy(hdu.header)
-            if not manually_requested_calibration:
-                #From the reduced data, crop around the edges of the
-                #raw 1x1 image to get rid of overscan and crusty edge bits
-                edge_crop=selfconfig["camera"][selfname]["settings"]['reduced_image_edge_crop']
-                if edge_crop > 0:
-                    hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
-
-                    hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
-                    hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
-                    hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
-                    hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
-
-                # bin to native binning
-                if selfnative_bin != 1 and (not pixscale == None):
-                    reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
-                    reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
-                    reduced_hdusmallheader['XBINING']=selfnative_bin
-                    reduced_hdusmallheader['YBINING']=selfnative_bin
-                    reduced_hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
-                    reduced_pixscale=float(hdu.header['PIXSCALE'])
-                    reduced_hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
-                    reduced_hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / selfnative_bin
-                    reduced_hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
-                    reduced_hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
-                    reduced_hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
-                    reduced_hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
-                    reduced_hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * selfnative_bin
-                    reduced_hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * selfnative_bin
-                    reduced_hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * selfnative_bin
-                    reduced_hdusmallheader['YPIXSZ']=float(hdu.header['YPIXSZ']) * selfnative_bin
-
-                    reduced_hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( selfnative_bin,2)
-                    reduced_hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
-                    reduced_hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
-
-                    reduced_hdusmalldata=hdusmalldata+200.0
-                    reduced_hdusmallheader['PEDESTAL']=200
-                else:
-                    reduced_hdusmalldata=copy.deepcopy(hdusmalldata)
-                    reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
-
-
-                # Add a pedestal to the reduced data
-                # This is important for a variety of reasons
-                # Some functions don't work with arrays with negative values
-                # 200 SHOULD be enough.
-                hdusmalldata=hdusmalldata+200.0
-                hdusmallheader['PEDESTAL']=200
-
-                hdusmallheader["OBSID"] = (
-                    selfconfig["obs_id"].replace("-", "").replace("_", "")
-                )
-
-                hdusmallheader["DAY-OBS"] = (
-                    g_dev["day"],
-                    "Date at start of observing night"
-                )
-                
-                g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))
-
-
-                if smartstackid != 'no':
-                    try:
-                        np.save(red_path + red_name01.replace('.fits','.npy'), hdusmalldata)
-                        hdusstack=fits.PrimaryHDU()
-                        hdusstack.header=hdusmallheader
-                        hdusstack.header["NAXIS1"] = hdusmalldata.shape[0]
-                        hdusstack.header["NAXIS2"] = hdusmalldata.shape[1]
-                        hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
-                        saver = 1
-                    except Exception as e:
-                        plog("Failed to write raw file: ", e)
-                        
-                # This puts the file into the smartstack queue
-                # And gets it underway ASAP.
-                if frame_type.lower() in ['fivepercent_exposure_dark','tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark', 'fivesec_exposure_dark', 'tensec_exposure_dark', 'fifteensec_exposure_dark', 'twentysec_exposure_dark', 'thirtysec_exposure_dark', 'broadband_ss_biasdark', 'narrowband_ss_biasdark']:
-                    a_dark_exposure=True
-                else:
-                    a_dark_exposure=False
-
-                if ( not frame_type.lower() in [
-                    "bias",
-                    "dark",
-                    "flat",
-                    "solar",
-                    "lunar",
-                    "skyflat",
-                    "screen",
-                    "spectrum",
-                    "auto_focus",
-                    "focus",
-                    "pointing"
-                ]) and smartstackid != 'no' and not a_dark_exposure :
-                    g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
-                else:
-                    if not selfconfig['keep_reduced_on_disk']:
-                        try:
-                            os.remove(red_path + red_name01)
-                        except:
-                            pass
-
-                if selfconfig['keep_reduced_on_disk']:
-                    
-                    if selfconfig["save_to_alt_path"] == "yes":
-                        selfalt_path = selfconfig[
-                            "alt_path"
-                        ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
-                    else:
-                        selfalt_path = 'no'
-
-                    slow_process=('reduced', red_path + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
-                                           frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure,selfalt_path)
-
-                    # Make  sure the alt paths exist
-                    if g_dev['obs'].config["save_to_alt_path"] == "yes":
-                        os.makedirs(
-                            g_dev['obs'].alt_path + g_dev["day"], exist_ok=True
-                        )
-                        os.makedirs(
-                            g_dev['obs'].alt_path + g_dev["day"] + "/raw/", exist_ok=True
-                        )
-                        os.makedirs(
-                            g_dev['obs'].alt_path + g_dev["day"] + "/reduced/", exist_ok=True
-                        )
-                        os.makedirs(
-                            g_dev['obs'].alt_path + g_dev["day"] + "/calib/", exist_ok=True)
-
-                        altpath=copy.deepcopy(g_dev['obs'].alt_path)
-                    else:
-                        altpath='no'
-
-
-                    picklepayload=(reduced_hdusmallheader,copy.deepcopy(g_dev['obs'].config),g_dev['cam'].name, slow_process, altpath)
-
-                    picklefilename='testred'+str(time.time()).replace('.','')
-                    pickle.dump(picklepayload, open(g_dev['obs'].local_calibration_path + 'smartstacks/'+picklefilename,'wb'))
-                   
-                    subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=g_dev['obs'].local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-
-
-                                  
-
-            # Send data off to process jpeg if not a smartstack
-            if smartstackid == 'no':
-                g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
-
-            if solve_it == True or (not manually_requested_calibration or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
-                                       or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.utcnow() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"])):
-
-                cal_name = (
-                    cal_name[:-9] + "F012" + cal_name[-7:]
-                )
-
-                # Check this is not an image in a smartstack set.
-                # No shifts in pointing are wanted in a smartstack set!
-                image_during_smartstack=False
-                if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or sskcounter ==0):
-                    image_during_smartstack=True
-                if exposure_time < 1.0:
-                    plog ("Not doing Platesolve for sub-second exposures.")
-                else:
-                    if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
-
-                        # Make sure any dither or return nudge has finished before platesolution
-                        if sskcounter == 0 and Nsmartstack > 1:
-                            firstframesmartstack = True
-                        else:
-                            firstframesmartstack = False
-
-
-                        g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, ''))
-                        # If it is the last of a set of smartstacks, we actually want to
-                        # wait for the platesolve and nudge before starting the next smartstack.
-
-            # Now that the jpeg, sep and platesolve has been sent up pronto,
-            # We turn back to getting the bigger raw, reduced and fz files dealt with
-            if not ( frame_type.lower() in [
-                "bias",
-                "dark"
-                "flat",
-                "focus",
-                "skyflat",
-                "pointing"
-                ]) and not a_dark_exposure:
-                picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(g_dev['obs'].config),g_dev['cam'].name, ('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
-
-                picklefilename='testlocalred'+str(time.time()).replace('.','')
-                pickle.dump(picklepayload, open(g_dev['obs'].local_calibration_path + 'smartstacks/'+picklefilename,'wb'))
-                
-                subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=g_dev['obs'].local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-
-
-                if not g_dev['obs'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:                   
-
-                    # Send this file up to ptrarchive
-                    if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-
-                        #print ("INGESTERING " + raw_name00)
-                        g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', raw_path + raw_name00 +'.fz'
-                        )
-
-                else:  # Is an OSC
-
-                    if g_dev['obs'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
-                        
-                        try:
-                            hdu.header['PIXSCALE'] = float(hdu.header['PIXSCALE'])*2
-                        except:
-                            pass
-                        hdu.header['CDELT1'] = float(hdu.header['CDELT1'])*2
-                        hdu.header['CDELT2'] = float(hdu.header['CDELT2'])*2
-                        tempfilter = hdu.header['FILTER']
-                        tempfilename = raw_path + raw_name00
-                        
-                        # Save and send R1
-                        hdu.header['FILTER'] = tempfilter + '_R1'
-                        hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('-EX', 'R1-EX')
-
-                        if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-                           
-                            g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'R1-EX') + '.fz'
-                            )                        
-
-                        # Save and send G1
-                        hdu.header['FILTER'] = tempfilter + '_G1'
-                        hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('R1-EX', 'G1-EX')
-
-                        if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-                            
-                            g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'G1-EX')+ '.fz'
-                            )                        
-
-                        # Save and send G2
-                        hdu.header['FILTER'] = tempfilter + '_G2'
-                        hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('G1-EX', 'G2-EX')
-                        
-                        if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-                           
-                            g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'G2-EX')+ '.fz'
-                            )
-                        
-                        # Save and send B1
-                        hdu.header['FILTER'] = tempfilter + '_B1'
-                        hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('G2-EX', 'B1-EX')
-
-                        if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-                           
-                            g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'B1-EX')+ '.fz'
-                            )
-                        
-                        # Save and send clearV
-                        hdu.header['FILTER'] = tempfilter + '_clearV'
-                        hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('B1-EX', 'CV-EX')
-
-                        if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-                            
-                            g_dev['obs'].enqueue_for_PTRarchive(
-                                26000000, '', tempfilename.replace('-EX', 'CV-EX')+ '.fz'
-                            )   
-                    else:
-                        plog("this bayer grid not implemented yet")
-
-
-
-            # Similarly to the above. This saves the RAW file to disk
-            # it works 99.9999% of the time.
-            if selfconfig['save_raw_to_disk']:
-                os.makedirs(
-                    raw_path, exist_ok=True
-                )
-                threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','thisisdeprecated')),)).start()
-
-
-                if selfconfig["save_to_alt_path"] == "yes":
-                    selfalt_path = selfconfig[
-                        "alt_path"
-                    ]  +'/' + selfconfig['obs_id']+ '/' 
-                   
-
-                    os.makedirs(
-                        selfalt_path , exist_ok=True
-                    )
-
-                    os.makedirs(
-                        selfalt_path + g_dev["day"], exist_ok=True
-                    )
-
-                    os.makedirs(
-                       selfalt_path + g_dev["day"] + "/raw/" , exist_ok=True
-                    )
-                    threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', selfalt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
-                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','deprecated')),)).start()
-                    
-
-            # remove file from memory
-            try:
-                hdu.close()
-            except:
-                pass
-            del hdu  # remove file from memory now that we are doing with it
-
-            if "hdusmalldata" in locals():
-                try:
-                    hdusmalldata.close()
-                except:
-                    pass
-                del hdusmalldata  # remove file from memory now that we are doing with it
-            if "reduced_hdusmalldata" in locals():
-                try:
-                    del reduced_hdusmalldata
-                    del reduced_hdusmallheader
-                except:
-                    pass
-
-
-    except:
-        plog(traceback.format_exc())
 
 def wait_for_slew(wait_after_slew=True):
     """

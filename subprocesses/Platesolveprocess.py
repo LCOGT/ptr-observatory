@@ -48,7 +48,7 @@ from math import cos, radians
 #     demosaicing_CFA_Bayer_Menon2007)
 import matplotlib.pyplot as plt
 import math
-from PIL import Image, ImageOps 
+from PIL import Image#, ImageOps 
 from scipy.stats import binned_statistic
 from astropy.wcs import WCS
 #from astropy.io import fits
