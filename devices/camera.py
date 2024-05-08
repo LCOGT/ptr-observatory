@@ -3928,6 +3928,9 @@ class Camera:
                     os.makedirs(
                        self.alt_path + g_dev["day"] + "/raw/" , exist_ok=True
                     )
+                    
+                    
+                raw_path = im_path_r + g_dev['day'] + "/raw/"
                             
                 ################################################# CUTOFF FOR THE POSTPROCESSING QUEUE
                 
@@ -4085,7 +4088,7 @@ class Camera:
                     smartstackthread_filename='no'
                     
                 # else:
-                #     if not selfconfig['keep_reduced_on_disk']:
+                #     if not self.config['keep_reduced_on_disk']:
                 #         try:
                 #             os.remove(red_path + red_name01)
                 #         except:
@@ -4229,8 +4232,110 @@ class Camera:
             
             
             
-            
-            
+                # Report files to the queues
+                
+                if not self.config["camera"][g_dev['cam'].alias]["settings"]["is_osc"]:                   
+
+                    # Send this file up to ptrarchive
+                    if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+
+                        #print ("INGESTERING " + raw_name00)
+                        g_dev['obs'].enqueue_for_PTRarchive(
+                            26000000, '', raw_path + raw_name00 +'.fz'
+                        )
+
+                else:  # Is an OSC
+
+                    if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
+                        
+                        # try:
+                        #     hdu.header['PIXSCALE'] = float(hdu.header['PIXSCALE'])*2
+                        # except:
+                        #     pass
+                        # hdu.header['CDELT1'] = float(hdu.header['CDELT1'])*2
+                        # hdu.header['CDELT2'] = float(hdu.header['CDELT2'])*2
+                        # tempfilter = hdu.header['FILTER']
+                        tempfilename = raw_path + raw_name00
+                        
+                        # # Save and send R1
+                        # hdu.header['FILTER'] = tempfilter + '_R1'
+                        # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('-EX', 'R1-EX')
+
+                        if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                           
+                            g_dev['obs'].enqueue_for_PTRarchive(
+                                26000000, '', tempfilename.replace('-EX', 'R1-EX') + '.fz'
+                            )                        
+
+                        # # Save and send G1
+                        # hdu.header['FILTER'] = tempfilter + '_G1'
+                        # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('R1-EX', 'G1-EX')
+
+                        if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                            
+                            g_dev['obs'].enqueue_for_PTRarchive(
+                                26000000, '', tempfilename.replace('-EX', 'G1-EX')+ '.fz'
+                            )                        
+
+                        # # Save and send G2
+                        # hdu.header['FILTER'] = tempfilter + '_G2'
+                        # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('G1-EX', 'G2-EX')
+                        
+                        if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                           
+                            g_dev['obs'].enqueue_for_PTRarchive(
+                                26000000, '', tempfilename.replace('-EX', 'G2-EX')+ '.fz'
+                            )
+                        
+                        # # Save and send B1
+                        # hdu.header['FILTER'] = tempfilter + '_B1'
+                        # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('G2-EX', 'B1-EX')
+
+                        if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                           
+                            g_dev['obs'].enqueue_for_PTRarchive(
+                                26000000, '', tempfilename.replace('-EX', 'B1-EX')+ '.fz'
+                            )
+                        
+                        # # Save and send clearV
+                        # hdu.header['FILTER'] = tempfilter + '_clearV'
+                        # hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('B1-EX', 'CV-EX')
+
+                        if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                            
+                            g_dev['obs'].enqueue_for_PTRarchive(
+                                26000000, '', tempfilename.replace('-EX', 'CV-EX')+ '.fz'
+                            )   
+                    else:
+                        print("this bayer grid not implemented yet")
+                        
+                        
+                    
+                    if solve_it == True or (not manually_requested_calibration or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
+                                               or g_dev['obs'].images_since_last_solve > self.config["solve_nth_image"] or (datetime.datetime.utcnow() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=self.config["solve_timer"])):
+
+                        cal_name = (
+                            cal_name[:-9] + "F012" + cal_name[-7:]
+                        )
+
+                        # Check this is not an image in a smartstack set.
+                        # No shifts in pointing are wanted in a smartstack set!
+                        image_during_smartstack=False
+                        if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or sskcounter ==0):
+                            image_during_smartstack=True
+                        if exposure_time < 1.0:
+                            print ("Not doing Platesolve for sub-second exposures.")
+                        else:
+                            if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
+
+                                # # Make sure any dither or return nudge has finished before platesolution
+                                # if sskcounter == 0 and Nsmartstack > 1:
+                                #     firstframesmartstack = True
+                                # else:
+                                #     firstframesmartstack = False
+                                platesolvethread_filename=self.local_calibration_path + "smartstacks/platesolve" + time.time().replace('d','') + '.pickle'
+                            else:
+                                platesolvethread_filename='no'
             
             
             
@@ -4240,7 +4345,7 @@ class Camera:
 ################################ START OFF THE MAIN POST_PROCESSING SUBTHREAD
                 
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
-                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"], exposure_filter_offset, g_dev["fil"].null_filterwheel, g_dev['evnt'].wema_config,smartstackthread_filename, septhread_filename, mainjpegthread_filename)), block=False)
+                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"], exposure_filter_offset, g_dev["fil"].null_filterwheel, g_dev['evnt'].wema_config,smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename)), block=False)
                     
                     
                 # Now we tell the queues we have a file to wait for

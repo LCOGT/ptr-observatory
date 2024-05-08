@@ -22,6 +22,53 @@ from astropy.nddata import block_reduce
 import subprocess
 import traceback
 
+# Note this is a thread!
+def write_raw_file_out(packet):
+
+    (raw, raw_name, hdudata, hduheader, frame_type, current_icrs_ra, current_icrs_dec,altpath,altfolder, dayobs, camera_path, altpath) = packet
+
+    # Make sure normal paths exist
+    os.makedirs(
+        camera_path + dayobs, exist_ok=True
+    )
+    os.makedirs(
+        camera_path + dayobs + "/raw/", exist_ok=True
+    )
+    os.makedirs(
+        camera_path + dayobs + "/reduced/", exist_ok=True
+    )
+    os.makedirs(
+        camera_path + dayobs + "/calib/", exist_ok=True)
+
+    # Make  sure the alt paths exist
+    if raw == 'raw_alt_path':
+        os.makedirs(
+            altpath + dayobs, exist_ok=True
+        )
+        os.makedirs(
+            altpath + dayobs + "/raw/", exist_ok=True
+        )
+        os.makedirs(
+            altpath + dayobs + "/reduced/", exist_ok=True
+        )
+        os.makedirs(
+            altpath + dayobs + "/calib/", exist_ok=True)
+
+    hdu = fits.PrimaryHDU()
+    hdu.data = hdudata
+    hdu.header = hduheader
+    hdu.header["DATE"] = (
+        datetime.date.strftime(
+            datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
+        ),
+        "Date FITS file was written",
+    )    
+    hdu.writeto( raw_name, overwrite=True, output_verify='silentfix')
+    try:
+        hdu.close()
+    except:
+        pass
+    del hdu
 
 payload=pickle.load(sys.stdin.buffer)
 
@@ -36,7 +83,7 @@ payload=pickle.load(sys.stdin.buffer)
  ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, \
  camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path, \
  solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure, \
- substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, substacker_filenames, dayobs, exposure_filter_offset,null_filterwheel, wema_config, smartstackthread_filename, septhread_filename, mainjpegthread_filename) = payload
+ substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, substacker_filenames, dayobs, exposure_filter_offset,null_filterwheel, wema_config, smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename) = payload
     
 
     
@@ -847,11 +894,13 @@ try:
     narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * selfconfig['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
     dark_exp_time = selfconfig['camera']['camera_1_1']['settings']['dark_exposure']
 
+    localcalibrationdirectory=selfconfig['local_calibration_path'] + selfconfig['obs_id'] + '/'
+    tempfrontcalib=obsname + '_' + camalias +'_'
+
     if not manually_requested_calibration and not substack:
         
         
-        localcalibrationdirectory=selfconfig['local_calibration_path'] + selfconfig['obs_id'] + '/'
-        tempfrontcalib=obsname + '_' + camalias +'_'
+        
         
         
         
@@ -1070,33 +1119,14 @@ try:
             #g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
             np.save(hdusmalldata, mainjpegthread_filename)
 
-        if solve_it == True or (not manually_requested_calibration or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
-                                   or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.utcnow() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"])):
+        
 
-            cal_name = (
-                cal_name[:-9] + "F012" + cal_name[-7:]
-            )
-
-            # Check this is not an image in a smartstack set.
-            # No shifts in pointing are wanted in a smartstack set!
-            image_during_smartstack=False
-            if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or sskcounter ==0):
-                image_during_smartstack=True
-            if exposure_time < 1.0:
-                print ("Not doing Platesolve for sub-second exposures.")
-            else:
-                if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
-
-                    # Make sure any dither or return nudge has finished before platesolution
-                    if sskcounter == 0 and Nsmartstack > 1:
-                        firstframesmartstack = True
-                    else:
-                        firstframesmartstack = False
-
-
-                    g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, ''))
+        if platesolvethread_filename !='no':
+            np.save(hdusmalldata, platesolvethread_filename)
+           #g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, ''))
                     # If it is the last of a set of smartstacks, we actually want to
                     # wait for the platesolve and nudge before starting the next smartstack.
+    
 
         # Now that the jpeg, sep and platesolve has been sent up pronto,
         # We turn back to getting the bigger raw, reduced and fz files dealt with
@@ -1108,88 +1138,15 @@ try:
             "skyflat",
             "pointing"
             ]) and not a_dark_exposure:
-            picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(g_dev['obs'].config),g_dev['cam'].name, ('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
+            picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),camalias, ('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
 
             picklefilename='testlocalred'+str(time.time()).replace('.','')
-            pickle.dump(picklepayload, open(g_dev['obs'].local_calibration_path + 'smartstacks/'+picklefilename,'wb'))
+            pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
             
-            subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=g_dev['obs'].local_calibration_path + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+            subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=localcalibrationdirectory + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
 
-            if not g_dev['obs'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:                   
-
-                # Send this file up to ptrarchive
-                if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-
-                    #print ("INGESTERING " + raw_name00)
-                    g_dev['obs'].enqueue_for_PTRarchive(
-                        26000000, '', raw_path + raw_name00 +'.fz'
-                    )
-
-            else:  # Is an OSC
-
-                if g_dev['obs'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
-                    
-                    try:
-                        hdu.header['PIXSCALE'] = float(hdu.header['PIXSCALE'])*2
-                    except:
-                        pass
-                    hdu.header['CDELT1'] = float(hdu.header['CDELT1'])*2
-                    hdu.header['CDELT2'] = float(hdu.header['CDELT2'])*2
-                    tempfilter = hdu.header['FILTER']
-                    tempfilename = raw_path + raw_name00
-                    
-                    # Save and send R1
-                    hdu.header['FILTER'] = tempfilter + '_R1'
-                    hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('-EX', 'R1-EX')
-
-                    if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-                       
-                        g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', tempfilename.replace('-EX', 'R1-EX') + '.fz'
-                        )                        
-
-                    # Save and send G1
-                    hdu.header['FILTER'] = tempfilter + '_G1'
-                    hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('R1-EX', 'G1-EX')
-
-                    if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-                        
-                        g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', tempfilename.replace('-EX', 'G1-EX')+ '.fz'
-                        )                        
-
-                    # Save and send G2
-                    hdu.header['FILTER'] = tempfilter + '_G2'
-                    hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('G1-EX', 'G2-EX')
-                    
-                    if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-                       
-                        g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', tempfilename.replace('-EX', 'G2-EX')+ '.fz'
-                        )
-                    
-                    # Save and send B1
-                    hdu.header['FILTER'] = tempfilter + '_B1'
-                    hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('G2-EX', 'B1-EX')
-
-                    if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-                       
-                        g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', tempfilename.replace('-EX', 'B1-EX')+ '.fz'
-                        )
-                    
-                    # Save and send clearV
-                    hdu.header['FILTER'] = tempfilter + '_clearV'
-                    hdu.header['ORIGNAME'] = hdu.header['ORIGNAME'].replace('B1-EX', 'CV-EX')
-
-                    if g_dev['obs'].config['send_files_at_end_of_night'] == 'no' and g_dev['obs'].config['ingest_raws_directly_to_archive']:
-                        
-                        g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', tempfilename.replace('-EX', 'CV-EX')+ '.fz'
-                        )   
-                else:
-                    print("this bayer grid not implemented yet")
+            
 
 
 
@@ -1199,7 +1156,7 @@ try:
             os.makedirs(
                 raw_path, exist_ok=True
             )
-            threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','thisisdeprecated')),)).start()
+            threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','thisisdeprecated', dayobs, im_path_r, selfalt_path)),)).start()
 
 
             if selfconfig["save_to_alt_path"] == "yes":
@@ -1220,7 +1177,7 @@ try:
                    selfalt_path + dayobs + "/raw/" , exist_ok=True
                 )
                 threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', selfalt_path + dayobs + "/raw/" + raw_name00, hdu.data, hdu.header, \
-                                                   frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec,'no','deprecated')),)).start()
+                                                   frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path)),)).start()
                 
 
         # remove file from memory
