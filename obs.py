@@ -521,10 +521,10 @@ class Observatory:
         self.send_status_queue_thread.daemon = True
         self.send_status_queue_thread.start()
 
-        # self.platesolve_queue = queue.Queue(maxsize=0)
-        # self.platesolve_queue_thread = threading.Thread(target=self.platesolve_process, args=())
-        # self.platesolve_queue_thread.daemon = True
-        # self.platesolve_queue_thread.start()
+        self.platesolve_queue = queue.Queue(maxsize=0)
+        self.platesolve_queue_thread = threading.Thread(target=self.platesolve_process, args=())
+        self.platesolve_queue_thread.daemon = True
+        self.platesolve_queue_thread.start()
 
         # self.sep_queue = queue.Queue(maxsize=0)
         # self.sep_queue_thread = threading.Thread(target=self.sep_process, args=())
@@ -2181,302 +2181,322 @@ class Observatory:
 
                 self.platesolve_is_processing = True
 
-                (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
-                 pixscale, pointing_ra, pointing_dec, firstframesmartstack, useastronometrynet, pointing_exposure, jpeg_filename) = self.platesolve_queue.get(block=False)
+                (platesolve_token_filename,hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
+                  pixscale, pointing_ra, pointing_dec, firstframesmartstack, useastronometrynet, pointing_exposure, jpeg_filename) = self.platesolve_queue.get(block=False)
 
-                is_osc=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
-
-                # Do not bother platesolving unless it is dark enough!!
-                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-                    plog("Too bright to consider platesolving!")
+                if np.isnan(pixscale) or pixscale == None:
+                    timeout_time = 1200
                 else:
+                    timeout_time = 120
+
+                platesolve_timeout_timer=time.time()
+                while not os.path.exists(platesolve_token_filename) and (time.time() - platesolve_timeout_timer) < timeout_time:
+                    time.sleep(0.5)
+
+                if (time.time() - platesolve_timeout_timer) > timeout_time:
+                    plog ("waiting for platesolve token timed out")
+                    solve = 'error'
+                    #platesolve_subprocess.kill()
+
                     try:
+                        os.system('taskkill /IM ps3cli.exe /F')
+                    except:
+                        pass
+                else:
 
+                    hdufocusdata=np.load(pickle.load(platesolve_token_filename))                    
+
+
+                    is_osc=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+    
+                    # Do not bother platesolving unless it is dark enough!!
+                    if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                        plog("Too bright to consider platesolving!")
+                    else:
                         try:
-                            os.remove(self.local_calibration_path + 'platesolve.pickle')
-                            os.remove(self.local_calibration_path + 'platesolve.temppickle')
-                        except:
-                            pass
-                        
-                        target_ra = g_dev["mnt"].last_ra_requested
-                        target_dec = g_dev["mnt"].last_dec_requested
-
-                        # print("Last RA requested: " + str(g_dev["mnt"].last_ra_requested))
-                        # print("Last DEC requested: " + str(g_dev["mnt"].last_dec_requested))
-
-                        if g_dev['seq'].block_guard and not g_dev["seq"].focussing:
-                            target_ra = g_dev['seq'].block_ra
-                            target_dec = g_dev['seq'].block_dec
-
-                        platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-
-                        platesolve_crop = 0.0
-
-                        # yet another pickle debugger.
-                        if True:
-                            pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
-
-                        try:
-                            pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc, useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], platesolve_subprocess.stdin)
-                        except:
-                            plog ("Problem in the platesolve pickle dump")
-                            plog(traceback.format_exc())
-
-
-                        del hdufocusdata
-
-                        if np.isnan(pixscale) or pixscale == None:
-                            timeout_time = 1200
-                        else:
-                            timeout_time = 120
-
-                        platesolve_timeout_timer=time.time()
-                        while not os.path.exists(self.local_calibration_path + 'platesolve.pickle') and (time.time() - platesolve_timeout_timer) < timeout_time:
-                            time.sleep(0.5)
-
-                        if (time.time() - platesolve_timeout_timer) > timeout_time:
-                            plog ("platesolve timed out")
-                            solve = 'error'
-                            platesolve_subprocess.kill()
-
+    
                             try:
-                                os.system('taskkill /IM ps3cli.exe /F')
+                                os.remove(self.local_calibration_path + 'platesolve.pickle')
+                                os.remove(self.local_calibration_path + 'platesolve.temppickle')
                             except:
                                 pass
-
-                        elif os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
-                            solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))
-                        else:
-                            solve = 'error'
-
-                        try:
-                            os.remove(self.local_calibration_path + 'platesolve.pickle')
-                        except:
-                            plog ("Could not remove platesolve pickle. ")
-
-                        if solve == 'error':
-                            plog ("Planewave solve came back as error")
-                            self.last_platesolved_ra = np.nan
-                            self.last_platesolved_dec = np.nan
-                            self.last_platesolved_ra_err = np.nan
-                            self.last_platesolved_dec_err = np.nan
-                            self.platesolve_errors_in_a_row=self.platesolve_errors_in_a_row+1
-                            self.platesolve_is_processing = False
                             
-                        else:                            
-                            self.enqueue_for_fastUI(
-                                '',jpeg_filename
-                            )
-                            # self.enqueue_for_mediumUI(
-                            #     1000, '',jpeg_filename.replace('EX10', 'EX20')
-                            # )
-                            
+                            target_ra = g_dev["mnt"].last_ra_requested
+                            target_dec = g_dev["mnt"].last_dec_requested
+    
+                            # print("Last RA requested: " + str(g_dev["mnt"].last_ra_requested))
+                            # print("Last DEC requested: " + str(g_dev["mnt"].last_dec_requested))
+    
+                            if g_dev['seq'].block_guard and not g_dev["seq"].focussing:
+                                target_ra = g_dev['seq'].block_ra
+                                target_dec = g_dev['seq'].block_dec
+    
+                            platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    
+                            platesolve_crop = 0.0
+    
+                            # yet another pickle debugger.
+                            if True:
+                                pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
+                                 pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
+    
                             try:
-                                plog(
-                                    "PW Solves: ",
-                                    round(solve["ra_j2000_hours"], 5),
-                                    round(solve["dec_j2000_degrees"], 4)
-                                )
+                                pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
+                                 pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc, useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], platesolve_subprocess.stdin)
                             except:
-                                plog ("couldn't print PW solves.... why?")
-                                plog (solve)
-
-                            solved_ra = solve["ra_j2000_hours"]
-                            solved_dec = solve["dec_j2000_degrees"]
-                            solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                            plog("1x1 pixelscale solved: " + str(round(solved_arcsecperpixel, 3 )))
+                                plog ("Problem in the platesolve pickle dump")
+                                plog(traceback.format_exc())
+    
+    
+                            del hdufocusdata
+    
                             
-                            # If this is the first pixelscale gotten, then it is the pixelscale!
-                            if g_dev['cam'].pixscale == None:
-                                g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
-                            if np.isnan(g_dev['cam'].pixscale) :
-                                g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
-
-                            if (g_dev['cam'].pixscale * 0.9) < float(abs(solved_arcsecperpixel)) < (g_dev['cam'].pixscale * 1.1):
-                                self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
+    
+                            platesolve_timeout_timer=time.time()
+                            while not os.path.exists(self.local_calibration_path + 'platesolve.pickle') and (time.time() - platesolve_timeout_timer) < timeout_time:
+                                time.sleep(0.5)
+    
+                            if (time.time() - platesolve_timeout_timer) > timeout_time:
+                                plog ("platesolve timed out")
+                                solve = 'error'
+                                platesolve_subprocess.kill()
+    
                                 try:
-                                    pixelscale_list=self.pixelscale_shelf['pixelscale_list']
+                                    os.system('taskkill /IM ps3cli.exe /F')
                                 except:
-                                    pixelscale_list=[]
-                                pixelscale_list.append(float(abs(solved_arcsecperpixel)))
-                                too_long=True
-                                while too_long:
-                                    if len(pixelscale_list) > 100:
-                                        pixelscale_list.pop(0)
-                                    else:
-                                        too_long = False
-                                self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
-                                self.pixelscale_shelf.close()
-
-                            err_ha = target_ra - solved_ra
-                            err_dec = target_dec - solved_dec
-                            
-                            mount_deviation_ha = pointing_ra - solved_ra
-                            mount_deviation_dec = pointing_dec - solved_dec                            
-                            
-
-                            # Check that the RA doesn't cross over zero, if so, bring it back around
-                            if err_ha > 12:
-                                plog ("BIG CHANGE ERR_HA")
-                                plog(err_ha)
-                                err_ha = err_ha - 24
-                                plog(err_ha)
-                            elif err_ha < -12:
-                                plog ("BIG CHANGE ERR_HA")
-                                plog(err_ha)
-                                err_ha = err_ha + 24
-                                plog(err_ha)
-
-                            plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 1)) + " & dec: " + str (round(err_dec * 3600, 1)) + " asec")
-
-                            self.last_platesolved_ra = solve["ra_j2000_hours"]
-                            self.last_platesolved_dec = solve["dec_j2000_degrees"]
-                            self.last_platesolved_ra_err = target_ra - solved_ra
-                            self.last_platesolved_dec_err = target_dec - solved_dec
-                            self.platesolve_errors_in_a_row=0
-
-                            # Reset Solve timers
-                            g_dev['obs'].last_solve_time = datetime.datetime.now()
-                            g_dev['obs'].images_since_last_solve = 0
-
-
-                            # self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
-                            # self.drift_tracker_dec=self.drift_tracker_dec + err_dec
-
-                            # if self.drift_tracker_counter == 0:
-                            #     #plog ("not calculating drift on first platesolve of drift set. Using deviation as the zeropoint in time and space.")
-                            #     self.drift_tracker_first_offset_ra = err_ha  * 15 * 3600
-                            #     self.drift_tracker_first_offset_dec = err_dec   * 3600
-                            #     self.drift_tracker_timer=time.time()
-
-                            # else:
-
-                            #     drift_timespan= time.time() - self.drift_tracker_timer
-                            #     # if drift_timespan < 180:
-                            #     #     plog ("Drift calculations unreliable as yet because drift timescale < 180s.")
-                            #     # plog ("Solve in drift set: " +str(self.drift_tracker_counter))
-                            #     # plog ("Drift Timespan " + str(drift_timespan))
-                            #     self.drift_tracker_ra_arcsecperhour=  ((err_ha * 15 * 3600 ) - self.drift_tracker_first_offset_ra) / (drift_timespan / 3600)
-                            #     self.drift_tracker_dec_arcsecperhour= ((err_dec *3600) - self.drift_tracker_first_offset_dec) / (drift_timespan / 3600)
-                            #     if drift_timespan > 180:
-                            #     #     plog ("Not calculating drift on a timescale under 5 minutes.")
-                            #     # else:
-                            #         plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
-
-                            self.drift_tracker_counter=self.drift_tracker_counter+1
-
-                            # drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
-                            # drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
-
-
-                            # If we are WAY out of range, then reset the mount reference and attempt moving back there.
-                            if not self.auto_centering_off:
-
-                                # dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
-                                # ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
-
-                                # if firstframesmartstack:
-                                #     plog ("Not recentering as this is the first frame of a smartstack.")
-                                #     self.pointing_correction_requested_by_platesolve_thread = False
-
-                                # Used for calculating relative offset compared to image size
-                                dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
-                                ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
-
-                                if (abs(err_ha * 15 * 3600) > self.worst_potential_pointing_in_arcseconds) or (abs(err_dec * 3600) > self.worst_potential_pointing_in_arcseconds):
-                                    err_ha = 0
-                                    err_dec = 0
-                                    plog("Platesolve has found that the current suggested pointing is way off!")
-                                    plog("This may be a poor pointing estimate.")
-                                    plog("This is more than a simple nudge, so not nudging the scope.")
-                                    g_dev["obs"].send_to_user("Platesolve detects pointing far out, RA: " + str(round(err_ha * 15 * 3600, 2)) + " DEC: " +str (round(err_dec * 3600, 2)))
-
-                                    #breakpoint()
-
-                                    #self.drift_tracker_ra=0
-                                    #self.drift_tracker_dec=0
-                                    #g_dev['obs'].drift_tracker_timer=0
-
-
-
-                                    # g_dev["mnt"].reset_mount_reference()
-                                    # plog("I've  reset the mount_reference.")
-
-                                    # plog ("reattempting to get back on target on next attempt")
-                                    # #self.pointing_correction_requested_by_platesolve_thread = True
-                                    # self.pointing_recentering_requested_by_platesolve_thread = True
-                                    # self.pointing_correction_request_time = time.time()
-                                    # self.pointing_correction_request_ra = target_ra
-                                    # self.pointing_correction_request_dec = target_dec
-                                    # self.pointing_correction_request_ra_err = err_ha
-                                    # self.pointing_correction_request_dec_err = err_dec
-
-                                elif self.time_of_last_slew > time_platesolve_requested:
-                                    plog("detected a slew since beginning platesolve... bailing out of platesolve.")
-                                    #self.drift_tracker_ra=0
-                                    #self.drift_tracker_dec=0
-                                    #g_dev['obs'].drift_tracker_timer=0
-
-                                # Only recenter if out by more than 1%                                
-                                elif (abs(err_ha * 15 * 3600) > 0.01 * ra_field_asec) or (abs(err_dec * 3600) > 0.01 * dec_field_asec):
-
-                                     self.pointing_correction_requested_by_platesolve_thread = True
-                                     self.pointing_correction_request_time = time.time()
-                                     self.pointing_correction_request_ra = pointing_ra + err_ha
-                                     self.pointing_correction_request_dec = pointing_dec + err_dec
-                                     self.pointing_correction_request_ra_err = err_ha
-                                     self.pointing_correction_request_dec_err = err_dec
-
-                                     drift_timespan= time.time() - self.drift_tracker_timer
-                                     #plog ("Drift Timespan " + str(drift_timespan))
-
-                                     if drift_timespan >180:
-                                     #     plog ("Not calculating drift on a timescale under 5 minutes.")
-                                     # else:
-                                         self.drift_arcsec_ra_arcsecperhour= (err_ha * 15 * 3600 ) / (drift_timespan / 3600)
-                                         self.drift_arcsec_dec_arcsecperhour=  (err_dec *3600) / (drift_timespan / 3600)
-                                         plog ("Drift calculations in arcsecs per hour, RA: " + str(round(self.drift_arcsec_ra_arcsecperhour,6)) + " DEC: " + str(round(self.drift_arcsec_dec_arcsecperhour,6)) )
-
-                                     if not g_dev['obs'].mount_reference_model_off:
-                                         if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
-                                             
-                                             # The mount reference should only be updated if it is less than a third of the worst potential pointing in arcseconds.....
-                                             if (abs(err_ha * 15 * 3600) < (self.worst_potential_pointing_in_arcseconds/3)) or (abs(err_dec * 3600) < (self.worst_potential_pointing_in_arcseconds/3)):
-                                                 try:
-                                                     g_dev['mnt'].last_slew_was_pointing_slew = False
-                                                     if g_dev["mnt"].pier_side == 0:
-                                                         try:
-                                                             g_dev["mnt"].record_mount_reference(
-                                                                 mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
-                                                             )
+                                    pass
     
-                                                         except Exception as e:
-                                                             plog("Something is up in the mount reference adjustment code ", e)
-                                                     else:
-                                                         try:
-                                                             g_dev["mnt"].record_flip_reference(
-                                                                 mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
-                                                             )
-                                                         except Exception as e:
-                                                             plog("Something is up in the mount reference adjustment code ", e)
+                            elif os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
+                                solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))
+                            else:
+                                solve = 'error'
     
-                                                 except:
-                                                     plog("This mount doesn't report pierside")
-                                                     plog(traceback.format_exc())
-
-                            self.platesolve_is_processing = False
-                    except:
-                        plog ("glitch in the platesolving dimension")
-                        plog(traceback.format_exc())
-
-                self.platesolve_is_processing = False
-                self.platesolve_queue.task_done()
-
-                g_dev['mnt'].last_slew_was_pointing_slew = False
-
-                time.sleep(1)
+                            try:
+                                os.remove(self.local_calibration_path + 'platesolve.pickle')
+                            except:
+                                plog ("Could not remove platesolve pickle. ")
+    
+                            if solve == 'error':
+                                plog ("Planewave solve came back as error")
+                                self.last_platesolved_ra = np.nan
+                                self.last_platesolved_dec = np.nan
+                                self.last_platesolved_ra_err = np.nan
+                                self.last_platesolved_dec_err = np.nan
+                                self.platesolve_errors_in_a_row=self.platesolve_errors_in_a_row+1
+                                self.platesolve_is_processing = False
+                                
+                            else:                            
+                                self.enqueue_for_fastUI(
+                                    '',jpeg_filename
+                                )
+                                # self.enqueue_for_mediumUI(
+                                #     1000, '',jpeg_filename.replace('EX10', 'EX20')
+                                # )
+                                
+                                try:
+                                    plog(
+                                        "PW Solves: ",
+                                        round(solve["ra_j2000_hours"], 5),
+                                        round(solve["dec_j2000_degrees"], 4)
+                                    )
+                                except:
+                                    plog ("couldn't print PW solves.... why?")
+                                    plog (solve)
+    
+                                solved_ra = solve["ra_j2000_hours"]
+                                solved_dec = solve["dec_j2000_degrees"]
+                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                plog("1x1 pixelscale solved: " + str(round(solved_arcsecperpixel, 3 )))
+                                
+                                # If this is the first pixelscale gotten, then it is the pixelscale!
+                                if g_dev['cam'].pixscale == None:
+                                    g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
+                                if np.isnan(g_dev['cam'].pixscale) :
+                                    g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
+    
+                                if (g_dev['cam'].pixscale * 0.9) < float(abs(solved_arcsecperpixel)) < (g_dev['cam'].pixscale * 1.1):
+                                    self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                                    try:
+                                        pixelscale_list=self.pixelscale_shelf['pixelscale_list']
+                                    except:
+                                        pixelscale_list=[]
+                                    pixelscale_list.append(float(abs(solved_arcsecperpixel)))
+                                    too_long=True
+                                    while too_long:
+                                        if len(pixelscale_list) > 100:
+                                            pixelscale_list.pop(0)
+                                        else:
+                                            too_long = False
+                                    self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
+                                    self.pixelscale_shelf.close()
+    
+                                err_ha = target_ra - solved_ra
+                                err_dec = target_dec - solved_dec
+                                
+                                mount_deviation_ha = pointing_ra - solved_ra
+                                mount_deviation_dec = pointing_dec - solved_dec                            
+                                
+    
+                                # Check that the RA doesn't cross over zero, if so, bring it back around
+                                if err_ha > 12:
+                                    plog ("BIG CHANGE ERR_HA")
+                                    plog(err_ha)
+                                    err_ha = err_ha - 24
+                                    plog(err_ha)
+                                elif err_ha < -12:
+                                    plog ("BIG CHANGE ERR_HA")
+                                    plog(err_ha)
+                                    err_ha = err_ha + 24
+                                    plog(err_ha)
+    
+                                plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 1)) + " & dec: " + str (round(err_dec * 3600, 1)) + " asec")
+    
+                                self.last_platesolved_ra = solve["ra_j2000_hours"]
+                                self.last_platesolved_dec = solve["dec_j2000_degrees"]
+                                self.last_platesolved_ra_err = target_ra - solved_ra
+                                self.last_platesolved_dec_err = target_dec - solved_dec
+                                self.platesolve_errors_in_a_row=0
+    
+                                # Reset Solve timers
+                                g_dev['obs'].last_solve_time = datetime.datetime.now()
+                                g_dev['obs'].images_since_last_solve = 0
+    
+    
+                                # self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
+                                # self.drift_tracker_dec=self.drift_tracker_dec + err_dec
+    
+                                # if self.drift_tracker_counter == 0:
+                                #     #plog ("not calculating drift on first platesolve of drift set. Using deviation as the zeropoint in time and space.")
+                                #     self.drift_tracker_first_offset_ra = err_ha  * 15 * 3600
+                                #     self.drift_tracker_first_offset_dec = err_dec   * 3600
+                                #     self.drift_tracker_timer=time.time()
+    
+                                # else:
+    
+                                #     drift_timespan= time.time() - self.drift_tracker_timer
+                                #     # if drift_timespan < 180:
+                                #     #     plog ("Drift calculations unreliable as yet because drift timescale < 180s.")
+                                #     # plog ("Solve in drift set: " +str(self.drift_tracker_counter))
+                                #     # plog ("Drift Timespan " + str(drift_timespan))
+                                #     self.drift_tracker_ra_arcsecperhour=  ((err_ha * 15 * 3600 ) - self.drift_tracker_first_offset_ra) / (drift_timespan / 3600)
+                                #     self.drift_tracker_dec_arcsecperhour= ((err_dec *3600) - self.drift_tracker_first_offset_dec) / (drift_timespan / 3600)
+                                #     if drift_timespan > 180:
+                                #     #     plog ("Not calculating drift on a timescale under 5 minutes.")
+                                #     # else:
+                                #         plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
+    
+                                self.drift_tracker_counter=self.drift_tracker_counter+1
+    
+                                # drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
+                                # drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
+    
+    
+                                # If we are WAY out of range, then reset the mount reference and attempt moving back there.
+                                if not self.auto_centering_off:
+    
+                                    # dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
+                                    # ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
+    
+                                    # if firstframesmartstack:
+                                    #     plog ("Not recentering as this is the first frame of a smartstack.")
+                                    #     self.pointing_correction_requested_by_platesolve_thread = False
+    
+                                    # Used for calculating relative offset compared to image size
+                                    dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
+                                    ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
+    
+                                    if (abs(err_ha * 15 * 3600) > self.worst_potential_pointing_in_arcseconds) or (abs(err_dec * 3600) > self.worst_potential_pointing_in_arcseconds):
+                                        err_ha = 0
+                                        err_dec = 0
+                                        plog("Platesolve has found that the current suggested pointing is way off!")
+                                        plog("This may be a poor pointing estimate.")
+                                        plog("This is more than a simple nudge, so not nudging the scope.")
+                                        g_dev["obs"].send_to_user("Platesolve detects pointing far out, RA: " + str(round(err_ha * 15 * 3600, 2)) + " DEC: " +str (round(err_dec * 3600, 2)))
+    
+                                        #breakpoint()
+    
+                                        #self.drift_tracker_ra=0
+                                        #self.drift_tracker_dec=0
+                                        #g_dev['obs'].drift_tracker_timer=0
+    
+    
+    
+                                        # g_dev["mnt"].reset_mount_reference()
+                                        # plog("I've  reset the mount_reference.")
+    
+                                        # plog ("reattempting to get back on target on next attempt")
+                                        # #self.pointing_correction_requested_by_platesolve_thread = True
+                                        # self.pointing_recentering_requested_by_platesolve_thread = True
+                                        # self.pointing_correction_request_time = time.time()
+                                        # self.pointing_correction_request_ra = target_ra
+                                        # self.pointing_correction_request_dec = target_dec
+                                        # self.pointing_correction_request_ra_err = err_ha
+                                        # self.pointing_correction_request_dec_err = err_dec
+    
+                                    elif self.time_of_last_slew > time_platesolve_requested:
+                                        plog("detected a slew since beginning platesolve... bailing out of platesolve.")
+                                        #self.drift_tracker_ra=0
+                                        #self.drift_tracker_dec=0
+                                        #g_dev['obs'].drift_tracker_timer=0
+    
+                                    # Only recenter if out by more than 1%                                
+                                    elif (abs(err_ha * 15 * 3600) > 0.01 * ra_field_asec) or (abs(err_dec * 3600) > 0.01 * dec_field_asec):
+    
+                                         self.pointing_correction_requested_by_platesolve_thread = True
+                                         self.pointing_correction_request_time = time.time()
+                                         self.pointing_correction_request_ra = pointing_ra + err_ha
+                                         self.pointing_correction_request_dec = pointing_dec + err_dec
+                                         self.pointing_correction_request_ra_err = err_ha
+                                         self.pointing_correction_request_dec_err = err_dec
+    
+                                         drift_timespan= time.time() - self.drift_tracker_timer
+                                         #plog ("Drift Timespan " + str(drift_timespan))
+    
+                                         if drift_timespan >180:
+                                         #     plog ("Not calculating drift on a timescale under 5 minutes.")
+                                         # else:
+                                             self.drift_arcsec_ra_arcsecperhour= (err_ha * 15 * 3600 ) / (drift_timespan / 3600)
+                                             self.drift_arcsec_dec_arcsecperhour=  (err_dec *3600) / (drift_timespan / 3600)
+                                             plog ("Drift calculations in arcsecs per hour, RA: " + str(round(self.drift_arcsec_ra_arcsecperhour,6)) + " DEC: " + str(round(self.drift_arcsec_dec_arcsecperhour,6)) )
+    
+                                         if not g_dev['obs'].mount_reference_model_off:
+                                             if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
+                                                 
+                                                 # The mount reference should only be updated if it is less than a third of the worst potential pointing in arcseconds.....
+                                                 if (abs(err_ha * 15 * 3600) < (self.worst_potential_pointing_in_arcseconds/3)) or (abs(err_dec * 3600) < (self.worst_potential_pointing_in_arcseconds/3)):
+                                                     try:
+                                                         g_dev['mnt'].last_slew_was_pointing_slew = False
+                                                         if g_dev["mnt"].pier_side == 0:
+                                                             try:
+                                                                 g_dev["mnt"].record_mount_reference(
+                                                                     mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
+                                                                 )
+        
+                                                             except Exception as e:
+                                                                 plog("Something is up in the mount reference adjustment code ", e)
+                                                         else:
+                                                             try:
+                                                                 g_dev["mnt"].record_flip_reference(
+                                                                     mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
+                                                                 )
+                                                             except Exception as e:
+                                                                 plog("Something is up in the mount reference adjustment code ", e)
+        
+                                                     except:
+                                                         plog("This mount doesn't report pierside")
+                                                         plog(traceback.format_exc())
+    
+                                self.platesolve_is_processing = False
+                        except:
+                            plog ("glitch in the platesolving dimension")
+                            plog(traceback.format_exc())
+    
+                    self.platesolve_is_processing = False
+                    self.platesolve_queue.task_done()
+    
+                    g_dev['mnt'].last_slew_was_pointing_slew = False
+    
+                    time.sleep(1)
 
             else:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
@@ -3603,8 +3623,8 @@ class Observatory:
     def to_slow_process(self, priority, to_slow):
         self.slow_camera_queue.put((priority, to_slow), block=False)
 
-    # def to_platesolve(self, to_platesolve):
-    #     self.platesolve_queue.put( to_platesolve, block=False)
+    def to_platesolve(self, to_platesolve):
+        self.platesolve_queue.put( to_platesolve, block=False)
 
     # def to_sep(self, to_sep):
     #     self.sep_queue.put( to_sep, block=False)

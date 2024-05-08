@@ -4329,11 +4329,15 @@ class Camera:
                             if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
 
                                 # # Make sure any dither or return nudge has finished before platesolution
-                                # if sskcounter == 0 and Nsmartstack > 1:
-                                #     firstframesmartstack = True
-                                # else:
-                                #     firstframesmartstack = False
+                                if sskcounter == 0 and Nsmartstack > 1:
+                                    firstframesmartstack = True
+                                else:
+                                    firstframesmartstack = False
                                 platesolvethread_filename=self.local_calibration_path + "smartstacks/platesolve" + time.time().replace('d','') + '.pickle'
+                                
+                                g_dev['obs'].to_platesolve((platesolvethread_filename, 'hdusmallheader', cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, ''))
+                                  
+                                
                             else:
                                 platesolvethread_filename='no'
             
