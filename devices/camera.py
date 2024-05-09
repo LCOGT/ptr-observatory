@@ -1936,7 +1936,7 @@ class Camera:
 
         
         readout_estimate_holder=[]
-        is_osc=self.config["camera"][self.name]["settings"]['is_osc']
+        #is_osc=self.config["camera"][self.name]["settings"]['is_osc']
         self.sub_stacker_midpoints=[]
 
         for subexposure in range(N_of_substacks):
@@ -1957,7 +1957,7 @@ class Camera:
             
             self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
             qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
-            # exposure_timer=time.time()
+            exposure_timer=time.time()
             
             
             
@@ -2108,18 +2108,18 @@ class Camera:
                 # except:
                 #     plog(traceback.format_exc())
 
-            if not subexposure == (N_of_substacks):
+            #if not subexposure == (N_of_substacks):
                 
 
 
         # Once collected and done, nanmedian the array into the single image
-        sub_stacker_array=bn.nanmedian(sub_stacker_array, axis=2) * N_of_substacks
+        # sub_stacker_array=bn.nanmedian(sub_stacker_array, axis=2) * N_of_substacks
         
-        self.sub_stack_hold = sub_stacker_array
+        # self.sub_stack_hold = sub_stacker_array
         self.readout_estimate= np.median(np.array(readout_estimate_holder))
         
-        del sub_stacker_array
-        self.substacker_available=True
+        # del sub_stacker_array
+        # self.substacker_available=True
         self.shutter_open=False
 
     def _qhyccd_expose(self, exposure_time, bias_dark_or_light_type_frame):
