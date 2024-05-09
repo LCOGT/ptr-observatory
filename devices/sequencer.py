@@ -2483,8 +2483,8 @@ class Sequencer:
         self.reset_completes()
         g_dev['obs'].events_new = None
         g_dev['obs'].reset_last_reference()
-        if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
-           g_dev['mnt'].reset_mount_reference()
+        # if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
+        #    g_dev['mnt'].reset_mount_reference()
         g_dev['obs'].last_solve_time = datetime.datetime.utcnow() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
 
