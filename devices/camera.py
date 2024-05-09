@@ -1932,14 +1932,14 @@ class Camera:
             temptemp=999.9
         return temptemp
 
-    def qhy_substacker_thread(self, exposure_time):
+    def qhy_substacker_thread(self, exposure_time,N_of_substacks,exp_of_substacks,substacker_filenames):
 
         
         readout_estimate_holder=[]
         is_osc=self.config["camera"][self.name]["settings"]['is_osc']
         self.sub_stacker_midpoints=[]
 
-        for subexposure in range(N_of_substacks+1):
+        for subexposure in range(N_of_substacks):
             # Check there hasn't been a cancel sent through
             if g_dev["obs"].stop_all_activity:
                 plog ("stop_all_activity cancelling out of camera exposure")
@@ -1948,149 +1948,168 @@ class Camera:
             if g_dev["obs"].exposure_halted_indicator:
                 self.shutter_open=False
                 return
+            
+            plog ("Collecting subexposure " + str(subexposure+1))
 
-            exposure_timer=time.time()
-            # If it is the first exposure, then just take the exposure. Same with the second as the first one is the reference.
-            if subexposure == 0 or subexposure == 1:
-                plog ("Collecting subexposure " + str(subexposure+1))
+            qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
+            if subexposure == 0 :
+                self.substack_start_time=time.time()
+            
+            self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
+            qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+            # exposure_timer=time.time()
+            
+            
+            
+            while (time.time() - exposure_timer) < exp_of_substacks:
+                time.sleep(0.001)
+                
+            # If this is the last exposure of the set of subexposures, then report shutter closed
+            if subexposure == (N_of_substacks-1):
+                self.shutter_open=False
+                
+            # READOUT FROM THE QHY
+            image_width_byref = c_uint32()
+            image_height_byref = c_uint32()
+            bits_per_pixel_byref = c_uint32()
+            time_before_last_substack_readout=time.time()
+            success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
+                                                  byref(image_width_byref),
+                                                  byref(image_height_byref),
+                                                  byref(bits_per_pixel_byref),
+                                                  byref(qhycam.camera_params[qhycam_id]['channels']),
+                                                  byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
 
-                qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
-                if subexposure == 0 :
-                    temporary_flat_in_memory=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
-                    self.substack_start_time=time.time()
+            image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
+            time_after_last_substack_readout=time.time()
+            
+            readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
+            #sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+            np.save(np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)),substacker_filenames[subexposure])
+            
+            
+            
+            
 
-                self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
-                qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
-                exposure_timer=time.time()
+            # exposure_timer=time.time()
+            # # If it is the first exposure, then just take the exposure. Same with the second as the first one is the reference.
+            # if subexposure == 0 or subexposure == 1:
+                # plog ("Collecting subexposure " + str(subexposure+1))
 
-                if subexposure == 0 :
-                    # if during first exposure, create memmap disk array
-                    temporary_substack_directory=self.local_calibration_path + "subsstacks/" + str(time.time()).replace('.','')
-                    if not os.path.exists(temporary_substack_directory):
-                        os.makedirs(temporary_substack_directory)
-                    sub_stacker_array = np.memmap(temporary_substack_directory + '/tempfile', dtype='float32', mode= 'w+', shape = (self.imagesize_x,self.imagesize_y,N_of_substacks))
+                # qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
+                # if subexposure == 0 :
+                #     temporary_flat_in_memory=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
+                #     self.substack_start_time=time.time()
 
-                if subexposure == 1:
-                    try:
-                        if exp_of_substacks == 10:
-                            plog ("Dedarking 0")
-                            sub_stacker_array[:,:,0]=copy.deepcopy(sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
-                        else:
-                            sub_stacker_array[:,:,0]=copy.deepcopy(sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['thirtysec_exposure_biasdark'])
-                    except:
-                        plog ("Couldn't biasdark substack")
-                        pass
-                    try:
-                        sub_stacker_array[:,:,0] = copy.deepcopy(np.divide(sub_stacker_array[:,:,0], temporary_flat_in_memory))
-                    except:
-                        plog ("couldn't flat field substack")
-                        pass
-                    # Bad pixel map sub stack array
-                    try:
-                        sub_stacker_array[:,:,0][g_dev['cam'].bpmFiles[str(1)]] = np.nan
-                    except:
-                        plog ("Couldn't badpixel substack")
-                        pass
+                # self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
+                # qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+                # exposure_timer=time.time()
+
+                # if subexposure == 0 :
+                #     # if during first exposure, create memmap disk array
+                #     temporary_substack_directory=self.local_calibration_path + "subsstacks/" + str(time.time()).replace('.','')
+                #     if not os.path.exists(temporary_substack_directory):
+                #         os.makedirs(temporary_substack_directory)
+                #     sub_stacker_array = np.memmap(temporary_substack_directory + '/tempfile', dtype='float32', mode= 'w+', shape = (self.imagesize_x,self.imagesize_y,N_of_substacks))
+
+                # if subexposure == 1:
+                #     try:
+                #         if exp_of_substacks == 10:
+                #             plog ("Dedarking 0")
+                #             sub_stacker_array[:,:,0]=copy.deepcopy(sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
+                #         else:
+                #             sub_stacker_array[:,:,0]=copy.deepcopy(sub_stacker_array[:,:,0] - g_dev['cam'].darkFiles['thirtysec_exposure_biasdark'])
+                #     except:
+                #         plog ("Couldn't biasdark substack")
+                #         pass
+                #     try:
+                #         sub_stacker_array[:,:,0] = copy.deepcopy(np.divide(sub_stacker_array[:,:,0], temporary_flat_in_memory))
+                #     except:
+                #         plog ("couldn't flat field substack")
+                #         pass
+                #     # Bad pixel map sub stack array
+                #     try:
+                #         sub_stacker_array[:,:,0][g_dev['cam'].bpmFiles[str(1)]] = np.nan
+                #     except:
+                #         plog ("Couldn't badpixel substack")
+                #         pass
 
             # For each further exposure, align the previous subexposure while exposing the next exposure
             # Do this through separate threads. The alignment should be faster than the exposure
             # So we don't need to get too funky, just two threads that wait for each other.
-            else:
+            # else:
 
 
-                if not subexposure == (N_of_substacks):
-                    # Fire off an exposure.
-                    plog ("Collecting subexposure " + str(subexposure+1))
-                    qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
-                    self.expected_endpoint_of_substack_exposure=time.time() + exp_of_substacks
-                    self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
-                    qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+            #     if not subexposure == (N_of_substacks):
+            #         # Fire off an exposure.
+            #         plog ("Collecting subexposure " + str(subexposure+1))
+            #         qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
+            #         self.expected_endpoint_of_substack_exposure=time.time() + exp_of_substacks
+            #         self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
+            #         qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
 
-                    exposure_timer=time.time()
+            #         exposure_timer=time.time()
                     
-                # While the exposure is happening prep align and stack the previous exposure.
-                try:
-                    # De-biasdark sub_stack array
-                    plog ("Dedarking " + str(subexposure-1))
-                    sub_stacker_array[:,:,subexposure-1]=sub_stacker_array[:,:,subexposure-1] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
-                except:
-                    plog ("couldn't biasdark substack")
-                    pass
+            #     # While the exposure is happening prep align and stack the previous exposure.
+            #     try:
+            #         # De-biasdark sub_stack array
+            #         plog ("Dedarking " + str(subexposure-1))
+            #         sub_stacker_array[:,:,subexposure-1]=sub_stacker_array[:,:,subexposure-1] - g_dev['cam'].darkFiles['tensec_exposure_biasdark']
+            #     except:
+            #         plog ("couldn't biasdark substack")
+            #         pass
 
-                # Flat field sub stack array                
-                try:                
-                    sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], temporary_flat_in_memory)
-                except:
-                    plog ("couldn't flat field substack")
-                    pass
+            #     # Flat field sub stack array                
+            #     try:                
+            #         sub_stacker_array[:,:,subexposure-1] = np.divide(sub_stacker_array[:,:,subexposure-1], temporary_flat_in_memory)
+            #     except:
+            #         plog ("couldn't flat field substack")
+            #         pass
 
-                # Bad pixel map sub stack array
-                try:
-                    sub_stacker_array[:,:,subexposure-1][g_dev['cam'].bpmFiles[str(1)]] = np.nan
+            #     # Bad pixel map sub stack array
+            #     try:
+            #         sub_stacker_array[:,:,subexposure-1][g_dev['cam'].bpmFiles[str(1)]] = np.nan
 
-                except:
-                    plog ("couldn't badpixel field substack")
-                    pass
+            #     except:
+            #         plog ("couldn't badpixel field substack")
+            #         pass
                 
-                xoff, yoff = cross_correlation_shifts(block_reduce(sub_stacker_array[:,:,0],3), block_reduce(sub_stacker_array[:,:,subexposure-1],3),zeromean=False)  
-                imageshift=[round(-yoff*3),round(-xoff*3)]
+                # xoff, yoff = cross_correlation_shifts(block_reduce(sub_stacker_array[:,:,0],3), block_reduce(sub_stacker_array[:,:,subexposure-1],3),zeromean=False)  
+                # imageshift=[round(-yoff*3),round(-xoff*3)]
 
-                if imageshift[0] > 100 or imageshift[1] > 100:
-                    imageshift = [0,0]
+                # if imageshift[0] > 100 or imageshift[1] > 100:
+                #     imageshift = [0,0]
 
-                try:
-                    if abs(imageshift[0]) > 0:
-                        imageshiftabs=int(abs(imageshift[0]))
-                        # If it is an OSC, it needs to be an even number
-                        if is_osc:
-                            if (imageshiftabs & 0x1) == 1:
-                                imageshiftabs=imageshiftabs+1
-                        if imageshift[0] > 0:
-                            imageshiftsign = 1
-                        else:
-                            imageshiftsign = -1
+                # try:
+                #     if abs(imageshift[0]) > 0:
+                #         imageshiftabs=int(abs(imageshift[0]))
+                #         # If it is an OSC, it needs to be an even number
+                #         if is_osc:
+                #             if (imageshiftabs & 0x1) == 1:
+                #                 imageshiftabs=imageshiftabs+1
+                #         if imageshift[0] > 0:
+                #             imageshiftsign = 1
+                #         else:
+                #             imageshiftsign = -1
 
-                        sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=0)
+                #         sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=0)
 
-                    if abs(imageshift[1]) > 0:
-                        imageshiftabs=int(abs(imageshift[1]))
-                        # If it is an OSC, it needs to be an even number
-                        if is_osc:
-                            if (imageshiftabs & 0x1) == 1:
-                                imageshiftabs=imageshiftabs+1
-                        if imageshift[1] > 0:
-                            imageshiftsign = 1
-                        else:
-                            imageshiftsign = -1
-                        sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=1)
-                except:
-                    plog(traceback.format_exc())
+                #     if abs(imageshift[1]) > 0:
+                #         imageshiftabs=int(abs(imageshift[1]))
+                #         # If it is an OSC, it needs to be an even number
+                #         if is_osc:
+                #             if (imageshiftabs & 0x1) == 1:
+                #                 imageshiftabs=imageshiftabs+1
+                #         if imageshift[1] > 0:
+                #             imageshiftsign = 1
+                #         else:
+                #             imageshiftsign = -1
+                #         sub_stacker_array[:,:,subexposure-1]=np.roll(sub_stacker_array[:,:,subexposure-1], imageshiftabs*imageshiftsign, axis=1)
+                # except:
+                #     plog(traceback.format_exc())
 
             if not subexposure == (N_of_substacks):
-                while (time.time() - exposure_timer) < exp_of_substacks:
-                    time.sleep(0.005)
-                    
-                # If this is the last exposure of the set of subexposures, then report shutter closed
-                if subexposure == (N_of_substacks-1):
-                    self.shutter_open=False
-                    
-                # READOUT FROM THE QHY
-                image_width_byref = c_uint32()
-                image_height_byref = c_uint32()
-                bits_per_pixel_byref = c_uint32()
-                time_before_last_substack_readout=time.time()
-                success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
-                                                      byref(image_width_byref),
-                                                      byref(image_height_byref),
-                                                      byref(bits_per_pixel_byref),
-                                                      byref(qhycam.camera_params[qhycam_id]['channels']),
-                                                      byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-
-                image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
-                time_after_last_substack_readout=time.time()
                 
-                readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
-                sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
 
         # Once collected and done, nanmedian the array into the single image
@@ -2129,7 +2148,7 @@ class Camera:
                 self.substacker_filenames.append(base_tempfile + str(i) + ".npy")           
             
             
-            thread=threading.Thread(target=self.qhy_substacker_thread, args=(exp_of_substacks,N_of_substacks,copy.deepcopy(self.substacker_filenames),))
+            thread=threading.Thread(target=self.qhy_substacker_thread, args=(exp_of_substacks,N_of_substacks,exp_of_substacks,copy.deepcopy(self.substacker_filenames),))
             thread.daemon=True
             thread.start()
 

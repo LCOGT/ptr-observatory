@@ -12,6 +12,7 @@ import pickle
 import shelve
 from astropy.io import fits
 import numpy as np
+import bottleneck as bn
 import datetime
 from astropy.time import Time
 import copy
@@ -21,6 +22,7 @@ import os
 from astropy.nddata import block_reduce
 import subprocess
 import traceback
+from image_registration import cross_correlation_shifts
 
 # Note this is a thread!
 def write_raw_file_out(packet):
@@ -84,18 +86,91 @@ payload=pickle.load(sys.stdin.buffer)
  camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path, \
  solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure, \
  substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, substacker_filenames, dayobs, exposure_filter_offset,null_filterwheel, wema_config, smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename) = payload
-    
 
     
-    
-# Insert section here that waits for the substacker frames to show up
-
-
-
-# Insert bit here that stacks the substack frames
-
 camalias=selfconfig["camera"][selfname]["name"]
 obsname=selfconfig['obs_id']
+localcalibrationdirectory=selfconfig['local_calibration_path'] + selfconfig['obs_id'] + '/'
+tempfrontcalib=obsname + '_' + camalias +'_'
+    
+
+# Get the calibrated image whether that is a substack or a normal image. 
+if substack:
+    # Get list of substack files needed and wait for them.
+    while len(substacker_filenames) > 0:
+        for tempfilename in substacker_filenames:
+            if os.path.exists(tempfilename):
+                substacker_filenames.remove(tempfilename)
+        time.sleep(0.2)
+    
+    temporary_substack_directory=localcalibrationdirectory + "subsstacks/" + str(time.time()).replace('.','')
+    if not os.path.exists(temporary_substack_directory):
+        os.makedirs(temporary_substack_directory)
+    
+    exp_of_substacks=int(exposure_time / len(substacker_filenames))
+    counter=0
+    
+    crosscorrelation_subprocess_array=[]
+    
+    for substackfilename in substacker_filenames:
+    
+        substackimage=np.load(substackfilename)
+        try:
+            if exp_of_substacks == 10:
+                print ("Dedarking 0")
+                substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
+            else:
+                substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
+        except:
+            print ("Couldn't biasdark substack")
+            pass
+        try:
+            substackimage = copy.deepcopy(np.divide(substackimage, np.load(localcalibrationdirectory + 'masterFlat_'+this_exposure_filter + "_bin" + str(1))))
+        except:
+            print ("couldn't flat field substack")
+            pass
+        # Bad pixel map sub stack array
+        try:
+            substackimage[np.load(localcalibrationdirectory + tempfrontcalib + 'badpixelmask_bin1.npy')] = np.nan
+        except:
+            print ("Couldn't badpixel substack")
+            pass
+        
+        # If it is the first image, just plonk it in the array.
+        if counter == 0:
+            # Set up the array
+            sub_stacker_array = np.zeros((substackimage.shape[0],substackimage.shape[1],len(substacker_filenames)), dtype=np.float32)
+            sub_stacker_array[:,:,0] = copy.deepcopy(substackimage)
+            
+        else:
+            
+            
+            output_filename='crosscorrel' + str(counter-1) + '.npy'
+            pickler=[]
+            pickler.append(sub_stacker_array[:,:,0])
+            pickler.append(substackimage)
+            pickler.append(temporary_substack_directory)
+            pickler.append(output_filename)
+            pickler.append(is_osc)
+            
+            crosscorrelation_subprocess_array.append(subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
+            pickle.dump(pickler, crosscorrelation_subprocess_array[counter-1].stdin)
+        
+        counter=counter+1
+    counter=1
+    for waiting_for_subprocesses in crosscorrelation_subprocess_array:
+        waiting_for_subprocesses.communicate()
+        sub_stacker_array[:,:,counter] = copy.deepcopy(np.load(temporary_substack_directory))
+        counter=counter+1    
+    
+    # Once collected and done, nanmedian the array into the single image
+    img=bn.nanmedian(sub_stacker_array, axis=2) * len(substacker_filenames)
+    
+    
+        
+        
+
+
 
 obsid_path = str(selfconfig["archive_path"] + '/' + obsname + '/').replace('//','/')
 
@@ -894,8 +969,7 @@ try:
     narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * selfconfig['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
     dark_exp_time = selfconfig['camera']['camera_1_1']['settings']['dark_exposure']
 
-    localcalibrationdirectory=selfconfig['local_calibration_path'] + selfconfig['obs_id'] + '/'
-    tempfrontcalib=obsname + '_' + camalias +'_'
+    
 
     if not manually_requested_calibration and not substack:
         
