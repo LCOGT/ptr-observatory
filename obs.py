@@ -2205,7 +2205,9 @@ class Observatory:
                         pass
                 else:
 
-                    imagefilename=pickle.load(platesolve_token_filename)
+                    imagefilename=pickle.load(open(platesolve_token_filename,'rb'))                    
+
+                    #imagefilename=pickle.load(platesolve_token_filename)
                     hdufocusdata=np.load(imagefilename)                 
                     hduheader = fits.open(imagefilename.replace('.npy','.head'))[0].header
 

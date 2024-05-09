@@ -67,8 +67,8 @@ def radial_profile(data, center):
 # The SEP code underestimates the moffat FWHM by some factor. This corrects for it.
 sep_to_moffat_factor=1.45
 
-input_sep_info=pickle.load(sys.stdin.buffer)
-#input_sep_info=pickle.load(open('testSEPpickle','rb'))
+#input_sep_info=pickle.load(sys.stdin.buffer)
+input_sep_info=pickle.load(open('testSEPpickle','rb'))
 
 #print ("HERE IS THE INCOMING. ")
 #print (input_sep_info)
@@ -110,13 +110,19 @@ exposure_time=input_sep_info[28]
 
 
 ############ WAITER FOR
-septhread_filename
+#septhread_filename
+print (septhread_filename)
+while not os.path.exists(septhread_filename):  
+    # print (septhread_filename)
+    # breakpoint()
+    time.sleep(0.2)
+    
 
+image_filename=pickle.load(open(septhread_filename,'rb'))
 
+hdufocusdata=np.load(image_filename)
 
-
-
-
+hduheader=fits.open(image_filename.replace('.npy','.head'))[0].header
 
 
 
@@ -125,7 +131,7 @@ septhread_filename
 #print (exposure_time)
 #breakpoint()
 # The photometry has a timelimit that is half of the exposure time
-time_limit=min (float(hduheader['EXPTIME'])*0.5, 20, exposure_time*0.5)
+time_limit=max(min (float(hduheader['EXPTIME'])*0.5, 20, exposure_time*0.5),5)
 
 minimum_exposure_for_extended_stuff = 10
 

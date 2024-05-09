@@ -12,6 +12,7 @@ import sys
 import pickle
 from math import sqrt
 import time
+import os
 
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
@@ -56,23 +57,29 @@ yt=input_jpeg_info[20]
 xl=input_jpeg_info[21]
 xr=input_jpeg_info[22]
 squash_on_x_axis=input_jpeg_info[23]
-try:
-    zoom_factor = input_jpeg_info[24].lower()
-    print("Mainjpeg received:", zoom_factor)
-except:
-    print("Zoom_factor paramater faulted.")
-
+#try:
+zoom_factor = input_jpeg_info[24].lower()
+#     print("Mainjpeg received:", zoom_factor)
+# except:
+#     print("Zoom_factor paramater faulted.")
+jpeg_path = input_jpeg_info[25]
+jpeg_name = input_jpeg_info[26]
 
 
 
 ############ WAITER FOR
-mainjpegthread_filename
+#mainjpegthread_filename
 
+# Get list of substack files needed and wait for them.
+# while len(substacker_filenames) > 0:
+    
+while not os.path.exists(mainjpegthread_filename):    
+    time.sleep(0.2)
+    
 
+image_filename=pickle.load(open(mainjpegthread_filename,'rb'))
 
-
-
-
+hdusmalldata=np.load(image_filename)
 
 
 # Really need to thresh the incoming image
@@ -204,6 +211,26 @@ if is_osc:
     else:
         print("this bayer grid not implemented yet")
 
+# archive_path = selfconfig["archive_path"] + selfconfig['obs_id'] + '/'+ "archive/"
+
+
+# im_path_r = archive_path + camalias + "/"
+# im_path = im_path_r + g_dev["day"] + "/to_AWS/"
+# jpeg_name = (
+#             self.config["obs_id"]
+#             + "-"
+#             + self.config["camera"][self.name]["name"]
+#             + "-"
+#             + g_dev["day"]
+#             + "-"
+#             + next_seq
+#             + "-"
+#             + im_type
+#             + "10.jpg"
+#         )            
+        
+
+
 # Code to stretch the image to fit into the 256 levels of grey for a jpeg
 # But only if it isn't a smartstack, if so wait for the reduce queue
 if smartstackid == 'no':
@@ -311,7 +338,8 @@ if smartstackid == 'no':
 
         # Save high-res version of JPEG.
         final_image.save(
-            paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
+            jpeg_path + jpeg_name.replace('EX10', 'EX20')
+            #paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
         )
 
 
@@ -382,7 +410,8 @@ if smartstackid == 'no':
                 final_image = final_image.resize((900, int(900 * iy / ix)))
 
         final_image.save(
-            paths["im_path"] + paths["jpeg_name10"]
+            #paths["im_path"] + paths["jpeg_name10"]
+            jpeg_path + jpeg_name
         )
         del final_image
 
@@ -428,7 +457,8 @@ if smartstackid == 'no':
 
         # Save high-res version of JPEG.
         final_image.save(
-            paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
+            jpeg_path + jpeg_name.replace('EX10', 'EX20')
+            #paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
         )
 
 
@@ -499,7 +529,8 @@ if smartstackid == 'no':
 
                 )
         final_image.save(
-            paths["im_path"] + paths["jpeg_name10"]
+            jpeg_path + jpeg_name
+            #paths["im_path"] + paths["jpeg_name10"]
         )
         del final_image
 
