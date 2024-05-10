@@ -2182,8 +2182,8 @@ class Observatory:
 
                 self.platesolve_is_processing = True
 
-                (platesolve_token_filename,hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
-                  pixscale, pointing_ra, pointing_dec, firstframesmartstack, useastronometrynet, pointing_exposure, jpeg_filename) = self.platesolve_queue.get(block=False)
+                (platesolve_token,hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
+                  pixscale, pointing_ra, pointing_dec, firstframesmartstack, useastronometrynet, pointing_exposure, jpeg_filename, image_or_reference) = self.platesolve_queue.get(block=False)
 
                 if np.isnan(pixscale) or pixscale == None:
                     timeout_time = 1200
@@ -2191,8 +2191,11 @@ class Observatory:
                     timeout_time = 120
 
                 platesolve_timeout_timer=time.time()
-                while not os.path.exists(platesolve_token_filename) and (time.time() - platesolve_timeout_timer) < timeout_time:
-                    time.sleep(0.5)
+                if image_or_reference == 'reference':
+                    #print (platesolve_token)   
+                    
+                    while not os.path.exists(platesolve_token) and (time.time() - platesolve_timeout_timer) < timeout_time:
+                        time.sleep(0.5)
 
                 if (time.time() - platesolve_timeout_timer) > timeout_time:
                     plog ("waiting for platesolve token timed out")
@@ -2205,11 +2208,17 @@ class Observatory:
                         pass
                 else:
 
-                    imagefilename=pickle.load(open(platesolve_token_filename,'rb'))                    
+                    if image_or_reference == 'reference':                    
 
-                    #imagefilename=pickle.load(platesolve_token_filename)
-                    hdufocusdata=np.load(imagefilename)                 
-                    hduheader = fits.open(imagefilename.replace('.npy','.head'))[0].header
+                        (imagefilename, imageMode)=pickle.load(open(platesolve_token,'rb'))                    
+    
+                        #imagefilename=pickle.load(platesolve_token_filename)
+                        hdufocusdata=np.load(imagefilename)                 
+                        hduheader = fits.open(imagefilename.replace('.npy','.head'))[0].header
+
+                    else:
+                        hdufocusdata=platesolve_token
+                        # hduheader already defined
 
 
                     is_osc=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
@@ -2256,9 +2265,10 @@ class Observatory:
                             del hdufocusdata
     
                             
-    
                             platesolve_timeout_timer=time.time()
                             while not os.path.exists(self.local_calibration_path + 'platesolve.pickle') and (time.time() - platesolve_timeout_timer) < timeout_time:
+                                #print ("waiting for " + str(self.local_calibration_path + 'platesolve.pickle'))
+                                
                                 time.sleep(0.5)
     
                             if (time.time() - platesolve_timeout_timer) > timeout_time:
@@ -2496,12 +2506,12 @@ class Observatory:
                             plog ("glitch in the platesolving dimension")
                             plog(traceback.format_exc())
     
-                    self.platesolve_is_processing = False
-                    self.platesolve_queue.task_done()
-    
-                    g_dev['mnt'].last_slew_was_pointing_slew = False
-    
-                    time.sleep(1)
+                self.platesolve_is_processing = False
+                self.platesolve_queue.task_done()
+
+                g_dev['mnt'].last_slew_was_pointing_slew = False
+
+                time.sleep(1)
 
             else:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.

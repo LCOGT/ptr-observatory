@@ -5,7 +5,7 @@ The subprocess for jpeg construction to be sent up to the UI
 """
 
 import numpy as np
-import bottleneck as bn
+#import bottleneck as bn
 from auto_stretch.stretch import Stretch
 from PIL import Image, ImageEnhance
 import sys
@@ -77,9 +77,9 @@ while not os.path.exists(mainjpegthread_filename):
     time.sleep(0.2)
     
 
-image_filename=pickle.load(open(mainjpegthread_filename,'rb'))
+(image_filename,edgefillvalue)=pickle.load(open(mainjpegthread_filename,'rb'))
 
-(hdusmalldata,edgefillvalue)=np.load(image_filename)
+hdusmalldata=np.load(image_filename)
 
 
 # # Really need to thresh the incoming image

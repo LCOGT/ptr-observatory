@@ -67,8 +67,8 @@ def radial_profile(data, center):
 # The SEP code underestimates the moffat FWHM by some factor. This corrects for it.
 sep_to_moffat_factor=1.45
 
-#input_sep_info=pickle.load(sys.stdin.buffer)
-input_sep_info=pickle.load(open('testSEPpickle','rb'))
+input_sep_info=pickle.load(sys.stdin.buffer)
+#input_sep_info=pickle.load(open('testSEPpickle','rb'))
 
 #print ("HERE IS THE INCOMING. ")
 #print (input_sep_info)
@@ -118,9 +118,10 @@ while not os.path.exists(septhread_filename):
     time.sleep(0.2)
     
 
-image_filename=pickle.load(open(septhread_filename,'rb'))
+(image_filename,imageMode)=pickle.load(open(septhread_filename,'rb'))
 
-(hdufocusdata,imageMode)=np.load(image_filename)
+
+hdufocusdata=np.load(image_filename)
 
 hduheader=fits.open(image_filename.replace('.npy','.head'))[0].header
 

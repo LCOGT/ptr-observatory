@@ -267,7 +267,7 @@ site_config = {
             
             'settle_time_after_unpark' : 0,
             'settle_time_after_park' : 0,
-            'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
+            #'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             #'home_after_unpark' : False,
             'home_altitude':  0.0,   #overloaded term these are not the coordinates for a PW home. Meant now to be park position. Due South.
@@ -460,7 +460,7 @@ site_config = {
             'use_local_temp':  False,
             'minimum': 0,    #NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
-            'throw': 400,
+            'throw': 300,
             'step_size': 1,
             'backlash':  0,
             'unit': 'steps',

@@ -89,7 +89,7 @@ input_psolve_info=pickle.load(sys.stdin.buffer)
 
 
 
-platesolvethread_filename=input_psolve_info[0]
+hdufocusdata=input_psolve_info[0]
 hduheader=input_psolve_info[1]
 cal_path=input_psolve_info[2]
 cal_name=input_psolve_info[3]
@@ -121,12 +121,12 @@ except:
 #breakpoint()
 
 
-while not os.path.exists(platesolvethread_filename):    
-    time.sleep(0.2)    
+# while not os.path.exists(platesolvethread_filename):    
+#     time.sleep(0.2)    
 
-(image_filename,edgefillvalue)=pickle.load(open(platesolvethread_filename,'rb'))
+# (image_filename,edgefillvalue)=pickle.load(open(platesolvethread_filename,'rb'))
 
-hdufocusdata=np.load(image_filename)
+# hdufocusdata=np.load(image_filename)
 
 
 # # Really need to thresh the incoming image
@@ -255,6 +255,8 @@ hdufocusdata=np.load(image_filename)
 if pointing_exposure:
     pointing_image=copy.deepcopy(hdufocusdata)
 
+
+#breakpoint() 
 googtime=time.time()
 #if not is_osc:
 bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
@@ -467,13 +469,15 @@ fx, fy = hdufocusdata.shape
 
 
 #hdufocusdata=hdufocusdata-bn.nanmedian(hdufocusdata)
-tempstd=np.std(hdufocusdata)
-threshold=2.5* np.std(hdufocusdata[hdufocusdata < (5*tempstd)])
+tempstd=bn.nanstd(hdufocusdata)
+threshold=2.5* bn.nanstd(hdufocusdata[hdufocusdata < (5*tempstd)])
 threshold=max(threshold,100)
 list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
 # Assess each point
 pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
 counter=0
+
+#breakpoint() 
 for point in list_of_local_maxima:
 
 
@@ -620,9 +624,6 @@ for i in range(len(pointvalues)):
     if abs(brightest_pixel_rdist) <  max(3, largest_deviation_from_center):
 
         try:
-
-
-
 
             # Reduce data down to make faster solvinging
             upperbin=math.floor(max(radprofile[:,0]))
@@ -1165,10 +1166,13 @@ else:
 
 
 
+#platsolve_pickle_actual_filename= cal_path + 'smartstacks/platesolve.pickle'
 
+print (cal_path+ 'platesolve.pickle')
 
 
 pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
+
 
 try:
     os.remove(cal_path + 'platesolve.pickle')
