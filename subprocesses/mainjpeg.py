@@ -79,119 +79,119 @@ while not os.path.exists(mainjpegthread_filename):
 
 image_filename=pickle.load(open(mainjpegthread_filename,'rb'))
 
-hdusmalldata=np.load(image_filename)
+(hdusmalldata,edgefillvalue)=np.load(image_filename)
 
 
-# Really need to thresh the incoming image
-googtime=time.time()
-int_array_flattened=hdusmalldata.astype(int).ravel()
-int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-m=counts.argmax()
-imageMode=unique[m]
-print ("Calculating Mode: " +str(time.time()-googtime))
+# # Really need to thresh the incoming image
+# googtime=time.time()
+# int_array_flattened=hdusmalldata.astype(int).ravel()
+# int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+# unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+# m=counts.argmax()
+# imageMode=unique[m]
+# print ("Calculating Mode: " +str(time.time()-googtime))
 
 
-# Zerothreshing image
-googtime=time.time()
-histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-histogramdata[histogramdata[:,0] > -10000]
-#Do some fiddle faddling to figure out the value that goes to zero less
-zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-breaker=1
-counter=0
-while (breaker != 0):
-    counter=counter+1
-    if not (imageMode-counter) in zeroValueArray[:,0]:
-        if not (imageMode-counter-1) in zeroValueArray[:,0]:
-            if not (imageMode-counter-2) in zeroValueArray[:,0]:
-                if not (imageMode-counter-3) in zeroValueArray[:,0]:
-                    if not (imageMode-counter-4) in zeroValueArray[:,0]:
-                        if not (imageMode-counter-5) in zeroValueArray[:,0]:
-                            if not (imageMode-counter-6) in zeroValueArray[:,0]:
-                                if not (imageMode-counter-7) in zeroValueArray[:,0]:
-                                    if not (imageMode-counter-8) in zeroValueArray[:,0]:
-                                        if not (imageMode-counter-9) in zeroValueArray[:,0]:
-                                            if not (imageMode-counter-10) in zeroValueArray[:,0]:
-                                                if not (imageMode-counter-11) in zeroValueArray[:,0]:
-                                                    if not (imageMode-counter-12) in zeroValueArray[:,0]:
-                                                        zeroValue=(imageMode-counter)
-                                                        breaker =0
+# # Zerothreshing image
+# googtime=time.time()
+# histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+# histogramdata[histogramdata[:,0] > -10000]
+# #Do some fiddle faddling to figure out the value that goes to zero less
+# zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+# breaker=1
+# counter=0
+# while (breaker != 0):
+#     counter=counter+1
+#     if not (imageMode-counter) in zeroValueArray[:,0]:
+#         if not (imageMode-counter-1) in zeroValueArray[:,0]:
+#             if not (imageMode-counter-2) in zeroValueArray[:,0]:
+#                 if not (imageMode-counter-3) in zeroValueArray[:,0]:
+#                     if not (imageMode-counter-4) in zeroValueArray[:,0]:
+#                         if not (imageMode-counter-5) in zeroValueArray[:,0]:
+#                             if not (imageMode-counter-6) in zeroValueArray[:,0]:
+#                                 if not (imageMode-counter-7) in zeroValueArray[:,0]:
+#                                     if not (imageMode-counter-8) in zeroValueArray[:,0]:
+#                                         if not (imageMode-counter-9) in zeroValueArray[:,0]:
+#                                             if not (imageMode-counter-10) in zeroValueArray[:,0]:
+#                                                 if not (imageMode-counter-11) in zeroValueArray[:,0]:
+#                                                     if not (imageMode-counter-12) in zeroValueArray[:,0]:
+#                                                         zeroValue=(imageMode-counter)
+#                                                         breaker =0
 
-hdusmalldata[hdusmalldata < zeroValue] = np.nan
+# hdusmalldata[hdusmalldata < zeroValue] = np.nan
 
-print ("Zero Threshing Image: " +str(time.time()-googtime))
+# print ("Zero Threshing Image: " +str(time.time()-googtime))
 
 
 
-# Check there are no nans in the image upon receipt
-# This is necessary as nans aren't interpolated in the main thread.
-# Fast next-door-neighbour in-fill algorithm
-num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
-x_size=hdusmalldata.shape[0]
-y_size=hdusmalldata.shape[1]
-# this is actually faster than np.nanmean
-edgefillvalue=np.divide(bn.nansum(hdusmalldata),(x_size*y_size)-num_of_nans)
-#breakpoint()
-while num_of_nans > 0:
-    # List the coordinates that are nan in the array
-    nan_coords=np.argwhere(np.isnan(hdusmalldata))
+# # Check there are no nans in the image upon receipt
+# # This is necessary as nans aren't interpolated in the main thread.
+# # Fast next-door-neighbour in-fill algorithm
+# num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
+# x_size=hdusmalldata.shape[0]
+# y_size=hdusmalldata.shape[1]
+# # this is actually faster than np.nanmean
+# #edgefillvalue=np.divide(bn.nansum(hdusmalldata),(x_size*y_size)-num_of_nans)
+# #breakpoint()
+# while num_of_nans > 0:
+#     # List the coordinates that are nan in the array
+#     nan_coords=np.argwhere(np.isnan(hdusmalldata))
 
-    # For each coordinate try and find a non-nan-neighbour and steal its value
-    for nancoord in nan_coords:
-        x_nancoord=nancoord[0]
-        y_nancoord=nancoord[1]
-        done=False
+#     # For each coordinate try and find a non-nan-neighbour and steal its value
+#     for nancoord in nan_coords:
+#         x_nancoord=nancoord[0]
+#         y_nancoord=nancoord[1]
+#         done=False
 
-        # Because edge pixels can tend to form in big clumps
-        # Masking the array just with the mean at the edges
-        # makes this MUCH faster to no visible effect for humans.
-        # Also removes overscan
-        if x_nancoord < 100:
-            hdusmalldata[x_nancoord,y_nancoord]=edgefillvalue
-            done=True
-        elif x_nancoord > (x_size-100):
-            hdusmalldata[x_nancoord,y_nancoord]=edgefillvalue
+#         # Because edge pixels can tend to form in big clumps
+#         # Masking the array just with the mean at the edges
+#         # makes this MUCH faster to no visible effect for humans.
+#         # Also removes overscan
+#         if x_nancoord < 100:
+#             hdusmalldata[x_nancoord,y_nancoord]=edgefillvalue
+#             done=True
+#         elif x_nancoord > (x_size-100):
+#             hdusmalldata[x_nancoord,y_nancoord]=edgefillvalue
 
-            done=True
-        elif y_nancoord < 100:
-            hdusmalldata[x_nancoord,y_nancoord]=edgefillvalue
+#             done=True
+#         elif y_nancoord < 100:
+#             hdusmalldata[x_nancoord,y_nancoord]=edgefillvalue
 
-            done=True
-        elif y_nancoord > (y_size-100):
-            hdusmalldata[x_nancoord,y_nancoord]=edgefillvalue
-            done=True
+#             done=True
+#         elif y_nancoord > (y_size-100):
+#             hdusmalldata[x_nancoord,y_nancoord]=edgefillvalue
+#             done=True
 
-        # left
-        if not done:
-            if x_nancoord != 0:
-                value_here=hdusmalldata[x_nancoord-1,y_nancoord]
-                if not np.isnan(value_here):
-                    hdusmalldata[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # right
-        if not done:
-            if x_nancoord != (x_size-1):
-                value_here=hdusmalldata[x_nancoord+1,y_nancoord]
-                if not np.isnan(value_here):
-                    hdusmalldata[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # below
-        if not done:
-            if y_nancoord != 0:
-                value_here=hdusmalldata[x_nancoord,y_nancoord-1]
-                if not np.isnan(value_here):
-                    hdusmalldata[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # above
-        if not done:
-            if y_nancoord != (y_size-1):
-                value_here=hdusmalldata[x_nancoord,y_nancoord+1]
-                if not np.isnan(value_here):
-                    hdusmalldata[x_nancoord,y_nancoord]=value_here
-                    done=True
+#         # left
+#         if not done:
+#             if x_nancoord != 0:
+#                 value_here=hdusmalldata[x_nancoord-1,y_nancoord]
+#                 if not np.isnan(value_here):
+#                     hdusmalldata[x_nancoord,y_nancoord]=value_here
+#                     done=True
+#         # right
+#         if not done:
+#             if x_nancoord != (x_size-1):
+#                 value_here=hdusmalldata[x_nancoord+1,y_nancoord]
+#                 if not np.isnan(value_here):
+#                     hdusmalldata[x_nancoord,y_nancoord]=value_here
+#                     done=True
+#         # below
+#         if not done:
+#             if y_nancoord != 0:
+#                 value_here=hdusmalldata[x_nancoord,y_nancoord-1]
+#                 if not np.isnan(value_here):
+#                     hdusmalldata[x_nancoord,y_nancoord]=value_here
+#                     done=True
+#         # above
+#         if not done:
+#             if y_nancoord != (y_size-1):
+#                 value_here=hdusmalldata[x_nancoord,y_nancoord+1]
+#                 if not np.isnan(value_here):
+#                     hdusmalldata[x_nancoord,y_nancoord]=value_here
+#                     done=True
 
-    num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
+#     num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
 
 
 # If this a bayer image, then we need to make an appropriate image that is monochrome

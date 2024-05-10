@@ -20,6 +20,45 @@ temporary_substack_directory=payload[2]
 output_filename=payload[3]
 is_osc=payload[4]
 
+
+# Really need to thresh the image
+#googtime=time.time()
+int_array_flattened=substackimage.astype(int).ravel()
+int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+m=counts.argmax()
+imageMode=unique[m]
+#print ("Calculating Mode: " +str(time.time()-googtime))
+
+#Zerothreshing image
+#googtime=time.time()
+histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+histogramdata[histogramdata[:,0] > -10000]
+#Do some fiddle faddling to figure out the value that goes to zero less
+zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+breaker=1
+counter=0
+while (breaker != 0):
+    counter=counter+1
+    if not (imageMode-counter) in zeroValueArray[:,0]:
+        if not (imageMode-counter-1) in zeroValueArray[:,0]:
+            if not (imageMode-counter-2) in zeroValueArray[:,0]:
+                if not (imageMode-counter-3) in zeroValueArray[:,0]:
+                    if not (imageMode-counter-4) in zeroValueArray[:,0]:
+                        if not (imageMode-counter-5) in zeroValueArray[:,0]:
+                            if not (imageMode-counter-6) in zeroValueArray[:,0]:
+                                if not (imageMode-counter-7) in zeroValueArray[:,0]:
+                                    if not (imageMode-counter-8) in zeroValueArray[:,0]:
+                                        if not (imageMode-counter-9) in zeroValueArray[:,0]:
+                                            if not (imageMode-counter-10) in zeroValueArray[:,0]:
+                                                if not (imageMode-counter-11) in zeroValueArray[:,0]:
+                                                    if not (imageMode-counter-12) in zeroValueArray[:,0]:
+                                                        zeroValue=(imageMode-counter)
+                                                        breaker =0
+                                                        
+substackimage[substackimage < zeroValue] = np.nan
+
+
 xoff, yoff = cross_correlation_shifts(block_reduce(reference_image,3), block_reduce(substackimage,3),zeromean=False)  
 imageshift=[round(-yoff*3),round(-xoff*3)]
 

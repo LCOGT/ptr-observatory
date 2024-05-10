@@ -3149,8 +3149,8 @@ class Camera:
                             useastrometrynet=useastrometrynet,
                             a_dark_exposure=a_dark_exposure,
                             substack=self.substacker,
-                            corrected_ra_for_header=0.0,
-                            corrected_dec_for_header=0.0
+                            corrected_ra_for_header=corrected_ra_for_header,
+                            corrected_dec_for_header=corrected_dec_for_header
                         )  # NB all these parameters are crazy!
 
                         self.retry_camera = 0
@@ -3610,7 +3610,7 @@ class Camera:
                         pass
                 #pointingfocus_masterdark_done=True
 
-            intermediate_tempflat=np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))])
+            intermediate_tempflat=np.load(g_dev['cam'].flatFiles[this_exposure_filter + "_bin" + str(1)])
             
         
         ## For traditional exposures, spin up all the subprocesses ready to collect and process the files once they arrive
@@ -3658,6 +3658,12 @@ class Camera:
                     yt=yt+50
                     xl=xl+50
                     xr=xr+50
+                    
+                if self.config['save_reduced_file_numberid_first']:
+                    red_name01 = (next_seq + "-" +self.config["obs_id"] + "-" + str(object_name).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(this_exposure_filter) + "-" +  str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")
+                else:
+                    red_name01 = (self.config["obs_id"] + "-" + str(object_name).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(this_exposure_filter) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")
+
 
                 if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                     picklepayload=[
@@ -3686,6 +3692,11 @@ class Camera:
                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'],
                         crop_preview,yb,yt,xl,xr,
                         zoom_factor
+                        ,self.camera_path + g_dev['day'] + "/to_AWS/", 
+                        jpeg_name,
+                        im_path_r + g_dev['day'] + "/reduced/",
+                        red_name01
+                        
                         ]
                 else:
                     picklepayload=[
@@ -3710,6 +3721,10 @@ class Camera:
                         0,0,0,0,0,
                         crop_preview,yb,yt,xl,xr,
                         zoom_factor
+                        ,self.camera_path + g_dev['day'] + "/to_AWS/", 
+                        jpeg_name,
+                        im_path_r + g_dev['day'] + "/reduced/",
+                        red_name01
                         ]
 
                 # Another pickle debugger

@@ -120,7 +120,7 @@ while not os.path.exists(septhread_filename):
 
 image_filename=pickle.load(open(septhread_filename,'rb'))
 
-hdufocusdata=np.load(image_filename)
+(hdufocusdata,imageMode)=np.load(image_filename)
 
 hduheader=fits.open(image_filename.replace('.npy','.head'))[0].header
 
@@ -167,126 +167,126 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
     return np.argwhere(adjacentmax & diagonalmax)
 
 
-# For a QHY600, it takes a few seconds to calculate the mode. We don't need it for a focus frame.
-# If the exposure time is short then just take the median
-if not frame_type == 'focus' and float(hduheader['EXPTIME']) >= minimum_exposure_for_extended_stuff :
-    googtime=time.time()
-    int_array_flattened=hdufocusdata.astype(int).ravel()
-    int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-    unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-    m=counts.argmax()
-    imageMode=unique[m]
-    print ("Calculating Mode: " +str(time.time()-googtime))
+# # For a QHY600, it takes a few seconds to calculate the mode. We don't need it for a focus frame.
+# # If the exposure time is short then just take the median
+# if not frame_type == 'focus' and float(hduheader['EXPTIME']) >= minimum_exposure_for_extended_stuff :
+#     googtime=time.time()
+#     int_array_flattened=hdufocusdata.astype(int).ravel()
+#     int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+#     unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+#     m=counts.argmax()
+#     imageMode=unique[m]
+#     print ("Calculating Mode: " +str(time.time()-googtime))
 
 
-    # Zerothreshing image
-    googtime=time.time()
-    histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-    histogramdata[histogramdata[:,0] > -10000]
-    #Do some fiddle faddling to figure out the value that goes to zero less
-    zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-    breaker=1
-    counter=0
-    while (breaker != 0):
-        counter=counter+1
-        if not (imageMode-counter) in zeroValueArray[:,0]:
-            if not (imageMode-counter-1) in zeroValueArray[:,0]:
-                if not (imageMode-counter-2) in zeroValueArray[:,0]:
-                    if not (imageMode-counter-3) in zeroValueArray[:,0]:
-                        if not (imageMode-counter-4) in zeroValueArray[:,0]:
-                            if not (imageMode-counter-5) in zeroValueArray[:,0]:
-                                if not (imageMode-counter-6) in zeroValueArray[:,0]:
-                                    if not (imageMode-counter-7) in zeroValueArray[:,0]:
-                                        if not (imageMode-counter-8) in zeroValueArray[:,0]:
-                                            if not (imageMode-counter-9) in zeroValueArray[:,0]:
-                                                if not (imageMode-counter-10) in zeroValueArray[:,0]:
-                                                    if not (imageMode-counter-11) in zeroValueArray[:,0]:
-                                                        if not (imageMode-counter-12) in zeroValueArray[:,0]:
-                                                            zeroValue=(imageMode-counter)
-                                                            breaker =0
+#     # Zerothreshing image
+#     googtime=time.time()
+#     histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+#     histogramdata[histogramdata[:,0] > -10000]
+#     #Do some fiddle faddling to figure out the value that goes to zero less
+#     zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+#     breaker=1
+#     counter=0
+#     while (breaker != 0):
+#         counter=counter+1
+#         if not (imageMode-counter) in zeroValueArray[:,0]:
+#             if not (imageMode-counter-1) in zeroValueArray[:,0]:
+#                 if not (imageMode-counter-2) in zeroValueArray[:,0]:
+#                     if not (imageMode-counter-3) in zeroValueArray[:,0]:
+#                         if not (imageMode-counter-4) in zeroValueArray[:,0]:
+#                             if not (imageMode-counter-5) in zeroValueArray[:,0]:
+#                                 if not (imageMode-counter-6) in zeroValueArray[:,0]:
+#                                     if not (imageMode-counter-7) in zeroValueArray[:,0]:
+#                                         if not (imageMode-counter-8) in zeroValueArray[:,0]:
+#                                             if not (imageMode-counter-9) in zeroValueArray[:,0]:
+#                                                 if not (imageMode-counter-10) in zeroValueArray[:,0]:
+#                                                     if not (imageMode-counter-11) in zeroValueArray[:,0]:
+#                                                         if not (imageMode-counter-12) in zeroValueArray[:,0]:
+#                                                             zeroValue=(imageMode-counter)
+#                                                             breaker =0
 
-    hdufocusdata[hdufocusdata < zeroValue] = np.nan
-    print ("Zero Value: " + str(zeroValue))
-    print ("Zero Threshing Image: " +str(time.time()-googtime))
+#     hdufocusdata[hdufocusdata < zeroValue] = np.nan
+#     print ("Zero Value: " + str(zeroValue))
+#     print ("Zero Threshing Image: " +str(time.time()-googtime))
 
-    real_mode=True
-else:
-    imageMode=bn.nanmedian(hdufocusdata)
-    real_mode=False
+#     real_mode=True
+# else:
+#     imageMode=bn.nanmedian(hdufocusdata)
+#     real_mode=False
 
 
 
-googtime=time.time()
-# Check there are no nans in the image upon receipt
-# This is necessary as nans aren't interpolated in the main thread.
-# Fast next-door-neighbour in-fill algorithm
-#num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
-x_size=hdufocusdata.shape[0]
-y_size=hdufocusdata.shape[1]
-# this is actually faster than np.nanmean
-edgefillvalue=imageMode
-# List the coordinates that are nan in the array
-#breakpoint()
-nan_coords=np.argwhere(np.isnan(hdufocusdata))
+# googtime=time.time()
+# # Check there are no nans in the image upon receipt
+# # This is necessary as nans aren't interpolated in the main thread.
+# # Fast next-door-neighbour in-fill algorithm
+# #num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+# x_size=hdufocusdata.shape[0]
+# y_size=hdufocusdata.shape[1]
+# # this is actually faster than np.nanmean
+# edgefillvalue=imageMode
+# # List the coordinates that are nan in the array
+# #breakpoint()
+# nan_coords=np.argwhere(np.isnan(hdufocusdata))
 
-# For each coordinate try and find a non-nan-neighbour and steal its value
-for nancoord in nan_coords:
-    x_nancoord=nancoord[0]
-    y_nancoord=nancoord[1]
-    done=False
+# # For each coordinate try and find a non-nan-neighbour and steal its value
+# for nancoord in nan_coords:
+#     x_nancoord=nancoord[0]
+#     y_nancoord=nancoord[1]
+#     done=False
 
-    # Because edge pixels can tend to form in big clumps
-    # Masking the array just with the mean at the edges
-    # makes this MUCH faster to no visible effect for humans.
-    # Also removes overscan
-    if x_nancoord < 100:
-        hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
-        done=True
-    elif x_nancoord > (x_size-100):
-        hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+#     # Because edge pixels can tend to form in big clumps
+#     # Masking the array just with the mean at the edges
+#     # makes this MUCH faster to no visible effect for humans.
+#     # Also removes overscan
+#     if x_nancoord < 100:
+#         hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+#         done=True
+#     elif x_nancoord > (x_size-100):
+#         hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
 
-        done=True
-    elif y_nancoord < 100:
-        hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+#         done=True
+#     elif y_nancoord < 100:
+#         hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
 
-        done=True
-    elif y_nancoord > (y_size-100):
-        hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
-        done=True
+#         done=True
+#     elif y_nancoord > (y_size-100):
+#         hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+#         done=True
 
-    # left
-    if not done:
-        if x_nancoord != 0:
-            value_here=hdufocusdata[x_nancoord-1,y_nancoord]
-            if not np.isnan(value_here):
-                hdufocusdata[x_nancoord,y_nancoord]=value_here
-                done=True
-    # right
-    if not done:
-        if x_nancoord != (x_size-1):
-            value_here=hdufocusdata[x_nancoord+1,y_nancoord]
-            if not np.isnan(value_here):
-                hdufocusdata[x_nancoord,y_nancoord]=value_here
-                done=True
-    # below
-    if not done:
-        if y_nancoord != 0:
-            value_here=hdufocusdata[x_nancoord,y_nancoord-1]
-            if not np.isnan(value_here):
-                hdufocusdata[x_nancoord,y_nancoord]=value_here
-                done=True
-    # above
-    if not done:
-        if y_nancoord != (y_size-1):
-            value_here=hdufocusdata[x_nancoord,y_nancoord+1]
-            if not np.isnan(value_here):
-                hdufocusdata[x_nancoord,y_nancoord]=value_here
-                done=True
+#     # left
+#     if not done:
+#         if x_nancoord != 0:
+#             value_here=hdufocusdata[x_nancoord-1,y_nancoord]
+#             if not np.isnan(value_here):
+#                 hdufocusdata[x_nancoord,y_nancoord]=value_here
+#                 done=True
+#     # right
+#     if not done:
+#         if x_nancoord != (x_size-1):
+#             value_here=hdufocusdata[x_nancoord+1,y_nancoord]
+#             if not np.isnan(value_here):
+#                 hdufocusdata[x_nancoord,y_nancoord]=value_here
+#                 done=True
+#     # below
+#     if not done:
+#         if y_nancoord != 0:
+#             value_here=hdufocusdata[x_nancoord,y_nancoord-1]
+#             if not np.isnan(value_here):
+#                 hdufocusdata[x_nancoord,y_nancoord]=value_here
+#                 done=True
+#     # above
+#     if not done:
+#         if y_nancoord != (y_size-1):
+#             value_here=hdufocusdata[x_nancoord,y_nancoord+1]
+#             if not np.isnan(value_here):
+#                 hdufocusdata[x_nancoord,y_nancoord]=value_here
+#                 done=True
 
-# Mop up any remaining nans
-hdufocusdata[np.isnan(hdufocusdata)] =edgefillvalue
+# # Mop up any remaining nans
+# hdufocusdata[np.isnan(hdufocusdata)] =edgefillvalue
 
-print ("De-nanning image initially: " +str(time.time()-googtime))
+# print ("De-nanning image initially: " +str(time.time()-googtime))
 
 
 

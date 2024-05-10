@@ -142,10 +142,52 @@ if substack:
             print ("Couldn't badpixel substack")
             pass
         
+        
+        
         # If it is the first image, just plonk it in the array.
         if counter == 0:
             # Set up the array
             sub_stacker_array = np.zeros((substackimage.shape[0],substackimage.shape[1],len(substacker_filenames)), dtype=np.float32)
+            
+            
+            # Really need to thresh the image
+            googtime=time.time()
+            int_array_flattened=substackimage.astype(int).ravel()
+            int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+            unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+            m=counts.argmax()
+            imageMode=unique[m]
+            print ("Calculating Mode: " +str(time.time()-googtime))
+            
+            #Zerothreshing image
+            #googtime=time.time()
+            histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+            histogramdata[histogramdata[:,0] > -10000]
+            #Do some fiddle faddling to figure out the value that goes to zero less
+            zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+            breaker=1
+            counter=0
+            while (breaker != 0):
+                counter=counter+1
+                if not (imageMode-counter) in zeroValueArray[:,0]:
+                    if not (imageMode-counter-1) in zeroValueArray[:,0]:
+                        if not (imageMode-counter-2) in zeroValueArray[:,0]:
+                            if not (imageMode-counter-3) in zeroValueArray[:,0]:
+                                if not (imageMode-counter-4) in zeroValueArray[:,0]:
+                                    if not (imageMode-counter-5) in zeroValueArray[:,0]:
+                                        if not (imageMode-counter-6) in zeroValueArray[:,0]:
+                                            if not (imageMode-counter-7) in zeroValueArray[:,0]:
+                                                if not (imageMode-counter-8) in zeroValueArray[:,0]:
+                                                    if not (imageMode-counter-9) in zeroValueArray[:,0]:
+                                                        if not (imageMode-counter-10) in zeroValueArray[:,0]:
+                                                            if not (imageMode-counter-11) in zeroValueArray[:,0]:
+                                                                if not (imageMode-counter-12) in zeroValueArray[:,0]:
+                                                                    zeroValue=(imageMode-counter)
+                                                                    breaker =0
+                                                                    
+            substackimage[substackimage < zeroValue] = np.nan
+            
+            
             sub_stacker_array[:,:,0] = copy.deepcopy(substackimage)
             
         else:
@@ -1123,6 +1165,125 @@ try:
         )
         
         
+        # Really need to thresh the image
+        googtime=time.time()
+        int_array_flattened=hdusmalldata.astype(int).ravel()
+        int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+        unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+        m=counts.argmax()
+        imageMode=unique[m]
+        print ("Calculating Mode: " +str(time.time()-googtime))
+
+
+        # Zerothreshing image
+        googtime=time.time()
+        histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+        histogramdata[histogramdata[:,0] > -10000]
+        #Do some fiddle faddling to figure out the value that goes to zero less
+        zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+        breaker=1
+        counter=0
+        while (breaker != 0):
+            counter=counter+1
+            if not (imageMode-counter) in zeroValueArray[:,0]:
+                if not (imageMode-counter-1) in zeroValueArray[:,0]:
+                    if not (imageMode-counter-2) in zeroValueArray[:,0]:
+                        if not (imageMode-counter-3) in zeroValueArray[:,0]:
+                            if not (imageMode-counter-4) in zeroValueArray[:,0]:
+                                if not (imageMode-counter-5) in zeroValueArray[:,0]:
+                                    if not (imageMode-counter-6) in zeroValueArray[:,0]:
+                                        if not (imageMode-counter-7) in zeroValueArray[:,0]:
+                                            if not (imageMode-counter-8) in zeroValueArray[:,0]:
+                                                if not (imageMode-counter-9) in zeroValueArray[:,0]:
+                                                    if not (imageMode-counter-10) in zeroValueArray[:,0]:
+                                                        if not (imageMode-counter-11) in zeroValueArray[:,0]:
+                                                            if not (imageMode-counter-12) in zeroValueArray[:,0]:
+                                                                zeroValue=(imageMode-counter)
+                                                                breaker =0
+
+        hdusmalldata[hdusmalldata < zeroValue] = np.nan
+
+        print ("Zero Threshing Image: " +str(time.time()-googtime))
+        
+        
+        googtime=time.time()
+
+        #Check there are no nans in the image upon receipt
+        # This is necessary as nans aren't interpolated in the main thread.
+        # Fast next-door-neighbour in-fill algorithm
+        #num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
+        x_size=hdusmalldata.shape[0]
+        y_size=hdusmalldata.shape[1]
+        # this is actually faster than np.nanmean
+        #imageMode=bn.nanmedian(hdusmalldata)
+
+        #np.divide(np.nansum(hdusmalldata),(x_size*y_size)-num_of_nans)
+        #imageMode=imageMode
+        #breakpoint()
+        # while num_of_nans > 0:
+        #     # List the coordinates that are nan in the array
+        #
+        nan_coords=np.argwhere(np.isnan(hdusmalldata))
+
+        # For each coordinate try and find a non-nan-neighbour and steal its value
+        for nancoord in nan_coords:
+            x_nancoord=nancoord[0]
+            y_nancoord=nancoord[1]
+            done=False
+
+            # Because edge pixels can tend to form in big clumps
+            # Masking the array just with the mean at the edges
+            # makes this MUCH faster to no visible effect for humans.
+            # Also removes overscan
+            if x_nancoord < 100:
+                hdusmalldata[x_nancoord,y_nancoord]=imageMode
+                done=True
+            elif x_nancoord > (x_size-100):
+                hdusmalldata[x_nancoord,y_nancoord]=imageMode
+
+                done=True
+            elif y_nancoord < 100:
+                hdusmalldata[x_nancoord,y_nancoord]=imageMode
+
+                done=True
+            elif y_nancoord > (y_size-100):
+                hdusmalldata[x_nancoord,y_nancoord]=imageMode
+                done=True
+
+            # left
+            if not done:
+                if x_nancoord != 0:
+                    value_here=hdusmalldata[x_nancoord-1,y_nancoord]
+                    if not np.isnan(value_here):
+                        hdusmalldata[x_nancoord,y_nancoord]=value_here
+                        done=True
+            # right
+            if not done:
+                if x_nancoord != (x_size-1):
+                    value_here=hdusmalldata[x_nancoord+1,y_nancoord]
+                    if not np.isnan(value_here):
+                        hdusmalldata[x_nancoord,y_nancoord]=value_here
+                        done=True
+            # below
+            if not done:
+                if y_nancoord != 0:
+                    value_here=hdusmalldata[x_nancoord,y_nancoord-1]
+                    if not np.isnan(value_here):
+                        hdusmalldata[x_nancoord,y_nancoord]=value_here
+                        done=True
+            # above
+            if not done:
+                if y_nancoord != (y_size-1):
+                    value_here=hdusmalldata[x_nancoord,y_nancoord+1]
+                    if not np.isnan(value_here):
+                        hdusmalldata[x_nancoord,y_nancoord]=value_here
+                        done=True
+
+        hdusmalldata[np.isnan(hdusmalldata)] = imageMode
+            #num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
+
+        print ("Denan Image: " +str(time.time()-googtime))
+        
         # Actually save out ONE reduced file for different threads to use.
         image_filename=localcalibrationdirectory + "smartstacks/reducedimage" + str(time.time()).replace('.','') + '.npy'
         
@@ -1143,7 +1304,7 @@ try:
         
         #g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))
         #np.save(hdusmalldata, septhread_filename)
-        pickle.dump(image_filename, open(septhread_filename+ '.temp', 'wb'))
+        pickle.dump((image_filename,imageMode), open(septhread_filename+ '.temp', 'wb'))
         
             
             
@@ -1184,7 +1345,7 @@ try:
         ]) and smartstackid != 'no' and not a_dark_exposure :
             #g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
             #np.save(hdusmalldata, smartstackthread_filename)
-            pickle.dump(image_filename, open(smartstackthread_filename+ '.temp', 'wb'))
+            pickle.dump((image_filename,imageMode), open(smartstackthread_filename+ '.temp', 'wb'))
             
             
             os.rename(smartstackthread_filename + '.temp', smartstackthread_filename)
@@ -1230,14 +1391,14 @@ try:
         if smartstackid == 'no':
             #g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
             # np.save(hdusmalldata, mainjpegthread_filename)
-            pickle.dump(image_filename, open(mainjpegthread_filename + '.temp', 'wb'))
+            pickle.dump((image_filename,imageMode), open(mainjpegthread_filename + '.temp', 'wb'))
             os.rename(mainjpegthread_filename + '.temp', mainjpegthread_filename)
 
         
 
         if platesolvethread_filename !='no':
             # np.save(hdusmalldata, platesolvethread_filename)
-            pickle.dump(image_filename, open(platesolvethread_filename+ '.temp', 'wb'))
+            pickle.dump((image_filename,imageMode), open(platesolvethread_filename+ '.temp', 'wb'))
             
             os.rename(platesolvethread_filename + '.temp', platesolvethread_filename)
             
