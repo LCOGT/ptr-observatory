@@ -3368,7 +3368,11 @@ class Camera:
             # We also have to factor in all the readout times unlike a single exposure
             # As the readouts are all done in the substack thread.
             #stacking_overhead= 0.0005*pow(exposure_time,2) + 0.0334*exposure_time
-            cycle_time=exposure_time + ((exposure_time / 10))*self.readout_time# + stacking_overhead
+            if self.current_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr']:  #, 'y', 'up', 'u']
+                cycle_time=exposure_time + ((exposure_time / 30))*self.readout_time# + stacking_overhead
+            else:
+                cycle_time=exposure_time + ((exposure_time / 10))*self.readout_time# + stacking_overhead
+           
             self.completion_time = start_time_of_observation + cycle_time
             
         # For file-based readouts, we need to factor in the readout time
@@ -3405,7 +3409,7 @@ class Camera:
                 pass
             block_and_focus_check_done=True
 
-        pointingfocus_masterdark_done=False
+        #pointingfocus_masterdark_done=False
         check_nudge_after_shutter_closed=False
 
         if frame_type[-5:] in ["focus", "probe", "ental"]:
@@ -3417,7 +3421,7 @@ class Camera:
         narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
         dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
 
-        spun_up_subprocesses=False
+        #spun_up_subprocesses=False
         
         
         ################################################# SETTING UP COMMON THINGS FOR ALL THREADS AND HEADERS.
