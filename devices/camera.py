@@ -1934,6 +1934,7 @@ class Camera:
 
     def qhy_substacker_thread(self, exposure_time,N_of_substacks,exp_of_substacks,substacker_filenames):
 
+        self.substacker_available=False
         
         readout_estimate_holder=[]
         #is_osc=self.config["camera"][self.name]["settings"]['is_osc']
@@ -1954,7 +1955,7 @@ class Camera:
             qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exp_of_substacks*1000*1000))
             if subexposure == 0 :
                 self.substack_start_time=time.time()
-            
+            self.expected_endpoint_of_substack_exposure=time.time() + exp_of_substacks
             self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
             qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
             exposure_timer=time.time()
@@ -1985,7 +1986,7 @@ class Camera:
             
             readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
             #sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-            np.save(np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)),substacker_filenames[subexposure])
+            np.save(substacker_filenames[subexposure],np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))
             
             
             
@@ -2119,7 +2120,7 @@ class Camera:
         self.readout_estimate= np.median(np.array(readout_estimate_holder))
         
         # del sub_stacker_array
-        # self.substacker_available=True
+        self.substacker_available=True
         self.shutter_open=False
 
     def _qhyccd_expose(self, exposure_time, bias_dark_or_light_type_frame):
@@ -2145,7 +2146,7 @@ class Camera:
             self.substacker_filenames=[]
             base_tempfile=str(time.time()).replace(".","")
             for i in range(N_of_substacks):
-                self.substacker_filenames.append(base_tempfile + str(i) + ".npy")           
+                self.substacker_filenames.append(self.local_calibration_path + "smartstacks/" +base_tempfile + str(i) + ".npy")           
             
             
             thread=threading.Thread(target=self.qhy_substacker_thread, args=(exp_of_substacks,N_of_substacks,exp_of_substacks,copy.deepcopy(self.substacker_filenames),))
@@ -2164,7 +2165,7 @@ class Camera:
     def _qhyccd_getImageArray(self):
 
         if self.substacker:
-            return self.sub_stack_hold
+            return 'substack_array'
         else:
             image_width_byref = c_uint32()
             image_height_byref = c_uint32()
@@ -2963,6 +2964,7 @@ class Camera:
                                 
                             # Sort out if it is a substack
                             # If request actually requested a substack
+                            # print (self.substacker)
                             if self.substacker:
                                 self.substacker=False
                                 broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
@@ -2988,6 +2990,10 @@ class Camera:
                                         plog ("Could not engage substacking as the filter requested has no flat")
                                 else:
                                     plog ("Could not engage substacking as the appropriate biasdark")
+
+                            # print (self.substacker)
+                            # if not self.substacker:
+                            #     breakpoint()
 
                             # Adjust pointing exposure time relative to known focus
                             if not g_dev['seq'].focussing and frame_type=='pointing':
@@ -3361,8 +3367,8 @@ class Camera:
             # It takes time to do the median stack... add in a bit of an empirical overhead
             # We also have to factor in all the readout times unlike a single exposure
             # As the readouts are all done in the substack thread.
-            stacking_overhead= 0.0005*pow(exposure_time,2) + 0.0334*exposure_time
-            cycle_time=exposure_time + ((exposure_time / 10))*self.readout_time + stacking_overhead
+            #stacking_overhead= 0.0005*pow(exposure_time,2) + 0.0334*exposure_time
+            cycle_time=exposure_time + ((exposure_time / 10))*self.readout_time# + stacking_overhead
             self.completion_time = start_time_of_observation + cycle_time
             
         # For file-based readouts, we need to factor in the readout time
@@ -3576,7 +3582,7 @@ class Camera:
         # FOR POINTING AND FOCUS EXPOSURES, CONSTRUCT THE SCALED MASTERDARK WHILE
         # THE EXPOSURE IS RUNNING
         if (frame_type=='pointing' or focus_image == True) and smartstackid == 'no':
-            if not self.substacker:
+            if not substack:# self.substacker:
                 try:
                     # Sort out an intermediate dark
                     fraction_through_range=0
@@ -3746,7 +3752,7 @@ class Camera:
                 # while not os.path.exists(paths["im_path"] + 'smartstack.pickle'):
                 #     time.sleep(0.5)
 
-                self.fast_queue.put((self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name ,time.time()), block=False)
+                g_dev['obs'].fast_queue.put((self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name ,time.time()), block=False)
                 # self.mediumui_queue.put(
                 #     (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
 
@@ -4150,7 +4156,7 @@ class Camera:
                     if time.time() > (start_time_of_observation + exposure_time):
                         # If the exposure time has passed, then the shutter is closed for normal exposures
                         # The substacker thread reports the shutter_open(/closed). Other methods may not.
-                        if not self.substacker:
+                        if not substack:#self.substacker:
                             g_dev['cam'].shutter_open=False
 
                     # If the shutter has closed but there is still time, then nudge the scope while reading out
@@ -4370,7 +4376,7 @@ class Camera:
                 if self.theskyx:
                     self.readout_estimate= time.time()-start_time_of_observation-exposure_time
 
-                if self.substacker:
+                if substack:#self.substacker:
                     expected_endpoint_of_substack_exposure=copy.deepcopy(self.expected_endpoint_of_substack_exposure)
                     substack_start_time=copy.deepcopy(self.substack_start_time)
                     sub_stacker_midpoints=copy.deepcopy(self.sub_stacker_midpoints)
@@ -4381,7 +4387,7 @@ class Camera:
                     
                 
                 ########################### HERE WE EITHER GET THE IMAGE ARRAY OR REPORT THE SUBSTACKER ARRAY
-                if self.substacker:
+                if substack:#self.substacker:
                     outputimg='substacker'
                 else:
                     imageCollected = 0
@@ -4429,10 +4435,10 @@ class Camera:
                 
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
                     #self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"], exposure_filter_offset, g_dev["fil"].null_filterwheel, g_dev['evnt'].wema_config,smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename)), block=False)
-                    if self.substacker:
+                    if substack:
                         outputimg=''
                         
-                    payload=copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,0.0, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"], exposure_filter_offset, g_dev["fil"].null_filterwheel, g_dev['evnt'].wema_config,smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename))
+                    payload=copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, substack,expected_endpoint_of_substack_exposure,substack_start_time,0.0, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"], exposure_filter_offset, g_dev["fil"].null_filterwheel, g_dev['evnt'].wema_config,smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename))
                     
                     # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
                     if True:
@@ -4614,7 +4620,7 @@ class Camera:
 
                 # If this is a pointing or a focus frame, we need to do an
                 # in-line flash reduction
-                if (frame_type=='pointing' or focus_image == True) and not self.substacker:
+                if (frame_type=='pointing' or focus_image == True) and not substack:
                     # Make sure any dither or return nudge has finished before platesolution
                     try:
                         # If not a smartstack use a scaled masterdark
@@ -4689,7 +4695,7 @@ class Camera:
                     hdu.header["FILTER"] =g_dev['cam'].current_filter
                     hdu.header["SMARTSTK"] = 'no'
                     hdu.header["SSTKNUM"] = 1
-                    hdu.header["SUBSTACK"] = self.substacker
+                    hdu.header["SUBSTACK"] = substack
 
                     tempRAdeg = ra_at_time_of_exposure * 15
                     tempDECdeg = dec_at_time_of_exposure

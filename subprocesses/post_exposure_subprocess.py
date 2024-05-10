@@ -100,23 +100,34 @@ tempfrontcalib=obsname + '_' + camalias +'_'
 localcalibmastersdirectory= localcalibrationdirectory+ "archive/" + camalias + "/calibmasters" \
                           + "/"
 
+
+
+#breakpoint()
+
 # Get the calibrated image whether that is a substack or a normal image. 
 if substack:
+    exp_of_substacks=int(exposure_time / len(substacker_filenames))
     # Get list of substack files needed and wait for them.
-    while len(substacker_filenames) > 0:
-        for tempfilename in substacker_filenames:
+    waiting_for_substacker_filenames=copy.deepcopy(substacker_filenames)
+    while len(waiting_for_substacker_filenames) > 0:
+        for tempfilename in waiting_for_substacker_filenames:
             if os.path.exists(tempfilename):
-                substacker_filenames.remove(tempfilename)
+                waiting_for_substacker_filenames.remove(tempfilename)
         time.sleep(0.2)
     
-    temporary_substack_directory=localcalibrationdirectory + "subsstacks/" + str(time.time()).replace('.','')
+    temporary_substack_directory=localcalibrationdirectory + "substacks/" + str(time.time()).replace('.','')
+    
+    if not os.path.exists(localcalibrationdirectory + "substacks/"):
+        os.makedirs(localcalibrationdirectory + "substacks/")
     if not os.path.exists(temporary_substack_directory):
         os.makedirs(temporary_substack_directory)
     
-    exp_of_substacks=int(exposure_time / len(substacker_filenames))
+    
     counter=0
     
     crosscorrelation_subprocess_array=[]
+    
+    crosscorrel_filename_waiter=[]
     
     for substackfilename in substacker_filenames:
     
@@ -124,20 +135,22 @@ if substack:
         try:
             if exp_of_substacks == 10:
                 print ("Dedarking 0")
-                substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
+                substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + camalias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
             else:
-                substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
+                substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + camalias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
         except:
+            breakpoint()
             print ("Couldn't biasdark substack")
             pass
         try:
-            substackimage = copy.deepcopy(np.divide(substackimage, np.load(localcalibrationdirectory + 'masterFlat_'+this_exposure_filter + "_bin" + str(1))))
+            substackimage = copy.deepcopy(np.divide(substackimage, np.load(localcalibrationdirectory  + 'archive/' + camalias + '/calibmasters/' + 'masterFlat_'+this_exposure_filter + "_bin" + str(1) +'.npy')))
         except:
             print ("couldn't flat field substack")
+            breakpoint()
             pass
         # Bad pixel map sub stack array
         try:
-            substackimage[np.load(localcalibrationdirectory + tempfrontcalib + 'badpixelmask_bin1.npy')] = np.nan
+            substackimage[np.load(localcalibrationdirectory  + 'archive/' + camalias + '/calibmasters/' + tempfrontcalib + 'badpixelmask_bin1.npy')] = np.nan
         except:
             print ("Couldn't badpixel substack")
             pass
@@ -166,23 +179,23 @@ if substack:
             #Do some fiddle faddling to figure out the value that goes to zero less
             zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
             breaker=1
-            counter=0
+            zerocounter=0
             while (breaker != 0):
-                counter=counter+1
-                if not (imageMode-counter) in zeroValueArray[:,0]:
-                    if not (imageMode-counter-1) in zeroValueArray[:,0]:
-                        if not (imageMode-counter-2) in zeroValueArray[:,0]:
-                            if not (imageMode-counter-3) in zeroValueArray[:,0]:
-                                if not (imageMode-counter-4) in zeroValueArray[:,0]:
-                                    if not (imageMode-counter-5) in zeroValueArray[:,0]:
-                                        if not (imageMode-counter-6) in zeroValueArray[:,0]:
-                                            if not (imageMode-counter-7) in zeroValueArray[:,0]:
-                                                if not (imageMode-counter-8) in zeroValueArray[:,0]:
-                                                    if not (imageMode-counter-9) in zeroValueArray[:,0]:
-                                                        if not (imageMode-counter-10) in zeroValueArray[:,0]:
-                                                            if not (imageMode-counter-11) in zeroValueArray[:,0]:
-                                                                if not (imageMode-counter-12) in zeroValueArray[:,0]:
-                                                                    zeroValue=(imageMode-counter)
+                zerocounter=zerocounter+1
+                if not (imageMode-zerocounter) in zeroValueArray[:,0]:
+                    if not (imageMode-zerocounter-1) in zeroValueArray[:,0]:
+                        if not (imageMode-zerocounter-2) in zeroValueArray[:,0]:
+                            if not (imageMode-zerocounter-3) in zeroValueArray[:,0]:
+                                if not (imageMode-zerocounter-4) in zeroValueArray[:,0]:
+                                    if not (imageMode-zerocounter-5) in zeroValueArray[:,0]:
+                                        if not (imageMode-zerocounter-6) in zeroValueArray[:,0]:
+                                            if not (imageMode-zerocounter-7) in zeroValueArray[:,0]:
+                                                if not (imageMode-zerocounter-8) in zeroValueArray[:,0]:
+                                                    if not (imageMode-zerocounter-9) in zeroValueArray[:,0]:
+                                                        if not (imageMode-zerocounter-10) in zeroValueArray[:,0]:
+                                                            if not (imageMode-zerocounter-11) in zeroValueArray[:,0]:
+                                                                if not (imageMode-zerocounter-12) in zeroValueArray[:,0]:
+                                                                    zeroValue=(imageMode-zerocounter)
                                                                     breaker =0
                                                                     
             substackimage[substackimage < zeroValue] = np.nan
@@ -201,15 +214,33 @@ if substack:
             pickler.append(output_filename)
             pickler.append(is_osc)
             
-            crosscorrelation_subprocess_array.append(subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
+            crosscorrel_filename_waiter.append(temporary_substack_directory + output_filename)
+            
+            crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
+            print (counter-1)
             pickle.dump(pickler, crosscorrelation_subprocess_array[counter-1].stdin)
         
         counter=counter+1
+        
+    
+   # breakpoint()
+    
     counter=1
-    for waiting_for_subprocesses in crosscorrelation_subprocess_array:
-        waiting_for_subprocesses.communicate()
-        sub_stacker_array[:,:,counter] = copy.deepcopy(np.load(temporary_substack_directory))
-        counter=counter+1    
+    
+    for waitfile in crosscorrel_filename_waiter:
+        while not os.path.exists(waitfile):
+            #print ("waiting for " + str(waitfile))
+            time.sleep(0.2)
+        
+        sub_stacker_array[:,:,counter] = np.load(waitfile)
+        counter=counter+1
+    
+    
+    # for waiting_for_subprocesses in crosscorrelation_subprocess_array:
+    #     waiting_for_subprocesses.communicate()
+        
+    #     sub_stacker_array[:,:,counter] = copy.deepcopy(np.load(temporary_substack_directory + output_filename))
+    #     counter=counter+1    
     
     # Once collected and done, nanmedian the array into the single image
     img=bn.nanmedian(sub_stacker_array, axis=2) * len(substacker_filenames)

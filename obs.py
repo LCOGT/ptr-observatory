@@ -3081,7 +3081,7 @@ class Observatory:
                         else:
                             self.file_wait_and_act_queue.put((filename, timesubmitted, packet) , block=False)
                     # If it has been less than 3 minutes put it back in
-                    elif time.time() -timesubmitted < 180:
+                    elif time.time() -timesubmitted < 300:
                         self.file_wait_and_act_queue.put((filename, timesubmitted, packet) , block=False)
                     else:
                         plog (str(filename) + " seemed to never turn up... not putting back in the queue")
@@ -3151,7 +3151,7 @@ class Observatory:
                                 plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in queue.")
                                 self.fast_queue.put(pri_image, block=False)
                         # If it has been less than 3 minutes put it back in
-                        elif time.time() -timesubmitted < 180:
+                        elif time.time() -timesubmitted < 300:
                             self.fast_queue.put(pri_image, block=False)
                         else:
                             plog (str(filepath) + " seemed to never turn up... not putting back in the queue")    
@@ -3266,7 +3266,7 @@ class Observatory:
                                 plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in queue.")
                                 self.mediumui_queue.put((100, pri_image[1]), block=False)
                         # If it has been less than 3 minutes put it back in
-                        elif time.time() - timesubmitted < 180:
+                        elif time.time() - timesubmitted < 300:
                             self.mediumui_queue.put((100, pri_image[1]), block=False)
                         else:
                             plog (str(filepath) + " seemed to never turn up... not putting back in the queue")

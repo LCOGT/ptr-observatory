@@ -11,6 +11,7 @@ from image_registration import cross_correlation_shifts
 from astropy.nddata import block_reduce
 import numpy as np
 import traceback
+import os
 
 payload=pickle.load(sys.stdin.buffer)
 
@@ -93,4 +94,5 @@ try:
 except:
     print(traceback.format_exc())
     
-np.save(substackimage, temporary_substack_directory + output_filename )
+np.save( temporary_substack_directory + output_filename +'temp', substackimage )
+os.rename(temporary_substack_directory + output_filename +'temp.npy' ,temporary_substack_directory + output_filename)
