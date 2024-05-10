@@ -1960,7 +1960,9 @@ class Camera:
             qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
             exposure_timer=time.time()
             
-            
+            # save out previous array to disk during exposure
+            if subexposure > 0:
+                np.save(substacker_filenames[subexposure-1],np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))
             
             while (time.time() - exposure_timer) < exp_of_substacks:
                 time.sleep(0.001)
@@ -1986,7 +1988,13 @@ class Camera:
             
             readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
             #sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-            np.save(substacker_filenames[subexposure],np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))
+            
+            
+            # If it is the last file in the substack, throw it out to the slow process queue to save
+            # So that the camera can get started up again quicker.
+            if subexposure == (N_of_substacks -1 ):
+                g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', copy.deepcopy(substacker_filenames[subexposure]), copy.deepcopy(np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))))
+                #np.save(substacker_filenames[subexposure],np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))
             
             
             
