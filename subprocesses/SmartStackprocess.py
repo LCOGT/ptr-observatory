@@ -682,153 +682,224 @@ if not os.path.exists(jpeg_path + smartstackid +'.busy'):
             text_name=jpeg_name.replace('.jpg','.txt')
             #paths["text_name00"]
     
-            pickler=[newhdured,pixscale,image_saturation_level,nativebin,readnoise,minimum_realistic_seeing,im_path,text_name,'red']
-            red_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            #red_sep_subprocess=subprocess.Popen(['python','OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            pickle.dump(pickler, red_sep_subprocess.stdin)
+            # pickler=[newhdured,pixscale,image_saturation_level,nativebin,readnoise,minimum_realistic_seeing,im_path,text_name,'red']
+            # red_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+            # #red_sep_subprocess=subprocess.Popen(['python','OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+            # pickle.dump(pickler, red_sep_subprocess.stdin)
     
-            pickler[0]=newhdugreen
-            pickler[8]='green'
-            green_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            #green_sep_subprocess=subprocess.Popen(['python','OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            pickle.dump(pickler, green_sep_subprocess.stdin)
+            # pickler[0]=newhdugreen
+            # pickler[8]='green'
+            # green_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+            # #green_sep_subprocess=subprocess.Popen(['python','OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+            # pickle.dump(pickler, green_sep_subprocess.stdin)
     
-            pickler[0]=newhdublue
-            pickler[8]='blue'
-            blue_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            #blue_sep_subprocess=subprocess.Popen(['python','OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            pickle.dump(pickler, blue_sep_subprocess.stdin)
+            # pickler[0]=newhdublue
+            # pickler[8]='blue'
+            # blue_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+            # #blue_sep_subprocess=subprocess.Popen(['python','OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+            # pickle.dump(pickler, blue_sep_subprocess.stdin)
     
-            # Essentially wait until each subprocess is complete
-            red_sep_subprocess.communicate()
-            green_sep_subprocess.communicate()
-            blue_sep_subprocess.communicate()
+            # # Essentially wait until each subprocess is complete
+            # red_sep_subprocess.communicate()
+            # green_sep_subprocess.communicate()
+            # blue_sep_subprocess.communicate()
     
-            redsources=pickle.load(open(im_path + 'oscaasep.picklered', 'rb'))
-            greensources=pickle.load(open(im_path + 'oscaasep.picklegreen', 'rb'))
-            bluesources=pickle.load(open(im_path + 'oscaasep.pickleblue', 'rb'))
+            # redsources=pickle.load(open(im_path + 'oscaasep.picklered', 'rb'))
+            # greensources=pickle.load(open(im_path + 'oscaasep.picklegreen', 'rb'))
+            # bluesources=pickle.load(open(im_path + 'oscaasep.pickleblue', 'rb'))
     
-            if len(greensources) > 5:
+            # if len(greensources) > 5:
             # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
-                reprojection_failed = False
-                for colstack in ['blue', 'green', 'red']:
-                    if not os.path.exists(
-                        obsid_path + "smartstacks/" +
-                            smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
-                    ):
-                        if len(greensources) >= 5:
-                            # Store original image
-    
-                            if colstack == 'blue':
-                                np.save(
-                                    obsid_path
-                                    + "smartstacks/"
-                                    + smartStackFilename.replace(smartstackid,
-                                                                 smartstackid + str(colstack)),
-                                    newhdublue,
-                                )
-    
-                                bluesources.write(obsid_path
-                                + "smartstacks/"
-                                + smartStackFilename.replace('.npy','blue.sep'), format='csv', overwrite=True)
-    
-    
-                            if colstack == 'green':
-                                np.save(
-                                    obsid_path
-                                    + "smartstacks/"
-                                    + smartStackFilename.replace(smartstackid,
-                                                                 smartstackid + str(colstack)),
-                                    newhdugreen,
-                                )
-                                greensources.write(obsid_path
-                                + "smartstacks/"
-                                + smartStackFilename.replace('.npy','green.sep'), format='csv', overwrite=True)
-                            if colstack == 'red':
-                                np.save(
-                                    obsid_path
-                                    + "smartstacks/"
-                                    + smartStackFilename.replace(smartstackid,
-                                                                 smartstackid + str(colstack)),
-                                    newhdured,
-                                )
-                                redsources.write(obsid_path
-                                + "smartstacks/"
-                                + smartStackFilename.replace('.npy','red.sep'), format='csv', overwrite=True)
-                            
-                            # As soon as there is a reference image, delete the busy token
-                            try:
-                                os.remove(jpeg_path + smartstackid +'.busy')
-                            except:
-                                print ("COULDNT DELETE BUSY TOKEN! ALERT!")
-    
-                        else:
-                            reprojection_failed = True
-    
-                    else:
-                        # Collect stored SmartStack
-                        storedsStack = np.load(
-                            obsid_path + "smartstacks/" +
-                            smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
+            reprojection_failed = False
+            crosscorrel_filename_waiter=[]
+            crosscorrelation_subprocess_array=[]
+            counter=0
+            for colstack in ['blue', 'green', 'red']:
+                if not os.path.exists(
+                    obsid_path + "smartstacks/" +
+                        smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
+                ):
+                    #if len(greensources) >= 5:
+                    # Store original image
+
+                    if colstack == 'blue':
+                        np.save(
+                            obsid_path
+                            + "smartstacks/"
+                            + smartStackFilename.replace(smartstackid,
+                                                         smartstackid + str(colstack)),
+                            newhdublue,
                         )
-    
-                        ref_sources=ref_sources = Table.read(obsid_path
-                        + "smartstacks/"
-                        + smartStackFilename.replace('.npy',str(colstack)+'.sep'), format='csv')
-    
-                        if colstack == 'blue':
-                            sources=bluesources
-                            imgdata=newhdublue
-                        if colstack == 'red':
-                            sources=redsources
-                            imgdata=newhdured
-                        if colstack == 'green':
-                            sources=greensources
-                            imgdata=newhdugreen
-    
-    
-                        sources=np.column_stack((sources['x'],sources['y']))
-                        ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
-    
-                        if len(greensources) > 5:
-    
-                            try:
-                                transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
-    
-                                reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
-    
-                                storedsStack = reprojectedimage + storedsStack
-    
-                                # Save new stack to disk
-                                np.save(
-                                    obsid_path
-                                    + "smartstacks/"
-                                    + smartStackFilename.replace(smartstackid,
-                                                                 smartstackid + str(colstack)),
-                                    storedsStack,
-                                )
-                                
-                                # As soon as there is a reference image, delete the busy token
-                                try:
-                                    os.remove(jpeg_path + smartstackid +'.busy')
-                                except:
-                                    print ("COULDNT DELETE BUSY TOKEN! ALERT!")
-    
-    
-                                if colstack == 'green':
-                                    newhdugreen = storedsStack
-                                if colstack == 'red':
-                                    newhdured = storedsStack
-                                if colstack == 'blue':
-                                    newhdublue = storedsStack
-                                del storedsStack
-                                reprojection_failed = False
-                            except aa.MaxIterError:
-                                reprojection_failed = True
-                            except Exception:
-                                reprojection_failed = True
-                        else:
-                            reprojection_failed = True
+
+                        # bluesources.write(obsid_path
+                        # + "smartstacks/"
+                        # + smartStackFilename.replace('.npy','blue.sep'), format='csv', overwrite=True)
+
+
+                    if colstack == 'green':
+                        np.save(
+                            obsid_path
+                            + "smartstacks/"
+                            + smartStackFilename.replace(smartstackid,
+                                                         smartstackid + str(colstack)),
+                            newhdugreen,
+                        )
+                        # greensources.write(obsid_path
+                        # + "smartstacks/"
+                        # + smartStackFilename.replace('.npy','green.sep'), format='csv', overwrite=True)
+                    if colstack == 'red':
+                        np.save(
+                            obsid_path
+                            + "smartstacks/"
+                            + smartStackFilename.replace(smartstackid,
+                                                         smartstackid + str(colstack)),
+                            newhdured,
+                        )
+                        # redsources.write(obsid_path
+                        # + "smartstacks/"
+                        # + smartStackFilename.replace('.npy','red.sep'), format='csv', overwrite=True)
+                    
+                    # # As soon as there is a reference image, delete the busy token
+                    # try:
+                    #     os.remove(jpeg_path + smartstackid +'.busy')
+                    # except:
+                    #     print ("COULDNT DELETE BUSY TOKEN! ALERT!")
+
+                    # else:
+                    #     reprojection_failed = True
+
+                else:
+                    # Collect stored SmartStack
+                    storedsStack = np.load(
+                        obsid_path + "smartstacks/" +
+                        smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
+                    )
+
+                    # ref_sources=ref_sources = Table.read(obsid_path
+                    # + "smartstacks/"
+                    # + smartStackFilename.replace('.npy',str(colstack)+'.sep'), format='csv')
+
+                    if colstack == 'blue':
+                        # sources=bluesources
+                        imgdata=newhdublue
+                    if colstack == 'red':
+                        # sources=redsources
+                        imgdata=newhdured
+                    if colstack == 'green':
+                        # sources=greensources
+                        imgdata=newhdugreen
+
+
+                    # sources=np.column_stack((sources['x'],sources['y']))
+                    # ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
+
+                    # if len(greensources) > 5:
+
+                    # try:
+                        
+                    # Send out each colstack to a subprocess to wait. 
+                    
+                    output_filename='crosscorrel' + str(colstack) + str(smartstackid) + '.npy'
+                    pickler=[]
+                    pickler.append(storedsStack)
+                    pickler.append(imgdata)
+                    pickler.append(obsid_path + "smartstacks/")
+                    pickler.append(output_filename)
+                    pickler.append(is_osc)
+                    
+                    crosscorrel_filename_waiter.append(obsid_path + "smartstacks/" + output_filename)
+                    
+                    crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
+                    print (counter)
+                    pickle.dump(pickler, crosscorrelation_subprocess_array[counter].stdin)
+                    
+                    counter=counter+1
+                    
+                
+               # breakpoint()
+                
+                #counter=1
+                
+                
+                        
+                        # transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
+
+                        # reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
+
+                        # storedsStack = reprojectedimage + storedsStack
+
+                        
+                    #     reprojection_failed = False
+                    # except aa.MaxIterError:
+                    #     reprojection_failed = True
+                    # except Exception:
+                    #     reprojection_failed = True
+                    # else:
+                    #     reprojection_failed = True
+                    
+            # Wait for the three crosscorrels to happen
+            for waitfile in crosscorrel_filename_waiter:
+                while not os.path.exists(waitfile):
+                    #print ("waiting for " + str(waitfile))
+                    time.sleep(0.2)
+                    
+            if len(crosscorrel_filename_waiter) > 0:
+                #for colstack in ['blue', 'green', 'red']:
+                for waitfile in crosscorrel_filename_waiter:
+                    
+                    storedsStack=np.load(waitfile)
+                    
+                    if 'blue' in waitfile:
+                        np.save(
+                            obsid_path
+                            + "smartstacks/"
+                            + smartStackFilename.replace(smartstackid,
+                                                         smartstackid + 'blue'),
+                            storedsStack,
+                        )
+                    if 'green' in waitfile:
+                        np.save(
+                            obsid_path
+                            + "smartstacks/"
+                            + smartStackFilename.replace(smartstackid,
+                                                         smartstackid + 'green'),
+                            storedsStack,
+                        )
+                    if 'red' in waitfile:
+                        np.save(
+                            obsid_path
+                            + "smartstacks/"
+                            + smartStackFilename.replace(smartstackid,
+                                                         smartstackid + 'red'),
+                            storedsStack,
+                        )
+                    
+                    if colstack == 'green':
+                        newhdugreen = storedsStack
+                    if colstack == 'red':
+                        newhdured = storedsStack
+                    if colstack == 'blue':
+                        newhdublue = storedsStack
+                    del storedsStack
+                        
+                        
+                    # sub_stacker_array[:,:,counter] = np.load(waitfile)
+                    # counter=counter+1
+            
+                    # Once the files are there, pick them back up again
+                    # Save new stack to disk
+                    
+            
+            # As soon as there is a reference image, delete the busy token
+            try:
+                os.remove(jpeg_path + smartstackid +'.busy')
+            except:
+                print ("COULDNT DELETE BUSY TOKEN! ALERT!")
+
+
+            
+            
+            
     
             pickle.dump(reprojection_failed, open(jpeg_path + 'smartstack.pickle', 'wb'))
     
