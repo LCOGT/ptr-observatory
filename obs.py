@@ -2016,7 +2016,7 @@ class Observatory:
                         reqs.post(url_log, body, timeout=5)
                     except:
                         plog("Log did not send, usually not fatal.")
-                        plog(traceback.format_exc())
+                        #plog(traceback.format_exc())
                     self.sendtouser_queue.task_done()
             else:
                 time.sleep(0.25)
