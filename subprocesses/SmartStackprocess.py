@@ -755,6 +755,12 @@ if not os.path.exists(jpeg_path + smartstackid +'.busy'):
                                 redsources.write(obsid_path
                                 + "smartstacks/"
                                 + smartStackFilename.replace('.npy','red.sep'), format='csv', overwrite=True)
+                            
+                            # As soon as there is a reference image, delete the busy token
+                            try:
+                                os.remove(jpeg_path + smartstackid +'.busy')
+                            except:
+                                print ("COULDNT DELETE BUSY TOKEN! ALERT!")
     
                         else:
                             reprojection_failed = True
@@ -801,6 +807,12 @@ if not os.path.exists(jpeg_path + smartstackid +'.busy'):
                                                                  smartstackid + str(colstack)),
                                     storedsStack,
                                 )
+                                
+                                # As soon as there is a reference image, delete the busy token
+                                try:
+                                    os.remove(jpeg_path + smartstackid +'.busy')
+                                except:
+                                    print ("COULDNT DELETE BUSY TOKEN! ALERT!")
     
     
                                 if colstack == 'green':
