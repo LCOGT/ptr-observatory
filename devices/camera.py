@@ -2195,10 +2195,11 @@ class Camera:
         if self.substacker:
             return 'substack_array'
         else:
+            ctype_timer=time.time()
             image_width_byref = c_uint32()
             image_height_byref = c_uint32()
             bits_per_pixel_byref = c_uint32()
-
+            plog ("ctype: " + str(time.time() - ctype_timer))
             time_before_readout=time.time()
             success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
                                                   byref(image_width_byref),
@@ -2211,6 +2212,7 @@ class Camera:
             image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
             time_after_readout=time.time()
             self.readout_estimate= time_after_readout - time_before_readout
+            print (self.readout_estimate)
 
             return np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
