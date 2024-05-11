@@ -3750,7 +3750,7 @@ class Camera:
                         ]
 
                 # Another pickle debugger
-                if True :
+                if False :
                     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
                 
@@ -3847,7 +3847,7 @@ class Camera:
             sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
             # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-            if True:
+            if False:
                 pickle.dump([septhread_filename, self.pixscale, self.camera_known_readnoise, avg_foc, focus_image, im_path, text_name, 'hduheader', cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,self.native_bin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
 
             try:
@@ -3917,7 +3917,7 @@ class Camera:
                 squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
 
                 # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                if True:
+                if False:
                     #NB set this path to create test pickle for makejpeg routine.
                     pickle.dump([mainjpegthread_filename, smartstackid, 'paths', g_dev["mnt"].pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                         osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
@@ -4459,7 +4459,7 @@ class Camera:
                     payload=copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, substack,expected_endpoint_of_substack_exposure,substack_start_time,0.0, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"], exposure_filter_offset, g_dev["fil"].null_filterwheel, g_dev['evnt'].wema_config,smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename))
                     
                     # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                    if True:
+                    if False:
                         #NB set this path to create test pickle for makejpeg routine.
                         pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
 
