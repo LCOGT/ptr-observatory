@@ -4289,7 +4289,7 @@ class Camera:
 ################################ STUFF ATTEMPTING TO SQUISH IN JUST AFTER EXPOSURE TIME AND BEFORE READOUT.
                 
                 
-                
+                checknudge_timer=time.time()
 
                 # Good spot to check if we need to nudge the telescope
                 # Allowed to on the last loop of a smartstack
@@ -4360,6 +4360,8 @@ class Camera:
                                         {"filter": g_dev['seq'].block_next_filter_requested}, {}
                                     )
 
+
+                print ("Check Nudge Timer: " + str(checknudge_timer-time.time()))
 
                 # # If you are shooting for short exposure times, the overhead
                 # # becomes a large fraction of the actual exposure time,
