@@ -106,6 +106,8 @@ minimum_realistic_seeing=input_sep_info[25]
 #nativebin=input_sep_info[26]
 do_sep=input_sep_info[27]
 exposure_time=input_sep_info[28]
+# unique=input_sep_info[29]
+# counts=input_sep_info[30]
 
 
 
@@ -118,7 +120,7 @@ while not os.path.exists(septhread_filename):
     time.sleep(0.2)
     
 
-(image_filename,imageMode)=pickle.load(open(septhread_filename,'rb'))
+(image_filename,imageMode, unique, counts)=pickle.load(open(septhread_filename,'rb'))
 
 
 hdufocusdata=np.load(image_filename)
@@ -520,7 +522,7 @@ else:
         for i in range(len(pointvalues)):
 
             # Don't take too long!
-            if ((time.time() - timer_for_bailing) > time_limit) and good_radials > 20:
+            if ((time.time() - timer_for_bailing) > time_limit):# and good_radials > 20:
                 print ("Time limit reached! Bailout!")
                 break
 
@@ -1132,9 +1134,9 @@ if frame_type=='expose':
 
 
     #breakpoint()
-    if float(hduheader['EXPTIME']) <= minimum_exposure_for_extended_stuff :
-        int_array_flattened=hdufocusdata.astype(int).ravel()
-        unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+    #if float(hduheader['EXPTIME']) <= minimum_exposure_for_extended_stuff :
+    # int_array_flattened=hdufocusdata.astype(int).ravel()
+    # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
 
     #breakpoint()
     # Collect unique values and counts

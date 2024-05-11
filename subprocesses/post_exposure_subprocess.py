@@ -216,7 +216,7 @@ if substack:
             
             crosscorrel_filename_waiter.append(temporary_substack_directory + output_filename)
             
-            crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
+            crosscorrelation_subprocess_array.append(subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
             print (counter-1)
             pickle.dump(pickler, crosscorrelation_subprocess_array[counter-1].stdin)
         
@@ -1340,7 +1340,7 @@ try:
         
         #g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))
         #np.save(hdusmalldata, septhread_filename)
-        pickle.dump((image_filename,imageMode), open(septhread_filename+ '.temp', 'wb'))
+        pickle.dump((image_filename,imageMode, unique, counts), open(septhread_filename+ '.temp', 'wb'))
         
             
             

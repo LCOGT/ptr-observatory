@@ -83,6 +83,8 @@ red_name01=input_sstk_info[32]
 ########## wAITER FOR 
 
 
+#breakpoint()
+
 # So wait for the image to be available in this smartstack run
 while not os.path.exists(smartstackthread_filename):    
     time.sleep(0.2)

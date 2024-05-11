@@ -2716,7 +2716,7 @@ class Camera:
                 if not g_dev['obs'].mountless_operation:
                     if not g_dev['mnt'].rapid_park_indicator:# and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                         #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
-                        self.wait_for_slew(wait_after_slew=False)
+                        #self.wait_for_slew(wait_after_slew=False)
                         if g_dev['mnt'].pier_flip_detected==True:
                             plog ("PIERFLIP DETECTED, RECENTERING.")
                             g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
@@ -2934,7 +2934,7 @@ class Camera:
                                 return 'cancelled'
 
                             if not g_dev['obs'].mountless_operation and not g_dev['mnt'].rapid_park_indicator:
-                                self.wait_for_slew(wait_after_slew=False)
+                                #self.wait_for_slew(wait_after_slew=False)
                                 if g_dev['mnt'].pier_flip_detected==True:
                                     plog("Detected a pier flip just before exposure!")
                                     g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
@@ -3189,7 +3189,7 @@ class Camera:
         # we check here.
         if not g_dev['obs'].mountless_operation:
             if not g_dev['mnt'].rapid_park_indicator: # and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-                self.wait_for_slew(wait_after_slew=False)
+                #self.wait_for_slew(wait_after_slew=False)
                 #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
                 if g_dev['mnt'].pier_flip_detected==True:
                     plog ("PIERFLIP DETECTED, RECENTERING.")
@@ -3746,8 +3746,10 @@ class Camera:
                         ]
 
                 # Another pickle debugger
-                if False :
+                if True :
                     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
+
+                
 
                 smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                 
@@ -3852,7 +3854,7 @@ class Camera:
                 plog(traceback.format_exc())
 
             # delete the subprocess connection once the data have been dumped out to the process.
-            del sep_subprocess
+            #del sep_subprocess
 
             packet=(avg_foc,exposure_time,this_exposure_filter, airmass_of_observation)
             g_dev['obs'].file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
@@ -4197,7 +4199,7 @@ class Camera:
                                                     )
                                                     
                                 elif g_dev['obs'].pointing_recentering_requested_by_platesolve_thread or g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
-                                    self.wait_for_slew(wait_after_slew=False)
+                                    #self.wait_for_slew(wait_after_slew=False)
                                     g_dev['obs'].check_platesolve_and_nudge()
 
                                 # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
@@ -4210,7 +4212,7 @@ class Camera:
                                             ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
                                             dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
                                         try:
-                                            self.wait_for_slew(wait_after_slew=False)
+                                            #self.wait_for_slew(wait_after_slew=False)
                                             g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra + ra_random_dither, dec=self.initial_smartstack_dec + dec_random_dither)
                                             
                                         except Exception as e:
@@ -4226,7 +4228,7 @@ class Camera:
                                     # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
                                     elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                                         try:
-                                            self.wait_for_slew(wait_after_slew=False)
+                                            #self.wait_for_slew(wait_after_slew=False)
                                             g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra, dec=self.initial_smartstack_dec)
                                             # no wait for slew here as we start downloading the image. the wait_for_slew is after that
 
@@ -4295,7 +4297,7 @@ class Camera:
                     if not g_dev['obs'].mountless_operation:
 
                         if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread or g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
-                            self.wait_for_slew(wait_after_slew=False)
+                            #self.wait_for_slew(wait_after_slew=False)
                             g_dev['obs'].check_platesolve_and_nudge()
 
                         # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
@@ -4308,7 +4310,7 @@ class Camera:
                                     ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
                                     dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
                                 try:
-                                    self.wait_for_slew(wait_after_slew=False)
+                                    #self.wait_for_slew(wait_after_slew=False)
                                     g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra + ra_random_dither, dec=self.initial_smartstack_dec + dec_random_dither)
                                     
                                 except Exception as e:
@@ -4324,7 +4326,7 @@ class Camera:
                             # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
                             elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                                 try:
-                                    self.wait_for_slew(wait_after_slew=False)
+                                    #self.wait_for_slew(wait_after_slew=False)
                                     g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra, dec=self.initial_smartstack_dec)
 
                                 except Exception as e:
@@ -4457,13 +4459,30 @@ class Camera:
                         #NB set this path to create test pickle for makejpeg routine.
                         pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
 
+                    # breakpoint()
+
                     post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+
+
+
 
                     try:
                         pickle.dump(payload, post_processing_subprocess.stdin)
                     except:
                         plog ("Problem in the post_processing_subprocess pickle dump")
                         plog(traceback.format_exc())
+
+                    #smartstack_subprocess
+                    # output, error = post_processing_subprocess.communicate()
+                    # print (output)
+                    # breakpoint()
+                    
+                    # output, error = smartstack_subprocess.communicate()
+                    # print (output)
+                    
+                    # output, error = sep_subprocess.communicate()
+                    # print (output)
+                    
                         
                     #del post_processing_subprocess
                     
