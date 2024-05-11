@@ -2632,7 +2632,7 @@ class Camera:
             g_dev['obs'].request_update_calendar_blocks()
         for seq in range(count):
 
-            pre_exposure_overhead_timer=time.time()            
+                   
 
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             # retry-3-times framework with an additional timeout included in it.
@@ -2713,6 +2713,7 @@ class Camera:
             #The variable Nsmartstacks defaults to 1 - e.g. normal functioning
             #When a smartstack is not requested.
             for sskcounter in range(int(Nsmartstack)):
+                pre_exposure_overhead_timer=time.time()     
                 # If the pier just flipped, trigger a recentering exposure.
                 #if not g_dev['mnt'].rapid_park_indicator:# and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                 if not g_dev['obs'].mountless_operation:
@@ -4283,6 +4284,7 @@ class Camera:
                 
                 plog ("Exposure Complete")
                 
+                post_overhead_timer=time.time()
                 
 ################################ STUFF ATTEMPTING TO SQUISH IN JUST AFTER EXPOSURE TIME AND BEFORE READOUT.
                 
@@ -5085,6 +5087,8 @@ class Camera:
                         expresult["real_time_filename"] =  self.config["obs_id"]+ "-"+ self.alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)+ "-"+ g_dev["day"]+ "-"+ next_seq+ "-"+ im_type+ "00.fits.fz"
                     except:
                         plog(traceback.format_exc())
+
+                plog ("Post-exposure overhead: " + str(time.time()- post_overhead_timer))
 
                 return copy.deepcopy(expresult)
 
