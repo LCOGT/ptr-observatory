@@ -3052,6 +3052,7 @@ class Camera:
                             self.substacker_filenames=[]
 
                             start_time_of_observation=time.time()
+                            plog ("Time between last start time and this start time: " + str(time.time()- self.start_time_of_observation))
                             self.start_time_of_observation=time.time()
                             self.shutter_open = True
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
