@@ -2632,6 +2632,8 @@ class Camera:
             g_dev['obs'].request_update_calendar_blocks()
         for seq in range(count):
 
+            pre_exposure_overhead_timer=time.time()            
+
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             # retry-3-times framework with an additional timeout included in it.
 
@@ -3052,6 +3054,7 @@ class Camera:
                             self.substacker_filenames=[]
 
                             start_time_of_observation=time.time()
+                            plog ("Pre-exposure overhead: " + str(time.time()- pre_exposure_overhead_timer))
                             plog ("Time between last start time and this start time: " + str(time.time()- self.start_time_of_observation))
                             self.start_time_of_observation=time.time()
                             self.shutter_open = True
