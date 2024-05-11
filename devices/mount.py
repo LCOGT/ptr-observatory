@@ -379,7 +379,7 @@ class Mount:
         self.slewtoAsyncRequested=False
         self.request_find_home=False
 
-        self.mount_update_period=0.5
+        self.mount_update_period=0.1
         self.mount_update_timer=time.time() - 2* self.mount_update_period
         self.mount_updates=0
         self.mount_update_paused=False

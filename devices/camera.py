@@ -4466,9 +4466,9 @@ class Camera:
                         pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
 
                     # breakpoint()
-
+                    process_dump_timer=time.time()
                     post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-
+                    print ("Dumping into subprocess: " + str(process_dump_timer - time.time() ))
 
 
 
