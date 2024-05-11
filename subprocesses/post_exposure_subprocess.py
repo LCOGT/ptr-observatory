@@ -246,7 +246,12 @@ if substack:
     img=bn.nanmedian(sub_stacker_array, axis=2) * len(substacker_filenames)
     
 
-        
+    # Once we've got the substack stacked, delete the original images
+    for waitfile in crosscorrel_filename_waiter:
+        try:
+            os.remove(waitfile)
+        except:
+            pass
         
 
 
