@@ -4444,7 +4444,7 @@ class Camera:
                             plog("Retried 8 times and didn't get an image, giving up.")
                             return expresult
                         try:
-                            outputimg = self._getImageArray().astype(np.float32)
+                            outputimg = self._getImageArray()#.astype(np.float32)
                             imageCollected = 1
                         except Exception as e:
                             
