@@ -25,6 +25,7 @@ import subprocess
 from math import sqrt
 import traceback
 import copy
+import bottleneck as bn
 
 #from skimage.registration import phase_cross_correlation
 
@@ -474,7 +475,7 @@ if not os.path.exists(jpeg_path + smartstackid +'.busy'):
                 
                 googtime=time.time()
                 edge_crop=100
-                xoff, yoff = cross_correlation_shifts(block_reduce(de_nanned_reference_frame[edge_crop:-edge_crop,edge_crop:-edge_crop],3), block_reduce(tempnan[edge_crop:-edge_crop,edge_crop:-edge_crop],3),zeromean=False)
+                xoff, yoff = cross_correlation_shifts(block_reduce(de_nanned_reference_frame[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=bn.nanmean), block_reduce(tempnan[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=bn.nanmean),zeromean=False)
                 print (time.time()-googtime)
                 print ("3x")
                 print (str(-yoff*3) + " " + str(-xoff*3))

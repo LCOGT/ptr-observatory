@@ -12,7 +12,7 @@ from astropy.nddata import block_reduce
 import numpy as np
 import traceback
 import os
-
+import bottlenck as bn
 payload=pickle.load(sys.stdin.buffer)
 
 reference_image=payload[0]
@@ -63,7 +63,7 @@ while (breaker != 0):
 substackimage[substackimage < zeroValue] = np.nan
 
 edge_crop=100
-xoff, yoff = cross_correlation_shifts(block_reduce(reference_image[edge_crop:-edge_crop,edge_crop:-edge_crop],3), block_reduce(substackimage[edge_crop:-edge_crop,edge_crop:-edge_crop],3),zeromean=False)  
+xoff, yoff = cross_correlation_shifts(block_reduce(reference_image[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=bn.nanmean), block_reduce(substackimage[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=bn.nanmean),zeromean=False)  
 imageshift=[round(-yoff*3),round(-xoff*3)]
 
 if imageshift[0] > 100 or imageshift[1] > 100:
