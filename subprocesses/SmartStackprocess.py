@@ -473,7 +473,8 @@ if not os.path.exists(jpeg_path + smartstackid +'.busy'):
                 #     imageshift=imageshift[0]
                 
                 googtime=time.time()
-                xoff, yoff = cross_correlation_shifts(block_reduce(de_nanned_reference_frame,3), block_reduce(tempnan,3),zeromean=False)
+                edge_crop=100
+                xoff, yoff = cross_correlation_shifts(block_reduce(de_nanned_reference_frame[edge_crop:-edge_crop,edge_crop:-edge_crop],3), block_reduce(tempnan[edge_crop:-edge_crop,edge_crop:-edge_crop],3),zeromean=False)
                 print (time.time()-googtime)
                 print ("3x")
                 print (str(-yoff*3) + " " + str(-xoff*3))

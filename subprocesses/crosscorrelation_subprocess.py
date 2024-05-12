@@ -22,6 +22,9 @@ output_filename=payload[3]
 is_osc=payload[4]
 
 
+
+
+
 # Really need to thresh the image
 #googtime=time.time()
 int_array_flattened=substackimage.astype(int).ravel()
@@ -59,8 +62,8 @@ while (breaker != 0):
                                                         
 substackimage[substackimage < zeroValue] = np.nan
 
-
-xoff, yoff = cross_correlation_shifts(block_reduce(reference_image,3), block_reduce(substackimage,3),zeromean=False)  
+edge_crop=100
+xoff, yoff = cross_correlation_shifts(block_reduce(reference_image[edge_crop:-edge_crop,edge_crop:-edge_crop],3), block_reduce(substackimage[edge_crop:-edge_crop,edge_crop:-edge_crop],3),zeromean=False)  
 imageshift=[round(-yoff*3),round(-xoff*3)]
 
 if imageshift[0] > 100 or imageshift[1] > 100:
