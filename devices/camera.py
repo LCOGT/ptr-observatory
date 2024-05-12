@@ -188,6 +188,11 @@ def dump_main_data_out_to_post_exposure_subprocess(payload):
         plog ("Problem in the post_processing_subprocess pickle dump")
         plog(traceback.format_exc())
     
+    
+    # output, error = post_processing_subprocess.communicate()
+    # print (output)
+    # breakpoint()
+    
 
 # Note this is a thread!
 def write_raw_file_out(packet):

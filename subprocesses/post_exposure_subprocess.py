@@ -134,7 +134,7 @@ if substack:
         substackimage=np.load(substackfilename)
         try:
             if exp_of_substacks == 10:
-                print ("Dedarking 0")
+                #print ("Dedarking 0")
                 substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + camalias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
             else:
                 substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + camalias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
@@ -217,7 +217,14 @@ if substack:
             crosscorrel_filename_waiter.append(temporary_substack_directory + output_filename)
             
             crosscorrelation_subprocess_array.append(subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
+            #crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
             print (counter-1)
+            
+            
+            if False:
+                #NB set this path to create test pickle for makejpeg routine.
+                pickle.dump(pickler, open('crosscorrelprocess.pickle','wb'))
+            
             pickle.dump(pickler, crosscorrelation_subprocess_array[counter-1].stdin)
         
         counter=counter+1
