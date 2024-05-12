@@ -415,8 +415,8 @@ class Observatory:
         self.net_connection_dead = False
 
         # Set default obs safety settings at bootup
-        #self.scope_in_manual_mode = self.config['scope_in_manual_mode']
-        self.scope_in_manual_mode = True
+        self.scope_in_manual_mode = self.config['scope_in_manual_mode']
+        #self.scope_in_manual_mode = True
         self.moon_checks_on = self.config['moon_checks_on']
         self.sun_checks_on = self.config['sun_checks_on']
         self.altitude_checks_on = self.config['altitude_checks_on']
