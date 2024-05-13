@@ -542,7 +542,7 @@ site_config = {
                                 ['HA',      [6, 0],    'HA'],  # 15
                                 ['S2',      [8, 0],     'S2'],  # 16 20240109 eve  Clear bright sky perfect evening
 
-                                ['dark',    [8, 5],     'dk']],  # 17
+                                ['dk',    [8, 5],     'dk']],  # 17
 
                 'focus_filter' : 'w',
 

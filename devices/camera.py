@@ -1078,7 +1078,7 @@ class Camera:
         if 1 <= humid <= 100 or 1 <= pressure <=1100:
             plog("Humidity and pressure:  ", humid, pressure)
         else:
-            plog("Camera temp and pressure is not reported.")
+            plog("Camera  humidity and pressure is not reported.")
 
         if self.maxim == True:
             plog("TEC  % load:  ", self._maxim_cooler_power())
