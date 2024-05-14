@@ -2244,8 +2244,12 @@ class Observatory:
                             if g_dev['seq'].block_guard and not g_dev["seq"].focussing:
                                 target_ra = g_dev['seq'].block_ra
                                 target_dec = g_dev['seq'].block_dec
-    
-                            platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                                
+                            try:
+                                platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                            except OSError:
+                                pass
+                            
     
                             platesolve_crop = 0.0
     

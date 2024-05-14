@@ -179,8 +179,10 @@ def dump_main_data_out_to_post_exposure_subprocess(payload):
         pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
 
     # breakpoint()
-    
-    post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    try:
+        post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    except OSError:
+        pass
     
     try:
         pickle.dump(payload, post_processing_subprocess.stdin)
@@ -3783,8 +3785,11 @@ class Camera:
                     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
                 
-
-                smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                try:
+                    smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                except OSError:
+                    pass
+                
                 
                 self.camera_path + g_dev['day'] + "/to_AWS/"
 
@@ -3873,7 +3878,11 @@ class Camera:
 
             saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
             minimum_realistic_seeing=self.config['minimum_realistic_seeing']
-            sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+            try:
+                sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+            except OSError:
+                pass
+            
 
             # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
             if False:
@@ -3951,8 +3960,11 @@ class Camera:
                     pickle.dump([mainjpegthread_filename, smartstackid, 'paths', g_dev["mnt"].pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                         osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
                             rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor,self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name], open('testjpegpickle','wb'))
-
-                jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                try:
+                    jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                except OSError:
+                    pass
+                
 
                 
 
