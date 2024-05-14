@@ -689,8 +689,8 @@ class Focuser:
 
             #if self.theskyx:
                 # self.current_focus_position=self.get_position()
-
-            self.get_position_actual()
+            if force_change:
+                self.get_position_actual()
 
             # else:
             #     self.current_focus_position=self.get_position()

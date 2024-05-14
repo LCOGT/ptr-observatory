@@ -238,7 +238,29 @@ def centration_d(theta, a, b):
 def centration_r(theta, a, b):
     return math.atan2(math.sin(theta) - STOR * b, math.cos(theta) - STOR * a)
 
+def appToObsRaHa(appRa, appDec, pSidTime):
+    global raRefr, decRefr, refAsec
+    try:
+        g_dev["ocn"].get_proxy_temp_press()
+    except:
+        pass
+    appHa, appDec = transform_raDec_to_haDec_r(appRa, appDec, pSidTime)
+    appAz, appAlt = transform_haDec_to_azAlt_r(
+        appHa, appDec, site_config["latitude"] * DTOR
+    )
+    try:
+        obsAlt, refAsec = apply_refraction_inEl_r(
+            appAlt, g_dev["ocn"].temperature, g_dev["ocn"].pressure
+        )
+        obsHa, obsDec = transform_azAlt_to_haDec_r(
+            appAz, obsAlt, site_config["latitude"] * DTOR
+        )
+    except:
+        pass
 
+    raRefr = reduce_ha_r(appHa - obsHa) * HTOS
+    decRefr = -reduce_dec_r(appDec - obsDec) * DTOS
+    return reduce_ha_r(obsHa), reduce_dec_r(obsDec), refAsec
 
 
 
@@ -611,7 +633,7 @@ press = 970 * u.hPa
 temp = 10 * u.deg_C
 hum = 0.5  # 50%
 
-print("Utility module loaded at: ", ephem.now(), round((ephem.now()), 4))
+print("Short utility module loaded at: ", ephem.now(), round((ephem.now()), 4))
 
 if __name__ == "__main__":
    print("Welcome to the new, shorter utility module.")

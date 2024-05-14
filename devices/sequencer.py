@@ -2483,8 +2483,8 @@ class Sequencer:
         self.reset_completes()
         g_dev['obs'].events_new = None
         g_dev['obs'].reset_last_reference()
-        if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
-           g_dev['mnt'].reset_mount_reference()
+        # if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
+        #    g_dev['mnt'].reset_mount_reference()
         g_dev['obs'].last_solve_time = datetime.datetime.utcnow() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
 
@@ -2742,14 +2742,30 @@ class Sequencer:
                     # Save and upload master bias
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
-                     # Store a version of the bias for the archive too
+                    if filename_start in ['DARK','halfsecondDARK', '2secondDARK', '10secondDARK', '30secondDARK', 'broadbandssDARK', '1']:
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.npy', copy.deepcopy(masterDark)))
+# scaled_darklist=[
+#     [g_dev['obs'].local_dark_folder                 , 'DARK','1'],
+#     [g_dev['obs'].local_dark_folder+ 'halfsecdarks/', 'halfsecondDARK', 'halfsec_exposure_dark' ],
+#     [g_dev['obs'].local_dark_folder+ 'twosecdarks/', '2secondDARK', 'twosec_exposure_dark' ],
+#     [g_dev['obs'].local_dark_folder+ 'tensecdarks/', '10secondDARK', 'tensec_exposure_dark'],                
+#     [g_dev['obs'].local_dark_folder+ 'tensecdarks/', '30secondDARK', 'thirtysec_exposure_dark'],
+#     [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssDARK', 'broadband_ss_dark' ]
+#     ]
+
+                    
+
+
+                    # Store a version of the bias for the archive too
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterDark)))
 
                 except Exception as e:
+                    plog(traceback.format_exc())
                     plog ("Could not save dark frame: ",e)
+                    breakpoint()
 
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
                 g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
@@ -2867,6 +2883,12 @@ class Sequencer:
                     
                     # Save and upload master bias
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, tempfrontcalib +filename_start+'_master_bin1.fits' ))
+                    
+                    
+                    if filename_start in ['tensecBIASDARK','thirtysecBIASDARK']:
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.npy', copy.deepcopy(masterDark)))
+
+
 
                      # Store a version of the bias for the archive too
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
@@ -2876,7 +2898,9 @@ class Sequencer:
                         g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterDark)))
 
                 except Exception as e:
+                    plog(traceback.format_exc())
                     plog ("Could not save dark frame: ",e)
+                    breakpoint()
                     
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
                 g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
@@ -3033,6 +3057,7 @@ class Sequencer:
                 try:                   
                     # Save and upload master bias
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias), None, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'BIAS_master_bin1.fits' ))
+                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.npy', copy.deepcopy(masterBias)))
 
                      # Store a version of the bias for the archive too
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits' ))
@@ -3081,7 +3106,7 @@ class Sequencer:
 ############################################# DARK
 
             scaled_darklist=[
-                [g_dev['obs'].local_dark_folder                 , 'dk','1'],
+                [g_dev['obs'].local_dark_folder                 , 'DARK','1'],
                 [g_dev['obs'].local_dark_folder+ 'halfsecdarks/', 'halfsecondDARK', 'halfsec_exposure_dark' ],
                 [g_dev['obs'].local_dark_folder+ 'twosecdarks/', '2secondDARK', 'twosec_exposure_dark' ],
                 [g_dev['obs'].local_dark_folder+ 'tensecdarks/', '10secondDARK', 'tensec_exposure_dark'],                

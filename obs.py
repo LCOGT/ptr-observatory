@@ -416,6 +416,7 @@ class Observatory:
 
         # Set default obs safety settings at bootup
         self.scope_in_manual_mode = self.config['scope_in_manual_mode']
+        #self.scope_in_manual_mode = True
         self.moon_checks_on = self.config['moon_checks_on']
         self.sun_checks_on = self.config['sun_checks_on']
         self.altitude_checks_on = self.config['altitude_checks_on']
@@ -526,15 +527,15 @@ class Observatory:
         self.platesolve_queue_thread.daemon = True
         self.platesolve_queue_thread.start()
 
-        self.sep_queue = queue.Queue(maxsize=0)
-        self.sep_queue_thread = threading.Thread(target=self.sep_process, args=())
-        self.sep_queue_thread.daemon = True
-        self.sep_queue_thread.start()
+        # self.sep_queue = queue.Queue(maxsize=0)
+        # self.sep_queue_thread = threading.Thread(target=self.sep_process, args=())
+        # self.sep_queue_thread.daemon = True
+        # self.sep_queue_thread.start()
 
-        self.mainjpeg_queue = queue.Queue(maxsize=0)
-        self.mainjpeg_queue_thread = threading.Thread(target=self.mainjpeg_process, args=())
-        self.mainjpeg_queue_thread.daemon = True
-        self.mainjpeg_queue_thread.start()
+        # self.mainjpeg_queue = queue.Queue(maxsize=0)
+        # self.mainjpeg_queue_thread = threading.Thread(target=self.mainjpeg_process, args=())
+        # self.mainjpeg_queue_thread.daemon = True
+        # self.mainjpeg_queue_thread.start()
 
         self.laterdelete_queue = queue.Queue(maxsize=0)
         self.laterdelete_queue_thread = threading.Thread(target=self.laterdelete_process, args=())
@@ -546,12 +547,12 @@ class Observatory:
         self.sendtouser_queue_thread.daemon = True
         self.sendtouser_queue_thread.start()
 
-        self.smartstack_queue = queue.Queue(
-            maxsize=0
-        )
-        self.smartstack_queue_thread = threading.Thread(target=self.smartstack_image, args=())
-        self.smartstack_queue_thread.daemon = True
-        self.smartstack_queue_thread.start()
+        # self.smartstack_queue = queue.Queue(
+        #     maxsize=0
+        # )
+        # self.smartstack_queue_thread = threading.Thread(target=self.smartstack_image, args=())
+        # self.smartstack_queue_thread.daemon = True
+        # self.smartstack_queue_thread.start()
 
         self.queue_reporting_period = 60
         self.queue_reporting_timer = time.time() - (2* self.queue_reporting_period)
@@ -2015,156 +2016,156 @@ class Observatory:
                         reqs.post(url_log, body, timeout=5)
                     except:
                         plog("Log did not send, usually not fatal.")
-                        plog(traceback.format_exc())
+                        #plog(traceback.format_exc())
                     self.sendtouser_queue.task_done()
             else:
                 time.sleep(0.25)
 
-    def mainjpeg_process(self, zoom_factor=False):
-        """
-        This is the main subprocess where jpegs are created for the UI.
-        """
+    # def mainjpeg_process(self, zoom_factor=False):
+    #     """
+    #     This is the main subprocess where jpegs are created for the UI.
+    #     """
 
-        while True:
-            if (not self.mainjpeg_queue.empty()):
-                osc_jpeg_timer_start = time.time()
-                (hdusmalldata, smartstackid, paths, pier_side, zoom_factor) = self.mainjpeg_queue.get(block=False)
-                is_osc = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
-                osc_bayer= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"]
-                if is_osc:
-                    osc_background_cut=self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']
-                    osc_brightness_enhance= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance']
-                    osc_contrast_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance']
-                    osc_colour_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance']
-                    osc_saturation_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance']
-                    osc_sharpness_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance']
-                else:
-                    osc_background_cut=0
-                    osc_brightness_enhance= 0
-                    osc_contrast_enhance=0
-                    osc_colour_enhance=0
-                    osc_saturation_enhance=0
-                    osc_sharpness_enhance=0
-                # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
-                transpose_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]
-                flipx_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']
-                flipy_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']
-                rotate180_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']
-                rotate90_jpeg = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']
-                rotate270_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']
-                crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
-                yb = self.config["camera"][g_dev['cam'].name]["settings"][
-                     "crop_preview_ybottom"
-                 ]
-                yt = self.config["camera"][g_dev['cam'].name]["settings"][
-                     "crop_preview_ytop"
-                 ]
-                xl = self.config["camera"][g_dev['cam'].name]["settings"][
-                     "crop_preview_xleft"
-                 ]
-                xr = self.config["camera"][g_dev['cam'].name]["settings"][
-                     "crop_preview_xright"
-                 ]
-                squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
+    #     while True:
+    #         if (not self.mainjpeg_queue.empty()):
+    #             osc_jpeg_timer_start = time.time()
+    #             (hdusmalldata, smartstackid, paths, pier_side, zoom_factor) = self.mainjpeg_queue.get(block=False)
+    #             is_osc = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+    #             osc_bayer= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"]
+    #             if is_osc:
+    #                 osc_background_cut=self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']
+    #                 osc_brightness_enhance= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance']
+    #                 osc_contrast_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance']
+    #                 osc_colour_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance']
+    #                 osc_saturation_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance']
+    #                 osc_sharpness_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance']
+    #             else:
+    #                 osc_background_cut=0
+    #                 osc_brightness_enhance= 0
+    #                 osc_contrast_enhance=0
+    #                 osc_colour_enhance=0
+    #                 osc_saturation_enhance=0
+    #                 osc_sharpness_enhance=0
+    #             # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
+    #             transpose_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]
+    #             flipx_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']
+    #             flipy_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']
+    #             rotate180_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']
+    #             rotate90_jpeg = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']
+    #             rotate270_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']
+    #             crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
+    #             yb = self.config["camera"][g_dev['cam'].name]["settings"][
+    #                  "crop_preview_ybottom"
+    #              ]
+    #             yt = self.config["camera"][g_dev['cam'].name]["settings"][
+    #                  "crop_preview_ytop"
+    #              ]
+    #             xl = self.config["camera"][g_dev['cam'].name]["settings"][
+    #                  "crop_preview_xleft"
+    #              ]
+    #             xr = self.config["camera"][g_dev['cam'].name]["settings"][
+    #                  "crop_preview_xright"
+    #              ]
+    #             squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
 
-                # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                if False:
-                    #NB set this path to create test pickle for makejpeg routine.
-                    pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                        osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                            rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], open('testjpegpickle','wb'))
+    #             # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
+    #             if False:
+    #                 #NB set this path to create test pickle for makejpeg routine.
+    #                 pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+    #                     osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+    #                         rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], open('testjpegpickle','wb'))
 
-                jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    #             jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                try:
-                    pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                          osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                              rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
-                except:
-                    plog ("Problem in the jpeg pickle dump")
-                    plog(traceback.format_exc())
+    #             try:
+    #                 pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+    #                       osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+    #                           rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
+    #             except:
+    #                 plog ("Problem in the jpeg pickle dump")
+    #                 plog(traceback.format_exc())
 
-                del hdusmalldata # Get big file out of memory
+    #             del hdusmalldata # Get big file out of memory
 
-                # Try saving the jpeg to disk and quickly send up to AWS to present for the user
-                if smartstackid == 'no':
-                    try:                        
-                        self.enqueue_for_fastUI(
-                            paths["im_path"], paths["jpeg_name10"]
-                        )
-                        # self.enqueue_for_mediumUI(
-                        #     1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
-                        # )
-                        plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
-                    except:
-                        plog(
-                            "there was an issue saving the preview jpg. Pushing on though"
-                        )
+    #             # Try saving the jpeg to disk and quickly send up to AWS to present for the user
+    #             if smartstackid == 'no':
+    #                 try:                        
+    #                     self.enqueue_for_fastUI(
+    #                         paths["im_path"], paths["jpeg_name10"]
+    #                     )
+    #                     # self.enqueue_for_mediumUI(
+    #                     #     1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
+    #                     # )
+    #                     plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
+    #                 except:
+    #                     plog(
+    #                         "there was an issue saving the preview jpg. Pushing on though"
+    #                     )
 
-                self.mainjpeg_queue.task_done()
-                time.sleep(1)
+    #             self.mainjpeg_queue.task_done()
+    #             time.sleep(1)
 
-            else:
-                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                time.sleep(1)
+    #         else:
+    #             # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+    #             time.sleep(1)
 
-    def sep_process(self):
-        """This is the sep queue that happens in a different process
-        than the main camera thread. SEPs can take 5-10, up to 30 seconds sometimes
-        to run, so it is an overhead we can't have hanging around.
-        """
+    # def sep_process(self):
+    #     """This is the sep queue that happens in a different process
+    #     than the main camera thread. SEPs can take 5-10, up to 30 seconds sometimes
+    #     to run, so it is an overhead we can't have hanging around.
+    #     """
 
-        while True:
-            if (not self.sep_queue.empty()):
-                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, nativebin, exposure_time) = self.sep_queue.get(block=False)
+    #     while True:
+    #         if (not self.sep_queue.empty()):
+    #             (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, nativebin, exposure_time) = self.sep_queue.get(block=False)
 
-                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
-                    do_sep=False
-                else:
-                    do_sep=True
+    #             if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
+    #                 do_sep=False
+    #             else:
+    #                 do_sep=True
 
-                is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+    #             is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
                 
-                # These are deprecated, just holding onto it until a cleanup at some stage
-                interpolate_for_focus= False
-                bin_for_focus= False
-                focus_bin_value= 1
-                interpolate_for_sep=False
-                bin_for_sep= False
-                sep_bin_value= 1
-                focus_jpeg_size= 500
+    #             # These are deprecated, just holding onto it until a cleanup at some stage
+    #             interpolate_for_focus= False
+    #             bin_for_focus= False
+    #             focus_bin_value= 1
+    #             interpolate_for_sep=False
+    #             bin_for_sep= False
+    #             sep_bin_value= 1
+    #             focus_jpeg_size= 500
 
-                saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                minimum_realistic_seeing=self.config['minimum_realistic_seeing']
-                sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    #             saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+    #             minimum_realistic_seeing=self.config['minimum_realistic_seeing']
+    #             sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                if False:
-                    pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
+    #             # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
+    #             if False:
+    #                 pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
 
-                try:
+    #             try:
 
-                    pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep,exposure_time], sep_subprocess.stdin)
-                except:
-                    plog ("Problem in the SEP pickle dump")
-                    plog(traceback.format_exc())
+    #                 pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep,exposure_time], sep_subprocess.stdin)
+    #             except:
+    #                 plog ("Problem in the SEP pickle dump")
+    #                 plog(traceback.format_exc())
 
-                # delete the subprocess connection once the data have been dumped out to the process.
-                del sep_subprocess
+    #             # delete the subprocess connection once the data have been dumped out to the process.
+    #             del sep_subprocess
 
-                packet=(avg_foc,hduheader['EXPTIME'],hduheader['FILTER'], hduheader['AIRMASS'])
-                self.file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
+    #             packet=(avg_foc,hduheader['EXPTIME'],hduheader['FILTER'], hduheader['AIRMASS'])
+    #             self.file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
 
-                self.enqueue_for_fastUI(im_path, text_name)
+    #             self.enqueue_for_fastUI(im_path, text_name)
 
-                del hdufocusdata
+    #             del hdufocusdata
 
-                self.sep_queue.task_done()
-                time.sleep(0.25)
+    #             self.sep_queue.task_done()
+    #             time.sleep(0.25)
 
-            else:
-                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                time.sleep(0.25)
+    #         else:
+    #             # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+    #             time.sleep(0.25)
 
     def platesolve_process(self):
         """This is the platesolve queue that happens in a different process
@@ -2181,296 +2182,330 @@ class Observatory:
 
                 self.platesolve_is_processing = True
 
-                (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
-                 pixscale, pointing_ra, pointing_dec, firstframesmartstack, useastronometrynet, pointing_exposure, jpeg_filename) = self.platesolve_queue.get(block=False)
+                (platesolve_token,hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
+                  pixscale, pointing_ra, pointing_dec, firstframesmartstack, useastronometrynet, pointing_exposure, jpeg_filename, image_or_reference) = self.platesolve_queue.get(block=False)
 
-                is_osc=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
-
-                # Do not bother platesolving unless it is dark enough!!
-                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-                    plog("Too bright to consider platesolving!")
+                if np.isnan(pixscale) or pixscale == None:
+                    timeout_time = 1200
                 else:
+                    timeout_time = 120
+
+                platesolve_timeout_timer=time.time()
+                if image_or_reference == 'reference':
+                    #print (platesolve_token)   
+                    
+                    while not os.path.exists(platesolve_token) and (time.time() - platesolve_timeout_timer) < timeout_time:
+                        time.sleep(0.5)
+
+                if (time.time() - platesolve_timeout_timer) > timeout_time:
+                    plog ("waiting for platesolve token timed out")
+                    solve = 'error'
+                    #platesolve_subprocess.kill()
+
                     try:
+                        os.system('taskkill /IM ps3cli.exe /F')
+                    except:
+                        pass
+                else:
 
+                    if image_or_reference == 'reference':                    
+
+                        (imagefilename, imageMode)=pickle.load(open(platesolve_token,'rb'))                    
+    
+                        #imagefilename=pickle.load(platesolve_token_filename)
+                        hdufocusdata=np.load(imagefilename)                 
+                        hduheader = fits.open(imagefilename.replace('.npy','.head'))[0].header
+
+                    else:
+                        hdufocusdata=platesolve_token
+                        # hduheader already defined
+
+
+                    is_osc=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+    
+                    # Do not bother platesolving unless it is dark enough!!
+                    if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                        plog("Too bright to consider platesolving!")
+                    else:
                         try:
-                            os.remove(self.local_calibration_path + 'platesolve.pickle')
-                            os.remove(self.local_calibration_path + 'platesolve.temppickle')
-                        except:
-                            pass
-                        
-                        target_ra = g_dev["mnt"].last_ra_requested
-                        target_dec = g_dev["mnt"].last_dec_requested
-
-                        # print("Last RA requested: " + str(g_dev["mnt"].last_ra_requested))
-                        # print("Last DEC requested: " + str(g_dev["mnt"].last_dec_requested))
-
-                        if g_dev['seq'].block_guard and not g_dev["seq"].focussing:
-                            target_ra = g_dev['seq'].block_ra
-                            target_dec = g_dev['seq'].block_dec
-
-                        platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-
-                        platesolve_crop = 0.0
-
-                        # yet another pickle debugger.
-                        if True:
-                            pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
-
-                        try:
-                            pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc, useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], platesolve_subprocess.stdin)
-                        except:
-                            plog ("Problem in the platesolve pickle dump")
-                            plog(traceback.format_exc())
-
-
-                        del hdufocusdata
-
-                        if np.isnan(pixscale) or pixscale == None:
-                            timeout_time = 1200
-                        else:
-                            timeout_time = 120
-
-                        platesolve_timeout_timer=time.time()
-                        while not os.path.exists(self.local_calibration_path + 'platesolve.pickle') and (time.time() - platesolve_timeout_timer) < timeout_time:
-                            time.sleep(0.5)
-
-                        if (time.time() - platesolve_timeout_timer) > timeout_time:
-                            plog ("platesolve timed out")
-                            solve = 'error'
-                            platesolve_subprocess.kill()
-
+    
                             try:
-                                os.system('taskkill /IM ps3cli.exe /F')
+                                os.remove(self.local_calibration_path + 'platesolve.pickle')
+                                os.remove(self.local_calibration_path + 'platesolve.temppickle')
                             except:
                                 pass
-
-                        elif os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
-                            solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))
-                        else:
-                            solve = 'error'
-
-                        try:
-                            os.remove(self.local_calibration_path + 'platesolve.pickle')
-                        except:
-                            plog ("Could not remove platesolve pickle. ")
-
-                        if solve == 'error':
-                            plog ("Planewave solve came back as error")
-                            self.last_platesolved_ra = np.nan
-                            self.last_platesolved_dec = np.nan
-                            self.last_platesolved_ra_err = np.nan
-                            self.last_platesolved_dec_err = np.nan
-                            self.platesolve_errors_in_a_row=self.platesolve_errors_in_a_row+1
-                            self.platesolve_is_processing = False
                             
-                        else:                            
-                            self.enqueue_for_fastUI(
-                                '',jpeg_filename
-                            )
-                            # self.enqueue_for_mediumUI(
-                            #     1000, '',jpeg_filename.replace('EX10', 'EX20')
-                            # )
-                            
+                            target_ra = g_dev["mnt"].last_ra_requested
+                            target_dec = g_dev["mnt"].last_dec_requested
+    
+                            # print("Last RA requested: " + str(g_dev["mnt"].last_ra_requested))
+                            # print("Last DEC requested: " + str(g_dev["mnt"].last_dec_requested))
+    
+                            if g_dev['seq'].block_guard and not g_dev["seq"].focussing:
+                                target_ra = g_dev['seq'].block_ra
+                                target_dec = g_dev['seq'].block_dec
+    
+                            platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    
+                            platesolve_crop = 0.0
+    
+                            # yet another pickle debugger.
+                            if False:
+                                pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
+                                 pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
+    
                             try:
-                                plog(
-                                    "PW Solves: ",
-                                    round(solve["ra_j2000_hours"], 5),
-                                    round(solve["dec_j2000_degrees"], 4)
-                                )
+                                pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
+                                 pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc, useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], platesolve_subprocess.stdin)
                             except:
-                                plog ("couldn't print PW solves.... why?")
-                                plog (solve)
-
-                            solved_ra = solve["ra_j2000_hours"]
-                            solved_dec = solve["dec_j2000_degrees"]
-                            solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                            plog("1x1 pixelscale solved: " + str(round(solved_arcsecperpixel, 3 )))
+                                plog ("Problem in the platesolve pickle dump")
+                                plog(traceback.format_exc())
+    
+    
+                            del hdufocusdata
+    
                             
-                            # If this is the first pixelscale gotten, then it is the pixelscale!
-                            if g_dev['cam'].pixscale == None:
-                                g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
-                            if np.isnan(g_dev['cam'].pixscale) :
-                                g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
-
-                            if (g_dev['cam'].pixscale * 0.9) < float(abs(solved_arcsecperpixel)) < (g_dev['cam'].pixscale * 1.1):
-                                self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                            platesolve_timeout_timer=time.time()
+                            while not os.path.exists(self.local_calibration_path + 'platesolve.pickle') and (time.time() - platesolve_timeout_timer) < timeout_time:
+                                #print ("waiting for " + str(self.local_calibration_path + 'platesolve.pickle'))
+                                
+                                time.sleep(0.5)
+    
+                            if (time.time() - platesolve_timeout_timer) > timeout_time:
+                                plog ("platesolve timed out")
+                                solve = 'error'
+                                platesolve_subprocess.kill()
+    
                                 try:
-                                    pixelscale_list=self.pixelscale_shelf['pixelscale_list']
+                                    os.system('taskkill /IM ps3cli.exe /F')
                                 except:
-                                    pixelscale_list=[]
-                                pixelscale_list.append(float(abs(solved_arcsecperpixel)))
-                                too_long=True
-                                while too_long:
-                                    if len(pixelscale_list) > 100:
-                                        pixelscale_list.pop(0)
-                                    else:
-                                        too_long = False
-                                self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
-                                self.pixelscale_shelf.close()
-
-                            err_ha = target_ra - solved_ra
-                            err_dec = target_dec - solved_dec
-                            
-                            mount_deviation_ha = pointing_ra - solved_ra
-                            mount_deviation_dec = pointing_dec - solved_dec                            
-                            
-
-                            # Check that the RA doesn't cross over zero, if so, bring it back around
-                            if err_ha > 12:
-                                plog ("BIG CHANGE ERR_HA")
-                                plog(err_ha)
-                                err_ha = err_ha - 24
-                                plog(err_ha)
-                            elif err_ha < -12:
-                                plog ("BIG CHANGE ERR_HA")
-                                plog(err_ha)
-                                err_ha = err_ha + 24
-                                plog(err_ha)
-
-                            plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 1)) + " & dec: " + str (round(err_dec * 3600, 1)) + " asec")
-
-                            self.last_platesolved_ra = solve["ra_j2000_hours"]
-                            self.last_platesolved_dec = solve["dec_j2000_degrees"]
-                            self.last_platesolved_ra_err = target_ra - solved_ra
-                            self.last_platesolved_dec_err = target_dec - solved_dec
-                            self.platesolve_errors_in_a_row=0
-
-                            # Reset Solve timers
-                            g_dev['obs'].last_solve_time = datetime.datetime.now()
-                            g_dev['obs'].images_since_last_solve = 0
-
-
-                            # self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
-                            # self.drift_tracker_dec=self.drift_tracker_dec + err_dec
-
-                            # if self.drift_tracker_counter == 0:
-                            #     #plog ("not calculating drift on first platesolve of drift set. Using deviation as the zeropoint in time and space.")
-                            #     self.drift_tracker_first_offset_ra = err_ha  * 15 * 3600
-                            #     self.drift_tracker_first_offset_dec = err_dec   * 3600
-                            #     self.drift_tracker_timer=time.time()
-
-                            # else:
-
-                            #     drift_timespan= time.time() - self.drift_tracker_timer
-                            #     # if drift_timespan < 180:
-                            #     #     plog ("Drift calculations unreliable as yet because drift timescale < 180s.")
-                            #     # plog ("Solve in drift set: " +str(self.drift_tracker_counter))
-                            #     # plog ("Drift Timespan " + str(drift_timespan))
-                            #     self.drift_tracker_ra_arcsecperhour=  ((err_ha * 15 * 3600 ) - self.drift_tracker_first_offset_ra) / (drift_timespan / 3600)
-                            #     self.drift_tracker_dec_arcsecperhour= ((err_dec *3600) - self.drift_tracker_first_offset_dec) / (drift_timespan / 3600)
-                            #     if drift_timespan > 180:
-                            #     #     plog ("Not calculating drift on a timescale under 5 minutes.")
-                            #     # else:
-                            #         plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
-
-                            self.drift_tracker_counter=self.drift_tracker_counter+1
-
-                            # drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
-                            # drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
-
-
-                            # If we are WAY out of range, then reset the mount reference and attempt moving back there.
-                            if not self.auto_centering_off:
-
-                                # dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
-                                # ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
-
-                                # if firstframesmartstack:
-                                #     plog ("Not recentering as this is the first frame of a smartstack.")
-                                #     self.pointing_correction_requested_by_platesolve_thread = False
-
-                                # Used for calculating relative offset compared to image size
-                                dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
-                                ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
-
-                                if (abs(err_ha * 15 * 3600) > self.worst_potential_pointing_in_arcseconds) or (abs(err_dec * 3600) > self.worst_potential_pointing_in_arcseconds):
-                                    err_ha = 0
-                                    err_dec = 0
-                                    plog("Platesolve has found that the current suggested pointing is way off!")
-                                    plog("This may be a poor pointing estimate.")
-                                    plog("This is more than a simple nudge, so not nudging the scope.")
-                                    g_dev["obs"].send_to_user("Platesolve detects pointing far out, RA: " + str(round(err_ha * 15 * 3600, 2)) + " DEC: " +str (round(err_dec * 3600, 2)))
-
-                                    #breakpoint()
-
-                                    #self.drift_tracker_ra=0
-                                    #self.drift_tracker_dec=0
-                                    #g_dev['obs'].drift_tracker_timer=0
-
-
-
-                                    # g_dev["mnt"].reset_mount_reference()
-                                    # plog("I've  reset the mount_reference.")
-
-                                    # plog ("reattempting to get back on target on next attempt")
-                                    # #self.pointing_correction_requested_by_platesolve_thread = True
-                                    # self.pointing_recentering_requested_by_platesolve_thread = True
-                                    # self.pointing_correction_request_time = time.time()
-                                    # self.pointing_correction_request_ra = target_ra
-                                    # self.pointing_correction_request_dec = target_dec
-                                    # self.pointing_correction_request_ra_err = err_ha
-                                    # self.pointing_correction_request_dec_err = err_dec
-
-                                elif self.time_of_last_slew > time_platesolve_requested:
-                                    plog("detected a slew since beginning platesolve... bailing out of platesolve.")
-                                    #self.drift_tracker_ra=0
-                                    #self.drift_tracker_dec=0
-                                    #g_dev['obs'].drift_tracker_timer=0
-
-                                # Only recenter if out by more than 1%                                
-                                elif (abs(err_ha * 15 * 3600) > 0.01 * ra_field_asec) or (abs(err_dec * 3600) > 0.01 * dec_field_asec):
-
-                                     self.pointing_correction_requested_by_platesolve_thread = True
-                                     self.pointing_correction_request_time = time.time()
-                                     self.pointing_correction_request_ra = pointing_ra + err_ha
-                                     self.pointing_correction_request_dec = pointing_dec + err_dec
-                                     self.pointing_correction_request_ra_err = err_ha
-                                     self.pointing_correction_request_dec_err = err_dec
-
-                                     drift_timespan= time.time() - self.drift_tracker_timer
-                                     #plog ("Drift Timespan " + str(drift_timespan))
-
-                                     if drift_timespan >180:
-                                     #     plog ("Not calculating drift on a timescale under 5 minutes.")
-                                     # else:
-                                         self.drift_arcsec_ra_arcsecperhour= (err_ha * 15 * 3600 ) / (drift_timespan / 3600)
-                                         self.drift_arcsec_dec_arcsecperhour=  (err_dec *3600) / (drift_timespan / 3600)
-                                         plog ("Drift calculations in arcsecs per hour, RA: " + str(round(self.drift_arcsec_ra_arcsecperhour,6)) + " DEC: " + str(round(self.drift_arcsec_dec_arcsecperhour,6)) )
-
-                                     if not g_dev['obs'].mount_reference_model_off:
-                                         if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
-                                             
-                                             # The mount reference should only be updated if it is less than a third of the worst potential pointing in arcseconds.....
-                                             if (abs(err_ha * 15 * 3600) < (self.worst_potential_pointing_in_arcseconds/3)) or (abs(err_dec * 3600) < (self.worst_potential_pointing_in_arcseconds/3)):
-                                                 try:
-                                                     g_dev['mnt'].last_slew_was_pointing_slew = False
-                                                     if g_dev["mnt"].pier_side == 0:
-                                                         try:
-                                                             g_dev["mnt"].record_mount_reference(
-                                                                 mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
-                                                             )
+                                    pass
     
-                                                         except Exception as e:
-                                                             plog("Something is up in the mount reference adjustment code ", e)
-                                                     else:
-                                                         try:
-                                                             g_dev["mnt"].record_flip_reference(
-                                                                 mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
-                                                             )
-                                                         except Exception as e:
-                                                             plog("Something is up in the mount reference adjustment code ", e)
+                            elif os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
+                                solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))
+                            else:
+                                solve = 'error'
     
-                                                 except:
-                                                     plog("This mount doesn't report pierside")
-                                                     plog(traceback.format_exc())
-
-                            self.platesolve_is_processing = False
-                    except:
-                        plog ("glitch in the platesolving dimension")
-                        plog(traceback.format_exc())
-
+                            try:
+                                os.remove(self.local_calibration_path + 'platesolve.pickle')
+                            except:
+                                plog ("Could not remove platesolve pickle. ")
+    
+                            if solve == 'error':
+                                plog ("Planewave solve came back as error")
+                                self.last_platesolved_ra = np.nan
+                                self.last_platesolved_dec = np.nan
+                                self.last_platesolved_ra_err = np.nan
+                                self.last_platesolved_dec_err = np.nan
+                                self.platesolve_errors_in_a_row=self.platesolve_errors_in_a_row+1
+                                self.platesolve_is_processing = False
+                                
+                            else:                            
+                                self.enqueue_for_fastUI(
+                                    '',jpeg_filename
+                                )
+                                # self.enqueue_for_mediumUI(
+                                #     1000, '',jpeg_filename.replace('EX10', 'EX20')
+                                # )
+                                
+                                try:
+                                    plog(
+                                        "PW Solves: ",
+                                        round(solve["ra_j2000_hours"], 5),
+                                        round(solve["dec_j2000_degrees"], 4)
+                                    )
+                                except:
+                                    plog ("couldn't print PW solves.... why?")
+                                    plog (solve)
+    
+                                solved_ra = solve["ra_j2000_hours"]
+                                solved_dec = solve["dec_j2000_degrees"]
+                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                plog("1x1 pixelscale solved: " + str(round(solved_arcsecperpixel, 3 )))
+                                
+                                # If this is the first pixelscale gotten, then it is the pixelscale!
+                                if g_dev['cam'].pixscale == None:
+                                    g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
+                                if np.isnan(g_dev['cam'].pixscale) :
+                                    g_dev['cam'].pixscale = abs(solved_arcsecperpixel)
+    
+                                if (g_dev['cam'].pixscale * 0.9) < float(abs(solved_arcsecperpixel)) < (g_dev['cam'].pixscale * 1.1):
+                                    self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                                    try:
+                                        pixelscale_list=self.pixelscale_shelf['pixelscale_list']
+                                    except:
+                                        pixelscale_list=[]
+                                    pixelscale_list.append(float(abs(solved_arcsecperpixel)))
+                                    too_long=True
+                                    while too_long:
+                                        if len(pixelscale_list) > 100:
+                                            pixelscale_list.pop(0)
+                                        else:
+                                            too_long = False
+                                    self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
+                                    self.pixelscale_shelf.close()
+    
+                                err_ha = target_ra - solved_ra
+                                err_dec = target_dec - solved_dec
+                                
+                                mount_deviation_ha = pointing_ra - solved_ra
+                                mount_deviation_dec = pointing_dec - solved_dec                            
+                                
+    
+                                # Check that the RA doesn't cross over zero, if so, bring it back around
+                                if err_ha > 12:
+                                    plog ("BIG CHANGE ERR_HA")
+                                    plog(err_ha)
+                                    err_ha = err_ha - 24
+                                    plog(err_ha)
+                                elif err_ha < -12:
+                                    plog ("BIG CHANGE ERR_HA")
+                                    plog(err_ha)
+                                    err_ha = err_ha + 24
+                                    plog(err_ha)
+    
+                                plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 1)) + " & dec: " + str (round(err_dec * 3600, 1)) + " asec")
+    
+                                self.last_platesolved_ra = solve["ra_j2000_hours"]
+                                self.last_platesolved_dec = solve["dec_j2000_degrees"]
+                                self.last_platesolved_ra_err = target_ra - solved_ra
+                                self.last_platesolved_dec_err = target_dec - solved_dec
+                                self.platesolve_errors_in_a_row=0
+    
+                                # Reset Solve timers
+                                g_dev['obs'].last_solve_time = datetime.datetime.now()
+                                g_dev['obs'].images_since_last_solve = 0
+    
+    
+                                # self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
+                                # self.drift_tracker_dec=self.drift_tracker_dec + err_dec
+    
+                                # if self.drift_tracker_counter == 0:
+                                #     #plog ("not calculating drift on first platesolve of drift set. Using deviation as the zeropoint in time and space.")
+                                #     self.drift_tracker_first_offset_ra = err_ha  * 15 * 3600
+                                #     self.drift_tracker_first_offset_dec = err_dec   * 3600
+                                #     self.drift_tracker_timer=time.time()
+    
+                                # else:
+    
+                                #     drift_timespan= time.time() - self.drift_tracker_timer
+                                #     # if drift_timespan < 180:
+                                #     #     plog ("Drift calculations unreliable as yet because drift timescale < 180s.")
+                                #     # plog ("Solve in drift set: " +str(self.drift_tracker_counter))
+                                #     # plog ("Drift Timespan " + str(drift_timespan))
+                                #     self.drift_tracker_ra_arcsecperhour=  ((err_ha * 15 * 3600 ) - self.drift_tracker_first_offset_ra) / (drift_timespan / 3600)
+                                #     self.drift_tracker_dec_arcsecperhour= ((err_dec *3600) - self.drift_tracker_first_offset_dec) / (drift_timespan / 3600)
+                                #     if drift_timespan > 180:
+                                #     #     plog ("Not calculating drift on a timescale under 5 minutes.")
+                                #     # else:
+                                #         plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
+    
+                                self.drift_tracker_counter=self.drift_tracker_counter+1
+    
+                                # drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
+                                # drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
+    
+    
+                                # If we are WAY out of range, then reset the mount reference and attempt moving back there.
+                                if not self.auto_centering_off:
+    
+                                    # dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
+                                    # ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
+    
+                                    # if firstframesmartstack:
+                                    #     plog ("Not recentering as this is the first frame of a smartstack.")
+                                    #     self.pointing_correction_requested_by_platesolve_thread = False
+    
+                                    # Used for calculating relative offset compared to image size
+                                    dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
+                                    ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
+    
+                                    if (abs(err_ha * 15 * 3600) > self.worst_potential_pointing_in_arcseconds) or (abs(err_dec * 3600) > self.worst_potential_pointing_in_arcseconds):
+                                        err_ha = 0
+                                        err_dec = 0
+                                        plog("Platesolve has found that the current suggested pointing is way off!")
+                                        plog("This may be a poor pointing estimate.")
+                                        plog("This is more than a simple nudge, so not nudging the scope.")
+                                        g_dev["obs"].send_to_user("Platesolve detects pointing far out, RA: " + str(round(err_ha * 15 * 3600, 2)) + " DEC: " +str (round(err_dec * 3600, 2)))
+    
+                                        #breakpoint()
+    
+                                        #self.drift_tracker_ra=0
+                                        #self.drift_tracker_dec=0
+                                        #g_dev['obs'].drift_tracker_timer=0
+    
+    
+    
+                                        # g_dev["mnt"].reset_mount_reference()
+                                        # plog("I've  reset the mount_reference.")
+    
+                                        # plog ("reattempting to get back on target on next attempt")
+                                        # #self.pointing_correction_requested_by_platesolve_thread = True
+                                        # self.pointing_recentering_requested_by_platesolve_thread = True
+                                        # self.pointing_correction_request_time = time.time()
+                                        # self.pointing_correction_request_ra = target_ra
+                                        # self.pointing_correction_request_dec = target_dec
+                                        # self.pointing_correction_request_ra_err = err_ha
+                                        # self.pointing_correction_request_dec_err = err_dec
+    
+                                    elif self.time_of_last_slew > time_platesolve_requested:
+                                        plog("detected a slew since beginning platesolve... bailing out of platesolve.")
+                                        #self.drift_tracker_ra=0
+                                        #self.drift_tracker_dec=0
+                                        #g_dev['obs'].drift_tracker_timer=0
+    
+                                    # Only recenter if out by more than 1%                                
+                                    elif (abs(err_ha * 15 * 3600) > 0.01 * ra_field_asec) or (abs(err_dec * 3600) > 0.01 * dec_field_asec):
+    
+                                         self.pointing_correction_requested_by_platesolve_thread = True
+                                         self.pointing_correction_request_time = time.time()
+                                         self.pointing_correction_request_ra = pointing_ra + err_ha
+                                         self.pointing_correction_request_dec = pointing_dec + err_dec
+                                         self.pointing_correction_request_ra_err = err_ha
+                                         self.pointing_correction_request_dec_err = err_dec
+    
+                                         drift_timespan= time.time() - self.drift_tracker_timer
+                                         #plog ("Drift Timespan " + str(drift_timespan))
+    
+                                         if drift_timespan >180:
+                                         #     plog ("Not calculating drift on a timescale under 5 minutes.")
+                                         # else:
+                                             self.drift_arcsec_ra_arcsecperhour= (err_ha * 15 * 3600 ) / (drift_timespan / 3600)
+                                             self.drift_arcsec_dec_arcsecperhour=  (err_dec *3600) / (drift_timespan / 3600)
+                                             plog ("Drift calculations in arcsecs per hour, RA: " + str(round(self.drift_arcsec_ra_arcsecperhour,6)) + " DEC: " + str(round(self.drift_arcsec_dec_arcsecperhour,6)) )
+    
+                                         if not g_dev['obs'].mount_reference_model_off:
+                                             if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
+                                                 
+                                                 # The mount reference should only be updated if it is less than a third of the worst potential pointing in arcseconds.....
+                                                 if (abs(err_ha * 15 * 3600) < (self.worst_potential_pointing_in_arcseconds/3)) or (abs(err_dec * 3600) < (self.worst_potential_pointing_in_arcseconds/3)):
+                                                     try:
+                                                         g_dev['mnt'].last_slew_was_pointing_slew = False
+                                                         if g_dev["mnt"].pier_side == 0:
+                                                             try:
+                                                                 g_dev["mnt"].record_mount_reference(
+                                                                     mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
+                                                                 )
+        
+                                                             except Exception as e:
+                                                                 plog("Something is up in the mount reference adjustment code ", e)
+                                                         else:
+                                                             try:
+                                                                 g_dev["mnt"].record_flip_reference(
+                                                                     mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
+                                                                 )
+                                                             except Exception as e:
+                                                                 plog("Something is up in the mount reference adjustment code ", e)
+        
+                                                     except:
+                                                         plog("This mount doesn't report pierside")
+                                                         plog(traceback.format_exc())
+    
+                                self.platesolve_is_processing = False
+                        except:
+                            plog ("glitch in the platesolving dimension")
+                            plog(traceback.format_exc())
+    
                 self.platesolve_is_processing = False
                 self.platesolve_queue.task_done()
 
@@ -3046,7 +3081,7 @@ class Observatory:
                         else:
                             self.file_wait_and_act_queue.put((filename, timesubmitted, packet) , block=False)
                     # If it has been less than 3 minutes put it back in
-                    elif time.time() -timesubmitted < 180:
+                    elif time.time() -timesubmitted < 300:
                         self.file_wait_and_act_queue.put((filename, timesubmitted, packet) , block=False)
                     else:
                         plog (str(filename) + " seemed to never turn up... not putting back in the queue")
@@ -3116,7 +3151,7 @@ class Observatory:
                                 plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in queue.")
                                 self.fast_queue.put(pri_image, block=False)
                         # If it has been less than 3 minutes put it back in
-                        elif time.time() -timesubmitted < 180:
+                        elif time.time() -timesubmitted < 300:
                             self.fast_queue.put(pri_image, block=False)
                         else:
                             plog (str(filepath) + " seemed to never turn up... not putting back in the queue")    
@@ -3231,7 +3266,7 @@ class Observatory:
                                 plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in queue.")
                                 self.mediumui_queue.put((100, pri_image[1]), block=False)
                         # If it has been less than 3 minutes put it back in
-                        elif time.time() - timesubmitted < 180:
+                        elif time.time() - timesubmitted < 300:
                             self.mediumui_queue.put((100, pri_image[1]), block=False)
                         else:
                             plog (str(filepath) + " seemed to never turn up... not putting back in the queue")
@@ -3251,151 +3286,151 @@ class Observatory:
         # everything down each time this was called!
         self.sendtouser_queue.put((p_log, p_level),block=False)
 
-    def smartstack_image(self):
+    # def smartstack_image(self):
 
-        while True:
-            if not self.smartstack_queue.empty():
-                (
-                    paths,
-                    pixscale,
-                    smartstackid,
-                    sskcounter,
-                    Nsmartstack, pier_side, zoom_factor
-                ) = self.smartstack_queue.get(block=False)
+    #     while True:
+    #         if not self.smartstack_queue.empty():
+    #             (
+    #                 paths,
+    #                 pixscale,
+    #                 smartstackid,
+    #                 sskcounter,
+    #                 Nsmartstack, pier_side, zoom_factor
+    #             ) = self.smartstack_queue.get(block=False)
 
-                # SmartStack Section
-                if smartstackid != "no":
-                    sstack_timer = time.time()
+    #             # SmartStack Section
+    #             if smartstackid != "no":
+    #                 sstack_timer = time.time()
                     
-                    crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
-                    yb=self.config["camera"][g_dev['cam'].name]["settings"][
-                        "crop_preview_ybottom"
-                    ]
-                    yt=self.config["camera"][g_dev['cam'].name]["settings"][
-                        "crop_preview_ytop"
-                    ]
-                    xl=self.config["camera"][g_dev['cam'].name]["settings"][
-                        "crop_preview_xleft"
-                    ]
-                    xr=self.config["camera"][g_dev['cam'].name]["settings"][
-                        "crop_preview_xright"
-                    ]
+    #                 crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
+    #                 yb=self.config["camera"][g_dev['cam'].name]["settings"][
+    #                     "crop_preview_ybottom"
+    #                 ]
+    #                 yt=self.config["camera"][g_dev['cam'].name]["settings"][
+    #                     "crop_preview_ytop"
+    #                 ]
+    #                 xl=self.config["camera"][g_dev['cam'].name]["settings"][
+    #                     "crop_preview_xleft"
+    #                 ]
+    #                 xr=self.config["camera"][g_dev['cam'].name]["settings"][
+    #                     "crop_preview_xright"
+    #                 ]
 
-                    if g_dev['cam'].dither_enabled:
-                        crop_preview=True
-                        yb=yb+50
-                        yt=yt+50
-                        xl=xl+50
-                        xr=xr+50
+    #                 if g_dev['cam'].dither_enabled:
+    #                     crop_preview=True
+    #                     yb=yb+50
+    #                     yt=yt+50
+    #                     xl=xl+50
+    #                     xr=xr+50
 
-                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                        picklepayload=[
-                            paths,
-                            smartstackid,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
-                            self.local_calibration_path,
-                            pixscale,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
-                            pier_side,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
-                            self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
-                            g_dev['cam'].native_bin,
-                            g_dev['cam'].camera_known_readnoise,
-                            self.config['minimum_realistic_seeing'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] ,
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'] ,
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'] ,
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'],
-                            crop_preview,yb,yt,xl,xr,
-                            zoom_factor
-                            ]
-                    else:
-                        picklepayload=[
-                            paths,
-                            smartstackid,
-                            False,
-                            self.obsid_path,
-                            pixscale,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
-                            pier_side,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
-                            None,
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
-                            g_dev['cam'].native_bin,
-                            g_dev['cam'].camera_known_readnoise,
-                            self.config['minimum_realistic_seeing'],
-                            0,0,0,0,0,
-                            crop_preview,yb,yt,xl,xr,
-                            zoom_factor
-                            ]
+    #                 if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+    #                     picklepayload=[
+    #                         paths,
+    #                         smartstackid,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
+    #                         self.local_calibration_path,
+    #                         pixscale,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
+    #                         pier_side,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
+    #                         g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
+    #                         g_dev['cam'].native_bin,
+    #                         g_dev['cam'].camera_known_readnoise,
+    #                         self.config['minimum_realistic_seeing'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] ,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'] ,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'] ,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'],
+    #                         crop_preview,yb,yt,xl,xr,
+    #                         zoom_factor
+    #                         ]
+    #                 else:
+    #                     picklepayload=[
+    #                         paths,
+    #                         smartstackid,
+    #                         False,
+    #                         self.obsid_path,
+    #                         pixscale,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
+    #                         pier_side,
+    #                         self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
+    #                         None,
+    #                         g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
+    #                         g_dev['cam'].native_bin,
+    #                         g_dev['cam'].camera_known_readnoise,
+    #                         self.config['minimum_realistic_seeing'],
+    #                         0,0,0,0,0,
+    #                         crop_preview,yb,yt,xl,xr,
+    #                         zoom_factor
+    #                         ]
 
-                    # Another pickle debugger
-                    if False :
-                        pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
+    #                 # Another pickle debugger
+    #                 if False :
+    #                     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
-                    smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    #                 smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                    try:
-                        pickle.dump(picklepayload, smartstack_subprocess.stdin)
-                    except:
-                        plog ("Problem in the smartstack pickle dump")
-                        plog(traceback.format_exc())
+    #                 try:
+    #                     pickle.dump(picklepayload, smartstack_subprocess.stdin)
+    #                 except:
+    #                     plog ("Problem in the smartstack pickle dump")
+    #                     plog(traceback.format_exc())
                     
-                    #  We don't have to wait for the full smartstack process to finish, just until it gets to the stage where 
-                    # It has saved out the next layer to the npy. Beyond this, it is just making a jpeg and the reduced file. 
-                    while not os.path.exists(paths["im_path"] + 'smartstack.pickle'):
-                        time.sleep(0.5)
+    #                 #  We don't have to wait for the full smartstack process to finish, just until it gets to the stage where 
+    #                 # It has saved out the next layer to the npy. Beyond this, it is just making a jpeg and the reduced file. 
+    #                 while not os.path.exists(paths["im_path"] + 'smartstack.pickle'):
+    #                     time.sleep(0.5)
 
-                    self.fast_queue.put((paths["im_path"], paths["jpeg_name10"],time.time()), block=False)
-                    # self.mediumui_queue.put(
-                    #     (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
+    #                 self.fast_queue.put((paths["im_path"], paths["jpeg_name10"],time.time()), block=False)
+    #                 # self.mediumui_queue.put(
+    #                 #     (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
 
-                    try:
-                        reprojection_failed=pickle.load(open(paths["im_path"] + 'smartstack.pickle', 'rb'))
-                    except:
-                        plog ("Couldn't find smartstack pickle?")
-                        plog (traceback.format_exc())
-                        reprojection_failed=True
-                    try:
-                        os.remove(paths["im_path"] + 'smartstack.pickle')
-                    except:
-                        pass
+    #                 try:
+    #                     reprojection_failed=pickle.load(open(paths["im_path"] + 'smartstack.pickle', 'rb'))
+    #                 except:
+    #                     plog ("Couldn't find smartstack pickle?")
+    #                     plog (traceback.format_exc())
+    #                     reprojection_failed=True
+    #                 try:
+    #                     os.remove(paths["im_path"] + 'smartstack.pickle')
+    #                 except:
+    #                     pass
 
-                    if reprojection_failed == True:
-                        g_dev["obs"].send_to_user(
-                            "A smartstack failed to stack, the single image has been sent to the GUI.",
-                            p_level="INFO",
-                        )
+    #                 if reprojection_failed == True:
+    #                     g_dev["obs"].send_to_user(
+    #                         "A smartstack failed to stack, the single image has been sent to the GUI.",
+    #                         p_level="INFO",
+    #                     )
 
-                    else:
-                        g_dev["obs"].send_to_user(
-                            "A preview SmartStack, "
-                            + str(sskcounter + 1)
-                            + " out of "
-                            + str(Nsmartstack)
-                            + ", has been sent to the GUI.",
-                            p_level="INFO",
-                        )
-                    plog(datetime.datetime.now())
+    #                 else:
+    #                     g_dev["obs"].send_to_user(
+    #                         "A preview SmartStack, "
+    #                         + str(sskcounter + 1)
+    #                         + " out of "
+    #                         + str(Nsmartstack)
+    #                         + ", has been sent to the GUI.",
+    #                         p_level="INFO",
+    #                     )
+    #                 plog(datetime.datetime.now())
 
-                plog("Smartstack round complete. Time taken: " + str(time.time() - sstack_timer))
+    #             plog("Smartstack round complete. Time taken: " + str(time.time() - sstack_timer))
 
-                self.smartstack_queue.task_done()
-                time.sleep(0.5)
-            else:
-                time.sleep(3)
+    #             self.smartstack_queue.task_done()
+    #             time.sleep(0.5)
+    #         else:
+    #             time.sleep(3)
 
     def check_platesolve_and_nudge(self,no_confirmation=True):
 
@@ -3606,11 +3641,11 @@ class Observatory:
     def to_platesolve(self, to_platesolve):
         self.platesolve_queue.put( to_platesolve, block=False)
 
-    def to_sep(self, to_sep):
-        self.sep_queue.put( to_sep, block=False)
+    # def to_sep(self, to_sep):
+    #     self.sep_queue.put( to_sep, block=False)
 
-    def to_mainjpeg(self, to_sep):
-        self.mainjpeg_queue.put( to_sep, block=False)
+    # def to_mainjpeg(self, to_sep):
+    #     self.mainjpeg_queue.put( to_sep, block=False)
 
     def request_update_status(self, mount_only=False):
         
