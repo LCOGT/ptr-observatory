@@ -54,7 +54,7 @@ from astropy.time import Time
 from astropy import units as u
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun, get_moon, FK5#, ICRS
 
-import ptr_utility
+import short_utility as ptr_utility  #Once this works please undo this hack.
 import math
 import ephem
 from ptr_utility import plog
@@ -150,7 +150,7 @@ class Mount:
 
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
-        
+
         try:
             self.mount.Connected = True
         except:
@@ -371,7 +371,7 @@ class Mount:
         self.find_home_requested=False
 
         self.get_status()
-        
+
         self.unpark_requested=False
         self.park_requested=False
         self.slewtoRA = 1.0
@@ -384,7 +384,7 @@ class Mount:
         self.mount_updates=0
         self.mount_update_paused=False
         self.mount_update_reboot=False
-        
+
         self.mount_update_thread=threading.Thread(target=self.mount_update_thread)
         self.mount_update_thread.start()
 
@@ -420,9 +420,9 @@ class Mount:
                     self.currently_slewing=False
 
                     self.mount_updates=self.mount_updates + 1  #A monotonic increasing integer counter
-                    
+
                 if self.currently_slewing or (((self.mount_update_timer < time.time() - self.mount_update_period) and not self.mount_update_paused)):# or (no(self.currently_slewing) and not self.mount_update_paused):
-                    
+
                     self.currently_slewing= self.mount_update_wincom.Slewing
 
                     if self.currently_slewing:
@@ -477,6 +477,9 @@ class Mount:
                                         time.sleep(0.2)
                                 except:
                                     print ("mount thread camera wait failed.")
+                                #Here is the point of slewing the telescope
+                                #breakpoint()
+                                #self.go_w_model_and_velocity(self.slewtoRA, self.slewtoDEC)
                                 self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                                 self.currently_slewing=True
                                 if self.CanSetDeclinationRate:
@@ -509,7 +512,7 @@ class Mount:
                                 self.mount_update_wincom.FindHome()
 
                             self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
-                            
+
                             if not self.rapid_park_indicator:
                                 self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
                                 self.current_tracking_state=self.mount_update_wincom.Tracking
@@ -550,9 +553,9 @@ class Mount:
                         plog('m>')
                         movement_reporting_timer = time.time()
                     # if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                    g_dev['mnt'].get_mount_coordinates_after_next_update()                
+                    g_dev['mnt'].get_mount_coordinates_after_next_update()
                     g_dev['obs'].update_status(mount_only=True, dont_wait=True)#, dont_wait=True)
-                       
+
                 # Then wait for slew_time to settle
                 if actually_slewed and wait_after_slew:
                     time.sleep(g_dev['mnt'].wait_after_slew_time)
@@ -628,7 +631,7 @@ class Mount:
             DESCRIPTION.
 
         '''
-
+        #NB THE mount returns coordinates that are basically J.now, not ICRS 2000
         self.current_icrs_ra = self.right_ascension_directly_from_mount    #May not be applied in positioning
         self.current_icrs_dec = self.declination_directly_from_mount
 
@@ -650,7 +653,7 @@ class Mount:
             DESCRIPTION.
 
         '''
-        
+
         self.wait_for_mount_update()
         self.current_icrs_ra = self.right_ascension_directly_from_mount    #May not be applied in positioning
         self.current_icrs_dec = self.declination_directly_from_mount
@@ -700,7 +703,7 @@ class Mount:
                 'message': self.mount_message[:32]
             }
         elif self.tel == True:
-            rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)            
+            rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
             aa = AltAz(location=self.site_coordinates, obstime=Time.now())
             rd = rd.transform_to(aa)
             alt = float(rd.alt/u.deg)
@@ -722,7 +725,7 @@ class Mount:
             self.zen = zen
 
             self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
-            
+
             if self.prior_roll_rate == 0:
                 pass
             ha = self.right_ascension_directly_from_mount - self.current_sidereal
@@ -764,7 +767,7 @@ class Mount:
         return copy.deepcopy(status)
 
     def get_rapid_exposure_status(self, pre):
-        
+
         pre.append(time.time())
         pre.append(self.current_icrs_ra)
         pre.append(self.current_icrs_dec)
@@ -863,7 +866,7 @@ class Mount:
 
         elif action == "stop":
             self.stop_command(req, opt)
-            
+
         elif action == 'center_on_pixels':
             if g_dev['obs'].open_and_enabled_to_observe:
                 if True:
@@ -871,7 +874,7 @@ class Mount:
                 else:
                     plog (command)
                     try:
-    
+
                         # Need to convert image fraction into offset
                         image_y = req['image_x']
                         image_x = req['image_y']
@@ -882,36 +885,36 @@ class Mount:
                         # Calculate the RA and Dec of the pointing
                         center_image_ra=float(req['header_rahrs'])
                         center_image_dec=float(req['header_decdeg'])
-    
+
                         # y pixel seems to be RA
                         # x pixel seems to be DEC
-                        # negative for dec    
+                        # negative for dec
                         x_center= int(g_dev['cam'].imagesize_x/2)
                         y_center= int(g_dev['cam'].imagesize_y/2)
-    
+
                         #x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
                         #y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
                         x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
                         y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
                         plog ("X pixel shift: " + str(x_pixel_shift))
                         plog ("Y pixel shift: " + str(y_pixel_shift))
-    
+
                         gora=center_image_ra + (y_pixel_shift * pixscale_hours)
                         godec=center_image_dec - (x_pixel_shift * pixscale_degrees)
-    
+
                         plog ("X centre shift (asec): " + str((x_pixel_shift * pixscale)))
                         plog ("Y centre shift (asec): " + str(((y_pixel_shift * pixscale))))
-    
+
                         plog ("X centre shift (hours): " + str((x_pixel_shift * pixscale_hours)))
                         plog ("Y centre shift (degrees): " + str(((y_pixel_shift * pixscale_degrees))))
                         #plog ("New RA: " + str(req['ra']))
                         #plog ("New DEC: " + str(req['dec']))
-    
+
                         #plog ("New RA - Old RA = "+ str(float(req['ra'])-center_image_ra))
                         #plog ("New dec - Old dec = "+ str(float(req['dec'])-center_image_dec))
-    
+
                         self.wait_for_slew(wait_after_slew=False)
-                        
+
                         #### Slew to CoordinatesAsync block
                         self.slewtoRA = gora
                         self.slewtoDEC = godec
@@ -920,24 +923,24 @@ class Mount:
                         self.wait_for_slew(wait_after_slew=False)
                         ###################################
                         g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-                        
+
                         # end mount command #
                         self.wait_for_slew(wait_after_slew=False)
                         self.get_mount_coordinates()
-    
+
                     except:
                         plog (traceback.format_exc())
                         plog ("seems the image header hasn't arrived at the UI yet, wait a moment")
             else:
                 g_dev['obs'].send_to_user("Observatory not open. Center on pixels not done.")
                 plog("Observatory not open. Center on pixels not done.")
-                
+
         elif not ("admin" in command['user_roles']) or ("owner" in command['user_roles']):
             g_dev['obs'].send_to_user("Command not available to non-admins.")
-            
-            
+
+
         elif action == "home":
-            self.home_command(req, opt)       
+            self.home_command(req, opt)
         elif action == "tracking":
             self.tracking_command(req, opt)
         elif action in ["pivot", 'zero', 'ra=sid, dec=0']:
@@ -947,7 +950,7 @@ class Mount:
         elif action == "park":
             self.park_command(req, opt)
         elif action == "unpark":
-            self.unpark_command(req, opt)      
+            self.unpark_command(req, opt)
         elif action == 'sky_flat_position':
             g_dev['mnt'].go_command(skyflatspot=True)
         else:
@@ -1006,7 +1009,7 @@ class Mount:
         # Whether this violates the pointing principle.
         try:
             sun_coords=get_sun(Time.now())
-            if skyflatspot != None:                
+            if skyflatspot != None:
                 if not skip_open_test:
                     if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
                         not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
@@ -1119,7 +1122,7 @@ class Mount:
             dec=dec1
             tracking_rate_ra=dra_moon
             tracking_rate_dec = ddec_moon
-        
+
         # During flats the scope is so continuously nudged as to make reporting of nudges meaningless... so don't report.
         if not skyflatspot:
             if self.object == "":
@@ -1144,7 +1147,7 @@ class Mount:
         if not skyflatspot:
 
             if self.can_report_destination_pierside == True:
-                try:                          
+                try:
                     self.request_new_pierside=True
                     self.request_new_pierside_ra=ra
                     self.request_new_pierside_dec=dec
@@ -1155,7 +1158,7 @@ class Mount:
                         else:
                             delta_ra, delta_dec = self.get_flip_reference(ra,dec)
                 except:
-                    try:                   
+                    try:
                         self.request_new_pierside=True
                         self.request_new_pierside_ra=ra
                         self.request_new_pierside_dec=dec
@@ -1172,13 +1175,13 @@ class Mount:
                     delta_ra, delta_dec = self.get_mount_reference(ra,dec)
                 else:
                     delta_ra, delta_dec = self.get_flip_reference(ra,dec)
-    
-    
+
+
             plog ("Reference used for mount deviation in go_command")
             plog (str(delta_ra*15* 60) + " RA (Arcmins), " + str(delta_dec*60) + " Dec (Arcmins)")
-    
-            if not g_dev['obs'].mount_reference_model_off:          
-                ra = ra + delta_ra 
+
+            if not g_dev['obs'].mount_reference_model_off:
+                ra = ra + delta_ra
                 dec = dec + delta_dec
         else:
             delta_ra=0
@@ -1194,7 +1197,7 @@ class Mount:
                 if ra < 0:
                     ra=ra+24
                 if ra > 24:
-                    ra=ra-24                    
+                    ra=ra-24
                 #### Slew to CoordinatesAsync block
                 self.slewtoRA = ra
                 self.slewtoDEC = dec
@@ -1248,7 +1251,7 @@ class Mount:
                 except:
                     self.mount_busy=False
                     plog (traceback.format_exc())
-           
+
             g_dev["mnt"].pier_side=self.rapid_pier_indicator
             if self.previous_pier_side == g_dev["mnt"].pier_side or self.can_report_destination_pierside:
                 successful_move=1
@@ -1305,7 +1308,7 @@ class Mount:
                         ra=ra+24
                     if ra > 24:
                         ra=ra-24
-                   
+
                     #### Slew to CoordinatesAsync block
                     self.slewtoRA = ra
                     self.slewtoDEC = dec
@@ -1357,55 +1360,57 @@ class Mount:
         self.last_tracking_rate_dec = tracking_rate_dec
         self.last_seek_time = time.time()
 
-        self.unpark_command()
+        #
+        #self.unpark_command()
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
         #result in a flip.  So first figure out if there will be a flip:
-        try:
-            try:             
-                self.request_new_pierside=True
-                self.request_new_pierside_ra=ra
-                self.request_new_pierside_dec=dec
+        # try:
+        #     try:
+        #         self.request_new_pierside=True
+        #         self.request_new_pierside_ra=ra
+        #         self.request_new_pierside_dec=dec
 
-                self.wait_for_mount_update()
+        #         self.wait_for_mount_update()
 
-                if len(self.new_pierside) > 1:
-                    if self.new_pierside[0] == 0:
-                        delta_ra, delta_dec = self.get_mount_reference(ra,dec)
-                        pier_east = 1
-                    else:
-                        delta_ra, delta_dec = self.get_flip_reference(ra,dec)
-                        pier_east = 0
-            except:
-                try:
-                    self.request_new_pierside=True
-                    self.request_new_pierside_ra=ra
-                    self.request_new_pierside_dec=dec
+        #         if len(self.new_pierside) > 1:
+        #             if self.new_pierside[0] == 0:
+        #                 delta_ra, delta_dec = self.get_mount_reference(ra,dec)
+        #                 pier_east = 1
+        #             else:
+        #                 delta_ra, delta_dec = self.get_flip_reference(ra,dec)
+        #                 pier_east = 0
+        #     except:
+        #         try:
+        #             self.request_new_pierside=True
+        #             self.request_new_pierside_ra=ra
+        #             self.request_new_pierside_dec=dec
 
-                    self.wait_for_mount_update()
+        #             self.wait_for_mount_update()
 
-                    if self.new_pierside == 0:
-                        delta_ra, delta_dec = self.get_mount_reference(ra,dec)
-                        pier_east = 1
-                    else:
-                        delta_ra, delta_dec = self.get_flip_reference(ra,dec)
-                        pier_east = 0
-                except:
-                    self.mount_busy=False
-                    delta_ra, delta_dec = self.get_mount_reference(ra,dec)
-                    pier_east = 1
-        except Exception as e:
-            self.mount_busy=False
-            print ("mount really doesn't like pierside calls ", e)
-            pier_east = 1
-         #Update incoming ra and dec with mounting offsets.
-        print ("delta")
-        print (delta_ra)
-        ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
-        dec += delta_dec
-        ra, dec = ra_dec_fix_h(ra,dec)
-        
-        if self.EquatorialSystem == 1:
+        #             if self.new_pierside == 0:
+        #                 delta_ra, delta_dec = self.get_mount_reference(ra,dec)
+        #                 pier_east = 1
+        #             else:
+        #                 delta_ra, delta_dec = self.get_flip_reference(ra,dec)
+        #                 pier_east = 0
+        #         except:
+        #             self.mount_busy=False
+        #             delta_ra, delta_dec = self.get_mount_reference(ra,dec)
+        #             pier_east = 1
+        # except Exception as e:
+        #     self.mount_busy=False
+        #     print ("mount really doesn't like pierside calls ", e)
+        #     pier_east = 1
+        #  #Update incoming ra and dec with mounting offsets.
+
+        # print ("delta")
+        # print (delta_ra)
+        # ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
+        # dec += delta_dec
+        # ra, dec = ra_dec_fix_h(ra,dec)
+        breakpoint()
+        if self.EquatorialSystem == 1:  #ie., equTopocentric input to the telescope
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             #  Input is meant to be IRCS, so change to that Astropy type;
             icrs_coord = SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
@@ -1421,7 +1426,7 @@ class Mount:
         #Here we add in refraction and the TPOINT compatible mount model
 
         self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
-
+        #Cosider adding a comparision with Sid time as reported by telescope.
         self.sid_now_r = self.current_sidereal*HTOR   #NB NB ADDED THIS FOR SRO, WHY IS THIS NEEDED?
 
         self.ha_obs_r, self.dec_obs_r, self.refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
@@ -1449,7 +1454,7 @@ class Mount:
                     self.wait_for_slew(wait_after_slew=False)
                     self.unpark_command()
                     self.wait_for_slew(wait_after_slew=False)
-                    
+
                     #### Slew to CoordinatesAsync block
                     self.slewtoRA = self.ra_mech*RTOH
                     self.slewtoDEC = self.dec_mech*RTOD
@@ -1457,7 +1462,7 @@ class Mount:
                     self.wait_for_mount_update()
                     self.wait_for_slew(wait_after_slew=False)
                     ###################################
-                    
+
                     g_dev['obs'].rotator_has_been_checked_since_last_slew=False
 
                     self.wait_for_slew(wait_after_slew=False)
@@ -1479,7 +1484,7 @@ class Mount:
 
         self.wait_for_slew(wait_after_slew=False)
         try:
-            
+
             #### Slew to CoordinatesAsync block
             self.slewtoRA = self.ra_mech*RTOH
             self.slewtoDEC = self.dec_mech*RTOD
@@ -1568,7 +1573,7 @@ class Mount:
         '''
         if self.CanSetRightAscensionRate:
             self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
-            
+
             self.request_set_RightAscensionRate=True
             self.request_new_RightAscensionRate=0.0
             self.wait_for_mount_update()
@@ -1578,7 +1583,7 @@ class Mount:
 
         if self.CanSetDeclinationRate:
            self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
-          
+
            self.request_set_DeclinationRate=True
            self.request_new_DeclinationRate=self.prior_pitch_rate
            self.wait_for_mount_update()
@@ -1588,7 +1593,7 @@ class Mount:
             self.prior_pitch_rate = 0.0
         #plog(self.prior_roll_rate, self.prior_pitch_rate, refr_asec)
         # time.sleep(.5)
-        
+
         if self.CanSetRightAscensionRate:
             self.request_set_RightAscensionRate=True
             self.request_new_RightAscensionRate=0.0
@@ -1600,7 +1605,7 @@ class Mount:
             self.request_new_DeclinationRate=self.prior_pitch_rate
             self.wait_for_mount_update()
 
-        plog("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)        
+        plog("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
 
         # On successful movement of telescope reset the solving timer
         if reset_solve == True:
@@ -1694,12 +1699,12 @@ class Mount:
                 current_updates=copy.deepcopy(self.mount_updates)
                 while current_updates==self.mount_updates:
                     time.sleep(sleep_period)
-                    
+
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-                
+
                 self.rapid_park_indicator=False
                 self.wait_for_slew(wait_after_slew=False)
-                
+
                 if self.settle_time_after_unpark > 0:
                     time.sleep(self.settle_time_after_unpark)
                     plog("Waiting " + str(self.settle_time_after_unpark) + " seconds for mount to settle.")
@@ -1738,12 +1743,12 @@ class Mount:
             self.parking_or_homing=False
 
 
-    def record_mount_reference(self, deviation_ha, deviation_dec, pointing_ra, pointing_dec):        
+    def record_mount_reference(self, deviation_ha, deviation_dec, pointing_ra, pointing_dec):
 
         # The HA is for the actual requested HA, NOT the solved ra
         HA=self.current_sidereal - pointing_ra + deviation_ha
-        
-        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))        
+
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = deviation_ha
         mnt_shelf['dec_cal_offset'] = deviation_dec
         mnt_shelf['last_mount_reference_time']=time.time()
@@ -1759,16 +1764,16 @@ class Mount:
         # Add in latest point to the list of mount references
         # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.
-        HA=self.current_sidereal - pointing_ra + deviation_ha        
+        HA=self.current_sidereal - pointing_ra + deviation_ha
         # Removing older references
         for entry in self.longterm_storage_of_mount_references:
             distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
             if distance_from_new_reference < 2:
                 plog ("Found and removing an old reference close to new reference: " + str(entry))
                 self.longterm_storage_of_mount_references.remove(entry)
-        
+
         plog ("Recording and using new reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )
-        
+
         self.longterm_storage_of_mount_references.append([time.time(),HA,pointing_dec + deviation_dec , deviation_ha,  deviation_dec])
         mnt_shelf['longterm_storage_of_mount_references']=self.longterm_storage_of_mount_references
         mnt_shelf.close()
@@ -1800,8 +1805,8 @@ class Mount:
                 plog ("Found and removing an old reference close to new reference: " + str(entry))
                 self.longterm_storage_of_mount_references.remove(entry)
 
-        plog ("Recording and using new reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )        
-        
+        plog ("Recording and using new reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )
+
         # Add in latest point to the list of mount references
         # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.
@@ -1810,36 +1815,36 @@ class Mount:
         mnt_shelf['longterm_storage_of_flip_references']=self.longterm_storage_of_flip_references
         mnt_shelf.close()
 
-        return   
+        return
 
     def get_mount_reference(self, pointing_ra, pointing_dec):
 
         HA = self.current_sidereal - pointing_ra
         # Have a look through shelf to find closest reference:
-        
+
         # Removing older references
         distance_from_closest_reference=180
         found_close_reference= False
-        
+
         for entry in self.longterm_storage_of_flip_references:
             distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec)
             if distance_from_new_reference < 5:
                 if distance_from_new_reference < distance_from_closest_reference:
                     found_close_reference=True
                     close_reference=copy.deepcopy(entry)
-                    
+
         if found_close_reference:
             plog ("Found nearby mount offset in shelf: " + str(close_reference))
-            plog ("Using reference: HA: " + str(close_reference[3] * 15 * 60) + " arcminutes, Dec: " + str(close_reference[4] * 60) + " arcminutes." )        
-        
-            self.last_mount_reference_time=close_reference[0]     
+            plog ("Using reference: HA: " + str(close_reference[3] * 15 * 60) + " arcminutes, Dec: " + str(close_reference[4] * 60) + " arcminutes." )
+
+            self.last_mount_reference_time=close_reference[0]
             self.last_mount_reference_ha =close_reference[1]
-            self.last_mount_reference_dec =close_reference[2]       
+            self.last_mount_reference_dec =close_reference[2]
             self.last_mount_reference_ha_offset = close_reference[3]
             self.last_mount_reference_dec_offset = close_reference[4]
-            
-            return close_reference[3], close_reference[4]        
-        
+
+            return close_reference[3], close_reference[4]
+
         distance_from_current_reference_in_ha = abs(self.last_mount_reference_ha - HA)
         distance_from_current_reference_in_dec = abs(self.last_mount_reference_dec- pointing_dec)
         absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(pointing_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
@@ -1855,29 +1860,29 @@ class Mount:
     def get_flip_reference(self, pointing_ra, pointing_dec):
 
         HA = self.current_sidereal - pointing_ra
-        
+
         distance_from_closest_reference=180
         found_close_reference= False
-        
+
         for entry in self.longterm_storage_of_flip_references:
             distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec)
             if distance_from_new_reference < 5:
                 if distance_from_new_reference < distance_from_closest_reference:
                     found_close_reference=True
                     close_reference=copy.deepcopy(entry)
-                    
+
         if found_close_reference:
             plog ("Found nearby mount offset in shelf: " + str(close_reference))
-            plog ("Using reference: HA: " + str(close_reference[3] * 15 * 60) + " arcminutes, Dec: " + str(close_reference[4] * 60) + " arcminutes." )           
-            
-            self.last_flip_reference_time=close_reference[0]     
+            plog ("Using reference: HA: " + str(close_reference[3] * 15 * 60) + " arcminutes, Dec: " + str(close_reference[4] * 60) + " arcminutes." )
+
+            self.last_flip_reference_time=close_reference[0]
             self.last_flip_reference_ha =close_reference[1]
-            self.last_flip_reference_dec =close_reference[2]       
+            self.last_flip_reference_dec =close_reference[2]
             self.last_flip_reference_ha_offset = close_reference[3]
             self.last_flip_reference_dec_offset = close_reference[4]
-            
+
             return close_reference[3], close_reference[4]
-        
+
         distance_from_current_reference_in_ha = abs(self.last_flip_reference_ha - HA)
         distance_from_current_reference_in_dec = abs(self.last_flip_reference_dec- pointing_dec)
         absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(pointing_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
