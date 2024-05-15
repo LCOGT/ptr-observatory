@@ -2571,7 +2571,10 @@ class Observatory:
                     fits.writeto(slow_process[1], slow_process[2], temphduheader, overwrite=True)
                     filepathaws=slow_process[4]
                     filenameaws=slow_process[5]
-                    g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
+                    if 'ARCHIVE_' in filenameaws:
+                       g_dev['obs']. enqueue_for_PTRarchive(100000000000000, filepathaws,filenameaws)
+                    else:
+                        g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
 
                 if slow_process[0] == 'localcalibration':
 
