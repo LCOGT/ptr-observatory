@@ -55,6 +55,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun, get_moon, FK5#, ICRS
 
 import short_utility as ptr_utility  #Once this works please undo this hack.
+
 import math
 import ephem
 from ptr_utility import plog
@@ -76,10 +77,17 @@ DTOS = 3600.
 STOD = 1/3600.
 STOH = 1/3600/15.
 SecTOH = 1/3600.
-HTOSec = 3600
+HTOSec = 3600.
 APPTOSID = 1.00273811906 #USNO Supplement
 MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
+
+LOOK_WEST = 0  #These four constants reflect ASCOM conventions
+LOOK_EAST = 1  #Flipped
+ON_EAST_SIDE = 0   #Not Flipped.
+ON_WEST_SIDE = 1   #This means flipped.
+IS_FLIPPED = 1
+IS_NORMAL = 0
 
 
 tzOffset = -7
@@ -96,7 +104,37 @@ def ra_fix_r(ra):
         ra += TWOPI
     return ra
 
-def ra_dec_fix_r(ra, dec): #Note this is not a mechanical (TPOINT) transformation of dec
+def ra_fix_h(ra):
+    if ra >= 24:
+        ra -= 24
+    if ra < 0:
+        ra = 24
+    return ra
+
+def ha_fix_h(ha):
+    while ha <= -12:
+        ha += 24.0
+    while ha > 12:
+        ha -= 24.0
+    return ha
+
+def ha_fix_r(ha):
+    while ha <= -PIOVER2:
+        ha += TWOPI
+    while ha > PIOVER2:
+        ha -= TWOPI
+    return ha
+
+def dec_fix_d(pDec):   #NB NB Note this limits not fixes!!!
+    if pDec > 90.0:
+        pDec = 90.0
+    if pDec < -90.0:
+        pDec = -90.0
+    return pDec
+
+
+
+def ra_dec_fix_r(ra, dec): #Note this is not a mechanical (TPOINT) transformation of dec and HA/RA
     if dec > PIOVER2:
         dec = PI - dec
         ra -= PI
@@ -122,12 +160,42 @@ def ra_dec_fix_h(ra, dec):
         ra = 24
     return ra, dec
 
-def ra_fix_h(ra):
-    if ra >= 24:
-        ra -= 24
-    if ra < 0:
-        ra = 24
-    return ra
+def rect_sph_d(pX, pY, pZ):
+    rSq = pX * pX + pY * pY + pZ * pZ
+    return math.degrees(math.atan2(pY, pX)), math.degrees(math.asin(pZ / rSq))
+
+def rect_sph_r(pX, pY, pZ):
+    rSq = pX * pX + pY * pY + pZ * pZ
+    return math.atan2(pY, pX), math.asin(pZ / rSq)
+
+def sph_rect_d(pRoll, pPitch):
+    pRoll = math.radians(pRoll)
+    pPitch = math.radians(pPitch)
+    cPitch = math.cos(pPitch)
+    return math.cos(pRoll) * cPitch, math.sin(pRoll) * cPitch, math.sin(pPitch)
+
+def sph_rect_r(pRoll, pPitch):
+    cPitch = math.cos(pPitch)
+    return math.cos(pRoll) * cPitch, math.sin(pRoll) * cPitch, math.sin(pPitch)
+
+
+def rotate_r(pX, pY, pTheta):
+    cTheta = math.cos(pTheta)
+    sTheta = math.sin(pTheta)
+    return pX * cTheta - pY * sTheta, pX * sTheta + pY * cTheta
+
+
+def centration_d(theta, a, b):
+    theta = math.radians(theta)
+    return math.degrees(
+        math.atan2(math.sin(theta) - STOR * b, math.cos(theta) - STOR * a)
+    )
+
+
+def centration_r(theta, a, b):
+    return math.atan2(math.sin(theta) - b, math.cos(theta) - a)
+
+
 
 class Mount:
     '''
@@ -168,6 +236,10 @@ class Mount:
                                 lon=float(g_dev['evnt'].wema_config['longitude'])*u.deg,
                                 height=float(g_dev['evnt'].wema_config['elevation'])*u.m)
         self.latitude_r = g_dev['evnt'].wema_config['latitude']*DTOR
+        self.sin_lat = math.sin(self.latitude_r)
+        self.cos_lat = math.cos(self.latitude_r)
+        self.pressure =g_dev['evnt'].wema_config['reference_pressure']
+        self.temperature = g_dev['evnt'].wema_config['reference_ambient']
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
@@ -180,13 +252,26 @@ class Mount:
         self.current_icrs_ra = self.mount.RightAscension
         self.current_icrs_dec = self.mount.Declination
         try:
+            self.ICRS2000 = config["mount"]["mount1"]["settings"]['ICRS2000_input_coords']
             self.refr_on = config["mount"]["mount1"]["settings"]["refraction_on"]
             self.model_on = config["mount"]["mount1"]["settings"]["model_on"]
+            self.model_type = config["mount"]["mount1"]["settings"]["model_type"]
             self.rates_on = config["mount"]["mount1"]["settings"]["rates_on"]
         except:
-            self.refr_on = False
+            self.ICRS2000 = True    #This is the default for coordinates provided by the PTR GUI
+            self.refr_on = False    #These also are probably the settings for The SkyX since it does all this internally.
             self.model_on = False
+            self.model_type = 'Equatorial'
             self.rates_on = False
+
+        if self.model_type == 'Equatorial':
+            self.model = config["mount"]["mount1"]["settings"]["model_equat"]
+        else:
+            self.model = config["mount"]["mount1"]["settings"]["model_altAz"]
+        for key in self.model:
+            self.model[key] = math.radians(self.model[key]/ 3600.)  #Convert  asec to degrees then radians
+
+
 
         self.delta_t_s = HTOSec/12   #5 minutes
         self.prior_roll_rate = 0
@@ -370,7 +455,7 @@ class Mount:
         self.abort_slew_requested=False
         self.find_home_requested=False
 
-        self.get_status()
+        #self.get_status()
 
         self.unpark_requested=False
         self.park_requested=False
@@ -388,6 +473,328 @@ class Mount:
         self.mount_update_thread=threading.Thread(target=self.mount_update_thread)
         self.mount_update_thread.start()
 
+
+#First add in various needed functions for coordinate conversions
+
+    def transform_haDec_to_az_alt(self, pLocal_hour_angle_h, pDec_d):
+        #global sin_lat, cos_lat     #### Check to see if these can be eliminated
+        decr = radians(pDec_d)
+        sinDec = math.sin(decr)
+        cosDec = math.cos(decr)
+        mHar = radians(15.0 * pLocal_hour_angle_h)
+        sinHa = math.sin(mHar)
+        cosHa = math.cos(mHar)
+        altitude = math.degrees(math.asin(self.sin_lat * sinDec + self.cos_lat * cosDec * cosHa))
+        x = cosHa * self.sin_lat - math.tan(decr) * self.cos_lat
+        azimuth = math.degrees(math.atan2(sinHa, x)) + 180
+        # azimuth = reduceAz(azimuth)
+        # altitude = reduceAlt(altitude)
+        return (azimuth, altitude)  # , local_hour_angle)
+
+
+    def transform_azAlt_to_haDec(self, pAz, pAlt):
+        #global sin_lat, cos_lat, lat
+        alt = math.radians(pAlt)
+        sinAlt = math.sin(alt)
+        cosAlt = math.cos(alt)
+        az = math.radians(pAz) - PI
+        sinAz = math.sin(az)
+        cosAz = math.cos(az)
+        if abs(abs(alt) - PIOVER2) < 1.0 * STOR:
+            return (
+                0.0,
+                self.lat
+            )  # by convention azimuth points South at local zenith
+        else:
+            dec = math.degrees(math.asin(sinAlt * self.sin_lat - cosAlt * cosAz * self.cos_lat))
+            ha = math.degrees(math.atan2(sinAz, (cosAz * self.sin_lat + math.tan(alt) * self.cos_lat)))/15.
+            return (ha_fix_h(ha), dec_fix_d(dec))
+
+    def apply_refraction_in_alt(self, pApp_alt):  # Deg, C. , mmHg     #note change to mbar
+
+        # From Astronomical Algorithms.  Max error 0.89" at 0 elev.
+        # 20210328 This code does not the right thing if star is below the Pole and is refracted above it.
+        if not self.refr_on:
+            return pApp_alt, 0.0
+        elif pApp_alt > 0:
+            ref = (1 / math.tan(DTOR * (pApp_alt + 7.31 / (pApp_alt + 4.4))) + 0.001351521673756295)
+            ref -= 0.06 * math.sin((14.7 * ref + 13.0) * DTOR) - 0.0134970632606319
+            ref *= 283 / (273 + self.temperature)
+            ref *= self.pressure / 1010.0
+            obs_alt = pApp_alt + ref / 60.0
+            return dec_fix_d(obs_alt), ref * 60.0    #note the Observed _altevation is > apparent.
+        else:
+            #Just return refr for elev = 0
+            ref = 1 / math.tan(DTOR * (7.31 / (pApp_alt + 4.4))) + 0.001351521673756295
+            ref -= 0.06 * math.sin((14.7 * ref + 13.0) * DTOR) - 0.0134970632606319
+            ref *= 283 / (273 + self.temperature)
+            ref *= self.pressure / 1010.0
+            return dec_fix_d(obs_alt), round(ref * 60.0,3)
+
+    def correct_refraction_in_alt(self, pObs_alt):  # Deg, C. , mmHg
+
+        if not self.refr_on:
+            return pObs_alt, 0.0, 0
+        else:
+            ERRORlimit = 0.01 * STOR
+            count = 0
+            error = 10
+            trial = pObs_alt
+            while abs(error) > ERRORlimit:
+                appTrial, ref = self.apply_refraction_in_alt(trial)
+                error = appTrial - pObs_alt
+                trial -= error
+                count += 1
+                if count > 25:  # count about 12 at-0.5 deg. 3 at 45deg.
+                    return dec_fix_d(pObs_alt)
+            return dec_fix_d(trial), dec_fix_d(pObs_alt - trial)  * 3600.0, count
+
+    def transform_mount_to_observed_r(self, pRoll, pPitch, pPierSide, loud=False):
+        # I am amazed this works so well even very near the celestial pole.
+        # input is Ha in hours and pitch in degrees.
+        if not self.model_on:
+            return (pRoll, pPitch)
+        else:
+
+            cosDec = math.cos(pPitch)
+            ERRORlimit = 0.01 * STOR
+            count = 0
+            error = 10
+            rollTrial = pRoll
+            pitchTrial = pPitch
+            while abs(error) > ERRORlimit:
+                obsRollTrial, obsPitchTrial = self.transform_observed_to_mount_r(
+                    rollTrial, pitchTrial, pPierSide
+                )
+                errorRoll = reduce_ha_r(obsRollTrial - pRoll)
+                errorPitch = reduce_dec_r(obsPitchTrial - pPitch)
+                # TODO this needs a unit checkout.
+                error = math.sqrt(
+                    cosDec * (errorRoll) ** 2 + (errorPitch) ** 2
+                )  # Removed *15 from errorRoll
+                rollTrial -= errorRoll
+                pitchTrial -= errorPitch
+                count += 1
+                if count > 500:  # count about 12 at-0.5 deg. 3 at 45deg.
+                    if loud:
+                        print("transform_mount_to_observed_r() FAILED!")
+                    return pRoll, pPitch
+            return ha_fix_r(rollTrial), dec_fix_r(pitchTrial)
+    def transform_observed_to_mount(self, pRoll_h, pPitch_d, pPierSide, loud=False, enable=False):
+        """
+        Long-run probably best way to do this is inherit a model dictionary.
+
+        NBNBNB improbable minus sign of ID, WD
+
+        This implements a basic 7 term TPOINT transformation.
+        This routine is interatively invertible.
+        """
+        #breakpoint()
+        #loud = True
+
+        if not self.model_on:
+            return (pRoll_h, pPitch_d)
+        else:
+
+            # R to HD convention
+            # pRoll  in Hours
+            # pPitch in degrees
+            #Apply IH and ID to incoming coordinates, and if needed GEM correction.
+            rRoll = math.radians(pRoll_h * 15) - self.model['ih']  #This is the basic calibration for Park Position.
+            rPitch = math.radians(pPitch_d) - self.model['id']
+            # siteLatitude = self.latitude_r
+            GEM = True
+            if GEM:
+                #"Pier_side" is now "Look East" or "Look West" For a GEM. Given ARO Telescope starts Looking West
+
+
+                #In ASCOM Pier east, looking West is pierside = 0
+                if pPierSide == LOOK_WEST:
+                    #rRoll = math.radians(pRoll_h * 15) - self.model['ih']  #This is the basic calibration for Park Position.
+                    #rPitch = math.radians(pPitch_d) - self.model['id']
+                    ch = self.model['ch']
+                    np = self.model['np']
+                elif pPierSide == LOOK_EAST:    #Add in offset correction and flip CH, NP terms.
+                    rRoll += self.model['eho']
+                    rPitch += self.model['edo']
+                    ch = -self.model['ch']
+                    np = -self.model['np']
+                    pass
+                # if loud:
+                #     print(ih, idec, edh, edd, ma, me, ch, np, tf, tx, hces, hcec, dces, dcec, pPierSide)
+
+                # This is exact trigonometrically:
+                if loud:
+                    print("Pre CN; roll, pitch:  ", rRoll * RTOH, rPitch * RTOD)
+                cnRoll = rRoll + math.atan2(
+                    math.cos(math.radians(np)) * math.tan(math.radians(ch))
+                    + math.sin(math.radians(np)) * math.sin(rPitch),
+                    math.cos(rPitch),
+                )
+                cnPitch = math.asin(
+                    math.cos(math.radians(np))
+                    * math.cos(math.radians(ch))
+                    * math.sin(rPitch)
+                    - math.sin(math.radians(np)) * math.sin(math.radians(ch))
+                )
+                if loud:
+                    print("Post CN; roll, pitch:  ", cnRoll * RTOH, cnPitch * RTOD)
+                x, y, z = sph_rect_r(cnRoll, cnPitch)
+                if loud:
+                    print("To spherical:  ", x, y, z, x * x + y * y + z * z)
+                # Apply MA error:
+                y, z = rotate_r(y, z, -self.model['ma'])
+                # Apply ME error:
+                x, z = rotate_r(x, z, -self.model['me'])
+                if loud:
+                    print("Post MA, ME:       ", x, y, z, x * x + y * y + z * z)
+                # Apply latitude
+                x, z = rotate_r(x, z, (PIOVER2 - self.latitude_r))
+                if loud:
+                    print("Post-Lat:  ", x, y, z, x * x + y * y + z * z)
+                # Apply TF, TX
+                az, alt = rect_sph_d(x, y, z)  # math.pi/2. -
+                if loud:
+                    print("Az Alt:  ", az + 180.0, alt)
+                # flexure causes mount to sag so a shift in el, apply then
+                # move back to other coordinate system
+                zen = 90 - alt
+                if zen >= 89:
+                    clampedTz = 57.289961630759144  # tan(89)
+                else:
+                    clampedTz = math.tan(math.radians(zen))
+                defl = (
+                    self.model['tf'] * math.sin(math.radians(zen))
+                    + self.model['tx'] * clampedTz
+                )
+                alt += defl * RTOD
+                if loud:
+                    print(
+                        "Post Tf,Tx; az, alt, z, defl:  ",
+                        az + 180.0,
+                        alt,
+                        z * RTOD,
+                        defl * RTOS,
+                    )
+                # The above is dubious but close for small deflections.
+                # Unapply Latitude
+
+                x, y, z = sph_rect_d(az,alt)
+                x, z = rotate_r(x, z, -(PIOVER2 - self.latitude_r))
+                fRoll, fPitch = rect_sph_r(x, y, z)
+                cRoll = centration_r(fRoll, -self.model['hces'], self.model['hcec'])
+                cPitch = centration_r(fPitch, -self.model['dces'], self.model['dcec'])
+
+                if loud:
+                    print("Back:  ", x, y, z, x * x + y * y + z * z)
+                    print("Back-Lat:  ", x, y, z, x * x + y * y + z * z)
+                    print("Back-Sph:  ", fRoll * RTOH, fPitch * RTOD)
+                    print("f,c Roll: ", fRoll, cRoll)
+                    print("f, c Pitch: ", fPitch, cPitch)
+                corrRoll = ha_fix_r(cRoll)
+                corrPitch = cPitch
+                if loud:
+                    print("Final:   ", fRoll * RTOH, fPitch * RTOD)
+                raCorr = ha_fix_h(corrRoll - pRoll_h) * 15 * 3600
+                decCorr = dec_fix_d(corrPitch - pPitch_d) * 3600
+                # 20210328  Note this may not work at Pole.
+                #if enable:
+                #    print("Corrections in asec:  ", raCorr, decCorr)
+                return (corrRoll*RTOH, corrPitch*RTOD )
+            elif not GEM:
+                #if loud:
+                    # print(
+                    #     ih, idec, ia, ie, an, aw, tf, tx, ca, npae, aces, acec, eces, ecec
+                    # )
+                pass
+
+                # Convert Incoming Ha, Dec to Alt-Az system, apply corrections then
+                # convert back to equitorial. At this stage we assume positioning of
+                # the mounting is still done in Ra/Dec coordinates so the canonical
+                # velocities are generated by the mounting, not any Python level code.
+
+                loud = False
+                az, alt = transform_haDec_to_az_alt(pRoll, pPitch)  #units!!
+                # Probably a units problem here.
+                rRoll = math.radians(az + ia / 3600.0)
+                rPitch = math.radians(alt - ie / 3600.0)
+                ch = ca / 3600.0
+                np = npae / 3600.0
+                # This is exact trigonometrically:
+
+                cnRoll = rRoll + math.atan2(
+                    math.cos(math.radians(np)) * math.tan(math.radians(ch))
+                    + math.sin(math.radians(np)) * math.sin(rPitch),
+                    math.cos(rPitch),
+                )
+                cnPitch = math.asin(
+                    math.cos(math.radians(np))
+                    * math.cos(math.radians(ch))
+                    * math.sin(rPitch)
+                    - math.sin(math.radians(np)) * math.sin(math.radians(ch))
+                )
+                if loud:
+                    print("Pre CANPAE; roll, pitch:  ", rRoll * RTOH, rPitch * RTOD)
+                    print("Post CANPAE; roll, pitch:  ", cnRoll * RTOH, cnPitch * RTOD)
+                x, y, z = sph_rect_d(math.degrees(cnRoll), math.degrees(cnPitch))
+
+                # Apply AN error:
+                y, z = rotate_r(y, z, math.radians(-aw / 3600.0))
+                # Apply AW error:
+                x, z = rotate_r(x, z, math.radians(an / 3600.0))
+                az, el = rect_sph_d(x, y, z)
+                if loud:
+                    print("To spherical:  ", x, y, z, x * x + y * y + z * z)
+                    print("Pre  AW:       ", x, y, z, math.radians(aw / 3600.0))
+                    print("Post AW:       ", x, y, z, x * x + y * y + z * z)
+                    print("Pre  AN:       ", x, y, z, math.radians(an / 3600.0))
+                    print("Post AN:       ", x, y, z, x * x + y * y + z * z)
+                    print("Az El:  ", az + 180.0, el)
+                # flexure causes mount to sag so a shift in el, apply then
+                # move back to other coordinate system
+                zen = 90 - el
+                if zen >= 89:
+                    clampedTz = 57.289961630759144  # tan(89)
+                else:
+                    clampedTz = math.tan(math.radians(zen))
+                defl = (
+                    math.radians(tf / 3600.0) * math.sin(math.radians(zen))
+                    + math.radians(tx / 3600.0) * clampedTz
+                )
+                el += defl * RTOD
+                if loud:
+                    print(
+                        "Post Tf,Tx; az, el, z, defl:  ",
+                        az + 180.0,
+                        el,
+                        z * RTOD,
+                        defl * RTOS,
+                    )
+                # The above is dubious but close for small deflections.
+                # Unapply Latitude
+
+                x, y, z = sph_rect_d(az, el)
+                if loud:
+                    print("Back:  ", x, y, z, x * x + y * y + z * z)
+                fRoll, fPitch = rect_sph_d(x, y, z)
+                if loud:
+                    print("Back-Sph:  ", fRoll * RTOH, fPitch * RTOD)
+                cRoll = centration_d(fRoll, aces, acec)
+                if loud:
+                    print("f,c Roll: ", fRoll, cRoll)
+                cPitch = centration_d(fPitch, -eces, ecec)
+                if loud:
+                    print("f, c Pitch: ", fPitch, cPitch)
+                corrRoll = reduce_az_r(cRoll)
+                corrPitch = reduce_alt_r(cPitch)
+                if loud:
+                    print("Final Az, ALT:   ", corrRoll, corrPitch)
+                haH, decD = transform_azAlt_to_haDec(corrRoll, corrPitch)   #Units
+                raCorr = reduce_ha_h(haH - pRoll) * 15 * 3600
+                decCorr = reduce_dec_d(decD - pPitch) * 3600
+                if loud:
+                    print("Corrections:  ", raCorr, decCorr)
+                return (haH, decD)
     # Note this is a thread!
     def mount_update_thread(self):   # NB is this the best name for this? Update vs Command
 
@@ -437,7 +844,7 @@ class Mount:
                         self.mount_updates=self.mount_updates + 1
                         self.mount_update_timer=time.time()
                     else:
-                        #  Starting here ae tha varius mount commands and reads...
+                        #  Starting here ae tha vari0us mount commands and reads...
                         try:
                             if self.unpark_requested:
                                 self.unpark_requested=False
@@ -477,10 +884,89 @@ class Mount:
                                         time.sleep(0.2)
                                 except:
                                     print ("mount thread camera wait failed.")
-                                #Here is the point of slewing the telescope
-                                #breakpoint()
+                                #Here is the point for slewing the telescope.  There is a lot
+                                #to sort out here.  Incoming coordinates are assumed to be
+                                #ICRS2000.0.  There are conversions to Apparent, then Observed
+                                #(refraction) then to mechanical (mount-modeled) coordinates and
+                                #velocities.  The status loop needs to process the opposite
+                                #direction: from Mount to ICRS and from time to time to update
+                                #the velocities.  If all this is computed correctly the drift
+                                #rate should be minimal.
+
                                 #self.go_w_model_and_velocity(self.slewtoRA, self.slewtoDEC)
-                                self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
+                                self.get_current_times()
+
+                                if self.ICRS2000:
+                                    #Convert to Apparent
+                                    icrs_coord = SkyCoord(self.slewtoRA*u.hour, self.slewtoDEC*u.degree, frame='icrs')
+                                    jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
+                                    #jnow_coord_2 = icrs_coord.transform_to(ICRS(equinox=self.equinox_now))
+                                    #breakpoint()
+                                    ra = jnow_coord.ra.hour
+                                    dec = jnow_coord.dec.degree
+                                else:
+                                    ra = self.slewtoRA
+                                    dec = self.slewtoDEC
+                                if self.offset_received:
+                                    ra += self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
+                                    dec += self.dec_offset
+                                ra_app_h, dec_app_d = ra_dec_fix_h(ra, dec)
+
+                                #First, convert Ra to Ha
+                                self.sid_now_h = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+
+                                #First, convert Ra to Ha
+                                ha_app_h = ha_fix_h(self.current_sidereal - ra_app_h)
+                                if self.refr_on:
+                                    #Convert to Observed
+                                    #next convert to ALT az, and save the az
+                                    az_d, alt_d = self.transform_haDec_to_az_alt(ha_app_h, dec_app_d)
+                                    #next add in the refractive lift
+                                    alt_ref_d, self.refr_asec = self.apply_refraction_in_alt(alt_d)
+                                    #next convert back to Ha and dec
+
+                                    ha_obs_h, dec_obs_d = self.transform_azAlt_to_haDec(az_d, alt_ref_d)
+                                else:
+                                    ha_obs_h = ha_app_h
+                                    dec_obs_d =dec_app_d
+                                if self.model_on:
+                                    #Convert to Mechanical.
+
+                                    self.slewtoHA, self.slewtoDEC = self.transform_observed_to_mount(ha_obs_h, dec_obs_d, self.rapid_pier_indicator, loud=False, enable=False)
+                                    self.slewtoRA = ra_fix_h(self.current_sidereal - self.slewtoHA)
+                                    pass
+
+                                if self.rates_on:
+                                    #Compute Velocities.  Typically with a CCD we rarely expose longer than 300 sec  so we
+                                    # are going to use 600 sec as the time delta.
+                                    self.delta_step = 600./3600.
+                                    self.delta_sid_now_h = self.sid_now_h + self.delta_step
+                                    delta_ha_app_h = ha_fix_h(self.delta_sid_now_h - ra_app_h)
+                                    if self.refr_on:
+                                        #Convert to Observed
+                                        #next convert to ALT az, and save the az
+                                        az_d, alt_d = self.transform_haDec_to_az_alt(delta_ha_app_h, dec_app_d)
+                                        #next add in the refractive lift
+                                        alt_ref_d, self.delta_refr_asec = self.apply_refraction_in_alt(alt_d)
+                                        #next convert back to Ha and dec
+
+                                        delta_ha_obs_h, delta_dec_obs_d = self.transform_azAlt_to_haDec(az_d, alt_ref_d)
+                                    else:
+                                        delta_ha_obs_h = ha_app_h
+                                        delta_dec_obs_d =dec_app_d
+                                    if self.model_on:
+                                        #Convert to Mechanical.
+                                        self.delta_slewtoHA, self.delta_slewtoDEC = self.transform_observed_to_mount(delta_ha_obs_h, delta_dec_obs_d, self.rapid_pier_indicator, loud=False, enable=False)
+                                        self.delta_slewtoRA = ra_fix_h(self.delta_sid_now_h - self.delta_slewtoHA)
+                                    else:
+                                        self.delta_slewtoRA = self.slewtoRA
+                                        self.delta_slewtoHA = delta_ha_obs_h
+                                        self.delta_slewtoDEC = self.slewtoDEC
+                                    self.ha_rate = (self.delta_slewtoHA - self.slewtoHA)/600/APPTOSID
+                                    self.dec_rate = (self.delta_slewtoDEC - self.slewtoDEC)/600/APPTOSID
+
+
+                                self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA, self.slewtoDEC)
                                 self.currently_slewing=True
                                 if self.CanSetDeclinationRate:
                                     self.mount_update_wincom.DeclinationRate = 0
@@ -1142,6 +1628,19 @@ class Mount:
 
         self.previous_pier_side=self.rapid_pier_indicator
 
+        ###################################### HERE IS WHERE THE NEW WAYNE STUFF SHOULD GO
+
+
+
+
+
+
+
+        ############################################################################## NEW WAYNE BARRIER WALL
+
+
+
+
 
         # Don't need a mount reference for skyflatspots!
         if not skyflatspot:
@@ -1186,6 +1685,10 @@ class Mount:
         else:
             delta_ra=0
             delta_dec=0
+
+
+
+
 
         # First move, then check the pier side
         successful_move=0
@@ -1365,44 +1868,44 @@ class Mount:
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
         #result in a flip.  So first figure out if there will be a flip:
-        # try:
-        #     try:
-        #         self.request_new_pierside=True
-        #         self.request_new_pierside_ra=ra
-        #         self.request_new_pierside_dec=dec
+        try:
+            try:
+                self.request_new_pierside=True
+                self.request_new_pierside_ra=ra
+                self.request_new_pierside_dec=dec
 
-        #         self.wait_for_mount_update()
+                self.wait_for_mount_update()
 
-        #         if len(self.new_pierside) > 1:
-        #             if self.new_pierside[0] == 0:
-        #                 delta_ra, delta_dec = self.get_mount_reference(ra,dec)
-        #                 pier_east = 1
-        #             else:
-        #                 delta_ra, delta_dec = self.get_flip_reference(ra,dec)
-        #                 pier_east = 0
-        #     except:
-        #         try:
-        #             self.request_new_pierside=True
-        #             self.request_new_pierside_ra=ra
-        #             self.request_new_pierside_dec=dec
+                if len(self.new_pierside) > 1:
+                    if self.new_pierside[0] == 0:
+                        delta_ra, delta_dec = self.get_mount_reference(ra,dec)
+                        pier_east = 1
+                    else:
+                        delta_ra, delta_dec = self.get_flip_reference(ra,dec)
+                        pier_east = 0
+            except:
+                try:
+                    self.request_new_pierside=True
+                    self.request_new_pierside_ra=ra
+                    self.request_new_pierside_dec=dec
 
-        #             self.wait_for_mount_update()
+                    self.wait_for_mount_update()
 
-        #             if self.new_pierside == 0:
-        #                 delta_ra, delta_dec = self.get_mount_reference(ra,dec)
-        #                 pier_east = 1
-        #             else:
-        #                 delta_ra, delta_dec = self.get_flip_reference(ra,dec)
-        #                 pier_east = 0
-        #         except:
-        #             self.mount_busy=False
-        #             delta_ra, delta_dec = self.get_mount_reference(ra,dec)
-        #             pier_east = 1
-        # except Exception as e:
-        #     self.mount_busy=False
-        #     print ("mount really doesn't like pierside calls ", e)
-        #     pier_east = 1
-        #  #Update incoming ra and dec with mounting offsets.
+                    if self.new_pierside == 0:
+                        delta_ra, delta_dec = self.get_mount_reference(ra,dec)
+                        pier_east = 1
+                    else:
+                        delta_ra, delta_dec = self.get_flip_reference(ra,dec)
+                        pier_east = 0
+                except:
+                    self.mount_busy=False
+                    delta_ra, delta_dec = self.get_mount_reference(ra,dec)
+                    pier_east = 1
+        except Exception as e:
+            self.mount_busy=False
+            print ("mount really doesn't like pierside calls ", e)
+            pier_east = 1
+          #Update incoming ra and dec with mounting offsets.
 
         # print ("delta")
         # print (delta_ra)
@@ -1894,8 +2397,8 @@ class Mount:
             plog ("No previous deviation reference nearby")
             return 0.0,0.0
 
-if __name__ == '__main__':
-    req = {'time': 1,  'alias': 'ea03', 'frame': 'Light', 'filter': 2}
-    opt = {'area': 50}
-    m = Mount('ASCOM.PWI4.Telescope', "mnt1", {})
-    m.paddle()
+# if __name__ == '__main__':
+#     req = {'time': 1,  'alias': 'ea03', 'frame': 'Light', 'filter': 2}
+#     opt = {'area': 50}
+#     m = Mount('ASCOM.PWI4.Telescope', "mnt1", {})
+#     m.paddle()

@@ -253,24 +253,43 @@ site_config = {
                     '270': 25.,
                     '359': 25.
                     },  #  We use a dict because of fragmented azimuth measurements.
+                'ICRS2000_input_coords':  True,
                 'refraction_on': True,  #  Refraction is applied during pointing.
-                'model_on': True,  #  Model is applied during pointing.
-                'rates_on': True,  #  Rates implied by model and refraction applie during tracking.
-                'model': {
-                    'IH': 0.00, #
-                    'ID': 0.00, #
-                    'WIH': 0.0,
-                    'WID': 0.0,
-                    'MA': 0.0,
-                    'ME': 0.0,
-                    'CH': 0.0,
-                    'NP': 0.0,
-                    'TF': 0.0,
-                    'TX': 0.0,
-                    'HCES': 0.0,
-                    'HCEC': 0.0,
-                    'DCES': 0.0,
-                    'DCEC': 0.0,
+                'model_on': True,
+                'model_type': "Equatorial",
+                'rates_on': True,  #  Rates implied by model and refraction applied during tracking.
+                'model_equat': {
+                    'ih': 0.0, #"Home naturally points to West for AP GEM mounts.
+                    'id': 0.00, #These two are zero-point references.
+                    'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
+                    'edo': 0.0, #"East Dec Offset
+                    'ma': 0.0,
+                    'me': 0.0,  #Default is about -60 asec above pole for ARO
+                    'ch': 0.0,
+                    'np': 0.0,
+                    'tf': 0.0,
+                    'tx': 0.0,
+                    'hces': 0.0,
+                    'hcec': 0.0,
+                    'dces': 0.0,
+                    'dcec': 0.0,
+                    }
+                ,
+                'model_altAz': {
+                    'ih': 3600.00, #"Home naturally points to West for AP GEM mounts.
+                    'id': 0.00, #These two are zero-point references.
+                    'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
+                    'edo': 0.0, #"East Dec Offset
+                    'ma': 0.0,
+                    'me': 0.0,  #Default is about -60 asec above pole for ARO
+                    'ch': 0.0,
+                    'np': 0.0,
+                    'tf': 0.0,
+                    'tx': 0.0,
+                    'hces': 0.0,
+                    'hcec': 0.0,
+                    'dces': 0.0,
+                    'dcec': 0.0,
                     }
                 },
             },
