@@ -248,7 +248,7 @@ class Focuser:
                 time.sleep(self.focuser_settle_time)
 
                 try:
-                    g_dev["obs"].send_to_user("Focus Movement Complete")
+                    #g_dev["obs"].send_to_user("Focus Movement Complete")
 
                     plog("Focus Movement Complete")
                 except:
