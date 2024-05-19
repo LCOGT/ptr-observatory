@@ -2413,10 +2413,23 @@ class Observatory:
 
                                 # drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
                                 # drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
+                                
+                                
+                                if self.sync_after_platesolving:
+                                    plog ("Syncing mount after this solve")
+                                    g_dev['mnt'].sync_to_pointing(solved_ra, solved_dec)     
+                                    
+                                    # After sync we shuold be able to nudge over to the correct pointing. 
+                                    self.pointing_correction_requested_by_platesolve_thread = True
+                                    self.pointing_correction_request_time = time.time()
+                                    self.pointing_correction_request_ra = pointing_ra 
+                                    self.pointing_correction_request_dec = pointing_dec 
+                                    self.pointing_correction_request_ra_err = 0
+                                    self.pointing_correction_request_dec_err = 0
 
 
                                 # If we are WAY out of range, then reset the mount reference and attempt moving back there.
-                                if not self.auto_centering_off:
+                                elif not self.auto_centering_off:
 
                                     # dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
                                     # ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
@@ -2465,57 +2478,65 @@ class Observatory:
 
                                     # Only recenter if out by more than 1%
                                     elif (abs(err_ha * 15 * 3600) > 0.01 * ra_field_asec) or (abs(err_dec * 3600) > 0.01 * dec_field_asec):
+
+                                        self.pointing_correction_requested_by_platesolve_thread = True
+                                        self.pointing_correction_request_time = time.time()
+                                        self.pointing_correction_request_ra = pointing_ra + err_ha
+                                        self.pointing_correction_request_dec = pointing_dec + err_dec
+                                        self.pointing_correction_request_ra_err = err_ha
+                                        self.pointing_correction_request_dec_err = err_dec
                                         
+                                        # if self.sync_after_platesolving:
+                                        #     plog ("Syncing mount after this solve")
+                                        #     g_dev['mnt'].sync_to_pointing(solved_ra, solved_dec)     
+                                            
+                                        #     # After sync we shuold be able to nudge over to the correct pointing. 
+                                        #     self.pointing_correction_requested_by_platesolve_thread = True
+                                        #     self.pointing_correction_request_time = time.time()
+                                        #     self.pointing_correction_request_ra = pointing_ra 
+                                        #     self.pointing_correction_request_dec = pointing_dec 
+                                        #     self.pointing_correction_request_ra_err = 0
+                                        #     self.pointing_correction_request_dec_err = 0
                                         
-                                        
+                                        # else:
+                                       
 
-                                         self.pointing_correction_requested_by_platesolve_thread = True
-                                         self.pointing_correction_request_time = time.time()
-                                         self.pointing_correction_request_ra = pointing_ra + err_ha
-                                         self.pointing_correction_request_dec = pointing_dec + err_dec
-                                         self.pointing_correction_request_ra_err = err_ha
-                                         self.pointing_correction_request_dec_err = err_dec
-                                         
-                                         if self.sync_after_platesolving:
-                                             plog ("Syncing mount after this solve")
-                                             g_dev['mnt'].sync_to_pointing(solved_ra, solved_dec)                                        
+                                        drift_timespan= time.time() - self.drift_tracker_timer
+                                        #plog ("Drift Timespan " + str(drift_timespan))
 
-                                         drift_timespan= time.time() - self.drift_tracker_timer
-                                         #plog ("Drift Timespan " + str(drift_timespan))
+                                        if drift_timespan >180:
+                                        #     plog ("Not calculating drift on a timescale under 5 minutes.")
+                                        # else:
+                                            self.drift_arcsec_ra_arcsecperhour= (err_ha * 15 * 3600 ) / (drift_timespan / 3600)
+                                            self.drift_arcsec_dec_arcsecperhour=  (err_dec *3600) / (drift_timespan / 3600)
+                                            plog ("Drift calculations in arcsecs per hour, RA: " + str(round(self.drift_arcsec_ra_arcsecperhour,6)) + " DEC: " + str(round(self.drift_arcsec_dec_arcsecperhour,6)) )
 
-                                         if drift_timespan >180:
-                                         #     plog ("Not calculating drift on a timescale under 5 minutes.")
-                                         # else:
-                                             self.drift_arcsec_ra_arcsecperhour= (err_ha * 15 * 3600 ) / (drift_timespan / 3600)
-                                             self.drift_arcsec_dec_arcsecperhour=  (err_dec *3600) / (drift_timespan / 3600)
-                                             plog ("Drift calculations in arcsecs per hour, RA: " + str(round(self.drift_arcsec_ra_arcsecperhour,6)) + " DEC: " + str(round(self.drift_arcsec_dec_arcsecperhour,6)) )
+                                        if not g_dev['obs'].mount_reference_model_off:
+                                            if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
 
-                                         if not g_dev['obs'].mount_reference_model_off:
-                                             if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
+                                                # The mount reference should only be updated if it is less than a third of the worst potential pointing in arcseconds.....
+                                                if (abs(err_ha * 15 * 3600) < (self.worst_potential_pointing_in_arcseconds/3)) or (abs(err_dec * 3600) < (self.worst_potential_pointing_in_arcseconds/3)):
+                                                    try:
+                                                        g_dev['mnt'].last_slew_was_pointing_slew = False
+                                                        if g_dev["mnt"].pier_side == 0:
+                                                            try:
+                                                                g_dev["mnt"].record_mount_reference(
+                                                                    mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
+                                                                )
 
-                                                 # The mount reference should only be updated if it is less than a third of the worst potential pointing in arcseconds.....
-                                                 if (abs(err_ha * 15 * 3600) < (self.worst_potential_pointing_in_arcseconds/3)) or (abs(err_dec * 3600) < (self.worst_potential_pointing_in_arcseconds/3)):
-                                                     try:
-                                                         g_dev['mnt'].last_slew_was_pointing_slew = False
-                                                         if g_dev["mnt"].pier_side == 0:
-                                                             try:
-                                                                 g_dev["mnt"].record_mount_reference(
-                                                                     mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
-                                                                 )
+                                                            except Exception as e:
+                                                                plog("Something is up in the mount reference adjustment code ", e)
+                                                        else:
+                                                            try:
+                                                                g_dev["mnt"].record_flip_reference(
+                                                                    mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
+                                                                )
+                                                            except Exception as e:
+                                                                plog("Something is up in the mount reference adjustment code ", e)
 
-                                                             except Exception as e:
-                                                                 plog("Something is up in the mount reference adjustment code ", e)
-                                                         else:
-                                                             try:
-                                                                 g_dev["mnt"].record_flip_reference(
-                                                                     mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
-                                                                 )
-                                                             except Exception as e:
-                                                                 plog("Something is up in the mount reference adjustment code ", e)
-
-                                                     except:
-                                                         plog("This mount doesn't report pierside")
-                                                         plog(traceback.format_exc())
+                                                    except:
+                                                        plog("This mount doesn't report pierside")
+                                                        plog(traceback.format_exc())
 
                                 self.platesolve_is_processing = False
                         except:
