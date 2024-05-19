@@ -119,9 +119,9 @@ def ha_fix_h(ha):
     return ha
 
 def ha_fix_r(ha):
-    while ha <= -PIOVER2:
+    while ha <= -PI:
         ha += TWOPI
-    while ha > PIOVER2:
+    while ha > PI:
         ha -= TWOPI
     return ha
 
@@ -132,6 +132,12 @@ def dec_fix_d(pDec):   #NB NB Note this limits not fixes!!!
         pDec = -90.0
     return pDec
 
+def dec_fix_r(pDec):   #NB NB Note this limits not fixes!!!
+    if pDec > PIOVER2:
+        pDec = PIOVER2
+    if pDec < -PIOVER2:
+        pDec = -PIOVER2
+    return pDec
 
 
 def ra_dec_fix_r(ra, dec): #Note this is not a mechanical (TPOINT) transformation of dec and HA/RA
@@ -249,6 +255,7 @@ class Mount:
         self.object = "Unspecified"
         self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
+        #DIRECT MOUNT POSITION READ #1
         self.current_icrs_ra = self.mount.RightAscension
         self.current_icrs_dec = self.mount.Declination
         try:
@@ -341,9 +348,11 @@ class Mount:
 
         # NEED to initialise these variables here in case the mount isn't slewed
         # before exposures after bootup
-        self.last_ra_requested = self.mount.RightAscension
 
+        #DIRECT MOUNT POSITION READ #2
+        self.last_ra_requested = self.mount.RightAscension
         self.last_dec_requested = self.mount.Declination
+
         self.last_tracking_rate_ra = 0
         self.last_tracking_rate_dec = 0
         self.last_seek_time = time.time() - 5000
@@ -380,6 +389,7 @@ class Mount:
         self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
         self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
 
+        #DIRECT MOUNT POSITION READ #3
         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
         #Verified these set the rates additively to mount supplied refraction rate.20231221 WER
@@ -455,7 +465,7 @@ class Mount:
         self.abort_slew_requested=False
         self.find_home_requested=False
 
-        #self.get_status()
+
 
         self.unpark_requested=False
         self.park_requested=False
@@ -472,6 +482,9 @@ class Mount:
 
         self.mount_update_thread=threading.Thread(target=self.mount_update_thread)
         self.mount_update_thread.start()
+
+        self.wait_for_mount_update()
+        self.get_status()
 
 
 #First add in various needed functions for coordinate conversions
@@ -549,7 +562,7 @@ class Mount:
                     return dec_fix_d(pObs_alt)
             return dec_fix_d(trial), dec_fix_d(pObs_alt - trial)  * 3600.0, count
 
-    def transform_mount_to_observed_r(self, pRoll, pPitch, pPierSide, loud=False):
+    def transform_mechanical_to_observed(self, pRoll, pPitch, pPierSide, loud=False):
         # I am amazed this works so well even very near the celestial pole.
         # input is Ha in hours and pitch in degrees.
         if not self.model_on:
@@ -563,11 +576,11 @@ class Mount:
             rollTrial = pRoll
             pitchTrial = pPitch
             while abs(error) > ERRORlimit:
-                obsRollTrial, obsPitchTrial = self.transform_observed_to_mount_r(
+                obsRollTrial, obsPitchTrial = self.transform_observed_to_mount(
                     rollTrial, pitchTrial, pPierSide
                 )
-                errorRoll = reduce_ha_r(obsRollTrial - pRoll)
-                errorPitch = reduce_dec_r(obsPitchTrial - pPitch)
+                errorRoll = ha_fix_r(obsRollTrial - pRoll)
+                errorPitch = dec_fix_r(obsPitchTrial - pPitch)
                 # TODO this needs a unit checkout.
                 error = math.sqrt(
                     cosDec * (errorRoll) ** 2 + (errorPitch) ** 2
@@ -579,7 +592,83 @@ class Mount:
                     if loud:
                         print("transform_mount_to_observed_r() FAILED!")
                     return pRoll, pPitch
-            return ha_fix_r(rollTrial), dec_fix_r(pitchTrial)
+            return ha_fix_r(rollTrial)*RTOH, dec_fix_r(pitchTrial)*RTOD
+
+    def transform_icrs_to_mechanical(self, icrs_ra_h, icrs_dec_d, rapid_pier_indicator, loud=False, enable=False):
+           #Note when starting up Rapid Pier indicator may be incorrect.
+        self.get_current_times()
+
+        if self.ICRS2000:
+            #Convert to Apparent
+            icrs_coord = SkyCoord(icrs_ra_h*u.hour, icrs_dec_d*u.degree, frame='icrs')
+            jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
+            #jnow_coord_2 = icrs_coord.transform_to(ICRS(equinox=self.equinox_now))
+            #breakpoint()
+            ra = jnow_coord.ra.hour
+            dec = jnow_coord.dec.degree
+        else:
+            ra = icrs_ra_h
+            dec = icrs_dec_d
+        if self.offset_received:
+            ra += self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
+            dec += self.dec_offset
+        ra_app_h, dec_app_d = ra_dec_fix_h(ra, dec)
+
+        #First, convert Ra to Ha
+        self.sid_now_h = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+
+        #First, convert Ra to Ha
+        ha_app_h = ha_fix_h(self.current_sidereal - ra_app_h)
+        if self.refr_on:
+            #Convert to Observed
+            #next convert to ALT az, and save the az
+            az_d, alt_d = self.transform_haDec_to_az_alt(ha_app_h, dec_app_d)
+            #next add in the refractive lift
+            alt_ref_d, self.refr_asec = self.apply_refraction_in_alt(alt_d)
+            #next convert back to Ha and dec
+
+            ha_obs_h, dec_obs_d = self.transform_azAlt_to_haDec(az_d, alt_ref_d)
+        else:
+            ha_obs_h = ha_app_h
+            dec_obs_d =dec_app_d
+        if self.model_on:
+            #Convert to Mechanical.
+
+            self.slewtoHA, self.slewtoDEC = self.transform_observed_to_mount(ha_obs_h, dec_obs_d, self.rapid_pier_indicator, loud=False, enable=False)
+            self.slewtoRA = ra_fix_h(self.current_sidereal - self.slewtoHA)
+            pass
+
+        if self.rates_on:
+            #Compute Velocities.  Typically with a CCD we rarely expose longer than 300 sec  so we
+            # are going to use 600 sec as the time delta.
+            self.delta_step = 600./3600.
+            self.delta_sid_now_h = self.sid_now_h + self.delta_step
+            delta_ha_app_h = ha_fix_h(self.delta_sid_now_h - ra_app_h)
+            if self.refr_on:
+                #Convert to Observed
+                #next convert to ALT az, and save the az
+                az_d, alt_d = self.transform_haDec_to_az_alt(delta_ha_app_h, dec_app_d)
+                #next add in the refractive lift
+                alt_ref_d, self.delta_refr_asec = self.apply_refraction_in_alt(alt_d)
+                #next convert back to Ha and dec
+
+                delta_ha_obs_h, delta_dec_obs_d = self.transform_azAlt_to_haDec(az_d, alt_ref_d)
+            else:
+                delta_ha_obs_h = ha_app_h
+                delta_dec_obs_d =dec_app_d
+            if self.model_on:
+                #Convert to Mechanical.
+                self.delta_slewtoHA, self.delta_slewtoDEC = self.transform_observed_to_mount(delta_ha_obs_h, delta_dec_obs_d, self.rapid_pier_indicator, loud=False, enable=False)
+                self.delta_slewtoRA = ra_fix_h(self.delta_sid_now_h - self.delta_slewtoHA)
+            else:
+                self.delta_slewtoRA = self.slewtoRA
+                self.delta_slewtoHA = delta_ha_obs_h
+                self.delta_slewtoDEC = self.slewtoDEC
+            self.ha_rate = (self.delta_slewtoHA - self.slewtoHA)/600/APPTOSID
+            self.dec_rate = (self.delta_slewtoDEC - self.slewtoDEC)/600/APPTOSID
+        return(self.slewtoRA, self.slewtoDEC, self.ha_rate, self.dec_rate)
+        pass
+
     def transform_observed_to_mount(self, pRoll_h, pPitch_d, pPierSide, loud=False, enable=False):
         """
         Long-run probably best way to do this is inherit a model dictionary.
@@ -835,6 +924,8 @@ class Mount:
                     if self.currently_slewing:
                         try:
                             self.pier_flip_detected=False
+
+                            #DIRECT MOUNT POSITION READ #4  But this time from mount_update_wincom
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
                         except:
@@ -884,92 +975,11 @@ class Mount:
                                         time.sleep(0.2)
                                 except:
                                     print ("mount thread camera wait failed.")
-                                #Here is the point for slewing the telescope.  There is a lot
-                                #to sort out here.  Incoming coordinates are assumed to be
-                                #ICRS2000.0.  There are conversions to Apparent, then Observed
-                                #(refraction) then to mechanical (mount-modeled) coordinates and
-                                #velocities.  The status loop needs to process the opposite
-                                #direction: from Mount to ICRS and from time to time to update
-                                #the velocities.  If all this is computed correctly the drift
-                                #rate should be minimal.
 
-                                #self.go_w_model_and_velocity(self.slewtoRA, self.slewtoDEC)
-                                self.get_current_times()
-
-                                if self.ICRS2000:
-                                    #Convert to Apparent
-                                    icrs_coord = SkyCoord(self.slewtoRA*u.hour, self.slewtoDEC*u.degree, frame='icrs')
-                                    jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
-                                    #jnow_coord_2 = icrs_coord.transform_to(ICRS(equinox=self.equinox_now))
-                                    #breakpoint()
-                                    ra = jnow_coord.ra.hour
-                                    dec = jnow_coord.dec.degree
-                                else:
-                                    ra = self.slewtoRA
-                                    dec = self.slewtoDEC
-                                if self.offset_received:
-                                    ra += self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
-                                    dec += self.dec_offset
-                                ra_app_h, dec_app_d = ra_dec_fix_h(ra, dec)
-
-                                #First, convert Ra to Ha
-                                self.sid_now_h = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
-
-                                #First, convert Ra to Ha
-                                ha_app_h = ha_fix_h(self.current_sidereal - ra_app_h)
-                                if self.refr_on:
-                                    #Convert to Observed
-                                    #next convert to ALT az, and save the az
-                                    az_d, alt_d = self.transform_haDec_to_az_alt(ha_app_h, dec_app_d)
-                                    #next add in the refractive lift
-                                    alt_ref_d, self.refr_asec = self.apply_refraction_in_alt(alt_d)
-                                    #next convert back to Ha and dec
-
-                                    ha_obs_h, dec_obs_d = self.transform_azAlt_to_haDec(az_d, alt_ref_d)
-                                else:
-                                    ha_obs_h = ha_app_h
-                                    dec_obs_d =dec_app_d
-                                if self.model_on:
-                                    #Convert to Mechanical.
-
-                                    self.slewtoHA, self.slewtoDEC = self.transform_observed_to_mount(ha_obs_h, dec_obs_d, self.rapid_pier_indicator, loud=False, enable=False)
-                                    self.slewtoRA = ra_fix_h(self.current_sidereal - self.slewtoHA)
-                                    pass
-
-                                if self.rates_on:
-                                    #Compute Velocities.  Typically with a CCD we rarely expose longer than 300 sec  so we
-                                    # are going to use 600 sec as the time delta.
-                                    self.delta_step = 600./3600.
-                                    self.delta_sid_now_h = self.sid_now_h + self.delta_step
-                                    delta_ha_app_h = ha_fix_h(self.delta_sid_now_h - ra_app_h)
-                                    if self.refr_on:
-                                        #Convert to Observed
-                                        #next convert to ALT az, and save the az
-                                        az_d, alt_d = self.transform_haDec_to_az_alt(delta_ha_app_h, dec_app_d)
-                                        #next add in the refractive lift
-                                        alt_ref_d, self.delta_refr_asec = self.apply_refraction_in_alt(alt_d)
-                                        #next convert back to Ha and dec
-
-                                        delta_ha_obs_h, delta_dec_obs_d = self.transform_azAlt_to_haDec(az_d, alt_ref_d)
-                                    else:
-                                        delta_ha_obs_h = ha_app_h
-                                        delta_dec_obs_d =dec_app_d
-                                    if self.model_on:
-                                        #Convert to Mechanical.
-                                        self.delta_slewtoHA, self.delta_slewtoDEC = self.transform_observed_to_mount(delta_ha_obs_h, delta_dec_obs_d, self.rapid_pier_indicator, loud=False, enable=False)
-                                        self.delta_slewtoRA = ra_fix_h(self.delta_sid_now_h - self.delta_slewtoHA)
-                                    else:
-                                        self.delta_slewtoRA = self.slewtoRA
-                                        self.delta_slewtoHA = delta_ha_obs_h
-                                        self.delta_slewtoDEC = self.slewtoDEC
-                                    self.ha_rate = (self.delta_slewtoHA - self.slewtoHA)/600/APPTOSID
-                                    self.dec_rate = (self.delta_slewtoDEC - self.slewtoDEC)/600/APPTOSID
-
-
-                                self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA, self.slewtoDEC)
+                                self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                                 self.currently_slewing=True
-                                if self.CanSetDeclinationRate:
-                                    self.mount_update_wincom.DeclinationRate = 0
+                                # if self.CanSetDeclinationRate:
+                                #     self.mount_update_wincom.DeclinationRate = 0
 
                             if self.request_tracking_on:
                                 self.request_tracking_on = False
@@ -983,15 +993,17 @@ class Mount:
                                 self.request_new_pierside=False
                                 self.new_pierside=self.mount_update_wincom.DestinationSideOfPier(self.request_new_pierside_ra, self.request_new_pierside_dec)
 
-                            if self.request_set_RightAscensionRate:
+                            if self.request_set_RightAscensionRate and self.CanSetRightAscensionRate:
                                 self.request_set_RightAscensionRate=False
                                 self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
                                 self.RightAscensionRate=self.request_new_RightAscensionRate
+                                print ("new RA rate set: " +str(self.RightAscensionRate))
 
                             if self.request_set_DeclinationRate and self.CanSetDeclinationRate:
                                 self.request_set_DeclinationRate=False
                                 self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
                                 self.DeclinationRate=self.request_new_DeclinationRate
+                                print ("new DEC rate set: " +str(self.DeclinationRate))
 
                             if self.request_find_home:
                                 self.request_find_home=False
@@ -1007,10 +1019,14 @@ class Mount:
                                     print ("PIERFLIP DETECTED!")
                                 g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
 
+                            #DIRECT MOUNT POSITION READ #5
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
                             self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
                             self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
+
+
+
 
                         except:
                             plog ("Issue in normal mount thread")
@@ -1220,6 +1236,12 @@ class Mount:
             if ha > 12:
                 ha -= 24
 
+
+            #This needs to move into the status read portion. it is just here for testing.
+            #t_ra_r, t_dec_d = self.transform_mechanical_to_observed(self.mech_ra*HTOR, self.mech_dec*DTOR, self.rapid_pier_indicator, loud=False)
+            t_ra_r, t_dec_d = self.transform_mechanical_to_observed(self.right_ascension_directly_from_mount*HTOR, self.declination_directly_from_mount*DTOR, self.rapid_pier_indicator, loud=False)
+            #The above routine is not finished and will end up returning ICRS not observed.
+
             status = {
                 'timestamp': round(time.time(), 3),
                 'right_ascension': round(self.right_ascension_directly_from_mount, 4),
@@ -1243,11 +1265,19 @@ class Mount:
                 'coordinate_system': str(self.rdsys),
                 'pointing_instrument': str(self.inst),
                 'message': str(self.mount_message[:54]),
-                'move_time': self.move_time
+                'move_time': self.move_time,
+                'ra_mech_to_obs': t_ra_r,
+                'dec_mech_to_obs': t_dec_d
             }
         else:
             plog('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
+
+
+
+
+
+
         self.previous_status = copy.deepcopy(status)
         self.currently_creating_status = False
         return copy.deepcopy(status)
@@ -1628,18 +1658,43 @@ class Mount:
 
         self.previous_pier_side=self.rapid_pier_indicator
 
+        plog ("RA and Dec pre icrs to mech: " + str(round(ra,6))+ " " + str(round(dec,6)))
+
         ###################################### HERE IS WHERE THE NEW WAYNE STUFF SHOULD GO
 
 
+        #Here is the point for slewing the telescope.  There is a lot
+        #to sort out here.  Incoming coordinates are assumed to be
+        #ICRS2000.0.  There are conversions to Apparent, then Observed
+        #(refraction) then to mechanical (mount-modeled) coordinates and
+        #velocities.  The status loop needs to process the opposite
+        #direction: from Mount to ICRS and from time to time to update
+        #the velocities.  If all this is computed correctly the drift
+        #rate should be minimal.
+
+        #Below we need to be sure we have the right pierside predicted for the seek that is about to happen.
+        #self.mech_ra, self.mech_dec, self.roll_rate, self.pitch_rate= self.transform_icrs_to_mechanical(self.slewtoRA, self.slewtoDEC, self.rapid_pier_indicator, loud=False, enable=False)
+        #self.mech_ra, self.mech_dec, self.roll_rate, self.pitch_rate= self.transform_icrs_to_mechanical(ra, dec, self.rapid_pier_indicator, loud=False, enable=False)
+        #ra, dec, self.roll_rate, self.pitch_rate= self.transform_icrs_to_mechanical(ra, dec, self.rapid_pier_indicator, loud=False, enable=False)
+        ra, dec, roll_rate, pitch_rate= self.transform_icrs_to_mechanical(ra, dec, self.rapid_pier_indicator, loud=False, enable=False)
+        #Above  we need to decide where to update the rates after a seek
 
 
+        if self.CanSetRightAscensionRate:
+            self.request_set_RightAscensionRate=True
+            self.request_new_RightAscensionRate=roll_rate
 
 
+        if self.CanSetDeclinationRate:
+            self.request_set_DeclinationRate=True
+            self.request_new_DeclinationRate=pitch_rate
 
         ############################################################################## NEW WAYNE BARRIER WALL
 
 
-
+        plog ("RA and Dec post icrs to mech: " + str(round(ra,6))+ " " + str(round(dec,6)))
+        plog ("Roll Rate: " + str(roll_rate))
+        plog ("Pitch Rate: " + str(pitch_rate))
 
 
         # Don't need a mount reference for skyflatspots!
