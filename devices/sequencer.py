@@ -5064,10 +5064,19 @@ class Sequencer:
             self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
             aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
             self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)
+            
+            # Also avoid being to close to the meridian
+            # This is to avoid flips but also
+            # If we are syncing the mount during this period, we need to sync safely away from the meridian
+            sid = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+            self.focus_catalogue_hourangles=[]
+            for splot in self.focus_catalogue[:,0]:
+                self.focus_catalogue_hourangles= abs(sid - (splot / 15))
+            
             above_altitude_patches=[]
 
             for ctr in range(len(self.focus_catalogue_altitudes)):
-                if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
+                if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0 and self.focus_catalogue_hourangles[ctr] > 1:
                     above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
             above_altitude_patches=np.asarray(above_altitude_patches)
             self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)
