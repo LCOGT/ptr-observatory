@@ -464,6 +464,8 @@ class Observatory:
         self.last_platesolved_dec_err =np.nan
         self.platesolve_errors_in_a_row=0
 
+        self.sync_after_platesolving=False
+
         self.worst_potential_pointing_in_arcseconds=30000
 
         # Rotator vs mount vs camera sync stuff
@@ -2463,6 +2465,9 @@ class Observatory:
 
                                     # Only recenter if out by more than 1%
                                     elif (abs(err_ha * 15 * 3600) > 0.01 * ra_field_asec) or (abs(err_dec * 3600) > 0.01 * dec_field_asec):
+                                        
+                                        
+                                        
 
                                          self.pointing_correction_requested_by_platesolve_thread = True
                                          self.pointing_correction_request_time = time.time()
@@ -2470,6 +2475,10 @@ class Observatory:
                                          self.pointing_correction_request_dec = pointing_dec + err_dec
                                          self.pointing_correction_request_ra_err = err_ha
                                          self.pointing_correction_request_dec_err = err_dec
+                                         
+                                         if self.sync_after_platesolving:
+                                             plog ("Syncing mount after this solve")
+                                             g_dev['mnt'].sync_to_pointing(solved_ra, solved_dec)                                        
 
                                          drift_timespan= time.time() - self.drift_tracker_timer
                                          #plog ("Drift Timespan " + str(drift_timespan))

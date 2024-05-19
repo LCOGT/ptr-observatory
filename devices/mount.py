@@ -382,6 +382,9 @@ class Mount:
 
         self.can_park = self.mount.CanPark
         self.can_set_tracking = self.mount.CanSetTracking
+        
+        self.can_sync_mount = self.mount.CanSync
+        
         # The update_status routine collects the current atpark status and pier status.
         # This is a slow command, so unless the code needs to know IMMEDIATELY
         # whether the scope is parked, then this is polled rather than directly
@@ -465,7 +468,13 @@ class Mount:
         self.abort_slew_requested=False
         self.find_home_requested=False
 
+        self.sync_mount_requested=False
+        
+        self.mount_update_wincom.SyncToCoordinates(self.syncToRA,self.syncToDEC)
+        self.syncToRA=12.0
+        self.syncToDEC=-20.0
 
+        
 
         self.unpark_requested=False
         self.park_requested=False
@@ -937,6 +946,13 @@ class Mount:
                     else:
                         #  Starting here ae tha vari0us mount commands and reads...
                         try:
+                            
+                            if self.can_sync_mount:
+                                if self.sync_mount_requested:
+                                    self.sync_mount_requested=False
+                                    self.mount_update_wincom.SyncToCoordinates(self.syncToRA,self.syncToDEC)
+                            
+                            
                             if self.unpark_requested:
                                 self.unpark_requested=False
                                 self.mount_update_wincom.Unpark()
@@ -1507,6 +1523,17 @@ class Mount:
     ###############################
     #        Mount Commands       #
     ###############################
+    
+    
+    def sync_to_pointing(self, syncToRA, syncToDec):
+        
+        self.syncToRA=syncToRA
+        self.syncToDEC=syncToDec
+        self.sync_mount_requested=True
+        plog ("Mount synced to : " + str(syncToRA) + " " + str(syncToDec))
+        self.wait_for_mount_update()
+    
+    
 
     '''
     This is the standard go to that does not establish and tracking for refraction or

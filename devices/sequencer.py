@@ -648,10 +648,14 @@ class Sequencer:
 
                 g_dev['foc'].set_initial_best_guess_for_focus()
 
+                g_dev['obs'].sync_after_platesolving=True
+
                 # Autofocus
                 req2 = {'target': 'near_tycho_star'}
                 opt = {}
                 self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
+                
+                g_dev['obs'].sync_after_platesolving=False
 
                 g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
 
