@@ -361,14 +361,18 @@ class Mount:
 
         # Minimising ASCOM calls by holding these as internal variables
         if self.mount.CanSetRightAscensionRate:
+            print ("Can Set RightAscensionRate")
             self.CanSetRightAscensionRate=True
         else:
+            print ("CANNOT Set RightAscensionRate")
             self.CanSetRightAscensionRate=False
         self.RightAscensionRate = self.mount.RightAscensionRate
         if self.mount.CanSetDeclinationRate:
             self.CanSetDeclinationRate = True
+            print ("Can Set DeclinationRate")
         else:
             self.CanSetDeclinationRate = False
+            print ("CANNOT Set DeclinationRate")
 
         self.DeclinationRate = self.mount.DeclinationRate
 
