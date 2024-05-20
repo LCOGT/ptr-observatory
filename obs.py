@@ -2419,6 +2419,7 @@ class Observatory:
                                     plog ("Syncing mount after this solve")
                                     g_dev['mnt'].sync_to_pointing(solved_ra, solved_dec)     
                                     self.pointing_correction_requested_by_platesolve_thread = False
+                                    self.sync_after_platesolving=False
                                     # # After sync we shuold be able to nudge over to the correct pointing. 
                                     # self.pointing_correction_requested_by_platesolve_thread = True
                                     # self.pointing_correction_request_time = time.time()
