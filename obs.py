@@ -2418,14 +2418,14 @@ class Observatory:
                                 if self.sync_after_platesolving:
                                     plog ("Syncing mount after this solve")
                                     g_dev['mnt'].sync_to_pointing(solved_ra, solved_dec)     
-                                    
-                                    # After sync we shuold be able to nudge over to the correct pointing. 
-                                    self.pointing_correction_requested_by_platesolve_thread = True
-                                    self.pointing_correction_request_time = time.time()
-                                    self.pointing_correction_request_ra = pointing_ra 
-                                    self.pointing_correction_request_dec = pointing_dec 
-                                    self.pointing_correction_request_ra_err = 0
-                                    self.pointing_correction_request_dec_err = 0
+                                    self.pointing_correction_requested_by_platesolve_thread = False
+                                    # # After sync we shuold be able to nudge over to the correct pointing. 
+                                    # self.pointing_correction_requested_by_platesolve_thread = True
+                                    # self.pointing_correction_request_time = time.time()
+                                    # self.pointing_correction_request_ra = pointing_ra 
+                                    # self.pointing_correction_request_dec = pointing_dec 
+                                    # self.pointing_correction_request_ra_err = 0
+                                    # self.pointing_correction_request_dec_err = 0
 
 
                                 # If we are WAY out of range, then reset the mount reference and attempt moving back there.
