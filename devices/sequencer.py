@@ -5148,10 +5148,17 @@ class Sequencer:
                             self.total_sequencer_control = False
                             return np.nan, np.nan
                         pass
+                    
+                    
 
                     g_dev['obs'].sync_after_platesolving = False
+                    
+                    # Once the mount is synced, then re-slew the mount to where it thinks it should be
+                    g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
+                    
+                    
 
-                    g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+                    #g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
                     g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field and test the sync", p_level='INFO')
             else:
                 g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
