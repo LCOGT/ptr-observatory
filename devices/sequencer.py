@@ -5115,9 +5115,13 @@ class Sequencer:
 
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
 
-            # If no extensive_focus has been done, centre the focus field.
-            if extensive_focus == None:
-                g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
+            # # If no extensive_focus has been done, centre the focus field.
+            # if extensive_focus == None:
+                
+            
+            # First check if we are doing a sync
+            if g_dev['obs'].sync_after_platesolving:
+                g_dev['obs'].send_to_user("Running a platesolve to sync the mount", p_level='INFO')
 
                 self.centering_exposure(no_confirmation=True, try_hard=True)
                 # Wait for platesolve
@@ -5144,6 +5148,39 @@ class Sequencer:
                             self.total_sequencer_control = False
                             return np.nan, np.nan
                         pass
+                    
+                    g_dev['obs'].sync_after_platesolving = False
+
+                    g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+                    g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field and test the sync", p_level='INFO')
+            else:
+                g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
+
+            self.centering_exposure(no_confirmation=True, try_hard=True)
+            # Wait for platesolve
+            reported=0
+            temptimer=time.time()
+            while True:
+                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                    break
+                else:
+                    if reported ==0:
+                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                        reported=1
+                    if (time.time() - temptimer) > 20:
+                        #g_dev["obs"].request_full_update()
+                        temptimer=time.time()
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                        self.focussing=False
+                        self.total_sequencer_control = False
+                        return np.nan, np.nan
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                        self.focussing=False
+                        self.total_sequencer_control = False
+                        return np.nan, np.nan
+                    pass
 
                 g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
 
