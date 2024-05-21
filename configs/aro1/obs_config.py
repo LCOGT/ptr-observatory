@@ -259,12 +259,13 @@ site_config = {
                 'model_type': "Equatorial",
                 'rates_on': True,  #  Rates implied by model and refraction applied during tracking.
                 #units for model are asec/radian
+                'model_date':  "n.a.",
                 'model_equat': {
                     'ih': 0.0, #"Home naturally points to West for AP GEM mounts.
                     'id': 0.00, #These two are zero-point references for HA/Ra and dec.
                     'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
                     'edo': 0.0, #"East Dec Offset
-                    'ma': 3600.0, # Azimuth error of polar axia
+                    'ma': 0.0, # Azimuth error of polar axia
                     'me': 0.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
                     'ch': 0.0,  #Optical axis not perp to dec axis
                     'np': 0.0,  #Non-perp of polar and dec axis

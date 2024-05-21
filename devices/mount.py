@@ -259,6 +259,7 @@ class Mount:
         #DIRECT MOUNT POSITION READ #1
         self.current_icrs_ra = self.mount.RightAscension
         self.current_icrs_dec = self.mount.Declination
+        self.current_mount_sidereal = self.mount.SiderealTime
         try:
             self.ICRS2000 = config["mount"]["mount1"]["settings"]['ICRS2000_input_coords']
             self.refr_on = config["mount"]["mount1"]["settings"]["refraction_on"]
@@ -353,6 +354,7 @@ class Mount:
         #DIRECT MOUNT POSITION READ #2
         self.last_ra_requested = self.mount.RightAscension
         self.last_dec_requested = self.mount.Declination
+        self.last_sidereal_requested = self.mount.SiderealTime
 
         self.last_tracking_rate_ra = 0
         self.last_tracking_rate_dec = 0
@@ -415,9 +417,11 @@ class Mount:
         #DIRECT MOUNT POSITION READ #3
         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
+        self.sidereal_time_directly_from_mount = copy.deepcopy(self.mount.SiderealTime)
         #Verified these set the rates additively to mount supplied refraction rate.20231221 WER
         self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount.RightAscensionRate)
         self.declination_rate_directly_from_mount = copy.deepcopy(self.mount.DeclinationRate)
+
 
         # initialisation values
         self.alt= 45
@@ -426,7 +430,7 @@ class Mount:
         self.zen = 45
 
 
-        self.inverse_icrs_and_rates_timer=time.time() - 600
+        self.inverse_icrs_and_rates_timer=time.time() - 180
 
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
 
@@ -664,7 +668,7 @@ class Mount:
         self.sid_now_h = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
         #First, convert Ra to Ha
-        ha_app_h = ha_fix_h(self.current_sidereal - ra_app_h)
+        ha_app_h = ha_fix_h(self.sid_now_h - ra_app_h)
         if self.refr_on:
             #Convert to Observed
             #next convert to ALT az, and save the az
@@ -681,13 +685,13 @@ class Mount:
             #Convert to Mechanical.
 
             self.slewtoHA, self.slewtoDEC = self.transform_observed_to_mount(ha_obs_h, dec_obs_d, self.rapid_pier_indicator, loud=False, enable=False)
-            self.slewtoRA = ra_fix_h(self.current_sidereal - self.slewtoHA)
+            self.slewtoRA = ra_fix_h(self.sid_now_h - self.slewtoHA)
             pass
 
         if self.rates_on:
             #Compute Velocities.  Typically with a CCD we rarely expose longer than 300 sec  so we
             # are going to use 600 sec as the time delta.
-            self.delta_step = 600./3600.
+            self.delta_step = APPTOSID/3600.
             self.delta_sid_now_h = self.sid_now_h + self.delta_step
             delta_ha_app_h = ha_fix_h(self.delta_sid_now_h - ra_app_h)
             if self.refr_on:
@@ -710,9 +714,11 @@ class Mount:
                 self.delta_slewtoRA = self.slewtoRA
                 self.delta_slewtoHA = delta_ha_obs_h
                 self.delta_slewtoDEC = self.slewtoDEC
-
-            self.ha_rate = (self.delta_slewtoHA - self.slewtoHA)/600/APPTOSID
-            self.dec_rate = (self.delta_slewtoDEC - self.slewtoDEC)/600/APPTOSID
+            if 34.5 < dec_app_d < 35.5 and -2 < ha_app_h < 2:
+                #breakpoint()
+                pass
+            self.ha_rate = (self.delta_slewtoHA - self.slewtoHA)*HTOSec/APPTOSID
+            self.dec_rate = (self.delta_slewtoDEC - self.slewtoDEC)*DTOS
         return(self.slewtoRA, self.slewtoDEC, self.ha_rate, self.dec_rate)
         pass
 
@@ -984,10 +990,11 @@ class Mount:
                             # quickly as possible
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
+                            self.sidereal_time_directly_from_mount= copy.deepcopy(self.mount_update_wincom.SiderealTime)
                             # Here we calculate the values that go to the status.
                             self.inverse_icrs_ra, self.inverse_icrs_dec, inverse_ra_vel, inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
                             #I left the above two velocities as local becuse we will not do anything with them.
-                            self.inverse_icrs_and_rates_timer=time.time-600
+                            self.inverse_icrs_and_rates_timer=time.time()
 
                         except:
                             plog ("Issue in slewing mount thread")
@@ -1099,6 +1106,7 @@ class Mount:
                             #DIRECT MOUNT POSITION READ #5
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
+                            self.sidereal_time_directly_from_mount= copy.deepcopy(self.mount_update_wincom.SiderealTime)
                             self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
                             self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
 
@@ -1304,7 +1312,9 @@ class Mount:
             self.zen = zen
 
             self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
-
+            # if abs(self.current_sidereal - self.sidereal_time_directly_from_mount) > 0.0001:
+            #     breakpoint()
+            #     pass
             if self.prior_roll_rate == 0:
                 pass
             ha = self.right_ascension_directly_from_mount - self.current_sidereal
