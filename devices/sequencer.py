@@ -496,26 +496,96 @@ class Sequencer:
             if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) \
                 and not self.cool_down_latch and g_dev['obs'].open_and_enabled_to_observe \
                 and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].rapid_park_indicator \
-                and ((time.time() - self.time_roof_last_opened) < 10) :
+                and ((time.time() - self.time_roof_last_opened) < 20) :
 
                 self.nightly_reset_complete = False
                 self.cool_down_latch = True
                 self.reset_completes()
 
+    
+                # If the roof opens later then sync and refocus
                 if (g_dev['events']['Observing Begins'] < ephem_now < g_dev['events']['Observing Ends']):
-                    # Move to reasonable spot
+                    # # Move to reasonable spot
+                    # g_dev['mnt'].go_command(alt=70,az= 70)
+                    # g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
+                    #     days=1
+                    # )  # Initialise last focus as yesterday
+                    # g_dev['foc'].set_initial_best_guess_for_focus()
+                    # g_dev['mnt'].set_tracking_on()
+                    # # Autofocus
+                    # req2 = {'target': 'near_tycho_star'}
+                    # opt = {}
+                    # plog ("Running initial autofocus upon opening observatory")
+
+                    # self.auto_focus_script(req2, opt)
+                    
+                    self.total_sequencer_control=True
+                    g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
                     g_dev['mnt'].go_command(alt=70,az= 70)
+                    g_dev['mnt'].set_tracking_on()
+
+                    # Super-duper double check that darkslide is open
+                    if g_dev['cam'].has_darkslide:
+                        g_dev['cam'].openDarkslide()
+                    self.wait_for_slew(wait_after_slew=False)
+
+                    # Check it hasn't actually been homed this evening from the rotatorhome shelf
+                    homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                    if 'lasthome' in homerotator_time_shelf:
+                        if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
+                            self.rotator_has_been_homed_this_evening=True
+                    homerotator_time_shelf.close()
+                    if not self.rotator_has_been_homed_this_evening:
+                        # Homing Rotator for the evening.
+                        try:
+                            while g_dev['rot'].rotator.IsMoving:
+                                plog("home rotator wait")
+                                time.sleep(1)
+                            g_dev['obs'].send_to_user("Rotator being homed at beginning of night.", p_level='INFO')
+                            time.sleep(0.5)
+                            g_dev['rot'].home_command({},{})
+                            while g_dev['rot'].rotator.IsMoving:
+                                plog("home rotator wait")
+                                time.sleep(1)
+                            # Store last home time.
+                            homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                            homerotator_time_shelf['lasthome'] = time.time()
+                            homerotator_time_shelf.close()
+
+                            g_dev['mnt'].go_command(alt=70,az= 70)
+                            self.wait_for_slew(wait_after_slew=False)
+                            while g_dev['rot'].rotator.IsMoving:
+                                plog("home rotator wait")
+                                time.sleep(1)
+                            self.rotator_has_been_homed_this_evening=True
+                            g_dev['obs'].rotator_has_been_checked_since_last_slew = True
+                        except:
+                            #plog ("no rotator to home or wait for.")
+                            pass
+
                     g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
                         days=1
                     )  # Initialise last focus as yesterday
+
                     g_dev['foc'].set_initial_best_guess_for_focus()
-                    g_dev['mnt'].set_tracking_on()
+
+                    g_dev['obs'].sync_after_platesolving=True
+
                     # Autofocus
                     req2 = {'target': 'near_tycho_star'}
                     opt = {}
-                    plog ("Running initial autofocus upon opening observatory")
+                    self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
-                    self.auto_focus_script(req2, opt)
+                    g_dev['obs'].sync_after_platesolving=False
+
+                    g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
+
+                    g_dev['obs'].flush_command_queue()
+
+                    self.total_sequencer_control=False
+                    
+                    
+                    
                 else:
                     self.night_focus_ready=True
 
