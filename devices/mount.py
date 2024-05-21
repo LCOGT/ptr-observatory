@@ -61,7 +61,7 @@ import ephem
 from ptr_utility import plog
 import time
 
-DEBUG = True
+DEBUG = False
 
 DEG_SYM = '°'
 PI = math.pi
@@ -597,6 +597,7 @@ class Mount:
                 count += 1
                 if count > 25:  # count about 12 at-0.5 deg. 3 at 45deg.
                     return dec_fix_d(pObs_alt)
+
             return dec_fix_d(trial), dec_fix_d(pObs_alt - trial)  * 3600.0, count
 
     def transform_mechanical_to_icrs(self, pRoll_h, pPitch_d, pPierSide, loud=False):
@@ -628,11 +629,16 @@ class Mount:
                 pitchTrial -= errorPitch*RTOD
                 count += 1
                 if count > 500:  # count about 12 at-0.5 deg. 3 at 45deg.
-                    if loud:
-                        print("transform_mount_to_observed_r() FAILED!")
-                    return pRoll_h, pPitch_d
+                    #if loud:
+                    print("transform_mount_to_observed_r() FAILED!")
+                    return pRoll_h, pPitch_d, 0.0, 0.0
+
+            print("                ref:  ", round(self.refr_asec, 2))
+            print("Corrections in asec:  ", round(self.raCorr, 2), round(self.decCorr, 2))
             #if DEBUG:  print("Iterations:  ", count, ra_vel, dec_vel)
-            return ha_fix_h(rollTrial), dec_fix_d(pitchTrial)
+
+
+            return ha_fix_h(rollTrial), dec_fix_d(pitchTrial), ra_vel, dec_vel
 
     def transform_icrs_to_mechanical(self, icrs_ra_h, icrs_dec_d, rapid_pier_indicator, loud=False, enable=False):
            #Note when starting up Rapid Pier indicator may be incorrect.
@@ -704,7 +710,7 @@ class Mount:
                 self.delta_slewtoRA = self.slewtoRA
                 self.delta_slewtoHA = delta_ha_obs_h
                 self.delta_slewtoDEC = self.slewtoDEC
-                breakpoint()
+
             self.ha_rate = (self.delta_slewtoHA - self.slewtoHA)/600/APPTOSID
             self.dec_rate = (self.delta_slewtoDEC - self.slewtoDEC)/600/APPTOSID
         return(self.slewtoRA, self.slewtoDEC, self.ha_rate, self.dec_rate)
@@ -979,7 +985,8 @@ class Mount:
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
                             # Here we calculate the values that go to the status.
-                            self.inverse_icrs_ra, self.inverse_icrs_dec = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
+                            self.inverse_icrs_ra, self.inverse_icrs_dec, inverse_ra_vel, inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
+                            #I left the above two velocities as local becuse we will not do anything with them.
                             self.inverse_icrs_and_rates_timer=time.time-600
 
                         except:
@@ -1043,7 +1050,8 @@ class Mount:
                             # If we aren't slewing this update and we haven't
                             # updated the position for a minute, update the position.
                             elif (time.time() - self.inverse_icrs_and_rates_timer) > 60:
-                                self.inverse_icrs_ra, self.inverse_icrs_dec = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
+
+                                self.inverse_icrs_ra, self.inverse_icrs_dec, self.inverse_ra_vel, self.inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
                                 self.inverse_icrs_and_rates_timer=time.time()
 
 
@@ -1305,16 +1313,18 @@ class Mount:
             if ha > 12:
                 ha -= 24
 
+            try:
+                h = self.inverse_icrs_ra
+                d = self.inverse_icrs_dec
+            except:
+                h = 12.    #just to get this initilized
+                d = -55.
 
-            #This needs to move into the status read portion. it is just here for testing.
-
-
-            #self.inverse_icrs_ra, self.inverse_icrs_dec = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
             #The above routine is not finished and will end up returning ICRS not observed.
             status = {
                 'timestamp': round(time.time(), 3),
-                'right_ascension': round(self.inverse_icrs_ra, 4),
-                'declination': round(self.inverse_icrs_dec, 4),
+                'right_ascension': round(h, 4),
+                'declination': round(d, 4),
                 'sidereal_time': round(self.current_sidereal, 5),  #Should we add HA?
                 #'refraction': round(self.refraction_rev, 2),
                 'correction_ra': round(self.ha_corr, 4),  #If mount model = 0, these are very small numbers.
@@ -1757,8 +1767,7 @@ class Mount:
 
         ra, dec, roll_rate, pitch_rate = self.transform_icrs_to_mechanical(ra, dec, self.rapid_pier_indicator)
         #Above  we need to decide where to update the rates after a seek
-        #breakpoint()
-        #ra2, dec2 = self.transform_mechanical_to_icrs(ra1, dec1,  self.rapid_pier_indicator)
+
 
 
 

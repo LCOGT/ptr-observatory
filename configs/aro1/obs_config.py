@@ -264,9 +264,9 @@ site_config = {
                     'id': 0.00, #These two are zero-point references for HA/Ra and dec.
                     'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
                     'edo': 0.0, #"East Dec Offset
-                    'ma': 0.0, #Azimuth error of polar axia
+                    'ma': 3600.0, # Azimuth error of polar axia
                     'me': 0.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
-                    'ch': 333.0,  #Optical axis not perp to dec axis
+                    'ch': 0.0,  #Optical axis not perp to dec axis
                     'np': 0.0,  #Non-perp of polar and dec axis
                     'tf': 0.0,  #Sin flexure -- Hook's law.
                     'tx': 0.0,  #Tangent flexure
@@ -277,8 +277,8 @@ site_config = {
                     }
                 ,
                 'model_altAz': {
-                    'ih': 000.00, #"Home naturally points to West for AP GEM mounts.
-                    'id': 0.00, #These two are zero-point references.
+                    'ia': 000.00, #"Home naturally points to West for AP GEM mounts.
+                    'ie': 0.00, #These two are zero-point references.
                     'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
                     'edo': 0.0, #"East Dec Offset
                     'ma': 0.0,
