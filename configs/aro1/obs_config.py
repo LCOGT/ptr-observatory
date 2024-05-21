@@ -218,7 +218,7 @@ site_config = {
             'hostname':  'safpier',
             'desc':  'AP 1600 GoTo',
             'driver': 'AstroPhysicsV2.Telescope',
-            'alignment': 'Equatorial',
+            'alignment': 'Equatorial',  #this is redundnat with a term below near model.
             'default_zenith_avoid': 0.0,   # degrees floating, 0.0 means do not apply this constraint.
             'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
 
@@ -258,25 +258,26 @@ site_config = {
                 'model_on': True,
                 'model_type': "Equatorial",
                 'rates_on': True,  #  Rates implied by model and refraction applied during tracking.
+                #units for model are asec/radian
                 'model_equat': {
                     'ih': 0.0, #"Home naturally points to West for AP GEM mounts.
-                    'id': 0.00, #These two are zero-point references.
+                    'id': 0.00, #These two are zero-point references for HA/Ra and dec.
                     'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
                     'edo': 0.0, #"East Dec Offset
-                    'ma': 0.0,
-                    'me': 0.0,  #Default is about -60 asec above pole for ARO
-                    'ch': 0.0,
-                    'np': 0.0,
-                    'tf': 0.0,
-                    'tx': 0.0,
-                    'hces': 0.0,
+                    'ma': 0.0, #Azimuth error of polar axia
+                    'me': 0.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
+                    'ch': 333.0,  #Optical axis not perp to dec axis
+                    'np': 0.0,  #Non-perp of polar and dec axis
+                    'tf': 0.0,  #Sin flexure -- Hook's law.
+                    'tx': 0.0,  #Tangent flexure
+                    'hces': 0.0, #Centration error of encoders.
                     'hcec': 0.0,
                     'dces': 0.0,
                     'dcec': 0.0,
                     }
                 ,
                 'model_altAz': {
-                    'ih': 3600.00, #"Home naturally points to West for AP GEM mounts.
+                    'ih': 000.00, #"Home naturally points to West for AP GEM mounts.
                     'id': 0.00, #These two are zero-point references.
                     'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
                     'edo': 0.0, #"East Dec Offset

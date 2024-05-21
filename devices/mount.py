@@ -61,6 +61,7 @@ import ephem
 from ptr_utility import plog
 import time
 
+DEBUG = True
 
 DEG_SYM = '°'
 PI = math.pi
@@ -367,14 +368,29 @@ class Mount:
             print ("CANNOT Set RightAscensionRate")
             self.CanSetRightAscensionRate=False
         self.RightAscensionRate = self.mount.RightAscensionRate
+
         if self.mount.CanSetDeclinationRate:
             self.CanSetDeclinationRate = True
             print ("Can Set DeclinationRate")
         else:
             self.CanSetDeclinationRate = False
             print ("CANNOT Set DeclinationRate")
-
         self.DeclinationRate = self.mount.DeclinationRate
+
+        #IMPORTANT Ap1600 Info.
+        #Set Rate unit to asec/sec and Relative to Sid.  Rates are in asec/sec
+        #So a dec rate value of 15.0477 causes about a dec rate -15!  Not a typo, the sign is reversed.
+        #For RA a rate entry of 0.0 means normal tracking, a entry of 0.1 means RA increases 1 sec in ra
+        #every 10 seconds of time.
+        #Divide RArate by APPTOSID to get an exact rate display on APCC
+        #Multiply DEC rate by APPTOSID for an exact rate display.
+        #self.mount.RightAscensionRate = 1/APPTOSID  Ra rate = 15.0000000
+        #self.mount.DeclinationRate = 15*APPTOSID  Dec Rate = 15.0000000
+        #self.mount.RightAscensionRate = 0.0  Returns to normal tracking
+
+
+
+
 
         self.EquatorialSystem = self.mount.EquatorialSystem
 
@@ -408,6 +424,9 @@ class Mount:
         self.airmass = 1.5
         self.az = 160
         self.zen = 45
+
+
+        self.inverse_icrs_and_rates_timer=time.time() - 600
 
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
 
@@ -612,7 +631,7 @@ class Mount:
                     if loud:
                         print("transform_mount_to_observed_r() FAILED!")
                     return pRoll_h, pPitch_d
-            #print("Iterations:  ", count)
+            #if DEBUG:  print("Iterations:  ", count, ra_vel, dec_vel)
             return ha_fix_h(rollTrial), dec_fix_d(pitchTrial)
 
     def transform_icrs_to_mechanical(self, icrs_ra_h, icrs_dec_d, rapid_pier_indicator, loud=False, enable=False):
@@ -647,7 +666,7 @@ class Mount:
             #next add in the refractive lift
             alt_ref_d, self.refr_asec = self.apply_refraction_in_alt(alt_d)
             #next convert back to Ha and dec
-
+            if DEBUG: print("                ref:  ", round(self.refr_asec, 2))
             ha_obs_h, dec_obs_d = self.transform_azAlt_to_haDec(az_d, alt_ref_d)
         else:
             ha_obs_h = ha_app_h
@@ -685,6 +704,7 @@ class Mount:
                 self.delta_slewtoRA = self.slewtoRA
                 self.delta_slewtoHA = delta_ha_obs_h
                 self.delta_slewtoDEC = self.slewtoDEC
+                breakpoint()
             self.ha_rate = (self.delta_slewtoHA - self.slewtoHA)/600/APPTOSID
             self.dec_rate = (self.delta_slewtoDEC - self.slewtoDEC)/600/APPTOSID
         return(self.slewtoRA, self.slewtoDEC, self.ha_rate, self.dec_rate)
@@ -805,11 +825,11 @@ class Mount:
                 corrPitch = cPitch
                 if loud:
                     print("Final:   ", fRoll * RTOH, fPitch * RTOD)
-                self.raCorr = ha_fix_h(corrRoll - pRoll_h) * 15 * 3600  #Stash the correction
-                self.decCorr = dec_fix_d(corrPitch - pPitch_d) * 3600
+                self.raCorr = (ha_fix_r(corrRoll - pRoll_h*HTOR))*RTOS  #Stash the correction
+                self.decCorr = (dec_fix_r(corrPitch - pPitch_d*DTOR))*RTOS
                 # 20210328  Note this may not work at Pole.
                 #if enable:
-                #    print("Corrections in asec:  ", raCorr, decCorr)
+                if DEBUG: print("Corrections in asec:  ", round(self.raCorr, 2), round(self.decCorr, 2))
                 return (corrRoll*RTOH, corrPitch*RTOD )
             elif not GEM:
                 #if loud:
@@ -952,8 +972,16 @@ class Mount:
                             self.pier_flip_detected=False
 
                             #DIRECT MOUNT POSITION READ #4  But this time from mount_update_wincom
+                            # This is the direct command WHILE SLEWING.
+                            # This part of the thread just updates the position
+                            # Purely to make the green crosshair update as
+                            # quickly as possible
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
+                            # Here we calculate the values that go to the status.
+                            self.inverse_icrs_ra, self.inverse_icrs_dec = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
+                            self.inverse_icrs_and_rates_timer=time.time-600
+
                         except:
                             plog ("Issue in slewing mount thread")
                             plog(traceback.format_exc())
@@ -1011,6 +1039,14 @@ class Mount:
 
                                 self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                                 self.currently_slewing=True
+
+                            # If we aren't slewing this update and we haven't
+                            # updated the position for a minute, update the position.
+                            elif (time.time() - self.inverse_icrs_and_rates_timer) > 60:
+                                self.inverse_icrs_ra, self.inverse_icrs_dec = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
+                                self.inverse_icrs_and_rates_timer=time.time()
+
+
                                 # if self.CanSetDeclinationRate:
                                 #     self.mount_update_wincom.DeclinationRate = 0
 
@@ -1273,7 +1309,7 @@ class Mount:
             #This needs to move into the status read portion. it is just here for testing.
 
 
-            self.inverse_icrs_ra, self.inverse_icrs_dec = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
+            #self.inverse_icrs_ra, self.inverse_icrs_dec = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
             #The above routine is not finished and will end up returning ICRS not observed.
             status = {
                 'timestamp': round(time.time(), 3),
