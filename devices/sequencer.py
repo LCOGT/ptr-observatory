@@ -5663,6 +5663,8 @@ class Sequencer:
             return
 
 
+        previous_mount_reference_model_off = copy.deepcopy(g_dev['obs'].mount_reference_model_off)
+        g_dev['obs'].mount_reference_model_off = True
 
         self.total_sequencer_control = True
         g_dev['obs'].stop_processing_command_requests = True
@@ -5858,6 +5860,8 @@ class Sequencer:
         plog (deviation_catalogue_for_tpoint)
 
         g_dev['obs'].auto_centering_off = prev_auto_centering
+        
+        g_dev['obs'].mount_reference_model_off = previous_mount_reference_model_off
 
         g_dev['obs'].flush_command_queue()
 
@@ -5881,6 +5885,9 @@ class Sequencer:
 
         prev_auto_centering = g_dev['obs'].auto_centering_off
         g_dev['obs'].auto_centering_off = True
+        
+        previous_mount_reference_model_off = copy.deepcopy(g_dev['obs'].mount_reference_model_off)
+        g_dev['obs'].mount_reference_model_off = True
 
         plog("Starting pointing run. ")
         time.sleep(0.1)
@@ -6111,6 +6118,8 @@ class Sequencer:
         plog ("Final devation catalogue for Tpoint")
         plog (deviation_catalogue_for_tpoint)
 
+        
+        g_dev['obs'].mount_reference_model_off = previous_mount_reference_model_off
         g_dev['obs'].auto_centering_off = prev_auto_centering
 
         g_dev['obs'].flush_command_queue()
