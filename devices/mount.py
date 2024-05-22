@@ -1848,10 +1848,12 @@ class Mount:
                     delta_ra, delta_dec = self.get_flip_reference(ra,dec)
 
 
-            plog ("Reference used for mount deviation in go_command")
-            plog (str(delta_ra*15* 60) + " RA (Arcmins), " + str(delta_dec*60) + " Dec (Arcmins)")
+            
 
             if not g_dev['obs'].mount_reference_model_off:
+                plog ("Reference used for mount deviation in go_command")
+                plog (str(delta_ra*15* 60) + " RA (Arcmins), " + str(delta_dec*60) + " Dec (Arcmins)")
+                
                 ra = ra + delta_ra
                 dec = dec + delta_dec
         else:
