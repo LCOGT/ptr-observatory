@@ -1064,6 +1064,18 @@ class Mount:
 
                                 self.inverse_icrs_ra, self.inverse_icrs_dec, self.inverse_ra_vel, self.inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
                                 self.inverse_icrs_and_rates_timer=time.time()
+                                
+                                if self.CanSetRightAscensionRate:
+                                    self.request_set_RightAscensionRate=False
+                                    self.mount_update_wincom.RightAscensionRate=self.inverse_ra_vel
+                                    self.RightAscensionRate=self.inverse_ra_vel
+                                    print ("new RA rate set: " +str(self.RightAscensionRate))
+
+                                if self.CanSetDeclinationRate:
+                                    self.request_set_DeclinationRate=False
+                                    self.mount_update_wincom.DeclinationRate=self.inverse_dec_vel
+                                    self.DeclinationRate=self.inverse_dec_vel
+                                    print ("new DEC rate set: " +str(self.DeclinationRate))
 
 
                                 # if self.CanSetDeclinationRate:
@@ -2429,11 +2441,17 @@ class Mount:
         # We need to store time, HA, Dec, HA offset, Dec offset.
         HA=self.current_sidereal - pointing_ra + deviation_ha
         # Removing older references
+        counter=0
+        deleteList=[]
         for entry in self.longterm_storage_of_mount_references:
             distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
             if distance_from_new_reference < 2:
                 plog ("Found and removing an old reference close to new reference: " + str(entry))
-                self.longterm_storage_of_mount_references.remove(entry)
+                #self.longterm_storage_of_mount_references.remove(entry)
+                deleteList.append(counter)
+            counter=counter+1
+        for index in sorted(deleteList, reverse=True):
+            del self.longterm_storage_of_mount_references[index]
 
         plog ("Recording and using new reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )
 
@@ -2461,19 +2479,33 @@ class Mount:
         self.last_flip_reference_ha_offset =  deviation_ha
         self.last_flip_reference_dec_offset =  deviation_dec
 
-        # Removing older references
-        for entry in self.longterm_storage_of_flip_references:
-            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
-            if distance_from_new_reference < 2:
-                plog ("Found and removing an old reference close to new reference: " + str(entry))
-                self.longterm_storage_of_mount_references.remove(entry)
-
-        plog ("Recording and using new reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )
-
         # Add in latest point to the list of mount references
         # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.
         HA=self.current_sidereal - pointing_ra  + deviation_ha
+
+        # # Removing older references
+        # for entry in self.longterm_storage_of_flip_references:
+        #     distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
+        #     if distance_from_new_reference < 2:
+        #         plog ("Found and removing an old reference close to new reference: " + str(entry))
+        #         self.longterm_storage_of_mount_references.remove(entry)
+
+        plog ("Recording and using new reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )
+        
+        counter=0
+        deleteList=[]
+        for entry in self.longterm_storage_of_flip_references:
+            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
+            if distance_from_new_reference < 2:
+                plog ("Found and removing an old reference close to new reference: " + str(entry))
+                #self.longterm_storage_of_mount_references.remove(entry)
+                deleteList.append(counter)
+            counter=counter+1
+            
+        for index in sorted(deleteList, reverse=True):
+            del self.longterm_storage_of_flip_references[index]
+        
         self.longterm_storage_of_flip_references.append([time.time(),HA,pointing_dec + deviation_dec, deviation_ha,  deviation_dec])
         mnt_shelf['longterm_storage_of_flip_references']=self.longterm_storage_of_flip_references
         mnt_shelf.close()
