@@ -991,9 +991,13 @@ class Mount:
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
                             self.sidereal_time_directly_from_mount= copy.deepcopy(self.mount_update_wincom.SiderealTime)
-                            # Here we calculate the values that go to the status.
-                            self.inverse_icrs_ra, self.inverse_icrs_dec, inverse_ra_vel, inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
-                            #I left the above two velocities as local becuse we will not do anything with them.
+                            # # Here we calculate the values that go to the status.
+                            # self.inverse_icrs_ra, self.inverse_icrs_dec, inverse_ra_vel, inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
+                            # #I left the above two velocities as local becuse we will not do anything with them.
+                            
+                            # Dont need to correct temporary slewing values as it is moving
+                            self.inverse_icrs_ra = self.right_ascension_directly_from_mount
+                            self.inverse_icrs_dec = self.declination_directly_from_mount                            
                             self.inverse_icrs_and_rates_timer=time.time()
 
                         except:
