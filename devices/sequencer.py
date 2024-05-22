@@ -5730,7 +5730,8 @@ class Sequencer:
                 g_dev['obs'].time_of_last_slew=time.time()
                 g_dev["mnt"].last_ra_requested = grid_star[0] / 15
                 g_dev["mnt"].last_dec_requested = grid_star[1]
-                g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
+                #g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
+                g_dev['mnt'].go_command(ra=grid_star[0] /15, dec=grid_star[1])
             except:
                 plog ("Difficulty in directly slewing to object")
                 plog(traceback.format_exc())
@@ -5985,7 +5986,9 @@ class Sequencer:
                 g_dev['obs'].time_of_last_slew=time.time()
                 g_dev["mnt"].last_ra_requested = grid_star[0] / 15
                 g_dev["mnt"].last_dec_requested = grid_star[1]
-                g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
+                #g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
+                
+                g_dev['mnt'].go_command(ra=grid_star[0] /15, dec=grid_star[1])
             except:
                 plog ("Difficulty in directly slewing to object")
                 plog(traceback.format_exc())
