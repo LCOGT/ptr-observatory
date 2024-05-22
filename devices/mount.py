@@ -634,7 +634,7 @@ class Mount:
                 count += 1
                 if count > 500:  # count about 12 at-0.5 deg. 3 at 45deg.
                     #if loud:
-                    print("transform_mount_to_observed_r() FAILED!")
+                    #print("transform_mount_to_observed_r() FAILED!")
                     return pRoll_h, pPitch_d, 0.0, 0.0
 
             print("                ref:  ", round(self.refr_asec, 2))
@@ -714,9 +714,9 @@ class Mount:
                 self.delta_slewtoRA = self.slewtoRA
                 self.delta_slewtoHA = delta_ha_obs_h
                 self.delta_slewtoDEC = self.slewtoDEC
-            if 34.5 < dec_app_d < 35.5 and -2 < ha_app_h < 2:
-                #breakpoint()
-                pass
+            # if 34.5 < dec_app_d < 35.5 and -2 < ha_app_h < 2:
+            #     #breakpoint()
+            #     pass
             self.ha_rate = (self.delta_slewtoHA - self.slewtoHA)*HTOSec/APPTOSID
             self.dec_rate = (self.delta_slewtoDEC - self.slewtoDEC)*DTOS
         return(self.slewtoRA, self.slewtoDEC, self.ha_rate, self.dec_rate)
