@@ -274,9 +274,47 @@ class Mount:
             self.rates_on = False
 
         if self.model_type == 'Equatorial':
-            self.model = config["mount"]["mount1"]["settings"]["model_equat"]
+            try:
+                self.model = config["mount"]["mount1"]["settings"]["model_equat"]
+            except:
+                plog ("No model in config, using 0 model")
+                self.model = {
+                    'ih': 0.0, #"Home naturally points to West for AP GEM mounts.
+                    'id': 0.00, #These two are zero-point references for HA/Ra and dec.
+                    'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
+                    'edo': 0.0, #"East Dec Offset
+                    'ma': 0.0, # Azimuth error of polar axia
+                    'me': 0.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
+                    'ch': 0.0,  #Optical axis not perp to dec axis
+                    'np': 0.0,  #Non-perp of polar and dec axis
+                    'tf': 0.0,  #Sin flexure -- Hook's law.
+                    'tx': 0.0,  #Tangent flexure
+                    'hces': 0.0, #Centration error of encoders.
+                    'hcec': 0.0,
+                    'dces': 0.0,
+                    'dcec': 0.0,
+                    }
         else:
-            self.model = config["mount"]["mount1"]["settings"]["model_altAz"]
+            try:
+                self.model = config["mount"]["mount1"]["settings"]["model_altAz"]
+            except:
+                plog ("No model in config, using 0 model")
+                self.model = {
+                    'ih': 0.0, #"Home naturally points to West for AP GEM mounts.
+                    'id': 0.00, #These two are zero-point references for HA/Ra and dec.
+                    'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
+                    'edo': 0.0, #"East Dec Offset
+                    'ma': 0.0, # Azimuth error of polar axia
+                    'me': 0.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
+                    'ch': 0.0,  #Optical axis not perp to dec axis
+                    'np': 0.0,  #Non-perp of polar and dec axis
+                    'tf': 0.0,  #Sin flexure -- Hook's law.
+                    'tx': 0.0,  #Tangent flexure
+                    'hces': 0.0, #Centration error of encoders.
+                    'hcec': 0.0,
+                    'dces': 0.0,
+                    'dcec': 0.0,
+                    }
         for key in self.model:
             self.model[key] = math.radians(self.model[key]/ 3600.)  #Convert  asec to degrees then radians
 
