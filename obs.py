@@ -19,6 +19,7 @@ from multiprocessing.pool import ThreadPool
 import time
 import sys
 import copy
+import math
 import shutil
 import glob
 import subprocess
@@ -2385,7 +2386,10 @@ class Observatory:
                                     err_ha = err_ha + 24
                                     plog(err_ha)
 
-                                plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 1)) + " & dec: " + str (round(err_dec * 3600, 1)) + " asec")
+                                radial_distance=pow(pow(err_ha*math.cos(math.radians(pointing_dec)),2)+pow(err_dec,2),0.5)
+
+
+                                plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 1)) + " & dec: " + str (round(err_dec * 3600, 1)) + " asec Radial: " +str(radial_distance))
 
                                 self.last_platesolved_ra = solve["ra_j2000_hours"]
                                 self.last_platesolved_dec = solve["dec_j2000_degrees"]
