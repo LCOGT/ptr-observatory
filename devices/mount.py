@@ -326,7 +326,7 @@ class Mount:
             self.longterm_storage_of_mount_references=mnt_shelf['longterm_storage_of_mount_references']
             self.longterm_storage_of_flip_references=mnt_shelf['longterm_storage_of_flip_references']
         except:
-            plog ("Could not load the mount debiations from the shelf, starting again.")
+            plog ("Could not load the mount deviations from the shelf, starting again.")
             self.longterm_storage_of_mount_references=[]
             self.longterm_storage_of_flip_references=[]
         mnt_shelf.close()
@@ -380,17 +380,19 @@ class Mount:
         self.DeclinationRate = self.mount.DeclinationRate
 
         #IMPORTANT Ap1600 Info.
-        #Set Rate unit to asec/sec and Relative to Sid.  Rates are in asec/sec
-        #So a dec rate value of 15.0477 causes about a dec rate -15!  Not a typo, the sign is reversed.
-        #For RA a rate entry of 0.0 means normal tracking, a entry of 0.1 means RA increases 1 sec in ra
-        #every 10 seconds of time.
-        #Divide RArate by APPTOSID to get an exact rate display on APCC
-        #Multiply DEC rate by APPTOSID for an exact rate display.
-        #self.mount.RightAscensionRate = 1/APPTOSID  Ra rate = 15.0000000
-        #self.mount.DeclinationRate = 15*APPTOSID  Dec Rate = 15.0000000
-        #self.mount.RightAscensionRate = 0.0  Returns to normal tracking
-
-
+        #hogwash:   #Set Rate unit to asec/sec and Relative to Sid.  Rates are in asec/sec
+                    #So a dec rate value of 15.0477 causes about a dec rate -15!  Not a typo, the sign is reversed.
+                    #For RA a rate entry of 0.0 means normal tracking, a entry of 0.1 means RA increases 1 sec in ra
+                    #every 10 seconds of time.
+                    #Divide RArate by APPTOSID to get an exact rate display on APCC
+                    #Multiply DEC rate by APPTOSID for an exact rate display.
+                    #self.mount.RightAscensionRate = 1/APPTOSID  Ra rate = 15.0000000
+                    #self.mount.DeclinationRate = 15*APPTOSID  Dec Rate = 15.0000000
+                    #self.mount.RightAscensionRate = 0.0  Returns to normal tracking
+        #Truth:   Supply asec per sec/APPTOSID for RA and asec per sec for DEC, just
+                  #like the ASCOM litrature says.  The display on APCC can be confusing
+                  #The rates display on the AP GpTo ASCOM driver (tall skinny window)
+                  #is correct and shows the input asec/sec values.
 
 
 
@@ -458,9 +460,7 @@ class Mount:
         # not keep calling the mount to ask for it, which is slow and prone
         # to an ascom crash.
         try:
-            self.pier_side = g_dev[
-                "mnt"
-            ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
+            self.pier_side = g_dev["mnt"].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
             self.can_report_pierside = True
         except Exception:
             plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
@@ -470,9 +470,7 @@ class Mount:
 
         # Similarly for DestinationSideOfPier
         try:
-            g_dev[
-                "mnt"
-            ].mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
+            g_dev["mnt"].mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
             self.can_report_destination_pierside = True
         except Exception:
             plog ("Mount cannot report destination pierside. Setting the code not to ask again.")
@@ -497,13 +495,16 @@ class Mount:
 
         self.sync_mount_requested=False
 
-        #This faults. WER 20240519
+        self.syncToRA=12.0   #Moved these two variables up from below the next block of code WER
+        self.syncToDEC=-20.0 #And why these values?SidTime for RA might be better, or synch to Park5.
+        #This faults. WER 20240519  and why are we synching the mount here?
+        #Next mount_update.wincom does not exist yet, hence teh fault.
         try:
-            self.mount_update_wincom.SyncToCoordinates(self.syncToRA,self.syncToDEC)
+            #self.mount_update_wincom.SyncToCoordinates(self.syncToRA,self.syncToDEC)
+            pass
         except:
             pass
-        self.syncToRA=12.0
-        self.syncToDEC=-20.0
+
 
 
 
@@ -642,7 +643,7 @@ class Mount:
             #if DEBUG:  print("Iterations:  ", count, ra_vel, dec_vel)
 
 
-            return ha_fix_h(rollTrial), dec_fix_d(pitchTrial), ra_vel, dec_vel
+            return ha_fix_h(rollTrial), dec_fix_d(pitchTrial), 0 , 0 #ra_vel, dec_vel
 
     def transform_icrs_to_mechanical(self, icrs_ra_h, icrs_dec_d, rapid_pier_indicator, loud=False, enable=False):
            #Note when starting up Rapid Pier indicator may be incorrect.
@@ -719,7 +720,7 @@ class Mount:
             #     pass
             self.ha_rate = (self.delta_slewtoHA - self.slewtoHA)*HTOSec/APPTOSID
             self.dec_rate = (self.delta_slewtoDEC - self.slewtoDEC)*DTOS
-        return(self.slewtoRA, self.slewtoDEC, self.ha_rate, self.dec_rate)
+        return(self.slewtoRA, self.slewtoDEC, 0, 0) #self.ha_rate, self.dec_rate)
         pass
 
     def transform_observed_to_mount(self, pRoll_h, pPitch_d, pPierSide, loud=False, enable=False):
@@ -994,10 +995,10 @@ class Mount:
                             # # Here we calculate the values that go to the status.
                             # self.inverse_icrs_ra, self.inverse_icrs_dec, inverse_ra_vel, inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
                             # #I left the above two velocities as local becuse we will not do anything with them.
-                            
+
                             # Dont need to correct temporary slewing values as it is moving
                             self.inverse_icrs_ra = self.right_ascension_directly_from_mount
-                            self.inverse_icrs_dec = self.declination_directly_from_mount                            
+                            self.inverse_icrs_dec = self.declination_directly_from_mount
                             self.inverse_icrs_and_rates_timer=time.time()
 
                         except:
@@ -1064,18 +1065,26 @@ class Mount:
 
                                 self.inverse_icrs_ra, self.inverse_icrs_dec, self.inverse_ra_vel, self.inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
                                 self.inverse_icrs_and_rates_timer=time.time()
-                                
+
                                 if self.CanSetRightAscensionRate:
                                     self.request_set_RightAscensionRate=False
-                                    self.mount_update_wincom.RightAscensionRate=self.inverse_ra_vel
+                                    try:
+                                        self.mount_update_wincom.RightAscensionRate=self.inverse_ra_vel
+                                        print ("new RA rate set: " +str(self.RightAscensionRate))
+                                    except:
+                                        pass  #This faults if mount is parked.
                                     self.RightAscensionRate=self.inverse_ra_vel
                                     print ("new RA rate set: " +str(self.RightAscensionRate))
 
                                 if self.CanSetDeclinationRate:
                                     self.request_set_DeclinationRate=False
-                                    self.mount_update_wincom.DeclinationRate=self.inverse_dec_vel
+                                    try:
+                                        self.mount_update_wincom.DeclinationRate=self.inverse_dec_vel
+                                        print ("new DEC rate set: " +str(self.DeclinationRate))
+                                    except:
+                                        pass  #This faults if mount is parked.
                                     self.DeclinationRate=self.inverse_dec_vel
-                                    print ("new DEC rate set: " +str(self.DeclinationRate))
+
 
 
                                 # if self.CanSetDeclinationRate:
@@ -1848,12 +1857,12 @@ class Mount:
                     delta_ra, delta_dec = self.get_flip_reference(ra,dec)
 
 
-            
+
 
             if not g_dev['obs'].mount_reference_model_off:
                 plog ("Reference used for mount deviation in go_command")
                 plog (str(delta_ra*15* 60) + " RA (Arcmins), " + str(delta_dec*60) + " Dec (Arcmins)")
-                
+
                 ra = ra + delta_ra
                 dec = dec + delta_dec
         else:
@@ -2494,7 +2503,7 @@ class Mount:
         #         self.longterm_storage_of_mount_references.remove(entry)
 
         plog ("Recording and using new reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )
-        
+
         counter=0
         deleteList=[]
         for entry in self.longterm_storage_of_flip_references:
@@ -2504,10 +2513,10 @@ class Mount:
                 #self.longterm_storage_of_mount_references.remove(entry)
                 deleteList.append(counter)
             counter=counter+1
-            
+
         for index in sorted(deleteList, reverse=True):
             del self.longterm_storage_of_flip_references[index]
-        
+
         self.longterm_storage_of_flip_references.append([time.time(),HA,pointing_dec + deviation_dec, deviation_ha,  deviation_dec])
         mnt_shelf['longterm_storage_of_flip_references']=self.longterm_storage_of_flip_references
         mnt_shelf.close()
