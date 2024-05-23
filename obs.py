@@ -2366,25 +2366,26 @@ class Observatory:
                                 err_ha = target_ra - solved_ra
                                 err_dec = target_dec - solved_dec
 
-                                corrected_pointing_ra, corrected_pointing_dec, _, _ = g_dev['mnt'].transform_mechanical_to_icrs(pointing_ra,pointing_dec, g_dev['mnt'].rapid_pier_indicator)
-
-
-                                # mount_deviation_ha = pointing_ra - solved_ra
-                                # mount_deviation_dec = pointing_dec - solved_dec
-
-                                mount_deviation_ha = corrected_pointing_ra - solved_ra
-                                mount_deviation_dec = corrected_pointing_dec - solved_dec
-
-                                if abs(mount_deviation_ha) > 10:
-                                    plog ("BIG deviation in HA... whats going on?")
-                                    plog (mount_deviation_ha)
-                                    plog (corrected_pointing_ra)
-                                    plog (solved_ra)
-                                    plog (pointing_ra)
-                                    #plog (pointing_ra + (g_dev['mnt'].raCorr)
-                                    #breakpoint()
+                                
+                                if not g_dev['mnt'].model_on:
+                                    mount_deviation_ha = pointing_ra - solved_ra
+                                    mount_deviation_dec = pointing_dec - solved_dec
                                 else:
-                                    plog ("Reasonable ha deviation")
+                                    corrected_pointing_ra, corrected_pointing_dec, _, _ = g_dev['mnt'].transform_mechanical_to_icrs(pointing_ra,pointing_dec, g_dev['mnt'].rapid_pier_indicator)
+
+                                    mount_deviation_ha = corrected_pointing_ra - solved_ra
+                                    mount_deviation_dec = corrected_pointing_dec - solved_dec
+
+                                    if abs(mount_deviation_ha) > 10:
+                                        plog ("BIG deviation in HA... whats going on?")
+                                        plog (mount_deviation_ha)
+                                        plog (corrected_pointing_ra)
+                                        plog (solved_ra)
+                                        plog (pointing_ra)
+                                        #plog (pointing_ra + (g_dev['mnt'].raCorr)
+                                        #breakpoint()
+                                    else:
+                                        plog ("Reasonable ha deviation")
 
 
                                 # Check that the RA doesn't cross over zero, if so, bring it back around
