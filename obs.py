@@ -1837,6 +1837,8 @@ class Observatory:
 
                         except ocs_ingester.exceptions.DoNotRetryError:
                             plog ("Couldn't upload to PTR archive: " + str(filepath))
+                            plog(traceback.format_exc())
+                            breakpoint()
                             broken=1
                         except Exception as e:
 
