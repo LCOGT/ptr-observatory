@@ -2381,7 +2381,7 @@ class Observatory:
                                     plog (corrected_pointing_ra)
                                     plog (solved_ra)
                                     plog (pointing_ra)
-                                    plog (pointing_ra + g_dev['mnt'].raCorr)
+                                    #plog (pointing_ra + (g_dev['mnt'].raCorr)
                                     #breakpoint()
                                 else:
                                     plog ("Reasonable ha deviation")

@@ -364,8 +364,8 @@ class Mount:
             self.longterm_storage_of_mount_references=mnt_shelf['longterm_storage_of_mount_references']
             self.longterm_storage_of_flip_references=mnt_shelf['longterm_storage_of_flip_references']
 
-            self.longterm_storage_of_mount_references=[]
-            self.longterm_storage_of_flip_references=[]
+            # self.longterm_storage_of_mount_references=[]
+            # self.longterm_storage_of_flip_references=[]
 
         except:
             plog ("Could not load the mount deviations from the shelf, starting again.")
@@ -684,8 +684,13 @@ class Mount:
             print("Corrections in asec:  ", round(self.raCorr, 2), round(self.decCorr, 2))
             #if DEBUG:  print("Iterations:  ", count, ra_vel, dec_vel)
 
+            return_ra = ha_fix_h(rollTrial)
+            if return_ra < 0:
+                return_ra=return_ra+24
+            if return_ra > 24:
+                return_ra=return_ra-24
 
-            return ha_fix_h(rollTrial), dec_fix_d(pitchTrial), 0 , 0 #ra_vel, dec_vel
+            return return_ra, dec_fix_d(pitchTrial), 0 , 0 #ra_vel, dec_vel
 
     def transform_icrs_to_mechanical(self, icrs_ra_h, icrs_dec_d, rapid_pier_indicator, loud=False, enable=False):
            #Note when starting up Rapid Pier indicator may be incorrect.
