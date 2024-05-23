@@ -2822,6 +2822,7 @@ class Sequencer:
 
 
                 tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+                calibhduheader['OBSTYPE'] = 'DARK'
                 try:
                     # Save and upload master bias
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + filename_start+'_master_bin1.fits' ))
@@ -2963,6 +2964,7 @@ class Sequencer:
 
 
                 tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+                calibhduheader['OBSTYPE'] = 'DARK'
                 try:
 
                     # Save and upload master bias
@@ -3020,6 +3022,35 @@ class Sequencer:
         calibhdu = fits.PrimaryHDU()
         calibhduheader=copy.deepcopy(calibhdu.header)
         calibhduheader['RLEVEL'] = 99
+        calibhduheader['PROPID'] = 'INGEST-CALIB'
+        calibhduheader['DATE-OBS'] = (
+            datetime.datetime.isoformat(
+                datetime.datetime.utcfromtimestamp(time.time())
+            ),
+            "Start date and time of observation"
+        )
+        calibhduheader['INSTRUME'] = self.config["camera"][self.name]["name"], "Name of camera"
+        calibhduheader['SITEID'] = self.config["wema_name"].replace("-", "").replace("_", "")
+        calibhduheader['TELID'] = g_dev['obs'].obsid
+        calibhduheader['OBSTYPE'] = 'DARK'
+        calibhduheader['BLKUID'] = 1234
+        calibhduheader["OBSID"] = g_dev['obs'].obsid
+        
+        # calibhduheader["OBSID"] = (
+        #     selfconfig["obs_id"].replace("-", "").replace("_", "")
+        # )
+        
+        
+        # hdu.header["SITEID"] = (self.config["wema_name"].replace("-", "").replace("_", ""))
+        # hdu.header["INSTRUME"] = (self.config["camera"][self.name]["name"], "Name of camera")
+        
+        # 'PROPID': 'INGEST-TEST-2021',
+        #                       'DATE-OBS': '2015-02-19T13:56:05.261',
+        #                       'INSTRUME': 'nres03',
+        #                       'SITEID': 'cpt',
+        #                       'TELID': '1m0a',
+        #                       'OBSTYPE': 'EXPOSE',
+        #                       'BLKUID': 1234,
 
         # NOW to get to the business of constructing the local calibrations
         # Start with biases
@@ -3143,6 +3174,8 @@ class Sequencer:
                 temp_bias_level_min=bn.nanmin(masterBias)
                 del finalImage
                 del holder
+                
+                calibhduheader['OBSTYPE'] = 'BIAS'
 
                 try:
                     # Save and upload master bias
@@ -3711,6 +3744,8 @@ class Sequencer:
                                 temporaryFlat=np.nan_to_num(temporaryFlat, nan = bn.nanmedian(temporaryFlat))
 
                             plog ("Interpolated flat: " +str(time.time()-calibration_timer))
+                            
+                            calibhduheader['OBSTYPE'] = 'SKYFLAT'
 
                             try:
                                 g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))

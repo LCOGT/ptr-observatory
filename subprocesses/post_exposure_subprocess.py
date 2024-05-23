@@ -368,15 +368,9 @@ try:
     hdu.header["SITEID"] = (
         selfconfig["wema_name"].replace("-", "").replace("_", "")
     )
-    hdu.header["TELID"] = selfconfig["telescope"]["telescope1"][
-        "telescop"
-    ][:4]
-    hdu.header["TELESCOP"] = selfconfig["telescope"]["telescope1"][
-        "telescop"
-    ][:4]
-    hdu.header["PTRTEL"] = selfconfig["telescope"]["telescope1"][
-        "ptrtel"
-    ]
+    hdu.header["TELID"] =selfconfig["obs_id"].replace("-", "").replace("_", "")
+    hdu.header["TELESCOP"] = selfconfig["obs_id"].replace("-", "").replace("_", "")
+    hdu.header["PTRTEL"] = selfconfig["obs_id"].replace("-", "").replace("_", "")
     hdu.header["PROPID"] = "ptr-" + selfconfig["obs_id"] + "-001-0001"
     hdu.header["BLKUID"] = (
         "1234567890",
