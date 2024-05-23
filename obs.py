@@ -2386,11 +2386,11 @@ class Observatory:
                                     err_ha = err_ha + 24
                                     plog(err_ha)
 
-                                radial_distance=pow(pow(err_ha*math.cos(math.radians(pointing_dec)* 15 * 3600),2)+pow(err_dec*3600,2),0.5)
+                                radial_distance=pow(pow(err_ha*math.cos(math.radians(pointing_dec))* 15 * 3600,2)+pow(err_dec*3600,2),0.5)
 
 
                                 plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 1)) + " & dec: " + str (round(err_dec * 3600, 1)) + " asec Radial: " +str(radial_distance))
-
+                                #breakpoint()
                                 self.last_platesolved_ra = solve["ra_j2000_hours"]
                                 self.last_platesolved_dec = solve["dec_j2000_degrees"]
                                 self.last_platesolved_ra_err = target_ra - solved_ra
@@ -2539,6 +2539,7 @@ class Observatory:
                                                         g_dev['mnt'].last_slew_was_pointing_slew = False
                                                         if g_dev["mnt"].pier_side == 0:
                                                             try:
+                                                                print ("HA going in " + str(mount_deviation_ha))
                                                                 g_dev["mnt"].record_mount_reference(
                                                                     mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
                                                                 )
@@ -2547,6 +2548,7 @@ class Observatory:
                                                                 plog("Something is up in the mount reference adjustment code ", e)
                                                         else:
                                                             try:
+                                                                print ("HA going in " + str(mount_deviation_ha))
                                                                 g_dev["mnt"].record_flip_reference(
                                                                     mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
                                                                 )

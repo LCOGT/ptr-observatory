@@ -2078,7 +2078,7 @@ class Mount:
         Note no dependency on current position.
         unpark the telescope mount
         '''  #  NB can we check if unparked and save time?
-        
+
         breakpoint()  #WE SHOULD NOT GET HERE!  JUST CHECKING -WER
         self.last_ra = ra
         self.last_dec = dec
@@ -2487,6 +2487,8 @@ class Mount:
         self.last_mount_reference_ha_offset =  deviation_ha
         self.last_mount_reference_dec_offset =  deviation_dec
 
+
+        #breakpoint()
         # Add in latest point to the list of mount references
         # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.
@@ -2535,6 +2537,7 @@ class Mount:
         # We need to store time, HA, Dec, HA offset, Dec offset.
         #HA=self.current_sidereal - pointing_ra  + deviation_ha
 
+        #breakpoint()
         # # Removing older references
         # for entry in self.longterm_storage_of_flip_references:
         #     distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
