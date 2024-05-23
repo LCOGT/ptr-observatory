@@ -363,6 +363,10 @@ class Mount:
         try:
             self.longterm_storage_of_mount_references=mnt_shelf['longterm_storage_of_mount_references']
             self.longterm_storage_of_flip_references=mnt_shelf['longterm_storage_of_flip_references']
+
+            self.longterm_storage_of_mount_references=[]
+            self.longterm_storage_of_flip_references=[]
+
         except:
             plog ("Could not load the mount deviations from the shelf, starting again.")
             self.longterm_storage_of_mount_references=[]

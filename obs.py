@@ -665,32 +665,34 @@ class Observatory:
 
         # Initialisation complete!
 
+        #g_dev['mnt'].reset_mount_reference()
 
 
-    def set_last_reference(self, delta_ra, delta_dec, last_time):
-        mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
-        mnt_shelf["ra_cal_offset"] = delta_ra
-        mnt_shelf["dec_cal_offset"] = delta_dec
-        mnt_shelf["time_offset"] = last_time
-        mnt_shelf.close()
-        return
 
-    def get_last_reference(self):
-        mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
-        delta_ra = mnt_shelf["ra_cal_offset"]
-        delta_dec = mnt_shelf["dec_cal_offset"]
-        last_time = mnt_shelf["time_offset"]
-        mnt_shelf.close()
-        return delta_ra, delta_dec, last_time
+    # def set_last_reference(self, delta_ra, delta_dec, last_time):
+    #     mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
+    #     mnt_shelf["ra_cal_offset"] = delta_ra
+    #     mnt_shelf["dec_cal_offset"] = delta_dec
+    #     mnt_shelf["time_offset"] = last_time
+    #     mnt_shelf.close()
+    #     return
 
-    def reset_last_reference(self):
+    # def get_last_reference(self):
+    #     mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
+    #     delta_ra = mnt_shelf["ra_cal_offset"]
+    #     delta_dec = mnt_shelf["dec_cal_offset"]
+    #     last_time = mnt_shelf["time_offset"]
+    #     mnt_shelf.close()
+    #     return delta_ra, delta_dec, last_time
 
-        mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
-        mnt_shelf["ra_cal_offset"] = None
-        mnt_shelf["dec_cal_offset"] = None
-        mnt_shelf["time_offset"] = None
-        mnt_shelf.close()
-        return
+    # def reset_last_reference(self):
+
+    #     mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
+    #     mnt_shelf["ra_cal_offset"] = None
+    #     mnt_shelf["dec_cal_offset"] = None
+    #     mnt_shelf["time_offset"] = None
+    #     mnt_shelf.close()
+    #     return
 
     def create_devices(self):
         """Dictionary to store created devices, subcategorized by device type."""
@@ -2373,13 +2375,14 @@ class Observatory:
                                 mount_deviation_ha = corrected_pointing_ra - solved_ra
                                 mount_deviation_dec = corrected_pointing_dec - solved_dec
 
-                                if mount_deviation_ha > 10:
+                                if abs(mount_deviation_ha) > 10:
                                     plog ("BIG deviation in HA... whats going on?")
                                     plog (mount_deviation_ha)
                                     plog (corrected_pointing_ra)
                                     plog (solved_ra)
                                     plog (pointing_ra)
-                                    breakpoint()
+                                    plog (pointing_ra + g_dev['mnt'].raCorr)
+                                    #breakpoint()
                                 else:
                                     plog ("Reasonable ha deviation")
 
