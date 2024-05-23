@@ -1188,7 +1188,7 @@ class Sequencer:
 
                                             plog("Expose 1x1 dark of " \
                                                  + str(1) + " using exposure:  " + str(dark_exp_time) )
-                                            req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dk'}
+                                            req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
                                             opt = {'count': 1, 'filter': 'dk'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -2381,7 +2381,7 @@ class Sequencer:
 
                 plog("Expose 1x1 dark of " \
                      + str(dark_count) + " using exposure:  " + str(dark_exp_time) )
-                req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dk'}
+                req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
                 opt = {'count': 1, 'filter': 'dk'}
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
