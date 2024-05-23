@@ -3008,7 +3008,7 @@ class Sequencer:
 
         # Make header for calibration files
         calibhdu = fits.PrimaryHDU()
-        calibhduheader=copy.deepcoy(calibhdu.header)
+        calibhduheader=copy.deepcopy(calibhdu.header)
         calibhduheader['RLEVEL'] = 99
 
         # NOW to get to the business of constructing the local calibrations
