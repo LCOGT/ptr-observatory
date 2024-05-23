@@ -2078,6 +2078,8 @@ class Mount:
         Note no dependency on current position.
         unpark the telescope mount
         '''  #  NB can we check if unparked and save time?
+        
+        breakpoint()  #WE SHOULD NOT GET HERE!  JUST CHECKING -WER
         self.last_ra = ra
         self.last_dec = dec
         self.last_tracking_rate_ra = tracking_rate_ra

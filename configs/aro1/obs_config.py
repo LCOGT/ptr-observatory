@@ -261,21 +261,22 @@ site_config = {
                 #units for model are asec/radian
                 'model_date':  "n.a.",
                 'model_equat': {
-                    'ih': 0.0, #"Home naturally points to West for AP GEM mounts.
-                    'id': 0.00, #These two are zero-point references for HA/Ra and dec.
+                    'ih': 47., #"Home naturally points to West for AP GEM mounts.
+                    'id': 0, #These two are zero-point references for HA/Ra and dec.
                     'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
                     'edo': 0.0, #"East Dec Offset
-                    'ma': 0.0, # Azimuth error of polar axia
-                    'me': 0.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
-                    'ch': 0.0,  #Optical axis not perp to dec axis
-                    'np': 0.0,  #Non-perp of polar and dec axis
-                    'tf': 0.0,  #Sin flexure -- Hook's law.
+                    'ma': -778.0, # Azimuth error of polar axia
+                    'me': -275.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
+                    'ch': -316.0,  #Optical axis not perp to dec axis
+                    'np': 35.0,  #Non-perp of polar and dec axis
+                    'tf': 37.0,  #Sin flexure -- Hook's law.
                     'tx': 0.0,  #Tangent flexure
-                    'hces': 0.0, #Centration error of encoders.
-                    'hcec': 0.0,
-                    'dces': 0.0,
-                    'dcec': 0.0,
-                    }
+                    'hces': 0.0, #Sin/Cos centration error of encoders.
+                    'hcec': -180.0,
+                    'dces': 25.0,
+                    'dcec': 0.0,   #20240522.mod
+                    }   #20240522.mod   Eventually we can put the model name here and pick 
+                        #up the file automatically.
                 ,
                 'model_altAz': {
                     'ia': 000.00, #"Home naturally points to West for AP GEM mounts.
