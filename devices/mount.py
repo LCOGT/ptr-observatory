@@ -1862,7 +1862,7 @@ class Mount:
 
 
         # Don't need a mount reference for skyflatspots!
-        if not skyflatspot:
+        if not skyflatspot and not g_dev['obs'].mount_reference_model_off:
 
             if self.can_report_destination_pierside == True:
                 try:
