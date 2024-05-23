@@ -2244,8 +2244,12 @@ class Observatory:
                             if g_dev['seq'].block_guard and not g_dev["seq"].focussing:
                                 target_ra = g_dev['seq'].block_ra
                                 target_dec = g_dev['seq'].block_dec
-    
-                            platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                                
+                            try:
+                                platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                            except OSError:
+                                pass
+                            
     
                             platesolve_crop = 0.0
     
@@ -2567,7 +2571,10 @@ class Observatory:
                     fits.writeto(slow_process[1], slow_process[2], temphduheader, overwrite=True)
                     filepathaws=slow_process[4]
                     filenameaws=slow_process[5]
-                    g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
+                    if 'ARCHIVE_' in filenameaws:
+                       g_dev['obs']. enqueue_for_PTRarchive(100000000000000, filepathaws,filenameaws)
+                    else:
+                        g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
 
                 if slow_process[0] == 'localcalibration':
 

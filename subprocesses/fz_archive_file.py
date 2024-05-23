@@ -60,7 +60,7 @@ if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
 
 
 
-if not selfconfig["camera"][camname]["settings"]["is_osc"]:
+if not selfconfig["camera"]['camera_1_1']["settings"]["is_osc"]:
 
 
     # This routine saves the file ready for uploading to AWS

@@ -510,10 +510,30 @@ try:
             exposure_time,
             "[s] Integrated exposure length",
         )
-        hdu.header["EFFEXPN"] = (
-            int(exposure_time / 10),
-            "[s] Number of integrated exposures",
-        )
+        
+        if this_exposure_filter.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
+            hdu.header["EFFEXPN"] = (
+                int(exposure_time / 30),
+                " Number of integrated exposures",
+            )
+        else:
+            
+            hdu.header["EFFEXPN"] = (
+                int(exposure_time / 10),
+                " Number of integrated exposures",
+            )
+        
+        hdu.header["EXPREQ"] = (
+            exposure_time,
+            "[s] Requested Total Exposure Time",
+        )  # This is the exposure in seconds specified by the user
+        
+        if not smartstackid == 'no':
+            hdu.header["EXPREQSE"] = (
+                exposure_time,
+                "[s] Open Shutter Time of this smartstack element",
+            )  # This is the exposure in seconds specified by the user
+            
 
         hdu.header[
             "EXPOSURE"
@@ -561,7 +581,19 @@ try:
         hdu.header["EXPTIME"] = (
             exposure_time,
             "[s] Actual exposure length",
+        )  # This is the exposure in seconds specified by the 
+        
+        hdu.header["EXPREQ"] = (
+            exposure_time,
+            "[s] Requested Exposure Time",
         )  # This is the exposure in seconds specified by the user
+        
+        if not smartstackid == 'no':
+            hdu.header["EXPREQSE"] = (
+                exposure_time,
+                "[s] Open Shutter Time of this smartstack element",
+            )  # This is the exposure in seconds specified by the user
+        
         hdu.header["EFFEXPT"] = (
             exposure_time,
             "[s] Integrated exposure length",
