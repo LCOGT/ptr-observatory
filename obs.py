@@ -1219,8 +1219,14 @@ class Observatory:
                 ) > datetime.timedelta(minutes=self.observing_check_period):
                     g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
                     #These two lines are meant to update the parameters for refraction correction in the mount class
-                    g_dev['mnt'].pressure = g_dev['obs'].ocn_status['pressure_mbar']
-                    g_dev['mnt'].temperature = g_dev['obs'].ocn_status['temperature_C']
+                    try:
+                        g_dev['mnt'].pressure = g_dev['obs'].ocn_status['pressure_mbar']
+                    except:
+                        g_dev['mnt'].pressure = 1013.0
+                    try:
+                        g_dev['mnt'].temperature = g_dev['obs'].ocn_status['temperature_C']
+                    except:
+                        g_dev['mnt'].temperature = g_dev['foc'].current_focus_temperature
                     self.observing_status_timer = datetime.datetime.now()
 
                 if (

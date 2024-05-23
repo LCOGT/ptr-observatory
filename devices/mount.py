@@ -647,7 +647,7 @@ class Mount:
         # I am amazed this works so well even very near the celestial pole.
         # input is Ha in hours and pitch in degrees.
         if not self.model_on:
-            return (pRoll_h, pPitch_d)
+            return (pRoll_h, pPitch_d, 0, 0)
         else:
 
             cosDec = math.cos(pPitch_d*DTOR)
