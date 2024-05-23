@@ -1862,7 +1862,7 @@ class Mount:
 
 
         # Don't need a mount reference for skyflatspots!
-        if not skyflatspot:
+        if not skyflatspot and not g_dev['obs'].mount_reference_model_off:
 
             if self.can_report_destination_pierside == True:
                 try:
@@ -2078,7 +2078,7 @@ class Mount:
         Note no dependency on current position.
         unpark the telescope mount
         '''  #  NB can we check if unparked and save time?
-        
+
         breakpoint()  #WE SHOULD NOT GET HERE!  JUST CHECKING -WER
         self.last_ra = ra
         self.last_dec = dec
@@ -2487,10 +2487,12 @@ class Mount:
         self.last_mount_reference_ha_offset =  deviation_ha
         self.last_mount_reference_dec_offset =  deviation_dec
 
+
+        #breakpoint()
         # Add in latest point to the list of mount references
         # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.
-        HA=self.current_sidereal - pointing_ra + deviation_ha
+        #HA=self.current_sidereal - pointing_ra + deviation_ha
         # Removing older references
         counter=0
         deleteList=[]
@@ -2503,8 +2505,8 @@ class Mount:
             counter=counter+1
         for index in sorted(deleteList, reverse=True):
             del self.longterm_storage_of_mount_references[index]
-
-        plog ("Recording and using new reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )
+        plog ("Deviation in mount reference: HA: " + str(deviation_ha) + " Dec: " + str(deviation_dec))
+        plog ("Recording and using new mount reference: HA: " + str(deviation_ha) + " arcminutes, Dec: " + str(deviation_dec) + " arcminutes." )
 
         self.longterm_storage_of_mount_references.append([time.time(),HA,pointing_dec + deviation_dec , deviation_ha,  deviation_dec])
         mnt_shelf['longterm_storage_of_mount_references']=self.longterm_storage_of_mount_references
@@ -2533,16 +2535,17 @@ class Mount:
         # Add in latest point to the list of mount references
         # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.
-        HA=self.current_sidereal - pointing_ra  + deviation_ha
+        #HA=self.current_sidereal - pointing_ra  + deviation_ha
 
+        #breakpoint()
         # # Removing older references
         # for entry in self.longterm_storage_of_flip_references:
         #     distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
         #     if distance_from_new_reference < 2:
         #         plog ("Found and removing an old reference close to new reference: " + str(entry))
         #         self.longterm_storage_of_mount_references.remove(entry)
-
-        plog ("Recording and using new reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )
+        plog ("Deviation in flip reference: HA: " + str(deviation_ha) + " Dec: " + str(deviation_dec))
+        plog ("Recording and using new flip reference: HA: " + str(deviation_ha ) + " arcminutes, Dec: " + str(deviation_dec ) + " arcminutes." )
 
         counter=0
         deleteList=[]
