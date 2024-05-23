@@ -26,7 +26,7 @@ from astropy.coordinates import SkyCoord, ICRS, EarthLocation
 import ephem
 #from ptr_events import compute_day_directory
 #from ptr_config import site_config
-#from global_yard import g_dev
+from global_yard import g_dev
 
 from datetime import timezone, timedelta #datetime,
 #from dateutil import tz
@@ -203,57 +203,56 @@ def convert_to_mechanical_h_d(pRa, pDec, pFlip):
         return (pRa, fDec)
 
 
-def rect_sph_d(pX, pY, pZ):
-    rSq = pX * pX + pY * pY + pZ * pZ
-    return math.degrees(math.atan2(pY, pX)), math.degrees(math.asin(pZ / rSq))
+# def rect_sph_d(pX, pY, pZ):
+#     rSq = pX * pX + pY * pY + pZ * pZ
+#     return math.degrees(math.atan2(pY, pX)), math.degrees(math.asin(pZ / rSq))
 
-def rect_sph_r(pX, pY, pZ):
-    rSq = pX * pX + pY * pY + pZ * pZ
-    return math.atan2(pY, pX), math.asin(pZ / rSq)
+# def rect_sph_r(pX, pY, pZ):
+#     rSq = pX * pX + pY * pY + pZ * pZ
+#     return math.atan2(pY, pX), math.asin(pZ / rSq)
 
-def sph_rect_d(pRoll, pPitch):
-    pRoll = math.radians(pRoll)
-    pPitch = math.radians(pPitch)
-    cPitch = math.cos(pPitch)
-    return math.cos(pRoll) * cPitch, math.sin(pRoll) * cPitch, math.sin(pPitch)
+# def sph_rect_d(pRoll, pPitch):
+#     pRoll = math.radians(pRoll)
+#     pPitch = math.radians(pPitch)
+#     cPitch = math.cos(pPitch)
+#     return math.cos(pRoll) * cPitch, math.sin(pRoll) * cPitch, math.sin(pPitch)
 
-def sph_rect_r(pRoll, pPitch):
-    cPitch = math.cos(pPitch)
-    return math.cos(pRoll) * cPitch, math.sin(pRoll) * cPitch, math.sin(pPitch)
-
-
-def rotate_r(pX, pY, pTheta):
-    cTheta = math.cos(pTheta)
-    sTheta = math.sin(pTheta)
-    return pX * cTheta - pY * sTheta, pX * sTheta + pY * cTheta
+# def sph_rect_r(pRoll, pPitch):
+#     cPitch = math.cos(pPitch)
+#     return math.cos(pRoll) * cPitch, math.sin(pRoll) * cPitch, math.sin(pPitch)
 
 
-def centration_d(theta, a, b):
-    theta = math.radians(theta)
-    return math.degrees(
-        math.atan2(math.sin(theta) - STOR * b, math.cos(theta) - STOR * a)
-    )
+# def rotate_r(pX, pY, pTheta):
+#     cTheta = math.cos(pTheta)
+#     sTheta = math.sin(pTheta)
+#     return pX * cTheta - pY * sTheta, pX * sTheta + pY * cTheta
 
 
-def centration_r(theta, a, b):
-    return math.atan2(math.sin(theta) - STOR * b, math.cos(theta) - STOR * a)
+# def centration_d(theta, a, b):
+#     theta = math.radians(theta)
+#     return math.degrees(
+#         math.atan2(math.sin(theta) - STOR * b, math.cos(theta) - STOR * a)
+#     )
 
-def appToObsRaHa(appRa, appDec, pSidTime):
+
+# def centration_r(theta, a, b):
+#     return math.atan2(math.sin(theta) - STOR * b, math.cos(theta) - STOR * a)
+
+def appToObsRaHa(self, appRa, appDec, pSidTime):
     global raRefr, decRefr, refAsec
     try:
         g_dev["ocn"].get_proxy_temp_press()
     except:
         pass
-    appHa, appDec = transform_raDec_to_haDec_r(appRa, appDec, pSidTime)
-    appAz, appAlt = transform_haDec_to_azAlt_r(
-        appHa, appDec, site_config["latitude"] * DTOR
-    )
+    appHa, appDec = self.transform_raDec_to_haDec_r(appRa, appDec, pSidTime)
+    appAz, appAlt = self.transform_haDec_to_azAlt_r(appHa, appDec, self.latitude * DTOR)
+
     try:
         obsAlt, refAsec = apply_refraction_inEl_r(
-            appAlt, g_dev["ocn"].temperature, g_dev["ocn"].pressure
+            appAlt, self.temperature, self.pressure
         )
-        obsHa, obsDec = transform_azAlt_to_haDec_r(
-            appAz, obsAlt, site_config["latitude"] * DTOR
+        obsHa, obsDec = self.transform_azAlt_to_haDec_r(
+            appAz, obsAlt, self["latitude"] * DTOR
         )
     except:
         pass

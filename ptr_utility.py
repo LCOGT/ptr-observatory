@@ -73,50 +73,50 @@ else:
     MOUNT = "AP1600GOTO"
     INTEGRATOR_SIZE = 3
 
-model = {}  # Note model starts out zero, need to persist actual model.
-wmodel = {}
+# model = {}  # Note model starts out zero, need to persist actual model.
+# wmodel = {}
 
-# NB Currently this is where the working model is stored.
-model["IH"] = 0
-model["ID"] = 0
-model["WH"] = 0
-model["WD"] = 0
-model["MA"] = 0
-model["ME"] = 0
-model["CH"] = 0  # Value not clear after a flip.
-model["NP"] = 0
-model["TF"] = 0
-model["TX"] = 0
-model["HCES"] = 0
-model["HCEC"] = 0
-model["DCES"] = 0.0
-model["DCEC"] = 0.0
+# # NB Currently this is where the working model is stored.
+# model["IH"] = 0
+# model["ID"] = 0
+# model["WH"] = 0
+# model["WD"] = 0
+# model["MA"] = 0
+# model["ME"] = 0
+# model["CH"] = 0  # Value not clear after a flip.
+# model["NP"] = 0
+# model["TF"] = 0
+# model["TX"] = 0
+# model["HCES"] = 0
+# model["HCEC"] = 0
+# model["DCES"] = 0.0
+# model["DCEC"] = 0.0
 
-wmodel["IH"] = 0.0
-wmodel["ID"] = 0.0
-wmodel["WH"] = 0.0
-wmodel["WD"] = 0.0
-wmodel["MA"] = 0.0
-wmodel["ME"] = 0.0
-wmodel["CH"] = 0.0
-wmodel["NP"] = 0.0
-wmodel["TF"] = 0.0
-wmodel["TX"] = -0.0
-wmodel["HCES"] = 0.0
-wmodel["HCEC"] = 0.0
-wmodel["DCES"] = 0.0
-wmodel["DCEC"] = 0.0
+# wmodel["IH"] = 0.0
+# wmodel["ID"] = 0.0
+# wmodel["WH"] = 0.0
+# wmodel["WD"] = 0.0
+# wmodel["MA"] = 0.0
+# wmodel["ME"] = 0.0
+# wmodel["CH"] = 0.0
+# wmodel["NP"] = 0.0
+# wmodel["TF"] = 0.0
+# wmodel["TX"] = -0.0
+# wmodel["HCES"] = 0.0
+# wmodel["HCEC"] = 0.0
+# wmodel["DCES"] = 0.0
+# wmodel["DCEC"] = 0.0
 
-model["IA"] = 0
-model["IE"] = 0
-model["AN"] = 0
-model["AW"] = 0
-model["CA"] = 0
-model["NPAE"] = 0
-model["ACES"] = 0
-model["ACEC"] = 0
-model["ECES"] = 0
-model["ECEC"] = 0
+# model["IA"] = 0
+# model["IE"] = 0
+# model["AN"] = 0
+# model["AW"] = 0
+# model["CA"] = 0
+# model["NPAE"] = 0
+# model["ACES"] = 0
+# model["ACEC"] = 0
+# model["ECES"] = 0
+# model["ECEC"] = 0
 
 modelChanged = False
 
@@ -163,7 +163,7 @@ try:
 except KeyError:
     try:
         #plog_path = site_config['archive_path'] + '/' + site_config['obs_id'] + '/' + DAY_Directory + '/'
-        
+
         obsid_path = str(site_config["archive_path"] + '/' + site_config['obs_id'] + '/').replace('//','/')
         plog_path= obsid_path + 'plog/'
         if not os.path.exists(obsid_path):
@@ -174,10 +174,10 @@ except KeyError:
         if not os.path.exists(plog_path):
             os.makedirs(plog_path)
         #breakpoint()
-        
+
         # if not g_dev['obs'].obsid_path  + 'plog/':
         #     os.makedirs(g_dev['obs'].obsid_path + 'plog/')
-        
+
     except:
         if not site_config['archive_path'] + '/' + site_config['obs_id'] + '/'  + 'plog/':
             os.makedirs(site_config['archive_path'] + '/' + site_config['obs_id'] + '/' + 'plog/')

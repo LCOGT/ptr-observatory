@@ -2750,7 +2750,7 @@ class Camera:
                     if not g_dev['mnt'].rapid_park_indicator:# and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                         #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
                         #self.wait_for_slew(wait_after_slew=False)
-                        if g_dev['mnt'].pier_flip_detected==True:
+                        if g_dev['mnt'].pier_flip_detected==True and not self.auto_centering_off:
                             plog ("PIERFLIP DETECTED, RECENTERING.")
                             g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                             g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
@@ -3085,8 +3085,8 @@ class Camera:
                             self.substacker_filenames=[]
 
                             start_time_of_observation=time.time()
-                            plog ("Pre-exposure overhead: " + str(time.time()- pre_exposure_overhead_timer))
-                            plog ("Time between last start time and this start time: " + str(time.time()- self.start_time_of_observation))
+                            #plog ("Pre-exposure overhead: " + str(time.time()- pre_exposure_overhead_timer))
+                            #plog ("Time between last start time and this start time: " + str(time.time()- self.start_time_of_observation))
                             self.start_time_of_observation=time.time()
                             self.shutter_open = True
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
@@ -3226,7 +3226,7 @@ class Camera:
             if not g_dev['mnt'].rapid_park_indicator: # and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                 #self.wait_for_slew(wait_after_slew=False)
                 #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
-                if g_dev['mnt'].pier_flip_detected==True:
+                if g_dev['mnt'].pier_flip_detected==True  and not self.auto_centering_off:
                     plog ("PIERFLIP DETECTED, RECENTERING.")
                     g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                     g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
@@ -4403,7 +4403,7 @@ class Camera:
                                     )
 
 
-                print ("Check Nudge Timer: " + str(checknudge_timer-time.time()))
+                #print ("Check Nudge Timer: " + str(checknudge_timer-time.time()))
 
                 # # If you are shooting for short exposure times, the overhead
                 # # becomes a large fraction of the actual exposure time,
@@ -4487,7 +4487,7 @@ class Camera:
                             time.sleep(3)
                             retrycounter = retrycounter + 1
                 
-                print ("Get Image Array: " + str(imagearraytimer-time.time()))
+                #print ("Get Image Array: " + str(imagearraytimer-time.time()))
                 
                 
                             
@@ -5109,7 +5109,7 @@ class Camera:
                         del hdu
                         return copy.deepcopy(expresult)
                     
-                plog ("Calibflatfocus: "+str(calibflatfocuspointing_timer-time.time()))
+                #plog ("Calibflatfocus: "+str(calibflatfocuspointing_timer-time.time()))
 
                 outendbit=time.time()
 
@@ -5144,9 +5144,9 @@ class Camera:
                         expresult["real_time_filename"] =  self.config["obs_id"]+ "-"+ self.alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)+ "-"+ g_dev["day"]+ "-"+ next_seq+ "-"+ im_type+ "00.fits.fz"
                     except:
                         plog(traceback.format_exc())
-                plog ("Odd end bit " + str(time.time()-outendbit))
+                #plog ("Odd end bit " + str(time.time()-outendbit))
 
-                plog ("Post-exposure overhead: " + str(time.time()- post_overhead_timer))
+                #plog ("Post-exposure overhead: " + str(time.time()- post_overhead_timer))
 
                 return copy.deepcopy(expresult)
 

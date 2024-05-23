@@ -156,8 +156,8 @@ site_config = {
      'enclosure_check_period': 3,    # How many minutes between enclosure checks
 
      # Turn on and off various automated calibrations at different times.
-     'auto_eve_bias_dark': False,
-     'auto_eve_sky_flat': False,
+     'auto_eve_bias_dark': True,
+     'auto_eve_sky_flat': True,
      'time_to_wait_after_roof_opens_to_take_flats': 3,   #  Units??  Just imposing a minimum in case of a restart.
      'auto_midnight_moonless_bias_dark': True,  # WER 20240303 Afternoon, changed from True
      'auto_morn_sky_flat':  True,
@@ -218,7 +218,7 @@ site_config = {
             'hostname':  'safpier',
             'desc':  'AP 1600 GoTo',
             'driver': 'AstroPhysicsV2.Telescope',
-            'alignment': 'Equatorial',
+            'alignment': 'Equatorial',  #this is redundnat with a term below near model.
             'default_zenith_avoid': 0.0,   # degrees floating, 0.0 means do not apply this constraint.
             'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
 
@@ -253,24 +253,45 @@ site_config = {
                     '270': 25.,
                     '359': 25.
                     },  #  We use a dict because of fragmented azimuth measurements.
+                'ICRS2000_input_coords':  True,
                 'refraction_on': True,  #  Refraction is applied during pointing.
-                'model_on': True,  #  Model is applied during pointing.
-                'rates_on': True,  #  Rates implied by model and refraction applie during tracking.
-                'model': {
-                    'IH': 0.00, #
-                    'ID': 0.00, #
-                    'WIH': 0.0,
-                    'WID': 0.0,
-                    'MA': 0.0,
-                    'ME': 0.0,
-                    'CH': 0.0,
-                    'NP': 0.0,
-                    'TF': 0.0,
-                    'TX': 0.0,
-                    'HCES': 0.0,
-                    'HCEC': 0.0,
-                    'DCES': 0.0,
-                    'DCEC': 0.0,
+                'model_on': True,
+                'model_type': "Equatorial",
+                'rates_on': True,  #  Rates implied by model and refraction applied during tracking.
+                #units for model are asec/radian
+                'model_date':  "n.a.",
+                'model_equat': {
+                    'ih': 0.0, #"Home naturally points to West for AP GEM mounts.
+                    'id': 0.00, #These two are zero-point references for HA/Ra and dec.
+                    'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
+                    'edo': 0.0, #"East Dec Offset
+                    'ma': 0.0, # Azimuth error of polar axia
+                    'me': 0.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
+                    'ch': 0.0,  #Optical axis not perp to dec axis
+                    'np': 0.0,  #Non-perp of polar and dec axis
+                    'tf': 0.0,  #Sin flexure -- Hook's law.
+                    'tx': 0.0,  #Tangent flexure
+                    'hces': 0.0, #Centration error of encoders.
+                    'hcec': 0.0,
+                    'dces': 0.0,
+                    'dcec': 0.0,
+                    }
+                ,
+                'model_altAz': {
+                    'ia': 000.00, #"Home naturally points to West for AP GEM mounts.
+                    'ie': 0.00, #These two are zero-point references.
+                    'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
+                    'edo': 0.0, #"East Dec Offset
+                    'ma': 0.0,
+                    'me': 0.0,  #Default is about -60 asec above pole for ARO
+                    'ch': 0.0,
+                    'np': 0.0,
+                    'tf': 0.0,
+                    'tx': 0.0,
+                    'hces': 0.0,
+                    'hcec': 0.0,
+                    'dces': 0.0,
+                    'dcec': 0.0,
                     }
                 },
             },
