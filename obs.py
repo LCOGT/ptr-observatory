@@ -2373,6 +2373,16 @@ class Observatory:
                                 mount_deviation_ha = corrected_pointing_ra - solved_ra
                                 mount_deviation_dec = corrected_pointing_dec - solved_dec
 
+                                if mount_deviation_ha > 10:
+                                    plog ("BIG deviation in HA... whats going on?")
+                                    plog (mount_deviation_ha)
+                                    plog (corrected_pointing_ra)
+                                    plog (solved_ra)
+                                    plog (pointing_ra)
+                                    breakpoint()
+                                else:
+                                    plog ("Reasonable ha deviation")
+
 
                                 # Check that the RA doesn't cross over zero, if so, bring it back around
                                 if err_ha > 12:
@@ -2389,7 +2399,7 @@ class Observatory:
                                 radial_distance=pow(pow(err_ha*math.cos(math.radians(pointing_dec))* 15 * 3600,2)+pow(err_dec*3600,2),0.5)
 
 
-                                plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 1)) + " & dec: " + str (round(err_dec * 3600, 1)) + " asec Radial: " +str(radial_distance))
+                                plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 1)) + " & dec: " + str (round(err_dec * 3600, 1)) + " asec Radial: " +str(round(radial_distance,1)))
                                 #breakpoint()
                                 self.last_platesolved_ra = solve["ra_j2000_hours"]
                                 self.last_platesolved_dec = solve["dec_j2000_degrees"]
