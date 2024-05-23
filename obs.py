@@ -1796,7 +1796,12 @@ class Observatory:
                             # Get header explicitly out to send up
                             # This seems to be necessary
                             tempheader=fits.open(filepath)
-                            tempheader=tempheader[1].header
+                            try:
+                                tempheader=tempheader[1].header
+                            except:
+                                # Calibrations are not fz'ed so have the header elsewhere.
+                                tempheader=tempheader[0].header
+                            
                             headerdict = {}
                             for entry in tempheader.keys():
                                 headerdict[entry] = tempheader[entry]

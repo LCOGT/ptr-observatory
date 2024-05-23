@@ -3662,8 +3662,11 @@ class Camera:
                     except:
                         pass
                 #pointingfocus_masterdark_done=True
-
-            intermediate_tempflat=np.load(g_dev['cam'].flatFiles[this_exposure_filter + "_bin" + str(1)])
+            try:
+                intermediate_tempflat=np.load(g_dev['cam'].flatFiles[this_exposure_filter + "_bin" + str(1)])
+            except:
+                plog ("couldn't find flat for this filter")
+                intermediate_tempflat=None
 
 
         ## For traditional exposures, spin up all the subprocesses ready to collect and process the files once they arrive
