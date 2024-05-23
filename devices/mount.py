@@ -106,9 +106,9 @@ def ra_fix_r(ra):
     return ra
 
 def ra_fix_h(ra):
-    if ra >= 24:
+    while ra >= 24:
         ra -= 24
-    if ra < 0:
+    while ra < 0:
         ra = 24
     return ra
 
@@ -1042,7 +1042,7 @@ class Mount:
                             # # Here we calculate the values that go to the status.
                             # self.inverse_icrs_ra, self.inverse_icrs_dec, inverse_ra_vel, inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
                             # #I left the above two velocities as local becuse we will not do anything with them.
-                            
+
                             if self.model_on:
                                 # Dont need to correct temporary slewing values as it is moving
                                 self.inverse_icrs_ra = self.right_ascension_directly_from_mount
@@ -1110,12 +1110,12 @@ class Mount:
                             # If we aren't slewing this update and we haven't
                             # updated the position for a minute, update the position.
                             elif (time.time() - self.inverse_icrs_and_rates_timer) > 60:
-                                
+
                                 if self.model_on:
 
                                     self.inverse_icrs_ra, self.inverse_icrs_dec, self.inverse_ra_vel, self.inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
                                     self.inverse_icrs_and_rates_timer=time.time()
-    
+
                                     if self.CanSetRightAscensionRate:
                                         self.request_set_RightAscensionRate=False
                                         try:
@@ -1125,7 +1125,7 @@ class Mount:
                                             pass  #This faults if mount is parked.
                                         self.RightAscensionRate=self.inverse_ra_vel
                                         print ("new RA rate set: " +str(self.RightAscensionRate))
-    
+
                                     if self.CanSetDeclinationRate:
                                         self.request_set_DeclinationRate=False
                                         try:
@@ -1852,26 +1852,26 @@ class Mount:
         if self.model_on:
             ra, dec, roll_rate, pitch_rate = self.transform_icrs_to_mechanical(ra, dec, self.rapid_pier_indicator)
             #Above  we need to decide where to update the rates after a seek
-    
-    
-    
-    
+
+
+
+
             if self.CanSetRightAscensionRate:
                 self.request_set_RightAscensionRate=True
                 self.request_new_RightAscensionRate=roll_rate
-    
-    
+
+
             if self.CanSetDeclinationRate:
                 self.request_set_DeclinationRate=True
                 self.request_new_DeclinationRate=pitch_rate
-    
+
             ############################################################################## NEW WAYNE BARRIER WALL
-    
-    
+
+
             plog ("RA and Dec post icrs to mech: " + str(round(ra,6))+ " " + str(round(dec,6)))
             plog ("Roll Rate: " + str(roll_rate))
             plog ("Pitch Rate: " + str(pitch_rate))
-    
+
 
         # Don't need a mount reference for skyflatspots!
         if not skyflatspot and not g_dev['obs'].mount_reference_model_off:
