@@ -2363,12 +2363,12 @@ class Observatory:
                                 err_ha = target_ra - solved_ra
                                 err_dec = target_dec - solved_dec
 
-                                corrected_pointing_ra, corrected_pointing_dec, _, _ = self.transform_mechanical_to_icrs(pointing_ra,pointing_dec)
-                                
+                                corrected_pointing_ra, corrected_pointing_dec, _, _ = g_dev['mnt'].transform_mechanical_to_icrs(pointing_ra,pointing_dec, g_dev['mnt'].rapid_pier_indicator)
+
 
                                 # mount_deviation_ha = pointing_ra - solved_ra
                                 # mount_deviation_dec = pointing_dec - solved_dec
-                                
+
                                 mount_deviation_ha = corrected_pointing_ra - solved_ra
                                 mount_deviation_dec = corrected_pointing_dec - solved_dec
 
