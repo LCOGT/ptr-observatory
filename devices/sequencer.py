@@ -2665,6 +2665,16 @@ class Sequencer:
                     time.sleep(5)
                     g_dev['cam'].camera_update_reboot=True
                     time.sleep(5)
+                    
+                    g_dev['cam'].theskyx_set_cooler_on=True
+                    g_dev['cam'].theskyx_cooleron=True
+                    g_dev['cam'].theskyx_set_setpoint_trigger=True
+                    g_dev['cam'].theskyx_set_setpoint_value= self.setpoint
+                    g_dev['cam'].theskyx_temperature=self.camera.Temperature, 999.9, 999.9
+                    
+                    g_dev['cam'].shutter_open=False
+                    g_dev['cam'].theskyxIsExposureComplete=True
+                    g_dev['cam'].theskyx=True
                     g_dev['cam'].updates_paused=False
 
                 if self.config['filter_wheel']['filter_wheel1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':

@@ -1735,6 +1735,12 @@ class Camera:
 
         tempcamera.ExposureTime = self.theskyxExposureTime
         tempcamera.Frame = self.theskyxFrame
+        
+        while not tempcamera.IsExposureComplete:
+            self.theskyxIsExposureComplete=False
+            plog ("waiting for skyx exposure complete.")
+            time.sleep(0.01)
+            
         try:
             tempcamera.TakeImage()
         except:
@@ -1787,7 +1793,26 @@ class Camera:
                 plog(traceback.format_exc())
 
     def _theskyx_getImageArray(self):
-        imageTempOpen=fits.open(self.theskyxLastImageFileName, uint=False)[0].data.astype("float32")
+        
+        # Wait for it to turn up....
+        file_wait_timer=time.time()
+        while not os.path.exists(self.theskyxLastImageFileName):
+            if time.time()-file_wait_timer > 15:
+                plog ("Waiting for file to arrive for 15 seconds but it never did: " + str(self.theskyxLastImageFileName))
+                return None
+            time.sleep(0.05)
+        
+        # Make sure it is openable - can happen if the file appears but it hasn't fully written yet
+        file_wait_timer=time.time()
+        while True:
+            try:
+                imageTempOpen=fits.open(self.theskyxLastImageFileName, uint=False)[0].data.astype("float32")
+                break
+            except:
+                if time.time()-file_wait_timer > 15:
+                    plog ("Waiting for file to become big for 15 seconds but it never did: " + str(self.theskyxLastImageFileName))
+                    return None
+                time.sleep(0.05)
         try:
             os.remove(self.theskyxLastImageFileName)
         except Exception as e:

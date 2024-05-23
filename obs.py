@@ -1173,14 +1173,34 @@ class Observatory:
                     g_dev["obs"].stop_all_activity = False
 
                 # If camera is rebooting, the.running_an_exposure_set term can fall out
-                if g_dev["cam"].theskyx:
+                # If it is rebooting then return to the start of the loop.
+                not_rebooting=True
+                try:
+                    if g_dev["cam"].theskyx:
+                        while True:
+                            try:
+                                g_dev["cam"].running_an_exposure_set
+                                #plog ("theskyx camera check")
+                                if not not_rebooting:
+                                    continue
+                                else:
+                                    break
+                            except:
+                                plog ("pausing while camera reboots")
+                                not_rebooting=False
+                                time.sleep(1)
+                except:
                     while True:
                         try:
                             g_dev["cam"].running_an_exposure_set
                             #plog ("theskyx camera check")
-                            break
+                            if not not_rebooting:
+                                continue
+                            else:
+                                break
                         except:
                             plog ("pausing while camera reboots")
+                            not_rebooting=False
                             time.sleep(1)
 
                 # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
