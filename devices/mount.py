@@ -2504,7 +2504,7 @@ class Mount:
         for index in sorted(deleteList, reverse=True):
             del self.longterm_storage_of_mount_references[index]
         plog ("Deviation in mount reference: HA: " + str(deviation_ha) + " Dec: " + str(deviation_dec))
-        plog ("Recording and using new mount reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )
+        plog ("Recording and using new mount reference: HA: " + str(deviation_ha) + " arcminutes, Dec: " + str(deviation_dec) + " arcminutes." )
 
         self.longterm_storage_of_mount_references.append([time.time(),HA,pointing_dec + deviation_dec , deviation_ha,  deviation_dec])
         mnt_shelf['longterm_storage_of_mount_references']=self.longterm_storage_of_mount_references
@@ -2542,7 +2542,7 @@ class Mount:
         #         plog ("Found and removing an old reference close to new reference: " + str(entry))
         #         self.longterm_storage_of_mount_references.remove(entry)
         plog ("Deviation in flip reference: HA: " + str(deviation_ha) + " Dec: " + str(deviation_dec))
-        plog ("Recording and using new flip reference: HA: " + str(deviation_ha * 15 * 60) + " arcminutes, Dec: " + str(deviation_dec * 60) + " arcminutes." )
+        plog ("Recording and using new flip reference: HA: " + str(deviation_ha ) + " arcminutes, Dec: " + str(deviation_dec ) + " arcminutes." )
 
         counter=0
         deleteList=[]
