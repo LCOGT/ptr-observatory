@@ -3029,12 +3029,12 @@ class Sequencer:
             ),
             "Start date and time of observation"
         )
-        calibhduheader['INSTRUME'] = self.config["camera"][self.name]["name"], "Name of camera"
-        calibhduheader['SITEID'] = self.config["wema_name"].replace("-", "").replace("_", "")
-        calibhduheader['TELID'] = g_dev['obs'].obsid
+        calibhduheader['INSTRUME'] = g_dev['cam'].config["camera"][g_dev['cam'].name]["name"], "Name of camera"
+        calibhduheader['SITEID'] = g_dev['cam'].config["wema_name"].replace("-", "").replace("_", "")
+        calibhduheader['TELID'] = g_dev['obs'].obs_id
         calibhduheader['OBSTYPE'] = 'DARK'
         calibhduheader['BLKUID'] = 1234
-        calibhduheader["OBSID"] = g_dev['obs'].obsid
+        calibhduheader["OBSID"] = g_dev['obs'].obs_id
         
         # calibhduheader["OBSID"] = (
         #     selfconfig["obs_id"].replace("-", "").replace("_", "")
