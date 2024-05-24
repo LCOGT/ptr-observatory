@@ -233,7 +233,7 @@ site_config = {
             'settle_time_after_park' : 5,
   #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
-            'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
+            'time_inactive_until_park' : 1800.0, # How many seconds of inactivity until it will park the telescope
 
             'west_clutch_ra_correction': 0.0,  #final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_dec_correction': 0.0,
@@ -261,21 +261,21 @@ site_config = {
                 #units for model are asec/radian
                 'model_date':  "n.a.",
                 'model_equat': {
-                    'ih': 47., #"Home naturally points to West for AP GEM mounts.
-                    'id': 0, #These two are zero-point references for HA/Ra and dec.
-                    'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
-                    'edo': 0.0, #"East Dec Offset
-                    'ma': -778.0, # Azimuth error of polar axia
-                    'me': -275.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
-                    'ch': -316.0,  #Optical axis not perp to dec axis
-                    'np': 35.0,  #Non-perp of polar and dec axis
-                    'tf': 37.0,  #Sin flexure -- Hook's law.
-                    'tx': 0.0,  #Tangent flexure
-                    'hces': 0.0, #Sin/Cos centration error of encoders.
-                    'hcec': -180.0,
-                    'dces': 25.0,
-                    'dcec': 0.0,   #20240522.mod
-                    }   #20240522.mod   Eventually we can put the model name here and pick 
+                    'ih': 29., #"Home naturally points to West for AP GEM mounts.
+                    'id': -39.0, #These two are zero-point references for HA/Ra and dec.
+                    'eho': 0, # 0.0, #"East Hour angle Offset -- NOTE an offset
+                    'edo': 0, # 0.0, #"East Dec Offset
+                    'ma': -661.0, # Azimuth error of polar axia
+                    'me': -398.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
+                    'ch': -482.0,  #Optical axis not perp to dec axis
+                    'np': 0, # 35.0,  #Non-perp of polar and dec axis
+                    'tf': -38.0,  #Sin flexure -- Hook's law.
+                    'tx': 0, # 0.0,  #Tangent flexure
+                    'hces': 0, # 0.0, #Sin/Cos centration error of encoders.
+                    'hcec': 0, # -180.0,
+                    'dces': 0, # 25.0,
+                    'dcec': 0, # 0.0,   #20240522.mod
+                    }   #20240522.mod   Eventually we can put the model name here and pick
                         #up the file automatically.
                 ,
                 'model_altAz': {

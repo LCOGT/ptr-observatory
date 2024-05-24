@@ -1801,7 +1801,7 @@ class Observatory:
                             except:
                                 # Calibrations are not fz'ed so have the header elsewhere.
                                 tempheader=tempheader[0].header
-                            
+
                             headerdict = {}
                             for entry in tempheader.keys():
                                 headerdict[entry] = tempheader[entry]
@@ -2371,7 +2371,7 @@ class Observatory:
                                 err_ha = target_ra - solved_ra
                                 err_dec = target_dec - solved_dec
 
-                                
+
                                 if not g_dev['mnt'].model_on:
                                     mount_deviation_ha = pointing_ra - solved_ra
                                     mount_deviation_dec = pointing_dec - solved_dec
@@ -2408,7 +2408,7 @@ class Observatory:
                                 radial_distance=pow(pow(err_ha*math.cos(math.radians(pointing_dec))* 15 * 3600,2)+pow(err_dec*3600,2),0.5)
 
 
-                                plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 1)) + " & dec: " + str (round(err_dec * 3600, 1)) + " asec Radial: " +str(round(radial_distance,1)))
+                                plog("Radial Deviation, Ra, Dec  (asec): ", str(round(radial_distance,1)) + ",  " + str(round(err_ha * 15 * 3600, 1)) + ",  " + str (round(err_dec * 3600, 1)) + " asec Radial: " )
                                 #breakpoint()
                                 self.last_platesolved_ra = solve["ra_j2000_hours"]
                                 self.last_platesolved_dec = solve["dec_j2000_degrees"]
