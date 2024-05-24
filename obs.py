@@ -2582,7 +2582,7 @@ class Observatory:
                                                             try:
                                                                 print ("HA going in " + str(mount_deviation_ha))
                                                                 g_dev["mnt"].record_mount_reference(
-                                                                    mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
+                                                                    -mount_deviation_ha , -mount_deviation_dec, pointing_ra, pointing_dec
                                                                 )
 
                                                             except Exception as e:
@@ -2591,7 +2591,7 @@ class Observatory:
                                                             try:
                                                                 print ("HA going in " + str(mount_deviation_ha))
                                                                 g_dev["mnt"].record_flip_reference(
-                                                                    mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
+                                                                    -mount_deviation_ha , -mount_deviation_dec, pointing_ra, pointing_dec
                                                                 )
                                                             except Exception as e:
                                                                 plog("Something is up in the mount reference adjustment code ", e)
