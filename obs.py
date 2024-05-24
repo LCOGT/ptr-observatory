@@ -1811,7 +1811,7 @@ class Observatory:
                                 time.sleep(5)
 
 
-                    elif self.env_exists == True and (not frame_exists(fileobj)):
+                    elif self.env_exists == True:# and (not frame_exists(fileobj)):
                         try:
                             # Get header explicitly out to send up
                             # This seems to be necessary
@@ -1835,10 +1835,15 @@ class Observatory:
                                 except:
                                     self.laterdelete_queue.put(filepath, block=False)
 
+                        except ocs_ingester.exceptions.NonFatalDoNotRetryError:
+                            plog ("Apprently this file already exists in the archive: " + str(filepath))
+                            broken=1
+
                         except ocs_ingester.exceptions.DoNotRetryError:
+                            
                             plog ("Couldn't upload to PTR archive: " + str(filepath))
                             plog(traceback.format_exc())
-                            breakpoint()
+                            #breakpoint()
                             broken=1
                         except Exception as e:
 
