@@ -1173,14 +1173,34 @@ class Observatory:
                     g_dev["obs"].stop_all_activity = False
 
                 # If camera is rebooting, the.running_an_exposure_set term can fall out
-                if g_dev["cam"].theskyx:
+                # If it is rebooting then return to the start of the loop.
+                not_rebooting=True
+                try:
+                    if g_dev["cam"].theskyx:
+                        while True:
+                            try:
+                                g_dev["cam"].running_an_exposure_set
+                                #plog ("theskyx camera check")
+                                if not not_rebooting:
+                                    continue
+                                else:
+                                    break
+                            except:
+                                plog ("pausing while camera reboots")
+                                not_rebooting=False
+                                time.sleep(1)
+                except:
                     while True:
                         try:
                             g_dev["cam"].running_an_exposure_set
                             #plog ("theskyx camera check")
-                            break
+                            if not not_rebooting:
+                                continue
+                            else:
+                                break
                         except:
                             plog ("pausing while camera reboots")
+                            not_rebooting=False
                             time.sleep(1)
 
                 # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
@@ -1791,7 +1811,7 @@ class Observatory:
                                 time.sleep(5)
 
 
-                    elif self.env_exists == True and (not frame_exists(fileobj)):
+                    elif self.env_exists == True:# and (not frame_exists(fileobj)):
                         try:
                             # Get header explicitly out to send up
                             # This seems to be necessary
@@ -1815,8 +1835,15 @@ class Observatory:
                                 except:
                                     self.laterdelete_queue.put(filepath, block=False)
 
+                        except ocs_ingester.exceptions.NonFatalDoNotRetryError:
+                            plog ("Apprently this file already exists in the archive: " + str(filepath))
+                            broken=1
+
                         except ocs_ingester.exceptions.DoNotRetryError:
+                            
                             plog ("Couldn't upload to PTR archive: " + str(filepath))
+                            plog(traceback.format_exc())
+                            #breakpoint()
                             broken=1
                         except Exception as e:
 
@@ -2560,7 +2587,7 @@ class Observatory:
                                                             try:
                                                                 print ("HA going in " + str(mount_deviation_ha))
                                                                 g_dev["mnt"].record_mount_reference(
-                                                                    mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
+                                                                    -mount_deviation_ha , -mount_deviation_dec, pointing_ra, pointing_dec
                                                                 )
 
                                                             except Exception as e:
@@ -2569,7 +2596,7 @@ class Observatory:
                                                             try:
                                                                 print ("HA going in " + str(mount_deviation_ha))
                                                                 g_dev["mnt"].record_flip_reference(
-                                                                    mount_deviation_ha , mount_deviation_dec, pointing_ra, pointing_dec
+                                                                    -mount_deviation_ha , -mount_deviation_dec, pointing_ra, pointing_dec
                                                                 )
                                                             except Exception as e:
                                                                 plog("Something is up in the mount reference adjustment code ", e)
