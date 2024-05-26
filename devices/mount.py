@@ -1026,6 +1026,8 @@ class Mount:
 
                     self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                     self.currently_slewing=False
+                    g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
+
 
                     self.mount_updates=self.mount_updates + 1  #A monotonic increasing integer counter
 
@@ -1179,9 +1181,13 @@ class Mount:
                             if not self.rapid_park_indicator:
                                 self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
                                 self.current_tracking_state=self.mount_update_wincom.Tracking
-                                if not (g_dev['mnt'].pier_side_last_check==g_dev['mnt'].rapid_pier_indicator):
-                                    self.pier_flip_detected=True
-                                    plog ("PIERFLIP DETECTED!")
+                                try:
+                                    if not (g_dev['mnt'].pier_side_last_check==g_dev['mnt'].rapid_pier_indicator):
+                                        self.pier_flip_detected=True
+                                        plog ("PIERFLIP DETECTED!")
+                                except:
+                                    plog ("missing pier_side_last_check variable probs")
+                                    plog(traceback.format_exc())
                                 g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
 
                             #DIRECT MOUNT POSITION READ #5
