@@ -1846,10 +1846,20 @@ class Observatory:
                             #breakpoint()
                             broken=1
                         except Exception as e:
+                            
+                            if 'urllib3.exceptions.ConnectTimeoutError' in str(traceback.format_exc()):
+                                plog ("timeout in ingester")
+                                
+                            elif 'requests.exceptions.ConnectTimeout' in str(traceback.format_exc()):
+                                plog ("timeout in ingester")
+                            
+                            elif 'TimeoutError' in str(traceback.format_exc()):
+                                plog ("timeout in ingester")
+                                
 
-                            plog(traceback.format_exc())
+                            
 
-                            if 'list index out of range' in str(e):
+                            elif 'list index out of range' in str(e):
                                 # This error is thrown when there is a corrupt file
                                 broken=1
 
@@ -1870,6 +1880,7 @@ class Observatory:
                             else:
                                 plog (filepath)
                                 plog("couldn't send to PTR archive for some reason: ", e)
+                                plog(traceback.format_exc())
                                 # And give it a little sleep
                                 time.sleep(10)
                                 broken =1

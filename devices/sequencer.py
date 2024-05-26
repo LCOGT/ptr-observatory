@@ -344,7 +344,7 @@ class Sequencer:
         g_dev['cam'].user_name = command['user_name']
         action = command['action']
 
-        print (command['user_roles'])
+        plog (command['user_roles'])
 
         try:
             script = command['required_params']['script']
@@ -956,9 +956,9 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                print (self.stop_script_called)
-                                                print (g_dev['obs'].open_and_enabled_to_observe)
-                                                print ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
+                                                plog (self.stop_script_called)
+                                                plog (g_dev['obs'].open_and_enabled_to_observe)
+                                                plog ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
                                                 return
 
                                             # COLLECTING A Three point five sec SECOND EXPOSURE DARK FRAME
@@ -971,9 +971,9 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                print (self.stop_script_called)
-                                                print (g_dev['obs'].open_and_enabled_to_observe)
-                                                print ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
+                                                plog (self.stop_script_called)
+                                                plog (g_dev['obs'].open_and_enabled_to_observe)
+                                                plog ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
                                                 return
 
 
@@ -1434,7 +1434,7 @@ class Sequencer:
             else:
                 distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_flip_reference_ha - HAtemp)
                 distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_flip_reference_dec- dest_dec)
-                #print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+                #plog ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
                 absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(distance_from_current_reference_in_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
                 plog ("absolute_distance from reference to requested position: " + str(round(absolute_distance,2)))
                 if absolute_distance < absolute_distance_threshold:
@@ -2431,7 +2431,7 @@ class Sequencer:
                     try:
                         shutil.move(orphanfile, orphan_path)
                     except:
-                        print ("Couldn't move orphan: " + str(orphanfile) +', deleting.')
+                        plog ("Couldn't move orphan: " + str(orphanfile) +', deleting.')
                         g_dev['obs'].laterdelete_queue.put(orphanfile, block=False)
 
         # Add all fits.fz members to the AWS queue
@@ -2556,7 +2556,7 @@ class Sequencer:
         plog ("Nightly reset of complete projects")
         self.reset_completes()
         g_dev['obs'].events_new = None
-        g_dev['obs'].reset_last_reference()
+        #g_dev['obs'].reset_last_reference()
         # if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
         #    g_dev['mnt'].reset_mount_reference()
         g_dev['obs'].last_solve_time = datetime.datetime.utcnow() - datetime.timedelta(days=1)
@@ -2936,7 +2936,7 @@ class Sequencer:
                 chunk_size=8
                 while not ( shapeImage[0] % chunk_size ==0):
                     chunk_size=chunk_size+1
-                    #print (chunk_size)
+                    #plog (chunk_size)
                 chunk_size=int(shapeImage[0]/chunk_size)
 
                 holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
@@ -2944,7 +2944,7 @@ class Sequencer:
                 # iterate through the input, replace with ones, and write to output
                 for i in range(shapeImage[0]):
                     if i % chunk_size == 0:
-                        #print (i)
+                        #plog (i)
                         counter=0
                         for imagefile in range(len(PLDrive)):
                             holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
@@ -5565,14 +5565,14 @@ class Sequencer:
                                 fit = np.polyfit(x, y, 2)
                                 f = np.poly1d(fit)
                             except:
-                                print ("focus fit didn't work dunno y yet.")
+                                plog ("focus fit didn't work dunno y yet.")
                                 plog(traceback.format_exc())
                                 fit_failed=True
                             crit_points = bounds + [x for x in f.deriv().r if x.imag == 0 and bounds[0] < x.real < bounds[1]]
                             try:
                                 fitted_focus_position=crit_points[2]
                             except:
-                                print ("crit points didn't work dunno y yet.")
+                                plog ("crit points didn't work dunno y yet.")
                                 plog(traceback.format_exc())
                                 fit_failed=True
 
@@ -5683,13 +5683,13 @@ class Sequencer:
 
                                     # If there seems to be a wonky spot, remove it and try again
                                     if len(delete_list) > 1:
-                                        print ("Found possible problem spots: " + str(delete_list))
+                                        plog ("Found possible problem spots: " + str(delete_list))
                                         for entry in delete_list:
                                             new_focus_position_to_attempt=entry[0]
                                             focus_spots.remove(entry)
-                                        print ("Attempting this spot again: " + str(new_focus_position_to_attempt))
+                                        plog ("Attempting this spot again: " + str(new_focus_position_to_attempt))
                                     else:
-                                        print ("Couldn't find a problem spot, attempting another point on the smaller end of the curve")
+                                        plog ("Couldn't find a problem spot, attempting another point on the smaller end of the curve")
                                         if focus_spots[0][1] < focus_spots[-1][1]:
                                             plog ("smaller focus spot has lower fwhm value, trying out a spot out there")
                                             new_focus_position_to_attempt=focus_spots[0][0] - throw
@@ -5898,8 +5898,8 @@ class Sequencer:
 
         try:
             os.path.expanduser('~')
-            print (os.path.expanduser('~'))
-            print (os.path.expanduser('~')+ "/Desktop/TPOINT/")
+            plog (os.path.expanduser('~'))
+            plog (os.path.expanduser('~')+ "/Desktop/TPOINT/")
             if not os.path.exists(os.path.expanduser('~')+ "/Desktop/TPOINT"):
                 os.makedirs(os.path.expanduser('~')+ "/Desktop/TPOINT")
             shutil.copy (tpointnamefile, os.path.expanduser('~') + "/Desktop/TPOINT/" + 'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT')
@@ -6157,8 +6157,8 @@ class Sequencer:
 
         try:
             os.path.expanduser('~')
-            print (os.path.expanduser('~'))
-            print (os.path.expanduser('~')+ "/Desktop/TPOINT/")
+            plog (os.path.expanduser('~'))
+            plog (os.path.expanduser('~')+ "/Desktop/TPOINT/")
             if not os.path.exists(os.path.expanduser('~')+ "/Desktop/TPOINT"):
                 os.makedirs(os.path.expanduser('~')+ "/Desktop/TPOINT")
             shutil.copy (tpointnamefile, os.path.expanduser('~') + "/Desktop/TPOINT/" + 'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT')

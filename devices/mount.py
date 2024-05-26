@@ -377,9 +377,9 @@ class Mount:
             self.longterm_storage_of_flip_references=[]
         mnt_shelf.close()
 
-        print ("Mount deviations, mount then flip:")
-        print (self.longterm_storage_of_mount_references)
-        print (self.longterm_storage_of_flip_references)
+        plog ("Mount deviations, mount then flip:")
+        plog (self.longterm_storage_of_mount_references)
+        plog (self.longterm_storage_of_flip_references)
 
         self.last_mount_reference_time=time.time() - 86400
         self.last_flip_reference_time=time.time() - 86400
@@ -410,19 +410,19 @@ class Mount:
 
         # Minimising ASCOM calls by holding these as internal variables
         if self.mount.CanSetRightAscensionRate:
-            print ("Can Set RightAscensionRate")
+            plog ("Can Set RightAscensionRate")
             self.CanSetRightAscensionRate=True
         else:
-            print ("CANNOT Set RightAscensionRate")
+            plog ("CANNOT Set RightAscensionRate")
             self.CanSetRightAscensionRate=False
         self.RightAscensionRate = self.mount.RightAscensionRate
 
         if self.mount.CanSetDeclinationRate:
             self.CanSetDeclinationRate = True
-            print ("Can Set DeclinationRate")
+            plog ("Can Set DeclinationRate")
         else:
             self.CanSetDeclinationRate = False
-            print ("CANNOT Set DeclinationRate")
+            plog ("CANNOT Set DeclinationRate")
         self.DeclinationRate = self.mount.DeclinationRate
 
         #IMPORTANT Ap1600 Info.
@@ -681,11 +681,11 @@ class Mount:
                 count += 1
                 if count > 500:  # count about 12 at-0.5 deg. 3 at 45deg.
                     #if loud:
-                    #print("transform_mount_to_observed_r() FAILED!")
+                    #plog("transform_mount_to_observed_r() FAILED!")
                     return pRoll_h, pPitch_d, 0.0, 0.0
 
             print("Refr and Corrections in asec:  ",round(self.refr_asec, 2), round(self.raCorr, 2), round(self.decCorr, 2))
-            #if DEBUG:  print("Iterations:  ", count, ra_vel, dec_vel)
+            #if DEBUG:  plog("Iterations:  ", count, ra_vel, dec_vel)
 
             return_ra = ra_fix_h(rollTrial)
 
@@ -706,7 +706,7 @@ class Mount:
         else:
             ra = icrs_ra_h
             dec = icrs_dec_d
-        #print('Converted j.now: ', ra, dec)
+        #plog('Converted j.now: ', ra, dec)
 
         if self.offset_received:
             ra += self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
@@ -718,7 +718,7 @@ class Mount:
 
         #First, convert Ra to Ha
         ha_app_h = ha_fix_h(self.sid_now_h - ra_app_h)
-        #print('Converted j.now + OFFSET ra, ha, dec: ', ra_app_h, ha_app_h, dec_app_d)
+        #plog('Converted j.now + OFFSET ra, ha, dec: ', ra_app_h, ha_app_h, dec_app_d)
         if self.refr_on:
             #Convert to Observed
             #next convert to ALT az, and save the az
@@ -731,7 +731,7 @@ class Mount:
         else:
             ha_obs_h = ha_app_h
             dec_obs_d =dec_app_d
-        #print('Converted obs + OFFSET refr, ha, dec: ', self.refr_asec, ha_obs_h, dec_obs_d)
+        #plog('Converted obs + OFFSET refr, ha, dec: ', self.refr_asec, ha_obs_h, dec_obs_d)
         if self.model_on:
             #Convert to Mechanical.
 
@@ -740,7 +740,7 @@ class Mount:
             self.ha_rate = 0.0
             self.dec_rate = 0.0
             pass
-        #print('Mech ra, ha, dec: ', self.slewtoRA, self.slewtoHA, self.slewtoDEC)
+        #plog('Mech ra, ha, dec: ', self.slewtoRA, self.slewtoHA, self.slewtoDEC)
         if self.rates_on:
             #Compute Velocities.  Typically with a CCD we rarely expose longer than 300 sec  so we
             # are going to use 600 sec as the time delta.
@@ -817,11 +817,11 @@ class Mount:
                     np = -self.model['np']
                     pass
                 # if loud:
-                #     print(ih, idec, edh, edd, ma, me, ch, np, tf, tx, hces, hcec, dces, dcec, pPierSide)
+                #     plog(ih, idec, edh, edd, ma, me, ch, np, tf, tx, hces, hcec, dces, dcec, pPierSide)
 
                 # This is exact trigonometrically:
                 if loud:
-                    print("Pre CN; roll, pitch:  ", rRoll * RTOH, rPitch * RTOD)
+                    plog("Pre CN; roll, pitch:  ", rRoll * RTOH, rPitch * RTOD)
                 cnRoll = rRoll + math.atan2(
                     math.cos(math.radians(np)) * math.tan(math.radians(ch))
                     + math.sin(math.radians(np)) * math.sin(rPitch),
@@ -834,24 +834,24 @@ class Mount:
                     - math.sin(math.radians(np)) * math.sin(math.radians(ch))
                 )
                 if loud:
-                    print("Post CN; roll, pitch:  ", cnRoll * RTOH, cnPitch * RTOD)
+                    plog("Post CN; roll, pitch:  ", cnRoll * RTOH, cnPitch * RTOD)
                 x, y, z = sph_rect_r(cnRoll, cnPitch)
                 if loud:
-                    print("To spherical:  ", x, y, z, x * x + y * y + z * z)
+                    plog("To spherical:  ", x, y, z, x * x + y * y + z * z)
                 # Apply MA error:
                 y, z = rotate_r(y, z, -self.model['ma'])
                 # Apply ME error:
                 x, z = rotate_r(x, z, -self.model['me'])
                 if loud:
-                    print("Post MA, ME:       ", x, y, z, x * x + y * y + z * z)
+                    plog("Post MA, ME:       ", x, y, z, x * x + y * y + z * z)
                 # Apply latitude
                 x, z = rotate_r(x, z, (PIOVER2 - self.latitude_r))
                 if loud:
-                    print("Post-Lat:  ", x, y, z, x * x + y * y + z * z)
+                    plog("Post-Lat:  ", x, y, z, x * x + y * y + z * z)
                 # Apply TF, TX
                 az, alt = rect_sph_d(x, y, z)  # math.pi/2. -
                 if loud:
-                    print("Az Alt:  ", az + 180.0, alt)
+                    plog("Az Alt:  ", az + 180.0, alt)
                 # flexure causes mount to sag so a shift in el, apply then
                 # move back to other coordinate system
                 zen = 90 - alt
@@ -865,7 +865,7 @@ class Mount:
                 )
                 alt += defl * RTOD
                 if loud:
-                    print(
+                    plog(
                         "Post Tf,Tx; az, alt, z, defl:  ",
                         az + 180.0,
                         alt,
@@ -882,15 +882,15 @@ class Mount:
                 cPitch = centration_r(fPitch, -self.model['dces'], self.model['dcec'])
 
                 if loud:
-                    print("Back:  ", x, y, z, x * x + y * y + z * z)
-                    print("Back-Lat:  ", x, y, z, x * x + y * y + z * z)
-                    print("Back-Sph:  ", fRoll * RTOH, fPitch * RTOD)
-                    print("f,c Roll: ", fRoll, cRoll)
-                    print("f, c Pitch: ", fPitch, cPitch)
+                    plog("Back:  ", x, y, z, x * x + y * y + z * z)
+                    plog("Back-Lat:  ", x, y, z, x * x + y * y + z * z)
+                    plog("Back-Sph:  ", fRoll * RTOH, fPitch * RTOD)
+                    plog("f,c Roll: ", fRoll, cRoll)
+                    plog("f, c Pitch: ", fPitch, cPitch)
                 corrRoll = ha_fix_r(cRoll)
                 corrPitch = cPitch
                 if loud:
-                    print("Final:   ", fRoll * RTOH, fPitch * RTOD)
+                    plog("Final:   ", fRoll * RTOH, fPitch * RTOD)
                 self.raCorr = (ha_fix_r(corrRoll - pRoll_h*HTOR))*RTOS  #Stash the correction
                 self.decCorr = (dec_fix_r(corrPitch - pPitch_d*DTOR))*RTOS
                 # 20210328  Note this may not work at Pole.
@@ -899,7 +899,7 @@ class Mount:
                 return (corrRoll*RTOH, corrPitch*RTOD )
             elif not GEM:
                 #if loud:
-                    # print(
+                    # plog(
                     #     ih, idec, ia, ie, an, aw, tf, tx, ca, npae, aces, acec, eces, ecec
                     # )
                 pass
@@ -930,8 +930,8 @@ class Mount:
                 #     - math.sin(math.radians(np)) * math.sin(math.radians(ch))
                 # )
                 # if loud:
-                #     print("Pre CANPAE; roll, pitch:  ", rRoll * RTOH, rPitch * RTOD)
-                #     print("Post CANPAE; roll, pitch:  ", cnRoll * RTOH, cnPitch * RTOD)
+                #     plog("Pre CANPAE; roll, pitch:  ", rRoll * RTOH, rPitch * RTOD)
+                #     plog("Post CANPAE; roll, pitch:  ", cnRoll * RTOH, cnPitch * RTOD)
                 # x, y, z = sph_rect_d(math.degrees(cnRoll), math.degrees(cnPitch))
 
                 # # Apply AN error:
@@ -940,12 +940,12 @@ class Mount:
                 # x, z = rotate_r(x, z, math.radians(an / 3600.0))
                 # az, el = rect_sph_d(x, y, z)
                 # if loud:
-                #     print("To spherical:  ", x, y, z, x * x + y * y + z * z)
-                #     print("Pre  AW:       ", x, y, z, math.radians(aw / 3600.0))
-                #     print("Post AW:       ", x, y, z, x * x + y * y + z * z)
-                #     print("Pre  AN:       ", x, y, z, math.radians(an / 3600.0))
-                #     print("Post AN:       ", x, y, z, x * x + y * y + z * z)
-                #     print("Az El:  ", az + 180.0, el)
+                #     plog("To spherical:  ", x, y, z, x * x + y * y + z * z)
+                #     plog("Pre  AW:       ", x, y, z, math.radians(aw / 3600.0))
+                #     plog("Post AW:       ", x, y, z, x * x + y * y + z * z)
+                #     plog("Pre  AN:       ", x, y, z, math.radians(an / 3600.0))
+                #     plog("Post AN:       ", x, y, z, x * x + y * y + z * z)
+                #     plog("Az El:  ", az + 180.0, el)
                 # # flexure causes mount to sag so a shift in el, apply then
                 # # move back to other coordinate system
                 # zen = 90 - el
@@ -959,7 +959,7 @@ class Mount:
                 # )
                 # el += defl * RTOD
                 # if loud:
-                #     print(
+                #     plog(
                 #         "Post Tf,Tx; az, el, z, defl:  ",
                 #         az + 180.0,
                 #         el,
@@ -971,25 +971,25 @@ class Mount:
 
                 # x, y, z = sph_rect_d(az, el)
                 # if loud:
-                #     print("Back:  ", x, y, z, x * x + y * y + z * z)
+                #     plog("Back:  ", x, y, z, x * x + y * y + z * z)
                 # fRoll, fPitch = rect_sph_d(x, y, z)
                 # if loud:
-                #     print("Back-Sph:  ", fRoll * RTOH, fPitch * RTOD)
+                #     plog("Back-Sph:  ", fRoll * RTOH, fPitch * RTOD)
                 # cRoll = centration_d(fRoll, aces, acec)
                 # if loud:
-                #     print("f,c Roll: ", fRoll, cRoll)
+                #     plog("f,c Roll: ", fRoll, cRoll)
                 # cPitch = centration_d(fPitch, -eces, ecec)
                 # if loud:
-                #     print("f, c Pitch: ", fPitch, cPitch)
+                #     plog("f, c Pitch: ", fPitch, cPitch)
                 # corrRoll = reduce_az_r(cRoll)
                 # corrPitch = reduce_alt_r(cPitch)
                 # if loud:
-                #     print("Final Az, ALT:   ", corrRoll, corrPitch)
+                #     plog("Final Az, ALT:   ", corrRoll, corrPitch)
                 # haH, decD = transform_azAlt_to_haDec(corrRoll, corrPitch)   #Units
                 # raCorr = reduce_ha_h(haH - pRoll) * 15 * 3600
                 # decCorr = reduce_dec_d(decD - pPitch) * 3600
                 # if loud:
-                #     print("Corrections:  ", raCorr, decCorr)
+                #     plog("Corrections:  ", raCorr, decCorr)
                 # return (haH, decD)
 
 
@@ -1105,10 +1105,10 @@ class Mount:
                                 # Don't slew while exposing!
                                 try:
                                     while g_dev['cam'].shutter_open:
-                                        print ("mount thread waiting for camera")
+                                        plog ("mount thread waiting for camera")
                                         time.sleep(0.2)
                                 except:
-                                    print ("mount thread camera wait failed.")
+                                    plog ("mount thread camera wait failed.")
 
                                 self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                                 self.currently_slewing=True
@@ -1126,17 +1126,17 @@ class Mount:
                                         self.request_set_RightAscensionRate=False
                                         try:
                                             self.mount_update_wincom.RightAscensionRate=self.inverse_ra_vel
-                                            #print ("new RA rate set: " +str(self.RightAscensionRate))
+                                            #plog ("new RA rate set: " +str(self.RightAscensionRate))
                                         except:
                                             pass  #This faults if mount is parked.
                                         self.RightAscensionRate=self.inverse_ra_vel
-                                        #print ("new RA rate set: " +str(self.RightAscensionRate))
+                                        #plog ("new RA rate set: " +str(self.RightAscensionRate))
 
                                     if self.CanSetDeclinationRate:
                                         self.request_set_DeclinationRate=False
                                         try:
                                             self.mount_update_wincom.DeclinationRate=self.inverse_dec_vel
-                                            #print ("new DEC rate set: " +str(self.DeclinationRate))
+                                            #plog ("new DEC rate set: " +str(self.DeclinationRate))
                                         except:
                                             pass  #This faults if mount is parked.
                                         self.DeclinationRate=self.inverse_dec_vel
@@ -1162,13 +1162,13 @@ class Mount:
                                 self.request_set_RightAscensionRate=False
                                 self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
                                 self.RightAscensionRate=self.request_new_RightAscensionRate
-                                #print ("new RA rate set: " +str(self.RightAscensionRate))
+                                #plog ("new RA rate set: " +str(self.RightAscensionRate))
 
                             if self.request_set_DeclinationRate and self.CanSetDeclinationRate:
                                 self.request_set_DeclinationRate=False
                                 self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
                                 self.DeclinationRate=self.request_new_DeclinationRate
-                                #print ("new DEC rate set: " +str(self.DeclinationRate))
+                                #plog ("new DEC rate set: " +str(self.DeclinationRate))
 
                             if self.request_find_home:
                                 self.request_find_home=False
@@ -1181,7 +1181,7 @@ class Mount:
                                 self.current_tracking_state=self.mount_update_wincom.Tracking
                                 if not (g_dev['mnt'].pier_side_last_check==g_dev['mnt'].rapid_pier_indicator):
                                     self.pier_flip_detected=True
-                                    print ("PIERFLIP DETECTED!")
+                                    plog ("PIERFLIP DETECTED!")
                                 g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
 
                             #DIRECT MOUNT POSITION READ #5
@@ -2144,12 +2144,12 @@ class Mount:
     #                 pier_east = 1
     #     except Exception as e:
     #         self.mount_busy=False
-    #         print ("mount really doesn't like pierside calls ", e)
+    #         plog ("mount really doesn't like pierside calls ", e)
     #         pier_east = 1
     #       #Update incoming ra and dec with mounting offsets.
 
-    #     # print ("delta")
-    #     # print (delta_ra)
+    #     # plog ("delta")
+    #     # plog (delta_ra)
     #     # ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
     #     # dec += delta_dec
     #     # ra, dec = ra_dec_fix_h(ra,dec)
@@ -2211,14 +2211,14 @@ class Mount:
 
     #                 self.wait_for_slew(wait_after_slew=False)
     #                 self.get_mount_coordinates()
-    #                 print ("this mount may not accept tracking commands")
+    #                 plog ("this mount may not accept tracking commands")
     #             elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
-    #                 print ("theskyx has been rescued one too many times. Just sending it to park.")
+    #                 plog ("theskyx has been rescued one too many times. Just sending it to park.")
     #                 self.park_command()
     #                 self.wait_for_slew(wait_after_slew=False)
     #                 return
     #             else:
-    #                 print ("problem with setting tracking: ", e)
+    #                 plog ("problem with setting tracking: ", e)
 
 
     #     self.move_time = time.time()
@@ -2285,14 +2285,14 @@ class Mount:
     #                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
     #                 self.wait_for_slew(wait_after_slew=False)
     #                 self.get_mount_coordinates()
-    #                 print ("this mount may not accept tracking commands")
+    #                 plog ("this mount may not accept tracking commands")
     #             elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
-    #                 print ("theskyx has been rescued one too many times. Just sending it to park.")
+    #                 plog ("theskyx has been rescued one too many times. Just sending it to park.")
     #                 self.park_command()
     #                 self.wait_for_slew(wait_after_slew=False)
     #                 return
     #             else:
-    #                 print ("problem with setting tracking: ", e)
+    #                 plog ("problem with setting tracking: ", e)
 
     #     g_dev['obs'].time_since_last_slew_or_exposure = time.time()
     #     g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
