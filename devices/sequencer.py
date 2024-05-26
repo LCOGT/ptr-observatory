@@ -502,7 +502,7 @@ class Sequencer:
                 self.cool_down_latch = True
                 self.reset_completes()
 
-    
+
                 # If the roof opens later then sync and refocus
                 if (g_dev['events']['Observing Begins'] < ephem_now < g_dev['events']['Observing Ends']):
                     # # Move to reasonable spot
@@ -518,7 +518,7 @@ class Sequencer:
                     # plog ("Running initial autofocus upon opening observatory")
 
                     # self.auto_focus_script(req2, opt)
-                    
+
                     self.total_sequencer_control=True
                     g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
                     g_dev['mnt'].go_command(alt=70,az= 70)
@@ -583,9 +583,9 @@ class Sequencer:
                     g_dev['obs'].flush_command_queue()
 
                     self.total_sequencer_control=False
-                    
-                    
-                    
+
+
+
                 else:
                     self.night_focus_ready=True
 
@@ -2665,13 +2665,13 @@ class Sequencer:
                     time.sleep(5)
                     g_dev['cam'].camera_update_reboot=True
                     time.sleep(5)
-                    
+
                     g_dev['cam'].theskyx_set_cooler_on=True
                     g_dev['cam'].theskyx_cooleron=True
                     g_dev['cam'].theskyx_set_setpoint_trigger=True
                     g_dev['cam'].theskyx_set_setpoint_value= self.setpoint
                     g_dev['cam'].theskyx_temperature=self.camera.Temperature, 999.9, 999.9
-                    
+
                     g_dev['cam'].shutter_open=False
                     g_dev['cam'].theskyxIsExposureComplete=True
                     g_dev['cam'].theskyx=True
@@ -3035,15 +3035,15 @@ class Sequencer:
         calibhduheader['OBSTYPE'] = 'DARK'
         calibhduheader['BLKUID'] = 1234
         calibhduheader["OBSID"] = g_dev['obs'].obs_id
-        
+
         # calibhduheader["OBSID"] = (
         #     selfconfig["obs_id"].replace("-", "").replace("_", "")
         # )
-        
-        
+
+
         # hdu.header["SITEID"] = (self.config["wema_name"].replace("-", "").replace("_", ""))
         # hdu.header["INSTRUME"] = (self.config["camera"][self.name]["name"], "Name of camera")
-        
+
         # 'PROPID': 'INGEST-TEST-2021',
         #                       'DATE-OBS': '2015-02-19T13:56:05.261',
         #                       'INSTRUME': 'nres03',
@@ -3174,7 +3174,7 @@ class Sequencer:
                 temp_bias_level_min=bn.nanmin(masterBias)
                 del finalImage
                 del holder
-                
+
                 calibhduheader['OBSTYPE'] = 'BIAS'
 
                 try:
@@ -3744,7 +3744,7 @@ class Sequencer:
                                 temporaryFlat=np.nan_to_num(temporaryFlat, nan = bn.nanmedian(temporaryFlat))
 
                             plog ("Interpolated flat: " +str(time.time()-calibration_timer))
-                            
+
                             calibhduheader['OBSTYPE'] = 'SKYFLAT'
 
                             try:
@@ -5263,15 +5263,15 @@ class Sequencer:
                             self.total_sequencer_control = False
                             return np.nan, np.nan
                         pass
-                    
-                    
+
+
 
                     g_dev['obs'].sync_after_platesolving = False
-                    
+
                     # Once the mount is synced, then re-slew the mount to where it thinks it should be
                     g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
-                    
-                    
+
+
 
                     #g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
                     g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field and test the sync", p_level='INFO')
@@ -5838,8 +5838,13 @@ class Sequencer:
 
             except Exception:
                 plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
-            ra_mount=g_dev['mnt'].return_right_ascension()
-            dec_mount = g_dev['mnt'].return_declination()
+            ra_mount=g_dev["mnt"].last_ra_requested #g_dev['mnt'].return_right_ascension()
+            dec_mount = g_dev["mnt"].last_dec_requested #g_dev['mnt'].return_declination()
+
+            #ra_2 = g_dev['obs'].last_platesolved_ra
+            #dec_2 = g_dev['obs'].last_platesolved_dec
+
+
             result=[ra_mount, dec_mount, g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
             deviation_catalogue_for_tpoint.append (result)
             plog(result)
@@ -5905,7 +5910,7 @@ class Sequencer:
         plog (deviation_catalogue_for_tpoint)
 
         g_dev['obs'].auto_centering_off = prev_auto_centering
-        
+
         g_dev['obs'].mount_reference_model_off = previous_mount_reference_model_off
 
         g_dev['obs'].flush_command_queue()
@@ -5930,7 +5935,7 @@ class Sequencer:
 
         prev_auto_centering = g_dev['obs'].auto_centering_off
         g_dev['obs'].auto_centering_off = True
-        
+
         previous_mount_reference_model_off = copy.deepcopy(g_dev['obs'].mount_reference_model_off)
         g_dev['obs'].mount_reference_model_off = True
 
@@ -6039,7 +6044,7 @@ class Sequencer:
                 g_dev["mnt"].last_ra_requested = grid_star[0] / 15
                 g_dev["mnt"].last_dec_requested = grid_star[1]
                 #g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
-                
+
                 g_dev['mnt'].go_command(ra=grid_star[0] /15, dec=grid_star[1])
             except:
                 plog ("Difficulty in directly slewing to object")
@@ -6163,7 +6168,7 @@ class Sequencer:
         plog ("Final devation catalogue for Tpoint")
         plog (deviation_catalogue_for_tpoint)
 
-        
+
         g_dev['obs'].mount_reference_model_off = previous_mount_reference_model_off
         g_dev['obs'].auto_centering_off = prev_auto_centering
 

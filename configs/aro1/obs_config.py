@@ -261,20 +261,20 @@ site_config = {
                 #units for model are asec/radian
                 'model_date':  "n.a.",
                 'model_equat': {
-                    'ih': 29., #"Home naturally points to West for AP GEM mounts.
-                    'id': -39.0, #These two are zero-point references for HA/Ra and dec.
-                    'eho': 0, # 0.0, #"East Hour angle Offset -- NOTE an offset
-                    'edo': 0, # 0.0, #"East Dec Offset
-                    'ma': -661.0, # Azimuth error of polar axia
-                    'me': -398.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
-                    'ch': -482.0,  #Optical axis not perp to dec axis
-                    'np': 0, # 35.0,  #Non-perp of polar and dec axis
-                    'tf': -38.0,  #Sin flexure -- Hook's law.
-                    'tx': 0, # 0.0,  #Tangent flexure
-                    'hces': 0, # 0.0, #Sin/Cos centration error of encoders.
-                    'hcec': 0, # -180.0,
-                    'dces': 0, # 25.0,
-                    'dcec': 0, # 0.0,   #20240522.mod
+                    'ih':   -1687., #"Home naturally points to West for AP GEM mounts.
+                    'id':   0., #These two are zero-point references for HA/Ra and dec.
+                    'eho':  0., # 0.0, #"East Hour angle Offset -- NOTE an offset
+                    'edo':  0., # 0.0, #"East Dec Offset
+                    'ma':   -207., # Azimuth error of polar axia
+                    'me':   0.,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
+                    'ch':   0.,  #Optical axis not perp to dec axis
+                    'np':   0., # 35.0,  #Non-perp of polar and dec axis
+                    'tf':   44.,  #Sin flexure -- Hook's law.
+                    'tx':   0., # 0.0,  #Tangent flexure
+                    'hces': 0., # 0.0, #Sin/Cos centration error of encoders.
+                    'hcec': 0., # -180.0,
+                    'dces': 0., # 25.0,
+                    'dcec': 0., # 0.0,   #20240522.mod
                     }   #20240522.mod   Eventually we can put the model name here and pick
                         #up the file automatically.
                 ,

@@ -1840,7 +1840,7 @@ class Observatory:
                             broken=1
 
                         except ocs_ingester.exceptions.DoNotRetryError:
-                            
+
                             plog ("Couldn't upload to PTR archive: " + str(filepath))
                             plog(traceback.format_exc())
                             #breakpoint()
@@ -2435,7 +2435,7 @@ class Observatory:
                                 radial_distance=pow(pow(err_ha*math.cos(math.radians(pointing_dec))* 15 * 3600,2)+pow(err_dec*3600,2),0.5)
 
 
-                                plog("Radial Deviation, Ra, Dec  (asec): ", str(round(radial_distance,1)) + ",  " + str(round(err_ha * 15 * 3600, 1)) + ",  " + str (round(err_dec * 3600, 1)) + " asec Radial: " )
+                                plog("Radial Deviation, Ra, Dec  (asec): ", str(round(radial_distance,1)) + ",  " + str(round(err_ha * 15 * 3600, 1)) + ",  " + str (round(err_dec * 3600, 1)))
                                 #breakpoint()
                                 self.last_platesolved_ra = solve["ra_j2000_hours"]
                                 self.last_platesolved_dec = solve["dec_j2000_degrees"]

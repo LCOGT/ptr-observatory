@@ -257,9 +257,13 @@ class Mount:
         self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
         #DIRECT MOUNT POSITION READ #1
-        self.current_icrs_ra = self.mount.RightAscension
+        #NB NB this is toally incorrect.  The mount is mechanical. self.current_icrs_ra is used!
+        self.current_icrs_ra = self.mount.RightAscension  #this _icrs_ reference is used in saftey check..
         self.current_icrs_dec = self.mount.Declination
         self.current_mount_sidereal = self.mount.SiderealTime
+        self.current_mechanical_ra = self.mount.RightAscension
+        self.current_mechanical_dec = self.mount.Declination
+        self.current_mechanical_sidereal = self.mount.SiderealTime
         try:
             self.ICRS2000 = config["mount"]["mount1"]["settings"]['ICRS2000_input_coords']
             self.refr_on = config["mount"]["mount1"]["settings"]["refraction_on"]
