@@ -1158,7 +1158,8 @@ class Mount:
 
                             if self.request_new_pierside:
                                 self.request_new_pierside=False
-                                self.new_pierside=self.mount_update_wincom.DestinationSideOfPier(self.request_new_pierside_ra, self.request_new_pierside_dec)
+                                if self.can_report_destination_pierside:
+                                    self.new_pierside=self.mount_update_wincom.DestinationSideOfPier(self.request_new_pierside_ra, self.request_new_pierside_dec)
 
                             if self.request_set_RightAscensionRate and self.CanSetRightAscensionRate:
                                 self.request_set_RightAscensionRate=False
@@ -1179,21 +1180,22 @@ class Mount:
                             self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
 
                             if not self.rapid_park_indicator:
-                                self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
-                                self.current_tracking_state=self.mount_update_wincom.Tracking
-                                try:
-                                    if not (g_dev['mnt'].pier_side_last_check==g_dev['mnt'].rapid_pier_indicator):
-                                        self.pier_flip_detected=True
-                                        plog ("PIERFLIP DETECTED!")
-                                except:
-                                    plog ("missing pier_side_last_check variable probs")
-                                    plog(traceback.format_exc())
-                                g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
+                                if self.can_report_pierside:
+                                    self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
+                                    self.current_tracking_state=self.mount_update_wincom.Tracking
+                                    try:
+                                        if not (g_dev['mnt'].pier_side_last_check==g_dev['mnt'].rapid_pier_indicator):
+                                            self.pier_flip_detected=True
+                                            plog ("PIERFLIP DETECTED!")
+                                    except:
+                                        plog ("missing pier_side_last_check variable probs")
+                                        plog(traceback.format_exc())
+                                    g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
 
                             #DIRECT MOUNT POSITION READ #5
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-                            self.sidereal_time_directly_from_mount= copy.deepcopy(self.mount_update_wincom.SiderealTime)
+                            #self.sidereal_time_directly_from_mount= copy.deepcopy(self.mount_update_wincom.SiderealTime)
                             self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
                             self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
 

@@ -2669,8 +2669,8 @@ class Sequencer:
                     g_dev['cam'].theskyx_set_cooler_on=True
                     g_dev['cam'].theskyx_cooleron=True
                     g_dev['cam'].theskyx_set_setpoint_trigger=True
-                    g_dev['cam'].theskyx_set_setpoint_value= self.setpoint
-                    g_dev['cam'].theskyx_temperature=self.camera.Temperature, 999.9, 999.9
+                    g_dev['cam'].theskyx_set_setpoint_value= g_dev['cam'].setpoint
+                    g_dev['cam'].theskyx_temperature=g_dev['cam'].setpoint, 999.9, 999.9
 
                     g_dev['cam'].shutter_open=False
                     g_dev['cam'].theskyxIsExposureComplete=True
