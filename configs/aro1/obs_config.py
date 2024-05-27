@@ -261,15 +261,15 @@ site_config = {
                 #units for model are asec/radian
                 'model_date':  "n.a.",
                 'model_equat': {
-                    'ih':   -1687., #"Home naturally points to West for AP GEM mounts.
+                    'ih':   0.0, #-1687., #"Home naturally points to West for AP GEM mounts.
                     'id':   0., #These two are zero-point references for HA/Ra and dec.
                     'eho':  0., # 0.0, #"East Hour angle Offset -- NOTE an offset
                     'edo':  0., # 0.0, #"East Dec Offset
-                    'ma':   -207., # Azimuth error of polar axia
+                    'ma':   0.0, #-207., # Azimuth error of polar axia
                     'me':   0.,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
                     'ch':   0.,  #Optical axis not perp to dec axis
                     'np':   0., # 35.0,  #Non-perp of polar and dec axis
-                    'tf':   44.,  #Sin flexure -- Hook's law.
+                    'tf':   0.0, #44.,  #Sin flexure -- Hook's law.
                     'tx':   0., # 0.0,  #Tangent flexure
                     'hces': 0., # 0.0, #Sin/Cos centration error of encoders.
                     'hcec': 0., # -180.0,
