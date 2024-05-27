@@ -3269,7 +3269,7 @@ class Observatory:
                                 plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in queue.")
                                 self.fast_queue.put(pri_image, block=False)
                         # If it has been less than 3 minutes put it back in
-                        elif time.time() -timesubmitted < 300:
+                        elif time.time() -timesubmitted < 1200:
                             self.fast_queue.put(pri_image, block=False)
                         else:
                             plog (str(filepath) + " seemed to never turn up... not putting back in the queue")
