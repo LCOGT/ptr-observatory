@@ -174,7 +174,7 @@ def mid_stretch_jpeg(data):
 def dump_main_data_out_to_post_exposure_subprocess(payload):
 
     # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-    if False:
+    if True:
         #NB set this path to create test pickle for makejpeg routine.
         pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
 
