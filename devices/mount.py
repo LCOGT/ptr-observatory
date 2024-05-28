@@ -1135,6 +1135,7 @@ class Mount:
                                         except:
                                             pass  #This faults if mount is parked.
                                         self.DeclinationRate=self.inverse_dec_vel
+                                    
 
 
 
@@ -1405,12 +1406,19 @@ class Mount:
             if ha > 12:
                 ha -= 24
 
-            try:
-                h = self.inverse_icrs_ra
-                d = self.inverse_icrs_dec
-            except:
-                h = 12.    #just to get this initilized
-                d = -55.
+            
+
+            if not self.model_on:
+                h = self.right_ascension_directly_from_mount
+                d= self.declination_directly_from_mount
+            else:
+                try:
+                    h = self.inverse_icrs_ra
+                    d = self.inverse_icrs_dec
+                except:
+                    h = 12.    #just to get this initilized
+                    d = -55.
+                
 
             #The above routine is not finished and will end up returning ICRS not observed.
             status = {
