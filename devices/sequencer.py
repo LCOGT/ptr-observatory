@@ -242,6 +242,9 @@ class Sequencer:
         self.master_restack_thread = threading.Thread(target=self.master_restack, args=())
         self.master_restack_thread.daemon = True
         self.master_restack_thread.start()
+        
+        
+        self.rebooting_theskyx=False
 
 
 
@@ -2639,6 +2642,8 @@ class Sequencer:
 
     def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
         g_dev['mnt'].mount_update_paused=True
+        
+        self.rebooting_theskyx=True
 
         if g_dev['cam'].theskyx:
             g_dev['cam'].updates_paused=True
@@ -2700,9 +2705,13 @@ class Sequencer:
                     plog(traceback.format_exc())
                     #
 
+        
+
         g_dev['mnt'].mount_update_reboot=True
         g_dev['mnt'].wait_for_mount_update()
         g_dev['mnt'].mount_update_paused=False
+        
+        self.rebooting_theskyx=False        
 
         if returnra == -1 or returndec == -1:
             g_dev['mnt'].park_command({}, {})

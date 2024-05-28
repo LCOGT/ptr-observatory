@@ -1171,6 +1171,12 @@ class Observatory:
 
                 if g_dev["obs"].stop_all_activity and ((time.time() - g_dev["obs"].stop_all_activity_timer) > 35):
                     g_dev["obs"].stop_all_activity = False
+                    
+                
+                # If theskyx is rebooting wait
+                while g_dev['seq'].rebooting_theskyx:
+                    plog ("waiting for theskyx to reboot")
+                    time.sleep(5)
 
                 # If camera is rebooting, the.running_an_exposure_set term can fall out
                 # If it is rebooting then return to the start of the loop.
@@ -1692,6 +1698,11 @@ class Observatory:
                 plog ("Something went wrong in safety check loop. It is ok.... it is a try/except")
                 plog ("But we should prevent any crashes.")
                 plog(traceback.format_exc())
+                
+                # If theskyx is rebooting wait
+                while g_dev['seq'].rebooting_theskyx:
+                    plog ("waiting for theskyx to reboot in the except function")
+                    time.sleep(5)
 
 
     def core_command_and_sequencer_loop(self):
