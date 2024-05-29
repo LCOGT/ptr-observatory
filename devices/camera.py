@@ -1733,18 +1733,18 @@ class Camera:
         tempcamera = win32com.client.Dispatch(self.driver)
         tempcamera.Connect()
 
-        
-        
+
+
         timeout_timer=time.time()
         while not tempcamera.IsExposureComplete and (time.time() - timeout_timer) < (self.theskyxExposureTime + self.readout_time):
             self.theskyxIsExposureComplete=False
             plog ("waiting for skyx exposure complete.")
             time.sleep(0.01)
-        
-        
+
+
         tempcamera.ExposureTime = self.theskyxExposureTime
         tempcamera.Frame = self.theskyxFrame
-        
+
         try:
             tempcamera.TakeImage()
         except:
@@ -1766,16 +1766,16 @@ class Camera:
                 self.theskyxIsExposureComplete=True
                 self.async_exposure_lock=False
                 return
-            
+
         timeout_timer=time.time()
         while not tempcamera.IsExposureComplete and (time.time() - timeout_timer) < (self.theskyxExposureTime + self.readout_time):
             self.theskyxIsExposureComplete=False
             time.sleep(0.01)
-            
+
         # If that was overly long a wait then cancel exposure
         if (time.time() - timeout_timer) > 2 * (self.theskyxExposureTime + self.readout_time):
             plog ("That was a very long readout for the image.... " + str((time.time() - timeout_timer)))
-            
+
         self.theskyxIsExposureComplete=True
         self.theskyxLastImageFileName=tempcamera.LastImageFileName
         tempcamera.ShutDownTemperatureRegulationOnDisconnect = False
@@ -1813,7 +1813,7 @@ class Camera:
                 plog(traceback.format_exc())
 
     def _theskyx_getImageArray(self):
-        
+
         # Wait for it to turn up....
         file_wait_timer=time.time()
         while not os.path.exists(self.theskyxLastImageFileName):
@@ -1821,7 +1821,7 @@ class Camera:
                 plog ("Waiting for file to arrive for 15 seconds but it never did: " + str(self.theskyxLastImageFileName))
                 return None
             time.sleep(0.05)
-        
+
         # Make sure it is openable - can happen if the file appears but it hasn't fully written yet
         file_wait_timer=time.time()
         while True:
@@ -3271,7 +3271,8 @@ class Camera:
             if not g_dev['mnt'].rapid_park_indicator: # and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                 #self.wait_for_slew(wait_after_slew=False)
                 #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
-                if g_dev['mnt'].pier_flip_detected==True  and not g_dev['obs'].auto_centering_off:
+                if g_dev['mnt'].pier_flip_detected == True  and not g_dev['obs'].auto_centering_off:
+                    breakpoint()
                     plog ("PIERFLIP DETECTED, RECENTERING.")
                     g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                     g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True

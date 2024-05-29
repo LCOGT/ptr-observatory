@@ -1846,18 +1846,18 @@ class Observatory:
                             #breakpoint()
                             broken=1
                         except Exception as e:
-                            
+
                             if 'urllib3.exceptions.ConnectTimeoutError' in str(traceback.format_exc()):
                                 plog ("timeout in ingester")
-                                
+
                             elif 'requests.exceptions.ConnectTimeout' in str(traceback.format_exc()):
                                 plog ("timeout in ingester")
-                            
+
                             elif 'TimeoutError' in str(traceback.format_exc()):
                                 plog ("timeout in ingester")
-                                
 
-                            
+
+
 
                             elif 'list index out of range' in str(e):
                                 # This error is thrown when there is a corrupt file
@@ -3557,6 +3557,7 @@ class Observatory:
         """
         if not g_dev['obs'].auto_centering_off:
             # Sometimes the pointing is so far off platesolve requests a new slew and recenter
+
             if self.pointing_recentering_requested_by_platesolve_thread:
                 self.pointing_recentering_requested_by_platesolve_thread = False
                 self.pointing_correction_requested_by_platesolve_thread = False

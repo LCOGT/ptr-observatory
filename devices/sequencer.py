@@ -55,6 +55,45 @@ reqs.mount('http://', HTTPAdapter(max_retries=retries))
 '''
 '''
 
+
+DEG_SYM = '°'
+PI = math.pi
+TWOPI = math.pi*2.
+PIOVER2 = math.pi/2.
+DTOR = math.pi/180.
+RTOD = 180./math.pi
+STOR = math.pi/180./3600.    # "S" stand for arc-seconds
+RTOS = 3600.*180./math.pi
+RTOH = 12./math.pi
+HTOR = math.pi/12.
+HTOS = 15*3600.
+STOM = 1000.        # "M" stands for mas, milli arc-seconds
+MTOS = 0.001
+HTOD = 15.
+DTOH = 1./15.
+DTOS = 3600.
+STOD = 1/3600.
+STOH = 1/3600./15.
+SecTOH = 1/3600.    # "Sec" means seconds of time.
+HTOSec = 3600.
+APPTOSID = 1.00273811906 #USNO Supplement
+MOUNTRATE = 15*APPTOSID  #15.0410717859
+KINGRATE = 15.029
+
+LOOK_WEST = 0  #These four constants reflect ASCOM conventions
+LOOK_EAST = 1  #Flipped
+TEL_ON_EAST_SIDE = 0   #Not Flipped.
+TEL_ON_WEST_SIDE = 1   #This means flipped.
+IS_FLIPPED = 1
+IS_NORMAL = 0
+
+def ra_fix_h(ra):
+    while ra >= 24:
+        ra -= 24
+    while ra < 0:
+        ra += 24
+    return ra
+
 def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
 
     # Populate the request parameters. Include data only if it was sent.
@@ -5698,7 +5737,7 @@ class Sequencer:
                                             new_focus_position_to_attempt=focus_spots[-1][0] + throw
 
 
-    def equatorial_pointing_run(self, max_pointings=15, alt_minimum=30):
+    def equatorial_pointing_run(self, max_pointings=16, alt_minimum=15):
 
         #breakpoint()
         g_dev['obs'].get_enclosure_status_from_aws()
@@ -5723,15 +5762,27 @@ class Sequencer:
         g_dev['mnt'].unpark_command({}, {})
 
         g_dev["obs"].request_update_status()
-
-        step = (180.0 - 2*alt_minimum)/max_pointings
-        ra = 0
+        sidereal_h = g_dev['mnt'].get_sidereal_time_h()
         catalogue = []
-        while ra < 360:
-            catalogue.append([round(ra, 3), 0.0, 19])
-            ra += step
 
-       # catalogue=self.pointing_catalogue
+        if max_pointings == 8:
+            ha_cat = [-4, -3, -2, -1, 1, 2, 3, 4]  #8 points
+            for hour in ha_cat:
+                ra = ra_fix_h(sidereal_h - hour)  #This step could be done just before the seek below so hitting flips would be eliminated
+                catalogue.append([round(ra*HTOD, 3), 0.0, 19])
+        elif max_pointings == 16:
+            ha_cat = [-4, -3.5, -3, -2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]  #16 points
+            for hour in ha_cat:
+                ra = ra_fix_h(sidereal_h - hour)
+                catalogue.append([round(ra*HTOD, 3), 0.0, 19])
+        else:
+            step = (180.0 - 2*alt_minimum)/max_pointings
+            ra = 0
+            catalogue = []
+            while ra < 360:
+                catalogue.append([round(ra, 3), 0.0, 19])
+                ra += step
+        # catalogue=self.pointing_catalogue
 
         g_dev["obs"].send_to_user("Starting pointing run. Constructing altitude catalogue. This can take a while.")
         plog("Constructing sweep catalogue above altitude " + str(alt_minimum))
@@ -5748,7 +5799,7 @@ class Sequencer:
 
         sweep_catalogue = sorted(sweep_catalogue, key= lambda az: az[4])
         plog (len(sweep_catalogue), sweep_catalogue)
-
+        breakpoint()
         del catalogue
 
         length = len(sweep_catalogue)
@@ -5777,6 +5828,7 @@ class Sequencer:
                 g_dev['obs'].time_of_last_slew=time.time()
                 g_dev["mnt"].last_ra_requested = grid_star[0] / 15
                 g_dev["mnt"].last_dec_requested = grid_star[1]
+                print("sweep: ",grid_star[0] / 15 , grid_star[1])
                 #g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
                 g_dev['mnt'].go_command(ra=grid_star[0] /15, dec=grid_star[1])
             except:

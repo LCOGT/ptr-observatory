@@ -65,19 +65,23 @@ DEBUG = False
 
 DEG_SYM = '°'
 PI = math.pi
-TWOPI = PI*2
-PIOVER2 = PI/2.
-DTOR = PI/180.
-RTOD = 180/PI
-STOR = PI/180./3600.
-RTOS = 3600.*180./PI
-RTOH = 12./PI
-HTOR = PI/12.
+TWOPI = math.pi*2.
+PIOVER2 = math.pi/2.
+DTOR = math.pi/180.
+RTOD = 180./math.pi
+STOR = math.pi/180./3600.    # "S" stand for arc-seconds
+RTOS = 3600.*180./math.pi
+RTOH = 12./math.pi
+HTOR = math.pi/12.
 HTOS = 15*3600.
+STOM = 1000.        # "M" stands for mas, milli arc-seconds
+MTOS = 0.001
+HTOD = 15.
+DTOH = 1./15.
 DTOS = 3600.
 STOD = 1/3600.
-STOH = 1/3600/15.
-SecTOH = 1/3600.
+STOH = 1/3600./15.
+SecTOH = 1/3600.    # "Sec" means seconds of time.
 HTOSec = 3600.
 APPTOSID = 1.00273811906 #USNO Supplement
 MOUNTRATE = 15*APPTOSID  #15.0410717859
@@ -85,17 +89,12 @@ KINGRATE = 15.029
 
 LOOK_WEST = 0  #These four constants reflect ASCOM conventions
 LOOK_EAST = 1  #Flipped
-ON_EAST_SIDE = 0   #Not Flipped.
-ON_WEST_SIDE = 1   #This means flipped.
+TEL_ON_EAST_SIDE = 0   #Not Flipped.
+TEL_ON_WEST_SIDE = 1   #This means flipped.
 IS_FLIPPED = 1
 IS_NORMAL = 0
 
 
-tzOffset = -7
-loop_count = 0
-
-mountOne = "PW_L600"
-mountOneAscom = None
 
 
 def ra_fix_r(ra):
@@ -109,7 +108,7 @@ def ra_fix_h(ra):
     while ra >= 24:
         ra -= 24
     while ra < 0:
-        ra = 24
+        ra += 24
     return ra
 
 def ha_fix_h(ha):
@@ -164,7 +163,7 @@ def ra_dec_fix_h(ra, dec):
     if ra >= 24:
         ra -= 24
     if ra < 0:
-        ra = 24
+        ra += 24
     return ra, dec
 
 def rect_sph_d(pX, pY, pZ):
@@ -561,10 +560,14 @@ class Mount:
         self.mount_update_thread.start()
 
         self.wait_for_mount_update()
+        breakpoint()
         self.get_status()
 
 
 #First add in various needed functions for coordinate conversions
+    def get_sidereal_time_h(self):
+
+        return float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
     def transform_haDec_to_az_alt(self, pLocal_hour_angle_h, pDec_d):
         #global sin_lat, cos_lat     #### Check to see if these can be eliminated
@@ -597,14 +600,14 @@ class Mount:
             )  # by convention azimuth points South at local zenith
         else:
             dec = math.degrees(math.asin(sinAlt * self.sin_lat - cosAlt * cosAz * self.cos_lat))
-            ha = math.degrees(math.atan2(sinAz, (cosAz * self.sin_lat + math.tan(alt) * self.cos_lat)))/15.
+            ha = math.degrees(math.atan2(sinAz, (cosAz * self.sin_lat + math.tan(alt) * self.cos_lat)))*DTOH
             return (ha_fix_h(ha), dec_fix_d(dec))
 
     def apply_refraction_in_alt(self, pApp_alt):  # Deg, C. , mmHg     #note change to mbar
 
         # From Astronomical Algorithms.  Max error 0.89" at 0 elev.
         # 20210328 This code does not the right thing if star is below the Pole and is refracted above it.
-        #return pApp_alt, 0.0
+
         if not self.refr_on:
             return pApp_alt, 0.0
         elif pApp_alt > 0:
@@ -621,7 +624,7 @@ class Mount:
             ref -= 0.06 * math.sin((14.7 * ref + 13.0) * DTOR) - 0.0134970632606319
             ref *= 283 / (273 + self.temperature)
             ref *= self.pressure / 1010.0
-            return dec_fix_d(obs_alt), round(ref * 60.0,3)
+            return dec_fix_d(obs_alt), round(ref * 60.0,3)  #Convert arc-min to asec
 
     def correct_refraction_in_alt(self, pObs_alt):  # Deg, C. , mmHg
 
@@ -640,7 +643,7 @@ class Mount:
                 if count > 25:  # count about 12 at-0.5 deg. 3 at 45deg.
                     return dec_fix_d(pObs_alt)
 
-            return dec_fix_d(trial), dec_fix_d(pObs_alt - trial)  * 3600.0, count
+            return dec_fix_d(trial), dec_fix_d(pObs_alt - trial)  * DTOS, count
 
     def transform_mechanical_to_icrs(self, pRoll_h, pPitch_d, pPierSide, loud=False):
         # I am amazed this works so well even very near the celestial pole.
@@ -664,9 +667,7 @@ class Mount:
                 errorRoll = ha_fix_h(obsRollTrial - pRoll_h)*HTOR
                 errorPitch = dec_fix_d(obsPitchTrial - pPitch_d)*DTOR
                 # This needs a unit checkout.
-                error = math.sqrt(
-                    cosDec * (errorRoll) ** 2 + (errorPitch) ** 2
-                )  # Removed *15 from errorRoll
+                error = math.sqrt((cosDec * errorRoll) ** 2 + (errorPitch) ** 2)  # Removed *15 from errorRoll
                 rollTrial -= errorRoll*RTOH
                 pitchTrial -= errorPitch*RTOD
                 count += 1
@@ -675,7 +676,7 @@ class Mount:
                     #plog("transform_mount_to_observed_r() FAILED!")
                     return pRoll_h, pPitch_d, 0.0, 0.0
 
-            print("Refr and Inversion Ra, Dec corrections in asec:  ",round(self.refr_asec, 2), round(self.raCorr, 2), round(self.decCorr, 2))
+            #if DEBUG:  print("Refr and Inversion Ra, Dec corrections in asec:  ",round(self.refr_asec, 2), round(self.raCorr, 2), round(self.decCorr, 2))
             #if DEBUG:  plog("Iterations:  ", count, ra_vel, dec_vel)
 
             return_ra = ra_fix_h(rollTrial)
@@ -735,8 +736,8 @@ class Mount:
         if self.rates_on:
             #Compute Velocities.  Typically with a CCD we rarely expose longer than 300 sec  so we
             # are going to use 600 sec as the time delta.
-            step = 1 #seconds  #at zenith refraction is about 13 asec for first hour.
-            self.delta_step = step/3600.
+            self.step_s = 1 #seconds  #at zenith refraction is about 13 asec for first hour.
+            self.delta_step = self.step_s*APPTOSID/3600.  #1 sec later Sid time has advanced a bit more
             self.delta_sid_now_h = self.sid_now_h + self.delta_step
             delta_ha_app_h = ha_fix_h(self.delta_sid_now_h - ra_app_h)
             if self.refr_on:
@@ -763,20 +764,20 @@ class Mount:
 
             #     pass
 
-            self.ha_rate = (self.delta_slewtoHA - self.slewtoHA - self.delta_step)*HTOS/step/15/APPTOSID #step needed in this!
-            self.dec_rate = (self.delta_slewtoDEC - self.slewtoDEC)*DTOS/step
-            #print("Trial rates:  ",self.ha_rate, self.dec_rate, self.refr_asec)
+            self.ha_rate = ((self.delta_slewtoHA - self.slewtoHA)*HTOS - self.step_s*15*APPTOSID)/APPTOSID #step needed in this!
+            self.dec_rate = (self.delta_slewtoDEC - self.slewtoDEC)*DTOS/self.step_s
+            print("Trial rates:  ",round(self.ha_rate, 6), round(self.dec_rate, 5), round(self.refr_asec, 2))
         return(self.slewtoRA, self.slewtoDEC, self.ha_rate, self.dec_rate)
         pass
 
     def transform_observed_to_mount(self, pRoll_h, pPitch_d, pPierSide, loud=False, enable=False):
         """
-        Long-run probably best way to do this is inherit a model dictionary.
+
 
         NBNBNB improbable minus sign of ID, WD
 
-        This implements a basic 7 term TPOINT transformation.
-        This routine is interatively invertible.
+        This implements a basic 12 term TPOINT transformation.
+        This routine is invertible by intertion.
         """
         #breakpoint()
         #loud = True
@@ -789,7 +790,7 @@ class Mount:
             # pRoll  in Hours
             # pPitch in degrees
             #Apply IH and ID to incoming coordinates, and if needed GEM correction.
-            rRoll = math.radians(pRoll_h * 15) - self.model['ih']  #This is the basic calibration for Park Position.
+            rRoll = math.radians(pRoll_h * HTOD) - self.model['ih']  #This is the basic calibration for Park Position.
             rPitch = math.radians(pPitch_d) - self.model['id']
             # siteLatitude = self.latitude_r
             GEM = True
@@ -797,15 +798,13 @@ class Mount:
                 #"Pier_side" is now "Look East" or "Look West" For a GEM. Given ARO Telescope starts Looking West
 
 
-                #In ASCOM Pier east, looking West is pierside = 0
+                #In ASCOM, Pier In East, looking West means pierside = 0
                 if pPierSide == LOOK_WEST:
-                    #rRoll = math.radians(pRoll_h * 15) - self.model['ih']  #This is the basic calibration for Park Position.
-                    #rPitch = math.radians(pPitch_d) - self.model['id']
                     ch = self.model['ch']
                     np = self.model['np']
                 elif pPierSide == LOOK_EAST:    #Add in offset correction and flip CH, NP terms.
-                    rRoll += self.model['eho']
-                    rPitch += self.model['edo']
+                    rRoll += self.model['eho']  #This is rarely used.
+                    rPitch += self.model['edo'] #This is rarely used.
                     ch = -self.model['ch']
                     np = -self.model['np']
                     pass
@@ -2386,4 +2385,5 @@ class Mount:
         else:
             plog ("No previous deviation reference nearby")
             return 0.0,0.0
+
 

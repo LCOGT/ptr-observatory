@@ -72,12 +72,24 @@ site_config = {
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': False,
-    'mount_reference_model_off': False,
-    'sun_checks_on': True,
-    'moon_checks_on': True,
-    'altitude_checks_on': True,
-    'daytime_exposure_time_safety_on': True,
+
+    ### SAFESTART
+
+    # 'scope_in_manual_mode': False,
+    # 'mount_reference_model_off': False,
+    # 'sun_checks_on': True,
+    # 'moon_checks_on': True,
+    # 'altitude_checks_on': True,
+    # 'daytime_exposure_time_safety_on': True,
+
+    ###   QUICKSTART
+
+    'scope_in_manual_mode': True,
+    'mount_reference_model_off': True,
+    'sun_checks_on': False,
+    'moon_checks_on': False,
+    'altitude_checks_on': False,
+    'daytime_exposure_time_safety_on': False,
 
 
 
@@ -258,25 +270,35 @@ site_config = {
                 'model_on': True,
                 'model_type': "Equatorial",
                 'rates_on': True,  #  Rates implied by model and refraction applied during tracking.
+                                  #In the northern hemisphere, positive MA means that the pole of the mounting
+                                  #is to the right of due north.
+                                  #In the northern hemisphere, positive ME means that the pole of the mounting is
+                                  #below the true (unrefracted) pole. A mounting aligned the refracted pole (for most
+                                  #telescopes probably the simplest and best thing to aim for in order to avoid unwanted
+                                  #field rotation effects will have negative ME.                'model_date':  "n.a.",
                 #units for model are asec/radian
-                'model_date':  "n.a.",
                 'model_equat': {
-                    'ih':   0.0, #-1687., #"Home naturally points to West for AP GEM mounts.
-                    'id':   0., #These two are zero-point references for HA/Ra and dec.
-                    'eho':  0., # 0.0, #"East Hour angle Offset -- NOTE an offset
-                    'edo':  0., # 0.0, #"East Dec Offset
-                    'ma':   0.0, #-207., # Azimuth error of polar axia
-                    'me':   0.,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
-                    'ch':   0.,  #Optical axis not perp to dec axis
-                    'np':   0., # 35.0,  #Non-perp of polar and dec axis
-                    'tf':   0.0, #44.,  #Sin flexure -- Hook's law.
-                    'tx':   0., # 0.0,  #Tangent flexure
-                    'hces': 0., # 0.0, #Sin/Cos centration error of encoders.
-                    'hcec': 0., # -180.0,
-                    'dces': 0., # 25.0,
-                    'dcec': 0., # 0.0,   #20240522.mod
-                    }   #20240522.mod   Eventually we can put the model name here and pick
-                        #up the file automatically.
+                    'ih':   0.0, # Home naturally points to West for AP GEM mounts.  Howeveer when @ Park 5 it is flipped.
+                    'id':   0.0, # These two are zero-point references for HA/Ra and dec.
+                    'eho':  0.0, # East Hour angle Offset -- NOTE an offset
+                    'edo':  0.0, # East Dec Offset
+                    'ma':   0.0, # Azimuth error of polar axis
+                    'me':   0.0, # Elev error of polar axisDefault is about -60 asec above pole for ARO
+                    'ch':   0.0, # Optical axis not perp to dec axis
+                    'np':   0.0, # Non-perp of polar and dec axis
+                    'tf':   0.0, # Sin flexure -- Hook's law.
+                    'tx':   0.0, # Tangent flexure
+                    'hces': 0.0, # Sin centration error of RA encoder
+                    'hcec': 0.0, # Cos centration error of RA encoder
+                    'dces': 0.0, # Sin centration error of DEC encoder
+                    'dcec': 0.0, # Cos centration error of DEC encoder
+                    }
+
+                #'model_version': 'N.A', # As in "20240526-1.mod"   Eventually we can put the model name here and pick up automatically.
+
+
+
+
                 ,
                 'model_altAz': {
                     'ia': 000.00, #"Home naturally points to West for AP GEM mounts.
