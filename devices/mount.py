@@ -454,7 +454,7 @@ class Mount:
         #DIRECT MOUNT POSITION READ #3
         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
-        self.sidereal_time_directly_from_mount = copy.deepcopy(self.mount.SiderealTime)
+        #self.sidereal_time_directly_from_mount = copy.deepcopy(self.mount.SiderealTime)
         #Verified these set the rates additively to mount supplied refraction rate.20231221 WER
         self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount.RightAscensionRate)
         self.declination_rate_directly_from_mount = copy.deepcopy(self.mount.DeclinationRate)
@@ -1038,7 +1038,7 @@ class Mount:
                             # quickly as possible
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-                            self.sidereal_time_directly_from_mount= copy.deepcopy(self.mount_update_wincom.SiderealTime)
+                            #self.sidereal_time_directly_from_mount= copy.deepcopy(self.mount_update_wincom.SiderealTime)
                             # # Here we calculate the values that go to the status.
                             # self.inverse_icrs_ra, self.inverse_icrs_dec, inverse_ra_vel, inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
                             # #I left the above two velocities as local becuse we will not do anything with them.
@@ -1134,6 +1134,7 @@ class Mount:
                                         except:
                                             pass  #This faults if mount is parked.
                                         self.DeclinationRate=self.inverse_dec_vel
+                                    
 
 
 
@@ -1404,12 +1405,19 @@ class Mount:
             if ha > 12:
                 ha -= 24
 
-            try:
-                h = self.inverse_icrs_ra
-                d = self.inverse_icrs_dec
-            except:
-                h = 12.    #just to get this initilized
-                d = -55.
+            
+
+            if not self.model_on:
+                h = self.right_ascension_directly_from_mount
+                d= self.declination_directly_from_mount
+            else:
+                try:
+                    h = self.inverse_icrs_ra
+                    d = self.inverse_icrs_dec
+                except:
+                    h = 12.    #just to get this initilized
+                    d = -55.
+                
 
             #The above routine is not finished and will end up returning ICRS not observed.
             status = {
