@@ -560,7 +560,7 @@ class Mount:
         self.mount_update_thread.start()
 
         self.wait_for_mount_update()
-        breakpoint()
+        #breakpoint()
         self.get_status()
 
 

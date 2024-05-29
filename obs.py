@@ -2251,12 +2251,14 @@ class Observatory:
                 self.platesolve_is_processing = True
 
                 (platesolve_token,hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
-                  pixscale, pointing_ra, pointing_dec, firstframesmartstack, useastronometrynet, pointing_exposure, jpeg_filename, image_or_reference) = self.platesolve_queue.get(block=False)
+                  pixscale, pointing_ra, pointing_dec, firstframesmartstack, useastronometrynet, pointing_exposure, jpeg_filename, image_or_reference, exposure_time) = self.platesolve_queue.get(block=False)
+
+                #print (pointing_exposure)
 
                 if np.isnan(pixscale) or pixscale == None:
-                    timeout_time = 1200
+                    timeout_time = 1200 + exposure_time + g_dev['cam'].readout_time
                 else:
-                    timeout_time = 120
+                    timeout_time = 120 + exposure_time + g_dev['cam'].readout_time
 
                 platesolve_timeout_timer=time.time()
                 if image_or_reference == 'reference':
@@ -2374,8 +2376,8 @@ class Observatory:
 
                             else:
                                 self.enqueue_for_fastUI(
-                                    '',jpeg_filename
-                                )
+                                    '',jpeg_filename, exposure_time)
+                                
                                 # self.enqueue_for_mediumUI(
                                 #     1000, '',jpeg_filename.replace('EX10', 'EX20')
                                 # )
@@ -3210,7 +3212,7 @@ class Observatory:
                         else:
                             self.file_wait_and_act_queue.put((filename, timesubmitted, packet) , block=False)
                     # If it has been less than 3 minutes put it back in
-                    elif time.time() -timesubmitted < 300:
+                    elif time.time() -timesubmitted < (300 + packet[1] + g_dev['cam'].readout_time):
                         self.file_wait_and_act_queue.put((filename, timesubmitted, packet) , block=False)
                     else:
                         plog (str(filename) + " seemed to never turn up... not putting back in the queue")
@@ -3280,7 +3282,7 @@ class Observatory:
                                 plog (str(filepath) + " is there but has a zero file size so is probably still being written to, putting back in queue.")
                                 self.fast_queue.put(pri_image, block=False)
                         # If it has been less than 3 minutes put it back in
-                        elif time.time() -timesubmitted < 1200:
+                        elif time.time() -timesubmitted < 1200 + float(pri_image[3]):
                             self.fast_queue.put(pri_image, block=False)
                         else:
                             plog (str(filepath) + " seemed to never turn up... not putting back in the queue")
@@ -3750,9 +3752,9 @@ class Observatory:
         image = (im_path, name, time.time())
         self.ptrarchive_queue.put((priority, image), block=False)
 
-    def enqueue_for_fastUI(self, im_path, name):
+    def enqueue_for_fastUI(self, im_path, name, exposure_time):
         image = (im_path, name)
-        self.fast_queue.put((image[0], image[1], time.time()), block=False)
+        self.fast_queue.put((image[0], image[1], time.time(), exposure_time), block=False)
 
     def enqueue_for_mediumUI(self, priority, im_path, name):
         image = (im_path, name)
