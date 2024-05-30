@@ -3248,6 +3248,14 @@ class Sequencer:
                 g_dev["obs"].send_to_user("Bias calibration frame created.")
 
 
+            # A theskyx reboot catch
+            while True:
+                try:
+                    g_dev['cam'].camera_known_gain <1000
+                    break
+                except:
+                    plog ("waiting for theskyx to reboot")
+
             # Now that we have the master bias, we can estimate the readnoise actually
             # by comparing the standard deviations between the bias and the masterbias
             if g_dev['cam'].camera_known_gain <1000:
