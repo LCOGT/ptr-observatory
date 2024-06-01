@@ -281,8 +281,8 @@ class Sequencer:
         self.master_restack_thread = threading.Thread(target=self.master_restack, args=())
         self.master_restack_thread.daemon = True
         self.master_restack_thread.start()
-        
-        
+
+
         self.rebooting_theskyx=False
 
 
@@ -2681,7 +2681,7 @@ class Sequencer:
 
     def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
         g_dev['mnt'].mount_update_paused=True
-        
+
         self.rebooting_theskyx=True
 
         if g_dev['cam'].theskyx:
@@ -2744,13 +2744,13 @@ class Sequencer:
                     plog(traceback.format_exc())
                     #
 
-        
+
 
         g_dev['mnt'].mount_update_reboot=True
         g_dev['mnt'].wait_for_mount_update()
         g_dev['mnt'].mount_update_paused=False
-        
-        self.rebooting_theskyx=False        
+
+        self.rebooting_theskyx=False
 
         if returnra == -1 or returndec == -1:
             g_dev['mnt'].park_command({}, {})
@@ -5808,7 +5808,7 @@ class Sequencer:
 
         sweep_catalogue = sorted(sweep_catalogue, key= lambda az: az[4])
         plog (len(sweep_catalogue), sweep_catalogue)
-        breakpoint()
+
         del catalogue
 
         length = len(sweep_catalogue)
@@ -5933,12 +5933,14 @@ class Sequencer:
             if not np.isnan(entry[2]):
                 ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
                 dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
-                ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
+                ra_got=Angle(entry[2], u.hour).to_string(sep=' ')
                 if entry[7] == 0:
                     pierstring='0  1'
                     entry[2] += 12.
                     while entry[2] >= 24:
                         entry[2] -= 24.
+                    while entry[2] <= 24:
+                        entry[2] += 24.
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
 
                     if latitude >= 0:
@@ -5947,8 +5949,8 @@ class Sequencer:
                         dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ')
                 else:
                     pierstring='0  0'
-                    ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
-                    dec_got=Angle(entry[3],u.degree).to_string(sep=' ')
+                    ra_got=Angle(entry[2], u.hour).to_string(sep=' ')
+                    dec_got=Angle(entry[3], u.degree).to_string(sep=' ')
 
 
                 sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]

@@ -560,7 +560,7 @@ class Mount:
         self.mount_update_thread.start()
 
         self.wait_for_mount_update()
-        breakpoint()
+
         self.get_status()
 
 
@@ -766,7 +766,7 @@ class Mount:
 
             self.ha_rate = ((self.delta_slewtoHA - self.slewtoHA)*HTOS - self.step_s*15*APPTOSID)/APPTOSID #step needed in this!
             self.dec_rate = (self.delta_slewtoDEC - self.slewtoDEC)*DTOS/self.step_s
-            print("Trial rates:  ",round(self.ha_rate, 6), round(self.dec_rate, 5), round(self.refr_asec, 2))
+            #print("Trial rates:  ",round(self.ha_rate, 6), round(self.dec_rate, 5), round(self.refr_asec, 2))
         return(self.slewtoRA, self.slewtoDEC, self.ha_rate, self.dec_rate)
         pass
 
@@ -1134,7 +1134,7 @@ class Mount:
                                         except:
                                             pass  #This faults if mount is parked.
                                         self.DeclinationRate=self.inverse_dec_vel
-                                    
+
 
 
 
@@ -1405,7 +1405,7 @@ class Mount:
             if ha > 12:
                 ha -= 24
 
-            
+
 
             if not self.model_on:
                 h = self.right_ascension_directly_from_mount
@@ -1417,7 +1417,7 @@ class Mount:
                 except:
                     h = 12.    #just to get this initilized
                     d = -55.
-                
+
 
             #The above routine is not finished and will end up returning ICRS not observed.
             status = {

@@ -75,21 +75,21 @@ site_config = {
 
     ### SAFESTART
 
-    # 'scope_in_manual_mode': False,
-    # 'mount_reference_model_off': False,
-    # 'sun_checks_on': True,
-    # 'moon_checks_on': True,
-    # 'altitude_checks_on': True,
-    # 'daytime_exposure_time_safety_on': True,
+    'scope_in_manual_mode': False,
+    'mount_reference_model_off': False,
+    'sun_checks_on': True,
+    'moon_checks_on': True,
+    'altitude_checks_on': True,
+    'daytime_exposure_time_safety_on': True,
 
     ###   QUICKSTART
 
-    'scope_in_manual_mode': True,
-    'mount_reference_model_off': True,
-    'sun_checks_on': False,
-    'moon_checks_on': False,
-    'altitude_checks_on': False,
-    'daytime_exposure_time_safety_on': False,
+    # 'scope_in_manual_mode': True,
+    # 'mount_reference_model_off': True,
+    # 'sun_checks_on': False,
+    # 'moon_checks_on': False,
+    # 'altitude_checks_on': False,
+    # 'daytime_exposure_time_safety_on': False,
 
 
 
