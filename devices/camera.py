@@ -174,11 +174,11 @@ def mid_stretch_jpeg(data):
 def dump_main_data_out_to_post_exposure_subprocess(payload):
 
     # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-    if True:
+    if False:
         #NB set this path to create test pickle for makejpeg routine.
         pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
 
-    # breakpoint()
+    #breakpoint()
     try:
         post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
     except OSError:
@@ -3950,7 +3950,7 @@ class Camera:
             packet=(avg_foc,exposure_time,this_exposure_filter, airmass_of_observation)
             g_dev['obs'].file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
 
-            g_dev['obs'].enqueue_for_fastUI(im_path, text_name)
+            g_dev['obs'].enqueue_for_fastUI(im_path, text_name, exposure_time)
 
             #del hdufocusdata
 
@@ -4033,7 +4033,7 @@ class Camera:
                 # if smartstackid == 'no':
                 #     try:
                 g_dev['obs'].enqueue_for_fastUI(
-                    self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name
+                    self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name, exposure_time
                 )
                     #     # self.enqueue_for_mediumUI(
                     #     #     1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
@@ -4152,7 +4152,7 @@ class Camera:
                             firstframesmartstack = False
                         platesolvethread_filename=self.local_calibration_path + "smartstacks/platesolve" + str(time.time()).replace('.','') + '.pickle'
 
-                        g_dev['obs'].to_platesolve((platesolvethread_filename, 'hdusmallheader', cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, '','reference'))
+                        g_dev['obs'].to_platesolve((platesolvethread_filename, 'hdusmallheader', cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, '','reference', exposure_time))
 
 
                     else:
@@ -4806,7 +4806,7 @@ class Camera:
 
                     g_dev['obs'].platesolve_is_processing =True
                     #g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r+ g_dev["day"]+ "/to_AWS/"+ jpeg_name))
-                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r+ g_dev["day"]+ "/to_AWS/"+ jpeg_name, 'image'))
+                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r+ g_dev["day"]+ "/to_AWS/"+ jpeg_name, 'image', exposure_time))
 
                 # If this is a focus image,
                 # FWHM.
@@ -4926,7 +4926,7 @@ class Camera:
 
                     # if os.path.exists(im_path + text_name):
                     #     try:
-                    g_dev['obs'].enqueue_for_fastUI( im_path, text_name)
+                    g_dev['obs'].enqueue_for_fastUI( im_path, text_name, exposure_time)
 
                         # except:
                         #     plog("Failed to send FOCUS TEXT up for some reason")

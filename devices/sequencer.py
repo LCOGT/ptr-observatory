@@ -3248,6 +3248,14 @@ class Sequencer:
                 g_dev["obs"].send_to_user("Bias calibration frame created.")
 
 
+            # A theskyx reboot catch
+            while True:
+                try:
+                    g_dev['cam'].camera_known_gain <1000
+                    break
+                except:
+                    plog ("waiting for theskyx to reboot")
+
             # Now that we have the master bias, we can estimate the readnoise actually
             # by comparing the standard deviations between the bias and the masterbias
             if g_dev['cam'].camera_known_gain <1000:
@@ -5523,7 +5531,7 @@ class Sequencer:
                 if len(focus_spots) > 0:
                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                     # Fling the jpeg up
-                    g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                    g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
             else:
                 if len(focus_spots) == 0 or len(focus_spots) == 1:
@@ -5559,7 +5567,7 @@ class Sequencer:
                         if minimum_value > 3.0:
                             plog ("Minimum value: " + str(minimum_value) + " is too high to bother focussing, just going with the estimated value from previous focus")
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
                             g_dev['foc'].set_initial_best_guess_for_focus()
                             self.total_sequencer_control = False
                             self.focussing=False
@@ -5572,7 +5580,7 @@ class Sequencer:
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                         elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
 
@@ -5580,7 +5588,7 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
 
 
@@ -5593,7 +5601,7 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                         # If right hand side is too low get another dot
                         elif focus_spots[0][1] < (minimum_value * 1.5):
@@ -5601,7 +5609,7 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                         # Otherwise if it seems vaguely plausible to get a fit... give it a shot
                         else:
@@ -5635,7 +5643,7 @@ class Sequencer:
                                     new_focus_position_to_attempt=focus_spots[0][0] - throw
                                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                                     # Fling the jpeg up
-                                    g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                                    g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                                 elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
 
@@ -5643,14 +5651,14 @@ class Sequencer:
                                     new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                                     # Fling the jpeg up
-                                    g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                                    g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                             else:
                                 plog ("focus pos: " + str(fitted_focus_position))
                                 fitted_focus_fwhm=f(fitted_focus_position)
                                 threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, f, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),fitted_focus_position,fitted_focus_fwhm),))).start()
                                 # Fling the jpeg up
-                                g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                                g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                                 # Check that the solved minimum focussed position actually fits in between the lowest measured point and
                                 # the two next door measured points.
