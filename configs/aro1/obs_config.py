@@ -334,7 +334,7 @@ site_config = {
             'collecting_area': 31808,   #This is correct as of 20230420 WER
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
-            'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C  1468.4 @ F4.9?
+            'focal_length': 1468.4,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C  1468.4 @ F4.9?
             'has_dew_heater':  False,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
@@ -344,7 +344,7 @@ site_config = {
             'instrument names':  ['camera1'],
             'instrument aliases':  ['QHY600Mono'],
             'configuration': {
-                 'f-ratio':  'f9',     #  This needs expanding into something easy for the owner to change.
+                 'f-ratio':  'f4.99',     #  This needs expanding into something easy for the owner to change.
                  "position1": ["darkslide1", "filter_wheel1", "camera1"]
                  },
             'camera_name':  'camera_1_1',
@@ -416,9 +416,9 @@ site_config = {
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
             'focuser_movement_settle_time': 3,
             #F.9 setup
-            'reference': 9089,    # 2024-04-13
+            'reference': 5600,    # 2024-04-13  F9 on 20240601
             'ref_temp':  15.,
-            'temp_coeff': 0.0,     #Initial setting 20240413 WER
+            'temp_coeff': -20.45,     #Initial setting 20240413602    WER
             # Update when pinning reference
             #F4.9 setup
             #'reference': 5462.94, #5743,
@@ -514,7 +514,7 @@ site_config = {
                 #         ['dark', [1,  3],    0, 0.00,  [360 , 170], 'dk']],    #22     #Not a real filter.  Total 23
 
                 'filter_data': [
-                        ['Air',  [0,  0],   'AIR'],    #0  Gains est and some from 20240106 listing
+                        ['Air',  [0,  0],   'AIR'],    #0
                         ['PL',   [7,  0],   'Photo Luminance'],     #1
                         ['Exo',  [8,  0],   'Exoplanet'],      #2
                         ['PB',   [0,  6],   'Photo Blue'],    #3

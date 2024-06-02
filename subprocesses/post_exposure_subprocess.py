@@ -64,7 +64,7 @@ def write_raw_file_out(packet):
             datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
         ),
         "Date FITS file was written",
-    )    
+    )
     hdu.writeto( raw_name, overwrite=True, output_verify='silentfix')
     try:
         hdu.close()
@@ -72,9 +72,12 @@ def write_raw_file_out(packet):
         pass
     del hdu
 
-payload=pickle.load(sys.stdin.buffer)
-#payload=pickle.load(open('testpostprocess.pickle','rb'))
 
+try:
+    payload=pickle.load(sys.stdin.buffer)
+    #payload=pickle.load(open('testpostprocess.pickle','rb'))
+except:
+    print ("ignoring exception")
 #expresult={}
 #A long tuple unpack of the payload
 (img, pier_side, is_osc, frame_type, reject_flat_by_known_gain, avg_mnt, avg_foc, avg_rot, \
@@ -104,7 +107,7 @@ localcalibmastersdirectory= localcalibrationdirectory+ "archive/" + camalias + "
 
 #breakpoint()
 
-# Get the calibrated image whether that is a substack or a normal image. 
+# Get the calibrated image whether that is a substack or a normal image.
 if substack:
     exp_of_substacks=int(exposure_time / len(substacker_filenames))
     # Get list of substack files needed and wait for them.
@@ -114,23 +117,23 @@ if substack:
             if os.path.exists(tempfilename):
                 waiting_for_substacker_filenames.remove(tempfilename)
         time.sleep(0.2)
-    
+
     temporary_substack_directory=localcalibrationdirectory + "substacks/" + str(time.time()).replace('.','')
-    
+
     if not os.path.exists(localcalibrationdirectory + "substacks/"):
         os.makedirs(localcalibrationdirectory + "substacks/")
     if not os.path.exists(temporary_substack_directory):
         os.makedirs(temporary_substack_directory)
-    
-    
+
+
     counter=0
-    
+
     crosscorrelation_subprocess_array=[]
-    
+
     crosscorrel_filename_waiter=[]
-    
+
     for substackfilename in substacker_filenames:
-    
+
         substackimage=np.load(substackfilename)
         try:
             if exp_of_substacks == 10:
@@ -139,14 +142,14 @@ if substack:
             else:
                 substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + camalias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
         except:
-            breakpoint()
+            #breakpoint()
             print ("Couldn't biasdark substack")
             pass
         try:
             substackimage = copy.deepcopy(np.divide(substackimage, np.load(localcalibrationdirectory  + 'archive/' + camalias + '/calibmasters/' + 'masterFlat_'+this_exposure_filter + "_bin" + str(1) +'.npy')))
         except:
             print ("couldn't flat field substack")
-            breakpoint()
+            #breakpoint()
             pass
         # Bad pixel map sub stack array
         try:
@@ -154,15 +157,15 @@ if substack:
         except:
             print ("Couldn't badpixel substack")
             pass
-        
-        
-        
+
+
+
         # If it is the first image, just plonk it in the array.
         if counter == 0:
             # Set up the array
             sub_stacker_array = np.zeros((substackimage.shape[0],substackimage.shape[1],len(substacker_filenames)), dtype=np.float32)
-            
-            
+
+
             # Really need to thresh the image
             googtime=time.time()
             int_array_flattened=substackimage.astype(int).ravel()
@@ -171,7 +174,7 @@ if substack:
             m=counts.argmax()
             imageMode=unique[m]
             print ("Calculating Mode: " +str(time.time()-googtime))
-            
+
             #Zerothreshing image
             #googtime=time.time()
             histogramdata=np.column_stack([unique,counts]).astype(np.int32)
@@ -197,15 +200,15 @@ if substack:
                                                                 if not (imageMode-zerocounter-12) in zeroValueArray[:,0]:
                                                                     zeroValue=(imageMode-zerocounter)
                                                                     breaker =0
-                                                                    
+
             substackimage[substackimage < zeroValue] = np.nan
-            
-            
+
+
             sub_stacker_array[:,:,0] = copy.deepcopy(substackimage)
-            
+
         else:
-            
-            
+
+
             output_filename='crosscorrel' + str(counter-1) + '.npy'
             pickler=[]
             pickler.append(sub_stacker_array[:,:,0])
@@ -213,45 +216,45 @@ if substack:
             pickler.append(temporary_substack_directory)
             pickler.append(output_filename)
             pickler.append(is_osc)
-            
+
             crosscorrel_filename_waiter.append(temporary_substack_directory + output_filename)
-            
+
             crosscorrelation_subprocess_array.append(subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
             #crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
             print (counter-1)
-            
-            
+
+
             if False:
                 #NB set this path to create test pickle for makejpeg routine.
                 pickle.dump(pickler, open('crosscorrelprocess.pickle','wb'))
-            
+
             pickle.dump(pickler, crosscorrelation_subprocess_array[counter-1].stdin)
-        
+
         counter=counter+1
-        
-    
+
+
    # breakpoint()
-    
+
     counter=1
-    
+
     for waitfile in crosscorrel_filename_waiter:
         while not os.path.exists(waitfile):
             #print ("waiting for " + str(waitfile))
             time.sleep(0.2)
-        
+
         sub_stacker_array[:,:,counter] = np.load(waitfile)
         counter=counter+1
-    
-    
+
+
     # for waiting_for_subprocesses in crosscorrelation_subprocess_array:
     #     waiting_for_subprocesses.communicate()
-        
+
     #     sub_stacker_array[:,:,counter] = copy.deepcopy(np.load(temporary_substack_directory + output_filename))
-    #     counter=counter+1    
-    
+    #     counter=counter+1
+
     # Once collected and done, nanmedian the array into the single image
     img=bn.nanmedian(sub_stacker_array, axis=2) * len(substacker_filenames)
-    
+
 
     # Once we've got the substack stacked, delete the original images
     for waitfile in crosscorrel_filename_waiter:
@@ -259,7 +262,7 @@ if substack:
             os.remove(waitfile)
         except:
             pass
-        
+
 
 
 
@@ -504,30 +507,30 @@ try:
             exposure_time,
             "[s] Integrated exposure length",
         )
-        
+
         if this_exposure_filter.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
             hdu.header["EFFEXPN"] = (
                 int(exposure_time / 30),
                 " Number of integrated exposures",
             )
         else:
-            
+
             hdu.header["EFFEXPN"] = (
                 int(exposure_time / 10),
                 " Number of integrated exposures",
             )
-        
+
         hdu.header["EXPREQ"] = (
             exposure_time,
             "[s] Requested Total Exposure Time",
         )  # This is the exposure in seconds specified by the user
-        
+
         if not smartstackid == 'no':
             hdu.header["EXPREQSE"] = (
                 exposure_time,
                 "[s] Open Shutter Time of this smartstack element",
             )  # This is the exposure in seconds specified by the user
-            
+
 
         hdu.header[
             "EXPOSURE"
@@ -575,19 +578,19 @@ try:
         hdu.header["EXPTIME"] = (
             exposure_time,
             "[s] Actual exposure length",
-        )  # This is the exposure in seconds specified by the 
-        
+        )  # This is the exposure in seconds specified by the
+
         hdu.header["EXPREQ"] = (
             exposure_time,
             "[s] Requested Exposure Time",
         )  # This is the exposure in seconds specified by the user
-        
+
         if not smartstackid == 'no':
             hdu.header["EXPREQSE"] = (
                 exposure_time,
                 "[s] Open Shutter Time of this smartstack element",
             )  # This is the exposure in seconds specified by the user
-        
+
         hdu.header["EFFEXPT"] = (
             exposure_time,
             "[s] Integrated exposure length",
@@ -805,7 +808,7 @@ try:
         hdu.header["HACORR"] = (
             ha_corr,
             "[deg] Hour angle correction",
-        )  
+        )
         hdu.header["DECCORR"] = (
             dec_corr,
             "[deg] Declination correction",
@@ -834,8 +837,10 @@ try:
         hdu.header["FOCUSMOV"] = (avg_foc[3], "Focuser is moving")
     except:
         print("There is something fishy in the focuser routine")
-    
-    if pixscale == None:
+
+
+    #breakpoint()
+    if pixscale == None or np.isnan(pixscale):
         hdu.header["PIXSCALE"] = (
             'Unknown',
             "[arcsec/pixel] Nominal pixel scale on sky",
@@ -867,7 +872,7 @@ try:
     )
 
 
-    im_type = "EX"  
+    im_type = "EX"
     f_ext = ""
 
     cal_name = (
@@ -958,11 +963,11 @@ try:
     hdu.header["ORIGNAME"] = str(raw_name00 + ".fz")
 
     # tempRAdeg = ra_at_time_of_exposure * 15
-    # tempDECdeg = dec_at_time_of_exposure       
-    
+    # tempDECdeg = dec_at_time_of_exposure
+
     tempRAdeg = corrected_ra_for_header * 15
-    tempDECdeg = corrected_dec_for_header              
-    
+    tempDECdeg = corrected_dec_for_header
+
     tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
     tempointing=tempointing.to_string("hmsdms").split(' ')
 
@@ -1086,16 +1091,16 @@ try:
     narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * selfconfig['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
     dark_exp_time = selfconfig['camera']['camera_1_1']['settings']['dark_exposure']
 
-    
+
 
     if not manually_requested_calibration and not substack:
-        
-        
-        
-        
+
+
+
+
         #breakpoint()
-        
-        
+
+
         try:
             # If not a smartstack use a scaled masterdark
             timetakenquickdark=time.time()
@@ -1152,7 +1157,7 @@ try:
             print("debias/darking light frame failed: ", e)
 
         # Quick flat flat frame
-        try:                
+        try:
             hdusmalldata = np.divide(hdusmalldata, np.load(localcalibmastersdirectory + 'masterFlat_'+this_exposure_filter + "_bin" + str(1) +'.npy'))
         except Exception as e:
             print("flatting light frame failed", e)
@@ -1162,7 +1167,7 @@ try:
 
         except Exception as e:
             print("Bad Pixel Masking light frame failed: ", e)
-    
+
     # else:
     #     hdusmalldata
 
@@ -1188,11 +1193,12 @@ try:
             hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
         # bin to native binning
-        if selfnative_bin != 1 and (not pixscale == None):
+        if selfnative_bin != 1 and (not pixscale == None) and not hdu.header['PIXSCALE'] == 'Unknown':
             reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
             reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
             reduced_hdusmallheader['XBINING']=selfnative_bin
             reduced_hdusmallheader['YBINING']=selfnative_bin
+            #breakpoint()
             reduced_hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
             reduced_pixscale=float(hdu.header['PIXSCALE'])
             reduced_hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
@@ -1232,8 +1238,8 @@ try:
             dayobs,
             "Date at start of observing night"
         )
-        
-        
+
+
         # Really need to thresh the image
         googtime=time.time()
         int_array_flattened=hdusmalldata.astype(int).ravel()
@@ -1273,8 +1279,8 @@ try:
         hdusmalldata[hdusmalldata < zeroValue] = np.nan
 
         print ("Zero Threshing Image: " +str(time.time()-googtime))
-        
-        
+
+
         googtime=time.time()
 
         #Check there are no nans in the image upon receipt
@@ -1352,31 +1358,31 @@ try:
             #num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
 
         print ("Denan Image: " +str(time.time()-googtime))
-        
+
         # Actually save out ONE reduced file for different threads to use.
         image_filename=localcalibrationdirectory + "smartstacks/reducedimage" + str(time.time()).replace('.','') + '.npy'
-        
+
         # Save numpy array out.
         np.save(image_filename, hdusmalldata)
-        
+
         # Just save astropy header
         cleanhdu=fits.PrimaryHDU()
         cleanhdu.data=np.asarray([0])
         cleanhdu.header=hdusmallheader
         cleanhdu.writeto(image_filename.replace('.npy','.head'))
-        
-        
-        
-        
-        
-        
-        
+
+
+
+
+
+
+
         #g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))
         #np.save(hdusmalldata, septhread_filename)
         pickle.dump((image_filename,imageMode, unique, counts), open(septhread_filename+ '.temp', 'wb'))
-        
-            
-            
+
+
+
         os.rename(septhread_filename + '.temp', septhread_filename)
 
 
@@ -1391,7 +1397,7 @@ try:
                 saver = 1
             except Exception as e:
                 print("Failed to write raw file: ", e)
-                
+
         # This puts the file into the smartstack queue
         # And gets it underway ASAP.
         if frame_type.lower() in ['fivepercent_exposure_dark','tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark', 'fivesec_exposure_dark', 'tensec_exposure_dark', 'fifteensec_exposure_dark', 'twentysec_exposure_dark', 'thirtysec_exposure_dark', 'broadband_ss_biasdark', 'narrowband_ss_biasdark']:
@@ -1415,10 +1421,10 @@ try:
             #g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
             #np.save(hdusmalldata, smartstackthread_filename)
             pickle.dump((image_filename,imageMode), open(smartstackthread_filename+ '.temp', 'wb'))
-            
-            
+
+
             os.rename(smartstackthread_filename + '.temp', smartstackthread_filename)
-            
+
         else:
             if not selfconfig['keep_reduced_on_disk']:
                 try:
@@ -1427,7 +1433,7 @@ try:
                     pass
 
         if selfconfig['keep_reduced_on_disk']:
-            
+
             if selfconfig["save_to_alt_path"] == "yes":
                 selfalt_path = selfconfig[
                     "alt_path"
@@ -1450,11 +1456,11 @@ try:
 
             picklefilename='testred'+str(time.time()).replace('.','')
             pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
-           
+
             subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=localcalibrationdirectory + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
 
-                          
+
 
         # Send data off to process jpeg if not a smartstack
         if smartstackid == 'no':
@@ -1463,18 +1469,18 @@ try:
             pickle.dump((image_filename,imageMode), open(mainjpegthread_filename + '.temp', 'wb'))
             os.rename(mainjpegthread_filename + '.temp', mainjpegthread_filename)
 
-        
+
 
         if platesolvethread_filename !='no':
             # np.save(hdusmalldata, platesolvethread_filename)
             pickle.dump((image_filename,imageMode), open(platesolvethread_filename+ '.temp', 'wb'))
-            
+
             os.rename(platesolvethread_filename + '.temp', platesolvethread_filename)
-            
+
            #g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, ''))
                     # If it is the last of a set of smartstacks, we actually want to
                     # wait for the platesolve and nudge before starting the next smartstack.
-    
+
 
         # Now that the jpeg, sep and platesolve has been sent up pronto,
         # We turn back to getting the bigger raw, reduced and fz files dealt with
@@ -1490,11 +1496,11 @@ try:
 
             picklefilename='testlocalred'+str(time.time()).replace('.','')
             pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
-            
+
             subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=localcalibrationdirectory + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
 
-            
+
 
 
 
@@ -1510,8 +1516,8 @@ try:
             if selfconfig["save_to_alt_path"] == "yes":
                 selfalt_path = selfconfig[
                     "alt_path"
-                ]  +'/' + selfconfig['obs_id']+ '/' 
-               
+                ]  +'/' + selfconfig['obs_id']+ '/'
+
 
                 os.makedirs(
                     selfalt_path , exist_ok=True
@@ -1526,7 +1532,7 @@ try:
                 )
                 threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', selfalt_path + dayobs + "/raw/" + raw_name00, hdu.data, hdu.header, \
                                                    frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path)),)).start()
-                
+
 
         # remove file from memory
         try:
@@ -1551,5 +1557,5 @@ try:
 
 except:
     print(traceback.format_exc())
-    
+
 print ("FINISHED! in " + str(time.time()-a_timer))

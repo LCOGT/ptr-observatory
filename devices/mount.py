@@ -472,7 +472,7 @@ class Mount:
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
 
         self.request_tracking_on = False
-        self.request_tracking_off = False
+        self.request_tracking_off =True    #Hopefull in case of a restart we do not run into pier
 
         self.request_set_RightAscensionRate=False
         self.request_set_DeclinationRate=False
@@ -527,6 +527,7 @@ class Mount:
         self.currently_slewing= False
         self.abort_slew_requested=False
         self.find_home_requested=False
+        self.mount.Tracking = False
 
         self.sync_mount_requested=False
 

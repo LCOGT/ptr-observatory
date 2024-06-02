@@ -174,15 +174,15 @@ def mid_stretch_jpeg(data):
 def dump_main_data_out_to_post_exposure_subprocess(payload):
 
     # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-    if False:
+    if True:
         #NB set this path to create test pickle for makejpeg routine.
         pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
 
     #breakpoint()
-    try:
-        post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-    except OSError:
-        pass
+    #try:
+    post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    # except OSError:
+    #     pass
 
     try:
         pickle.dump(payload, post_processing_subprocess.stdin)
@@ -3853,7 +3853,7 @@ class Camera:
                 # while not os.path.exists(paths["im_path"] + 'smartstack.pickle'):
                 #     time.sleep(0.5)
 
-                g_dev['obs'].fast_queue.put((self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name ,time.time()), block=False)
+                g_dev['obs'].fast_queue.put((self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name ,time.time(), exposure_time), block=False)
                 # self.mediumui_queue.put(
                 #     (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
 

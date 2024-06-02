@@ -51,16 +51,16 @@ IH = 188
 
 ID =405
 
-MA = +205  #20240524-3
+MA = +455  #20240524-3   455  Errors doubled and wrong sign.
 
-ME = +212  #Both signs verified
+ME = +520  #Both signs verified   620
 
 
 
-alt = round(aro_lift - ME, 1)
+alt = -round(aro_lift - ME, 1)
 alt_turns = round(alt/lift_asec_per_turn, 2)
 alt_spokes = round(alt/lift_asec_per_spoke, 2)
-az = round(MA/cos_lat, 1)
+az = -round(MA/cos_lat, 1)
 small_az = round(az/az_asec_per_small_grad, 2)
 major_az = round(az/az_asec_per_major_grad, 2)
 
