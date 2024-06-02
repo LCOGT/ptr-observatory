@@ -527,7 +527,11 @@ class Mount:
         self.currently_slewing= False
         self.abort_slew_requested=False
         self.find_home_requested=False
-        self.mount.Tracking = False
+        try:            
+            self.mount.Tracking = False
+            self.can_set_tracking=True
+        except:
+            self.can_set_tracking=False
 
         self.sync_mount_requested=False
 
@@ -1143,11 +1147,13 @@ class Mount:
 
                             if self.request_tracking_on:
                                 self.request_tracking_on = False
-                                self.mount_update_wincom.Tracking = True
+                                if  self.can_set_tracking:
+                                    self.mount_update_wincom.Tracking = True
 
                             if self.request_tracking_off:
                                 self.request_tracking_off = False
-                                self.mount_update_wincom.Tracking = False
+                                if  self.can_set_tracking:
+                                    self.mount_update_wincom.Tracking = False
 
                             if self.request_new_pierside:
                                 self.request_new_pierside=False
