@@ -1044,7 +1044,7 @@ class Observatory:
         # Wait a bit between status updates otherwise
         # status updates bank up in the queue
         if not g_dev['mnt'].return_slewing(): # Don't wait while slewing.
-            if dont_wait == True:
+            if not dont_wait:
                 self.status_interval = self.status_upload_time + 0.25
                 while time.time() < (self.time_last_status + self.status_interval):
                     time.sleep(0.001)
