@@ -4272,7 +4272,7 @@ class Camera:
 
                         # Attempt to sneak in a platesolve and nudge during readout time.
                         if not check_nudge_after_shutter_closed:
-                            plog ("Shutter Closed.")
+                            plog ("Readout Complete.")  #Deleted the "Shutter" mis-que.
                             # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
                             if not g_dev['obs'].mountless_operation:
                                 if g_dev['seq'].flats_being_collected:

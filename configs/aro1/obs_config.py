@@ -344,7 +344,7 @@ site_config = {
             'instrument names':  ['camera1'],
             'instrument aliases':  ['QHY600Mono'],
             'configuration': {
-                 'f-ratio':  'f4.99',     #  This needs expanding into something easy for the owner to change.
+                 'f-ratio':  'f4.9',     #  This needs expanding into something easy for the owner to change.
                  "position1": ["darkslide1", "filter_wheel1", "camera1"]
                  },
             'camera_name':  'camera_1_1',
