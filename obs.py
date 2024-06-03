@@ -1046,10 +1046,11 @@ class Observatory:
         if not g_dev['mnt'].return_slewing(): # Don't wait while slewing.
             if dont_wait == True:
                 self.status_interval = self.status_upload_time + 0.25
-
-            while time.time() < self.time_last_status + self.status_interval:
-                self.currently_updating_status=False
-                return  # Note we are just not sending status, too soon.
+                while time.time() < (self.time_last_status + self.status_interval):
+                    time.sleep(0.001)
+            # while time.time() < self.time_last_status + self.status_interval:
+            #     self.currently_updating_status=False
+            #     return  # Note we are just not sending status, too soon.
 
          # Don't make a new status during a slew unless the queue is empty, otherwise the green crosshairs on the UI lags.
         if (g_dev['mnt'].return_slewing() and self.send_status_queue.qsize() == 0) or not g_dev['mnt'].return_slewing():
