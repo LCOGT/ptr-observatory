@@ -118,6 +118,12 @@ try:
 except:
     pass
 
+
+try:
+    if np.isnan(pixscale):
+        pixscale=None
+except:
+    pixscale=None
 #breakpoint()
 
 
