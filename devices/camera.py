@@ -4643,8 +4643,10 @@ class Camera:
                             outputimg.astype('float32')
                         )
                     del outputimg
-
-                    hdu.header['PIXSCALE']=self.pixscale
+                    try:
+                        hdu.header['PIXSCALE']=self.pixscale
+                    except:
+                        hdu.header['PIXSCALE']=-99
                     hdu.header['EXPTIME']=exposure_time
                     hdu.header['OBSTYPE']='flat'
                     hdu.header['FILTER']=self.current_filter
