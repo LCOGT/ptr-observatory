@@ -1038,51 +1038,55 @@ class Observatory:
 
         self.currently_updating_status=True
 
-        # Wait a bit between status updates otherwise
-        # status updates bank up in the queue
-        if not g_dev['mnt'].return_slewing(): # Don't wait while slewing.
-            if dont_wait == True:
-                self.status_interval = self.status_upload_time + 0.25
-
-            while time.time() < self.time_last_status + self.status_interval:
-                self.currently_updating_status=False
-                return  # Note we are just not sending status, too soon.
-
-         # Don't make a new status during a slew unless the queue is empty, otherwise the green crosshairs on the UI lags.
-        if (g_dev['mnt'].return_slewing() and self.send_status_queue.qsize() == 0) or not g_dev['mnt'].return_slewing():
-
-            # Send main batch of devices status
-            obsy = self.name
-            if mount_only == True:
-                device_list = ['mount']
-            else:
-                device_list = self.device_types
-            status={}
-            for dev_type in device_list:
-                #  The status that we will send is grouped into lists of
-                #  devices by dev_type.
-                status[dev_type] = {}
-                devices_of_type = self.all_devices.get(dev_type, {})
-                device_names = devices_of_type.keys()
-
-                for device_name in device_names:
-                    # Get the actual device object...
-                    device = devices_of_type[device_name]
-                    result = device.get_status()
-
-                    if result is not None:
-                        status[dev_type][device_name] = result
-
-            status["timestamp"] = round((time.time()) / 2.0, 3)
-            status["send_heartbeat"] = False
-
-            if status is not None:
-                lane = "device"
-                if self.send_status_queue.qsize() < 7:
-                    self.send_status_queue.put((obsy, lane, status), block=False)
-
-            self.time_last_status = time.time()
-            self.status_count += 1
+        try:
+            # Wait a bit between status updates otherwise
+            # status updates bank up in the queue
+            if not g_dev['mnt'].return_slewing(): # Don't wait while slewing.
+                if dont_wait == True:
+                    self.status_interval = self.status_upload_time + 0.25
+    
+                while time.time() < self.time_last_status + self.status_interval:
+                    self.currently_updating_status=False
+                    return  # Note we are just not sending status, too soon.
+    
+             # Don't make a new status during a slew unless the queue is empty, otherwise the green crosshairs on the UI lags.
+            if (g_dev['mnt'].return_slewing() and self.send_status_queue.qsize() == 0) or not g_dev['mnt'].return_slewing():
+    
+                # Send main batch of devices status
+                obsy = self.name
+                if mount_only == True:
+                    device_list = ['mount']
+                else:
+                    device_list = self.device_types
+                status={}
+                for dev_type in device_list:
+                    #  The status that we will send is grouped into lists of
+                    #  devices by dev_type.
+                    status[dev_type] = {}
+                    devices_of_type = self.all_devices.get(dev_type, {})
+                    device_names = devices_of_type.keys()
+    
+                    for device_name in device_names:
+                        # Get the actual device object...
+                        device = devices_of_type[device_name]
+                        result = device.get_status()
+    
+                        if result is not None:
+                            status[dev_type][device_name] = result
+    
+                status["timestamp"] = round((time.time()) / 2.0, 3)
+                status["send_heartbeat"] = False
+    
+                if status is not None:
+                    lane = "device"
+                    if self.send_status_queue.qsize() < 7:
+                        self.send_status_queue.put((obsy, lane, status), block=False)
+    
+                self.time_last_status = time.time()
+                self.status_count += 1
+        except:
+            plog ("Status failed?")
+            plog(traceback.format_exc())
 
         self.currently_updating_status=False
 
