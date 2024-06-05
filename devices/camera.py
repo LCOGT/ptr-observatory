@@ -1378,7 +1378,11 @@ class Camera:
 
     def in_line_quick_focus(self, hdufocusdata, im_path, text_name):
 
-        bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+        try:
+            bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+        except:
+            hdufocusdata=np.asarray(hdufocusdata, dtype=float)
+            bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
         bkg.subfrom(hdufocusdata)
 
         imageMedian=bn.nanmedian(hdufocusdata)
