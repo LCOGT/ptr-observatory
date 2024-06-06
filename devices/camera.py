@@ -715,6 +715,11 @@ class Camera:
         self.flatFiles = {}
         self.bpmFiles = {}
 
+
+        # Camera overscan values
+        self.overscan_values={}
+        self.overscan_values['QHY600']=[0,0,0,0]
+
         g_dev['obs'].obs_id
         g_dev['cam'].alias
         tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
@@ -2039,7 +2044,10 @@ class Camera:
 
             # save out previous array to disk during exposure
             if subexposure > 0:
-                np.save(substacker_filenames[subexposure-1],np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))
+                tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+
+                tempsend=tempsend[ 0:6388, 25:9600]
+                np.save(substacker_filenames[subexposure-1],tempsend)
 
             while (time.time() - exposure_timer) < exp_of_substacks:
                 time.sleep(0.001)
@@ -2071,7 +2079,10 @@ class Camera:
             # So that the camera can get started up again quicker.
             if subexposure == (N_of_substacks -1 ):
                 #g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', copy.deepcopy(substacker_filenames[subexposure]), copy.deepcopy(np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))))
-                np.save(substacker_filenames[subexposure],np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))
+                tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+
+                tempsend=tempsend[ 0:6388, 25:9600]
+                np.save(substacker_filenames[subexposure],tempsend)
 
 
 
@@ -2271,8 +2282,13 @@ class Camera:
             self.readout_estimate= time_after_readout - time_before_readout
             #print (self.readout_estimate)
 
-            return np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+            tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
+            tempsend=tempsend[ 0:6388, 25:9600]
+
+            #breakpoint()   #I see it!
+            #return np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+            return tempsend
     def wait_for_slew(self, wait_after_slew=True):
         """
         A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
