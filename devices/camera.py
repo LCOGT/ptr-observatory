@@ -4670,6 +4670,10 @@ class Camera:
                             debiaseddarkmean= bn.nanmean(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time
                             plog ("Debiased 1s Dark Mean is " + str(debiaseddarkmean))
 
+
+
+                            plog ("Number of overly negative pixels after bias subtraction:")
+
                             plog ("Exposure time: " + str(exposure_time))
 
                             #Short exposures are inherently much more variable, so their limit is set much higher.
