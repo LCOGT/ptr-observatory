@@ -747,12 +747,12 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': 0.0,  # Verify we can go colder
+                'temp_setpoint': 0.0,  # 20240606, new camera installed 20240604
                 'temp_setpoint_tolerance': 1.5, #down from 1.5 that was built into the code.
                 'has_chiller': True,
                 #"temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  16.0,  # C 2024
+                'chiller_ref_temp':  16.0,  # C 20240606
                 'day_warm': False,   #This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 0,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating' : False,
