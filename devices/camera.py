@@ -4651,13 +4651,13 @@ class Camera:
 
 
                     # Really need to thresh the image
-                    googtime=time.time()
+                    #googtime=time.time()
                     int_array_flattened=outputimg.astype(int).ravel()
                     int_array_flattened=int_array_flattened[int_array_flattened > -10000]
                     unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
                     m=counts.argmax()
                     imageMode=unique[m]
-                    plog ("Calculating Mode: " +str(time.time()-googtime))
+                    #plog ("Calculating Mode: " +str(time.time()-googtime))
 
                     #Zerothreshing image
                     #googtime=time.time()
@@ -4687,11 +4687,16 @@ class Camera:
 
                     #numpy.count_nonzero(numpy.isnan(imagedata))
                     countypixels=outputimg[ np.where(outputimg < zeroValue ) ]
-                    plog ("Number of unnaturally negative pixels: " + str(countypixels) )
-                    plog (seq)
+                    plog ("Number of unnaturally negative pixels: " + str(len(countypixels)) )
+                    plog (next_seq)
                     #breakpoint()
 
-
+                    # If there are too many unnaturally negative pixels, then reject the calibration
+                    if len(countypixels) > 100:
+                        plog ("Rejecting calibration because it has a disturbing amount of low value pixels.")
+                        expresult = {}
+                        expresult["error"] = True
+                        return expresult
 
                     # For a dark, check that the debiased dark has an adequately low value
                     # If there is no master bias, it will just skip this check
@@ -4714,8 +4719,49 @@ class Camera:
                             debiaseddarkmean= bn.nanmean(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time
                             plog ("Debiased 1s Dark Mean is " + str(debiaseddarkmean))
 
+                            # # Really need to thresh the image
+                            # #googtime=time.time()
+                            # int_array_flattened=outputimg.astype(int).ravel()
+                            # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+                            # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                            # m=counts.argmax()
+                            # imageMode=unique[m]
+                            # plog ("Calculating Mode: " +str(time.time()-googtime))
 
-                            plog ("Number of overly negative pixels after bias subtraction:")
+                            # #Zerothreshing image
+                            # #googtime=time.time()
+                            # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                            # histogramdata[histogramdata[:,0] > -10000]
+                            # #Do some fiddle faddling to figure out the value that goes to zero less
+                            # zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+                            # breaker=1
+                            # zerocounter=0
+                            # while (breaker != 0):
+                            #     zerocounter=zerocounter+1
+                            #     if not (imageMode-zerocounter) in zeroValueArray[:,0]:
+                            #         if not (imageMode-zerocounter-1) in zeroValueArray[:,0]:
+                            #             if not (imageMode-zerocounter-2) in zeroValueArray[:,0]:
+                            #                 if not (imageMode-zerocounter-3) in zeroValueArray[:,0]:
+                            #                     if not (imageMode-zerocounter-4) in zeroValueArray[:,0]:
+                            #                         if not (imageMode-zerocounter-5) in zeroValueArray[:,0]:
+                            #                             if not (imageMode-zerocounter-6) in zeroValueArray[:,0]:
+                            #                                 if not (imageMode-zerocounter-7) in zeroValueArray[:,0]:
+                            #                                     if not (imageMode-zerocounter-8) in zeroValueArray[:,0]:
+                            #                                         if not (imageMode-zerocounter-9) in zeroValueArray[:,0]:
+                            #                                             if not (imageMode-zerocounter-10) in zeroValueArray[:,0]:
+                            #                                                 if not (imageMode-zerocounter-11) in zeroValueArray[:,0]:
+                            #                                                     if not (imageMode-zerocounter-12) in zeroValueArray[:,0]:
+                            #                                                         zeroValue=(imageMode-zerocounter)
+                            #                                                         breaker =0
+
+                            # #numpy.count_nonzero(numpy.isnan(imagedata))
+                            # countypixels=outputimg[ np.where(outputimg < zeroValue ) ]
+                            # plog ("Number of unnaturally negative pixels: " + str(countypixels) )
+                            # plog (seq)
+
+                            # breakpoint()
+
+                            #plog ("Number of overly negative pixels after bias subtraction:")
 
                             plog ("Exposure time: " + str(exposure_time))
 
