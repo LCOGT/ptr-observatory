@@ -1774,11 +1774,14 @@ class Camera:
         timeout_timer=time.time()
         while not tempcamera.IsExposureComplete and (time.time() - timeout_timer) < (self.theskyxExposureTime + self.readout_time):
             self.theskyxIsExposureComplete=False
+            plog ("second waiting for exposure time to complete")
             time.sleep(0.01)
 
         # If that was overly long a wait then cancel exposure
         if (time.time() - timeout_timer) > 2 * (self.theskyxExposureTime + self.readout_time):
             plog ("That was a very long readout for the image.... " + str((time.time() - timeout_timer)))
+            
+        g_dev['cam'].shutter_open=False
 
         self.theskyxIsExposureComplete=True
         self.theskyxLastImageFileName=tempcamera.LastImageFileName
