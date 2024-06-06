@@ -265,9 +265,13 @@ if pointing_exposure:
 #breakpoint()
 googtime=time.time()
 #if not is_osc:
-bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-bkg.subfrom(hdufocusdata)
-
+try:
+    bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+    bkg.subfrom(hdufocusdata)
+except:
+    hdufocusdata=np.array(hdufocusdata, dtype=float)
+    bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+    bkg.subfrom(hdufocusdata)
 
 # hdufocus = fits.PrimaryHDU()
 # hdufocus.data = bkg
@@ -555,8 +559,10 @@ fwhmlist=[]
 sources=[]
 #radius_of_radialprofile=(20)
 #breakpoint()
-
-if np.isnan(pixscale):
+try:
+    if np.isnan(pixscale):
+        pixscale = None
+except:
     pixscale = None
 
 if pixscale == None:

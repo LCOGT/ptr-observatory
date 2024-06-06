@@ -570,16 +570,16 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq002ms',      # Important because this points to a server file structure by that name.
+            'name': 'sq003ms',      # Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
-            'service_date': '20211111',
+            'service_date': '20240604',
             #'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
             'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
 
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
-            'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',
+            'file_mode_path':  'G:/000ptr_saf/archive/sq003ms/autosaves/',
 
 
             'settings': {
@@ -747,12 +747,12 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -1.0,  # Verify we can go colder
+                'temp_setpoint': 0.0,  # Verify we can go colder
                 'temp_setpoint_tolerance': 1.5, #down from 1.5 that was built into the code.
                 'has_chiller': True,
                 #"temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  15.0,  # C
+                'chiller_ref_temp':  18.0,  # C
                 'day_warm': False,   #This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 0,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating' : False,
@@ -761,7 +761,7 @@ site_config = {
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
                 #'onebyone_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
-                'onebyone_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
+                'onebyone_pix_scale': 0.5283,    #  This is the 1x1 binning pixelscale
                 'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
                 'y_pixel':  3.76, # pixel size in microns

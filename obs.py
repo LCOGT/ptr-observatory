@@ -1172,8 +1172,8 @@ class Observatory:
 
                 if g_dev["obs"].stop_all_activity and ((time.time() - g_dev["obs"].stop_all_activity_timer) > 35):
                     g_dev["obs"].stop_all_activity = False
-                    
-                
+
+
                 # If theskyx is rebooting wait
                 while g_dev['seq'].rebooting_theskyx:
                     plog ("waiting for theskyx to reboot")
@@ -1483,6 +1483,7 @@ class Observatory:
                 if g_dev['cam']._cooler_on():
                     current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
                     current_camera_temperature = float(current_camera_temperature)
+
                     if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
                         self.camera_sufficiently_cooled_for_calibrations = False
                         self.last_time_camera_was_warm=time.time()
@@ -1699,7 +1700,7 @@ class Observatory:
                 plog ("Something went wrong in safety check loop. It is ok.... it is a try/except")
                 plog ("But we should prevent any crashes.")
                 plog(traceback.format_exc())
-                
+
                 # If theskyx is rebooting wait
                 while g_dev['seq'].rebooting_theskyx:
                     plog ("waiting for theskyx to reboot in the except function")
@@ -2378,7 +2379,7 @@ class Observatory:
                             else:
                                 self.enqueue_for_fastUI(
                                     '',jpeg_filename, exposure_time)
-                                
+
                                 # self.enqueue_for_mediumUI(
                                 #     1000, '',jpeg_filename.replace('EX10', 'EX20')
                                 # )

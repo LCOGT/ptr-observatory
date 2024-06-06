@@ -1129,7 +1129,7 @@ class Camera:
             try:
                 pixelscale_list=self.pixelscale_shelf['pixelscale_list']
             except:
-                pixelscale_list=[]
+                pixelscale_list=[0.5283] #NB a hack
 
             self.pixelscale_shelf.close()
 
