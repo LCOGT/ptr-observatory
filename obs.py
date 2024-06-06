@@ -489,11 +489,11 @@ class Observatory:
             self.mountless_operation=True
             self.scope_in_manual_mode=True
 
-        if self.config['ingest_raws_directly_to_archive']:
-            self.ptrarchive_queue = queue.PriorityQueue(maxsize=0)
-            self.ptrarchive_queue_thread = threading.Thread(target=self.send_to_ptrarchive, args=())
-            self.ptrarchive_queue_thread.daemon = True
-            self.ptrarchive_queue_thread.start()
+        #if self.config['ingest_raws_directly_to_archive']:
+        self.ptrarchive_queue = queue.PriorityQueue(maxsize=0)
+        self.ptrarchive_queue_thread = threading.Thread(target=self.send_to_ptrarchive, args=())
+        self.ptrarchive_queue_thread.daemon = True
+        self.ptrarchive_queue_thread.start()
 
         self.fast_queue = queue.Queue(maxsize=0)
         self.fast_queue_thread = threading.Thread(target=self.fast_to_ui, args=())
