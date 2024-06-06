@@ -752,7 +752,7 @@ site_config = {
                 'has_chiller': True,
                 #"temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  18.0,  # C
+                'chiller_ref_temp':  16.0,  # C 2024
                 'day_warm': False,   #This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 0,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating' : False,
