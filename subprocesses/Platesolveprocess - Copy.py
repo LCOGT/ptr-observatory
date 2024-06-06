@@ -48,7 +48,7 @@ from math import cos, radians
 #     demosaicing_CFA_Bayer_Menon2007)
 import matplotlib.pyplot as plt
 import math
-from PIL import Image#, ImageOps
+from PIL import Image#, ImageOps 
 from scipy.stats import binned_statistic
 from astropy.wcs import WCS
 #from astropy.io import fits
@@ -118,17 +118,11 @@ try:
 except:
     pass
 
-
-try:
-    if np.isnan(pixscale):
-        pixscale=None
-except:
-    pixscale=None
 #breakpoint()
 
 
-# while not os.path.exists(platesolvethread_filename):
-#     time.sleep(0.2)
+# while not os.path.exists(platesolvethread_filename):    
+#     time.sleep(0.2)    
 
 # (image_filename,edgefillvalue)=pickle.load(open(platesolvethread_filename,'rb'))
 
@@ -262,16 +256,12 @@ if pointing_exposure:
     pointing_image=copy.deepcopy(hdufocusdata)
 
 
-#breakpoint()
+#breakpoint() 
 googtime=time.time()
 #if not is_osc:
-try:
-    bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-    bkg.subfrom(hdufocusdata)
-except:
-    hdufocusdata=np.array(hdufocusdata, dtype=float)
-    bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-    bkg.subfrom(hdufocusdata)
+bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+bkg.subfrom(hdufocusdata)
+
 
 # hdufocus = fits.PrimaryHDU()
 # hdufocus.data = bkg
@@ -487,7 +477,7 @@ list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
 pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
 counter=0
 
-#breakpoint()
+#breakpoint() 
 for point in list_of_local_maxima:
 
 
@@ -559,10 +549,8 @@ fwhmlist=[]
 sources=[]
 #radius_of_radialprofile=(20)
 #breakpoint()
-try:
-    if np.isnan(pixscale):
-        pixscale = None
-except:
+
+if np.isnan(pixscale):
     pixscale = None
 
 if pixscale == None:
@@ -737,7 +725,7 @@ failed=True
 #breakpoint()
 if len(sources) >= 5:
 
-    if not pixscale == None:# or np.isnan(pixscale):
+    if not pixscale == None or np.isnan(pixscale):
         # Get size of original image
         xpixelsize = hdufocusdata.shape[0]
         ypixelsize = hdufocusdata.shape[1]
@@ -952,7 +940,7 @@ if len(sources) >= 5:
     # if unknown pixelscale do a search
     print ("failed?")
     print (failed)
-    if failed or pixscale == None:# or np.isnan(pixscale):#) and useastrometrynet:
+    if failed or pixscale == None or np.isnan(pixscale):#) and useastrometrynet:
 
 
         #from astropy.table import Table
@@ -975,7 +963,7 @@ if len(sources) >= 5:
         #sources=sources[:,200]
 
 
-        if pixscale == None:# or np.isnan(pixscale):
+        if pixscale == None or np.isnan(pixscale):
             scale_lower=0.04
             scale_upper=8.0
         elif binnedtwo:
@@ -997,7 +985,7 @@ if len(sources) >= 5:
         # Then wait for a LONG time to get it.
         # with a wider range
         try:
-            if pixscale == None:# or np.isnan(pixscale):
+            if pixscale == None or np.isnan(pixscale):
                 wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
                                                         image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=30.0,
                                                         solve_timeout=1200)
@@ -1235,12 +1223,12 @@ def mid_stretch_jpeg(data):
     """
     This product is based on software from the PixInsight project, developed by
     Pleiades Astrophoto and its contributors (http://pixinsight.com/).
-
+    
     And also Tim Beccue with a minor flourishing/speedup by Michael Fitzgerald.
     """
     target_bkg=0.25
     shadows_clip=-1.25
-
+    
     """ Stretch the image.
 
     Args:
@@ -1253,9 +1241,9 @@ def mid_stretch_jpeg(data):
     try:
         data = data / np.max(data)
     except:
-        data = data    #NB this avoids div by 0 is image is a very flat bias
-
-
+        data = data    #NB this avoids div by 0 is image is a very flat bias    
+    
+    
     """Return the average deviation from the median.
 
     Args:
@@ -1263,10 +1251,10 @@ def mid_stretch_jpeg(data):
     """
     median = np.median(data.ravel())
     n = data.size
-    avg_dev = np.sum( np.absolute(data-median) / n )
+    avg_dev = np.sum( np.absolute(data-median) / n )    
     c0 = np.clip(median + (shadows_clip * avg_dev), 0, 1)
     x= median - c0
-
+    
     """Midtones Transfer Function
 
     MTF(m, x) = {
@@ -1289,7 +1277,7 @@ def mid_stretch_jpeg(data):
         x (np.array): the data that we want to copy and transform.
     """
     shape = x.shape
-    x = x.ravel()
+    x = x.ravel()    
     zeros = x==0
     halfs = x==target_bkg
     ones = x==1
@@ -1299,22 +1287,22 @@ def mid_stretch_jpeg(data):
     x[ones] = 1
     x[others] = (target_bkg - 1) * x[others] / ((((2 * target_bkg) - 1) * x[others]) - target_bkg)
     m= x.reshape(shape)
-
+    
     stretch_params = {
         "c0": c0,
         #"c1": 1,
         "m": m
-    }
-
+    }  
+    
     m = stretch_params["m"]
     c0 = stretch_params["c0"]
     above = data >= c0
 
     # Clip everything below the shadows clipping point
-    data[data < c0] = 0
+    data[data < c0] = 0   
     # For the rest of the pixels: apply the midtones transfer function
     x=(data[above] - c0)/(1 - c0)
-
+    
     """Midtones Transfer Function
 
     MTF(m, x) = {
@@ -1337,7 +1325,7 @@ def mid_stretch_jpeg(data):
         x (np.array): the data that we want to copy and transform.
     """
     shape = x.shape
-    x = x.ravel()
+    x = x.ravel()    
     zeros = x==0
     halfs = x==m
     ones = x==1
@@ -1346,21 +1334,21 @@ def mid_stretch_jpeg(data):
     x[halfs] = 0.5
     x[ones] = 1
     x[others] = (m - 1) * x[others] / ((((2 * m) - 1) * x[others]) - m)
-    data[above]= x.reshape(shape)
-
+    data[above]= x.reshape(shape)  
+    
     return data
 
 
-if solve != 'error' and pointing_exposure and not pixscale == None:
-
-
+if solve != 'error' and pointing_exposure:
+    
+    
     pointing_image = mid_stretch_jpeg(pointing_image)
-
+    
     solved_ra = solve["ra_j2000_hours"]
     solved_dec = solve["dec_j2000_degrees"]
     solved_arcsecperpixel = solve["arcsec_per_pixel"]
-
-
+    
+    
 
     RA_where_it_actually_is=solved_ra
     DEC_where_it_actually_is=solved_dec
@@ -1373,7 +1361,7 @@ if solve != 'error' and pointing_exposure and not pixscale == None:
     tempheader['CUNIT1'] = 'deg'
     tempheader['CUNIT2'] = 'deg'
     tempheader['CRVAL1'] = RA_where_it_actually_is * 15.0
-    tempheader['CRVAL2'] = DEC_where_it_actually_is
+    tempheader['CRVAL2'] = DEC_where_it_actually_is 
     #breakpoint()
     tempheader['CRPIX1'] = int(pointing_image.shape[0] / 2)
     tempheader['CRPIX2'] = int(pointing_image.shape[1] / 2)
@@ -1421,12 +1409,12 @@ if solve != 'error' and pointing_exposure and not pixscale == None:
     ax.plot([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is],  linestyle='dashed',color='green',
           linewidth=2, markersize=12,transform=ax.get_transform('fk5'))
     # #ax.set_autoscale_on(False)
-
+    
     # ax.plot([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is],  linestyle='dashed',color='white',
     #       linewidth=2, markersize=12,transform=ax.get_transform('fk5'))
+    
 
-
-    # This should point to the center of the box.
+    # This should point to the center of the box. 
     ax.scatter(target_ra * 15, target_dec, transform=ax.get_transform('icrs'), s=300,
                 edgecolor='red', facecolor='none')
 
@@ -1437,7 +1425,7 @@ if solve != 'error' and pointing_exposure and not pixscale == None:
     # This should point to the center of the current image
     ax.scatter(RA_where_it_actually_is * 15, DEC_where_it_actually_is, transform=ax.get_transform('icrs'), s=300,
                 edgecolor='white', facecolor='none')
-
+    
     # This should point to the where the telescope is reporting it is positioned.
     ax.scatter(pointing_ra * 15, pointing_dec, transform=ax.get_transform('icrs'), s=300,
                 edgecolor='lime', facecolor='none')
@@ -1445,37 +1433,37 @@ if solve != 'error' and pointing_exposure and not pixscale == None:
     # r = Quadrangle((target_ra * 15 - 0.5 * y_deg_field_size, target_dec - 0.5 * x_deg_field_size)*u.deg, y_deg_field_size*u.deg, x_deg_field_size*u.deg,
     #                 edgecolor='red', facecolor='none',
     #                 transform=ax.get_transform('icrs'))
-
+    
     r = Quadrangle((target_ra * 15 - 0.5 * y_deg_field_size, target_dec - 0.5 * x_deg_field_size)*u.deg, y_deg_field_size*u.deg, x_deg_field_size*u.deg,
                     edgecolor='red', facecolor='none',
                     transform=ax.get_transform('icrs'))
-
-
+    
+    
     ax.add_patch(r)
     # ax.axes.set_aspect(aspect)
     # plt.axis('scaled')
     # plt.gca().set_aspect(aspect)
-
+    
     # breakpoint()
     # plt.canvas.draw()
     # temp_canvas = plt.canvas
     # plt.close()
     # pil_image=Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_rgb())
-
+    
     # pil_image.save(jpeg_filename.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
     # os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
-
+    
     plt.savefig(jpeg_filename.replace('.jpg','matplotlib.png'), dpi=100, bbox_inches='tight', pad_inches=0)
 
 
-    im = Image.open(jpeg_filename.replace('.jpg','matplotlib.png'))
+    im = Image.open(jpeg_filename.replace('.jpg','matplotlib.png')) 
 
     # Get amount of padding to add
     fraction_of_padding=(im.size[0]/im.size[1])/aspect
     padding_added_pixels=int(((fraction_of_padding * im.size[1])- im.size[1])/2)
     if padding_added_pixels > 0:
         im=add_margin(im,padding_added_pixels,0,padding_added_pixels,0,(0,0,0))
-
+        
     #im=ImageOps.grayscale(im)
     #breakpoint()
     im=im.convert('RGB')
@@ -1486,7 +1474,7 @@ if solve != 'error' and pointing_exposure and not pixscale == None:
         os.remove(jpeg_filename.replace('.jpg','matplotlib.jpg'))
     except:
         pass
-
+    
     try:
         os.remove(jpeg_filename.replace('.jpg','matplotlib.png'))
     except:

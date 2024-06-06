@@ -55,6 +55,45 @@ reqs.mount('http://', HTTPAdapter(max_retries=retries))
 '''
 '''
 
+
+DEG_SYM = '°'
+PI = math.pi
+TWOPI = math.pi*2.
+PIOVER2 = math.pi/2.
+DTOR = math.pi/180.
+RTOD = 180./math.pi
+STOR = math.pi/180./3600.    # "S" stand for arc-seconds
+RTOS = 3600.*180./math.pi
+RTOH = 12./math.pi
+HTOR = math.pi/12.
+HTOS = 15*3600.
+STOM = 1000.        # "M" stands for mas, milli arc-seconds
+MTOS = 0.001
+HTOD = 15.
+DTOH = 1./15.
+DTOS = 3600.
+STOD = 1/3600.
+STOH = 1/3600./15.
+SecTOH = 1/3600.    # "Sec" means seconds of time.
+HTOSec = 3600.
+APPTOSID = 1.00273811906 #USNO Supplement
+MOUNTRATE = 15*APPTOSID  #15.0410717859
+KINGRATE = 15.029
+
+LOOK_WEST = 0  #These four constants reflect ASCOM conventions
+LOOK_EAST = 1  #Flipped
+TEL_ON_EAST_SIDE = 0   #Not Flipped.
+TEL_ON_WEST_SIDE = 1   #This means flipped.
+IS_FLIPPED = 1
+IS_NORMAL = 0
+
+def ra_fix_h(ra):
+    while ra >= 24:
+        ra -= 24
+    while ra < 0:
+        ra += 24
+    return ra
+
 def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
 
     # Populate the request parameters. Include data only if it was sent.
@@ -244,6 +283,9 @@ class Sequencer:
         self.master_restack_thread.start()
 
 
+        self.rebooting_theskyx=False
+
+
 
     def construct_focus_jpeg_and_save(self, packet):
 
@@ -344,7 +386,7 @@ class Sequencer:
         g_dev['cam'].user_name = command['user_name']
         action = command['action']
 
-        print (command['user_roles'])
+        plog (command['user_roles'])
 
         try:
             script = command['required_params']['script']
@@ -502,7 +544,7 @@ class Sequencer:
                 self.cool_down_latch = True
                 self.reset_completes()
 
-    
+
                 # If the roof opens later then sync and refocus
                 if (g_dev['events']['Observing Begins'] < ephem_now < g_dev['events']['Observing Ends']):
                     # # Move to reasonable spot
@@ -518,7 +560,7 @@ class Sequencer:
                     # plog ("Running initial autofocus upon opening observatory")
 
                     # self.auto_focus_script(req2, opt)
-                    
+
                     self.total_sequencer_control=True
                     g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
                     g_dev['mnt'].go_command(alt=70,az= 70)
@@ -583,9 +625,9 @@ class Sequencer:
                     g_dev['obs'].flush_command_queue()
 
                     self.total_sequencer_control=False
-                    
-                    
-                    
+
+
+
                 else:
                     self.night_focus_ready=True
 
@@ -956,9 +998,9 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                print (self.stop_script_called)
-                                                print (g_dev['obs'].open_and_enabled_to_observe)
-                                                print ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
+                                                plog (self.stop_script_called)
+                                                plog (g_dev['obs'].open_and_enabled_to_observe)
+                                                plog ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
                                                 return
 
                                             # COLLECTING A Three point five sec SECOND EXPOSURE DARK FRAME
@@ -971,9 +1013,9 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                print (self.stop_script_called)
-                                                print (g_dev['obs'].open_and_enabled_to_observe)
-                                                print ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
+                                                plog (self.stop_script_called)
+                                                plog (g_dev['obs'].open_and_enabled_to_observe)
+                                                plog ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
                                                 return
 
 
@@ -1188,7 +1230,7 @@ class Sequencer:
 
                                             plog("Expose 1x1 dark of " \
                                                  + str(1) + " using exposure:  " + str(dark_exp_time) )
-                                            req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dk'}
+                                            req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
                                             opt = {'count': 1, 'filter': 'dk'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -1434,7 +1476,7 @@ class Sequencer:
             else:
                 distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_flip_reference_ha - HAtemp)
                 distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_flip_reference_dec- dest_dec)
-                #print ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+                #plog ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
                 absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(distance_from_current_reference_in_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
                 plog ("absolute_distance from reference to requested position: " + str(round(absolute_distance,2)))
                 if absolute_distance < absolute_distance_threshold:
@@ -2381,7 +2423,7 @@ class Sequencer:
 
                 plog("Expose 1x1 dark of " \
                      + str(dark_count) + " using exposure:  " + str(dark_exp_time) )
-                req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dk'}
+                req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
                 opt = {'count': 1, 'filter': 'dk'}
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -2431,7 +2473,7 @@ class Sequencer:
                     try:
                         shutil.move(orphanfile, orphan_path)
                     except:
-                        print ("Couldn't move orphan: " + str(orphanfile) +', deleting.')
+                        plog ("Couldn't move orphan: " + str(orphanfile) +', deleting.')
                         g_dev['obs'].laterdelete_queue.put(orphanfile, block=False)
 
         # Add all fits.fz members to the AWS queue
@@ -2556,7 +2598,7 @@ class Sequencer:
         plog ("Nightly reset of complete projects")
         self.reset_completes()
         g_dev['obs'].events_new = None
-        g_dev['obs'].reset_last_reference()
+        #g_dev['obs'].reset_last_reference()
         # if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
         #    g_dev['mnt'].reset_mount_reference()
         g_dev['obs'].last_solve_time = datetime.datetime.utcnow() - datetime.timedelta(days=1)
@@ -2640,6 +2682,8 @@ class Sequencer:
     def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
         g_dev['mnt'].mount_update_paused=True
 
+        self.rebooting_theskyx=True
+
         if g_dev['cam'].theskyx:
             g_dev['cam'].updates_paused=True
 
@@ -2665,6 +2709,16 @@ class Sequencer:
                     time.sleep(5)
                     g_dev['cam'].camera_update_reboot=True
                     time.sleep(5)
+
+                    g_dev['cam'].theskyx_set_cooler_on=True
+                    g_dev['cam'].theskyx_cooleron=True
+                    g_dev['cam'].theskyx_set_setpoint_trigger=True
+                    g_dev['cam'].theskyx_set_setpoint_value= g_dev['cam'].setpoint
+                    g_dev['cam'].theskyx_temperature=g_dev['cam'].setpoint, 999.9, 999.9
+
+                    g_dev['cam'].shutter_open=False
+                    g_dev['cam'].theskyxIsExposureComplete=True
+                    g_dev['cam'].theskyx=True
                     g_dev['cam'].updates_paused=False
 
                 if self.config['filter_wheel']['filter_wheel1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
@@ -2690,9 +2744,13 @@ class Sequencer:
                     plog(traceback.format_exc())
                     #
 
+
+
         g_dev['mnt'].mount_update_reboot=True
         g_dev['mnt'].wait_for_mount_update()
         g_dev['mnt'].mount_update_paused=False
+
+        self.rebooting_theskyx=False
 
         if returnra == -1 or returndec == -1:
             g_dev['mnt'].park_command({}, {})
@@ -2812,6 +2870,7 @@ class Sequencer:
 
 
                 tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+                calibhduheader['OBSTYPE'] = 'DARK'
                 try:
                     # Save and upload master bias
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + filename_start+'_master_bin1.fits' ))
@@ -2925,7 +2984,7 @@ class Sequencer:
                 chunk_size=8
                 while not ( shapeImage[0] % chunk_size ==0):
                     chunk_size=chunk_size+1
-                    #print (chunk_size)
+                    #plog (chunk_size)
                 chunk_size=int(shapeImage[0]/chunk_size)
 
                 holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
@@ -2933,7 +2992,7 @@ class Sequencer:
                 # iterate through the input, replace with ones, and write to output
                 for i in range(shapeImage[0]):
                     if i % chunk_size == 0:
-                        #print (i)
+                        #plog (i)
                         counter=0
                         for imagefile in range(len(PLDrive)):
                             holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
@@ -2953,6 +3012,7 @@ class Sequencer:
 
 
                 tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+                calibhduheader['OBSTYPE'] = 'DARK'
                 try:
 
                     # Save and upload master bias
@@ -3008,8 +3068,37 @@ class Sequencer:
 
         # Make header for calibration files
         calibhdu = fits.PrimaryHDU()
-        calibhduheader=copy.deepcoy(calibhdu.header)
+        calibhduheader=copy.deepcopy(calibhdu.header)
         calibhduheader['RLEVEL'] = 99
+        calibhduheader['PROPID'] = 'INGEST-CALIB'
+        calibhduheader['DATE-OBS'] = (
+            datetime.datetime.isoformat(
+                datetime.datetime.utcfromtimestamp(time.time())
+            ),
+            "Start date and time of observation"
+        )
+        calibhduheader['INSTRUME'] = g_dev['cam'].config["camera"][g_dev['cam'].name]["name"], "Name of camera"
+        calibhduheader['SITEID'] = g_dev['cam'].config["wema_name"].replace("-", "").replace("_", "")
+        calibhduheader['TELID'] = g_dev['obs'].obs_id
+        calibhduheader['OBSTYPE'] = 'DARK'
+        calibhduheader['BLKUID'] = 1234
+        calibhduheader["OBSID"] = g_dev['obs'].obs_id
+
+        # calibhduheader["OBSID"] = (
+        #     selfconfig["obs_id"].replace("-", "").replace("_", "")
+        # )
+
+
+        # hdu.header["SITEID"] = (self.config["wema_name"].replace("-", "").replace("_", ""))
+        # hdu.header["INSTRUME"] = (self.config["camera"][self.name]["name"], "Name of camera")
+
+        # 'PROPID': 'INGEST-TEST-2021',
+        #                       'DATE-OBS': '2015-02-19T13:56:05.261',
+        #                       'INSTRUME': 'nres03',
+        #                       'SITEID': 'cpt',
+        #                       'TELID': '1m0a',
+        #                       'OBSTYPE': 'EXPOSE',
+        #                       'BLKUID': 1234,
 
         # NOW to get to the business of constructing the local calibrations
         # Start with biases
@@ -3134,6 +3223,8 @@ class Sequencer:
                 del finalImage
                 del holder
 
+                calibhduheader['OBSTYPE'] = 'BIAS'
+
                 try:
                     # Save and upload master bias
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'BIAS_master_bin1.fits' ))
@@ -3156,6 +3247,14 @@ class Sequencer:
                 calibration_timer=time.time()
                 g_dev["obs"].send_to_user("Bias calibration frame created.")
 
+
+            # A theskyx reboot catch
+            while True:
+                try:
+                    g_dev['cam'].camera_known_gain <1000
+                    break
+                except:
+                    plog ("waiting for theskyx to reboot")
 
             # Now that we have the master bias, we can estimate the readnoise actually
             # by comparing the standard deviations between the bias and the masterbias
@@ -3701,6 +3800,8 @@ class Sequencer:
                                 temporaryFlat=np.nan_to_num(temporaryFlat, nan = bn.nanmedian(temporaryFlat))
 
                             plog ("Interpolated flat: " +str(time.time()-calibration_timer))
+
+                            calibhduheader['OBSTYPE'] = 'SKYFLAT'
 
                             try:
                                 g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
@@ -5218,15 +5319,15 @@ class Sequencer:
                             self.total_sequencer_control = False
                             return np.nan, np.nan
                         pass
-                    
-                    
+
+
 
                     g_dev['obs'].sync_after_platesolving = False
-                    
+
                     # Once the mount is synced, then re-slew the mount to where it thinks it should be
                     g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
-                    
-                    
+
+
 
                     #g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
                     g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field and test the sync", p_level='INFO')
@@ -5430,7 +5531,7 @@ class Sequencer:
                 if len(focus_spots) > 0:
                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                     # Fling the jpeg up
-                    g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                    g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
             else:
                 if len(focus_spots) == 0 or len(focus_spots) == 1:
@@ -5466,7 +5567,7 @@ class Sequencer:
                         if minimum_value > 3.0:
                             plog ("Minimum value: " + str(minimum_value) + " is too high to bother focussing, just going with the estimated value from previous focus")
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
                             g_dev['foc'].set_initial_best_guess_for_focus()
                             self.total_sequencer_control = False
                             self.focussing=False
@@ -5479,7 +5580,7 @@ class Sequencer:
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
 
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                         elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
 
@@ -5487,7 +5588,7 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
 
 
@@ -5500,7 +5601,7 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                         # If right hand side is too low get another dot
                         elif focus_spots[0][1] < (minimum_value * 1.5):
@@ -5508,7 +5609,7 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                         # Otherwise if it seems vaguely plausible to get a fit... give it a shot
                         else:
@@ -5520,14 +5621,14 @@ class Sequencer:
                                 fit = np.polyfit(x, y, 2)
                                 f = np.poly1d(fit)
                             except:
-                                print ("focus fit didn't work dunno y yet.")
+                                plog ("focus fit didn't work dunno y yet.")
                                 plog(traceback.format_exc())
                                 fit_failed=True
                             crit_points = bounds + [x for x in f.deriv().r if x.imag == 0 and bounds[0] < x.real < bounds[1]]
                             try:
                                 fitted_focus_position=crit_points[2]
                             except:
-                                print ("crit points didn't work dunno y yet.")
+                                plog ("crit points didn't work dunno y yet.")
                                 plog(traceback.format_exc())
                                 fit_failed=True
 
@@ -5542,7 +5643,7 @@ class Sequencer:
                                     new_focus_position_to_attempt=focus_spots[0][0] - throw
                                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                                     # Fling the jpeg up
-                                    g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                                    g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                                 elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
 
@@ -5550,14 +5651,14 @@ class Sequencer:
                                     new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                                     # Fling the jpeg up
-                                    g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                                    g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                             else:
                                 plog ("focus pos: " + str(fitted_focus_position))
                                 fitted_focus_fwhm=f(fitted_focus_position)
                                 threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, f, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),fitted_focus_position,fitted_focus_fwhm),))).start()
                                 # Fling the jpeg up
-                                g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                                g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                                 # Check that the solved minimum focussed position actually fits in between the lowest measured point and
                                 # the two next door measured points.
@@ -5638,13 +5739,13 @@ class Sequencer:
 
                                     # If there seems to be a wonky spot, remove it and try again
                                     if len(delete_list) > 1:
-                                        print ("Found possible problem spots: " + str(delete_list))
+                                        plog ("Found possible problem spots: " + str(delete_list))
                                         for entry in delete_list:
                                             new_focus_position_to_attempt=entry[0]
                                             focus_spots.remove(entry)
-                                        print ("Attempting this spot again: " + str(new_focus_position_to_attempt))
+                                        plog ("Attempting this spot again: " + str(new_focus_position_to_attempt))
                                     else:
-                                        print ("Couldn't find a problem spot, attempting another point on the smaller end of the curve")
+                                        plog ("Couldn't find a problem spot, attempting another point on the smaller end of the curve")
                                         if focus_spots[0][1] < focus_spots[-1][1]:
                                             plog ("smaller focus spot has lower fwhm value, trying out a spot out there")
                                             new_focus_position_to_attempt=focus_spots[0][0] - throw
@@ -5653,7 +5754,7 @@ class Sequencer:
                                             new_focus_position_to_attempt=focus_spots[-1][0] + throw
 
 
-    def equatorial_pointing_run(self, max_pointings=15, alt_minimum=30):
+    def equatorial_pointing_run(self, max_pointings=16, alt_minimum=15):
 
         #breakpoint()
         g_dev['obs'].get_enclosure_status_from_aws()
@@ -5678,15 +5779,27 @@ class Sequencer:
         g_dev['mnt'].unpark_command({}, {})
 
         g_dev["obs"].request_update_status()
-
-        step = (180.0 - 2*alt_minimum)/max_pointings
-        ra = 0
+        sidereal_h = g_dev['mnt'].get_sidereal_time_h()
         catalogue = []
-        while ra < 360:
-            catalogue.append([round(ra, 3), 0.0, 19])
-            ra += step
 
-       # catalogue=self.pointing_catalogue
+        if max_pointings == 8:
+            ha_cat = [-4, -3, -2, -1, 1, 2, 3, 4]  #8 points
+            for hour in ha_cat:
+                ra = ra_fix_h(sidereal_h - hour)  #This step could be done just before the seek below so hitting flips would be eliminated
+                catalogue.append([round(ra*HTOD, 3), 0.0, 19])
+        elif max_pointings == 16:
+            ha_cat = [-4, -3.5, -3, -2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]  #16 points
+            for hour in ha_cat:
+                ra = ra_fix_h(sidereal_h - hour)
+                catalogue.append([round(ra*HTOD, 3), 0.0, 19])
+        else:
+            step = (180.0 - 2*alt_minimum)/max_pointings
+            ra = 0
+            catalogue = []
+            while ra < 360:
+                catalogue.append([round(ra, 3), 0.0, 19])
+                ra += step
+        # catalogue=self.pointing_catalogue
 
         g_dev["obs"].send_to_user("Starting pointing run. Constructing altitude catalogue. This can take a while.")
         plog("Constructing sweep catalogue above altitude " + str(alt_minimum))
@@ -5732,6 +5845,7 @@ class Sequencer:
                 g_dev['obs'].time_of_last_slew=time.time()
                 g_dev["mnt"].last_ra_requested = grid_star[0] / 15
                 g_dev["mnt"].last_dec_requested = grid_star[1]
+                print("sweep: ",grid_star[0] / 15 , grid_star[1])
                 #g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
                 g_dev['mnt'].go_command(ra=grid_star[0] /15, dec=grid_star[1])
             except:
@@ -5793,8 +5907,13 @@ class Sequencer:
 
             except Exception:
                 plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
-            ra_mount=g_dev['mnt'].return_right_ascension()
-            dec_mount = g_dev['mnt'].return_declination()
+            ra_mount=g_dev["mnt"].last_ra_requested #g_dev['mnt'].return_right_ascension()
+            dec_mount = g_dev["mnt"].last_dec_requested #g_dev['mnt'].return_declination()
+
+            #ra_2 = g_dev['obs'].last_platesolved_ra
+            #dec_2 = g_dev['obs'].last_platesolved_dec
+
+
             result=[ra_mount, dec_mount, g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
             deviation_catalogue_for_tpoint.append (result)
             plog(result)
@@ -5822,12 +5941,14 @@ class Sequencer:
             if not np.isnan(entry[2]):
                 ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
                 dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
-                ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
+                ra_got=Angle(entry[2], u.hour).to_string(sep=' ')
                 if entry[7] == 0:
                     pierstring='0  1'
                     entry[2] += 12.
                     while entry[2] >= 24:
                         entry[2] -= 24.
+                    while entry[2] <= 24:
+                        entry[2] += 24.
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
 
                     if latitude >= 0:
@@ -5836,8 +5957,8 @@ class Sequencer:
                         dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ')
                 else:
                     pierstring='0  0'
-                    ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
-                    dec_got=Angle(entry[3],u.degree).to_string(sep=' ')
+                    ra_got=Angle(entry[2], u.hour).to_string(sep=' ')
+                    dec_got=Angle(entry[3], u.degree).to_string(sep=' ')
 
 
                 sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]
@@ -5848,8 +5969,8 @@ class Sequencer:
 
         try:
             os.path.expanduser('~')
-            print (os.path.expanduser('~'))
-            print (os.path.expanduser('~')+ "/Desktop/TPOINT/")
+            plog (os.path.expanduser('~'))
+            plog (os.path.expanduser('~')+ "/Desktop/TPOINT/")
             if not os.path.exists(os.path.expanduser('~')+ "/Desktop/TPOINT"):
                 os.makedirs(os.path.expanduser('~')+ "/Desktop/TPOINT")
             shutil.copy (tpointnamefile, os.path.expanduser('~') + "/Desktop/TPOINT/" + 'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT')
@@ -5860,7 +5981,7 @@ class Sequencer:
         plog (deviation_catalogue_for_tpoint)
 
         g_dev['obs'].auto_centering_off = prev_auto_centering
-        
+
         g_dev['obs'].mount_reference_model_off = previous_mount_reference_model_off
 
         g_dev['obs'].flush_command_queue()
@@ -5885,7 +6006,7 @@ class Sequencer:
 
         prev_auto_centering = g_dev['obs'].auto_centering_off
         g_dev['obs'].auto_centering_off = True
-        
+
         previous_mount_reference_model_off = copy.deepcopy(g_dev['obs'].mount_reference_model_off)
         g_dev['obs'].mount_reference_model_off = True
 
@@ -5994,7 +6115,7 @@ class Sequencer:
                 g_dev["mnt"].last_ra_requested = grid_star[0] / 15
                 g_dev["mnt"].last_dec_requested = grid_star[1]
                 #g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
-                
+
                 g_dev['mnt'].go_command(ra=grid_star[0] /15, dec=grid_star[1])
             except:
                 plog ("Difficulty in directly slewing to object")
@@ -6107,8 +6228,8 @@ class Sequencer:
 
         try:
             os.path.expanduser('~')
-            print (os.path.expanduser('~'))
-            print (os.path.expanduser('~')+ "/Desktop/TPOINT/")
+            plog (os.path.expanduser('~'))
+            plog (os.path.expanduser('~')+ "/Desktop/TPOINT/")
             if not os.path.exists(os.path.expanduser('~')+ "/Desktop/TPOINT"):
                 os.makedirs(os.path.expanduser('~')+ "/Desktop/TPOINT")
             shutil.copy (tpointnamefile, os.path.expanduser('~') + "/Desktop/TPOINT/" + 'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT')
@@ -6118,7 +6239,7 @@ class Sequencer:
         plog ("Final devation catalogue for Tpoint")
         plog (deviation_catalogue_for_tpoint)
 
-        
+
         g_dev['obs'].mount_reference_model_off = previous_mount_reference_model_off
         g_dev['obs'].auto_centering_off = prev_auto_centering
 

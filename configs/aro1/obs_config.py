@@ -72,12 +72,24 @@ site_config = {
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
+
+    ### SAFESTART
+
     'scope_in_manual_mode': False,
     'mount_reference_model_off': False,
     'sun_checks_on': True,
     'moon_checks_on': True,
     'altitude_checks_on': True,
     'daytime_exposure_time_safety_on': True,
+
+    ###   QUICKSTART
+
+    # 'scope_in_manual_mode': True,
+    # 'mount_reference_model_off': True,
+    # 'sun_checks_on': False,
+    # 'moon_checks_on': False,
+    # 'altitude_checks_on': False,
+    # 'daytime_exposure_time_safety_on': False,
 
 
 
@@ -233,7 +245,7 @@ site_config = {
             'settle_time_after_park' : 5,
   #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
-            'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
+            'time_inactive_until_park' : 1800.0, # How many seconds of inactivity until it will park the telescope
 
             'west_clutch_ra_correction': 0.0,  #final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_dec_correction': 0.0,
@@ -258,24 +270,35 @@ site_config = {
                 'model_on': True,
                 'model_type': "Equatorial",
                 'rates_on': True,  #  Rates implied by model and refraction applied during tracking.
+                                  #In the northern hemisphere, positive MA means that the pole of the mounting
+                                  #is to the right of due north.
+                                  #In the northern hemisphere, positive ME means that the pole of the mounting is
+                                  #below the true (unrefracted) pole. A mounting aligned the refracted pole (for most
+                                  #telescopes probably the simplest and best thing to aim for in order to avoid unwanted
+                                  #field rotation effects will have negative ME.                'model_date':  "n.a.",
                 #units for model are asec/radian
-                'model_date':  "n.a.",
                 'model_equat': {
-                    'ih': 0.0, #"Home naturally points to West for AP GEM mounts.
-                    'id': 0.00, #These two are zero-point references for HA/Ra and dec.
-                    'eho': 0.0, #"East Hour angle Offset -- NOTE an offset
-                    'edo': 0.0, #"East Dec Offset
-                    'ma': 0.0, # Azimuth error of polar axia
-                    'me': 0.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
-                    'ch': 0.0,  #Optical axis not perp to dec axis
-                    'np': 0.0,  #Non-perp of polar and dec axis
-                    'tf': 0.0,  #Sin flexure -- Hook's law.
-                    'tx': 0.0,  #Tangent flexure
-                    'hces': 0.0, #Centration error of encoders.
-                    'hcec': 0.0,
-                    'dces': 0.0,
-                    'dcec': 0.0,
+                    'ih':   0.0, # Home naturally points to West for AP GEM mounts.  Howeveer when @ Park 5 it is flipped.
+                    'id':   0.0, # These two are zero-point references for HA/Ra and dec.
+                    'eho':  0.0, # East Hour angle Offset -- NOTE an offset
+                    'edo':  0.0, # East Dec Offset
+                    'ma':   0.0, # Azimuth error of polar axis
+                    'me':   0.0, # Elev error of polar axisDefault is about -60 asec above pole for ARO
+                    'ch':   0.0, # Optical axis not perp to dec axis
+                    'np':   0.0, # Non-perp of polar and dec axis
+                    'tf':   0.0, # Sin flexure -- Hook's law.
+                    'tx':   0.0, # Tangent flexure
+                    'hces': 0.0, # Sin centration error of RA encoder
+                    'hcec': 0.0, # Cos centration error of RA encoder
+                    'dces': 0.0, # Sin centration error of DEC encoder
+                    'dcec': 0.0, # Cos centration error of DEC encoder
                     }
+
+                #'model_version': 'N.A', # As in "20240526-1.mod"   Eventually we can put the model name here and pick up automatically.
+
+
+
+
                 ,
                 'model_altAz': {
                     'ia': 000.00, #"Home naturally points to West for AP GEM mounts.
@@ -311,7 +334,7 @@ site_config = {
             'collecting_area': 31808,   #This is correct as of 20230420 WER
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
-            'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C  1468.4 @ F4.9?
+            'focal_length': 1468.4,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C  1468.4 @ F4.9?
             'has_dew_heater':  False,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
@@ -321,7 +344,7 @@ site_config = {
             'instrument names':  ['camera1'],
             'instrument aliases':  ['QHY600Mono'],
             'configuration': {
-                 'f-ratio':  'f9',     #  This needs expanding into something easy for the owner to change.
+                 'f-ratio':  'f4.9',     #  This needs expanding into something easy for the owner to change.
                  "position1": ["darkslide1", "filter_wheel1", "camera1"]
                  },
             'camera_name':  'camera_1_1',
@@ -393,9 +416,9 @@ site_config = {
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
             'focuser_movement_settle_time': 3,
             #F.9 setup
-            'reference': 9089,    # 2024-04-13
+            'reference': 5600,    # 2024-04-13  F9 on 20240601
             'ref_temp':  15.,
-            'temp_coeff': 0.0,     #Initial setting 20240413 WER
+            'temp_coeff': -20.45,     #Initial setting 20240413602    WER
             # Update when pinning reference
             #F4.9 setup
             #'reference': 5462.94, #5743,
@@ -491,7 +514,7 @@ site_config = {
                 #         ['dark', [1,  3],    0, 0.00,  [360 , 170], 'dk']],    #22     #Not a real filter.  Total 23
 
                 'filter_data': [
-                        ['Air',  [0,  0],   'AIR'],    #0  Gains est and some from 20240106 listing
+                        ['Air',  [0,  0],   'AIR'],    #0
                         ['PL',   [7,  0],   'Photo Luminance'],     #1
                         ['Exo',  [8,  0],   'Exoplanet'],      #2
                         ['PB',   [0,  6],   'Photo Blue'],    #3
@@ -547,16 +570,16 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq002ms',      # Important because this points to a server file structure by that name.
+            'name': 'sq003ms',      # Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
-            'service_date': '20211111',
+            'service_date': '20240604',
             #'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
             'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
 
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
-            'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',
+            'file_mode_path':  'G:/000ptr_saf/archive/sq003ms/autosaves/',
 
 
             'settings': {
@@ -724,12 +747,12 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -1.0,  # Verify we can go colder
+                'temp_setpoint': 0.0,  # Verify we can go colder
                 'temp_setpoint_tolerance': 1.5, #down from 1.5 that was built into the code.
                 'has_chiller': True,
                 #"temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  15.0,  # C
+                'chiller_ref_temp':  18.0,  # C
                 'day_warm': False,   #This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 0,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating' : False,
@@ -738,7 +761,7 @@ site_config = {
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
                 #'onebyone_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
-                'onebyone_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
+                'onebyone_pix_scale': 0.5283,    #  This is the 1x1 binning pixelscale
                 'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
                 'y_pixel':  3.76, # pixel size in microns

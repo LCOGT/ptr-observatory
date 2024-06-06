@@ -114,11 +114,11 @@ exposure_time=input_sep_info[28]
 ############ WAITER FOR
 #septhread_filename
 print (septhread_filename)
-while not os.path.exists(septhread_filename):  
+while not os.path.exists(septhread_filename):
     # print (septhread_filename)
     # breakpoint()
     time.sleep(0.2)
-    
+
 
 (image_filename,imageMode, unique, counts)=pickle.load(open(septhread_filename,'rb'))
 
@@ -127,9 +127,15 @@ hdufocusdata=np.load(image_filename)
 
 hduheader=fits.open(image_filename.replace('.npy','.head'))[0].header
 
+# # If pixscale is an invalud value just use a rough one.
+# try:
+#     pixscale/3
+# except:
+#     pixscale=0.5
 
 
-
+if np.isnan(pixscale):
+    pixscale = 0.5
 
 #print (exposure_time)
 #breakpoint()
@@ -308,7 +314,7 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     sepsky = np.nan
     pickle.dump([], open(im_path + text_name.replace('.txt', '.tempsep'),'wb'))
     os.rename(im_path + text_name.replace('.txt', '.tempsep'),im_path + text_name.replace('.txt', '.sep'))
-    
+
     sources = [0]
     rfp = np.nan
     rfr = np.nan
@@ -324,8 +330,8 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     with open(im_path + text_name.replace('.txt', '.tempfwhm'), 'w') as f:
         json.dump(fwhm_file, f)
     os.rename(im_path + text_name.replace('.txt', '.tempfwhm'),im_path + text_name.replace('.txt', '.fwhm'))
-    
-    
+
+
 
 else:
 
@@ -415,7 +421,11 @@ else:
         hduheader["IMGSTDEV"] = ( tempstd, "Median Value of Image Array" )
         # else:
         #     tempstd=float(hduheader["IMGSTDEV"])
-        threshold=max(3* np.std(hdufocusdata[hdufocusdata < (5*tempstd)]),(200*pixscale)) # Don't bother with stars with peaks smaller than 100 counts per arcsecond
+        try:
+            threshold=max(3* np.std(hdufocusdata[hdufocusdata < (5*tempstd)]),(200*pixscale)) # Don't bother with stars with peaks smaller than 100 counts per arcsecond
+        except:
+            threshold=max(3* np.std(hdufocusdata[hdufocusdata < (5*tempstd)]),(200*0.1)) # Don't bother with stars with peaks smaller than 100 counts per arcsecond
+
         googtime=time.time()
         list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
         print ("Finding Local Maxima: " + str(time.time()-googtime))
@@ -480,7 +490,10 @@ else:
         #radius_of_radialprofile=(30)
         # The radius should be related to arcseconds on sky
         # And a reasonable amount - 12'
-        radius_of_radialprofile=int(24/pixscale)
+        try:
+            radius_of_radialprofile=int(24/pixscale)
+        except:
+            radius_of_radialprofile=int(24/0.1)
         # Round up to nearest odd number to make a symmetrical array
         radius_of_radialprofile=int(radius_of_radialprofile // 2 *2 +1)
         halfradius_of_radialprofile=math.ceil(0.5*radius_of_radialprofile)
@@ -516,7 +529,10 @@ else:
                 testvalues.append(testvalue)
             testvalue=testvalue+0.1
         # convert pixelscales into pixels
-        pixel_testvalues=np.array(testvalues) / pixscale
+        try:
+            pixel_testvalues=np.array(testvalues) / pixscale
+        except:
+            pixel_testvalues=np.array(testvalues) / 0.5
 
 
         for i in range(len(pointvalues)):
@@ -568,7 +584,11 @@ else:
 
             # If the brightest pixel is in the center-ish
             # then attempt a fit
-            if abs(brightest_pixel_rdist) < max(3, 3/pixscale):
+            try:
+                maxvalue=max(3, 3/pixscale)
+            except:
+                maxvalue=20
+            if abs(brightest_pixel_rdist) < max(3, maxvalue):
 
                 try:
 
@@ -833,12 +853,12 @@ else:
         with open(im_path + text_name.replace('.txt', '.tempfwhm'), 'w') as f:
             json.dump(fwhm_file, f)
         os.rename(im_path + text_name.replace('.txt', '.tempfwhm'),im_path + text_name.replace('.txt', '.fwhm'))
-        
+
 
         # This pickled sep file is for internal use - usually used by the smartstack thread to align mono smartstacks.
         pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.tempsep'),'wb'))
         os.rename(im_path + text_name.replace('.txt', '.tempsep'),im_path + text_name.replace('.txt', '.sep'))
-        
+
 
 
         # Grab the central arcminute out of the image.
@@ -1090,7 +1110,7 @@ else:
         with open(im_path + text_name.replace('.txt', '.tempfwhm'), 'w') as f:
             json.dump(fwhm_file, f)
         os.rename(im_path + text_name.replace('.txt', '.tempfwhm'),im_path + text_name.replace('.txt', '.fwhm'))
-        
+
 
         #json_snippets['fwhm']=fwhm_file
         imageinspection_json_snippets['fwhm']=fwhm_file
@@ -1099,7 +1119,7 @@ else:
 
         pickle.dump([], open(im_path + text_name.replace('.txt', '.tempsep'),'wb'))
         os.rename(im_path + text_name.replace('.txt', '.tempsep'),im_path + text_name.replace('.txt', '.sep'))
-        
+
 # Value-added header items for the UI
 #breakpoint()
 
@@ -1194,7 +1214,7 @@ except:
 if input_sep_info[1] == None:
     hduheader['PIXSCALE']='Unknown'
 else:
-    hduheader['PIXSCALE']=float(input_sep_info[1])
+    hduheader['PIXSCALE']=float(pixscale)
 
 
 # parse header to a json-y type thing
