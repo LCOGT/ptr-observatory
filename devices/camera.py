@@ -1346,7 +1346,7 @@ class Camera:
         # Camera overscan values
         self.overscan_values={}
         self.overscan_values['QHY600']=[0,38,32,0]
-
+        self.overscan_values['SBIG16803']=[0,0,0,0]
 
         self.overscan_left=self.overscan_values[config["camera"][self.name]['overscan_trim']][0]
         self.overscan_right=self.overscan_values[config["camera"][self.name]['overscan_trim']][1]
