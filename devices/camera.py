@@ -1154,7 +1154,7 @@ class Camera:
 
             except:
                 plog(traceback.format_exc())
-                breakpoint()
+                #breakpoint()
 
         """
         TheSkyX runs on a file mode approach to images rather
@@ -1339,7 +1339,7 @@ class Camera:
 
             except:
                 plog(traceback.format_exc())
-                breakpoint()
+                #breakpoint()
 
 
         # OVERSCAN SETUP
@@ -2607,10 +2607,10 @@ class Camera:
         self.script = required_params.get("script", "None")
 
         try:
-
+            #breakpoint()  #NB Consider remapping 'Mosaic deg' to 'Full'
             self.zoom_factor = optional_params.get('zoom', False)
         except:
-            plog("Problem with supplied Zoom factor, Camera line 1510")
+            plog("Problem with supplied Zoom factor, Camera line 2613")
             self.zoom_factor = "Full"
 
         if imtype.lower() in ("bias"):

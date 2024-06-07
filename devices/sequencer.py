@@ -1550,7 +1550,7 @@ class Sequencer:
                             self.block_next_filter_requested=block['project']['exposures'][0]['filter']
                     except:
                         plog(traceback.format_exc())
-                        breakpoint()
+                        #breakpoint()
                         self.block_next_filter_requested='None'
 
                     exp_time =  float(exposure['exposure'])

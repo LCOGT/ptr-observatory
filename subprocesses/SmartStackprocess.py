@@ -631,7 +631,7 @@ if not os.path.exists(jpeg_path + smartstackid +'.busy'):
                 r_sq2 = (1 - 0.0625)/2
                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)
             else:
-                zoom = (0.0, 0.0, 0.0, 0.0)
+                zoom = (0.0, 0.0, 0.0, 0.0)   #for other cases treat the image as full-size no ZOOM.
             #breakpoint()
             xl, yt, xr, yb = zoom
             xl *= ix

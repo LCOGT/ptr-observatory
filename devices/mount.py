@@ -527,7 +527,7 @@ class Mount:
         self.currently_slewing= False
         self.abort_slew_requested=False
         self.find_home_requested=False
-        try:            
+        try:
             self.mount.Tracking = False
             self.can_set_tracking=True
         except:
@@ -1401,7 +1401,7 @@ class Mount:
 
             self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             # if abs(self.current_sidereal - self.sidereal_time_directly_from_mount) > 0.0001:
-            #     breakpoint()
+            #breakpoint()
             #     pass
             if self.prior_roll_rate == 0:
                 pass

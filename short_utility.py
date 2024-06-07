@@ -406,7 +406,7 @@ def transform_observed_to_mount(pRoll, pPitch, pPierSide, loud=False, enable=Fal
                 rRoll += math.radians(edh / 3600.0)
                 rPitch += math.radians(edd / 3600.0)  # NB Adjust signs to normal EWNS view
             else:
-                breakpoint()
+                #breakpoint()
                 pass
             if loud:
                 print(ih, idec, edh, edd, ma, me, ch, np, tf, tx, hces, hcec, dces, dcec, pPierSide)
@@ -586,7 +586,7 @@ def apply_refraction_inEl_r(pAppEl, pSiteRefTemp, pSiteRefPress):  # Deg, C. , m
     global RefrOn
     # From Astronomical Algorithms.  Max error 0.89" at 0 elev.
     # 20210328 This code does not the right thing if star is below the Pole and is refracted above it.
-    breakpoint()
+    #breakpoint()
     if not RefrOn:
         return pAppEl, 0.0
     elif pAppEl > 0:
