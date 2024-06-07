@@ -3141,7 +3141,7 @@ class Sequencer:
 
         tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
 
-        if len(inputList) == 0 or len(darkinputList) == 0 or len(inputList) == 1 or len(darkinputList) == 1:
+        if len(inputList) == 0 or len(darkinputList) == 0:# or len(inputList) == 1 or len(darkinputList) == 1:
             plog ("Not reprocessing local masters as there are not enough biases or darks")
         else:
 
@@ -3186,9 +3186,13 @@ class Sequencer:
                 # finalImage array
                 finalImage=np.zeros(shapeImage, dtype=np.float32)
 
+                #plog ('1')
+
                 try:
                     # create an empty array to hold each chunk
                     # the size of this array will determine the amount of RAM usage
+
+                    #breakpoint()
 
                     # Get a chunk size that evenly divides the array
                     chunk_size=8
@@ -3198,21 +3202,37 @@ class Sequencer:
 
                     holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
 
+                    #breakpoint()
+
                     # iterate through the input, replace with ones, and write to output
+
+                    # Maybe also only reform the memmap if chunk size bigger.
+                    reloader_trigger=0
                     for i in range(shapeImage[0]):
+                        #print (i)
                         if i % chunk_size == 0:
                             counter=0
                             for imagefile in range(len(PLDrive)):
+                                #print (imagefile)
                                 holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
                                 counter=counter+1
                             finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
-                            # Wipe and restore files in the memmap file
-                            # To clear RAM usage
-                            PLDrive= [None] * len(inputList)
-                            i=0
-                            for file in inputList:
-                                PLDrive[i] = np.load(file, mmap_mode='r')
-                                i=i+1
+
+                            reloader_trigger=reloader_trigger+chunk_size
+                            #print ("Reloader " + str(reloader_trigger))
+                            if reloader_trigger > 1000:
+                                print ("Reloader " + str(reloader_trigger))
+                                # Wipe and restore files in the memmap file
+                                # To clear RAM usage
+                                PLDrive= [None] * len(inputList)
+                                i=0
+                                for file in inputList:
+                                    PLDrive[i] = np.load(file, mmap_mode='r')
+                                    i=i+1
+                                reloader_trigger=0
+
+                    #breakpoint()
+
                 except:
                     plog(traceback.format_exc())
 
@@ -3224,6 +3244,8 @@ class Sequencer:
                 del holder
 
                 calibhduheader['OBSTYPE'] = 'BIAS'
+
+                #plog ('1')
 
                 try:
                     # Save and upload master bias
@@ -3247,7 +3269,7 @@ class Sequencer:
                 calibration_timer=time.time()
                 g_dev["obs"].send_to_user("Bias calibration frame created.")
 
-
+            #plog ('1')
             # A theskyx reboot catch
             while True:
                 try:
@@ -3256,6 +3278,7 @@ class Sequencer:
                 except:
                     plog ("waiting for theskyx to reboot")
 
+            #plog ('1')
             # Now that we have the master bias, we can estimate the readnoise actually
             # by comparing the standard deviations between the bias and the masterbias
             if g_dev['cam'].camera_known_gain <1000:
@@ -3274,6 +3297,9 @@ class Sequencer:
                     i=i+1
 
                 readnoise_array=np.array(readnoise_array)
+
+            #plog ('1')
+
 
             # Bad pixel accumulator for the bias frame
             img_temp_median=bn.nanmedian(masterBias)
@@ -4416,6 +4442,7 @@ class Sequencer:
                     else:
                         self.current_filter_last_camera_gain_stdev=200
                 except:
+                    plog ("perhaps can't find filter in shelf")
                     plog(traceback.format_exc())
                     self.current_filter_last_camera_gain=200
                     self.current_filter_last_camera_gain_stdev=200

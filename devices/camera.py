@@ -2046,7 +2046,7 @@ class Camera:
             if subexposure > 0:
                 tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
-                tempsend=tempsend[ 0:6388, 25:9600]
+                tempsend=tempsend[ 0:6384, 32:9600]
                 np.save(substacker_filenames[subexposure-1],tempsend)
 
             while (time.time() - exposure_timer) < exp_of_substacks:
@@ -2081,7 +2081,7 @@ class Camera:
                 #g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', copy.deepcopy(substacker_filenames[subexposure]), copy.deepcopy(np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))))
                 tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
-                tempsend=tempsend[ 0:6388, 25:9600]
+                tempsend=tempsend[ 0:6384, 32:9600]
                 np.save(substacker_filenames[subexposure],tempsend)
 
 
@@ -2284,7 +2284,7 @@ class Camera:
 
             tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
-            tempsend=tempsend[ 0:6388, 25:9600]
+            tempsend=tempsend[ 0:6384, 32:9600]
 
             #breakpoint()   #I see it!
             #return np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
