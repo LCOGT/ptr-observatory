@@ -720,6 +720,10 @@ class Camera:
         self.overscan_values={}
         self.overscan_values['QHY600']=[0,0,0,0]
 
+        breakpoint()
+
+
+
         g_dev['obs'].obs_id
         g_dev['cam'].alias
         tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
