@@ -716,11 +716,7 @@ class Camera:
         self.bpmFiles = {}
 
 
-        # Camera overscan values
-        self.overscan_values={}
-        self.overscan_values['QHY600']=[0,0,0,0]
 
-        breakpoint()
 
 
 
@@ -1344,6 +1340,31 @@ class Camera:
             except:
                 plog(traceback.format_exc())
                 breakpoint()
+
+
+        # OVERSCAN SETUP
+        # Camera overscan values
+        self.overscan_values={}
+        self.overscan_values['QHY600']=[0,38,32,0]
+
+
+        self.overscan_left=self.overscan_values[config["camera"][self.name]['overscan_trim']][0]
+        self.overscan_right=self.overscan_values[config["camera"][self.name]['overscan_trim']][1]
+        self.overscan_up=self.overscan_values[config["camera"][self.name]['overscan_trim']][2]
+        self.overscan_down=self.overscan_values[config["camera"][self.name]['overscan_trim']][3]
+
+
+        # print (self.overscan_left)
+
+        # print (self.imagesize_x-self.overscan_right)
+        # print (self.overscan_up)
+        # print(self.imagesize_y- self.overscan_down)
+        #tempsend=tempsend[ 0:6384, 32:9600]
+        #tempsend=tempsend[ self.overscan_up: self.imagesize_x- self.overscan_down, self.overscan_left: self.imagesize_y-self.overscan_right ]
+
+        #tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+
+        #breakpoint()
 
         if self.theskyx:
             self.theskyx_set_cooler_on=True
@@ -2050,7 +2071,9 @@ class Camera:
             if subexposure > 0:
                 tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
-                tempsend=tempsend[ 0:6384, 32:9600]
+                #tempsend=tempsend[ 0:6384, 32:9600]
+                tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+
                 np.save(substacker_filenames[subexposure-1],tempsend)
 
             while (time.time() - exposure_timer) < exp_of_substacks:
@@ -2085,7 +2108,9 @@ class Camera:
                 #g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', copy.deepcopy(substacker_filenames[subexposure]), copy.deepcopy(np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))))
                 tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
-                tempsend=tempsend[ 0:6384, 32:9600]
+                #tempsend=tempsend[ 0:6384, 32:9600]
+                tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+
                 np.save(substacker_filenames[subexposure],tempsend)
 
 
@@ -2288,7 +2313,10 @@ class Camera:
 
             tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
-            tempsend=tempsend[ 0:6384, 32:9600]
+            tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+
+
+            #tempsend=tempsend[ 0:6384, 32:9600]
 
             #breakpoint()   #I see it!
             #return np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))

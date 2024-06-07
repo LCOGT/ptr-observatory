@@ -54,7 +54,7 @@ ID =405
 MA = -100
   #20240524-3   455  Errors doubled and wrong sign.
 
-ME = +3000  #Both signs verified   620
+ME = +2981  #Both signs verified   620
 
 
 
