@@ -5930,7 +5930,7 @@ class Sequencer:
             try:
                 g_dev['mnt'].pier_side = g_dev[
                     "mnt"
-                ].return_side_of_pier()  # 0 == Tel Looking West, is flipped.
+                ].return_side_of_pier()  # 0 == Tel Looking West, is NOT flipped.
 
             except Exception:
                 plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
@@ -5969,12 +5969,15 @@ class Sequencer:
                 ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
                 dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
                 ra_got=Angle(entry[2], u.hour).to_string(sep=' ')
+
+
                 if entry[7] == 0:
+                    #NEED TO BREKPOINT HERE AND FIX
                     pierstring='0  1'
                     entry[2] += 12.
                     while entry[2] >= 24:
                         entry[2] -= 24.
-                    while entry[2] <= 24:
+                    while entry[2] < 0:   #This case should never occur
                         entry[2] += 24.
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
 
