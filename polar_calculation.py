@@ -51,9 +51,10 @@ IH = 188
 
 ID =405
 
-MA = +455  #20240524-3   455  Errors doubled and wrong sign.
+MA = -100
+  #20240524-3   455  Errors doubled and wrong sign.
 
-ME = +520  #Both signs verified   620
+ME = +2981  #Both signs verified   620
 
 
 

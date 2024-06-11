@@ -471,6 +471,8 @@ site_config = {
             'parent': 'telescope1',
             'name': 'ec002c',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16803',
+            
+            'overscan_trim' : 'SBIG16803',
             'service_date': '20211111',
             'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
             

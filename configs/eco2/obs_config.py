@@ -419,6 +419,8 @@ site_config = {
             'parent': 'telescope1',
             'name': 'ec002cs',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600C Pro',
+            
+            'overscan_trim' : 'QHY600',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
 

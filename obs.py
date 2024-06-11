@@ -2658,478 +2658,480 @@ class Observatory:
                 one_at_a_time = 1
                 slow_process = self.slow_camera_queue.get(block=False)
                 slow_process = slow_process[1]
-
-                # Set up RA and DEC headers
-                # needs to be done AFTER text file is sent up.
-                # Text file RA and Dec and PTRarchive RA and Dec are formatted different
                 try:
-                    temphduheader = slow_process[3]
-                except:
-                    temphduheader = None
-
-                if slow_process[0] == 'focus':
-                    hdufocus = fits.PrimaryHDU()
-                    hdufocus.data = slow_process[2]
-                    hdufocus.header = temphduheader
-                    hdufocus.header["NAXIS1"] = hdufocus.data.shape[0]
-                    hdufocus.header["NAXIS2"] = hdufocus.data.shape[1]
-                    hdufocus.header["DATE"] = (
-                        datetime.date.strftime(
-                            datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
-                        ),
-                        "Date FITS file was written",
-                    )
-                    hdufocus.writeto(slow_process[1], overwrite=True, output_verify='silentfix')
-
+                    # Set up RA and DEC headers
+                    # needs to be done AFTER text file is sent up.
+                    # Text file RA and Dec and PTRarchive RA and Dec are formatted different
                     try:
-                        hdufocus.close()
+                        temphduheader = slow_process[3]
                     except:
-                        pass
-                    del hdufocus
+                        temphduheader = None
 
-                if slow_process[0] == 'numpy_array_save':
-                    np.save(slow_process[1],slow_process[2])
+                    if slow_process[0] == 'focus':
+                        hdufocus = fits.PrimaryHDU()
+                        hdufocus.data = slow_process[2]
+                        hdufocus.header = temphduheader
+                        hdufocus.header["NAXIS1"] = hdufocus.data.shape[0]
+                        hdufocus.header["NAXIS2"] = hdufocus.data.shape[1]
+                        hdufocus.header["DATE"] = (
+                            datetime.date.strftime(
+                                datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
+                            ),
+                            "Date FITS file was written",
+                        )
+                        hdufocus.writeto(slow_process[1], overwrite=True, output_verify='silentfix')
 
-                if slow_process[0] == 'fits_file_save':
-                    fits.writeto(slow_process[1], slow_process[2], temphduheader, overwrite=True)
-
-                if slow_process[0] == 'fits_file_save_and_UIqueue':
-                    fits.writeto(slow_process[1], slow_process[2], temphduheader, overwrite=True)
-                    filepathaws=slow_process[4]
-                    filenameaws=slow_process[5]
-                    if 'ARCHIVE_' in filenameaws:
-                       g_dev['obs']. enqueue_for_PTRarchive(100000000000000, filepathaws,filenameaws)
-                    else:
-                        g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-
-                if slow_process[0] == 'localcalibration':
-
-                    saver = 0
-                    saverretries = 0
-                    while saver == 0 and saverretries < 10:
                         try:
+                            hdufocus.close()
+                        except:
+                            pass
+                        del hdufocus
 
-                            if not os.path.exists(self.local_dark_folder + "/localcalibrations"):
-                                os.makedirs(self.local_dark_folder + "/localcalibrations")
+                    if slow_process[0] == 'numpy_array_save':
+                        np.save(slow_process[1],slow_process[2])
 
-                            if 'dark' in slow_process[4]:
-                                if not os.path.exists(self.local_dark_folder ):
-                                    os.makedirs(self.local_dark_folder )
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/narrowbanddarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/narrowbanddarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/broadbanddarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/broadbanddarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/pointzerozerofourfivedarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/pointzerozerofourfivedarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/onepointfivepercentdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/onepointfivepercentdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/fivepercentdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/fivepercentdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/tenpercentdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/tenpercentdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/quartersecdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/quartersecdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/halfsecdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/halfsecdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/sevenfivepercentdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/sevenfivepercentdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/onesecdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/onesecdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/oneandahalfsecdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/oneandahalfsecdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/twosecdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/twosecdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/threepointfivesecdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/threepointfivesecdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/fivesecdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/fivesecdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/sevenpointfivesecdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/sevenpointfivesecdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/tensecdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/tensecdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/fifteensecdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/fifteensecdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/twentysecdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/twentysecdarks")
-                                if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/thirtysecdarks"):
-                                    os.makedirs(self.local_dark_folder + "/localcalibrations/darks/thirtysecdarks")
+                    if slow_process[0] == 'fits_file_save':
+                        fits.writeto(slow_process[1], slow_process[2], temphduheader, overwrite=True)
 
-                            if 'flat' in slow_process[4]:
-                                if not os.path.exists(self.local_flat_folder ):
-                                    os.makedirs(self.local_flat_folder )
+                    if slow_process[0] == 'fits_file_save_and_UIqueue':
+                        fits.writeto(slow_process[1], slow_process[2], temphduheader, overwrite=True)
+                        filepathaws=slow_process[4]
+                        filenameaws=slow_process[5]
+                        if 'ARCHIVE_' in filenameaws:
+                           g_dev['obs']. enqueue_for_PTRarchive(100000000000000, filepathaws,filenameaws)
+                        else:
+                            g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
 
-                            # Figure out which folder to send the calibration file to
-                            # and delete any old files over the maximum amount to store
-                            if slow_process[4] == 'bias':
-                                if not os.path.exists(self.local_bias_folder ):
-                                    os.makedirs(self.local_bias_folder )
-                                tempfilename = self.local_bias_folder + slow_process[1].replace('.fits', '.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_bias_to_store']
-                                n_files = len(glob.glob(self.local_bias_folder + '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_bias_folder + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                    if slow_process[0] == 'localcalibration':
 
-                            elif slow_process[4] == 'dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                        saver = 0
+                        saverretries = 0
+                        while saver == 0 and saverretries < 10:
+                            try:
 
-                                # Don't consider tempfiles that may be in use
-                                files_in_folder=glob.glob(self.local_dark_folder + '*.n*')
-                                files_in_folder= [ x for x in files_in_folder if "tempbiasdark" not in x ]
+                                if not os.path.exists(self.local_dark_folder + "/localcalibrations"):
+                                    os.makedirs(self.local_dark_folder + "/localcalibrations")
 
-                                n_files = len(files_in_folder)
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                if 'dark' in slow_process[4]:
+                                    if not os.path.exists(self.local_dark_folder ):
+                                        os.makedirs(self.local_dark_folder )
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/narrowbanddarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/narrowbanddarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/broadbanddarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/broadbanddarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/pointzerozerofourfivedarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/pointzerozerofourfivedarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/onepointfivepercentdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/onepointfivepercentdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/fivepercentdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/fivepercentdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/tenpercentdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/tenpercentdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/quartersecdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/quartersecdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/halfsecdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/halfsecdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/sevenfivepercentdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/sevenfivepercentdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/onesecdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/onesecdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/oneandahalfsecdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/oneandahalfsecdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/twosecdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/twosecdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/threepointfivesecdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/threepointfivesecdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/fivesecdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/fivesecdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/sevenpointfivesecdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/sevenpointfivesecdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/tensecdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/tensecdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/fifteensecdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/fifteensecdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/twentysecdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/twentysecdarks")
+                                    if not os.path.exists(self.local_dark_folder + "/localcalibrations/darks/thirtysecdarks"):
+                                        os.makedirs(self.local_dark_folder + "/localcalibrations/darks/thirtysecdarks")
 
-                            elif slow_process[4] == 'broadband_ss_biasdark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'broadbanddarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = 2*self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'broadbanddarks/'+  '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder+ 'broadbanddarks/'+ '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                if 'flat' in slow_process[4]:
+                                    if not os.path.exists(self.local_flat_folder ):
+                                        os.makedirs(self.local_flat_folder )
 
-                            elif slow_process[4] == 'narrowband_ss_biasdark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'narrowbanddarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = 2*self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder  + 'narrowbanddarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'narrowbanddarks/'  + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                # Figure out which folder to send the calibration file to
+                                # and delete any old files over the maximum amount to store
+                                if slow_process[4] == 'bias':
+                                    if not os.path.exists(self.local_bias_folder ):
+                                        os.makedirs(self.local_bias_folder )
+                                    tempfilename = self.local_bias_folder + slow_process[1].replace('.fits', '.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_bias_to_store']
+                                    n_files = len(glob.glob(self.local_bias_folder + '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_bias_folder + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'pointzerozerofourfive_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'pointzerozerofourfivedarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'pointzerozerofourfivedarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'pointzerozerofourfivedarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
 
-                            elif slow_process[4] == 'onepointfivepercent_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'onepointfivepercentdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'onepointfivepercentdarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'onepointfivepercentdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                    # Don't consider tempfiles that may be in use
+                                    files_in_folder=glob.glob(self.local_dark_folder + '*.n*')
+                                    files_in_folder= [ x for x in files_in_folder if "tempbiasdark" not in x ]
 
-                            elif slow_process[4] == 'fivepercent_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'fivepercentdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'fivepercentdarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'fivepercentdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                    n_files = len(files_in_folder)
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'tenpercent_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'tenpercentdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'tenpercentdarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'tenpercentdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'broadband_ss_biasdark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'broadbanddarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = 2*self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'broadbanddarks/'+  '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder+ 'broadbanddarks/'+ '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'quartersec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'quartersecdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'quartersecdarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'quartersecdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'narrowband_ss_biasdark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'narrowbanddarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = 2*self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder  + 'narrowbanddarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'narrowbanddarks/'  + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'halfsec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'halfsecdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'halfsecdarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'halfsecdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'pointzerozerofourfive_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'pointzerozerofourfivedarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'pointzerozerofourfivedarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'pointzerozerofourfivedarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'threequartersec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'sevenfivepercentdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'sevenfivepercentdarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'sevenfivepercentdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'onepointfivepercent_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'onepointfivepercentdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'onepointfivepercentdarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'onepointfivepercentdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'onesec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'onesecdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'onesecdarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'onesecdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'fivepercent_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'fivepercentdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'fivepercentdarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'fivepercentdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'oneandahalfsec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'oneandahalfsecdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'oneandahalfsecdarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'oneandahalfsecdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'tenpercent_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'tenpercentdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'tenpercentdarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'tenpercentdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'twosec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'twosecdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(
-                                    glob.glob(self.local_dark_folder + 'twosecdarks/' + '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(
-                                        self.local_dark_folder + 'twosecdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(
-                                        list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'quartersec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'quartersecdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'quartersecdarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'quartersecdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'threepointfivesec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'threepointfivesecdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'threepointfivesecdarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'threepointfivesecdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'halfsec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'halfsecdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'halfsecdarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'halfsecdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'fivesec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'fivesecdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'fivesecdarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'fivesecdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'threequartersec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'sevenfivepercentdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'sevenfivepercentdarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'sevenfivepercentdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'sevenpointfivesec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'sevenpointfivesecdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files =  self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'sevenpointfivesecdarks/'+ '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'sevenpointfivesecdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'onesec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'onesecdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'onesecdarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'onesecdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'tensec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'tensecdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = 2*self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'tensecdarks/' + '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'tensecdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'oneandahalfsec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'oneandahalfsecdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'oneandahalfsecdarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'oneandahalfsecdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'fifteensec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'fifteensecdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'fifteensecdarks/' + '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'fifteensecdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'twosec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'twosecdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(
+                                        glob.glob(self.local_dark_folder + 'twosecdarks/' + '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(
+                                            self.local_dark_folder + 'twosecdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(
+                                            list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'twentysec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'twentysecdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'twentysecdarks/' + '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'twentysecdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'threepointfivesec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'threepointfivesecdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'threepointfivesecdarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'threepointfivesecdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'thirtysec_exposure_dark':
-                                tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'thirtysecdarks/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'thirtysecdarks/' + '*.n*'))
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'thirtysecdarks/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                elif slow_process[4] == 'fivesec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'fivesecdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'fivesecdarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'fivesecdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            elif slow_process[4] == 'flat' or slow_process[4] == 'skyflat' or slow_process[4] == 'screenflat':
-                                tempfilter = temphduheader['FILTER']
-                                tempexposure = temphduheader['EXPTIME']
-                                if not os.path.exists(self.local_flat_folder + tempfilter):
-                                    os.makedirs(self.local_flat_folder + tempfilter)
-                                tempfilename = self.local_flat_folder + tempfilter + '/' + \
-                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                elif slow_process[4] == 'sevenpointfivesec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'sevenpointfivesecdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files =  self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'sevenpointfivesecdarks/'+ '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'sevenpointfivesecdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                                # Don't consider tempfiles that may be in use
-                                files_in_folder=glob.glob(self.local_flat_folder + tempfilter + '/' + '*.n*')
-                                files_in_folder= [ x for x in files_in_folder if "tempcali" not in x ]
+                                elif slow_process[4] == 'tensec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'tensecdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = 2*self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'tensecdarks/' + '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'tensecdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
+
+                                elif slow_process[4] == 'fifteensec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'fifteensecdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'fifteensecdarks/' + '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'fifteensecdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
+
+                                elif slow_process[4] == 'twentysec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'twentysecdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'twentysecdarks/' + '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'twentysecdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
+
+                                elif slow_process[4] == 'thirtysec_exposure_dark':
+                                    tempexposure = temphduheader['EXPTIME']
+                                    tempfilename = self.local_dark_folder + 'thirtysecdarks/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                    n_files = len(glob.glob(self.local_dark_folder + 'thirtysecdarks/' + '*.n*'))
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_dark_folder + 'thirtysecdarks/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
+
+                                elif slow_process[4] == 'flat' or slow_process[4] == 'skyflat' or slow_process[4] == 'screenflat':
+                                    tempfilter = temphduheader['FILTER']
+                                    tempexposure = temphduheader['EXPTIME']
+                                    if not os.path.exists(self.local_flat_folder + tempfilter):
+                                        os.makedirs(self.local_flat_folder + tempfilter)
+                                    tempfilename = self.local_flat_folder + tempfilter + '/' + \
+                                        slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+
+                                    # Don't consider tempfiles that may be in use
+                                    files_in_folder=glob.glob(self.local_flat_folder + tempfilter + '/' + '*.n*')
+                                    files_in_folder= [ x for x in files_in_folder if "tempcali" not in x ]
 
 
-                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_flat_to_store']
-                                n_files = len(files_in_folder)
-                                while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_flat_folder + tempfilter + '/' + '*.n*')
-                                    n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
-                                    try:
-                                        os.remove(oldest_file)
-                                    except:
-                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                    max_files = self.config['camera']['camera_1_1']['settings']['number_of_flat_to_store']
+                                    n_files = len(files_in_folder)
+                                    while n_files > max_files:
+                                        list_of_files = glob.glob(self.local_flat_folder + tempfilter + '/' + '*.n*')
+                                        n_files = len(list_of_files)
+                                        oldest_file = min(list_of_files, key=os.path.getctime)
+                                        try:
+                                            os.remove(oldest_file)
+                                        except:
+                                            self.laterdelete_queue.put(oldest_file, block=False)
 
-                            # Save the file as an uncompressed numpy binary
-                            temparray=np.array(slow_process[2], dtype=np.float32)
-                            tempmedian=bn.nanmedian(temparray)
-                            if tempmedian > 30 and tempmedian < 58000:
+                                # Save the file as an uncompressed numpy binary
+                                temparray=np.array(slow_process[2], dtype=np.float32)
+                                tempmedian=bn.nanmedian(temparray)
+                                if tempmedian > 30 and tempmedian < 58000:
 
-                                np.save(
-                                    tempfilename,
-                                    np.array(slow_process[2], dtype=np.float32)
-                                )
-                            else:
-                                plog ("Odd median: " + str(tempmedian))
-                                plog ("Not saving this calibration file: " + str(tempfilename))
+                                    np.save(
+                                        tempfilename,
+                                        np.array(slow_process[2], dtype=np.float32)
+                                    )
+                                else:
+                                    plog ("Odd median: " + str(tempmedian))
+                                    plog ("Not saving this calibration file: " + str(tempfilename))
 
-                            saver = 1
+                                saver = 1
 
-                        except Exception as e:
-                            plog("Failed to write raw file: ", e)
-                            if "requested" in str(e) and "written" in str(e):
-                                plog(check_download_cache())
-                            plog(traceback.format_exc())
-                            time.sleep(10)
-                            saverretries = saverretries + 1
-
+                            except Exception as e:
+                                plog("Failed to write raw file: ", e)
+                                if "requested" in str(e) and "written" in str(e):
+                                    plog(check_download_cache())
+                                plog(traceback.format_exc())
+                                time.sleep(10)
+                                saverretries = saverretries + 1
+                except:
+                    plog ("Something up in the slow process")
+                    plog(traceback.format_exc())
                 self.slow_camera_queue.task_done()
                 time.sleep(1)
 

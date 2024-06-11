@@ -416,7 +416,7 @@ site_config = {
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
             'focuser_movement_settle_time': 3,
             #F.9 setup
-            'reference': 5600,    # 2024-04-13  F9 on 20240601
+            'reference': 4700,    # 2024-04-13  F9 on 20240601
             'ref_temp':  15.,
             'temp_coeff': -20.45,     #Initial setting 20240413602    WER
             # Update when pinning reference
@@ -572,6 +572,7 @@ site_config = {
             'parent': 'telescope1',
             'name': 'sq003ms',      # Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
+            'overscan_trim' : 'QHY600',
             'service_date': '20240604',
             #'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
             'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
@@ -747,12 +748,12 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': 0.0,  # Verify we can go colder
+                'temp_setpoint': 0.0,  # 20240606, new camera installed 20240604
                 'temp_setpoint_tolerance': 1.5, #down from 1.5 that was built into the code.
                 'has_chiller': True,
                 #"temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  18.0,  # C
+                'chiller_ref_temp':  16.0,  # C 20240606
                 'day_warm': False,   #This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 0,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating' : False,

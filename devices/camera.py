@@ -715,6 +715,11 @@ class Camera:
         self.flatFiles = {}
         self.bpmFiles = {}
 
+
+
+
+
+
         g_dev['obs'].obs_id
         g_dev['cam'].alias
         tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
@@ -1149,7 +1154,7 @@ class Camera:
 
             except:
                 plog(traceback.format_exc())
-                breakpoint()
+                #breakpoint()
 
         """
         TheSkyX runs on a file mode approach to images rather
@@ -1334,7 +1339,32 @@ class Camera:
 
             except:
                 plog(traceback.format_exc())
-                breakpoint()
+                #breakpoint()
+
+
+        # OVERSCAN SETUP
+        # Camera overscan values
+        self.overscan_values={}
+        self.overscan_values['QHY600']=[0,38,32,0]
+        self.overscan_values['SBIG16803']=[0,0,0,0]
+
+        self.overscan_left=self.overscan_values[config["camera"][self.name]['overscan_trim']][0]
+        self.overscan_right=self.overscan_values[config["camera"][self.name]['overscan_trim']][1]
+        self.overscan_up=self.overscan_values[config["camera"][self.name]['overscan_trim']][2]
+        self.overscan_down=self.overscan_values[config["camera"][self.name]['overscan_trim']][3]
+
+
+        # print (self.overscan_left)
+
+        # print (self.imagesize_x-self.overscan_right)
+        # print (self.overscan_up)
+        # print(self.imagesize_y- self.overscan_down)
+        #tempsend=tempsend[ 0:6384, 32:9600]
+        #tempsend=tempsend[ self.overscan_up: self.imagesize_x- self.overscan_down, self.overscan_left: self.imagesize_y-self.overscan_right ]
+
+        #tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+
+        #breakpoint()
 
         if self.theskyx:
             self.theskyx_set_cooler_on=True
@@ -2039,7 +2069,12 @@ class Camera:
 
             # save out previous array to disk during exposure
             if subexposure > 0:
-                np.save(substacker_filenames[subexposure-1],np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))
+                tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+
+                #tempsend=tempsend[ 0:6384, 32:9600]
+                tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+
+                np.save(substacker_filenames[subexposure-1],tempsend)
 
             while (time.time() - exposure_timer) < exp_of_substacks:
                 time.sleep(0.001)
@@ -2071,7 +2106,12 @@ class Camera:
             # So that the camera can get started up again quicker.
             if subexposure == (N_of_substacks -1 ):
                 #g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', copy.deepcopy(substacker_filenames[subexposure]), copy.deepcopy(np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))))
-                np.save(substacker_filenames[subexposure],np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))
+                tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+
+                #tempsend=tempsend[ 0:6384, 32:9600]
+                tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+
+                np.save(substacker_filenames[subexposure],tempsend)
 
 
 
@@ -2271,8 +2311,16 @@ class Camera:
             self.readout_estimate= time_after_readout - time_before_readout
             #print (self.readout_estimate)
 
-            return np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+            tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
+            tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+
+
+            #tempsend=tempsend[ 0:6384, 32:9600]
+
+            #breakpoint()   #I see it!
+            #return np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+            return tempsend
     def wait_for_slew(self, wait_after_slew=True):
         """
         A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
@@ -2559,10 +2607,10 @@ class Camera:
         self.script = required_params.get("script", "None")
 
         try:
-
+            #breakpoint()  #NB Consider remapping 'Mosaic deg' to 'Full'
             self.zoom_factor = optional_params.get('zoom', False)
         except:
-            plog("Problem with supplied Zoom factor, Camera line 1510")
+            plog("Problem with supplied Zoom factor, Camera line 2613")
             self.zoom_factor = "Full"
 
         if imtype.lower() in ("bias"):
@@ -4633,6 +4681,55 @@ class Camera:
                         plog ("temperature in range for calibrations ("+ str(current_camera_temperature)+"), accepting calibration frame")
                         g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
+
+                    # Really need to thresh the image
+                    #googtime=time.time()
+                    int_array_flattened=outputimg.astype(int).ravel()
+                    int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+                    unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                    m=counts.argmax()
+                    imageMode=unique[m]
+                    #plog ("Calculating Mode: " +str(time.time()-googtime))
+
+                    #Zerothreshing image
+                    #googtime=time.time()
+                    histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                    histogramdata[histogramdata[:,0] > -10000]
+                    #Do some fiddle faddling to figure out the value that goes to zero less
+                    zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+                    breaker=1
+                    zerocounter=0
+                    while (breaker != 0):
+                        zerocounter=zerocounter+1
+                        if not (imageMode-zerocounter) in zeroValueArray[:,0]:
+                            if not (imageMode-zerocounter-1) in zeroValueArray[:,0]:
+                                if not (imageMode-zerocounter-2) in zeroValueArray[:,0]:
+                                    if not (imageMode-zerocounter-3) in zeroValueArray[:,0]:
+                                        if not (imageMode-zerocounter-4) in zeroValueArray[:,0]:
+                                            if not (imageMode-zerocounter-5) in zeroValueArray[:,0]:
+                                                if not (imageMode-zerocounter-6) in zeroValueArray[:,0]:
+                                                    if not (imageMode-zerocounter-7) in zeroValueArray[:,0]:
+                                                        if not (imageMode-zerocounter-8) in zeroValueArray[:,0]:
+                                                            if not (imageMode-zerocounter-9) in zeroValueArray[:,0]:
+                                                                if not (imageMode-zerocounter-10) in zeroValueArray[:,0]:
+                                                                    if not (imageMode-zerocounter-11) in zeroValueArray[:,0]:
+                                                                        if not (imageMode-zerocounter-12) in zeroValueArray[:,0]:
+                                                                            zeroValue=(imageMode-zerocounter)
+                                                                            breaker =0
+
+                    #numpy.count_nonzero(numpy.isnan(imagedata))
+                    countypixels=outputimg[ np.where(outputimg < zeroValue ) ]
+                    plog ("Number of unnaturally negative pixels: " + str(len(countypixels)) )
+                    plog (next_seq)
+                    #breakpoint()
+
+                    # If there are too many unnaturally negative pixels, then reject the calibration
+                    if len(countypixels) > 100:
+                        plog ("Rejecting calibration because it has a disturbing amount of low value pixels.")
+                        expresult = {}
+                        expresult["error"] = True
+                        return expresult
+
                     # For a dark, check that the debiased dark has an adequately low value
                     # If there is no master bias, it will just skip this check
                     if frame_type in ["dark"]  or a_dark_exposure :
@@ -4653,6 +4750,50 @@ class Camera:
 
                             debiaseddarkmean= bn.nanmean(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time
                             plog ("Debiased 1s Dark Mean is " + str(debiaseddarkmean))
+
+                            # # Really need to thresh the image
+                            # #googtime=time.time()
+                            # int_array_flattened=outputimg.astype(int).ravel()
+                            # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+                            # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                            # m=counts.argmax()
+                            # imageMode=unique[m]
+                            # plog ("Calculating Mode: " +str(time.time()-googtime))
+
+                            # #Zerothreshing image
+                            # #googtime=time.time()
+                            # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                            # histogramdata[histogramdata[:,0] > -10000]
+                            # #Do some fiddle faddling to figure out the value that goes to zero less
+                            # zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+                            # breaker=1
+                            # zerocounter=0
+                            # while (breaker != 0):
+                            #     zerocounter=zerocounter+1
+                            #     if not (imageMode-zerocounter) in zeroValueArray[:,0]:
+                            #         if not (imageMode-zerocounter-1) in zeroValueArray[:,0]:
+                            #             if not (imageMode-zerocounter-2) in zeroValueArray[:,0]:
+                            #                 if not (imageMode-zerocounter-3) in zeroValueArray[:,0]:
+                            #                     if not (imageMode-zerocounter-4) in zeroValueArray[:,0]:
+                            #                         if not (imageMode-zerocounter-5) in zeroValueArray[:,0]:
+                            #                             if not (imageMode-zerocounter-6) in zeroValueArray[:,0]:
+                            #                                 if not (imageMode-zerocounter-7) in zeroValueArray[:,0]:
+                            #                                     if not (imageMode-zerocounter-8) in zeroValueArray[:,0]:
+                            #                                         if not (imageMode-zerocounter-9) in zeroValueArray[:,0]:
+                            #                                             if not (imageMode-zerocounter-10) in zeroValueArray[:,0]:
+                            #                                                 if not (imageMode-zerocounter-11) in zeroValueArray[:,0]:
+                            #                                                     if not (imageMode-zerocounter-12) in zeroValueArray[:,0]:
+                            #                                                         zeroValue=(imageMode-zerocounter)
+                            #                                                         breaker =0
+
+                            # #numpy.count_nonzero(numpy.isnan(imagedata))
+                            # countypixels=outputimg[ np.where(outputimg < zeroValue ) ]
+                            # plog ("Number of unnaturally negative pixels: " + str(countypixels) )
+                            # plog (seq)
+
+                            # breakpoint()
+
+                            #plog ("Number of overly negative pixels after bias subtraction:")
 
                             plog ("Exposure time: " + str(exposure_time))
 

@@ -500,7 +500,37 @@ class Sequencer:
             g_dev['obs'].enclosure_status_timer = datetime.datetime.now()
 
         enc_status = g_dev['obs'].enc_status
-        events = g_dev['events']
+        events = g_dev['events']\
+
+
+
+        #Temp code to inspect project block incoming dict.
+        # self.update_calendar_blocks()
+        # block = self.blocks[0]
+        # try:
+        #     url_proj = "https://projects.photonranch.org/projects/get-project"
+        #     request_body = json.dumps({
+        #       "project_name": block['project_id'].split('#')[0],
+        #       "created_at": block['project_id'].split('#')[1],
+        #     })
+        #     project_response=reqs.post(url_proj, request_body, timeout=10)
+
+        #     if project_response.status_code ==200:
+        #         self.block_guard = True
+        #         block['project']=project_response.json()
+        #         identified_block=copy.deepcopy(block)
+        #     else:
+        #         plog("Project response status code not 200")
+        #         plog (str(project_response))
+        #         plog (str(project_response.status_code))
+        #         plog ("Project failed to be downloaded from Aws")
+        #         plog ("Not attempting to download again.")
+        #         #self.append_completes(block['event_id'])
+        #         identified_block=None
+
+        # except:
+        #     plog(traceback.format_exc())
+        # breakpoint()
 
 
         # Do this in case of WEMA faults.... they can crash these sequencer
@@ -827,6 +857,7 @@ class Sequencer:
                                         plog ("Not attempting to download again.")
                                         self.append_completes(block['event_id'])
                                         identified_block=None
+
                                 except:
                                     plog(traceback.format_exc())
 
@@ -1452,8 +1483,7 @@ class Sequencer:
             # too stringent. But if you are doing a giant mosaic, then you need
             # a reference that is very close to the target
             if exposure['zoom'].lower() in ["full", 'Full'] or 'X' in exposure['zoom'] \
-                or  '%' in exposure['zoom'] or ( exposure['zoom'].lower() == 'small sq.') \
-                or (exposure['zoom'].lower() == 'small sq'):
+                or  '%' in exposure['zoom'] or ( exposure['zoom'].lower() == 'small sq.'):
                 absolute_distance_threshold=10
             else:
                 absolute_distance_threshold=2
@@ -1788,6 +1818,16 @@ class Sequencer:
                                     self.total_sequencer_control=False
                                     return
                             result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id) #, zoom_factor=zoom_factor)
+                            #Presumably here we know the image MAY have been taken, but most probably has.
+                            #so we log the state in terms of any mosaic filter or panel in a shelve, for this
+                            #particular project and block.
+                            #pane += 1
+                            #block_exposure_counter
+                            #block number??
+                            #filter
+                            #Exact project name  *This permits multiple campaigns.
+                            #Unix-Time
+
 
                             try:
                                 if result == 'blockend':
@@ -6787,6 +6827,7 @@ class Sequencer:
         )
         try:
             self.blocks = reqs.post(url_blk, body, timeout=20).json()
+            plog(self.blocks)
         except:
             plog ("A glitch found in the blocks reqs post, probably date format")
 
