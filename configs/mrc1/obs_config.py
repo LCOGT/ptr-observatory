@@ -797,7 +797,7 @@ site_config = {
                 'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.
-                'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
+                'dark_lim_adu':  0.5, # 20240611   Most short ones all rejected but frames look OK. WER  was:0.15,   #adu/s of dark 20231229 moved down from 0.5
                 'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.
                 'fullwell_capacity': 80000,  # NB Guess
