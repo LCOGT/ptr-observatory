@@ -102,9 +102,9 @@ site_config = {
     # can be toggled by an admin in the Observe tab.
     'scope_in_manual_mode': False,    #20231222 This makes things easier for heavy debugging
     'mount_reference_model_off': False,
-    'sun_checks_on': True,
-    'moon_checks_on': True,
-    'altitude_checks_on': True,    
+    'sun_checks_on': False,
+    'moon_checks_on': False,
+    'altitude_checks_on': False,    
     'daytime_exposure_time_safety_on': False,
     
     

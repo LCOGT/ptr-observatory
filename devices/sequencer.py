@@ -5792,6 +5792,12 @@ class Sequencer:
             for hour in ha_cat:
                 ra = ra_fix_h(sidereal_h - hour)
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
+        elif max_pointings == 32:
+            ha_cat = [-4, -3.5, -3, -2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, \
+                      3.75, 3.25, 2.75, 2.25, 1.75, 1.25, 0.75, 0.25, -0.25, -0.75, -1.25, -1.75, -2.25, -2.75, -3.25, -3.75]  #16 points
+            for hour in ha_cat:
+                ra = ra_fix_h(sidereal_h - hour)
+                catalogue.append([round(ra*HTOD, 3), 0.0, 19])
         else:
             step = (180.0 - 2*alt_minimum)/max_pointings
             ra = 0
@@ -5947,7 +5953,7 @@ class Sequencer:
                     entry[2] += 12.
                     while entry[2] >= 24:
                         entry[2] -= 24.
-                    while entry[2] <= 24:
+                    while entry[2] <= -24:      #This was +24 which is wrong logic. 
                         entry[2] += 24.
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
 
