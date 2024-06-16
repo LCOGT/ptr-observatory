@@ -519,9 +519,15 @@ class Sequencer:
         if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
 
             self.nightly_reset_complete = False
+            
+        not_slewing=False
+        if g_dev['obs'].mountless_operation:
+            not_slewing=True
+        elif not g_dev['mnt'].return_slewing():
+            not_slewing=True
 
         # Don't attempt to start a sequence during an exposure OR when a function (usually TPOINT) has taken total control OR if it is doing something else or waiting to readjust.
-        if not self.total_sequencer_control and not g_dev['cam'].running_an_exposure_set and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_recentering_requested_by_platesolve_thread and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+        if not self.total_sequencer_control and not g_dev['cam'].running_an_exposure_set and not_slewing and not g_dev['obs'].pointing_recentering_requested_by_platesolve_thread and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             ###########################################################################
             # While in this part of the sequencer, we need to have manual UI commands
             # turned off.  So that if a sequencer script starts running, we don't get
