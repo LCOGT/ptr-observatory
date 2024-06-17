@@ -51,17 +51,19 @@ IH = 188
 
 ID =405
 
-MA = -100
+MA = 0
   #20240524-3   455  Errors doubled and wrong sign.
 
-ME = +2981  #Both signs verified   620
+ME = +8883
+
+  #Both signs verified   620
 
 
 
-alt = -round(aro_lift - ME, 1)
+alt = round(aro_lift - ME, 1)
 alt_turns = round(alt/lift_asec_per_turn, 2)
 alt_spokes = round(alt/lift_asec_per_spoke, 2)
-az = -round(MA/cos_lat, 1)
+az = round(MA/cos_lat, 1)
 small_az = round(az/az_asec_per_small_grad, 2)
 major_az = round(az/az_asec_per_major_grad, 2)
 
@@ -70,19 +72,19 @@ print('\n')
 print("Elevation Error:  ", ME, "asec.     Azimuth error:  ", MA, "asec.")
 print('\n')
 print("Note, 4 spokes on the elevation wheel, so 1 spoke = 0.25 turns. \n")
-if alt < 0:
-    print("Elevation Adjustment:  ", -alt, 'asec  Raise Tel axis above Pole, lower tail of Tel axis.')
+if alt > 0:
+    print("Elevation Adjustment:  ", alt, 'asec  Raise Tel axis above Pole, lower tail of Tel axis.')
     print("Need to raise the polar axis! For the lifting screw, that means tighten. \n")
     print("Pick one of the two following options.\n")
-    print("Elevation Adjustment:  ", -alt_turns, 'turns COUNTER Clockwise, as seen from above.\n')
-    print("Elevation Adjustment:  ", -alt_spokes, 'spokes COUNTER Clockwise, as seen from above.')
+    print("Elevation Adjustment:  ", alt_turns, 'turns COUNTER Clockwise, as seen from above.\n')
+    print("Elevation Adjustment:  ", alt_spokes, 'spokes COUNTER Clockwise, as seen from above.')
     print("\n")
 else:
     print("Need to lower the polar axis!  For the lifting screw, that means loosen. \n")
-    print("Elevation Adjustment:  ", alt, 'asec   Lower Tel axis to Pole, raise tail of Tel axis. \n')
+    print("Elevation Adjustment:  ", -alt, 'asec   Lower Tel axis to Pole, raise tail of Tel axis. \n')
     print("Pick one of the two following options.\n")
-    print("Elevation Adjustment:  ", alt_turns, 'turns Clockwise, as you look down above the spoked wheel')
-    print("Elevation Adjustment:  ", alt_spokes, 'spokes Clockwise, as you look down above the spoked wheel\n')
+    print("Elevation Adjustment:  ", -alt_turns, 'turns Clockwise, as you look down above the spoked wheel')
+    print("Elevation Adjustment:  ", -alt_spokes, 'spokes Clockwise, as you look down above the spoked wheel\n')
     print('Caution. Note Tightening the screw into the crossbar RAISES the polar axis -- and is a Counter Clockwise move.')
     print('Lowering the screw out of  the crossbar Lowers the polar axis -- and is a Clockwise move.')
 
@@ -93,14 +95,14 @@ print("Summary of Procedure:")
 print("First: Check both az knobs are snug. Second: back off one knob the required amount, then ")
 print("turn the other knob to push against the fixed tang the required amount. Then snug other side. \n ")
 
-if az > 0:
-   print("Azimuth Adjustment:  ", az, 'asec COUNTER-CLOCKWISE, as seen from above.\n' )
+if az < 0:
+   print("Azimuth Adjustment:  ",-az, 'asec COUNTER-CLOCKWISE, as seen from above.\n' )
    print("Pick only one of the following two ways to specify a move:\n")
-   print("Azimuth Adjustment:  ", small_az, 'small graduations COUNTER-CLOCKWISE, as seen from above. \n \
+   print("Azimuth Adjustment:  ", -small_az, 'small graduations COUNTER-CLOCKWISE, as seen from above. \n \
           Loosen LEFT knob to make room for counter-clockwise travel \n \
           Tighten RIGHT knob to push counter-clockwise.\n \
           Snug up Left knob.\n' )
-   print("Azimuth Adjustment:  ", major_az, 'major graduations COUNTER-CLOCKWISE, as seen from above. \n \
+   print("Azimuth Adjustment:  ", -major_az, 'major graduations COUNTER-CLOCKWISE, as seen from above. \n \
           Loosen LEFT knob to make room for counter-clockwise travel \n \
           Tighten RIGHT knob to push counter-clockwise. \n \
           Snug up Right knob' )
@@ -108,12 +110,12 @@ if az > 0:
 
 else:
 
-    print("Azimuth Adjustment:  ", az, 'asec CLOCKWISE, as seen from above.\n' )
+    print("Azimuth Adjustment:  ",az, 'asec CLOCKWISE, as seen from above.\n' )
     print("Pick only one of the following two ways to specify a move:\n")
-    print("Azimuth Adjustment:  ", -small_az, 'small graduations CLOCKWISE, as seen from above. \n \
+    print("Azimuth Adjustment:  ", small_az, 'small graduations CLOCKWISE, as seen from above. \n \
            Loosen RIGHT knob to make room for clockwise travel \n \
            Tighten LEFT knob to push clockwise.\n' )
-    print("Azimuth Adjustment:  ", -major_az, 'major graduations CLOCKWISE, as seen from above. \n \
+    print("Azimuth Adjustment:  ", major_az, 'major graduations CLOCKWISE, as seen from above. \n \
            Loosen RIGHT knob to make room for clockwise travel \n \
            Tighten LEFT knob to push clockwise.' )
     print('\n')

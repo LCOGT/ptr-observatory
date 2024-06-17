@@ -359,7 +359,7 @@ class Mount:
         self.obs = ephem.Observer()
         self.obs.long = g_dev['evnt'].wema_config['longitude']*DTOR
         self.obs.lat = g_dev['evnt'].wema_config['latitude']*DTOR
-
+        self.tpt_timer = time.time()
         self.theskyx_tracking_rescues = 0
 
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
@@ -891,7 +891,11 @@ class Mount:
                 self.decCorr = (dec_fix_r(corrPitch - pPitch_d*DTOR))*RTOS
                 # 20210328  Note this may not work at Pole.
                 #if enable:
-                if DEBUG: print("Corrections in asec:  ", round(self.raCorr, 2), round(self.decCorr, 2))
+
+                cur_time = time.time()
+                if self.tpt_timer + 45 < cur_time:
+                    print("Corrections in asec:  ", round(self.raCorr, 2), round(self.decCorr, 2))
+                    self.tpt_timer = cur_time
                 return (corrRoll*RTOH, corrPitch*RTOD )
             elif not GEM:
                 #if loud:

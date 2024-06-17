@@ -656,10 +656,10 @@ site_config = {
 
                 #HERE IS THE POTENTIAL MODE 1 SETTINGS
                 'direct_qhy_readout_mode' : 1,
-                'direct_qhy_gain' : 56,
+                'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
                 #'direct_qhy_usb_speed' : 50,
-                'direct_qhy_usb_traffic' : 45,  #Early 20240103 = 50, not clear earlier but better than before.
+                'direct_qhy_usb_traffic' : 50,
                 #The pattern before came and went. Now consitent at 50.  Changing to 45.
                 #Which one of these is actually used?
                 'set_qhy_usb_speed': True,
@@ -763,7 +763,7 @@ site_config = {
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
                 #'onebyone_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
                 'onebyone_pix_scale': 0.5283,    #  This is the 1x1 binning pixelscale
-                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
                 'y_pixel':  3.76, # pixel size in microns
                 # 'field_x':  1.3992,   #4770*2*0.528/3600
