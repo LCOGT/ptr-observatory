@@ -1,3 +1,7 @@
+'''
+selector.py  selector.py  selector.py  selector.py  selector.py  selector.py
+
+'''
 import time
 
 import win32com.client

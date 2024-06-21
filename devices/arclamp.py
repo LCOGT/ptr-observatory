@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+arclamp.py  arclamp.py  arclamp.py  arclamp.py  arclamp.py  arclamp.py
+
 Created in May 2021
 
 @author: wer

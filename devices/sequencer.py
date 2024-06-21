@@ -1,3 +1,8 @@
+'''
+
+sequencer.py  sequencer.py  sequencer.py  sequencer.py  sequencer.py
+
+'''
 import time
 import datetime
 #from datetime import timedelta,timezone
@@ -5467,10 +5472,12 @@ class Sequencer:
             elif position_counter==3:
                 focus_position_this_loop=central_starting_focus - 2* throw
             elif position_counter==4:
-                focus_position_this_loop=central_starting_focus + throw
+                focus_position_this_loop=central_starting_focus + 4*throw
             elif position_counter==5:
-                focus_position_this_loop=central_starting_focus + 2* throw
-            elif position_counter>5:
+                focus_position_this_loop=central_starting_focus + 2*throw   #WER reversed these 2 on 20260618 & added backlash comp in focus move
+            elif position_counter==6:
+                focus_position_this_loop=central_starting_focus + throw
+            elif position_counter>6:
                 focus_position_this_loop=new_focus_position_to_attempt
 
             #  If more than 15 attempts, fail and bail out.
@@ -5512,6 +5519,13 @@ class Sequencer:
                 plog ("Changing focus to " + str(round(focus_position_this_loop,1)))
                 g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
                 self.wait_for_slew(wait_after_slew=False)
+                if position_counter == 4:  #Move in after an intention overtravel out  WER 20240618
+                    plog("Extra focus out-travel added")
+                    position_counter += 1
+                    focus_position_this_loop=central_starting_focus + 2*throw
+                    g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
+                    self.wait_for_slew(wait_after_slew=False)
+
 
                 try:
                     while g_dev['rot'].rotator.IsMoving:
@@ -5554,7 +5568,7 @@ class Sequencer:
                 x=np.asarray(x, dtype=float)
                 y=np.asarray(y, dtype=float)
 
-            if position_counter < 5:
+            if position_counter < 6:
                 if len(focus_spots) > 0:
                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                     # Fling the jpeg up
@@ -5781,7 +5795,7 @@ class Sequencer:
                                             new_focus_position_to_attempt=focus_spots[-1][0] + throw
 
 
-    def equatorial_pointing_run(self, max_pointings=16, alt_minimum=15):
+    def equatorial_pointing_run(self, max_pointings=16, alt_minimum=22.5):
 
         #breakpoint()
         g_dev['obs'].get_enclosure_status_from_aws()
@@ -5814,6 +5828,11 @@ class Sequencer:
             for hour in ha_cat:
                 ra = ra_fix_h(sidereal_h - hour)  #This step could be done just before the seek below so hitting flips would be eliminated
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
+        elif max_pointings == 12:
+            ha_cat = [-3.5, -3, -2.5, -2, -1.5, -1,  1, 1.5, 2, 2.5, 3, 3.5]  #12points
+            for hour in ha_cat:
+                ra = ra_fix_h(sidereal_h - hour)
+                catalogue.append([round(ra*HTOD, 3), 0.0, 19])
         elif max_pointings == 16:
             ha_cat = [-4, -3.5, -3, -2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]  #16 points
             for hour in ha_cat:
@@ -5841,7 +5860,8 @@ class Sequencer:
             if alt > alt_minimum:
                 sweep_catalogue.append([catalogue[ctr][0],catalogue[ctr][1],catalogue[ctr][2],temppointingaltaz.alt.degree, temppointingaltaz.az.degree  ])
 
-        sweep_catalogue = sorted(sweep_catalogue, key= lambda az: az[4])
+        if max_pointings > 16:
+            sweep_catalogue = sorted(sweep_catalogue, key= lambda az: az[4])
         plog (len(sweep_catalogue), sweep_catalogue)
 
         del catalogue
@@ -5965,6 +5985,7 @@ class Sequencer:
             latitude = float(g_dev['evnt'].wema_config['latitude'])
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
+
             if not np.isnan(entry[2]):
                 ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
                 dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
@@ -5982,8 +6003,10 @@ class Sequencer:
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
 
                     if latitude >= 0:
+                        #I think the signs below *may be* incorrect WER 20240618
                         dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
                     else:
+                        #These signs need testing and verification for the Southern Hemisphere.
                         dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ')
                 else:
                     pierstring='0  0'

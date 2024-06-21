@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+polar_calculation.py  polar_calculation.py  polar_calculation.py
+
 Created on Sun Dec 10 17:55:12 2023
 
 @author: obs
@@ -51,10 +53,10 @@ IH = 188
 
 ID =405
 
-MA = 0
+MA = 250.23
   #20240524-3   455  Errors doubled and wrong sign.
 
-ME = +8883
+ME = +3676.22
 
   #Both signs verified   620
 

@@ -1,19 +1,22 @@
 # -*- coding: utf-8 -*-
 '''
-
+obs_config.py   obs_config.py   obs_config.py   obs_config.py   obs_config.py
 Created on Fri Feb 07,  11:57:41 2020
 Updated 20220914 WER   This version does not support color camera channel.
-Updates 20231102 WER   This is meant to clean up and refactor wema/obsp architecture
+Updates 20231102 WER   This is meant to clean up and refactor wema/obsp
+architecture
 
 @author: wrosing
 
-NB NB NB  If we have one config file then paths need to change depending upon which host does what job.
+NB NB NB  If we have one config file then paths need to change depending upon
+hich host does what job.
 
 aro-0m30      10.0.0.73
 aro-wema      10.0.0.50
 Power Control 10.0.0.100   admin arot******
 Roof Control  10.0.0.200   admin arot******    /setup.html     for setup.
-Redis         10.0.0.174:6379  ; rds = redis.Redis(host='10.0.0.174', port=6379); rds.set('wx', 'bogus'); rds.get('wx').decode()
+Redis         10.0.0.174:6379  ; rds = redis.Redis(host='10.0.0.174',
+              port=6379); rds.set('wx', 'bogus'); rds.get('wx').decode()
 Dragonfly     Obsolete.
 
 Hubble V1  00:41:27.30 +41:10:10.4

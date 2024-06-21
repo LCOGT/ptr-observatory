@@ -1,5 +1,7 @@
 
 '''
+ptr_events.py  ptr_events.py  ptr_events.py  ptr_events.py  ptr_events.py
+
 This is the Events organiser utility module
 
 '''
@@ -51,23 +53,23 @@ class Events:
         except:
             self.wema_config={}
             self.wema_config['latitude']=7.378917
-            
+
             self.wema_config['longitude']=-135.257229
-            
+
             self.wema_config['elevation']=20
             self.wema_config['reference_ambient']=20
             self.wema_config['reference_pressure']=20
             self.wema_config['time_offset']= -11   #  These two keys may be obsolete given the new TZ stuff
-            self.wema_config['timezone']= 'SST' 
+            self.wema_config['timezone']= 'SST'
             self.wema_config['TZ_database_name']='Pacific/Midway'
-            
+
             self.wema_config['eve_cool_down_open'] = float(-65.0) # How many minutes after sunrise to open. Default -65 = an hour-ish before sunset. Gives time to cool and get narrowband flats
             self.wema_config['morn_close_and_park'] = float(32.0) # How many minutes after sunrise to close. Default 32 minutes = enough time for narrowband flats
 
             plog ("Failed to get wema_config")
             plog(traceback.format_exc())
-            
-        
+
+
 
         self.siteLatitude = round(float(self.wema_config['latitude']), 8)  # 34 20 34.569   #34 + (20 + 34.549/60.)/60.
         self.siteLongitude = round(float(self.wema_config['longitude']), 8)  # -(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
@@ -166,7 +168,7 @@ class Events:
             j = 0
         if j < 0:
             j = 0
-            
+
         illuminance = i + j + 0.002
         #   0.002 = stars and galaxy -- averaged; rest is Airglow,
         #   2e-3 lux is brightness of stars + airglow. Ratio is relative to that number.
@@ -343,7 +345,7 @@ class Events:
         of day to open.
         '''
         sun = ephem.Sun()
-        ptr = ephem.Observer() 
+        ptr = ephem.Observer()
         ptr.date = dayNow
         ptr.lat = str(self.siteLatitude)
         ptr.lon = str(self.siteLongitude)
@@ -377,11 +379,11 @@ class Events:
 
 
     def sun_az_alt_now(self):
-        
-        altazframe=AltAz(obstime=Time.now(), location=self.site_coordinates)        
+
+        altazframe=AltAz(obstime=Time.now(), location=self.site_coordinates)
         sun_coords=get_sun(Time.now()).transform_to(altazframe)
         return sun_coords.az.degree, sun_coords.alt.degree
-        
+
 
     # def sun_az_alt_now(self):
     #     '''
@@ -535,7 +537,7 @@ class Events:
                 self.sunrise = self.sunrise - 24*ephem.hour
             if ephem.Date(self.cool_down_open) > self.endNightTime:
                 self.cool_down_open = self.cool_down_open - 24*ephem.hour
-                
+
         # we want the end of eve bias dark to be at least 2* dark exposure before the roof opens
         dark_exposure_in_minutes = self.config['camera']['camera_1_1']['settings']['dark_exposure'] /60
         #self.endNightTime = ephem.Date(self.sunrise + self.config['end_of_night_delay']/1440.)
@@ -555,7 +557,7 @@ class Events:
                      #('End Eve Sky Flats  ', ephem.Date(self.nauticalDusk - 10/1440)),
                      ('End Eve Sky Flats  ', ephem.Date(self.civilDusk + self.config['end_eve_sky_flats_offset']/1440)),
                      #('Clock & Auto Focus ', ephem.Date(self.nautDusk_plus_half - 8/1440.)),
-                     
+
                      #('Observing Begins   ', ephem.Date(self.nautDusk_plus_half)),
                      # ('Observing Begins   ', ephem.Date(obs_window := self.astroDark - self.config['astro_dark_buffer']/1440)),
                      # ('Clock & Auto Focus ', ephem.Date(obs_window + self.config['clock_and_auto_focus_offset']/1440)),
@@ -570,8 +572,8 @@ class Events:
                      ('Naut Dawn          ', ephem.Date(self.nauticalDawn)),
                      ('Civil Dawn         ', ephem.Date(self.civilDawn)),
                      ('Morn Sky Flats     ', ephem.Date(self.sunrise + self.config['morn_flat_start_offset']/1440.)),
-                     ('Sun Rise           ', ephem.Date(self.sunrise)), 
-                     ('End Morn Sky Flats ', ephem.Date(self.sunrise  + self.config['morn_flat_end_offset']/1440.)),  
+                     ('Sun Rise           ', ephem.Date(self.sunrise)),
+                     ('End Morn Sky Flats ', ephem.Date(self.sunrise  + self.config['morn_flat_end_offset']/1440.)),
                      ('Ops Window Closes  ', ephem.Date(self.close_and_park - 2/1440.)),
                      ('Close and Park     ', ephem.Date(self.close_and_park)),
 
