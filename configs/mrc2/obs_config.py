@@ -635,6 +635,8 @@ site_config = {
 
             'name': 'SQ007',# 'OF01', #'KF04',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600 Pro Mono',  #'FLI On-semi 50100',
+            
+            'overscan_trim' : 'QHY600',
             'service_date': '20240210',  #'20231222'
             #'driver':  'ASCOM.QHYCCD.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
             'driver':  'QHYCCD_Direct_Control',   #'ASCOM.FLI.Kepler.Camera',  #"QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #

@@ -1041,10 +1041,16 @@ class Observatory:
             return
 
         self.currently_updating_status=True
+        
+        not_slewing=False
+        if self.mountless_operation:
+            not_slewing=True
+        elif not g_dev['mnt'].return_slewing():
+            not_slewing=True
 
         # Wait a bit between status updates otherwise
         # status updates bank up in the queue
-        if not g_dev['mnt'].return_slewing(): # Don't wait while slewing.
+        if not_slewing: # Don't wait while slewing.
             if not dont_wait:
                 self.status_interval = self.status_upload_time + 0.25
                 while time.time() < (self.time_last_status + self.status_interval):
@@ -1054,7 +1060,7 @@ class Observatory:
             #     return  # Note we are just not sending status, too soon.
 
          # Don't make a new status during a slew unless the queue is empty, otherwise the green crosshairs on the UI lags.
-        if (g_dev['mnt'].return_slewing() and self.send_status_queue.qsize() == 0) or not g_dev['mnt'].return_slewing():
+        if (not not_slewing and self.send_status_queue.qsize() == 0) or not_slewing:
 
             # Send main batch of devices status
             obsy = self.name
@@ -1251,13 +1257,13 @@ class Observatory:
                     g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
                     #These two lines are meant to update the parameters for refraction correction in the mount class
                     try:
-                        g_dev['mnt'].pressure = g_dev['obs'].ocn_status['pressure_mbar']
+                        g_dev['obs'].pressure = g_dev['obs'].ocn_status['pressure_mbar']
                     except:
-                        g_dev['mnt'].pressure = 1013.0
+                        g_dev['obs'].pressure = 1013.0
                     try:
-                        g_dev['mnt'].temperature = g_dev['obs'].ocn_status['temperature_C']
+                        g_dev['obs'].temperature = g_dev['obs'].ocn_status['temperature_C']
                     except:
-                        g_dev['mnt'].temperature = g_dev['foc'].current_focus_temperature
+                        g_dev['obs'].temperature = g_dev['foc'].current_focus_temperature
                     self.observing_status_timer = datetime.datetime.now()
 
                 if (
@@ -1713,11 +1719,16 @@ class Observatory:
         This compact little function is the heart of the code in the sense this is repeatedly
         called. It checks for any new commands from AWS and runs them.
         """
+        not_slewing=False
+        if self.mountless_operation:
+            not_slewing=True
+        elif not g_dev['mnt'].return_slewing():
+            not_slewing=True
 
         # Check that there isn't individual commands to be run
-        if (not g_dev["cam"].running_an_exposure_set) and not g_dev['seq'].total_sequencer_control and (not self.stop_processing_command_requests) and not g_dev['mnt'].currently_slewing and not self.pointing_recentering_requested_by_platesolve_thread and not self.pointing_correction_requested_by_platesolve_thread:
+        if (not g_dev["cam"].running_an_exposure_set) and not g_dev['seq'].total_sequencer_control and (not self.stop_processing_command_requests) and not_slewing and not self.pointing_recentering_requested_by_platesolve_thread and not self.pointing_correction_requested_by_platesolve_thread:
             while self.cmd_queue.qsize() > 0:
-                if not self.stop_processing_command_requests and not g_dev["cam"].running_an_exposure_set and not g_dev['seq'].block_guard and not g_dev['seq'].total_sequencer_control and not g_dev['mnt'].currently_slewing and not self.pointing_recentering_requested_by_platesolve_thread and not self.pointing_correction_requested_by_platesolve_thread:  # This is to stop multiple commands running over the top of each other.
+                if not self.stop_processing_command_requests and not g_dev["cam"].running_an_exposure_set and not g_dev['seq'].block_guard and not g_dev['seq'].total_sequencer_control and not_slewing and not self.pointing_recentering_requested_by_platesolve_thread and not self.pointing_correction_requested_by_platesolve_thread:  # This is to stop multiple commands running over the top of each other.
                     self.stop_processing_command_requests = True
                     cmd = self.cmd_queue.get()
                     device_instance = cmd["deviceInstance"]
@@ -1967,7 +1978,13 @@ class Observatory:
     def update_status_thread(self):
 
         while True:
-            if not g_dev['mnt'].return_slewing(): # Stop automatic status update while slewing to allow mount full status throughput
+            not_slewing=False
+            if self.mountless_operation:
+                not_slewing=True
+            elif not g_dev['mnt'].return_slewing():
+                not_slewing=True
+            
+            if not_slewing: # Stop automatic status update while slewing to allow mount full status throughput
                 if (not self.update_status_queue.empty()):
                     request = self.update_status_queue.get(block=False)
                     if request == 'mountonly':
@@ -2038,12 +2055,20 @@ class Observatory:
                 if self.status_interval > 10:
                     self.status_interval = 10
                 self.status_upload_time = upload_time
-                if not g_dev['mnt'].return_slewing(): # Don't wait while slewing.
+                
+                not_slewing=False
+                if self.mountless_operation:
+                    not_slewing=True
+                elif not g_dev['mnt'].return_slewing():
+                    not_slewing=True
+                    
+                if not_slewing: # Don't wait while slewing.
                     time.sleep(max(2, self.status_interval))
             else:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                if not g_dev['mnt'].return_slewing(): # Don't wait while slewing.
-                    time.sleep(max(2, self.status_interval))
+                if not self.mountless_operation:
+                    if not g_dev['mnt'].return_slewing(): # Don't wait while slewing.
+                        time.sleep(max(2, self.status_interval))
 
     def laterdelete_process(self):
         """This is a thread where things that fail to get
@@ -2639,8 +2664,9 @@ class Observatory:
 
                 self.platesolve_is_processing = False
                 self.platesolve_queue.task_done()
-
-                g_dev['mnt'].last_slew_was_pointing_slew = False
+                
+                if not g_dev['obs'].mountless_operation:
+                    g_dev['mnt'].last_slew_was_pointing_slew = False
 
                 time.sleep(1)
 
@@ -3786,7 +3812,13 @@ class Observatory:
 
     def request_update_status(self, mount_only=False):
 
-        if not g_dev['mnt'].return_slewing(): # Don't glog the update pipes while slewing.
+        not_slewing=False
+        if self.mountless_operation:
+            not_slewing=True
+        elif not g_dev['mnt'].return_slewing():
+            not_slewing=True        
+
+        if not_slewing: # Don't glog the update pipes while slewing.
             if not self.currently_updating_status and not mount_only:
                 self.update_status_queue.put( 'normal', block=False)
             elif not self.currently_updating_status and mount_only:
