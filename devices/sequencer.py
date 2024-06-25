@@ -5597,7 +5597,7 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[-1][0] + throw
 
                     else:
-                        if minimum_value > 3.0:
+                        if minimum_value > self.config["focuser"]["focuser1"]['maximum_good_focus_in_arcsecond']:
                             plog ("Minimum value: " + str(minimum_value) + " is too high to bother focussing, just going with the estimated value from previous focus")
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                             g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
