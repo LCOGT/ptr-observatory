@@ -41,13 +41,13 @@ from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
-import math
+
 
 from scipy.stats import binned_statistic
 
-from scipy import optimize
+#from scipy import optimize
 googtime=time.time()
 def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-((x - mean) / 4 / stddev)**2)
@@ -151,7 +151,8 @@ print ("Time Limit: " + str(time_limit))
 
 #frame_type='focus'
 
-# https://stackoverflow.com/questions/9111711/get-coordinates-of-local-maxima-in-2d-array-above-certain-value
+# https://stackoverflow.com/questions/9111711/get-coordinates-of-local-maxima \
+    #-in-2d-array-above-certain-value
 def localMax(a, include_diagonal=True, threshold=-np.inf) :
     # Pad array so we can handle edges
     ap = np.pad(a, ((1,1),(1,1)), constant_values=-np.inf )
@@ -177,136 +178,9 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
 
     return np.argwhere(adjacentmax & diagonalmax)
 
-
-# # For a QHY600, it takes a few seconds to calculate the mode. We don't need it for a focus frame.
-# # If the exposure time is short then just take the median
-# if not frame_type == 'focus' and float(hduheader['EXPTIME']) >= minimum_exposure_for_extended_stuff :
-#     googtime=time.time()
-#     int_array_flattened=hdufocusdata.astype(int).ravel()
-#     int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-#     unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-#     m=counts.argmax()
-#     imageMode=unique[m]
-#     print ("Calculating Mode: " +str(time.time()-googtime))
-
-
-#     # Zerothreshing image
-#     googtime=time.time()
-#     histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-#     histogramdata[histogramdata[:,0] > -10000]
-#     #Do some fiddle faddling to figure out the value that goes to zero less
-#     zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-#     breaker=1
-#     counter=0
-#     while (breaker != 0):
-#         counter=counter+1
-#         if not (imageMode-counter) in zeroValueArray[:,0]:
-#             if not (imageMode-counter-1) in zeroValueArray[:,0]:
-#                 if not (imageMode-counter-2) in zeroValueArray[:,0]:
-#                     if not (imageMode-counter-3) in zeroValueArray[:,0]:
-#                         if not (imageMode-counter-4) in zeroValueArray[:,0]:
-#                             if not (imageMode-counter-5) in zeroValueArray[:,0]:
-#                                 if not (imageMode-counter-6) in zeroValueArray[:,0]:
-#                                     if not (imageMode-counter-7) in zeroValueArray[:,0]:
-#                                         if not (imageMode-counter-8) in zeroValueArray[:,0]:
-#                                             if not (imageMode-counter-9) in zeroValueArray[:,0]:
-#                                                 if not (imageMode-counter-10) in zeroValueArray[:,0]:
-#                                                     if not (imageMode-counter-11) in zeroValueArray[:,0]:
-#                                                         if not (imageMode-counter-12) in zeroValueArray[:,0]:
-#                                                             zeroValue=(imageMode-counter)
-#                                                             breaker =0
-
-#     hdufocusdata[hdufocusdata < zeroValue] = np.nan
-#     print ("Zero Value: " + str(zeroValue))
-#     print ("Zero Threshing Image: " +str(time.time()-googtime))
-
-#     real_mode=True
-# else:
-#     imageMode=bn.nanmedian(hdufocusdata)
-#     real_mode=False
-
-
-
-# googtime=time.time()
-# # Check there are no nans in the image upon receipt
-# # This is necessary as nans aren't interpolated in the main thread.
-# # Fast next-door-neighbour in-fill algorithm
-# #num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
-# x_size=hdufocusdata.shape[0]
-# y_size=hdufocusdata.shape[1]
-# # this is actually faster than np.nanmean
-# edgefillvalue=imageMode
-# # List the coordinates that are nan in the array
-# #breakpoint()
-# nan_coords=np.argwhere(np.isnan(hdufocusdata))
-
-# # For each coordinate try and find a non-nan-neighbour and steal its value
-# for nancoord in nan_coords:
-#     x_nancoord=nancoord[0]
-#     y_nancoord=nancoord[1]
-#     done=False
-
-#     # Because edge pixels can tend to form in big clumps
-#     # Masking the array just with the mean at the edges
-#     # makes this MUCH faster to no visible effect for humans.
-#     # Also removes overscan
-#     if x_nancoord < 100:
-#         hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
-#         done=True
-#     elif x_nancoord > (x_size-100):
-#         hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
-
-#         done=True
-#     elif y_nancoord < 100:
-#         hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
-
-#         done=True
-#     elif y_nancoord > (y_size-100):
-#         hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
-#         done=True
-
-#     # left
-#     if not done:
-#         if x_nancoord != 0:
-#             value_here=hdufocusdata[x_nancoord-1,y_nancoord]
-#             if not np.isnan(value_here):
-#                 hdufocusdata[x_nancoord,y_nancoord]=value_here
-#                 done=True
-#     # right
-#     if not done:
-#         if x_nancoord != (x_size-1):
-#             value_here=hdufocusdata[x_nancoord+1,y_nancoord]
-#             if not np.isnan(value_here):
-#                 hdufocusdata[x_nancoord,y_nancoord]=value_here
-#                 done=True
-#     # below
-#     if not done:
-#         if y_nancoord != 0:
-#             value_here=hdufocusdata[x_nancoord,y_nancoord-1]
-#             if not np.isnan(value_here):
-#                 hdufocusdata[x_nancoord,y_nancoord]=value_here
-#                 done=True
-#     # above
-#     if not done:
-#         if y_nancoord != (y_size-1):
-#             value_here=hdufocusdata[x_nancoord,y_nancoord+1]
-#             if not np.isnan(value_here):
-#                 hdufocusdata[x_nancoord,y_nancoord]=value_here
-#                 done=True
-
-# # Mop up any remaining nans
-# hdufocusdata[np.isnan(hdufocusdata)] =edgefillvalue
-
-# print ("De-nanning image initially: " +str(time.time()-googtime))
-
-
-
 # no zero values in readnoise.
 if float(readnoise) < 0.1:
     readnoise = 0.1
-
-
-
 
 
 if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
@@ -337,38 +211,6 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
 
 else:
 
-    # # Realistically we can figure out the focus stuff here from first principles.
-    # if frame_type == 'focus':
-    #     fx, fy = hdufocusdata.shape
-    #     # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
-    #     # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
-    #     # So we chop the image down to a degree by a degree
-    #     # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
-    #     fx_degrees = (fx * pixscale) /3600
-    #     fy_degrees = (fy * pixscale) /3600
-
-    #     crop_x=0
-    #     crop_y=0
-
-
-    #     if fx_degrees > 1.0:
-    #         ratio_crop= 1/fx_degrees
-    #         crop_x = int((fx - (ratio_crop * fx))/2)
-    #     if fy_degrees > 1.0:
-    #         ratio_crop= 1/fy_degrees
-    #         crop_y = int((fy - (ratio_crop * fy))/2)
-
-    #     if crop_x > 0 or crop_y > 0:
-    #         if crop_x == 0:
-    #             crop_x = 2
-    #         if crop_y == 0:
-    #             crop_y = 2
-    #         # Make sure it is an even number for OSCs
-    #         if (crop_x % 2) != 0:
-    #             crop_x = crop_x+1
-    #         if (crop_y % 2) != 0:
-    #             crop_y = crop_y+1
-    #         hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
 
     if is_osc:
 
@@ -402,20 +244,8 @@ else:
 
         fx, fy = hdufocusdata.shape        #
 
-        # if real_mode:
         bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
         bkg.subfrom(hdufocusdata)
-        # else:
-        #     hdufocusdata=hdufocusdata-imageMode
-
-        # hdufocus = fits.PrimaryHDU()
-        # hdufocus.data = hdufocusdata
-        # hdufocus.header = hduheader
-        # hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-        # hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-        # hdufocus.writeto('goop.fits', overwrite=True, output_verify='silentfix')
-
-
 
         #if frame_type == 'focus':       # This hasn't been calculated yet for focus, but already has for a normal image.
         tempstd=np.std(hdufocusdata)
