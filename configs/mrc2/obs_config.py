@@ -716,11 +716,11 @@ site_config = {
 
                 #HERE IS THE POTENTIAL MODE 1 SETTINGS
                 'direct_qhy_readout_mode' : 1,
-                'direct_qhy_gain' : 56,
+                'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
                 #'direct_qhy_usb_speed' : 50,
                 'set_qhy_usb_speed': True,
-                'direct_qhy_usb_traffic' : 60, 
+                'direct_qhy_usb_traffic' : 50, 
 
                 
                 # These options set whether an OSC gets binned or interpolated for different functions
