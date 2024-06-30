@@ -123,7 +123,7 @@ if not selfconfig["camera"]['camera_1_1']["settings"]["is_osc"]:
 
 else:  # Is an OSC
 
-    if selfconfig["camera"][camname]["settings"]["osc_bayer"] == 'RGGB':
+    if selfconfig["camera"]['camera_1_1']["settings"]["osc_bayer"] == 'RGGB':
 
         newhdured = slow_process[2][::2, ::2]
         GTRonly = slow_process[2][::2, 1::2]

@@ -5485,6 +5485,8 @@ class Sequencer:
                 if not dont_return_scope:
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev['obs'].send_to_user("Attempt at V-curve Focus Failed, using calculated values", p_level='INFO')
+
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                     self.wait_for_slew(wait_after_slew=False)
 
@@ -5536,7 +5538,7 @@ class Sequencer:
                 spot = g_dev['obs'].fwhmresult['FWHM']
                 foc_pos=g_dev['foc'].current_focus_position
 
-                g_dev['obs'].send_to_user("Focus position: " + str(focus_position_this_loop) + " FWHM: " + str(round(spot,2)), p_level='INFO')
+                g_dev['obs'].send_to_user("Focus at test position: " + str(focus_position_this_loop) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
 
                 if not np.isnan(spot):
                     if spot < 30.0:
@@ -5709,6 +5711,7 @@ class Sequencer:
 
                                     # If successful, then move to focus and live long and prosper
                                     plog ('Moving to Solved focus:  ', round(fitted_focus_position, 2), ' calculated:  ', fitted_focus_fwhm)
+                                    g_dev['obs'].send_to_user("Solved focus is at: " + str(fitted_focus_position) + " with FWHM: " + str(round(fitted_focus_fwhm,2)), p_level='INFO')
 
                                     pos = int(fitted_focus_position*g_dev['foc'].micron_to_steps)
                                     g_dev['foc'].guarded_move(pos)

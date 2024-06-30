@@ -178,11 +178,17 @@ def dump_main_data_out_to_post_exposure_subprocess(payload):
         #NB set this path to create test pickle for makejpeg routine.
         pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
 
+
+    breakpoint()
+
     #breakpoint()
     #try:
     post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
     # except OSError:
     #     pass
+
+    
+
 
     try:
         pickle.dump(payload, post_processing_subprocess.stdin)
