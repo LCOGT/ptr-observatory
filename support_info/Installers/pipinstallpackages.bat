@@ -1,3 +1,5 @@
+conda update -y menuinst
+conda install -y git
 pip install -U python-dotenv
 pip install -U colour-science colour_demosaicing
 wget https://aka.ms/vs/17/release/vs_BuildTools.exe -O vsBuildTools.exe
@@ -19,3 +21,4 @@ pip install -U numpy
 pip install -U scipy
 pip install -U xmltodict
 pip install -U image_registration
+pip install git+https://github.com/python-zwoasi/python-zwoasi
