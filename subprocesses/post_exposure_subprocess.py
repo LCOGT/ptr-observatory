@@ -74,8 +74,8 @@ def write_raw_file_out(packet):
 
 
 try:
-    #payload=pickle.load(sys.stdin.buffer)
-    payload=pickle.load(open('testpostprocess.pickle','rb'))
+    payload=pickle.load(sys.stdin.buffer)
+    #payload=pickle.load(open('testpostprocess.pickle','rb'))
 except:
     print ("ignoring exception")
 #expresult={}

@@ -1190,10 +1190,10 @@ os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
 time.sleep(1)
 
-try:
-    os.remove(cal_path + 'platesolve.pickle')
-except:
-    pass
+# try:
+#     os.remove(cal_path + 'platesolve.pickle')
+# except:
+#     pass
 
 try:
     os.remove(cal_path + 'platesolvetemp.fits')

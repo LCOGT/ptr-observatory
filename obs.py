@@ -2280,7 +2280,7 @@ class Observatory:
                 (platesolve_token,hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
                   pixscale, pointing_ra, pointing_dec, firstframesmartstack, useastronometrynet, pointing_exposure, jpeg_filename, image_or_reference, exposure_time) = self.platesolve_queue.get(block=False)
 
-                #print (pointing_exposure)
+                
 
                 if np.isnan(pixscale) or pixscale == None:
                     timeout_time = 1200 + exposure_time + g_dev['cam'].readout_time
@@ -2345,6 +2345,7 @@ class Observatory:
                             try:
                                 platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                             except OSError:
+                                plog(traceback.format_exc())
                                 pass
 
 
@@ -2370,7 +2371,7 @@ class Observatory:
 
                             platesolve_timeout_timer=time.time()
                             while not os.path.exists(self.local_calibration_path + 'platesolve.pickle') and (time.time() - platesolve_timeout_timer) < timeout_time:
-                                #print ("waiting for " + str(self.local_calibration_path + 'platesolve.pickle'))
+                                #print ("waiting for " + str(self.local_calibration_path + 'platesolve.pickle') + str(time.time()))
 
                                 time.sleep(0.5)
 
