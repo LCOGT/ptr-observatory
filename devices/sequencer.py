@@ -1473,7 +1473,7 @@ class Sequencer:
                 distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_mount_reference_dec- dest_dec)
                 absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(distance_from_current_reference_in_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
                 plog ("absolute_distance from reference to requested position: " + str(round(absolute_distance,2)))
-                if absolute_distance < absolute_distance_threshold:
+                if absolute_distance < absolute_distance_threshold and not self.config['always_do_a_centering_exposure_regardless_of_nearby_reference']:
                     plog ("reference close enough to requested position, skipping centering exposure")
                     skip_centering=True
                 # self.last_mount_reference_ha = 0.0
@@ -1485,7 +1485,7 @@ class Sequencer:
                 #plog ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
                 absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(distance_from_current_reference_in_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
                 plog ("absolute_distance from reference to requested position: " + str(round(absolute_distance,2)))
-                if absolute_distance < absolute_distance_threshold:
+                if absolute_distance < absolute_distance_threshold and not self.config['always_do_a_centering_exposure_regardless_of_nearby_reference']:
                     plog ("reference close enough to requested position, skipping centering exposure")
                     skip_centering=True
 
