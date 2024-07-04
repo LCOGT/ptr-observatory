@@ -11,7 +11,7 @@ import queue
 #import math
 import shelve
 import time
-from image_registration import cross_correlation_shifts
+#from image_registration import cross_correlation_shifts
 import traceback
 import ephem
 import copy
@@ -178,11 +178,17 @@ def dump_main_data_out_to_post_exposure_subprocess(payload):
         #NB set this path to create test pickle for makejpeg routine.
         pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
 
+
+    #breakpoint()
+
     #breakpoint()
     #try:
     post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
     # except OSError:
     #     pass
+
+    
+
 
     try:
         pickle.dump(payload, post_processing_subprocess.stdin)
@@ -3119,14 +3125,15 @@ class Camera:
                             if self.substacker:
                                 self.substacker=False
                                 # Must have a biasdark
-                                if 'tensec_exposure_biasdark' in self.darkFiles:
-                                    if this_exposure_filter.lower() + '_bin1' in self.flatFiles:
+                                if 'tensec_exposure_biasdark' in self.darkFiles:                                    
+                                    if (this_exposure_filter.lower() + '_bin1' in self.flatFiles) or (this_exposure_filter + '_bin1' in self.flatFiles):
                                         if '1' in self.bpmFiles:
                                             self.substacker=True
                                         else:
                                             plog ("Could not engage substacking as the bad pixel mask is missing")
                                     else:
                                         plog ("Could not engage substacking as the filter requested has no flat")
+                                        #breakpoint()
                                 else:
                                     plog ("Could not engage substacking as the appropriate biasdark")
 
@@ -3228,8 +3235,12 @@ class Camera:
                             # pretty closely, so we can use that. Thats close enough for our
                             # uses in the site code. The pipeline replaces the RA and DEC
                             # with thorough platesolved versions later on.
-                            corrected_ra_for_header=g_dev["mnt"].last_ra_requested
-                            corrected_dec_for_header=g_dev["mnt"].last_dec_requested
+                            if g_dev['obs'].mountless_operation:
+                                corrected_ra_for_header=0.0
+                                corrected_dec_for_header=0.0
+                            else:                                
+                                corrected_ra_for_header=g_dev["mnt"].last_ra_requested
+                                corrected_dec_for_header=g_dev["mnt"].last_dec_requested
 
                         else:
                             plog("Something terribly wrong, driver not recognized.!")
@@ -3883,7 +3894,7 @@ class Camera:
                         ]
 
                 # Another pickle debugger
-                if False :
+                if True :
                     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
 
@@ -3892,6 +3903,7 @@ class Camera:
                 except OSError:
                     pass
 
+                #breakpoint()
 
                 self.camera_path + g_dev['day'] + "/to_AWS/"
 
@@ -4056,10 +4068,17 @@ class Camera:
                  ]
                 squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
 
+
+
+                if g_dev['obs'].mountless_operation:
+                    pier_side=0
+                else:
+                    pier_side=g_dev["mnt"].pier_side
+
                 # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
                 if False:
                     #NB set this path to create test pickle for makejpeg routine.
-                    pickle.dump([mainjpegthread_filename, smartstackid, 'paths', g_dev["mnt"].pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+                    pickle.dump([mainjpegthread_filename, smartstackid, 'paths', pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                         osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
                             rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor,self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name], open('testjpegpickle','wb'))
                 try:
@@ -4071,7 +4090,7 @@ class Camera:
 
 
                 try:
-                    pickle.dump([mainjpegthread_filename, smartstackid, 'paths', g_dev["mnt"].pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+                    pickle.dump([mainjpegthread_filename, smartstackid, 'paths', pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                           osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
                               rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor,self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name], jpeg_subprocess.stdin)
                 except:
@@ -4610,10 +4629,17 @@ class Camera:
 
 
 
-
+                    if g_dev['obs'].mountless_operation:
+                        pier_side=0
+                        ha_corr=0
+                        dec_corr=0
+                    else:
+                        pier_side=g_dev["mnt"].pier_side
+                        ha_corr=g_dev["mnt"].ha_corr
+                        dec_corr=g_dev["mnt"].dec_corr
 
                     #process_dump_timer=time.time()
-                    payload=copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, substack,expected_endpoint_of_substack_exposure,substack_start_time,0.0, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"], exposure_filter_offset, g_dev["fil"].null_filterwheel, g_dev['evnt'].wema_config,smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename))
+                    payload=copy.deepcopy((outputimg, pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, ha_corr, dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, substack,expected_endpoint_of_substack_exposure,substack_start_time,0.0, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"], exposure_filter_offset, g_dev["fil"].null_filterwheel, g_dev['evnt'].wema_config,smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename))
 
 
                     #payload=(outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, substack,expected_endpoint_of_substack_exposure,substack_start_time,0.0, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"], exposure_filter_offset, g_dev["fil"].null_filterwheel, g_dev['evnt'].wema_config,smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename)

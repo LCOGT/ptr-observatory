@@ -107,7 +107,11 @@ site_config = {
     'altitude_checks_on': True,    
     'daytime_exposure_time_safety_on': False,
     
-    
+    # Depending on the pointing capacity of the scope OR the field of view OR both
+    # The pointing may never be quite good enough to center the object without
+    # a centering exposure. On initial commissioning, it should be set to always autocenter
+    # until you are convinced the natural pointing with empirical corrections is "good enough"
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
     
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': True,
@@ -716,11 +720,11 @@ site_config = {
 
                 #HERE IS THE POTENTIAL MODE 1 SETTINGS
                 'direct_qhy_readout_mode' : 1,
-                'direct_qhy_gain' : 56,
+                'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
                 #'direct_qhy_usb_speed' : 50,
                 'set_qhy_usb_speed': True,
-                'direct_qhy_usb_traffic' : 60, 
+                'direct_qhy_usb_traffic' : 50, 
 
                 
                 # These options set whether an OSC gets binned or interpolated for different functions
