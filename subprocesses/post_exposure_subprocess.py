@@ -89,7 +89,10 @@ except:
  ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, \
  camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path, \
  solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure, \
- substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, substacker_filenames, dayobs, exposure_filter_offset,null_filterwheel, wema_config, smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename) = payload
+ substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header, \
+ corrected_dec_for_header, substacker_filenames, dayobs, exposure_filter_offset,null_filterwheel, \
+ wema_config, smartstackthread_filename, septhread_filename, mainjpegthread_filename,\
+ platesolvethread_filename) = payload
 
 #breakpoint()
 
@@ -108,7 +111,7 @@ localcalibmastersdirectory= localcalibrationdirectory+ "archive/" + camalias + "
 #breakpoint()
 
 # Get the calibrated image whether that is a substack or a normal image.
-if substack:
+if substack:   #NB it appears substack is always true since this is the only path that does bis/darl/flat processing
     exp_of_substacks=int(exposure_time / len(substacker_filenames))
     # Get list of substack files needed and wait for them.
     waiting_for_substacker_filenames=copy.deepcopy(substacker_filenames)
