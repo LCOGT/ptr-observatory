@@ -178,11 +178,17 @@ def dump_main_data_out_to_post_exposure_subprocess(payload):
         #NB set this path to create test pickle for makejpeg routine.
         pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
 
+
+    #breakpoint()
+
     #breakpoint()
     #try:
     post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
     # except OSError:
     #     pass
+
+    
+
 
     try:
         pickle.dump(payload, post_processing_subprocess.stdin)
@@ -3119,14 +3125,15 @@ class Camera:
                             if self.substacker:
                                 self.substacker=False
                                 # Must have a biasdark
-                                if 'tensec_exposure_biasdark' in self.darkFiles:
-                                    if this_exposure_filter.lower() + '_bin1' in self.flatFiles:
+                                if 'tensec_exposure_biasdark' in self.darkFiles:                                    
+                                    if (this_exposure_filter.lower() + '_bin1' in self.flatFiles) or (this_exposure_filter + '_bin1' in self.flatFiles):
                                         if '1' in self.bpmFiles:
                                             self.substacker=True
                                         else:
                                             plog ("Could not engage substacking as the bad pixel mask is missing")
                                     else:
                                         plog ("Could not engage substacking as the filter requested has no flat")
+                                        #breakpoint()
                                 else:
                                     plog ("Could not engage substacking as the appropriate biasdark")
 
@@ -3887,7 +3894,7 @@ class Camera:
                         ]
 
                 # Another pickle debugger
-                if False :
+                if True :
                     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
 
@@ -3896,6 +3903,7 @@ class Camera:
                 except OSError:
                     pass
 
+                #breakpoint()
 
                 self.camera_path + g_dev['day'] + "/to_AWS/"
 

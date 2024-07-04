@@ -3282,6 +3282,7 @@ class Observatory:
                 ) = self.platesolve_queue.get(block=False)
 
                 # print (pointing_exposure)
+                
 
                 if np.isnan(pixscale) or pixscale == None:
                     timeout_time = 1200 + exposure_time + \
@@ -3367,40 +3368,17 @@ class Observatory:
                                     bufsize=0,
                                 )
                             except OSError:
+                                plog(traceback.format_exc())
                                 pass
 
                             platesolve_crop = 0.0
 
                             # yet another pickle debugger.
-                            if False:
-                                pickle.dump(
-                                    [
-                                        hdufocusdata,
-                                        hduheader,
-                                        self.local_calibration_path,
-                                        cal_name,
-                                        frame_type,
-                                        time_platesolve_requested,
-                                        pixscale,
-                                        pointing_ra,
-                                        pointing_dec,
-                                        platesolve_crop,
-                                        False,
-                                        1,
-                                        g_dev["cam"].config["camera"][
-                                            g_dev["cam"].name
-                                        ]["settings"]["saturate"],
-                                        g_dev["cam"].camera_known_readnoise,
-                                        self.config["minimum_realistic_seeing"],
-                                        is_osc,
-                                        useastronometrynet,
-                                        pointing_exposure,
-                                        jpeg_filename,
-                                        target_ra,
-                                        target_dec,
-                                    ],
-                                    open("subprocesses/testplatesolvepickle", "wb"),
-                                )
+                            if True:
+                                pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
+                                 pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
+
+                            #breakpoint()
 
                             try:
                                 pickle.dump(
@@ -3437,15 +3415,10 @@ class Observatory:
 
                             del hdufocusdata
 
-                            platesolve_timeout_timer = time.time()
-                            while (
-                                not os.path.exists(
-                                    self.local_calibration_path + "platesolve.pickle"
-                                )
-                                and (time.time() - platesolve_timeout_timer)
-                                < timeout_time
-                            ):
-                                # print ("waiting for " + str(self.local_calibration_path + 'platesolve.pickle'))
+
+                            platesolve_timeout_timer=time.time()
+                            while not os.path.exists(self.local_calibration_path + 'platesolve.pickle') and (time.time() - platesolve_timeout_timer) < timeout_time:
+                                #print ("waiting for " + str(self.local_calibration_path + 'platesolve.pickle') + str(time.time()))
 
                                 time.sleep(0.5)
 

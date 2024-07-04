@@ -1098,9 +1098,6 @@ try:
 
     if not manually_requested_calibration and not substack:
 
-
-
-
         #breakpoint()
 
 
@@ -1160,6 +1157,7 @@ try:
             print("debias/darking light frame failed: ", e)
 
         # Quick flat flat frame
+        #breakpoint()
         try:
             hdusmalldata = np.divide(hdusmalldata, np.load(localcalibmastersdirectory + 'masterFlat_'+this_exposure_filter + "_bin" + str(1) +'.npy'))
         except Exception as e:
@@ -1382,10 +1380,16 @@ try:
 
         #g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))
         #np.save(hdusmalldata, septhread_filename)
+        try:
+            os.remove(septhread_filename+ '.temp')
+        except:
+            pass
         pickle.dump((image_filename,imageMode, unique, counts), open(septhread_filename+ '.temp', 'wb'))
 
-
-
+        try:
+            os.remove(septhread_filename)
+        except:
+            pass
         os.rename(septhread_filename + '.temp', septhread_filename)
 
 
@@ -1469,15 +1473,31 @@ try:
         if smartstackid == 'no':
             #g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
             # np.save(hdusmalldata, mainjpegthread_filename)
+            try:
+                os.remove(mainjpegthread_filename + '.temp')
+            except:
+                pass
             pickle.dump((image_filename,imageMode), open(mainjpegthread_filename + '.temp', 'wb'))
+            try:
+                os.remove(mainjpegthread_filename)
+            except:
+                pass
             os.rename(mainjpegthread_filename + '.temp', mainjpegthread_filename)
 
 
 
         if platesolvethread_filename !='no':
             # np.save(hdusmalldata, platesolvethread_filename)
+            try:
+                os.remove(platesolvethread_filename+ '.temp')
+            except:
+                pass
             pickle.dump((image_filename,imageMode), open(platesolvethread_filename+ '.temp', 'wb'))
 
+            try:
+                os.remove(platesolvethread_filename)
+            except:
+                pass
             os.rename(platesolvethread_filename + '.temp', platesolvethread_filename)
 
            #g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, ''))
@@ -1562,3 +1582,5 @@ except:
     print(traceback.format_exc())
 
 print ("FINISHED! in " + str(time.time()-a_timer))
+
+#breakpoint()

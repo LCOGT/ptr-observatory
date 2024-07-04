@@ -1473,7 +1473,7 @@ class Sequencer:
                 distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_mount_reference_dec- dest_dec)
                 absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(distance_from_current_reference_in_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
                 plog ("absolute_distance from reference to requested position: " + str(round(absolute_distance,2)))
-                if absolute_distance < absolute_distance_threshold:
+                if absolute_distance < absolute_distance_threshold and not self.config['always_do_a_centering_exposure_regardless_of_nearby_reference']:
                     plog ("reference close enough to requested position, skipping centering exposure")
                     skip_centering=True
                 # self.last_mount_reference_ha = 0.0
@@ -1485,7 +1485,7 @@ class Sequencer:
                 #plog ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
                 absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(distance_from_current_reference_in_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
                 plog ("absolute_distance from reference to requested position: " + str(round(absolute_distance,2)))
-                if absolute_distance < absolute_distance_threshold:
+                if absolute_distance < absolute_distance_threshold and not self.config['always_do_a_centering_exposure_regardless_of_nearby_reference']:
                     plog ("reference close enough to requested position, skipping centering exposure")
                     skip_centering=True
 
@@ -5485,6 +5485,8 @@ class Sequencer:
                 if not dont_return_scope:
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev['obs'].send_to_user("Attempt at V-curve Focus Failed, using calculated values", p_level='INFO')
+
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                     self.wait_for_slew(wait_after_slew=False)
 
@@ -5536,7 +5538,7 @@ class Sequencer:
                 spot = g_dev['obs'].fwhmresult['FWHM']
                 foc_pos=g_dev['foc'].current_focus_position
 
-                g_dev['obs'].send_to_user("Focus position: " + str(focus_position_this_loop) + " FWHM: " + str(round(spot,2)), p_level='INFO')
+                g_dev['obs'].send_to_user("Focus at test position: " + str(focus_position_this_loop) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
 
                 if not np.isnan(spot):
                     if spot < 30.0:
@@ -5597,7 +5599,7 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[-1][0] + throw
 
                     else:
-                        if minimum_value > 3.0:
+                        if minimum_value > self.config["focuser"]["focuser1"]['maximum_good_focus_in_arcsecond']:
                             plog ("Minimum value: " + str(minimum_value) + " is too high to bother focussing, just going with the estimated value from previous focus")
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                             g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
@@ -5709,6 +5711,7 @@ class Sequencer:
 
                                     # If successful, then move to focus and live long and prosper
                                     plog ('Moving to Solved focus:  ', round(fitted_focus_position, 2), ' calculated:  ', fitted_focus_fwhm)
+                                    g_dev['obs'].send_to_user("Solved focus is at: " + str(fitted_focus_position) + " with FWHM: " + str(round(fitted_focus_fwhm,2)), p_level='INFO')
 
                                     pos = int(fitted_focus_position*g_dev['foc'].micron_to_steps)
                                     g_dev['foc'].guarded_move(pos)

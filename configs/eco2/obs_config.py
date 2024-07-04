@@ -50,7 +50,7 @@ site_config = {
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 60,
     'lowest_requestable_altitude': 15,  # Degrees. For normal pointing requests don't allow requests to go this low.
-    'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+    'lowest_acceptable_altitude' : -8.0, # Below this altitude, it will automatically try to home and park the scope to recover.
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
@@ -67,6 +67,11 @@ site_config = {
     'altitude_checks_on': True,
     'daytime_exposure_time_safety_on': True,
 
+    # Depending on the pointing capacity of the scope OR the field of view OR both
+    # The pointing may never be quite good enough to center the object without
+    # a centering exposure. On initial commissioning, it should be set to always autocenter
+    # until you are convinced the natural pointing with empirical corrections is "good enough"
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
 
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': True,
@@ -130,8 +135,8 @@ site_config = {
 
 
     # Exposure times for standard system exposures
-    'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 10,  # Exposure time in seconds for exposure image
+    'focus_exposure_time': 25,  # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 25,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
     'observing_check_period': 1,    # How many minutes between weather checks
@@ -349,8 +354,8 @@ site_config = {
             'focuser_movement_settle_time': 10,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
-            'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
-            'reference':23819,    #  20210313  Nominal at 10C Primary temperature
+            'maximum_good_focus_in_arcsecond': 3.5, # highest value to consider as being in "good focus". Used to select last good focus value
+            'reference':24200,    #  20210313  Nominal at 10C Primary temperature
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 30000,   #12672 actually
             'step_size': 1,
