@@ -139,7 +139,7 @@ site_config = {
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
 
-     'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
+     'time_to_wait_after_roof_opens_to_take_flats': 60,   #Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark':  True,
@@ -170,9 +170,10 @@ site_config = {
         #'telescope',
         'screen',    #  We do have one!  >>>>
         'rotator',
-        'focuser',
+        
         'selector',     #  Right now not used  >>>>
         'filter_wheel',
+        'focuser',        #CHANGER ORDER 20240704 wer
         'camera',
         'sequencer',    #NB I think we will add "engineering or telops" to the model >>>>
         'telops',       #   >>>>
@@ -525,7 +526,7 @@ site_config = {
 
                 'filter_data': [['air',     [0, 0],  'ai'],  # 0 Surface ws 1400Lux at end of night run  Sun Akt 0,97 degrees
                                 # 1  330NB NB NB If this in series should change focus about 1mm more.
-                                ['dif',     [4, 0],   'df'],
+                                #['dif',     [4, 0],   'df'],
                                 ['w',       [2, 0],  'w '],  # 2 346
                                 ['PL',      [0, 4],    "PL"],  # 3 317
                                 ['gp',      [0, 6],    'gp'],  # 4
@@ -587,35 +588,35 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq003cm',  # Important because this points to a server file structure by that name.
-            'desc':  'QHY 410 Color',
+            'name': 'sq009sm',  # Important because this points to a server file structure by that name.
+            'desc':  'Sony IMX455 BSI Mono',
             
             'overscan_trim' : 'none',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
-            'service_date': '20231205',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo. Left name unchanged.
-
-
-
-            'detector':  'Sony IMX455 BI Mono',  # It would be good to build out a table of chip characteristics
+            'service_date': '20240615',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo. 
+            
+            
+            
+            'detector':  'Sony IMX455 BSI Mono',  # It would be good to build out a table of chip characteristics  6280 x 4210  Inspect: 62:4102, 4:6076  Sony 6244X4168 Active Optical black Hor 16, rear 0, Vert 22, rear 0
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
             'file_mode_path':  'Q:/archive/sq01/maxim/',  # NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
             'settings': {
-
+            
                 # These are the offsets in degrees of the actual telescope from the latitude and longitude of the WEMA settings
                 'north_offset': 0.0,  # These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,
-
-
+            
+            
                 # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
                 'hold_flats_in_memory': True,
-
+            
                 # Simple Camera Properties
                 'is_cmos':  True,
-                'is_osc': True,
-                'is_color': True,  # NB we also have a is_osc key.
+                'is_osc': False,
+                'is_color': False,
                 'osc_bayer': 'RGGB',
 
                 # For direct QHY usage we need to set the appropriate gain.
@@ -646,8 +647,8 @@ site_config = {
                 # QHY410C is gain 0, offset 9, mode 1
                 'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712
 
-                'direct_qhy_gain': 0,
-                'direct_qhy_offset': 9,
+                'direct_qhy_gain': 62,
+                'direct_qhy_offset': 10,
                 'set_qhy_usb_speed': True,
                 'direct_qhy_usb_traffic' : 60,     #NB NB Why two keys/
                 #'direct_qhy_usb_speed' : 60,      #NB used in saving the image header.
@@ -753,10 +754,10 @@ site_config = {
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
-                'onebyone_pix_scale': 0.478,    #  This is the 1x1 binning pixelscale
+                'onebyone_pix_scale': 0.303,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
-                'x_pixel':  5.94, # pixel size in microns
-                'y_pixel':  5.94, # pixel size in microns
+                'x_pixel':  3.76, # pixel size in microns
+                'y_pixel':  3.76     , # pixel size in microns
 
                 #Please do not remove the following:  9576*6388
                 # WAYNE - x field and y field are already calculated within camera.py on bootup and send up in the config
@@ -799,7 +800,7 @@ site_config = {
                 'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.
-                'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
+                'dark_lim_adu': 1,   #adu/s of dark 20231229 moved down from 0.5
                 'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.
                 'fullwell_capacity': 80000,  # NB Guess
@@ -818,12 +819,12 @@ site_config = {
 
 
                 # As simple as it states, how many calibration frames to collect and how many to store.
-                'number_of_bias_to_collect': 17,
-                'number_of_dark_to_collect': 17,
-                'number_of_flat_to_collect': 15,
-                'number_of_bias_to_store': 63,
-                'number_of_dark_to_store': 31,
-                'number_of_flat_to_store': 31,
+                'number_of_bias_to_collect': 31,
+                'number_of_dark_to_collect': 9,
+                'number_of_flat_to_collect': 7,
+                'number_of_bias_to_store': 31,
+                'number_of_dark_to_store': 17,
+                'number_of_flat_to_store': 17,
                 # Default dark exposure time.
                 'dark_exposure': 180,
 
