@@ -713,7 +713,7 @@ site_config = {
                 # HERE IS THE POTENTIAL MODE 1 SETTINGS
                 'direct_qhy_readout_mode': 1,
                 'direct_qhy_gain': 26,
-                'direct_qhy_offset': 60,
+                'direct_qhy_offset': 10,
                 # 'direct_qhy_usb_speed' : 50,
                 'direct_qhy_usb_traffic': 50,
                 # The pattern before came and went. Now consitent at 50.  Changing to 45.

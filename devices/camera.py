@@ -3417,7 +3417,7 @@ class Camera:
                             if g_dev['obs'].mountless_operation:
                                 corrected_ra_for_header=0.0
                                 corrected_dec_for_header=0.0
-                            else:                                
+                            else:
                                 corrected_ra_for_header=g_dev["mnt"].last_ra_requested
                                 corrected_dec_for_header=g_dev["mnt"].last_dec_requested
 
@@ -3517,7 +3517,7 @@ class Camera:
                 # self.wait_for_slew(wait_after_slew=False)
                 # if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
                 if g_dev['mnt'].pier_flip_detected == True and not g_dev['obs'].auto_centering_off:
-                    breakpoint()
+
                     plog("PIERFLIP DETECTED, RECENTERING.")
                     g_dev["obs"].send_to_user(
                         "Pier Flip detected, recentering.")

@@ -524,7 +524,7 @@ class Sequencer:
         if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
 
             self.nightly_reset_complete = False
-            
+
         not_slewing=False
         if g_dev['obs'].mountless_operation:
             not_slewing=True
@@ -3046,6 +3046,7 @@ class Sequencer:
                     plog(traceback.format_exc())
                     plog ("Could not save dark frame: ",e)
                     breakpoint()
+                    #breakpoint()
 
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
                 g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
