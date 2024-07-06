@@ -107,7 +107,11 @@ site_config = {
     'altitude_checks_on': True,    
     'daytime_exposure_time_safety_on': False,
     
-    
+    # Depending on the pointing capacity of the scope OR the field of view OR both
+    # The pointing may never be quite good enough to center the object without
+    # a centering exposure. On initial commissioning, it should be set to always autocenter
+    # until you are convinced the natural pointing with empirical corrections is "good enough"
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
     
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': True,
@@ -184,13 +188,13 @@ site_config = {
     'enclosure_check_period': 1,    # How many minutes between enclosure checks
 
     # Turn on and off various automated calibrations at different times.
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     'auto_eve_sky_flat':True,
     
     'time_to_wait_after_roof_opens_to_take_flats': 30,   #sec Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': False,
+    'auto_morn_bias_dark': True,
     
     # FOCUS OPTIONS
     'periodic_focus_time': 2, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -717,7 +721,7 @@ site_config = {
                 #HERE IS THE POTENTIAL MODE 1 SETTINGS
                 'direct_qhy_readout_mode' : 1,
                 'direct_qhy_gain' : 26,
-                'direct_qhy_offset' : 60,
+                'direct_qhy_offset' : 10,
                 #'direct_qhy_usb_speed' : 50,
                 'set_qhy_usb_speed': True,
                 'direct_qhy_usb_traffic' : 50, 

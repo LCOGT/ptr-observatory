@@ -543,7 +543,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
         # Resizing the array to an appropriate shape for the jpg and the small fits
 
         # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-        stretched_data_float = Stretch().stretch(storedsStack + 1000)
+        stretched_data_float = Stretch().stretch(storedsStack) # + 1000)  WER 20240622
         del storedsStack
         stretched_256 = 255 * stretched_data_float
         hot = np.where(stretched_256 > 255)
