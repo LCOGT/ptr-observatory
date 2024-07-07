@@ -2374,7 +2374,7 @@ class Camera:
         enabled=1,
         column=1,
     ):
-        # Creates a valid Maxium Autosave file.
+        # Creates a valid Maxium Autosave file.  Probably obsolete.
         exp_time = round(abs(float(exp_time)), 3)
         if img_type > 3:
             img_type = 0

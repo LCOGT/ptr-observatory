@@ -746,11 +746,11 @@ site_config = {
                 'sep_image_crop_height': 0.0,
 
 
-
+                'dk_times':  [3.5, 5.0, 7.5, 10.0, 15.0, 20.0, 30.0, 30.0, 90.0],    #unused right now.
 
                 # This is the area for cooling related settings
-                'cooler_on': True,
-                'temp_setpoint': -2,  # Verify we can go colder
+                'cooler_on': True,     #Cooler is ambiguous nname
+                'temp_setpoint': 0,    # Verify we can go colder
                 'has_chiller': True,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C
