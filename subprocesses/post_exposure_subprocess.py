@@ -201,8 +201,12 @@ if substack:   #NB it appears substack is always true since this is the only pat
                                                         if not (imageMode-zerocounter-10) in zeroValueArray[:,0]:
                                                             if not (imageMode-zerocounter-11) in zeroValueArray[:,0]:
                                                                 if not (imageMode-zerocounter-12) in zeroValueArray[:,0]:
-                                                                    zeroValue=(imageMode-zerocounter)
-                                                                    breaker =0
+                                                                    if not (imageMode-zerocounter-13) in zeroValueArray[:,0]:
+                                                                        if not (imageMode-zerocounter-14) in zeroValueArray[:,0]:
+                                                                            if not (imageMode-zerocounter-15) in zeroValueArray[:,0]:
+                                                                                if not (imageMode-zerocounter-16) in zeroValueArray[:,0]:                                                                                    
+                                                                                    zeroValue=(imageMode-zerocounter)
+                                                                                    breaker =0
 
             substackimage[substackimage < zeroValue] = np.nan
 
