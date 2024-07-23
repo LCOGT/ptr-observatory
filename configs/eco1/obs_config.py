@@ -440,7 +440,7 @@ site_config = {
 
                        
                         ['dunno1',    [0,  0],    'PhLum'],    #1.
-                        ['dunno2',    [1,  1],      'PhRed'],    #2.
+                        ['dk',    [1,  1],      'PhRed'],    #2.
                         ['dunno3',    [2,  2],      'PhGreen'],    #3.
                         ['dunno4',    [3,  3],     'PhBlue'],    #4.
                         ['dunno5',    [4,  4],     'PhBlue'], 
@@ -450,7 +450,7 @@ site_config = {
                         ['dunno8',    [7,  7],    'OIII']],  
 
                 
-                'focus_filter' : 'lum',
+                'focus_filter' : 'dunno3',
 
                 # 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
@@ -590,7 +590,7 @@ site_config = {
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
                 'min_exposure': 0.2,
-                'min_flat_exposure' : 2.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'min_flat_exposure' : 0.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'reject_new_flat_by_known_gain' : True,
                 'max_exposure': 3600,

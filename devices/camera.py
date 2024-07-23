@@ -4751,8 +4751,12 @@ class Camera:
                                                                 if not (imageMode-zerocounter-10) in zeroValueArray[:,0]:
                                                                     if not (imageMode-zerocounter-11) in zeroValueArray[:,0]:
                                                                         if not (imageMode-zerocounter-12) in zeroValueArray[:,0]:
-                                                                            zeroValue=(imageMode-zerocounter)
-                                                                            breaker =0
+                                                                            if not (imageMode-zerocounter-13) in zeroValueArray[:,0]:
+                                                                                if not (imageMode-zerocounter-14) in zeroValueArray[:,0]:
+                                                                                    if not (imageMode-zerocounter-15) in zeroValueArray[:,0]:
+                                                                                        if not (imageMode-zerocounter-16) in zeroValueArray[:,0]:
+                                                                                            zeroValue=(imageMode-zerocounter)
+                                                                                            breaker =0
 
                     #numpy.count_nonzero(numpy.isnan(imagedata))
                     countypixels=outputimg[ np.where(outputimg < zeroValue ) ]
@@ -4765,6 +4769,7 @@ class Camera:
                         plog ("Rejecting calibration because it has a disturbing amount of low value pixels.")
                         expresult = {}
                         expresult["error"] = True
+                        breakpoint()
                         return expresult
 
                     # For a dark, check that the debiased dark has an adequately low value

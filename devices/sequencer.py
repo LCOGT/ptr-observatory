@@ -4439,27 +4439,30 @@ class Sequencer:
                         self.new_throughtputs_detected_in_flat_run=True
 
                 # Pick up previous camera_gain specific for this filter
-                self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
-                try:
-                    plog(self.filter_camera_gain_shelf[current_filter.lower()])
-                    self.current_filter_last_camera_gain=float(self.filter_camera_gain_shelf[current_filter.lower()][0])
-                    if float(self.filter_camera_gain_shelf[current_filter.lower()][1]) < 25:
-                        self.current_filter_last_camera_gain_stdev=self.filter_camera_gain_shelf[current_filter.lower()][1]
-                    else:
+                if known_throughput:
+                    self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                    try:
+                        plog(self.filter_camera_gain_shelf[current_filter.lower()])
+                        self.current_filter_last_camera_gain=float(self.filter_camera_gain_shelf[current_filter.lower()][0])
+                        if float(self.filter_camera_gain_shelf[current_filter.lower()][1]) < 25:
+                            self.current_filter_last_camera_gain_stdev=self.filter_camera_gain_shelf[current_filter.lower()][1]
+                        else:
+                            self.current_filter_last_camera_gain_stdev=200
+                    except:
+                        plog ("perhaps can't find filter in shelf")
+                        plog(traceback.format_exc())
+                        self.current_filter_last_camera_gain=200
                         self.current_filter_last_camera_gain_stdev=200
-                except:
-                    plog ("perhaps can't find filter in shelf")
-                    plog(traceback.format_exc())
-                    self.current_filter_last_camera_gain=200
-                    self.current_filter_last_camera_gain_stdev=200
-                self.filter_camera_gain_shelf.close()
+                    self.filter_camera_gain_shelf.close()
 
                 # If the known_throughput is false, then do not reject flats by camera gain.
-                if known_throughput==False:
+                else:
                     self.current_filter_last_camera_gain=200
                     self.current_filter_last_camera_gain_stdev=200
 
                 plog ("MTF tracking this issue: current_filter_last_camera_gain: " + str(self.current_filter_last_camera_gain))
+
+                #breakpoint()
 
                 acquired_count = 0
                 flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
@@ -4852,13 +4855,17 @@ class Sequencer:
                                             camera_gain_collector.append(fred["camera_gain"])
                                         except:
                                             plog ("camera gain not avails")
-                                    elif morn and (bright > (flat_saturation_level * 0.8)) and (old_throughput_value/new_throughput_value > 0.95) and (old_throughput_value/new_throughput_value < 1.05):
+                                    elif morn and (bright > (flat_saturation_level * 0.8)) and (old_throughput_value/new_throughput_value > 0.85) and (old_throughput_value/new_throughput_value < 1.15):
                                         plog ("Morning and overexposing at this exposure time: " + str(exp_time) + ". Dropping that out")
                                         sky_exposure_snap_this_filter.remove(exp_time)
+                                        # Remove all exposure times below this exposure
+                                        breakpoint()
 
-                                    elif not morn and (bright < (flat_saturation_level * 0.5)) and 0.95 < old_throughput_value/new_throughput_value < 1.05:
+                                    elif not morn and (bright < (flat_saturation_level * 0.5)) and 0.85 < old_throughput_value/new_throughput_value < 1.15:
                                         plog ("Evening and underexposing at this exposure time: " + str(exp_time) + ". Dropping that out")
                                         sky_exposure_snap_this_filter.remove(exp_time)
+                                        # Remove all exposure times below this exposure time
+                                        breakpoint()
 
                                 else:
                                     if bright < 0.1 * flat_saturation_level and number_of_exposures_so_far == 1 and self.current_filter_last_camera_gain < 200:
