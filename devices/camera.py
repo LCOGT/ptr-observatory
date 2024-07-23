@@ -1353,7 +1353,14 @@ class Camera:
         self.overscan_values={}
         self.overscan_values['QHY600']=[0,38,32,0]
         self.overscan_values['SBIG16803']=[0,0,0,0]
+        #self.overscan_values['asi1600']=[100,100,100,100]
+        self.overscan_values['asi1600']=[0,0,0,0]
+        
+        
         self.overscan_values['none']=[0,0,0,0]
+        
+        
+        
 
         self.overscan_left=self.overscan_values[config["camera"][self.name]['overscan_trim']][0]
         self.overscan_right=self.overscan_values[config["camera"][self.name]['overscan_trim']][1]
@@ -1868,6 +1875,9 @@ class Camera:
         while True:
             try:
                 imageTempOpen=fits.open(self.theskyxLastImageFileName, uint=False)[0].data.astype("float32")
+                # Do overscan
+                imageTempOpen=imageTempOpen[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+
                 break
             except:
                 if time.time()-file_wait_timer > 15:

@@ -6,7 +6,9 @@ involve multiple devices and fundamental operations of the OBS.
 
 It also organises the various queues that process, send, slice and dice data.
 """
-
+# The ingester should only be imported after environment variables are loaded in.
+from dotenv import load_dotenv
+load_dotenv(".env")
 import ocs_ingester.exceptions
 from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
 from requests.adapters import HTTPAdapter, Retry
@@ -38,7 +40,7 @@ from astropy import units as u
 import bottleneck as bn
 
 # from astropy.nddata import block_reduce
-from dotenv import load_dotenv
+
 import numpy as np
 
 import requests
@@ -73,8 +75,7 @@ retries = Retry(total=3, backoff_factor=0.1,
                 status_forcelist=[500, 502, 503, 504])
 reqs.mount("http://", HTTPAdapter(max_retries=retries))
 
-# The ingester should only be imported after environment variables are loaded in.
-load_dotenv(".env")
+
 
 
 def test_connect(host="http://google.com"):

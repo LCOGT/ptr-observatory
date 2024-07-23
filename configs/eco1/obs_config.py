@@ -94,9 +94,9 @@ site_config = {
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
     # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
-    'save_raw_to_disk': False,
+    'save_raw_to_disk': True,
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
-    'keep_reduced_on_disk': False,
+    'keep_reduced_on_disk': True,
     'keep_focus_images_on_disk': False,  # To save space, the focus file can not be saved.   
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,   
@@ -439,13 +439,15 @@ site_config = {
                 'filter_data': [  
 
                        
-                        ['lum',    [0,  0],    'PhLum'],    #1.
-                        ['ip',    [1,  1],      'PhRed'],    #2.
-                        ['v',    [2,  2],      'PhGreen'],    #3.
-                        ['pb',    [3,  3],     'PhBlue'],    #4.
-                        ['ha',    [4,  4],     'PhBlue'], 
-                        ['s2',    [5,  5],    'Halpha'],    #5.
-                        ['o3',    [6,  6],    'OIII']],  
+                        ['dunno1',    [0,  0],    'PhLum'],    #1.
+                        ['dunno2',    [1,  1],      'PhRed'],    #2.
+                        ['dunno3',    [2,  2],      'PhGreen'],    #3.
+                        ['dunno4',    [3,  3],     'PhBlue'],    #4.
+                        ['dunno5',    [4,  4],     'PhBlue'], 
+                        ['dunno6',    [5,  5],    'Halpha'],    #5.
+                        ['dunno7',    [6,  6],    'OIII'],  
+                
+                        ['dunno8',    [7,  7],    'OIII']],  
 
                 
                 'focus_filter' : 'lum',
@@ -478,7 +480,7 @@ site_config = {
             'name': 'ec003zwo',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16803',
             
-            'overscan_trim' : 'none',
+            'overscan_trim' : 'asi1600',
             'service_date': '20211111',
             'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
             
@@ -496,7 +498,7 @@ site_config = {
                 'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
 
                 
-                'squash_on_x_axis' : True,
+                'squash_on_x_axis' : False,
                 
                 
                 # There are some infuriating popups on theskyx that manually 
@@ -543,7 +545,7 @@ site_config = {
                'flipx_jpeg' : False,
                'flipy_jpeg' : False,
                'rotate180_jpeg' : False,
-               'rotate90_jpeg' : True,
+               'rotate90_jpeg' : False,
                'rotate270_jpeg' : False,
                
                # For large fields of view, crop the images down to solve faster.                 

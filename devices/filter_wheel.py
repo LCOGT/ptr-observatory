@@ -38,6 +38,8 @@ class FilterWheel:
         # Load filter offset shelf if avaiable
         self.filter_offsets={}
 
+        # Initialise variable
+        self.filter_selected = 'none'
 
 
         if driver is not None:
@@ -557,6 +559,7 @@ class FilterWheel:
         except:
             plog("Failed to change filter. Returning.")
             #breakpoint()
+            self.filter_selected = 'none'
             self.filter_changing=False
             return None, None, None
 
