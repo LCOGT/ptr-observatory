@@ -1824,9 +1824,9 @@ class Camera:
 
     def _theskyx_expose(self, exposure_time, bias_dark_or_light_type_frame):
         self.theskyxExposureTime = exposure_time
-        if bias_dark_or_light_type_frame == 'dark':
+        if bias_dark_or_light_type_frame == 'dark' and not self.config["camera"][self.name]["settings"]['cmos_on_theskyx'] :
             self.theskyxFrame = 3
-        elif bias_dark_or_light_type_frame == 'bias':
+        elif bias_dark_or_light_type_frame == 'bias' and not self.config["camera"][self.name]["settings"]['cmos_on_theskyx'] :
             self.theskyxFrame = 2
         else:
             self.theskyxFrame = 1

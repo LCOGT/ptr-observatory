@@ -492,6 +492,12 @@ site_config = {
 
 
                 'is_osc' : True,
+                
+                # There are some infuriating popups on theskyx that manually 
+                # need to be dealt with when doing darks and lights.
+                # This setting uses a workaround for that. This is just for CMOS
+                # CCDs are fine. 
+                'cmos_on_theskyx': False,
 
                 'squash_on_x_axis' : True,
                 'osc_brightness_enhance' : 1.0,
@@ -565,7 +571,7 @@ site_config = {
                 'crop_preview_ytop': 2,
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
-                'temp_setpoint': 0,    #Verify we can go colder, this system has a chiller
+                'temp_setpoint': 3,    #Verify we can go colder, this system has a chiller
                 'has_chiller': True,
 
                 'day_warm': True,

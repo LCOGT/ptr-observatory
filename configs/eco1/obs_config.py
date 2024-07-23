@@ -475,10 +475,10 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'ec002c',      #  Important because this points to a server file structure by that name.
+            'name': 'ec003zwo',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16803',
             
-            'overscan_trim' : 'SBIG16803',
+            'overscan_trim' : 'none',
             'service_date': '20211111',
             'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
             
@@ -498,6 +498,12 @@ site_config = {
                 
                 'squash_on_x_axis' : True,
                 
+                
+                # There are some infuriating popups on theskyx that manually 
+                # need to be dealt with when doing darks and lights.
+                # This setting uses a workaround for that. This is just for CMOS
+                # CCDs are fine. 
+                'cmos_on_theskyx': True,
                 
                 
                 # These options set whether an OSC gets binned or interpolated for different functions
@@ -565,7 +571,7 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -10,   
+                'temp_setpoint': 4,   
                 #'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
@@ -608,7 +614,7 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.08,
                 'readout_seconds': 12.5,
-                'smart_stack_exposure_time' : 45,
+                'smart_stack_exposure_time' : 15,
                 'substack': False, # Substack with this camera
                 
                 'smart_stack_exposure_NB_multiplier':  1,   #Michael's setting
