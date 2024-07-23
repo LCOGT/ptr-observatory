@@ -441,7 +441,7 @@ site_config = {
                        
                         ['dunno1',    [0,  0],    'PhLum'],    #1.
                         ['dk',    [1,  1],      'PhRed'],    #2.
-                        ['dunno3',    [2,  2],      'PhGreen'],    #3.
+                        ['lum',    [2,  2],      'PhGreen'],    #3.
                         ['dunno4',    [3,  3],     'PhBlue'],    #4.
                         ['dunno5',    [4,  4],     'PhBlue'], 
                         ['dunno6',    [5,  5],    'Halpha'],    #5.
@@ -450,7 +450,7 @@ site_config = {
                         ['dunno8',    [7,  7],    'OIII']],  
 
                 
-                'focus_filter' : 'dunno3',
+                'focus_filter' : 'lum',
 
                 # 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
