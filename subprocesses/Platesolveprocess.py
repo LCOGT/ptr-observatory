@@ -357,23 +357,23 @@ if crop_width > 0 or crop_height > 0:
 # hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
 # #hdufocusdata = hdufocusdata[crop_height:-crop_height,crop_width:-crop_width]
 
-
-x_size_degrees=hdufocusdata.shape[0] * (pixscale / 3600)
-x_size_pixel_needed= hdufocusdata.shape[0] / x_size_degrees
-if x_size_degrees > 1.0:
-    crop_width=int((hdufocusdata.shape[0] - x_size_pixel_needed)/2)
-else:
-    crop_width=0
-
-y_size_degrees=hdufocusdata.shape[1] * (pixscale / 3600)
-y_size_pixel_needed= hdufocusdata.shape[1] / y_size_degrees
-if y_size_degrees > 1.0:
-    crop_height=int((hdufocusdata.shape[1] - y_size_pixel_needed)/2)
-else:
-    crop_height=0
-
-hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
-
+if pixscale != None:
+    x_size_degrees=hdufocusdata.shape[0] * (pixscale / 3600)
+    x_size_pixel_needed= hdufocusdata.shape[0] / x_size_degrees
+    if x_size_degrees > 1.0:
+        crop_width=int((hdufocusdata.shape[0] - x_size_pixel_needed)/2)
+    else:
+        crop_width=1
+    
+    y_size_degrees=hdufocusdata.shape[1] * (pixscale / 3600)
+    y_size_pixel_needed= hdufocusdata.shape[1] / y_size_degrees
+    if y_size_degrees > 1.0:
+        crop_height=int((hdufocusdata.shape[1] - y_size_pixel_needed)/2)
+    else:
+        crop_height=1
+    
+    hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
+    
 
 
 #breakpoint()
