@@ -645,7 +645,7 @@ class Observatory:
         self.obs_settings_upload_timer = time.time() - 20
         self.obs_settings_upload_period = 60
 
-        self.last_time_report_to_console = time.time() - 700
+        self.last_time_report_to_console = time.time() - 180  #NB changed fro
 
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         self.images_since_last_solve = 10000
@@ -729,7 +729,7 @@ class Observatory:
         self.camera_time_initialised = time.time()
         # You want to make sure that the camera has been cooling for a while at the setpoint
         # Before taking calibrations to ensure the sensor is evenly cooled
-        self.last_time_camera_was_warm = time.time() - 6000
+        self.last_time_camera_was_warm = time.time() - 60
 
         # If there is a pointing correction needed, then it is REQUESTED
         # by the platesolve thread and then the code will interject
@@ -1561,8 +1561,39 @@ class Observatory:
                     self.send_status_queue.put(
                         (obsy, lane, status), block=False)
 
-            self.time_last_status = time.time()
-            self.status_count += 1
+        """
+        Here we update lightning system.
+        Check if file exists and is not stale
+        If ok open file and look for instances of distance < specified
+        if there are any then assemble a file to write to transfer disk.
+
+
+        """
+        try:
+
+            with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
+                r_date, r_time = light_rec.readline().split()[-2:]
+                plog(r_date, r_time)
+                d_string = r_date + 'T' +r_time
+                d_time = datetime.datetime.fromisoformat(d_string)+datetime.timedelta(minutes=7.5)
+                distance = 10.001
+                if d_time > datetime.datetime.now():   #  Here validate if not stale before doing next line.
+                    for lin in light_rec.readlines():
+                        if 'distance' in lin:
+                            s_range = float(lin.split()[-2])
+                            if s_range < distance:
+                                distance = s_range
+                else:
+                    plog("Lightning report is stale.")
+            if distance <=  10.0:
+                plog("Lightning distance is:   ", distance, ' km away.')
+            else:
+                plog('Lighting is > 10 km away,')
+        except:
+            plog('Lightning distance test did not work')
+
+        self.time_last_status = time.time()
+        self.status_count += 1
 
         self.currently_updating_status = False
 
@@ -2192,22 +2223,22 @@ class Observatory:
 
                 # Check that cooler is alive
                 if g_dev["cam"]._cooler_on():
-                    current_camera_temperature, cur_humidity, cur_pressure = g_dev[
+                    current_camera_temperature, cur_humidity, cur_pressure, cur_pwm = g_dev[
                         "cam"
                     ]._temperature()
-                    current_camera_temperature = float(
-                        current_camera_temperature)
-
+                    current_camera_temperature = round(
+                        current_camera_temperature, 1)
                     if (
                         abs(
                             float(current_camera_temperature)
                             - float(g_dev["cam"].setpoint)
                         )
-                        > 1.5
+                        > g_dev['cam'].config['camera']['camera_1_1']['settings']["temp_setpoint_tolerance"]  #1.5   #NB NB THis should be a config item
                     ):
+
                         self.camera_sufficiently_cooled_for_calibrations = False
                         self.last_time_camera_was_warm = time.time()
-                    elif (time.time() - self.last_time_camera_was_warm) < 600:
+                    elif (time.time() - self.last_time_camera_was_warm) < 120:  #NB NB THis should be a config item and in confict wth code below
                         self.camera_sufficiently_cooled_for_calibrations = False
                     else:
                         self.camera_sufficiently_cooled_for_calibrations = True
@@ -2235,12 +2266,10 @@ class Observatory:
                             plog("Camera cooler reconnect failed 2nd time.")
 
                 # Things that only rarely have to be reported go in this block.
-                if (time.time() - self.last_time_report_to_console) > 180:
+                if (time.time() - self.last_time_report_to_console) > 180:   #NB NB This should be a config item WER
                     plog(ephem.now())
                     if self.camera_sufficiently_cooled_for_calibrations == False:
-                        if (
-                            time.time() - self.last_time_camera_was_warm
-                        ) < 180:  # Temporary NB WER 2024_04-13
+                        if (time.time() - self.last_time_camera_was_warm) < 180:  # Temporary NB WER 2024_04-13
                             plog(
                                 "Camera was recently out of the temperature range for calibrations"
                             )
@@ -2266,10 +2295,15 @@ class Observatory:
                                 + ")."
                             )
                             plog(
+                                "Camera current PWM% ("
+                                + str(cur_pwm)
+                                + ")."
+                            )
+                            plog(
                                 "Difference from setpoint: "
                                 + str(
-                                    (current_camera_temperature -
-                                     g_dev["cam"].setpoint)
+                                    round((current_camera_temperature -
+                                     g_dev["cam"].setpoint),2)
                                 )
                             )
                         else:
@@ -2281,10 +2315,12 @@ class Observatory:
                             plog(
                                 "Difference from setpoint: "
                                 + str(
-                                    (current_camera_temperature -
-                                     g_dev["cam"].setpoint)
+                                    round((current_camera_temperature -
+                                     g_dev["cam"].setpoint), 2)
                                 )
                             )
+                        self.last_time_camera_was_warm = time.time()
+
                     self.last_time_report_to_console = time.time()
 
                 if time.time() - g_dev["seq"].time_roof_last_opened < 10:
@@ -3284,7 +3320,7 @@ class Observatory:
                 ) = self.platesolve_queue.get(block=False)
 
                 # print (pointing_exposure)
-                
+
 
                 if np.isnan(pixscale) or pixscale == None:
                     timeout_time = 1200 + exposure_time + \

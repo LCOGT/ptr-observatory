@@ -1472,6 +1472,7 @@ class Sequencer:
             #plog ("Checking whether the pointing reference is nearby. If so, we can skip the centering exposure...")
             skip_centering=False
             HAtemp=g_dev['mnt'].current_sidereal-dest_ra
+            # NB NB WER 20240710  the long key was missing and the following code appeared to be looping forever....
             if g_dev['mnt'].rapid_pier_indicator == 0:
 
                 distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_mount_reference_ha - HAtemp)

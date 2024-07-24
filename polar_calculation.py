@@ -56,7 +56,8 @@ ID =405
 MA = 250.23
   #20240524-3   455  Errors doubled and wrong sign.
 
-ME = +3676.22
+ME = +5079
+
 
   #Both signs verified   620
 

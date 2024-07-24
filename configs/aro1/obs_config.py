@@ -76,6 +76,7 @@ site_config = {
     'maximum_hour_angle_requestable': 12,
     # NB NB WER ARO Obs has a chiller
     'temperature_at_which_obs_too_hot_for_camera_cooling': 32,
+    'always_do_a_centering_exposure_regardless_of_nearby_reference':  True,
 
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
@@ -474,7 +475,7 @@ site_config = {
             'minimum': 0,
             'maximum': 12600,  # 12672 actually
             'step_size': 1,
-            'backlash': 0,
+            'backlash': 600,   #non- zero means enabled, + means over-travel when moving out, then come back IN  same amount.
             'throw': 300,  # Consider making larget for F9 configuration
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
@@ -711,8 +712,8 @@ site_config = {
 
 
                 # HERE IS THE POTENTIAL MODE 1 SETTINGS
-                'direct_qhy_readout_mode': 1,
-                'direct_qhy_gain': 26,
+                'direct_qhy_readout_mode': 1,  #High Gain mode
+                'direct_qhy_gain': 58,   #Above low noise setting
                 'direct_qhy_offset': 10,
                 # 'direct_qhy_usb_speed' : 50,
                 'direct_qhy_usb_traffic': 50,
@@ -804,13 +805,13 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': 0.0,  # 20240606, new camera installed 20240604
+                'temp_setpoint': 10,  # 20240606, new camera installed 20240604
                 # down from 1.5 that was built into the code.
                 'temp_setpoint_tolerance': 1.5,
-                'has_chiller': True,
+                'has_chiller': False,
                 # "temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  16.0,  # C 20240606
+                'chiller_ref_temp': 25.0,  # C 20240606
                 'day_warm': False,  # This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 0,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating': False,

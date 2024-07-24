@@ -194,7 +194,7 @@ def dump_main_data_out_to_post_exposure_subprocess(payload):
     # # except OSError:
     # #     pass
 
-    
+
 
 
     try:
@@ -914,6 +914,10 @@ class Camera:
 
         self.shutter_open = False  # Initialise
         self.substacker = False  # Initialise
+        self.pwm_percent = ' na%'
+        self.spt_C = '  naC'
+        self.temp_C = ' naC'
+        self.hum_percent = ' na%'
 
         """
         This section connects the appropriate methods for various
@@ -1175,6 +1179,7 @@ class Camera:
             self.config["camera"][self.name]["settings"]['protect_camera_from_overheating'])
 
         plog("Cooler setpoint is now:  ", self.setpoint)
+        pwm = None
         if self.config["camera"][self.name]["settings"][
             "cooler_on"
         ]:  # NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
@@ -1182,17 +1187,20 @@ class Camera:
         if self.theskyx:
             temp, humid, pressure = self.camera.Temperature, 999.9, 999.9
         else:
-            temp, humid, pressure = self._temperature()
-        plog("Cooling beginning @:  ", temp)
+            temp, humid, pressure , pwm = self._temperature()
+        plog("Cooling beginning @:  ", temp, " PWM%:  ", pwm)
         if 1 <= humid <= 100 or 1 <= pressure <= 1100:
             plog("Humidity and pressure:  ", humid, pressure)
         else:
-            plog("Camera  humidity and pressure is not reported.")
+            plog("Camera humidity and pressure is not reported.")
 
         if self.maxim == True:
             plog("TEC  % load:  ", self._maxim_cooler_power())
         else:
-            plog("TEC% load is  not reported.")
+            pass
+            #plog("TEC% load is  not reported.")
+        if pwm is not None:
+            plog("TEC  % load:  ", pwm)
 
         self.running_an_exposure_set = False
         self.currently_in_smartstack_loop = False
@@ -2139,11 +2147,16 @@ class Camera:
                 qhycam.camera_params[qhycam_id]['handle'],     qhycam.CONTROL_CURPWM)
             manual_pwm = qhycam.so.GetQHYCCDParam(
                 qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_MANULPWM)
-            #print(' QHY pwm:  ', pwm)
+            self.pwm_percent = " "+str(int(pwm*100.0/255))+"%"
+            self.spt_C = " "+str(round(self.current_setpoint,1))+"C"
+            self.temp_C = " "+str(round(temptemp, 1))+"C"
+            self.hum_percent = " "+str(int(humidity))+"%"
+
         except:
             print("failed at getting the CCD temperature, humidity or pressure.")
             temptemp = 999.9
-        return temptemp, humidity, pressure
+
+        return temptemp, humidity, pressure, round(pwm*100.0/255,1)
 
     def _qhyccd_cooler_on(self):
         # print ("QHY DOESN'T HAVE AN IS COOLER ON METHOD)
@@ -2546,7 +2559,10 @@ class Camera:
             status["darkslide"] = "unknown"
 
         cam_stat = self.config['camera'][self.name]['name'] + \
-            " connected."  # self.camera.CameraState
+            ", S " + self.spt_C + \
+            ", T " + self.temp_C + \
+            ", P " + self.pwm_percent + \
+            ", H " + self.hum_percent
         status[
             "status"
         ] = cam_stat  # The state could be expanded to be more meaningful. for instance report TEC % TEmp, temp setpoint...
@@ -3210,7 +3226,7 @@ class Camera:
                             if (bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type or a_dark_exposure) and not manually_requested_calibration:
 
                                 # Check that the temperature is ok before accepting
-                                current_camera_temperature, cur_humidity, cur_pressure = (
+                                current_camera_temperature, cur_humidity, cur_pressure, cur_pwm = (
                                     g_dev['cam']._temperature())
                                 current_camera_temperature = float(
                                     current_camera_temperature)
@@ -3307,7 +3323,7 @@ class Camera:
                             if self.substacker:
                                 self.substacker = False
                                 # Must have a biasdark
-                                if 'tensec_exposure_biasdark' in self.darkFiles:                                    
+                                if 'tensec_exposure_biasdark' in self.darkFiles:
                                     if (this_exposure_filter.lower() + '_bin1' in self.flatFiles) or (this_exposure_filter + '_bin1' in self.flatFiles):
                                         if '1' in self.bpmFiles:
                                             self.substacker = True
@@ -3751,7 +3767,7 @@ class Camera:
         g_dev["obs"].exposure_halted_indicator = False
 
         # This command takes 0.1s to do, so happens just during the start of exposures
-        g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure = (
+        g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure, cur_pwm= (
             g_dev['cam']._temperature())
 
         block_and_focus_check_done = False
@@ -5000,7 +5016,7 @@ class Camera:
                          np.median(outputimg))
 
                     # Check that the temperature is ok before accepting
-                    current_camera_temperature, cur_humidity, cur_pressure = (
+                    current_camera_temperature, cur_humidity, cur_pressure, cur_pwm = (
                         g_dev['cam']._temperature())
                     current_camera_temperature = float(
                         current_camera_temperature)
