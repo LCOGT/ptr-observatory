@@ -1435,7 +1435,14 @@ class Camera:
         self.overscan_values={}
         self.overscan_values['QHY600']=[0,38,32,0]
         self.overscan_values['SBIG16803']=[0,0,0,0]
+        #self.overscan_values['asi1600']=[100,100,100,100]
+        self.overscan_values['asi1600']=[0,0,0,0]
+        
+        
         self.overscan_values['none']=[0,0,0,0]
+        
+        
+        
 
         self.overscan_left=self.overscan_values[config["camera"][self.name]['overscan_trim']][0]
         self.overscan_right=self.overscan_values[config["camera"][self.name]['overscan_trim']][1]
@@ -1928,9 +1935,9 @@ class Camera:
 
     def _theskyx_expose(self, exposure_time, bias_dark_or_light_type_frame):
         self.theskyxExposureTime = exposure_time
-        if bias_dark_or_light_type_frame == 'dark':
+        if bias_dark_or_light_type_frame == 'dark' and not self.config["camera"][self.name]["settings"]['cmos_on_theskyx'] :
             self.theskyxFrame = 3
-        elif bias_dark_or_light_type_frame == 'bias':
+        elif bias_dark_or_light_type_frame == 'bias' and not self.config["camera"][self.name]["settings"]['cmos_on_theskyx'] :
             self.theskyxFrame = 2
         else:
             self.theskyxFrame = 1
@@ -1972,8 +1979,10 @@ class Camera:
         file_wait_timer = time.time()
         while True:
             try:
-                imageTempOpen = fits.open(self.theskyxLastImageFileName, uint=False)[
-                    0].data.astype("float32")
+                imageTempOpen=fits.open(self.theskyxLastImageFileName, uint=False)[0].data.astype("float32")
+                # Do overscan
+                imageTempOpen=imageTempOpen[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+
                 break
             except:
                 if time.time()-file_wait_timer > 15:
@@ -5029,23 +5038,26 @@ class Camera:
                     breaker = 1
                     zerocounter = 0
                     while (breaker != 0):
-                        zerocounter = zerocounter+1
-                        if not (imageMode-zerocounter) in zeroValueArray[:, 0]:
-                            if not (imageMode-zerocounter-1) in zeroValueArray[:, 0]:
-                                if not (imageMode-zerocounter-2) in zeroValueArray[:, 0]:
-                                    if not (imageMode-zerocounter-3) in zeroValueArray[:, 0]:
-                                        if not (imageMode-zerocounter-4) in zeroValueArray[:, 0]:
-                                            if not (imageMode-zerocounter-5) in zeroValueArray[:, 0]:
-                                                if not (imageMode-zerocounter-6) in zeroValueArray[:, 0]:
-                                                    if not (imageMode-zerocounter-7) in zeroValueArray[:, 0]:
-                                                        if not (imageMode-zerocounter-8) in zeroValueArray[:, 0]:
-                                                            if not (imageMode-zerocounter-9) in zeroValueArray[:, 0]:
-                                                                if not (imageMode-zerocounter-10) in zeroValueArray[:, 0]:
-                                                                    if not (imageMode-zerocounter-11) in zeroValueArray[:, 0]:
-                                                                        if not (imageMode-zerocounter-12) in zeroValueArray[:, 0]:
-                                                                            zeroValue = (
-                                                                                imageMode-zerocounter)
-                                                                            breaker = 0
+                        zerocounter=zerocounter+1
+                        if not (imageMode-zerocounter) in zeroValueArray[:,0]:
+                            if not (imageMode-zerocounter-1) in zeroValueArray[:,0]:
+                                if not (imageMode-zerocounter-2) in zeroValueArray[:,0]:
+                                    if not (imageMode-zerocounter-3) in zeroValueArray[:,0]:
+                                        if not (imageMode-zerocounter-4) in zeroValueArray[:,0]:
+                                            if not (imageMode-zerocounter-5) in zeroValueArray[:,0]:
+                                                if not (imageMode-zerocounter-6) in zeroValueArray[:,0]:
+                                                    if not (imageMode-zerocounter-7) in zeroValueArray[:,0]:
+                                                        if not (imageMode-zerocounter-8) in zeroValueArray[:,0]:
+                                                            if not (imageMode-zerocounter-9) in zeroValueArray[:,0]:
+                                                                if not (imageMode-zerocounter-10) in zeroValueArray[:,0]:
+                                                                    if not (imageMode-zerocounter-11) in zeroValueArray[:,0]:
+                                                                        if not (imageMode-zerocounter-12) in zeroValueArray[:,0]:
+                                                                            if not (imageMode-zerocounter-13) in zeroValueArray[:,0]:
+                                                                                if not (imageMode-zerocounter-14) in zeroValueArray[:,0]:
+                                                                                    if not (imageMode-zerocounter-15) in zeroValueArray[:,0]:
+                                                                                        if not (imageMode-zerocounter-16) in zeroValueArray[:,0]:
+                                                                                            zeroValue=(imageMode-zerocounter)
+                                                                                            breaker =0
 
                     # numpy.count_nonzero(numpy.isnan(imagedata))
                     countypixels = outputimg[np.where(outputimg < zeroValue)]
@@ -5060,6 +5072,7 @@ class Camera:
                             "Rejecting calibration because it has a disturbing amount of low value pixels.")
                         expresult = {}
                         expresult["error"] = True
+                        breakpoint()
                         return expresult
 
                     # For a dark, check that the debiased dark has an adequately low value

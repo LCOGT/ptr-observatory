@@ -7,7 +7,9 @@ involve multiple devices and fundamental operations of the OBS.
 
 It also organises the various queues that process, send, slice and dice data.
 """
-
+# The ingester should only be imported after environment variables are loaded in.
+from dotenv import load_dotenv
+load_dotenv(".env")
 import ocs_ingester.exceptions
 from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
 from requests.adapters import HTTPAdapter, Retry
@@ -39,7 +41,7 @@ from astropy import units as u
 import bottleneck as bn
 
 # from astropy.nddata import block_reduce
-from dotenv import load_dotenv
+
 import numpy as np
 
 import requests
@@ -74,8 +76,7 @@ retries = Retry(total=3, backoff_factor=0.1,
                 status_forcelist=[500, 502, 503, 504])
 reqs.mount("http://", HTTPAdapter(max_retries=retries))
 
-# The ingester should only be imported after environment variables are loaded in.
-load_dotenv(".env")
+
 
 
 def test_connect(host="http://google.com"):
@@ -3360,7 +3361,16 @@ class Observatory:
                             if g_dev["seq"].block_guard and not g_dev["seq"].focussing:
                                 target_ra = g_dev["seq"].block_ra
                                 target_dec = g_dev["seq"].block_dec
+                                
+                            platesolve_crop = 0.0
+                                
+                            # yet another pickle debugger.
+                            if True:
+                                pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
+                                 pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
 
+                            #breakpoint()
+                            
                             try:
                                 platesolve_subprocess = subprocess.Popen(
                                     ["python", "subprocesses/Platesolveprocess.py"],
@@ -3372,14 +3382,10 @@ class Observatory:
                                 plog(traceback.format_exc())
                                 pass
 
-                            platesolve_crop = 0.0
+                            
 
-                            # yet another pickle debugger.
-                            if True:
-                                pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                                 pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
-
-                            #breakpoint()
+                            
+                            
 
                             try:
                                 pickle.dump(

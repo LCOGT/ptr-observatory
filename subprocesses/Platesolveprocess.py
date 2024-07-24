@@ -338,6 +338,46 @@ if crop_width > 0 or crop_height > 0:
     hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
 
 
+# If it is still too wide field, lets crop this down to at most a degree.
+# #breakpoint()
+# x_size_degrees=hdufocusdata.shape[0] * (pixscale / 3600)
+# x_size_pixel_needed= hdufocusdata.shape[0] / x_size_degrees
+# if x_size_degrees > 1.0:
+#     crop_width=int((hdufocusdata.shape[0] - x_size_pixel_needed)/2)
+# else:
+#     crop_width=0
+
+# y_size_degrees=hdufocusdata.shape[1] * (pixscale / 3600)
+# y_size_pixel_needed= hdufocusdata.shape[1] / y_size_degrees
+# if y_size_degrees > 1.0:
+#     crop_height=int((hdufocusdata.shape[1] - y_size_pixel_needed)/2)
+# else:
+#     crop_height=0
+
+# hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
+# #hdufocusdata = hdufocusdata[crop_height:-crop_height,crop_width:-crop_width]
+
+
+x_size_degrees=hdufocusdata.shape[0] * (pixscale / 3600)
+x_size_pixel_needed= hdufocusdata.shape[0] / x_size_degrees
+if x_size_degrees > 1.0:
+    crop_width=int((hdufocusdata.shape[0] - x_size_pixel_needed)/2)
+else:
+    crop_width=0
+
+y_size_degrees=hdufocusdata.shape[1] * (pixscale / 3600)
+y_size_pixel_needed= hdufocusdata.shape[1] / y_size_degrees
+if y_size_degrees > 1.0:
+    crop_height=int((hdufocusdata.shape[1] - y_size_pixel_needed)/2)
+else:
+    crop_height=0
+
+hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
+
+
+
+#breakpoint()
+
 
 # binfocus = 1
 # if bin_for_platesolve:
@@ -582,8 +622,10 @@ for i in range(len(pointvalues)):
     # cvalue=hdufocusdata[int(cx)][int(cy)]
     #sources.append([cx,cy,cvalue])
 
-    if len(sources) > 200:
+    if len(sources) > 2000:
         break
+
+    # print (len(sources))
 
     cx= (pointvalues[i][0])
     cy= (pointvalues[i][1])
@@ -733,6 +775,8 @@ googtime=time.time()
 #breakpoint()
 #breakpoint()
 failed=True
+
+#breakpoint()
 
 #breakpoint()
 if len(sources) >= 5:

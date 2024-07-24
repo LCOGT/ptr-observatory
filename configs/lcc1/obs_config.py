@@ -484,7 +484,11 @@ site_config = {
                 'set_qhy_usb_speed': False,
                 'direct_qhy_usb_speed' : 60,
                 
-                
+                # There are some infuriating popups on theskyx that manually 
+                # need to be dealt with when doing darks and lights.
+                # This setting uses a workaround for that. This is just for CMOS
+                # CCDs are fine. 
+                'cmos_on_theskyx': False,
                 
                 
                 

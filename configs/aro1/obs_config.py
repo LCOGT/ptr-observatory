@@ -649,7 +649,11 @@ site_config = {
                 'is_color': False,  # NB we also have a is_osc key.
                 'osc_bayer': 'RGGB',
 
-
+                # There are some infuriating popups on theskyx that manually 
+                # need to be dealt with when doing darks and lights.
+                # This setting uses a workaround for that. This is just for CMOS
+                # CCDs are fine. 
+                'cmos_on_theskyx': False,
 
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".

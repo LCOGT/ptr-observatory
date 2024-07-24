@@ -662,7 +662,11 @@ site_config = {
 
 
 
-
+                # There are some infuriating popups on theskyx that manually 
+                # need to be dealt with when doing darks and lights.
+                # This setting uses a workaround for that. This is just for CMOS
+                # CCDs are fine. 
+                'cmos_on_theskyx': False,
 
                 # These options set whether an OSC gets binned or interpolated for different functions
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
