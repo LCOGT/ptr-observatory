@@ -126,6 +126,8 @@ except:
     pixscale=None
 #breakpoint()
 
+print ("Pixelscale")
+print (pixscale)
 
 # while not os.path.exists(platesolvethread_filename):
 #     time.sleep(0.2)
@@ -1235,6 +1237,11 @@ print (cal_path+ 'platesolve.pickle')
 
 pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
 
+
+try:
+    os.remove(cal_path + 'platesolve.pickle')
+except:
+    pass
 
 os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 

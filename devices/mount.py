@@ -1559,9 +1559,11 @@ class Mount:
             elif 'ha' in req:
                 result = self.go_command(ha=req['ha'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
 
-            if 'do_centering_routine' in opt and result != 'refused':
-                if opt['do_centering_routine']:
-                    g_dev['seq'].centering_exposure()
+            # BECAUSE THERE IS NOW NO SEPARATE BUTTON FOR SLEW AND CENTER
+            # ALL MANUALLY COMMANDED SHOTS HAVE TO BE CENTERED.
+            # if 'do_centering_routine' in opt and result != 'refused':
+            #     if opt['do_centering_routine']:
+            g_dev['seq'].centering_exposure()
 
         elif action == "stop":
             self.stop_command(req, opt)

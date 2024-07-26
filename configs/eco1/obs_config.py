@@ -368,9 +368,9 @@ site_config = {
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
-            'reference': 13500,    #  20210313  Nominal at 10C Primary temperature            
+            'reference': 23100,    #  20210313  Nominal at 10C Primary temperature            
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
-            'maximum': 18000,   #12672 actually
+            'maximum': 50000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
             'throw' : 300,
@@ -415,7 +415,7 @@ site_config = {
             "dual_wheel": False,
             'settings': {
                 
-                'default_filter': "lum",
+                'default_filter': "BV",
                 
                 'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
                 'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
@@ -451,7 +451,7 @@ site_config = {
                         #['o3',    [7,  7],    'OIII']],  
 
                 
-                'focus_filter' : 'lum',
+                'focus_filter' : 'BV',
 
                 # 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
@@ -616,7 +616,7 @@ site_config = {
                 'read_mode':  'Normal',
                 'readout_mode':  'Normal',
                 'readout_speed': 0.08,
-                'readout_seconds': 12.5,
+                'readout_seconds': 1.0,
                 'smart_stack_exposure_time' : 15,
                 'substack': False, # Substack with this camera
                 
@@ -628,7 +628,7 @@ site_config = {
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
                
-                'onebyone_pix_scale': 0.637,    #  This is the 1x1 binning pixelscale
+                'onebyone_pix_scale': 0.269,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 
                 # The drizzle_value is by the new pixelscale
