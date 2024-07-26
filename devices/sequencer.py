@@ -4522,7 +4522,7 @@ class Sequencer:
                                     pixel_area=pow(float(g_dev['cam'].pixscale),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 # snap the exposure time to a discrete grid
-                                if exp_time > 0.002:
+                                if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
                                     exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                                 else:
                                     exp_time = 0.5*min_exposure
@@ -4534,21 +4534,21 @@ class Sequencer:
                                 else:
                                     exp_time = min_exposure
                                     # snap the exposure time to a discrete grid
-                                    if exp_time > 0.002:
+                                    if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
                                         exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                                     else:
                                         exp_time = 0.5*min_exposure
                         elif in_wait_mode:
                             exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
                             # snap the exposure time to a discrete grid
-                            if exp_time > 0.002:
+                            if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
                                 exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                             else:
                                 exp_time = 0.5*min_exposure
                         else:
                             exp_time = scale * exp_time
                             # snap the exposure time to a discrete grid
-                            if exp_time > 0.002:
+                            if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
                                 exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                             else:
                                 exp_time = 0.5*min_exposure
@@ -4859,13 +4859,25 @@ class Sequencer:
                                         plog ("Morning and overexposing at this exposure time: " + str(exp_time) + ". Dropping that out")
                                         sky_exposure_snap_this_filter.remove(exp_time)
                                         # Remove all exposure times below this exposure
-                                        breakpoint()
+                                        # Also remove other useless exposure times
+                                        for expentry in sky_exposure_snap_this_filter:
+                                            if float(expentry) > exp_time:
+                                                try:
+                                                    sky_exposure_snap_this_filter.remove(expentry)
+                                                except:                                                    
+                                                    plog(traceback.format_exc())
 
                                     elif not morn and (bright < (flat_saturation_level * 0.5)) and 0.85 < old_throughput_value/new_throughput_value < 1.15:
                                         plog ("Evening and underexposing at this exposure time: " + str(exp_time) + ". Dropping that out")
                                         sky_exposure_snap_this_filter.remove(exp_time)
                                         # Remove all exposure times below this exposure time
-                                        breakpoint()
+                                        # Also remove other useless exposure times
+                                        for expentry in sky_exposure_snap_this_filter:
+                                            if float(expentry) < exp_time:
+                                                try:
+                                                    sky_exposure_snap_this_filter.remove(expentry)
+                                                except:                                                    
+                                                    plog(traceback.format_exc())
 
                                 else:
                                     if bright < 0.1 * flat_saturation_level and number_of_exposures_so_far == 1 and self.current_filter_last_camera_gain < 200:
@@ -4915,6 +4927,9 @@ class Sequencer:
                                                 except:                                                    
                                                     plog(traceback.format_exc())
 
+
+                            if len(sky_exposure_snap_this_filter) <1:
+                                acquired_count=flat_count+1
 
                             if bright == None:
                                 plog ("Seems like the camera isn't liking taking flats. This is usually because it hasn't been able to cool sufficiently, bailing out of flats. ")

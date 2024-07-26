@@ -439,15 +439,16 @@ site_config = {
                 'filter_data': [  
 
                        
-                        ['dunno1',    [0,  0],    'PhLum'],    #1.
+                        ['lum',    [0,  0],    'PhLum'],    #1.
                         ['dk',    [1,  1],      'PhRed'],    #2.
-                        ['lum',    [2,  2],      'PhGreen'],    #3.
-                        ['dunno4',    [3,  3],     'PhBlue'],    #4.
-                        ['dunno5',    [4,  4],     'PhBlue'], 
-                        ['dunno6',    [5,  5],    'Halpha'],    #5.
-                        ['dunno7',    [6,  6],    'OIII'],  
+                        ['BU',    [2, 2 ],      'PhRed'],    #2.
+                        ['BB',    [3, 3],      'PhGreen'],    #3.
+                        ['BV',    [4,  4],     'PhBlue'],    #4.
+                        ['BR',    [5,5],     'PhBlue'], 
+                        ['BI',    [6,6],    'Halpha'],    #5.
+                        ['ha',    [7,7],    'OIII']],  
                 
-                        ['dunno8',    [7,  7],    'OIII']],  
+                        #['o3',    [7,  7],    'OIII']],  
 
                 
                 'focus_filter' : 'lum',
@@ -644,7 +645,7 @@ site_config = {
                 'do_cosmics' : False,
                 'number_of_bias_to_collect' : 64,
                 'number_of_dark_to_collect' : 64,
-                'number_of_flat_to_collect' : 7,
+                'number_of_flat_to_collect' : 15,
                 'number_of_bias_to_store' : 64,
                 'number_of_dark_to_store' : 64,
                 'number_of_flat_to_store' : 64,
