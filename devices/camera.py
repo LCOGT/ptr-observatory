@@ -5193,6 +5193,13 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
+                        
+                        # If it is too dim and we need to wait, make sure there 
+                        # is a sufficient wait period between exposures, otherwise 
+                        # hundreds are taking while waiting for the sky to brighten.
+                        if exposure_time < 3:
+                            time.sleep(2)
+                        
                         return copy.deepcopy(expresult)  # signals to flat routine image was rejected, prompt return
                     elif (
                         central_median
@@ -5206,6 +5213,13 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
+                        
+                        # If it is too bright and we need to wait, make sure there 
+                        # is a sufficient wait period between exposures, otherwise 
+                        # hundreds are taking while waiting for the sky to dim.
+                        if exposure_time < 3:
+                            time.sleep(2)
+                        
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
                     else:
                         expresult={}
