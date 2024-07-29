@@ -1569,6 +1569,7 @@ class Observatory:
 
 
         """
+
         try:
 
             with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
@@ -1577,7 +1578,8 @@ class Observatory:
                 d_string = r_date + 'T' +r_time
                 d_time = datetime.datetime.fromisoformat(d_string)+datetime.timedelta(minutes=7.5)
                 distance = 10.001
-                if d_time > datetime.datetime.now():   #  Here validate if not stale before doing next line.
+
+                if datetime.datetime.now() < d_time:   #  Here validate if not stale before doing next line.
                     for lin in light_rec.readlines():
                         if 'distance' in lin:
                             s_range = float(lin.split()[-2])
@@ -1588,7 +1590,8 @@ class Observatory:
             if distance <=  10.0:
                 plog("Lightning distance is:   ", distance, ' km away.')
             else:
-                plog('Lighting is > 10 km away,')
+                pass
+                #plog('Lighting is > 10 km away,')
         except:
             plog('Lightning distance test did not work')
 
@@ -3397,16 +3400,16 @@ class Observatory:
                             if g_dev["seq"].block_guard and not g_dev["seq"].focussing:
                                 target_ra = g_dev["seq"].block_ra
                                 target_dec = g_dev["seq"].block_dec
-                                
+
                             platesolve_crop = 0.0
-                                
+
                             # yet another pickle debugger.
                             if True:
                                 pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
                                  pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
 
                             #breakpoint()
-                            
+
                             try:
                                 platesolve_subprocess = subprocess.Popen(
                                     ["python", "subprocesses/Platesolveprocess.py"],
@@ -3418,10 +3421,10 @@ class Observatory:
                                 plog(traceback.format_exc())
                                 pass
 
-                            
 
-                            
-                            
+
+
+
 
                             try:
                                 pickle.dump(
