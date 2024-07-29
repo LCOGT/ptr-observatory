@@ -7,7 +7,7 @@ Created on Sun Dec 10 17:55:12 2023
 @author: obs
 """
 
-from math import *
+import math
 
 print('''
 From the TPOINT manual:
@@ -33,7 +33,7 @@ print('\n\n')
 #Enter Tpoint MA and ME Then execute this routine
 aro_lift = -68            #Negative means 68 asec ABOVE the pole.
 aro_latitude = 35.554298
-cos_lat = cos(radians(aro_latitude))
+cos_lat = math.cos(math.radians(aro_latitude))
 
 #  Direct quotes from A-P GOTO1600 Manual.
 #  "One turn of an altitude knob is approximately 0.41 degrees (24.6 arcminutes)."

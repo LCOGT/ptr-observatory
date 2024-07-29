@@ -5,7 +5,7 @@ rotator.py  rotator.py  rotator.py  rotator.py  rotator.py  rotator.py
 import time
 import win32com.client
 import psutil
-from ptr_utility import plog
+#from ptr_utility import plog
 from global_yard import g_dev
 
 

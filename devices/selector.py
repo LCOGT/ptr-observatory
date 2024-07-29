@@ -100,7 +100,4 @@ class Selector:
             print("Command <{action}> not recognized.")
 
 
-if __name__ == "__main__":
-    import config
 
-    pass

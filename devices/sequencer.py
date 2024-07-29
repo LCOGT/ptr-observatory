@@ -3182,7 +3182,7 @@ class Sequencer:
                 masterBias=fits.open(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
                 masterBias= np.array(masterBias[0].data, dtype=np.float32)
                 temp_bias_level_median=bn.nanmedian(masterBias)
-                temp_bias_level_max=bn.nanmax(masterBias)
+                #temp_bias_level_max=bn.nanmax(masterBias)
                 temp_bias_level_min=bn.nanmin(masterBias)
 
             else:
@@ -4907,7 +4907,7 @@ class Sequencer:
                                             if float(expentry) > exp_time:
                                                 try:
                                                     sky_exposure_snap_this_filter.remove(expentry)
-                                                except:                                                    
+                                                except:
                                                     plog(traceback.format_exc())
 
                                     elif not morn and (bright < (flat_saturation_level * 0.25)) and 0.85 < old_throughput_value/new_throughput_value < 1.15:
@@ -4918,7 +4918,7 @@ class Sequencer:
                                             if float(expentry) < exp_time:
                                                 try:
                                                     sky_exposure_snap_this_filter.remove(expentry)
-                                                except:                                                    
+                                                except:
                                                     plog(traceback.format_exc())
 
 
@@ -6498,7 +6498,7 @@ class Sequencer:
                 plog('stop_all_activity cancelling out of centering')
                 return
 
-            queue_clear_time = time.time()
+            #queue_clear_time = time.time()
             reported=0
             temptimer=time.time()
             while True:

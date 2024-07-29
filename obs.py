@@ -11,7 +11,7 @@ It also organises the various queues that process, send, slice and dice data.
 from dotenv import load_dotenv
 load_dotenv(".env")
 import ocs_ingester.exceptions
-from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
+from ocs_ingester.ingester import upload_file_and_ingest_to_archive  #  frame_exists
 from requests.adapters import HTTPAdapter, Retry
 import ephem
 import datetime
@@ -2984,7 +2984,7 @@ class Observatory:
     def calendar_block_thread(self):
         while True:
             if not self.calendar_block_queue.empty():
-                one_at_a_time = 1
+                #one_at_a_time = 1
                 self.calendar_block_queue.get(block=False)
                 self.currently_updating_calendar_blocks = True
                 g_dev["seq"].update_calendar_blocks()
@@ -3144,151 +3144,7 @@ class Observatory:
             else:
                 time.sleep(0.25)
 
-    # def mainjpeg_process(self, zoom_factor=False):
-    #     """
-    #     This is the main subprocess where jpegs are created for the UI.
-    #     """
 
-    #     while True:
-    #         if (not self.mainjpeg_queue.empty()):
-    #             osc_jpeg_timer_start = time.time()
-    #             (hdusmalldata, smartstackid, paths, pier_side, zoom_factor) = self.mainjpeg_queue.get(block=False)
-    #             is_osc = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
-    #             osc_bayer= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"]
-    #             if is_osc:
-    #                 osc_background_cut=self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']
-    #                 osc_brightness_enhance= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance']
-    #                 osc_contrast_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance']
-    #                 osc_colour_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance']
-    #                 osc_saturation_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance']
-    #                 osc_sharpness_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance']
-    #             else:
-    #                 osc_background_cut=0
-    #                 osc_brightness_enhance= 0
-    #                 osc_contrast_enhance=0
-    #                 osc_colour_enhance=0
-    #                 osc_saturation_enhance=0
-    #                 osc_sharpness_enhance=0
-    #             # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
-    #             transpose_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]
-    #             flipx_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']
-    #             flipy_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']
-    #             rotate180_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']
-    #             rotate90_jpeg = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']
-    #             rotate270_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']
-    #             crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
-    #             yb = self.config["camera"][g_dev['cam'].name]["settings"][
-    #                  "crop_preview_ybottom"
-    #              ]
-    #             yt = self.config["camera"][g_dev['cam'].name]["settings"][
-    #                  "crop_preview_ytop"
-    #              ]
-    #             xl = self.config["camera"][g_dev['cam'].name]["settings"][
-    #                  "crop_preview_xleft"
-    #              ]
-    #             xr = self.config["camera"][g_dev['cam'].name]["settings"][
-    #                  "crop_preview_xright"
-    #              ]
-    #             squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
-
-    #             # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-    #             if False:
-    #                 #NB set this path to create test pickle for makejpeg routine.
-    #                 pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-    #                     osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-    #                         rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], open('testjpegpickle','wb'))
-
-    #             jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-
-    #             try:
-    #                 pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-    #                       osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-    #                           rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
-    #             except:
-    #                 plog ("Problem in the jpeg pickle dump")
-    #                 plog(traceback.format_exc())
-
-    #             del hdusmalldata # Get big file out of memory
-
-    #             # Try saving the jpeg to disk and quickly send up to AWS to present for the user
-    #             if smartstackid == 'no':
-    #                 try:
-    #                     self.enqueue_for_fastUI(
-    #                         paths["im_path"], paths["jpeg_name10"]
-    #                     )
-    #                     # self.enqueue_for_mediumUI(
-    #                     #     1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
-    #                     # )
-    #                     plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
-    #                 except:
-    #                     plog(
-    #                         "there was an issue saving the preview jpg. Pushing on though"
-    #                     )
-
-    #             self.mainjpeg_queue.task_done()
-    #             time.sleep(1)
-
-    #         else:
-    #             # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-    #             time.sleep(1)
-
-    # def sep_process(self):
-    #     """This is the sep queue that happens in a different process
-    #     than the main camera thread. SEPs can take 5-10, up to 30 seconds sometimes
-    #     to run, so it is an overhead we can't have hanging around.
-    #     """
-
-    #     while True:
-    #         if (not self.sep_queue.empty()):
-    #             (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, nativebin, exposure_time) = self.sep_queue.get(block=False)
-
-    #             if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
-    #                 do_sep=False
-    #             else:
-    #                 do_sep=True
-
-    #             is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
-
-    #             # These are deprecated, just holding onto it until a cleanup at some stage
-    #             interpolate_for_focus= False
-    #             bin_for_focus= False
-    #             focus_bin_value= 1
-    #             interpolate_for_sep=False
-    #             bin_for_sep= False
-    #             sep_bin_value= 1
-    #             focus_jpeg_size= 500
-
-    #             saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-    #             minimum_realistic_seeing=self.config['minimum_realistic_seeing']
-    #             sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-
-    #             # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-    #             if False:
-    #                 pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
-
-    #             try:
-
-    #                 pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep,exposure_time], sep_subprocess.stdin)
-    #             except:
-    #                 plog ("Problem in the SEP pickle dump")
-    #                 plog(traceback.format_exc())
-
-    #             # delete the subprocess connection once the data have been dumped out to the process.
-    #             del sep_subprocess
-
-    #             packet=(avg_foc,hduheader['EXPTIME'],hduheader['FILTER'], hduheader['AIRMASS'])
-    #             self.file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
-
-    #             self.enqueue_for_fastUI(im_path, text_name)
-
-    #             del hdufocusdata
-
-    #             self.sep_queue.task_done()
-    #             time.sleep(0.25)
-
-    #         else:
-    #             # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-    #             time.sleep(0.25)
 
     def platesolve_process(self):
         """This is the platesolve queue that happens in a different process
@@ -3938,6 +3794,7 @@ class Observatory:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
                 time.sleep(1)
 
+    #   Note this is a thread
     def slow_camera_process(self):
         """
         A place to process non-process dependant images from the camera pile.
@@ -3946,7 +3803,7 @@ class Observatory:
 
         while True:
             if not self.slow_camera_queue.empty():
-                one_at_a_time = 1
+                #one_at_a_time = 1
                 slow_process = self.slow_camera_queue.get(block=False)
                 slow_process = slow_process[1]
                 try:
@@ -5442,151 +5299,7 @@ class Observatory:
         # everything down each time this was called!
         self.sendtouser_queue.put((p_log, p_level), block=False)
 
-    # def smartstack_image(self):
 
-    #     while True:
-    #         if not self.smartstack_queue.empty():
-    #             (
-    #                 paths,
-    #                 pixscale,
-    #                 smartstackid,
-    #                 sskcounter,
-    #                 Nsmartstack, pier_side, zoom_factor
-    #             ) = self.smartstack_queue.get(block=False)
-
-    #             # SmartStack Section
-    #             if smartstackid != "no":
-    #                 sstack_timer = time.time()
-
-    #                 crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
-    #                 yb=self.config["camera"][g_dev['cam'].name]["settings"][
-    #                     "crop_preview_ybottom"
-    #                 ]
-    #                 yt=self.config["camera"][g_dev['cam'].name]["settings"][
-    #                     "crop_preview_ytop"
-    #                 ]
-    #                 xl=self.config["camera"][g_dev['cam'].name]["settings"][
-    #                     "crop_preview_xleft"
-    #                 ]
-    #                 xr=self.config["camera"][g_dev['cam'].name]["settings"][
-    #                     "crop_preview_xright"
-    #                 ]
-
-    #                 if g_dev['cam'].dither_enabled:
-    #                     crop_preview=True
-    #                     yb=yb+50
-    #                     yt=yt+50
-    #                     xl=xl+50
-    #                     xr=xr+50
-
-    #                 if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-    #                     picklepayload=[
-    #                         paths,
-    #                         smartstackid,
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
-    #                         self.local_calibration_path,
-    #                         pixscale,
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
-    #                         pier_side,
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
-    #                         g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
-    #                         g_dev['cam'].native_bin,
-    #                         g_dev['cam'].camera_known_readnoise,
-    #                         self.config['minimum_realistic_seeing'],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] ,
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'] ,
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'] ,
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'],
-    #                         crop_preview,yb,yt,xl,xr,
-    #                         zoom_factor
-    #                         ]
-    #                 else:
-    #                     picklepayload=[
-    #                         paths,
-    #                         smartstackid,
-    #                         False,
-    #                         self.obsid_path,
-    #                         pixscale,
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
-    #                         pier_side,
-    #                         self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
-    #                         None,
-    #                         g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
-    #                         g_dev['cam'].native_bin,
-    #                         g_dev['cam'].camera_known_readnoise,
-    #                         self.config['minimum_realistic_seeing'],
-    #                         0,0,0,0,0,
-    #                         crop_preview,yb,yt,xl,xr,
-    #                         zoom_factor
-    #                         ]
-
-    #                 # Another pickle debugger
-    #                 if False :
-    #                     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
-
-    #                 smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-
-    #                 try:
-    #                     pickle.dump(picklepayload, smartstack_subprocess.stdin)
-    #                 except:
-    #                     plog ("Problem in the smartstack pickle dump")
-    #                     plog(traceback.format_exc())
-
-    #                 #  We don't have to wait for the full smartstack process to finish, just until it gets to the stage where
-    #                 # It has saved out the next layer to the npy. Beyond this, it is just making a jpeg and the reduced file.
-    #                 while not os.path.exists(paths["im_path"] + 'smartstack.pickle'):
-    #                     time.sleep(0.5)
-
-    #                 self.fast_queue.put((paths["im_path"], paths["jpeg_name10"],time.time()), block=False)
-    #                 # self.mediumui_queue.put(
-    #                 #     (100, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'),time.time())), block=False)
-
-    #                 try:
-    #                     reprojection_failed=pickle.load(open(paths["im_path"] + 'smartstack.pickle', 'rb'))
-    #                 except:
-    #                     plog ("Couldn't find smartstack pickle?")
-    #                     plog (traceback.format_exc())
-    #                     reprojection_failed=True
-    #                 try:
-    #                     os.remove(paths["im_path"] + 'smartstack.pickle')
-    #                 except:
-    #                     pass
-
-    #                 if reprojection_failed == True:
-    #                     g_dev["obs"].send_to_user(
-    #                         "A smartstack failed to stack, the single image has been sent to the GUI.",
-    #                         p_level="INFO",
-    #                     )
-
-    #                 else:
-    #                     g_dev["obs"].send_to_user(
-    #                         "A preview SmartStack, "
-    #                         + str(sskcounter + 1)
-    #                         + " out of "
-    #                         + str(Nsmartstack)
-    #                         + ", has been sent to the GUI.",
-    #                         p_level="INFO",
-    #                     )
-    #                 plog(datetime.datetime.now())
-
-    #             plog("Smartstack round complete. Time taken: " + str(time.time() - sstack_timer))
-
-    #             self.smartstack_queue.task_done()
-    #             time.sleep(0.5)
-    #         else:
-    #             time.sleep(3)
 
     def check_platesolve_and_nudge(self, no_confirmation=True):
         """
@@ -5605,10 +5318,7 @@ class Observatory:
                 g_dev["seq"].centering_exposure(
                     no_confirmation=no_confirmation, try_hard=True, try_forever=True
                 )
-                # self.drift_tracker_ra=g_dev['mnt'].return_right_ascension()
-                # self.drift_tracker_dec=g_dev['mnt'].return_declination()
-                # self.drift_tracker_ra=0
-                # self.drift_tracker_dec=0
+
                 g_dev["obs"].drift_tracker_timer = time.time()
                 self.drift_tracker_counter = 0
                 if g_dev["seq"].currently_mosaicing:

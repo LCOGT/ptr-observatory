@@ -13,7 +13,7 @@ import serial
 import win32com.client
 import traceback
 import threading
-import queue
+#import queue
 import copy
 from global_yard import g_dev
 from ptr_utility import plog
