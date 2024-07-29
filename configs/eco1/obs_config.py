@@ -415,7 +415,7 @@ site_config = {
             "dual_wheel": False,
             'settings': {
                 
-                'default_filter': "BV",
+                'default_filter': "pg",
                 
                 'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
                 'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
@@ -441,17 +441,17 @@ site_config = {
                        
                         ['lum',    [0,  0],    'PhLum'],    #1.
                         ['dk',    [1,  1],      'PhRed'],    #2.
-                        ['BU',    [2, 2 ],      'PhRed'],    #2.
-                        ['BB',    [3, 3],      'PhGreen'],    #3.
-                        ['BV',    [4,  4],     'PhBlue'],    #4.
-                        ['BR',    [5,5],     'PhBlue'], 
-                        ['BI',    [6,6],    'Halpha'],    #5.
-                        ['ha',    [7,7],    'OIII']],  
+                        ['pb',    [2, 2 ],      'PhRed'],    #2.
+                        ['pg',    [3, 3],      'PhGreen'],    #3.
+                        ['pr',    [4,  4],     'PhBlue'],    #4.
+                        ['ha',    [5,5],     'PhBlue'], 
+                        ['o3',    [6,6],    'Halpha'],    #5.
+                        ['s2',    [7,7],    'OIII']],  
                 
                         #['o3',    [7,  7],    'OIII']],  
 
                 
-                'focus_filter' : 'BV',
+                'focus_filter' : 'pg',
 
                 # 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
