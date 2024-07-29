@@ -12,10 +12,8 @@ np.set_printoptions(threshold=np.inf)
 import re
 from astropy.stats import median_absolute_deviation
 from astropy.nddata.utils import extract_array
-import sys
 import pickle
 import time
-#import sep
 import traceback
 import math
 import os
@@ -29,8 +27,7 @@ from astropy.io import fits
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
 #     # demosaicing_CFA_Bayer_Malvar2004,
 #     demosaicing_CFA_Bayer_Menon2007)
-from PIL import Image, ImageDraw # ImageFont, ImageDraw#, ImageEnhance
-#from astropy.table import Table
+from PIL import Image, ImageDraw 
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
@@ -57,8 +54,8 @@ def radial_profile(data, center):
     return radialprofile
 
 
-input_sep_info=pickle.load(sys.stdin.buffer)
-#input_sep_info=pickle.load(open('testSEPpickle','rb'))
+#input_sep_info=pickle.load(sys.stdin.buffer)
+input_sep_info=pickle.load(open('testSEPpickle','rb'))
 
 #print ("HERE IS THE INCOMING. ")
 #print (input_sep_info)
@@ -513,11 +510,17 @@ else:
         fwhm_file['sources']=str(len(fwhmlist))
         with open(im_path + text_name.replace('.txt', '.tempfwhm'), 'w') as f:
             json.dump(fwhm_file, f)
-        os.rename(im_path + text_name.replace('.txt', '.tempfwhm'),im_path + text_name.replace('.txt', '.fwhm'))
+        try:
+            os.rename(im_path + text_name.replace('.txt', '.tempfwhm'),im_path + text_name.replace('.txt', '.fwhm'))
+        except:
+            print ("tried to save fwhm file but it was already there.")
 
         # This pickled sep file is for internal use - usually used by the smartstack thread to align mono smartstacks.
         pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.tempsep'),'wb'))
-        os.rename(im_path + text_name.replace('.txt', '.tempsep'),im_path + text_name.replace('.txt', '.sep'))
+        try:
+            os.rename(im_path + text_name.replace('.txt', '.tempsep'),im_path + text_name.replace('.txt', '.sep'))
+        except:
+            print ("tried to save sep file but it was already there.")
 
         # Grab the central arcminute out of the image.
         cx = int(fx/2)
