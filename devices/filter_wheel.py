@@ -18,10 +18,8 @@ import numpy as np
 import threading
 import copy
 import traceback
-import ptr_config
 from global_yard import g_dev
 from ptr_utility import plog
-import shelve
 
 class FilterWheel:
     """A filter wheel instrument."""
@@ -33,14 +31,11 @@ class FilterWheel:
         self.previous_filter_name='none'
 
         self.driver = driver
-
-
         # Load filter offset shelf if avaiable
         self.filter_offsets={}
 
         # Initialise variable
         self.filter_selected = 'none'
-
 
         if driver is not None:
             self.null_filterwheel = False
@@ -223,7 +218,6 @@ class FilterWheel:
                 # fake having an independnet filter wheel. IF the filter supplied is
                 # an ASCOM.filter then we set this device up normally. Eg., SAF is an
                 # example of this version of the setup.
-
                 self.maxim = False
                 self.dual = False
                 self.custom = False
@@ -244,22 +238,11 @@ class FilterWheel:
         sleep_period= self.filterwheel_update_period / 4
         current_updates=copy.deepcopy(self.filterwheel_updates)
         while current_updates==self.filterwheel_updates:
-            #print ('ping')
             time.sleep(sleep_period)
 
     # Note this is a thread!
     def filterwheel_update_thread(self):
 
-
-        #one_at_a_time = 0
-
-        #Hooking up connection to win32 com focuser
-        #win32com.client.pythoncom.CoInitialize()
-    #     fl = win32com.client.Dispatch(
-    #         win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['foc'].focuser_id, win32com.client.pythoncom.IID_IDispatch)
-    # )
-        #breakpoint()
-        #breakpoint()
         if not self.driver == "LCO.dual":
             win32com.client.pythoncom.CoInitialize()
 
@@ -281,16 +264,7 @@ class FilterWheel:
                     self.filterwheel_update_wincom.LinkEnabled = True
                 except:
                     plog(traceback.format_exc())
-
-
-
-        # try:
-        #     self.pier_side = g_dev[
-        #         "mnt"
-        #     ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
-        #     self.can_report_pierside = True
-        # except:
-        #     self.can_report_pierside = False
+       
 
         # This stopping mechanism allows for threads to close cleanly.
         while True:
@@ -315,10 +289,7 @@ class FilterWheel:
                                 if str(r0_pr) == str(r1_pr) == "<Response [200]>":
                                     break
                                 else:
-                                    #print ("MTF temp filterwheel report: r0_pr " + str(r0_pr) + " r1_pr " + str(r1_pr))
                                     time.sleep(0.2)
-
-                            #print ("MTF temp filterwheel report: r0_pr " + str(r0_pr) + " r1_pr " + str(r1_pr))
 
                             while True:
                                 r0_t = int(
@@ -333,21 +304,9 @@ class FilterWheel:
                                 )
 
                                 if (value_0 == r0_t) and (value_1 == r1_t):
-                                    #plog ("filter changed")
                                     break
                                 else:
-                                    #plog ("filter in motion")
                                     time.sleep(0.5)
-
-                                # breakpoint()
-                                # if r0_t == 808 or r1_t == 808:
-                                #     continue
-                                # else:
-                                #     pass
-                                #     break
-
-                            #print ("MTF temp filterwheel report: r0_t " + str(r0_t) + " r1_t " + str(r1_t))
-
 
                         elif self.dual and not self.maxim:
                             try:
@@ -365,6 +324,7 @@ class FilterWheel:
                             except:
                                 pass
                             self.filter_offset = float(self.filter_data[self.filt_pointer][2])
+                            
                         elif self.maxim and self.dual:
                             try:
                                 self.filterwheel_update_wincom.Filter = self.filter_selections[0]
@@ -372,9 +332,8 @@ class FilterWheel:
                                     self.filterwheel_update_wincom.GuiderFilter = self.filter_selections[1]
 
                             except:
-                                #plog("Filter RPC error, Maxim not responding. Reset Maxim needed.")
                                 plog(traceback.format_exc())
-                                #breakpoint()
+                                
                         elif self.theskyx:
 
                             self.filterwheel_update_wincom.FilterIndexZeroBased = self.filter_data[self.filt_pointer][1][0]
@@ -472,15 +431,12 @@ class FilterWheel:
         except:
             filter_name = str(req["filter_name"]).lower()
 
-        filter_identified = 0
-
         for match in range(
             len(self.filter_data)
         ):
 
             if filter_name in str(self.filter_data[match][0]).lower():
                 self.filt_pointer = match
-                filter_identified = 1
                 break
 
         try:
@@ -503,8 +459,6 @@ class FilterWheel:
         except:
             filter_name = str(req["filter_name"]).lower()
         filter_identified = 0
-
-
 
         for match in range(
             len(self.filter_data)
@@ -529,14 +483,9 @@ class FilterWheel:
                     filter_identified = 1
                     break
 
-
-
         if self.previous_filter_name==filter_name:
             self.filter_changing=False
-
             return self.previous_filter_name, self.previous_filter_match, self.filter_offset
-
-
 
         try:
             plog("Filter name is:  ", self.filter_data[match][0])
@@ -548,9 +497,7 @@ class FilterWheel:
             self.filter_number = self.filt_pointer
             self.filter_selected = str(filter_name).lower()
             self.filter_selections = self.filter_data[self.filt_pointer][1]
-            #self.filter_offset = float(self.filter_data[self.filt_pointer][2])
 
-            #breakpoint()
             if filter_name in self.filter_offsets:
                 self.filter_offset=self.filter_offsets[filter_name]
 
@@ -558,7 +505,6 @@ class FilterWheel:
                 self.filter_offset = 0
         except:
             plog("Failed to change filter. Returning.")
-            #breakpoint()
             self.filter_selected = 'none'
             self.filter_changing=False
             return None, None, None
@@ -572,32 +518,7 @@ class FilterWheel:
         except:
 
             plog ("not adjusting focus for filter change on bootup")
-
-        # make sure focusser is adjusted every filter change
-        #g_dev['foc'].adjust_focus()
-
-        # Not sure whether we need to wait for this? Look into that...
-        #self.wait_for_filterwheel_update()
-
-# <<<<<<< Updated upstream
-# =======
-#             except:
-#                 pass
-#             self.filter_offset = float(self.filter_data[filt_pointer][2])
-#         elif self.maxim and self.dual:
-#             try:
-#                 #breakpoint()
-#                 self.filter.Filter = filter_selections[0]
-#                 if self.dual_filter:
-#                     self.filter.GuiderFilter = filter_selections[1]
-# >>>>>>> Stashed changes
-
-
-        # if self.wait_time_after_filter_change != 0:
-        #     #plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
-        #     time.sleep(self.wait_time_after_filter_change)
-
-
+       
         self.previous_filter_name=filter_name
         self.previous_filter_match=match
 
@@ -605,8 +526,6 @@ class FilterWheel:
 
     def home_command(self, opt: dict):
         """Sets the filter to the home position."""
-
-
         self.set_name_command({"filter": self.config["filter_wheel1"]["settings"]['default_filter']}, {})
 
 
@@ -669,9 +588,6 @@ class FilterWheel:
             plog ("did not find a default filter value for that filter, taking a swing with a standard 150.0 throughput value")
             return 150.0
 
-
-
-
     def substitute_filter(self, requested_filter: str):
         """Returns an alternative filter if requested filter not at site.
 
@@ -679,7 +595,6 @@ class FilterWheel:
         order and returns the highest priority sub first.
         Skips the requested exposure if no substitute filter can be found.
         """
-
 
         # Seriously dumb way to do this..... but quick!
         # Construct available filter list
@@ -706,13 +621,7 @@ class FilterWheel:
 
         except:
             pass
-
-       # breakpoint()
-
-        #  NB NB NB note any filter string when lower cased needs to be unique. j - Johnson,
-        #  c = Cousins, p or ' implies Sloane, S is for stromgren.  Some of the mappings
-        #  below may not be optimal. WER
-
+       
         # List of tuples containing ([requested filter groups], [priority order]).
         # If this list continues to grow, consider putting it in a separate file.
         # This is going to get messy when we add Stromgrens, so I suggest
@@ -769,11 +678,3 @@ class FilterWheel:
 
         plog("No substitute filter found, skipping exposure.")
         return "none", None, None
-
-
-# if __name__ == "__main__":
-#     filt = FilterWheel(
-#         ["ASCOM.FLI.FilterWheel", "ASCOM.FLI.FilterWheel1"],
-#         "Dual filter wheel",
-#         config.site_config,
-#     )

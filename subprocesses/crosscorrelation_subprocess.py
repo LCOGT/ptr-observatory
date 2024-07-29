@@ -12,7 +12,7 @@ from astropy.nddata import block_reduce
 import numpy as np
 import traceback
 import os
-import bottleneck as bn
+
 payload=pickle.load(sys.stdin.buffer)
 #payload=pickle.load(open('crosscorrelprocess.pickle','rb'))
 
@@ -23,23 +23,17 @@ temporary_substack_directory=payload[2]
 output_filename=payload[3]
 is_osc=payload[4]
 
-
-
-
-
 # Really need to thresh the image
-#googtime=time.time()
 int_array_flattened=substackimage.astype(int).ravel()
 int_array_flattened=int_array_flattened[int_array_flattened > -10000]
 unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
 m=counts.argmax()
 imageMode=unique[m]
-#print ("Calculating Mode: " +str(time.time()-googtime))
 
 #Zerothreshing image
-#googtime=time.time()
 histogramdata=np.column_stack([unique,counts]).astype(np.int32)
 histogramdata[histogramdata[:,0] > -10000]
+
 #Do some fiddle faddling to figure out the value that goes to zero less
 zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
 breaker=1
@@ -58,9 +52,13 @@ while (breaker != 0):
                                         if not (imageMode-counter-9) in zeroValueArray[:,0]:
                                             if not (imageMode-counter-10) in zeroValueArray[:,0]:
                                                 if not (imageMode-counter-11) in zeroValueArray[:,0]:
-                                                    if not (imageMode-counter-12) in zeroValueArray[:,0]:
-                                                        zeroValue=(imageMode-counter)
-                                                        breaker =0
+                                                    if not (imageMode-counter-12) in zeroValueArray[:,0]:                                                        
+                                                        if not (imageMode-counter-13) in zeroValueArray[:,0]:
+                                                            if not (imageMode-counter-14) in zeroValueArray[:,0]:
+                                                                if not (imageMode-counter-15) in zeroValueArray[:,0]:
+                                                                    if not (imageMode-counter-16) in zeroValueArray[:,0]: 
+                                                                        zeroValue=(imageMode-counter)
+                                                                        breaker =0
                                                         
 substackimage[substackimage < zeroValue] = np.nan
 

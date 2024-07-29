@@ -1,7 +1,6 @@
 import time
 import win32com.client
 import psutil
-from ptr_utility import plog
 from global_yard import g_dev
 
 
@@ -22,9 +21,6 @@ def findProcessIdByName(processName):
            pass
     return listOfProcessObjects
 
-
-
-
 class Rotator:
     def __init__(self, driver: str, name: str, config: dict):
         self.name = name
@@ -43,47 +39,14 @@ class Rotator:
         try:
             self.rotator_telescope.Connected = True
         except:
-            breakpoint()
-            
+            breakpoint()            
         
         self.TargetPosition=self.rotator.TargetPosition
         self.Position=self.rotator.Position
         self.IsMoving=self.rotator.IsMoving
         
         self.rotator_meant_to_be_rotating = True
-        #self.check_rotator_is_rotating()       
-        
-    # def check_rotator_is_rotating(self):
-        
-    #     # Test that the rotator is ACTUALLY connected
-    #     # Not pretending
-    #     pos1=g_dev['rot'].rotator.Position
-    #     time.sleep(0.05)
-    #     pos2=g_dev['rot'].rotator.Position
-    #     time.sleep(0.05)
-    #     pos3=g_dev['rot'].rotator.Position
-    #     time.sleep(0.05)
-        
-    #     #plog("Rotator positions (Temporary reporting - MTF)")
-    #     if pos1 < 180:
-    #         pos1=pos1+360
-    #     if pos2 < 180:
-    #         pos2=pos2+360
-    #     if pos3 < 180:
-    #         pos3=pos3+360
-            
-        
-    #     avgpos=((pos1)+(pos2)+(pos3))/3
-        
-
-    #     if 359 < avgpos < 361 :
-    #         print ("The Rotator is indicating telescope is parked")
-    #         #breakpoint()
-    #     elif not self.rotator_meant_to_be_rotating:
-    #         print ("The Rotator is not moving, but it isn't meant to be.")
-    #     else:
-    #         print ("THE ROTATOR HAS PERHAPS CRASHED.")
-            
+                    
     def get_status(self):
         """
         The position is expressed as an angle from 0 up to but not including
