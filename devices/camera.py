@@ -33,11 +33,8 @@ from astropy.time import Time
 from astropy.io import fits
 import datetime
 import os
-import queue
-#import math
 import shelve
 import time
-#from image_registration import cross_correlation_shifts
 import traceback
 import ephem
 import copy
@@ -45,7 +42,22 @@ import json
 import random
 from astropy import log
 log.setLevel('ERROR')
-#from astropy import units as u
+
+from astropy.io import fits
+from astropy.coordinates import SkyCoord
+import glob
+import numpy as np
+import bottleneck as bn
+import win32com.client
+import pickle
+from astropy.stats import sigma_clip
+import math
+import sep
+import threading
+from astropy.utils.exceptions import AstropyUserWarning
+import warnings
+import subprocess
+
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 mplstyle.use('fast')
 mpl.rcParams['path.simplify'] = True
@@ -177,35 +189,48 @@ def mid_stretch_jpeg(data):
 def dump_main_data_out_to_post_exposure_subprocess(payload):
 
     # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
+# <<<<<<< HEAD
 
-    if True:
-        # NB set this path to create test pickle for makejpeg routine.
-        pickle.dump(payload, open('subprocesses/testpostprocess.pickle', 'wb'))
+#     if True:
+#         # NB set this path to create test pickle for makejpeg routine.
+#         pickle.dump(payload, open('subprocesses/testpostprocess.pickle', 'wb'))
 
-    # try:
-    post_processing_subprocess = subprocess.Popen(
-        ['python', 'subprocesses/post_exposure_subprocess.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
+#     # try:
+#     post_processing_subprocess = subprocess.Popen(
+#         ['python', 'subprocesses/post_exposure_subprocess.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
 
-    # #breakpoint()
+#     # #breakpoint()
 
-    # #breakpoint()
-    # #try:
-    # post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-    # # except OSError:
-    # #     pass
+#     # #breakpoint()
+#     # #try:
+#     # post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+#     # # except OSError:
+#     # #     pass
 
 
 
+
+#     try:
+#         pickle.dump(payload, post_processing_subprocess.stdin)
+#     except:
+#         plog("Problem in the post_processing_subprocess pickle dump")
+#         plog(traceback.format_exc())
+
+#     # output, error = post_processing_subprocess.communicate()
+#     # print (output)
+#     # breakpoint()
+
+# =======
+    if False:
+        pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
+
+    post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
     try:
         pickle.dump(payload, post_processing_subprocess.stdin)
     except:
-        plog("Problem in the post_processing_subprocess pickle dump")
+        plog ("Problem in the post_processing_subprocess pickle dump")
         plog(traceback.format_exc())
-
-    # output, error = post_processing_subprocess.communicate()
-    # print (output)
-    # breakpoint()
 
 
 # Note this is a thread!
@@ -568,9 +593,10 @@ def multiprocess_fast_gaussian_photometry(package):
 
                     tempvalue = actualprofile[temppos-counter, 1]
                     if tempvalue > 0.75:
-                        threequartertemp = temppos-counter
-                    #print (tempvalue)
-                    counter = counter+1
+
+                        threequartertemp=temppos-counter
+                    counter=counter+1
+
 
                 lefthand_quarter_spot = actualprofile[temppos-counter][0]
                 lefthand_threequarter_spot = actualprofile[threequartertemp][0]
@@ -578,8 +604,9 @@ def multiprocess_fast_gaussian_photometry(package):
                 # Get righthand quarter percentile
                 counter = 1
                 while tempvalue > 0.25*temppeakvalue:
-                    tempvalue = actualprofile[temppos+counter, 1]
-                    #print (tempvalue)
+
+                    tempvalue=actualprofile[temppos+counter,1]
+
                     if tempvalue > 0.75:
                         threequartertemp = temppos+counter
                     counter = counter+1
@@ -633,10 +660,14 @@ def multiprocess_fast_gaussian_photometry(package):
                             smallest_fpopt = copy.deepcopy(test_fpopt)
 
                         if difference < 1.25 * smallest_value:
-                            # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                            # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
-                            # # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                            # plt.show()
+                            # This commented code allows you see PSF plots as they come in for debugging.
+                            if False:
+                                pass
+                                # Need to resinstitute plt.
+                                # plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                                # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
+                                # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                                # plt.show()
                             pass
                         else:
                             break
@@ -648,13 +679,18 @@ def multiprocess_fast_gaussian_photometry(package):
 
                     # if it isn't a unreasonably small fwhm then measure it.
                     try:
-                        if (2.355 * smallest_fpopt[2]) > (0.8 / pixscale):
 
-                            # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                            # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
-                            # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
-                            # #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                            # plt.show()
+                        if (2.355 * smallest_fpopt[2]) > (0.8 / pixscale) :
+                            # This commented code allows you see PSF plots as they come in for debugging.
+                            if False:
+                                # Need to resinstitute plt.
+                                # plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                                # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
+                                # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
+                                # #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                                # plt.show()
+                                pass
+
 
                             return smallest_fpopt[2]
                         else:
@@ -1220,7 +1256,9 @@ class Camera:
             try:
                 pixelscale_list = self.pixelscale_shelf['pixelscale_list']
             except:
-                pixelscale_list = [0.5283]  # NB a hack
+
+                #pixelscale_list=[0.269] #NB a hack\
+                pixelscale_list=None
 
             self.pixelscale_shelf.close()
 
@@ -1243,7 +1281,7 @@ class Camera:
 
             except:
                 plog(traceback.format_exc())
-                # breakpoint()
+
 
         """
         TheSkyX runs on a file mode approach to images rather
@@ -1333,8 +1371,9 @@ class Camera:
 
         try:
 
-            gain_collector = []
-            stdev_collector = []
+            gain_collector=[]
+            stdev_collector=[]
+
 
             self.filter_camera_gain_shelf = shelve.open(
                 g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
@@ -1395,10 +1434,6 @@ class Camera:
             self._stop_expose()
         except:
             pass
-        # self.post_processing_queue = queue.Queue(maxsize=0)
-        # self.post_processing_queue_thread = threading.Thread(target=self.post_processing_process, args=())
-        # self.post_processing_queue_thread.daemon = True
-        # self.post_processing_queue_thread.start()
 
         # Load in previous estimates of readout_time
         try:
@@ -1436,20 +1471,16 @@ class Camera:
 
             except:
                 plog(traceback.format_exc())
-                # breakpoint()
+
 
         # OVERSCAN SETUP
         # Camera overscan values
         self.overscan_values={}
         self.overscan_values['QHY600']=[0,38,32,0]
         self.overscan_values['SBIG16803']=[0,0,0,0]
-        #self.overscan_values['asi1600']=[100,100,100,100]
+
         self.overscan_values['asi1600']=[0,0,0,0]
-
-
         self.overscan_values['none']=[0,0,0,0]
-
-
 
 
         self.overscan_left=self.overscan_values[config["camera"][self.name]['overscan_trim']][0]
@@ -1466,17 +1497,8 @@ class Camera:
         self.overscan_down = self.overscan_values[config["camera"]
                                                   [self.name]['overscan_trim']][3]
 
-        # print (self.overscan_left)
-
-        # print (self.imagesize_x-self.overscan_right)
-        # print (self.overscan_up)
-        # print(self.imagesize_y- self.overscan_down)
-        #tempsend=tempsend[ 0:6384, 32:9600]
-        #tempsend=tempsend[ self.overscan_up: self.imagesize_x- self.overscan_down, self.overscan_left: self.imagesize_y-self.overscan_right ]
-
-        #tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
-
-        # breakpoint()
+        # The skyx needs its own separate camera update thread to do with some theskyx
+        # curiosities and also the win32com sorta connection it makes.
 
         if self.theskyx:
             self.theskyx_set_cooler_on = True
@@ -1619,10 +1641,10 @@ class Camera:
                 elif value_at_point < 0.8*saturate:
                     pointvalues[counter][2] = value_at_point
                 else:
-                    pointvalues[counter][2] = np.nan
-            counter = counter+1
+                    pointvalues[counter][2]=np.nan
+            counter=counter+1
         # Trim list to remove things that have too many other things close to them.
-        googtime = time.time()
+
         # remove nan rows
         pointvalues = pointvalues[~np.isnan(pointvalues).any(axis=1)]
         # reverse sort by brightness
@@ -1708,14 +1730,13 @@ class Camera:
         # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
         hdusmalldata = np.array(hdufocusdata)
         fx, fy = hdusmalldata.shape
-        aspect_ratio = fx/fy
 
-        focus_jpeg_size = 0.2/(self.pixscale/3600)
-
+        aspect_ratio= fx/fy
+        focus_jpeg_size=0.2/(self.pixscale/3600)
         if focus_jpeg_size < fx:
             crop_width = (fx - focus_jpeg_size) / 2
         else:
-            crop_width = 2
+            crop_width =2
 
         if focus_jpeg_size < fy:
             crop_height = (fy - (focus_jpeg_size / aspect_ratio)) / 2
@@ -1823,21 +1844,6 @@ class Camera:
             else:
                 time.sleep(max(1, self.camera_update_period))
 
-    # def post_processing_process(self):
-    #     """
-
-    #     This sends images through post-processing through one at a time.
-
-    #     """
-
-    #     while True:
-    #         if (not self.post_processing_queue.empty()):
-    #             payload = self.post_processing_queue.get(block=False)
-    #             post_exposure_process(payload)
-    #             self.post_processing_queue.task_done()
-    #             time.sleep(2)
-    #         else:
-    #             time.sleep(2)
 
     # Patchable methods   NB These could be default ASCOM
 
@@ -1891,13 +1897,12 @@ class Camera:
         self.async_exposure_lock = True
         tempcamera = win32com.client.Dispatch(self.driver)
         tempcamera.Connect()
+        timeout_timer=time.time()
 
-        timeout_timer = time.time()
         while not tempcamera.IsExposureComplete and (time.time() - timeout_timer) < (self.theskyxExposureTime + self.readout_time):
             self.theskyxIsExposureComplete = False
             plog("waiting for skyx exposure complete.")
             time.sleep(0.01)
-
         tempcamera.ExposureTime = self.theskyxExposureTime
         tempcamera.Frame = self.theskyxFrame
 
@@ -2185,10 +2190,9 @@ class Camera:
     def qhy_substacker_thread(self, exposure_time, N_of_substacks, exp_of_substacks, substacker_filenames):
 
         self.substacker_available = False
+        readout_estimate_holder=[]
+        self.sub_stacker_midpoints=[]
 
-        readout_estimate_holder = []
-        # is_osc=self.config["camera"][self.name]["settings"]['is_osc']
-        self.sub_stacker_midpoints = []
 
         for subexposure in range(N_of_substacks):
             # Check there hasn't been a cancel sent through
@@ -2249,31 +2253,19 @@ class Camera:
                 qhycam.camera_params[qhycam_id]['prev_img_data'])
             time_after_last_substack_readout = time.time()
 
-            readout_estimate_holder.append(
-                time_after_last_substack_readout - time_before_last_substack_readout)
-            #sub_stacker_array[:,:,subexposure] = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+            readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
 
             # If it is the last file in the substack, throw it out to the slow process queue to save
             # So that the camera can get started up again quicker.
-            if subexposure == (N_of_substacks - 1):
-                #g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', copy.deepcopy(substacker_filenames[subexposure]), copy.deepcopy(np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y)))))
-                tempsend = np.reshape(
-                    image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+            if subexposure == (N_of_substacks -1 ):
+                tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+                tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+                np.save(substacker_filenames[subexposure],tempsend)
 
-                #tempsend=tempsend[ 0:6384, 32:9600]
-                tempsend = tempsend[self.overscan_left: self.imagesize_x-self.overscan_right,
-                                    self.overscan_up: self.imagesize_y - self.overscan_down]
+        self.readout_estimate= np.median(np.array(readout_estimate_holder))
+        self.substacker_available=True
+        self.shutter_open=False
 
-                np.save(substacker_filenames[subexposure], tempsend)
-
-
-
-        # self.sub_stack_hold = sub_stacker_array
-        self.readout_estimate = np.median(np.array(readout_estimate_holder))
-
-        # del sub_stacker_array
-        self.substacker_available = True
-        self.shutter_open = False
 
     def _qhyccd_expose(self, exposure_time, bias_dark_or_light_type_frame):
 
@@ -2323,12 +2315,10 @@ class Camera:
         if self.substacker:
             return 'substack_array'
         else:
-            # ctype_timer=time.time()
             image_width_byref = c_uint32()
             image_height_byref = c_uint32()
             bits_per_pixel_byref = c_uint32()
-            #plog ("ctype: " + str(time.time() - ctype_timer))
-            time_before_readout = time.time()
+            time_before_readout=time.time()
             success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
                                                      byref(image_width_byref),
                                                      byref(image_height_byref),
@@ -2337,23 +2327,11 @@ class Camera:
                                                      byref(
                                                          qhycam.camera_params[qhycam_id]['channels']),
                                                      byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-
-            image = np.ctypeslib.as_array(
-                qhycam.camera_params[qhycam_id]['prev_img_data'])
-            time_after_readout = time.time()
-            self.readout_estimate = time_after_readout - time_before_readout
-            #print (self.readout_estimate)
-
-            tempsend = np.reshape(
-                image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-
-            tempsend = tempsend[self.overscan_left: self.imagesize_x-self.overscan_right,
-                                self.overscan_up: self.imagesize_y - self.overscan_down]
-
-            #tempsend=tempsend[ 0:6384, 32:9600]
-
-            # breakpoint()   #I see it!
-            # return np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+            image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
+            time_after_readout=time.time()
+            self.readout_estimate= time_after_readout - time_before_readout
+            tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+            tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
             return tempsend
 
     def wait_for_slew(self, wait_after_slew=True):
@@ -2454,7 +2432,6 @@ class Camera:
         req = command["required_params"]
         opt = command["optional_params"]
         action = command["action"]
-        # breakpoint()
         self.user_id = command["user_id"]
         if self.user_id != self.last_user_id:
             self.last_user_id = self.user_id
@@ -2509,7 +2486,6 @@ class Camera:
                 g_dev["drk"].closeDarkslide()
             elif self.darkslide_type == 'ASCOM_FLI_SHUTTER':
                 self.camera.Action('SetShutter', 'close')
-
             plog("Closing the darkslide.")
             self.darkslide_state = 'Closed'
         elif action == "darkslide_open":
@@ -2517,7 +2493,6 @@ class Camera:
                 g_dev["drk"].openDarkslide()
             elif self.darkslide_type == 'ASCOM_FLI_SHUTTER':
                 self.camera.Action('SetShutter', 'open')
-
             plog("Opening the darkslide.")
             self.darkslide_state = 'Open'
         elif action == "stop":
@@ -2641,7 +2616,6 @@ class Camera:
                 self.running_an_exposure_set = False
                 return
 
-        # self.running_an_exposure_set = True # This really needs to be here from the start
         # We've had multiple cases of multiple camera exposures trying to go at once
         # And it is likely because it takes a non-zero time to get to Phase II
         # So even in the setup phase the "exposure" is "busy"
@@ -2651,7 +2625,6 @@ class Camera:
         self.script = required_params.get("script", "None")
 
         try:
-            # breakpoint()  #NB Consider remapping 'Mosaic deg' to 'Full'
             self.zoom_factor = optional_params.get('zoom', False)
         except:
             plog("Problem with supplied Zoom factor, Camera line 2613")
@@ -2809,8 +2782,6 @@ class Camera:
 
             g_dev["obs"].request_update_status()
 
-            # Vital Check : Has end of observing occured???
-            # Need to do this, SRO kept taking shots til midday without this
             if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
                 if not g_dev['obs'].scope_in_manual_mode and g_dev['events']['Observing Ends'] < ephem.Date(ephem.now() + (exposure_time * ephem.second)):
                     plog("Sorry, exposures are outside of night time.")
@@ -2889,16 +2860,11 @@ class Camera:
             for sskcounter in range(int(Nsmartstack)):
                 pre_exposure_overhead_timer = time.time()
                 # If the pier just flipped, trigger a recentering exposure.
-                # if not g_dev['mnt'].rapid_park_indicator:# and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                 if not g_dev['obs'].mountless_operation:
-                    # and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     if not g_dev['mnt'].rapid_park_indicator:
-                        # if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
-                        # self.wait_for_slew(wait_after_slew=False)
-                        if g_dev['mnt'].pier_flip_detected == True and not g_dev['obs'].auto_centering_off:
-                            plog("PIERFLIP DETECTED, RECENTERING.")
-                            g_dev["obs"].send_to_user(
-                                "Pier Flip detected, recentering.")
+                        if g_dev['mnt'].pier_flip_detected==True and not g_dev['obs'].auto_centering_off:
+                            plog ("PIERFLIP DETECTED, RECENTERING.")
+                            g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                             g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
                             g_dev['obs'].pointing_correction_request_time = time.time()
                             g_dev['obs'].pointing_correction_request_ra = g_dev["mnt"].last_ra_requested
@@ -2915,7 +2881,6 @@ class Camera:
                             pass
 
                     if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread:
-                        #plog ("Major shift detected, recentering.")
                         g_dev['obs'].check_platesolve_and_nudge()
 
                 self.tempStartupExposureTime = time.time()
@@ -2929,17 +2894,13 @@ class Camera:
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
                     if g_dev["obs"].stop_all_activity:
-                        Nsmartstack = 1
-                        sskcounter = 2
-                        # if expresult != None and expresult != {}:
-                        #     if expresult["stopped"] is True:
+                        Nsmartstack=1
+                        sskcounter=2
                         g_dev["obs"].stop_all_activity = False
                         plog("Camera retry loop stopped by Cancel Exposure")
                         self.running_an_exposure_set = False
-                        #plog ("stop_all_activity cancelling out of camera exposure")
-                        self.currently_in_smartstack_loop = False
-                        self.write_out_realtimefiles_token_to_disk(
-                            real_time_token, real_time_files)
+                        self.currently_in_smartstack_loop=False
+                        self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
                         return
 
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
@@ -3059,7 +3020,6 @@ class Camera:
                                     self.darkslide_state = 'Closed'
 
                             # Good spot to check if we need to nudge the telescope
-
                             g_dev['obs'].check_platesolve_and_nudge()
                             g_dev['obs'].time_of_last_exposure = time.time()
 
@@ -3082,14 +3042,12 @@ class Camera:
                                 if g_dev['rot'] != None:
                                     if not g_dev['mnt'].rapid_park_indicator and not g_dev['obs'].rotator_has_been_checked_since_last_slew:
                                         g_dev['obs'].rotator_has_been_checked_since_last_slew = True
-                                        # This signal fibrulates!
+
                                         while g_dev['rot'].rotator.IsMoving:
-                                            # if g_dev['rot'].rotator.IsMoving:
-                                            if rot_report == 0:
-                                                plog(
-                                                    "Waiting for camera rotator to catch up. ")
-                                                g_dev["obs"].send_to_user(
-                                                    "Waiting for instrument rotator to catch up before exposing.")
+                                            if rot_report == 0 :
+                                                plog("Waiting for camera rotator to catch up. ")
+                                                g_dev["obs"].send_to_user("Waiting for instrument rotator to catch up before exposing.")
+
 
                                                 rot_report = 1
                                             time.sleep(0.2)
@@ -3123,7 +3081,6 @@ class Camera:
                                     self.write_out_realtimefiles_token_to_disk(
                                         real_time_token, real_time_files)
                                     return expresult
-
                                 else:
                                     g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
@@ -3186,7 +3143,6 @@ class Camera:
 
                             # Sort out if it is a substack
                             # If request actually requested a substack
-                            # print (self.substacker)
                             if self.substacker:
                                 self.substacker = False
                                 broadband_ss_biasdark_exp_time = self.config['camera'][
@@ -3212,13 +3168,8 @@ class Camera:
                                             plog("Could not engage substacking as the bad pixel mask is missing")
                                     else:
                                         plog ("Could not engage substacking as the filter requested has no flat")
-                                        #breakpoint()
                                 else:
                                     plog("Could not engage substacking as the appropriate biasdark")
-
-                            # print (self.substacker)
-                            # if not self.substacker:
-                            #     breakpoint()
 
                             # Adjust pointing exposure time relative to known focus
                             if not g_dev['seq'].focussing and frame_type == 'pointing':
@@ -3270,11 +3221,8 @@ class Camera:
 
                             # Initialise this variable here
                             self.substacker_filenames = []
-
-                            start_time_of_observation = time.time()
-                            #plog ("Pre-exposure overhead: " + str(time.time()- pre_exposure_overhead_timer))
-                            #plog ("Time between last start time and this start time: " + str(time.time()- self.start_time_of_observation))
-                            self.start_time_of_observation = time.time()
+                            start_time_of_observation=time.time()
+                            self.start_time_of_observation=time.time()
                             self.shutter_open = True
                             self._expose(
                                 exposure_time, bias_dark_or_light_type_frame)
@@ -3286,8 +3234,6 @@ class Camera:
 
                             # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
                             # But not so important if you aren't platesovling - e.g. short exposures
-                            # where time is of the essence and we aren't platesolving anyway
-                            googtime = time.time()
                             if not g_dev['obs'].mountless_operation:
                                 if exposure_time >= 1:
                                     ra_at_time_of_exposure, dec_at_time_of_exposure = g_dev["mnt"].get_mount_coordinates_after_next_update(
@@ -3356,8 +3302,6 @@ class Camera:
                                 self.pre_mnt
                             )
 
-                        # We call below to keep this subroutine a reasonable length, Basically still in Phase 2
-
                         expresult = self.finish_exposure(
                             exposure_time,
                             frame_type,
@@ -3394,7 +3338,7 @@ class Camera:
                             substack=self.substacker,
                             corrected_ra_for_header=corrected_ra_for_header,
                             corrected_dec_for_header=corrected_dec_for_header
-                        )  # NB all these parameters are crazy!
+                        )
 
                         self.retry_camera = 0
                         if not frame_type[-4:] == "flat" and not frame_type.lower() in ["bias", "dark"] and not a_dark_exposure and not frame_type.lower() == 'focus' and not frame_type == 'pointing':
@@ -3663,8 +3607,7 @@ class Camera:
                 pass
             block_and_focus_check_done = True
 
-        # pointingfocus_masterdark_done=False
-        check_nudge_after_shutter_closed = False
+        check_nudge_after_shutter_closed=False
 
         if frame_type[-5:] in ["focus", "probe", "ental"]:
             focus_image = True
@@ -3676,41 +3619,20 @@ class Camera:
         narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * \
             self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
         dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
-
-        # spun_up_subprocesses=False
-
-        # SETTING UP COMMON THINGS FOR ALL THREADS AND HEADERS.
-        # Nothing slow goes here if can be helped.
-
-        #readout_estimate = copy.deepcopy(self.readout_estimate)
-        # If there isn't an estimated readout time shelf yet, use this first one as the estimate to begin with.
-        # if self.readout_time==0:
-        #     self.readout_time=copy.deepcopy(readout_estimate)
-
         if not g_dev['obs'].mountless_operation:
-            #avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
-            avg_mnt = g_dev["mnt"].get_average_status(
-                self.pre_mnt, self.pre_mnt)
-            #avg_mnt = self.pre_mnt
+            avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.pre_mnt)
         else:
             avg_mnt = None
 
         try:
-            #avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
-            avg_foc = g_dev["foc"].get_average_status(
-                self.pre_foc, self.pre_foc)
-            #avg_foc = self.pre_foc
+            avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.pre_foc)
         except:
             pass
 
         try:
-            # avg_rot = g_dev["rot"].get_average_status(
-            #     self.pre_rot, self.post_rot
-            # )
             avg_rot = g_dev["rot"].get_average_status(
                 self.pre_rot, self.pre_rot
             )
-            # avg_rot=self.pre_rot
         except:
             avg_rot = None
 
@@ -3839,8 +3761,8 @@ class Camera:
 
         # FOR POINTING AND FOCUS EXPOSURES, CONSTRUCT THE SCALED MASTERDARK WHILE
         # THE EXPOSURE IS RUNNING
-        if (frame_type == 'pointing' or focus_image == True) and smartstackid == 'no':
-            if not substack:  # self.substacker:
+        if (frame_type=='pointing' or focus_image == True) and smartstackid == 'no':
+            if not substack:
                 try:
                     # Sort out an intermediate dark
                     fraction_through_range = 0
@@ -3882,19 +3804,16 @@ class Camera:
                         intermediate_tempdark = (g_dev['cam'].darkFiles['1'])
                     except:
                         pass
-                # pointingfocus_masterdark_done=True
             try:
                 intermediate_tempflat = np.load(
                     g_dev['cam'].flatFiles[this_exposure_filter + "_bin" + str(1)])
             except:
                 plog("couldn't find flat for this filter")
                 intermediate_tempflat = None
+        ## For traditional exposures, spin up all the subprocesses ready to collect and process the files once they arrive
+        if (not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing'):
 
-        # For traditional exposures, spin up all the subprocesses ready to collect and process the files once they arrive
-        if (not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"] and not a_dark_exposure and not focus_image and not frame_type == 'pointing'):
-            #spun_up_subprocesses = True
-
-            # Trigger off threads to wait for their respective files
+            ######### Trigger off threads to wait for their respective files
             # SMARTSTACK THREAD
             if (not frame_type.lower() in [
                 "bias",
@@ -3914,9 +3833,8 @@ class Camera:
                     "smartstacks/smartstack" + \
                     str(time.time()).replace('.', '') + '.pickle'
 
-                crop_preview = self.config["camera"][g_dev['cam']
-                                                     .name]["settings"]["crop_preview"]
-                yb = self.config["camera"][g_dev['cam'].name]["settings"][
+                crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
+                yb=self.config["camera"][g_dev['cam'].name]["settings"][
                     "crop_preview_ybottom"
                 ]
                 yt = self.config["camera"][g_dev['cam'].name]["settings"][
@@ -3940,8 +3858,7 @@ class Camera:
                     red_name01 = (next_seq + "-" + self.config["obs_id"] + "-" + str(object_name).replace(':', 'd').replace('@', 'at').replace('.', 'd').replace(
                         ' ', '').replace('-', '') + '-'+str(this_exposure_filter) + "-" + str(exposure_time).replace('.', 'd') + "-" + im_type + "01.fits")
                 else:
-                    red_name01 = (self.config["obs_id"] + "-" + str(object_name).replace(':', 'd').replace('@', 'at').replace('.', 'd').replace(' ', '').replace(
-                        '-', '') + '-'+str(this_exposure_filter) + "-" + next_seq + "-" + str(exposure_time).replace('.', 'd') + "-" + im_type + "01.fits")
+                    red_name01 = (self.config["obs_id"] + "-" + str(object_name).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(this_exposure_filter) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")
 
                 if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                     picklepayload = [
@@ -3978,8 +3895,7 @@ class Camera:
                         jpeg_name,
                         im_path_r + g_dev['day'] + "/reduced/",
                         red_name01
-
-                    ]
+                        ]
                 else:
                     picklepayload = [
                         smartstackthread_filename,
@@ -4010,17 +3926,14 @@ class Camera:
                     ]
 
                 # Another pickle debugger
-                if False:
+                if False :
                     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
-
 
                 try:
                     smartstack_subprocess = subprocess.Popen(
                         ['python', 'subprocesses/SmartStackprocess.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
                 except OSError:
                     pass
-
-                #breakpoint()
 
                 self.camera_path + g_dev['day'] + "/to_AWS/"
 
@@ -4030,17 +3943,11 @@ class Camera:
                     plog("Problem in the smartstack pickle dump")
                     plog(traceback.format_exc())
 
-                # #  We don't have to wait for the full smartstack process to finish, just until it gets to the stage where
-                # # It has saved out the next layer to the npy. Beyond this, it is just making a jpeg and the reduced file.
-                # while not os.path.exists(paths["im_path"] + 'smartstack.pickle'):
-                #     time.sleep(0.5)
 
-                g_dev['obs'].fast_queue.put(
-                    (self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name, time.time(), exposure_time), block=False)
+                g_dev['obs'].fast_queue.put((self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name ,time.time(), exposure_time), block=False)
+
             else:
-                smartstackthread_filename = 'no'
-
-
+                smartstackthread_filename='no'
 
             # SEP THREAD
             septhread_filename = self.local_calibration_path + \
@@ -4063,18 +3970,18 @@ class Camera:
             sep_bin_value = 1
             focus_jpeg_size = 500
 
-            saturate = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-            minimum_realistic_seeing = self.config['minimum_realistic_seeing']
+            saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+            minimum_realistic_seeing=self.config['minimum_realistic_seeing']
+
+            # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
+            if False:
+                pickle.dump([septhread_filename, self.pixscale, self.camera_known_readnoise, avg_foc, focus_image, im_path, text_name, 'hduheader', cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,self.native_bin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
+
             try:
                 sep_subprocess = subprocess.Popen(
                     ['python', 'subprocesses/SEPprocess.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
             except OSError:
                 pass
-
-            # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-            if False:
-                pickle.dump([septhread_filename, self.pixscale, self.camera_known_readnoise, avg_foc, focus_image, im_path, text_name, 'hduheader', cal_path, cal_name, frame_type, focus_position, g_dev['events'], ephem.now(), 0.0, 0.0, is_osc,
-                            interpolate_for_focus, bin_for_focus, focus_bin_value, interpolate_for_sep, bin_for_sep, sep_bin_value, focus_jpeg_size, saturate, minimum_realistic_seeing, self.native_bin, do_sep, exposure_time], open('subprocesses/testSEPpickle', 'wb'))
 
             try:
 
@@ -4083,26 +3990,14 @@ class Camera:
             except:
                 plog("Problem in the SEP pickle dump")
                 plog(traceback.format_exc())
-
-            # delete the subprocess connection once the data have been dumped out to the process.
-            #del sep_subprocess
-
-            packet = (avg_foc, exposure_time,
-                      this_exposure_filter, airmass_of_observation)
-            g_dev['obs'].file_wait_and_act_queue.put(
-                (im_path + text_name.replace('.txt', '.fwhm'), time.time(), packet))
+            packet=(avg_foc,exposure_time,this_exposure_filter, airmass_of_observation)
+            g_dev['obs'].file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
 
             g_dev['obs'].enqueue_for_fastUI(im_path, text_name, exposure_time)
 
-            #del hdufocusdata
-
             # JPEG process
             if smartstackid == 'no':
-                mainjpegthread_filename = self.local_calibration_path + \
-                    "smartstacks/mainjpeg" + \
-                    str(time.time()).replace('.', '') + '.pickle'
-                #osc_jpeg_timer_start = time.time()
-                #(hdusmalldata, smartstackid, paths, pier_side, zoom_factor) = self.mainjpeg_queue.get(block=False)
+                mainjpegthread_filename=self.local_calibration_path + "smartstacks/mainjpeg" + str(time.time()).replace('.','') + '.pickle'
                 is_osc = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
                 osc_bayer = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"]
                 if is_osc:
@@ -4119,12 +4014,13 @@ class Camera:
                     osc_sharpness_enhance = g_dev['cam'].config["camera"][g_dev['cam']
                                                                           .name]["settings"]['osc_sharpness_enhance']
                 else:
-                    osc_background_cut = 0
-                    osc_brightness_enhance = 0
-                    osc_contrast_enhance = 0
-                    osc_colour_enhance = 0
-                    osc_saturation_enhance = 0
-                    osc_sharpness_enhance = 0
+                    osc_background_cut=0
+                    osc_brightness_enhance= 0
+                    osc_contrast_enhance=0
+                    osc_colour_enhance=0
+                    osc_saturation_enhance=0
+                    osc_sharpness_enhance=0
+
                 # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
                 transpose_jpeg = g_dev['cam'].config["camera"][g_dev['cam']
                                                                .name]["settings"]["transpose_jpeg"]
@@ -4153,8 +4049,6 @@ class Camera:
                 squash_on_x_axis = self.config["camera"][g_dev['cam']
                                                          .name]["settings"]["squash_on_x_axis"]
 
-
-
                 if g_dev['obs'].mountless_operation:
                     pier_side=0
                 else:
@@ -4171,7 +4065,6 @@ class Camera:
                         ['python', 'subprocesses/mainjpeg.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
                 except OSError:
                     pass
-
                 try:
                     pickle.dump([mainjpegthread_filename, smartstackid, 'paths', pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                           osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
@@ -4182,28 +4075,18 @@ class Camera:
 
                 del jpeg_subprocess
 
-                # del hdusmalldata # Get big file out of memory
-
-                # Try saving the jpeg to disk and quickly send up to AWS to present for the user
-                # if smartstackid == 'no':
-                #     try:
                 g_dev['obs'].enqueue_for_fastUI(
                     self.camera_path + g_dev['day'] +
                     "/to_AWS/", jpeg_name, exposure_time
                 )
-
             else:
-                mainjpegthread_filename = 'no'
+                mainjpegthread_filename='no'
 
             # Report files to the queues
-
-            # if not self.config["camera"][g_dev['cam'].alias]["settings"]["is_osc"]:
             if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
 
                 # Send this file up to ptrarchive
                 if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
-
-                    #print ("INGESTERING " + raw_name00)
                     g_dev['obs'].enqueue_for_PTRarchive(
                         26000000, '', raw_path + raw_name00 + '.fz'
                     )
@@ -4211,10 +4094,7 @@ class Camera:
             else:  # Is an OSC
 
                 if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
-
                     tempfilename = raw_path + raw_name00
-
-
 
                     if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
 
@@ -4230,14 +4110,12 @@ class Camera:
                                 '-EX', 'G1-EX') + '.fz'
                         )
 
-
                     if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
 
                         g_dev['obs'].enqueue_for_PTRarchive(
                             26000000, '', tempfilename.replace(
                                 '-EX', 'G2-EX') + '.fz'
                         )
-
 
                     if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
 
@@ -4255,10 +4133,9 @@ class Camera:
                 else:
                     print("this bayer grid not implemented yet")
 
-# PLATESOVLERY
-            platesolvethread_filename = 'no'
-            if solve_it == True or (not manually_requested_calibration or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)
-                                    or g_dev['obs'].images_since_last_solve > self.config["solve_nth_image"] or (datetime.datetime.utcnow() - g_dev['obs'].last_solve_time) > datetime.timedelta(minutes=self.config["solve_timer"])):
+            platesolvethread_filename='no'
+            if solve_it == True or (not manually_requested_calibration or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
+                                       or g_dev['obs'].images_since_last_solve > self.config["solve_nth_image"] or (datetime.datetime.utcnow() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=self.config["solve_timer"])):
 
                 cal_name = (
                     cal_name[:-9] + "F012" + cal_name[-7:]
@@ -4279,16 +4156,12 @@ class Camera:
                             firstframesmartstack = True
                         else:
                             firstframesmartstack = False
-                        platesolvethread_filename = self.local_calibration_path + \
-                            "smartstacks/platesolve" + \
-                            str(time.time()).replace('.', '') + '.pickle'
+                        platesolvethread_filename=self.local_calibration_path + "smartstacks/platesolve" + str(time.time()).replace('.','') + '.pickle'
 
-                        g_dev['obs'].to_platesolve((platesolvethread_filename, 'hdusmallheader', cal_path, cal_name, frame_type, time.time(
-                        ), self.pixscale, ra_at_time_of_exposure, dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, '', 'reference', exposure_time))
+                        g_dev['obs'].to_platesolve((platesolvethread_filename, 'hdusmallheader', cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, '','reference', exposure_time))
 
                     else:
-                        platesolvethread_filename = 'no'
-
+                        platesolvethread_filename='no'
         while True:
 
             if (
@@ -4321,7 +4194,6 @@ class Camera:
                         return expresult
 
                 remaining = round(self.completion_time - time.time(), 1)
-
                 if remaining > 0:
                     if time.time() - self.plog_exposure_time_counter_timer > 10.0:
                         self.plog_exposure_time_counter_timer = time.time()
@@ -4332,7 +4204,7 @@ class Camera:
 
                     if (
                         quartileExposureReport == 0
-                    ):  # Silly daft but workable exposure time reporting by MTF
+                    ):
                         initialRemaining = remaining
                         quartileExposureReport = quartileExposureReport + 1
                     if (
@@ -4386,8 +4258,8 @@ class Camera:
                     if time.time() > (start_time_of_observation + exposure_time):
                         # If the exposure time has passed, then the shutter is closed for normal exposures
                         # The substacker thread reports the shutter_open(/closed). Other methods may not.
-                        if not substack:  # self.substacker:
-                            g_dev['cam'].shutter_open = False
+                        if not substack:
+                            g_dev['cam'].shutter_open=False
 
                     # If the shutter has closed but there is still time, then nudge the scope while reading out
                     if not g_dev['cam'].shutter_open:
@@ -4421,7 +4293,6 @@ class Camera:
                                                     )
 
                                 elif g_dev['obs'].pointing_recentering_requested_by_platesolve_thread or g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
-                                    # self.wait_for_slew(wait_after_slew=False)
                                     g_dev['obs'].check_platesolve_and_nudge()
 
                                 # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
@@ -4445,7 +4316,6 @@ class Camera:
                                         except Exception as e:
                                             plog(traceback.format_exc())
                                             if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-
                                                 plog("The SkyX had an error.")
                                                 plog(
                                                     "Usually this is because of a broken connection.")
@@ -4458,15 +4328,10 @@ class Camera:
                                     # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
                                     elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                                         try:
-                                            # self.wait_for_slew(wait_after_slew=False)
-                                            g_dev['mnt'].slew_async_directly(
-                                                ra=self.initial_smartstack_ra, dec=self.initial_smartstack_dec)
-                                            # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-
+                                            g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra, dec=self.initial_smartstack_dec)
                                         except Exception as e:
                                             plog(traceback.format_exc())
                                             if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-
                                                 plog("The SkyX had an error.")
                                                 plog(
                                                     "Usually this is because of a broken connection.")
@@ -4520,23 +4385,19 @@ class Camera:
 
                 post_overhead_timer = time.time()
 
-# STUFF ATTEMPTING TO SQUISH IN JUST AFTER EXPOSURE TIME AND BEFORE READOUT.
 
-                checknudge_timer = time.time()
 
                 # Good spot to check if we need to nudge the telescope
                 # Allowed to on the last loop of a smartstack
                 # We need to clear the nudge before putting another platesolve in the queue
                 if (Nsmartstack > 1 and (Nsmartstack == sskcounter+1)):
-                    self.currently_in_smartstack_loop = False
+                    self.currently_in_smartstack_loop=False
 
                 # If the nudge wasn't done during the readout, then nudge it now
                 if not check_nudge_after_shutter_closed:
                     # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
                     if not g_dev['obs'].mountless_operation:
-
                         if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread or g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
-                            # self.wait_for_slew(wait_after_slew=False)
                             g_dev['obs'].check_platesolve_and_nudge()
 
                         # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
@@ -4553,14 +4414,11 @@ class Camera:
                                     dec_random_dither = (
                                         (random.randint(0, 50)-25) * self.pixscale / 3600)
                                 try:
-                                    # self.wait_for_slew(wait_after_slew=False)
-                                    g_dev['mnt'].slew_async_directly(
-                                        ra=self.initial_smartstack_ra + ra_random_dither, dec=self.initial_smartstack_dec + dec_random_dither)
+                                    g_dev['mnt'].slew_async_directly(ra=self.initial_smartstack_ra + ra_random_dither, dec=self.initial_smartstack_dec + dec_random_dither)
 
                                 except Exception as e:
                                     plog(traceback.format_exc())
                                     if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-
                                         plog("The SkyX had an error.")
                                         plog(
                                             "Usually this is because of a broken connection.")
@@ -4580,7 +4438,6 @@ class Camera:
                                 except Exception as e:
                                     plog(traceback.format_exc())
                                     if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-
                                         plog("The SkyX had an error.")
                                         plog(
                                             "Usually this is because of a broken connection.")
@@ -4607,9 +4464,6 @@ class Camera:
                                         }
                                     )
 
-
-
-                imagearraytimer = time.time()
                 if not frame_type in (
                         "flat",
                         "screenflat",
@@ -4619,13 +4473,10 @@ class Camera:
                 if self.theskyx:
                     self.readout_estimate = time.time()-start_time_of_observation-exposure_time
 
-                if substack:  # self.substacker:
-                    expected_endpoint_of_substack_exposure = copy.deepcopy(
-                        self.expected_endpoint_of_substack_exposure)
-                    substack_start_time = copy.deepcopy(
-                        self.substack_start_time)
-                    sub_stacker_midpoints = copy.deepcopy(
-                        self.sub_stacker_midpoints)
+                if substack:
+                    expected_endpoint_of_substack_exposure=copy.deepcopy(self.expected_endpoint_of_substack_exposure)
+                    substack_start_time=copy.deepcopy(self.substack_start_time)
+                    sub_stacker_midpoints=copy.deepcopy(self.sub_stacker_midpoints)
                 else:
                     expected_endpoint_of_substack_exposure = None
                     substack_start_time = None
@@ -4633,8 +4484,8 @@ class Camera:
 
                 # HERE WE EITHER GET THE IMAGE ARRAY OR REPORT THE SUBSTACKER ARRAY
 
-                if substack:  # self.substacker:
-                    outputimg = 'substacker'
+                if substack:
+                    outputimg='substacker'
                 else:
                     imageCollected = 0
                     retrycounter = 0
@@ -4661,7 +4512,6 @@ class Camera:
                                     expresult["error"] = True
                                     return expresult
                             else:
-
                                 plog(e)
                                 plog(traceback.format_exc())
                                 if "Image Not Available" in str(e):
@@ -4670,16 +4520,13 @@ class Camera:
                             retrycounter = retrycounter + 1
 
 
+################################################# CUTOFF FOR THE POSTPROCESSING QUEUE
 
+################################ START OFF THE MAIN POST_PROCESSING SUBTHREAD
 
-# START OFF THE MAIN POST_PROCESSING SUBTHREAD
-
-                if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"] and not a_dark_exposure and not focus_image and not frame_type == 'pointing':
-                    #self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, self.substacker,expected_endpoint_of_substack_exposure,substack_start_time,readout_estimate, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"], exposure_filter_offset, g_dev["fil"].null_filterwheel, g_dev['evnt'].wema_config,smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename)), block=False)
+                if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
                     if substack:
                         outputimg=''
-
-
 
                     if g_dev['obs'].mountless_operation:
                         pier_side=0
@@ -4690,83 +4537,19 @@ class Camera:
                         ha_corr=g_dev["mnt"].ha_corr
                         dec_corr=g_dev["mnt"].dec_corr
 
-                    #process_dump_timer=time.time()
                     payload=copy.deepcopy((outputimg, pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, ha_corr, dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, substack,expected_endpoint_of_substack_exposure,substack_start_time,0.0, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"], exposure_filter_offset, g_dev["fil"].null_filterwheel, g_dev['evnt'].wema_config,smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename))
 
-                    # process_dump_timer=time.time()
-                    payload = copy.deepcopy((outputimg,
-                                             g_dev["mnt"].pier_side,
-                                             self.config["camera"][self.name]["settings"]['is_osc'],
-                                             frame_type,
-                                             self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'],
-                                             avg_mnt,
-                                             avg_foc,
-                                             avg_rot,
-                                             self.setpoint,
-                                             self.tempccdtemp,
-                                             self.ccd_humidity,
-                                             self.ccd_pressure,
-                                             self.darkslide_state,
-                                             exposure_time,
-                                             this_exposure_filter,
-                                             exposure_filter_offset,
-                                             self.pane, opt,
-                                             observer_user_name,
-                                             self.hint,
-                                             azimuth_of_observation,
-                                             altitude_of_observation,
-                                             airmass_of_observation,
-                                             self.pixscale,
-                                             smartstackid, sskcounter,
-                                             Nsmartstack,
-                                             'longstack_deprecated',
-                                            ra_at_time_of_exposure,
-                                            dec_at_time_of_exposure,
-                                            manually_requested_calibration,
-                                            object_name,
-                                            object_specf,
-                                            g_dev["mnt"].ha_corr,
-                                            g_dev["mnt"].dec_corr,
-                                            focus_position,
-                                            self.config,
-                                            self.name,
-                                            self.camera_known_gain,
-                                            self.camera_known_readnoise,
-                                            start_time_of_observation,
-                                            observer_user_id,
-                                            self.camera_path,
-                                            solve_it,
-                                            next_seq,
-                                            zoom_factor,
-                                            useastrometrynet,
-                                            substack,
-                                            expected_endpoint_of_substack_exposure,
-                                            substack_start_time, 0.0,
-                                            self.readout_time,
-                                            sub_stacker_midpoints,
-                                            corrected_ra_for_header,
-                                            corrected_dec_for_header,
-                                            self.substacker_filenames,
-                                            g_dev["day"],
-                                            exposure_filter_offset,
-                                            g_dev["fil"].null_filterwheel,
-                                            g_dev['evnt'].wema_config,
-                                            smartstackthread_filename,
-                                            septhread_filename,
-                                            mainjpegthread_filename,
-                                            platesolvethread_filename))
+
+                    # It actually takes a few seconds to spin up the main subprocess, so we farm this out to a thread
+                    # So the code can continue more quickly to the next exposure.
+                    threading.Thread(target=dump_main_data_out_to_post_exposure_subprocess, args=(payload,)).start()
 
 
-
-                    threading.Thread(
-                        target=dump_main_data_out_to_post_exposure_subprocess, args=(payload,)).start()
+################################################# HERE IS WHERE IN-LINE STUFF HAPPENS.
 
 
-                # HERE IS WHERE IN-LINE STUFF HAPPENS.
+                # BIAS & DARK VETTING AND DISTRIBUTION AREA.
 
-
-# BIAS & DARK VETTING AND DISTRIBUTION AREA.
-                calibflatfocuspointing_timer = time.time()
                 # For biases, darks, flats, focus and pointing images, it doesn't go to the subprocess.
                 # It either doesn't buy us any time OR the results of one image relies on the next....
                 # e.g. the next flat exposure relies on the throughput results of the last
@@ -4789,31 +4572,23 @@ class Camera:
                         expresult = {}
                         expresult["error"] = True
                         return expresult
-
                     else:
                         plog("temperature in range for calibrations (" +
                              str(current_camera_temperature)+"), accepting calibration frame")
                         g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
                     # Really need to thresh the image
-                    # googtime=time.time()
-                    int_array_flattened = outputimg.astype(int).ravel()
-                    int_array_flattened = int_array_flattened[int_array_flattened > -10000]
-                    unique, counts = np.unique(
-                        int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-                    m = counts.argmax()
-                    imageMode = unique[m]
-                    #plog ("Calculating Mode: " +str(time.time()-googtime))
-
-                    # Zerothreshing image
-                    # googtime=time.time()
-                    histogramdata = np.column_stack(
-                        [unique, counts]).astype(np.int32)
-                    histogramdata[histogramdata[:, 0] > -10000]
-                    # Do some fiddle faddling to figure out the value that goes to zero less
-                    zeroValueArray = histogramdata[histogramdata[:, 0] < imageMode]
-                    breaker = 1
-                    zerocounter = 0
+                    int_array_flattened=outputimg.astype(int).ravel()
+                    int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+                    unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                    m=counts.argmax()
+                    imageMode=unique[m]
+                    histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                    histogramdata[histogramdata[:,0] > -10000]
+                    #Do some fiddle faddling to figure out the value that goes to zero less
+                    zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+                    breaker=1
+                    zerocounter=0
                     while (breaker != 0):
                         zerocounter=zerocounter+1
                         if not (imageMode-zerocounter) in zeroValueArray[:,0]:
@@ -4836,12 +4611,9 @@ class Camera:
                                                                                             zeroValue=(imageMode-zerocounter)
                                                                                             breaker =0
 
-                    # numpy.count_nonzero(numpy.isnan(imagedata))
-                    countypixels = outputimg[np.where(outputimg < zeroValue)]
-                    plog("Number of unnaturally negative pixels: " +
-                         str(len(countypixels)))
-                    plog(next_seq)
-                    # breakpoint()
+                    countypixels=outputimg[ np.where(outputimg < zeroValue ) ]
+                    plog ("Number of unnaturally negative pixels: " + str(len(countypixels)) )
+                    plog (next_seq)
 
                     # If there are too many unnaturally negative pixels, then reject the calibration
                     if len(countypixels) > 100:
@@ -4882,26 +4654,21 @@ class Camera:
                                  str(debiaseddarkmean))
 
 
+                            plog ("Exposure time: " + str(exposure_time))
 
-                            plog("Exposure time: " + str(exposure_time))
-
-                            # Short exposures are inherently much more variable, so their limit is set much higher.
-                            if frame_type in ['pointzerozerofourfive_exposure_dark', 'onepointfivepercent_exposure_dark', 'fivepercent_exposure_dark', 'tenpercent_exposure_dark']:
-                                plog(
-                                    "This exposure is too short for the dark rejecter to be particularly reliable.")
-                            elif frame_type in ['quartersec_exposure_dark', 'halfsec_exposure_dark', 'threequartersec_exposure_dark', 'onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark']:
-                                # was 0.5, NB later add in an std based second rejection criterion
+                            #Short exposures are inherently much more variable, so their limit is set much higher.
+                            if frame_type in ['pointzerozerofourfive_exposure_dark','onepointfivepercent_exposure_dark','fivepercent_exposure_dark','tenpercent_exposure_dark']:
+                                plog ("This exposure is too short for the dark rejecter to be particularly reliable.")
+                            elif frame_type in ['quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark']:
                                 if debiaseddarkmedian > 10*dark_limit_adu:
-                                    plog(
-                                        "Reject! This Dark seems to be light affected. ")
+                                    plog ("Reject! This Dark seems to be light affected. ")
                                     expresult = {}
                                     expresult["error"] = True
                                     return expresult
-                            elif debiaseddarkmedian > dark_limit_adu:   # was 0.5, NB later add in an std based second rejection criterion
-                                plog("Reject! This Dark seems to be light affected. ")
+                            elif debiaseddarkmedian > dark_limit_adu:
+                                plog ("Reject! This Dark seems to be light affected. ")
                                 expresult = {}
                                 expresult["error"] = True
-
                                 return expresult
 
                 # Specific dark and bias save area
@@ -5035,7 +4802,8 @@ class Camera:
                     except Exception as e:
                         plog("applying bad pixel mask to light frame failed: ", e)
 
-                if frame_type == 'pointing' and focus_image == False:
+
+                if frame_type=='pointing' and focus_image == False:
 
                     hdu = fits.PrimaryHDU()
                     if np.isnan(self.pixscale) or self.pixscale == None:
@@ -5047,10 +4815,8 @@ class Camera:
                     hdusmallheader = copy.deepcopy(hdu.header)
                     del hdu
 
-                    g_dev['obs'].platesolve_is_processing = True
-                    #g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r+ g_dev["day"]+ "/to_AWS/"+ jpeg_name))
-                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,
-                                               dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r + g_dev["day"] + "/to_AWS/" + jpeg_name, 'image', exposure_time))
+                    g_dev['obs'].platesolve_is_processing =True
+                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r+ g_dev["day"]+ "/to_AWS/"+ jpeg_name, 'image', exposure_time))
 
                 # If this is a focus image,
                 # FWHM.
@@ -5130,7 +4896,6 @@ class Camera:
                          str(round(float(g_dev['obs'].fwhmresult['FWHM']), 2)))
 
                     try:
-                        #hduheader["SEPSKY"] = str(sepsky)
                         hdusmallheader["SEPSKY"] = str(fwhm_dict['sky'])
                     except:
                         hdusmallheader["SEPSKY"] = -9999
@@ -5178,10 +4943,7 @@ class Camera:
                     )
                     text.write(str(hdusmallheader))
                     text.close()
-
-                    g_dev['obs'].enqueue_for_fastUI(
-                        im_path, text_name, exposure_time)
-
+                    g_dev['obs'].enqueue_for_fastUI( im_path, text_name, exposure_time)
 
                     return expresult
 
@@ -5256,8 +5018,13 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        # signals to flat routine image was rejected, prompt return
-                        return copy.deepcopy(expresult)
+                        # If it is too dim and we need to wait, make sure there
+                        # is a sufficient wait period between exposures, otherwise
+                        # hundreds are taking while waiting for the sky to brighten.
+                        if exposure_time < 3:
+                            time.sleep(2)
+
+                        return copy.deepcopy(expresult)  # signals to flat routine image was rejected, prompt return
                     elif (
                         central_median
                         <= 0.5 * image_saturation_level
@@ -5270,15 +5037,21 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        # signals to flat routine image was rejected, prompt return
-                        return copy.deepcopy(expresult)
+
+                        # If it is too bright and we need to wait, make sure there
+                        # is a sufficient wait period between exposures, otherwise
+                        # hundreds are taking while waiting for the sky to dim.
+                        if exposure_time < 3:
+                            time.sleep(2)
+
+                        return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
+
                     else:
                         expresult = {}
                         # Now estimate camera gain.
                         camera_gain_estimate_image = copy.deepcopy(outputimg)
 
                         try:
-
                             # Get the brightest bayer layer for gains
                             if self.config["camera"][self.name]["settings"]['is_osc']:
                                 if brightest_bayer == 0:
@@ -5423,17 +5196,12 @@ class Camera:
 
                         # For sites that have "save_to_alt_path" enabled, this routine
                         # Saves the raw and reduced fits files out to the provided directories
-
                         if self.config["save_to_alt_path"] == "yes":
                             threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header,
                                                                                              frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, 'no', 'deprecated')),)).start()
 
                         del hdu
                         return copy.deepcopy(expresult)
-
-                #plog ("Calibflatfocus: "+str(calibflatfocuspointing_timer-time.time()))
-
-                outendbit = time.time()
 
                 expresult["calc_sky"] = 0  # avg_ocn[7]
                 expresult["temperature"] = 0  # avg_foc[2]
@@ -5471,10 +5239,6 @@ class Camera:
                             this_exposure_filter) + "-" + g_dev["day"] + "-" + next_seq + "-" + im_type + "00.fits.fz"
                     except:
                         plog(traceback.format_exc())
-                #plog ("Odd end bit " + str(time.time()-outendbit))
-
-                #plog ("Post-exposure overhead: " + str(time.time()- post_overhead_timer))
-
                 return copy.deepcopy(expresult)
 
             else:
@@ -5487,7 +5251,7 @@ class Camera:
 
                 if remaining < -15:
                     if remaining > -16:
-                        plog("Camera overtime: " + str(remaining))
+                        plog ("Camera overtime: " + str(remaining))
 
                     g_dev['obs'].request_scan_requests()
 

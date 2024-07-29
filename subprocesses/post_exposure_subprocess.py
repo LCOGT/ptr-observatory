@@ -206,7 +206,7 @@ if substack:   #NB it appears substack is always true since this is the only pat
                                                                     if not (imageMode-zerocounter-13) in zeroValueArray[:,0]:
                                                                         if not (imageMode-zerocounter-14) in zeroValueArray[:,0]:
                                                                             if not (imageMode-zerocounter-15) in zeroValueArray[:,0]:
-                                                                                if not (imageMode-zerocounter-16) in zeroValueArray[:,0]:                                                                                    
+                                                                                if not (imageMode-zerocounter-16) in zeroValueArray[:,0]:
                                                                                     zeroValue=(imageMode-zerocounter)
                                                                                     breaker =0
 
@@ -360,7 +360,7 @@ try:
     hdu.header['CONFMODE'] = ('default',  'LCO Configuration Mode')
     hdu.header["DOCOSMIC"] = (
         selfconfig["camera"][selfname]["settings"]["do_cosmics"],
-        "Header item to indicate whether to do cosmic ray removal",
+        "Cosmic ray removal",
     )
 
     hdu.header["CCDSTEMP"] = (
@@ -414,7 +414,7 @@ try:
         "[e-/pixel] Read noise",
     )
     hdu.header["OSCCAM"] = (is_osc, "Is OSC camera")
-    hdu.header["OSCMONO"] = (False, "If OSC, is this a mono image or a bayer colour image.")
+    hdu.header["OSCMONO"] = (False, "If OSC,  a mono image or Bayer?")
 
     hdu.header["FULLWELL"] = (
         selfconfig["camera"][selfname]["settings"][
@@ -572,16 +572,16 @@ try:
         )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
         hdu.header["JD-START"] = (
             Time(start_time_of_observation, format="unix").jd,
-            "[UTC days] Julian Date at start of exposure")
+            "Julian Date at start of exposure")
 
         hdu.header["MJD-MID"] = (
             Time(start_time_of_observation + (0.5 * exposure_time), format="unix").mjd,
-            "[UTC days] Modified Julian Date mid exposure date/time",
+            "Modified Julian Date mid exposure date/time",
         )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
         hdu.header["JD-MID"] = (
             Time(start_time_of_observation+ (0.5 * exposure_time), format="unix").jd,
 
-            "[UTC days] Julian Date at middle of exposure",
+            "Julian Date at middle of exposure",
         )
 
         hdu.header["EXPTIME"] = (
@@ -860,7 +860,7 @@ try:
             "[arcsec/pixel] Nominal pixel scale on sky",
         )
 
-    hdu.header["DRZPIXSC"] = (selfconfig["camera"][selfname]["settings"]['drizzle_value_for_later_stacking'], 'Target pixel scale for drizzling')
+    hdu.header["DRZPIXSC"] = (selfconfig["camera"][selfname]["settings"]['drizzle_value_for_later_stacking'], 'Target drizzle scale')
 
     hdu.header["REQNUM"] = ("00000001", "Request number")
     hdu.header["ISMASTER"] = (False, "Is master image")

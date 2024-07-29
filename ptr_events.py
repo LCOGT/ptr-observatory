@@ -15,19 +15,11 @@ import time
 from global_yard import g_dev
 from astropy.time import Time
 from ptr_utility import plog
-# EVESCREENFLATDURATION = 60/1440  # 1.5 hours
-# BIASDARKDURATION = 120/1440  # 2.0 hours
-# EVESKYFLATDURATION = 105/1440
-# MORNSKYFLATDURATION = 0/1440
-# MORNBIASDARKDURATION = 0/1440  # 1.5 min
-# LONGESTSCREEN = 0/1440  # 1 min
-# LONGESTFLAT = 2.5/1440
-# LONGESTDARK = 5.5/1440  # 6 min
 
 # DAY_Directory = None  # NB this is an evil use of Globals by WER.  20200408   WER
 # Day_tomorrow = None
 # dayNow = None
-from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun, get_moon #\ #FK5, ICRS,  \
+from astropy.coordinates import EarthLocation, AltAz, get_sun
 from astropy import units as u
 import traceback
 import requests
@@ -53,7 +45,6 @@ class Events:
         except:
             self.wema_config={}
             self.wema_config['latitude']=7.378917
-
             self.wema_config['longitude']=-135.257229
 
             self.wema_config['elevation']=20
@@ -68,7 +59,6 @@ class Events:
 
             plog ("Failed to get wema_config")
             plog(traceback.format_exc())
-
 
 
         self.siteLatitude = round(float(self.wema_config['latitude']), 8)  # 34 20 34.569   #34 + (20 + 34.549/60.)/60.
@@ -307,34 +297,6 @@ class Events:
         return (degrees(FlatStartRa)/15, degrees(FlatStartDec),
                 degrees(FlatEndRa)/15, degrees(FlatEndDec), RaDot, DecDot)
 
-    # def _sunPhaseAngle(self, offsetHrs=0.0):
-    #     dayNow = ephem.now()
-    #     ptr = ephem.Observer()  # Photon Ranch
-    #     ptr.lat = str(self.siteLatitude)
-    #     ptr.lon = str(self.siteLongitude)
-    #     ptr.elev = self.siteElevation
-    #     ptr.compute_pressure()
-    #     ptr.temp = self.siteRefTemp
-    #     ptr.date = ephem.Date(dayNow + offsetHrs*ephem.hour)
-    #     sun = ephem.Sun()
-    #     sun.compute(ptr)
-    #     moon = ephem.Moon()
-    #     moon.compute(ptr)
-    #     saz = reduceAz(degrees(sun.az) + 180)
-    #     sal = degrees(sun.alt)
-    #     if sal > 0.5:
-    #         saz = 0
-    #         # NBNBNB this needs to be improved to implement sun earth eclipse shadow.
-    #     maz = degrees(moon.az)
-    #     mal = degrees(moon.alt)
-
-    #     if loud:
-    #         plog('Sun Now: ', saz, degrees(sun.alt))
-    #     moon.compute(ptr)
-    #     if loud:
-    #         plog('Moon Now: ', degrees(moon.az), degrees(moon.alt))
-    #     return round(saz, 2)
-
     #############################
     ###     Public Methods   ####
     #############################
@@ -361,36 +323,11 @@ class Events:
         ops_win_begin = civilDusk - 121/1440
         return (ops_win_begin, sunset, sunrise, ephem.now())
 
-    # def flat_spot_now(self):
-    #     '''
-    #     Return a tuple with the (az, alt) of the flattest part of the sky.
-    #     '''
-    #     ra, dec, sun_alt, sun_az, *other = self._sunNow()
-    #     sun_az2 = sun_az - 180.  # Opposite az of the Sun
-    #     if sun_az2 < 0:
-    #         sun_az2 += 360.
-    #     sun_alt2 = sun_alt + 105  # 105 degrees along great circle through zenith
-    #     if sun_alt2 > 90:   # Over the zenith so specify alt at above azimuth
-    #         sun_alt2 = 180 - sun_alt2
-    #     else:
-    #         sun_az2 = sun_az  # The sun is >15 degrees below horizon, use its az
-
-    #     return(sun_az2, sun_alt2)
-
-
     def sun_az_alt_now(self):
 
         altazframe=AltAz(obstime=Time.now(), location=self.site_coordinates)
         sun_coords=get_sun(Time.now()).transform_to(altazframe)
         return sun_coords.az.degree, sun_coords.alt.degree
-
-
-    # def sun_az_alt_now(self):
-    #     '''
-    #     Return a tuple with the (az, alt) of the flattest part of the sky.
-    #     '''
-    #     ra, dec, sun_alt, sun_az, *other = self._sunNow()
-    #     return sun_az, sun_alt
 
     def illuminationNow(self):
 
@@ -538,9 +475,6 @@ class Events:
             if ephem.Date(self.cool_down_open) > self.endNightTime:
                 self.cool_down_open = self.cool_down_open - 24*ephem.hour
 
-        # we want the end of eve bias dark to be at least 2* dark exposure before the roof opens
-        dark_exposure_in_minutes = self.config['camera']['camera_1_1']['settings']['dark_exposure'] /60
-        #self.endNightTime = ephem.Date(self.sunrise + self.config['end_of_night_delay']/1440.)
 
         self.cool_down_open = self.sunset + self.wema_config['eve_cool_down_open']/1440
         self.close_and_park = self.sunrise + self.wema_config['morn_close_and_park']/1440
@@ -554,20 +488,13 @@ class Events:
                      ('Eve Sky Flats      ', ephem.Date(self.sunset + self.config['eve_sky_flat_sunset_offset']/1440)),  # Nominally -35 for SRO
                      ('Sun Set            ', ephem.Date(self.sunset)),
                      ('Civil Dusk         ', ephem.Date(self.civilDusk)),
-                     #('End Eve Sky Flats  ', ephem.Date(self.nauticalDusk - 10/1440)),
                      ('End Eve Sky Flats  ', ephem.Date(self.civilDusk + self.config['end_eve_sky_flats_offset']/1440)),
-                     #('Clock & Auto Focus ', ephem.Date(self.nautDusk_plus_half - 8/1440.)),
-
-                     #('Observing Begins   ', ephem.Date(self.nautDusk_plus_half)),
-                     # ('Observing Begins   ', ephem.Date(obs_window := self.astroDark - self.config['astro_dark_buffer']/1440)),
-                     # ('Clock & Auto Focus ', ephem.Date(obs_window + self.config['clock_and_auto_focus_offset']/1440)),
                      ('Observing Begins   ', ephem.Date(self.astroDark - self.config['astro_dark_buffer']/1440)),
                      ('Clock & Auto Focus ', ephem.Date(self.nauticalDusk - self.config['clock_and_auto_focus_offset']/1440)),
                      ('Naut Dusk          ', ephem.Date(self.nauticalDusk)),
                      ('Astro Dark         ', ephem.Date(self.astroDark)),
                      ('Middle of Night    ', ephem.Date(self.middleNight)),
                      ('End Astro Dark     ', ephem.Date(self.astroEnd)),
-                     #('Observing Ends     ', ephem.Date(self.nautDawn_minus_half)),
                      ('Observing Ends     ', ephem.Date(self.astroEnd + self.config['astro_dark_buffer']/1440)),
                      ('Naut Dawn          ', ephem.Date(self.nauticalDawn)),
                      ('Civil Dawn         ', ephem.Date(self.civilDawn)),
@@ -587,8 +514,6 @@ class Events:
                      ('Moon Rise          ', ephem.Date(self.next_moonrise)),
                      ('Moon Transit       ', ephem.Date(self.next_moontransit)),
                      ('Moon Set           ', ephem.Date(self.next_moonset))]
-
-
 
         self.evnt_sort = self._sortTuple(self.evnt)
         day_dir = self.compute_day_directory()

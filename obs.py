@@ -11,7 +11,9 @@ It also organises the various queues that process, send, slice and dice data.
 from dotenv import load_dotenv
 load_dotenv(".env")
 import ocs_ingester.exceptions
-from ocs_ingester.ingester import upload_file_and_ingest_to_archive  #  frame_exists
+
+from ocs_ingester.ingester import upload_file_and_ingest_to_archive
+
 from requests.adapters import HTTPAdapter, Retry
 import ephem
 import datetime
@@ -30,18 +32,13 @@ import glob
 import subprocess
 import pickle
 
-# from math import sqrt
 from astropy.io import fits
 from astropy.utils.data import check_download_cache
 from astropy.coordinates import SkyCoord, get_sun, AltAz
 from astropy.time import Time
 from astropy import units as u
 
-# from astropy.table import Table
 import bottleneck as bn
-
-# from astropy.nddata import block_reduce
-
 import numpy as np
 
 import requests
@@ -54,22 +51,17 @@ from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
 from devices.mount import Mount
-
-# from devices.telescope import Telescope
 from devices.rotator import Rotator
-from devices.selector import Selector
-from devices.screen import Screen
+#from devices.selector import Selector
+#from devices.screen import Screen
 from devices.sequencer import Sequencer
 import ptr_events
 
-# import win32com.client
 from ptr_utility import plog
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 
 warnings.simplefilter("ignore", category=AstropyUserWarning)
-
-# Incorporate better request retry strategy
 
 reqs = requests.Session()
 retries = Retry(total=3, backoff_factor=0.1,
@@ -78,8 +70,11 @@ reqs.mount("http://", HTTPAdapter(max_retries=retries))
 
 
 
-
 def test_connect(host="http://google.com"):
+    # This just tests the net connection
+    # for certain safety checks
+    # If it cannot connect to the internet for an extended period of time.
+    # It will park
     try:
         urllib.request.urlopen(host)  # Python 3.x
         return True
@@ -88,6 +83,8 @@ def test_connect(host="http://google.com"):
 
 
 def ra_dec_fix_hd(ra, dec):
+    # Get RA and Dec into the proper domain
+    # RA in hours, Dec in degrees
     if dec > 90:
         dec = 180 - dec
         ra -= 12
@@ -138,7 +135,6 @@ def send_status(obsy, column, status_to_send):
     """Sends an update to the status endpoint."""
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     payload = {"statusType": str(column), "status": status_to_send}
-    # print (payload)
     try:
         data = json.dumps(payload)
     except Exception as e:
@@ -146,7 +142,6 @@ def send_status(obsy, column, status_to_send):
 
     try:
         reqs.post(uri_status, data=data, timeout=20)
-        # print (responsecode)
     except Exception as e:
         plog("Failed to send_status. Usually not fatal:  ", e)
 
@@ -626,12 +621,10 @@ class Observatory:
         self.all_device_types = ptr_config["device_types"]  # May not be needed
         self.device_types = ptr_config[
             "device_types"
-        ]  # ptr_config['short_status_devices']
+        ]
 
         # VERY TEMPORARY UNTIL MOUNT IS FIXED - MTF
         self.mount_reboot_on_first_status = True
-        # This prevents ascom calls from update_status colliding with the full_update section
-        # self.full_update_lock = False
 
         # Timers to only update status at regular specified intervals.
         self.observing_status_timer = datetime.datetime.now() - datetime.timedelta(
@@ -774,7 +767,6 @@ class Observatory:
             self.mountless_operation = True
             self.scope_in_manual_mode = True
 
-        # if self.config['ingest_raws_directly_to_archive']:
         self.ptrarchive_queue = queue.PriorityQueue(maxsize=0)
         self.ptrarchive_queue_thread = threading.Thread(
             target=self.send_to_ptrarchive, args=()
@@ -829,16 +821,6 @@ class Observatory:
         self.platesolve_queue_thread.daemon = True
         self.platesolve_queue_thread.start()
 
-        # self.sep_queue = queue.Queue(maxsize=0)
-        # self.sep_queue_thread = threading.Thread(target=self.sep_process, args=())
-        # self.sep_queue_thread.daemon = True
-        # self.sep_queue_thread.start()
-
-        # self.mainjpeg_queue = queue.Queue(maxsize=0)
-        # self.mainjpeg_queue_thread = threading.Thread(target=self.mainjpeg_process, args=())
-        # self.mainjpeg_queue_thread.daemon = True
-        # self.mainjpeg_queue_thread.start()
-
         self.laterdelete_queue = queue.Queue(maxsize=0)
         self.laterdelete_queue_thread = threading.Thread(
             target=self.laterdelete_process, args=()
@@ -853,12 +835,6 @@ class Observatory:
         self.sendtouser_queue_thread.daemon = True
         self.sendtouser_queue_thread.start()
 
-        # self.smartstack_queue = queue.Queue(
-        #     maxsize=0
-        # )
-        # self.smartstack_queue_thread = threading.Thread(target=self.smartstack_image, args=())
-        # self.smartstack_queue_thread.daemon = True
-        # self.smartstack_queue_thread.start()
 
         self.queue_reporting_period = 60
         self.queue_reporting_timer = time.time() - (2 * self.queue_reporting_period)
@@ -890,10 +866,7 @@ class Observatory:
         # On startup, collect orphaned fits files that may have been dropped from the queue
         # when the site crashed or was rebooted.
         if self.config["ingest_raws_directly_to_archive"]:
-            # breakpoint()
             g_dev["seq"].collect_and_queue_neglected_fits()
-        # if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-        #     self.reconstitute_pipe_copy_queue()
 
         # Inform UI of reboot
         self.send_to_user(
@@ -986,8 +959,6 @@ class Observatory:
         self.safety_and_monitoring_checks_loop_thread.daemon = True
         self.safety_and_monitoring_checks_loop_thread.start()
 
-        # self.drift_tracker_ra=0
-        # self.drift_tracker_dec=0
         g_dev["obs"].drift_tracker_timer = time.time()
         self.drift_tracker_counter = 0
 
@@ -1004,32 +975,6 @@ class Observatory:
 
         # Initialisation complete!
 
-        # g_dev['mnt'].reset_mount_reference()
-
-    # def set_last_reference(self, delta_ra, delta_dec, last_time):
-    #     mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
-    #     mnt_shelf["ra_cal_offset"] = delta_ra
-    #     mnt_shelf["dec_cal_offset"] = delta_dec
-    #     mnt_shelf["time_offset"] = last_time
-    #     mnt_shelf.close()
-    #     return
-
-    # def get_last_reference(self):
-    #     mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
-    #     delta_ra = mnt_shelf["ra_cal_offset"]
-    #     delta_dec = mnt_shelf["dec_cal_offset"]
-    #     last_time = mnt_shelf["time_offset"]
-    #     mnt_shelf.close()
-    #     return delta_ra, delta_dec, last_time
-
-    # def reset_last_reference(self):
-
-    #     mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
-    #     mnt_shelf["ra_cal_offset"] = None
-    #     mnt_shelf["dec_cal_offset"] = None
-    #     mnt_shelf["time_offset"] = None
-    #     mnt_shelf.close()
-    #     return
 
     def create_devices(self):
         """Dictionary to store created devices, subcategorized by device type."""
@@ -1068,12 +1013,8 @@ class Observatory:
                     device = Rotator(driver, name, self.config)
                 elif dev_type == "focuser":
                     device = Focuser(driver, name, self.config)
-                elif dev_type == "screen":
-                    device = Screen(driver, name, self.config)
                 elif dev_type == "filter_wheel":
                     device = FilterWheel(driver, name, self.config)
-                elif dev_type == "selector":
-                    device = Selector(driver, name, self.config)
                 elif dev_type == "camera":
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
@@ -1131,9 +1072,6 @@ class Observatory:
         self.send_to_user(
             "Pending reductions and transfers to the PTR Archive are not affected."
         )
-        # Now we need to cancel possibly a pending camera cycle or a
-        # script running in the sequencer.  NOTE a stop or cancel empties outgoing queue at AWS side and
-        # only a Cancel/Stop action is sent.  But we need to save any subsequent commands.
 
         plog("Emptying Command Queue")
         with self.cmd_queue.mutex:
@@ -1168,9 +1106,6 @@ class Observatory:
         have parallel mountings or independently controlled cameras.
         """
 
-        # To stop the scan requests getting hammered unnecessarily.
-        # Which is has sometimes on net disconnections.
-        # if (time.time() - self.scan_request_timer) > 1.0:
         self.scan_request_timer = time.time()
         url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
         body = {"site": self.name}
@@ -1524,9 +1459,6 @@ class Observatory:
                 self.status_interval = self.status_upload_time + 0.25
                 while time.time() < (self.time_last_status + self.status_interval):
                     time.sleep(0.001)
-            # while time.time() < self.time_last_status + self.status_interval:
-            #     self.currently_updating_status=False
-            #     return  # Note we are just not sending status, too soon.
 
         # Don't make a new status during a slew unless the queue is empty, otherwise the green crosshairs on the UI lags.
         if (not not_slewing and self.send_status_queue.qsize() == 0) or not_slewing:
@@ -1545,10 +1477,8 @@ class Observatory:
                 device_names = devices_of_type.keys()
 
                 for device_name in device_names:
-                    # Get the actual device object...
                     device = devices_of_type[device_name]
                     result = device.get_status()
-
                     if result is not None:
                         status[dev_type][device_name] = result
 
@@ -1620,7 +1550,6 @@ class Observatory:
                 plog("Platesolve Queue: " + str(self.platesolve_queue.qsize()))
                 plog("SEP Queue: " + str(self.sep_queue.qsize()))
                 plog("JPEG Queue: " + str(self.mainjpeg_queue.qsize()))
-                plog("Smartstack Queue: " + str(self.smartstack_queue.qsize()))
 
             if not self.mountless_operation:
                 try:
@@ -1912,10 +1841,6 @@ class Observatory:
                 # or just tracking forever after being left tracking for far too long.
                 #
                 # Also an area to put things to irregularly check if things are still connected, e.g. cooler
-                #
-                # We don't want to run these checks EVERY status update, just every 5 minutes
-                # if time.time() - self.time_since_safety_checks > self.safety_check_period:
-                # self.time_since_safety_checks = time.time()
 
                 # Adjust focus on a not-too-frequent period for temperature
                 if not self.mountless_operation:
@@ -3145,7 +3070,6 @@ class Observatory:
                 time.sleep(0.25)
 
 
-
     def platesolve_process(self):
         """This is the platesolve queue that happens in a different process
         than the main thread. Platesolves can take 5-10, up to 30 seconds sometimes
@@ -3178,8 +3102,6 @@ class Observatory:
                     exposure_time,
                 ) = self.platesolve_queue.get(block=False)
 
-                # print (pointing_exposure)
-
 
                 if np.isnan(pixscale) or pixscale == None:
                     timeout_time = 1200 + exposure_time + \
@@ -3190,7 +3112,6 @@ class Observatory:
 
                 platesolve_timeout_timer = time.time()
                 if image_or_reference == "reference":
-                    # print (platesolve_token)
 
                     while (
                         not os.path.exists(platesolve_token)
@@ -3201,7 +3122,6 @@ class Observatory:
                 if (time.time() - platesolve_timeout_timer) > timeout_time:
                     plog("waiting for platesolve token timed out")
                     solve = "error"
-                    # platesolve_subprocess.kill()
 
                     try:
                         os.system("taskkill /IM ps3cli.exe /F")
@@ -3213,7 +3133,6 @@ class Observatory:
                             open(platesolve_token, "rb")
                         )
 
-                        # imagefilename=pickle.load(platesolve_token_filename)
                         hdufocusdata = np.load(imagefilename)
                         hduheader = fits.open(imagefilename.replace(".npy", ".head"))[
                             0
@@ -3221,7 +3140,6 @@ class Observatory:
 
                     else:
                         hdufocusdata = platesolve_token
-                        # hduheader already defined
 
                     is_osc = g_dev["cam"].config["camera"][g_dev["cam"].name][
                         "settings"
@@ -3250,9 +3168,6 @@ class Observatory:
                             target_ra = g_dev["mnt"].last_ra_requested
                             target_dec = g_dev["mnt"].last_dec_requested
 
-                            # print("Last RA requested: " + str(g_dev["mnt"].last_ra_requested))
-                            # print("Last DEC requested: " + str(g_dev["mnt"].last_dec_requested))
-
                             if g_dev["seq"].block_guard and not g_dev["seq"].focussing:
                                 target_ra = g_dev["seq"].block_ra
                                 target_dec = g_dev["seq"].block_dec
@@ -3264,7 +3179,6 @@ class Observatory:
                                 pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
                                  pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
 
-                            #breakpoint()
 
                             try:
                                 platesolve_subprocess = subprocess.Popen(
@@ -3276,10 +3190,6 @@ class Observatory:
                             except OSError:
                                 plog(traceback.format_exc())
                                 pass
-
-
-
-
 
 
                             try:
@@ -3317,11 +3227,8 @@ class Observatory:
 
                             del hdufocusdata
 
-
                             platesolve_timeout_timer=time.time()
                             while not os.path.exists(self.local_calibration_path + 'platesolve.pickle') and (time.time() - platesolve_timeout_timer) < timeout_time:
-                                #print ("waiting for " + str(self.local_calibration_path + 'platesolve.pickle') + str(time.time()))
-
                                 time.sleep(0.5)
 
                             if (time.time() - platesolve_timeout_timer) > timeout_time:
@@ -3369,10 +3276,6 @@ class Observatory:
                                 self.enqueue_for_fastUI(
                                     "", jpeg_filename, exposure_time
                                 )
-
-                                # self.enqueue_for_mediumUI(
-                                #     1000, '',jpeg_filename.replace('EX10', 'EX20')
-                                # )
 
                                 try:
                                     plog(
@@ -3464,8 +3367,6 @@ class Observatory:
                                         plog(corrected_pointing_ra)
                                         plog(solved_ra)
                                         plog(pointing_ra)
-                                        # plog (pointing_ra + (g_dev['mnt'].raCorr)
-                                        # breakpoint()
                                     else:
                                         plog("Reasonable ha deviation")
 
@@ -3501,7 +3402,7 @@ class Observatory:
                                     + ",  "
                                     + str(round(err_dec * 3600, 1)),
                                 )
-                                # breakpoint()
+
                                 self.last_platesolved_ra = solve["ra_j2000_hours"]
                                 self.last_platesolved_dec = solve["dec_j2000_degrees"]
                                 self.last_platesolved_ra_err = target_ra - solved_ra
@@ -3512,35 +3413,11 @@ class Observatory:
                                 g_dev["obs"].last_solve_time = datetime.datetime.now()
                                 g_dev["obs"].images_since_last_solve = 0
 
-                                # self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
-                                # self.drift_tracker_dec=self.drift_tracker_dec + err_dec
-
-                                # if self.drift_tracker_counter == 0:
-                                #     #plog ("not calculating drift on first platesolve of drift set. Using deviation as the zeropoint in time and space.")
-                                #     self.drift_tracker_first_offset_ra = err_ha  * 15 * 3600
-                                #     self.drift_tracker_first_offset_dec = err_dec   * 3600
-                                #     self.drift_tracker_timer=time.time()
-
-                                # else:
-
-                                #     drift_timespan= time.time() - self.drift_tracker_timer
-                                #     # if drift_timespan < 180:
-                                #     #     plog ("Drift calculations unreliable as yet because drift timescale < 180s.")
-                                #     # plog ("Solve in drift set: " +str(self.drift_tracker_counter))
-                                #     # plog ("Drift Timespan " + str(drift_timespan))
-                                #     self.drift_tracker_ra_arcsecperhour=  ((err_ha * 15 * 3600 ) - self.drift_tracker_first_offset_ra) / (drift_timespan / 3600)
-                                #     self.drift_tracker_dec_arcsecperhour= ((err_dec *3600) - self.drift_tracker_first_offset_dec) / (drift_timespan / 3600)
-                                #     if drift_timespan > 180:
-                                #     #     plog ("Not calculating drift on a timescale under 5 minutes.")
-                                #     # else:
-                                #         plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
 
                                 self.drift_tracker_counter = (
                                     self.drift_tracker_counter + 1
                                 )
 
-                                # drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
-                                # drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
 
                                 if self.sync_after_platesolving:
                                     plog("Syncing mount after this solve")
@@ -3551,22 +3428,10 @@ class Observatory:
                                         False
                                     )
                                     self.sync_after_platesolving = False
-                                    # # After sync we shuold be able to nudge over to the correct pointing.
-                                    # self.pointing_correction_requested_by_platesolve_thread = True
-                                    # self.pointing_correction_request_time = time.time()
-                                    # self.pointing_correction_request_ra = pointing_ra
-                                    # self.pointing_correction_request_dec = pointing_dec
-                                    # self.pointing_correction_request_ra_err = 0
-                                    # self.pointing_correction_request_dec_err = 0
 
                                 # If we are WAY out of range, then reset the mount reference and attempt moving back there.
                                 elif not self.auto_centering_off:
-                                    # dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
-                                    # ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
 
-                                    # if firstframesmartstack:
-                                    #     plog ("Not recentering as this is the first frame of a smartstack.")
-                                    #     self.pointing_correction_requested_by_platesolve_thread = False
 
                                     # Used for calculating relative offset compared to image size
                                     dec_field_asec = (
@@ -3602,24 +3467,6 @@ class Observatory:
                                             + str(round(err_dec * 3600, 2))
                                         )
 
-                                        # breakpoint()
-
-                                        # self.drift_tracker_ra=0
-                                        # self.drift_tracker_dec=0
-                                        # g_dev['obs'].drift_tracker_timer=0
-
-                                        # g_dev["mnt"].reset_mount_reference()
-                                        # plog("I've  reset the mount_reference.")
-
-                                        # plog ("reattempting to get back on target on next attempt")
-                                        # #self.pointing_correction_requested_by_platesolve_thread = True
-                                        # self.pointing_recentering_requested_by_platesolve_thread = True
-                                        # self.pointing_correction_request_time = time.time()
-                                        # self.pointing_correction_request_ra = target_ra
-                                        # self.pointing_correction_request_dec = target_dec
-                                        # self.pointing_correction_request_ra_err = err_ha
-                                        # self.pointing_correction_request_dec_err = err_dec
-
                                     elif (
                                         self.time_of_last_slew
                                         > time_platesolve_requested
@@ -3627,9 +3474,7 @@ class Observatory:
                                         plog(
                                             "detected a slew since beginning platesolve... bailing out of platesolve."
                                         )
-                                        # self.drift_tracker_ra=0
-                                        # self.drift_tracker_dec=0
-                                        # g_dev['obs'].drift_tracker_timer=0
+
 
                                     # Only recenter if out by more than 1%
                                     elif (
@@ -3653,28 +3498,12 @@ class Observatory:
                                             err_dec
                                         )
 
-                                        # if self.sync_after_platesolving:
-                                        #     plog ("Syncing mount after this solve")
-                                        #     g_dev['mnt'].sync_to_pointing(solved_ra, solved_dec)
-
-                                        #     # After sync we shuold be able to nudge over to the correct pointing.
-                                        #     self.pointing_correction_requested_by_platesolve_thread = True
-                                        #     self.pointing_correction_request_time = time.time()
-                                        #     self.pointing_correction_request_ra = pointing_ra
-                                        #     self.pointing_correction_request_dec = pointing_dec
-                                        #     self.pointing_correction_request_ra_err = 0
-                                        #     self.pointing_correction_request_dec_err = 0
-
-                                        # else:
 
                                         drift_timespan = (
                                             time.time() - self.drift_tracker_timer
                                         )
-                                        # plog ("Drift Timespan " + str(drift_timespan))
 
                                         if drift_timespan > 180:
-                                            #     plog ("Not calculating drift on a timescale under 5 minutes.")
-                                            # else:
                                             self.drift_arcsec_ra_arcsecperhour = (
                                                 err_ha * 15 * 3600
                                             ) / (drift_timespan / 3600)
@@ -4980,10 +4809,7 @@ class Observatory:
                                     plog(
                                         "Last ten FWHM (pixels): "
                                         + str(g_dev["foc"].focus_tracker)
-                                    )  # + " Median: " + str(bn.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
-
-                                    # self.mega_tracker.append((self.fwhmresult["mean_focus"],self.fwhmresult["exp_time"] ,round(rfr, 3)))
-
+                                    )
                                     # If there hasn't been a focus yet, then it can't check it,
                                     # so make this image the last solved focus.
                                     if g_dev["foc"].last_focus_fwhm == None:
@@ -5054,8 +4880,6 @@ class Observatory:
                     # Full path to file on disk
                     filepath = pri_image[0] + filename
 
-                    # print (filepath)
-
                     if filepath == "":
                         plog(
                             "found an empty thing in the fast_queue? Why? MTF finding out."
@@ -5075,7 +4899,6 @@ class Observatory:
                                 )
                                 with open(filepath, "rb") as fileobj:
                                     files = {"file": (filepath, fileobj)}
-                                    # while True:
                                     try:
                                         reqs.post(
                                             aws_resp["url"],
@@ -5299,8 +5122,6 @@ class Observatory:
         # everything down each time this was called!
         self.sendtouser_queue.put((p_log, p_level), block=False)
 
-
-
     def check_platesolve_and_nudge(self, no_confirmation=True):
         """
         A function periodically called to check if there is a telescope nudge to re-center to undertake.
@@ -5341,7 +5162,7 @@ class Observatory:
             # If the platesolve requests such a thing.
             if (
                 self.pointing_correction_requested_by_platesolve_thread
-            ):  # and not g_dev['cam'].currently_in_smartstack_loop:
+            ):
                 # Check it hasn't slewed since request, although ignore this check if in smartstack_loop due to dithering.
                 if (
                     self.pointing_correction_request_time > self.time_of_last_slew
@@ -5397,8 +5218,6 @@ class Observatory:
                     g_dev["obs"].time_of_last_slew = time.time()
                     wait_for_slew(wait_after_slew=False)
 
-                    # self.drift_tracker_ra=0
-                    # self.drift_tracker_dec=0
                     g_dev["obs"].drift_tracker_timer = time.time()
                     self.drift_tracker_counter = 0
 
@@ -5587,20 +5406,11 @@ class Observatory:
         image = (im_path, name)
         self.calibrationui_queue.put((priority, image), block=False)
 
-    def to_smartstack(self, to_red):
-        self.smartstack_queue.put(to_red, block=False)
-
     def to_slow_process(self, priority, to_slow):
         self.slow_camera_queue.put((priority, to_slow), block=False)
 
     def to_platesolve(self, to_platesolve):
         self.platesolve_queue.put(to_platesolve, block=False)
-
-    # def to_sep(self, to_sep):
-    #     self.sep_queue.put( to_sep, block=False)
-
-    # def to_mainjpeg(self, to_sep):
-    #     self.mainjpeg_queue.put( to_sep, block=False)
 
     def request_update_status(self, mount_only=False):
         not_slewing = False

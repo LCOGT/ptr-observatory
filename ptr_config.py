@@ -10,7 +10,6 @@ import os
 import pathlib
 import sys
 import socket
-
 import glob
 
 # This routine here removes all mention of previous configs from the path...
@@ -31,7 +30,7 @@ pathdone = 0
 cwd = str(pathlib.Path().resolve())
 hwd = cwd.replace("ptr-observatory", "")
 hostname_file = glob.glob(hwd + "hostname*")
-#breakpoint()
+
 try:
     site_name = hostname_file[0].replace('.txt','').split("hostname")[1]
     sys.path.append(os.path.join(pathlib.Path().resolve(), "configs", site_name))

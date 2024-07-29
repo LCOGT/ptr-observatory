@@ -11,13 +11,8 @@ import pickle
 import sys
 from astropy.io import fits
 import numpy as np
-#import bottleneck as bn
 import os
 import time
-#from astropy.table import Table
-#import astroalign as aa
-
-#import bottleneck as bn
 from astropy.nddata import block_reduce
 from image_registration import cross_correlation_shifts  # chi2_shift,
 
@@ -27,12 +22,6 @@ import subprocess
 from math import sqrt
 import traceback
 import copy
-#import bottleneck as bn
-
-#from skimage.registration import phase_cross_correlation
-
-# from astropy.coordinates import SkyCoord
-# from astropy.units import pixel
 
 input_sstk_info = pickle.load(sys.stdin.buffer)
 # input_sstk_info=pickle.load(open('testsmartstackpickle','rb'))
@@ -41,52 +30,41 @@ print("HERE IS THE INCOMING. ")
 print(input_sstk_info)
 
 
-smartstackthread_filename = input_sstk_info[0]
-smartstackid = input_sstk_info[1]
-is_osc = input_sstk_info[2]
-obsid_path = input_sstk_info[3]
-pixscale = input_sstk_info[4]
-transpose_jpeg = input_sstk_info[5]
-flipx_jpeg = input_sstk_info[6]
-flipy_jpeg = input_sstk_info[7]
-rotate180_jpeg = input_sstk_info[8]
-rotate90_jpeg = input_sstk_info[9]
-rotate270_jpeg = input_sstk_info[10]
-pier_side = input_sstk_info[11]
-squash_on_x_axis = input_sstk_info[12]
-osc_bayer = input_sstk_info[13]
-image_saturation_level = input_sstk_info[14]
-# Deprecated - native bin not used in smartstacks
-# nativebin=input_sstk_info[15]
-nativebin = 1
-readnoise = input_sstk_info[16]
-minimum_realistic_seeing = input_sstk_info[17]
-osc_brightness_enhance = input_sstk_info[18]
-osc_contrast_enhance = input_sstk_info[19]
-osc_colour_enhance = input_sstk_info[20]
-osc_saturation_enhance = input_sstk_info[21]
-osc_sharpness_enhance = input_sstk_info[22]
-crop_preview = input_sstk_info[23]
+smartstackthread_filename=input_sstk_info[0]
+smartstackid=input_sstk_info[1]
+is_osc=input_sstk_info[2]
+obsid_path=input_sstk_info[3]
+pixscale=input_sstk_info[4]
+transpose_jpeg=input_sstk_info[5]
+flipx_jpeg=input_sstk_info[6]
+flipy_jpeg=input_sstk_info[7]
+rotate180_jpeg=input_sstk_info[8]
+rotate90_jpeg=input_sstk_info[9]
+rotate270_jpeg=input_sstk_info[10]
+pier_side=input_sstk_info[11]
+squash_on_x_axis=input_sstk_info[12]
+osc_bayer=input_sstk_info[13]
+image_saturation_level=input_sstk_info[14]
+nativebin=1
+readnoise=input_sstk_info[16]
+minimum_realistic_seeing=input_sstk_info[17]
+osc_brightness_enhance=input_sstk_info[18]
+osc_contrast_enhance=input_sstk_info[19]
+osc_colour_enhance=input_sstk_info[20]
+osc_saturation_enhance=input_sstk_info[21]
+osc_sharpness_enhance=input_sstk_info[22]
+crop_preview=input_sstk_info[23]
 yb = input_sstk_info[24]
 yt = input_sstk_info[25]
 xl = input_sstk_info[26]
 xr = input_sstk_info[27]
-# try:
 zoom_factor = input_sstk_info[28].lower()
-#     print("Mainjpeg received:", zoom_factor)
-# except:
-#     print("Zoom_factor paramater faulted.")
-#     zoom_factor=False
-jpeg_path = input_sstk_info[29]
-jpeg_name = input_sstk_info[30]
-red_path = input_sstk_info[31]
-red_name01 = input_sstk_info[32]
+jpeg_path=input_sstk_info[29]
+jpeg_name=input_sstk_info[30]
+red_path=input_sstk_info[31]
+red_name01=input_sstk_info[32]
 
 
-# wAITER FOR
-
-
-# breakpoint()
 
 # So wait for the image to be available in this smartstack run
 while not os.path.exists(smartstackthread_filename):
@@ -95,8 +73,6 @@ while not os.path.exists(smartstackthread_filename):
 
 (image_filename, imageMode) = pickle.load(
     open(smartstackthread_filename, 'rb'))
-
-# hdusmalldata=np.load(image_filename)
 
 # If the busy indicator for this smartstack is not laid down, then we go
 # Otherwise we skip this smartstack because the last one hasn't finished yet.
@@ -113,124 +89,12 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
         red_path + red_name01.replace('.fits', '.head'),
         ignore_missing_end=True,
     )
-    imgdata = copy.deepcopy(
-        np.load(red_path + red_name01.replace('.fits', '.npy')))
 
-    # # Really need to thresh the incoming image
-    # googtime=time.time()
-    # int_array_flattened=imgdata.astype(int).ravel()
-    # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-    # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-    # m=counts.argmax()
-    # imageMode=unique[m]
-    # print ("Calculating Mode: " +str(time.time()-googtime))
+    imgdata = copy.deepcopy(np.load(red_path + red_name01.replace('.fits','.npy')))
 
-    # # Zerothreshing image
-    # googtime=time.time()
-    # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-    # histogramdata[histogramdata[:,0] > -10000]
-    # #Do some fiddle faddling to figure out the value that goes to zero less
-    # zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-    # breaker=1
-    # counter=0
-    # while (breaker != 0):
-    #     counter=counter+1
-    #     if not (imageMode-counter) in zeroValueArray[:,0]:
-    #         if not (imageMode-counter-1) in zeroValueArray[:,0]:
-    #             if not (imageMode-counter-2) in zeroValueArray[:,0]:
-    #                 if not (imageMode-counter-3) in zeroValueArray[:,0]:
-    #                     if not (imageMode-counter-4) in zeroValueArray[:,0]:
-    #                         if not (imageMode-counter-5) in zeroValueArray[:,0]:
-    #                             if not (imageMode-counter-6) in zeroValueArray[:,0]:
-    #                                 if not (imageMode-counter-7) in zeroValueArray[:,0]:
-    #                                     if not (imageMode-counter-8) in zeroValueArray[:,0]:
-    #                                         if not (imageMode-counter-9) in zeroValueArray[:,0]:
-    #                                             if not (imageMode-counter-10) in zeroValueArray[:,0]:
-    #                                                 if not (imageMode-counter-11) in zeroValueArray[:,0]:
-    #                                                     if not (imageMode-counter-12) in zeroValueArray[:,0]:
-    #                                                         zeroValue=(imageMode-counter)
-    #                                                         top_of_sky_background_value=imageMode+counter
-    #                                                         breaker =0
-
-    # imgdata[imgdata < zeroValue] = np.nan
-
-    # print ("Zero Threshing Image: " +str(time.time()-googtime))
-
-    # # Check there are no nans in the image upon receipt
-    # # This is necessary as nans aren't interpolated in the main thread.
-    # # Fast next-door-neighbour in-fill algorithm
-    # num_of_nans=np.count_nonzero(np.isnan(imgdata))
-    # x_size=imgdata.shape[0]
-    # y_size=imgdata.shape[1]
-    # # this is actually faster than np.nanmean
-    # #edgefillvalue=np.divide(bn.nansum(imgdata),(x_size*y_size)-num_of_nans)
-    # #breakpoint()
-    # #while num_of_nans > 0:
-    # # List the coordinates that are nan in the array
-    # nan_coords=np.argwhere(np.isnan(imgdata))
-
-    # # For each coordinate try and find a non-nan-neighbour and steal its value
-    # for nancoord in nan_coords:
-    #     x_nancoord=nancoord[0]
-    #     y_nancoord=nancoord[1]
-    #     done=False
-
-    #     # Because edge pixels can tend to form in big clumps
-    #     # Masking the array just with the mean at the edges
-    #     # makes this MUCH faster to no visible effect for humans.
-    #     # Also removes overscan
-    #     if x_nancoord < 100:
-    #         imgdata[x_nancoord,y_nancoord]=imageMode
-    #         done=True
-    #     elif x_nancoord > (x_size-100):
-    #         imgdata[x_nancoord,y_nancoord]=imageMode
-
-    #         done=True
-    #     elif y_nancoord < 100:
-    #         imgdata[x_nancoord,y_nancoord]=imageMode
-
-    #         done=True
-    #     elif y_nancoord > (y_size-100):
-    #         imgdata[x_nancoord,y_nancoord]=imageMode
-    #         done=True
-
-    #     # left
-    #     if not done:
-    #         if x_nancoord != 0:
-    #             value_here=imgdata[x_nancoord-1,y_nancoord]
-    #             if not np.isnan(value_here):
-    #                 imgdata[x_nancoord,y_nancoord]=value_here
-    #                 done=True
-    #     # right
-    #     if not done:
-    #         if x_nancoord != (x_size-1):
-    #             value_here=imgdata[x_nancoord+1,y_nancoord]
-    #             if not np.isnan(value_here):
-    #                 imgdata[x_nancoord,y_nancoord]=value_here
-    #                 done=True
-    #     # below
-    #     if not done:
-    #         if y_nancoord != 0:
-    #             value_here=imgdata[x_nancoord,y_nancoord-1]
-    #             if not np.isnan(value_here):
-    #                 imgdata[x_nancoord,y_nancoord]=value_here
-    #                 done=True
-    #     # above
-    #     if not done:
-    #         if y_nancoord != (y_size-1):
-    #             value_here=imgdata[x_nancoord,y_nancoord+1]
-    #             if not np.isnan(value_here):
-    #                 imgdata[x_nancoord,y_nancoord]=value_here
-    #                 done=True
-
-    #     #num_of_nans=np.count_nonzero(np.isnan(imgdata))
-    # #breakpoint()
-    # # Mop up any remaining nans
-    # imgdata[np.isnan(imgdata)] =imageMode
-
-    # Make sure there is a smartstack directory!
-    if not os.path.exists(obsid_path + "smartstacks/"):
-        os.makedirs(obsid_path + "smartstacks/")
+    #Make sure there is a smartstack directory!
+    if not os.path.exists(obsid_path+ "smartstacks/"):
+                os.makedirs(obsid_path+ "smartstacks/")
     reprojection_failed = False
 
     # Pick up some header items for smartstacking later
@@ -263,43 +127,21 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
     )
 
     # For OSC, we need to smartstack individual frames.
-    if not is_osc:  # This is the monochrome camera processing path.
-        # breakpoint()
-        # eternal_loop_break=time.time()
-        # while not os.path.exists(jpeg_path + paths["text_name00"].replace('.txt','.sep')) and (time.time()-eternal_loop_break < 2* float(ssexptime.replace('d','.'))):
-        #     print (jpeg_path + paths["text_name00"].replace('.txt','.sep'))
-        #     print ("in the loop")
-        #     time.sleep(1)
-
-        # if not os.path.exists(jpeg_path + paths["text_name00"].replace('.txt','.sep')):
-        #    print ("Yikes. Couldn't find SEP file in time")
-        #    reprojection_failed = True
+    if not is_osc:   #This is the monochrome camera processing path.
         if True:
-            #print (os.path.exists(jpeg_path + paths["text_name00"].replace('.txt','.sep')))
 
-            #plog("Now to figure out how to get sep into a csv.")
             sstack_process_timer = time.time()
-            #sources = Table.read(jpeg_path + paths["text_name00"].replace('.txt', '.sep'), format='csv')
-
-            # sources = pickle.load(open(jpeg_path + paths["text_name00"].replace('.txt', '.sep'),'rb'))
-            # sources=np.asarray(sources)
-
-            # breakpoint()
 
             # IF SMARSTACK NPY FILE EXISTS ADD next image to the stack, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
             reprojection_failed = False
-            # breakpoint()
 
-            # print (os.path.exists(
-            #     obsid_path + "smartstacks/" + smartStackFilename
-            # ))
 
             if not os.path.exists(
                 obsid_path + "smartstacks/" + smartStackFilename
             ):
-                if True:  # len(sources) >= 5:    #IF image has at least five sources
+                if True:
 
-                    print("Storing single original image")
+                    print ("Storing single original image")
 
                     # Store original image
                     np.save(
@@ -311,17 +153,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                     try:
                         os.remove(jpeg_path + smartstackid + '.busy')
                     except:
-                        print("COULDNT DELETE BUSY TOKEN! ALERT!")
-
-                    # sources.write(obsid_path
-                    # + "smartstacks/"
-                    # + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
-
-                    #pickle.dump(sources, open(obsid_path+ "smartstacks/" + smartStackFilename.replace('.npy','.sep'),'wb'))
-
-                    # sources.write(obsid_path
-                    # + "smartstacks/"
-                    # + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
+                        print ("COULDNT DELETE BUSY TOKEN! ALERT!")
 
                 else:
                     reprojection_failed = True
@@ -333,175 +165,33 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                 )
 
                 # Grab the two arrays
-                de_nanned_reference_frame = copy.deepcopy(storedsStack)
-                tempnan = copy.deepcopy(imgdata)
-                # # Cut down image to central thousand by thousand patch to align
-                # fx, fy = de_nanned_reference_frame.shape
+                de_nanned_reference_frame=copy.deepcopy(storedsStack)
+                tempnan=copy.deepcopy(imgdata)
 
-                # if ssfilter.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
+                googtime=time.time()
+                edge_crop=100
+                xoff, yoff = cross_correlation_shifts(block_reduce(de_nanned_reference_frame[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean), block_reduce(tempnan[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean),zeromean=False)
+                print (time.time()-googtime)
+                print ("3x")
+                print (str(-yoff*3) + " " + str(-xoff*3))
+                print (str(round(-yoff*3)) + " " + str(round(-xoff*3)))
+                imageshift=[round(-yoff*3),round(-xoff*3)]
 
-                #     crop_x= 200
-                #     crop_y= 200
-                # else:
-                #     crop_x= int(0.5*fx) -1250
-                #     crop_y= int(0.5*fy) -1250
-                # # crop_x= 100
-                # # crop_y= 100
-                # de_nanned_reference_frame = de_nanned_reference_frame[crop_x:-crop_x, crop_y:-crop_y]
-                # tempnan= tempnan[crop_x:-crop_x, crop_y:-crop_y]
-
-                # #cut down the background and align on the signal in the images.
-                # median_used=False
-
-                # # Grab the reference frame, then figure out the sky background offset from the mode
-                # # in one direction and assume it is symmetrical in the other direction and use that
-                # # UNLESS the median is lower than the sky background offset... then use that... that
-                # # can happen when there is not much signal.
-                # denan_mask=copy.deepcopy(de_nanned_reference_frame)
-                # denan_median=np.nanpercentile(denan_mask, 90)
-                # # denan_median=2.5 * bn.nanmedian(denan_mask) - 1.5 * bn.nanmean(denan_mask)
-
-                # # # Calculating the edge of the sky distribution
-                # # int_array_flattened=denan_mask.astype(int).ravel()
-                # # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-                # # m=counts.argmax()
-                # # denanMode=unique[m]
-                # # # Zerothreshing image
-                # # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-                # # #Do some fiddle faddling to figure out the value that goes to zero less
-                # # zeroValueArray=histogramdata[histogramdata[:,0] < denanMode]
-                # # breaker=1
-                # # counter=0
-                # # while (breaker != 0):
-                # #     counter=counter+1
-                # #     if not (denanMode-counter) in zeroValueArray[:,0]:
-                # #         if not (denanMode-counter-1) in zeroValueArray[:,0]:
-                # #             if not (denanMode-counter-2) in zeroValueArray[:,0]:
-                # #                 if not (denanMode-counter-3) in zeroValueArray[:,0]:
-                # #                     if not (denanMode-counter-4) in zeroValueArray[:,0]:
-                # #                         if not (denanMode-counter-5) in zeroValueArray[:,0]:
-                # #                             if not (denanMode-counter-6) in zeroValueArray[:,0]:
-                # #                                 if not (denanMode-counter-7) in zeroValueArray[:,0]:
-                # #                                     if not (denanMode-counter-8) in zeroValueArray[:,0]:
-                # #                                         if not (denanMode-counter-9) in zeroValueArray[:,0]:
-                # #                                             if not (denanMode-counter-10) in zeroValueArray[:,0]:
-                # #                                                 if not (denanMode-counter-11) in zeroValueArray[:,0]:
-                # #                                                     if not (denanMode-counter-12) in zeroValueArray[:,0]:
-                # #                                                         denan_zeroValue=(denanMode-counter)
-                # #                                                         denan_top_of_sky_background_value=denanMode+counter
-                # #                                                         breaker =0
-
-                # # # if denan_top_of_sky_background_value > denan_median:
-                # # #     median_used=True
-                # # if denan_top_of_sky_background_value > denan_median:
-                # #     median_used=True
-
-                # # Do the same for the new image
-                # tempnan_mask=copy.deepcopy(tempnan)
-                # tempnan_median=np.nanpercentile(tempnan_mask, 90)
-                # # tempnan_median=2.5 * bn.nanmedian(tempnan_mask) - 1.5 * bn.nanmean(tempnan_mask)
-
-                # # # Calculating the edge of the sky distribution
-                # # int_array_flattened=tempnan_mask.astype(int).ravel()
-                # # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-                # # m=counts.argmax()
-                # # tempnanMode=unique[m]
-                # # # Zerothreshing image
-                # # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-                # # #Do some fiddle faddling to figure out the value that goes to zero less
-                # # zeroValueArray=histogramdata[histogramdata[:,0] < tempnanMode]
-                # # breaker=1
-                # # counter=0
-                # # while (breaker != 0):
-                # #     counter=counter+1
-                # #     if not (tempnanMode-counter) in zeroValueArray[:,0]:
-                # #         if not (tempnanMode-counter-1) in zeroValueArray[:,0]:
-                # #             if not (tempnanMode-counter-2) in zeroValueArray[:,0]:
-                # #                 if not (tempnanMode-counter-3) in zeroValueArray[:,0]:
-                # #                     if not (tempnanMode-counter-4) in zeroValueArray[:,0]:
-                # #                         if not (tempnanMode-counter-5) in zeroValueArray[:,0]:
-                # #                             if not (tempnanMode-counter-6) in zeroValueArray[:,0]:
-                # #                                 if not (tempnanMode-counter-7) in zeroValueArray[:,0]:
-                # #                                     if not (tempnanMode-counter-8) in zeroValueArray[:,0]:
-                # #                                         if not (tempnanMode-counter-9) in zeroValueArray[:,0]:
-                # #                                             if not (tempnanMode-counter-10) in zeroValueArray[:,0]:
-                # #                                                 if not (tempnanMode-counter-11) in zeroValueArray[:,0]:
-                # #                                                     if not (tempnanMode-counter-12) in zeroValueArray[:,0]:
-                # #                                                         tempnan_zeroValue=(tempnanMode-counter)
-                # #                                                         tempnan_top_of_sky_background_value=tempnanMode+counter
-                # #                                                         breaker =0
-
-                # # if tempnan_top_of_sky_background_value > tempnan_median:
-                # #     median_used=True
-
-                # denan_mask[np.isnan(denan_mask)] = False
-                # tempnan_mask[np.isnan(tempnan_mask)] = False
-
-                # # if median_used:
-                # denan_mask[denan_mask <= denan_median] = False
-                # denan_mask[denan_mask > denan_median] = True
-                # denan_mask=denan_mask.astype('bool')
-                # tempnan_mask[tempnan_mask <= tempnan_median] = False
-                # tempnan_mask[tempnan_mask > tempnan_median] = True
-                # tempnan_mask=tempnan_mask.astype('bool')
-                # # else:
-                #     # denan_mask[denan_mask <= denan_top_of_sky_background_value] = False
-                #     # denan_mask[denan_mask > denan_top_of_sky_background_value] = True
-                #     # denan_mask=denan_mask.astype('bool')
-                #     # tempnan_mask[tempnan_mask <= tempnan_top_of_sky_background_value] = False
-                #     # tempnan_mask[tempnan_mask > tempnan_top_of_sky_background_value] = True
-                #     # tempnan_mask=tempnan_mask.astype('bool')
-
-                # #breakpoint()
-
-                # imageshift = phase_cross_correlation(de_nanned_reference_frame, tempnan, reference_mask=denan_mask, moving_mask=tempnan_mask)
-
-                # if len(imageshift) == 3:
-                #     imageshift=imageshift[0]
-
-                googtime = time.time()
-                edge_crop = 100
-                xoff, yoff = cross_correlation_shifts(block_reduce(de_nanned_reference_frame[edge_crop:-edge_crop, edge_crop:-edge_crop], 3, func=np.nanmean), block_reduce(
-                    tempnan[edge_crop:-edge_crop, edge_crop:-edge_crop], 3, func=np.nanmean), zeromean=False)
-                print(time.time()-googtime)
-                print("3x")
-                print(str(-yoff*3) + " " + str(-xoff*3))
-                print(str(round(-yoff*3)) + " " + str(round(-xoff*3)))
-
-                imageshift = [round(-yoff*3), round(-xoff*3)]
-
-                # #imageshift, error, diffphase
-                # imageshiftabs=int(abs(imageshift[0]))
-
-                # breakpoint()
                 if abs(imageshift[0]) > 0:
-                    # print ("X shifter")
-                    # print (int(imageshift[0]))
-                    # if imageshift[0]
-                    imageshiftabs = int(abs(imageshift[0]))
+                    imageshiftabs=int(abs(imageshift[0]))
                     if imageshift[0] > 0:
                         imageshiftsign = 1
                     else:
                         imageshiftsign = -1
+                    imgdata=np.roll(imgdata, imageshiftabs*imageshiftsign, axis=0)
 
-                    imgdata = np.roll(imgdata, imageshiftabs *
-                                      imageshiftsign, axis=0)
-                    # print ("Roll: " + str(time.time()-rolltimer))
-
-                # rolltimer=time.time()
                 if abs(imageshift[1]) > 0:
-                    # print ("Y shifter")
-                    # print (int(imageshift[1]))
-
-                    imageshiftabs = int(abs(imageshift[1]))
+                    imageshiftabs=int(abs(imageshift[1]))
                     if imageshift[1] > 0:
                         imageshiftsign = 1
                     else:
                         imageshiftsign = -1
-
-                    imgdata = np.roll(imgdata, imageshiftabs *
-                                      imageshiftsign, axis=1)
-                    # print ("Roll: " + str(time.time()-rolltimer))
+                    imgdata=np.roll(imgdata, imageshiftabs*imageshiftsign, axis=1)
 
                 storedsStack += imgdata  # + storedsStack   A WER experiment!
 
@@ -519,28 +209,13 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                 except:
                     print("COULDNT DELETE BUSY TOKEN! ALERT!")
 
-                #         reprojection_failed = False
-                #     except aa.MaxIterError:
-                #         reprojection_failed = True
-                #         # print(traceback.format_exc())
-                #         # breakpoint()
-                #     except Exception:
-                #         reprojection_failed = True
-                #         # print(traceback.format_exc())
-                #         # breakpoint()
-                # else:
-                #     reprojection_failed = True
-
-        # If we couldn't make a stack send a jpeg of the original image.
-        if reprojection_failed == True:
+        if reprojection_failed == True:  # If we couldn't make a stack send a jpeg of the original image.
             storedsStack = imgdata
 
         pickle.dump(reprojection_failed, open(
             jpeg_path + 'smartstack.pickle', 'wb'))
 
-        # breakpoint()
-
-        # Resizing the array to an appropriate shape for the jpg and the small fits
+         # Resizing the array to an appropriate shape for the jpg and the small fits
 
         # Code to stretch the image to fit into the 256 levels of grey for a jpeg
         stretched_data_float = Stretch().stretch(storedsStack) # + 1000)  WER 20240622
@@ -623,9 +298,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                 r_sq2 = (1 - 0.0625)/2
                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)
             else:
-                # for other cases treat the image as full-size no ZOOM.
-                zoom = (0.0, 0.0, 0.0, 0.0)
-            # breakpoint()
+                zoom = (0.0, 0.0, 0.0, 0.0)   #for other cases treat the image as full-size no ZOOM.
             xl, yt, xr, yb = zoom
             xl *= ix
             yt *= iy
@@ -684,11 +357,9 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
         if is_osc:
             sstack_process_timer = time.time()
             if osc_bayer == 'RGGB':
-
                 newhdured = imgdata[::2, ::2]
                 newhdugreen = imgdata[::2, 1::2]
                 newhdublue = imgdata[1::2, 1::2]
-
             else:
                 pass
 
@@ -696,37 +367,9 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
             # multithreaded sep.
             pixscale = pixscale
 
-            im_path = jpeg_path
-            text_name = jpeg_name.replace('.jpg', '.txt')
-            # paths["text_name00"]
+            im_path=jpeg_path
+            text_name=jpeg_name.replace('.jpg','.txt')
 
-            # pickler=[newhdured,pixscale,image_saturation_level,nativebin,readnoise,minimum_realistic_seeing,im_path,text_name,'red']
-            # red_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            # #red_sep_subprocess=subprocess.Popen(['python','OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            # pickle.dump(pickler, red_sep_subprocess.stdin)
-
-            # pickler[0]=newhdugreen
-            # pickler[8]='green'
-            # green_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            # #green_sep_subprocess=subprocess.Popen(['python','OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            # pickle.dump(pickler, green_sep_subprocess.stdin)
-
-            # pickler[0]=newhdublue
-            # pickler[8]='blue'
-            # blue_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            # #blue_sep_subprocess=subprocess.Popen(['python','OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            # pickle.dump(pickler, blue_sep_subprocess.stdin)
-
-            # # Essentially wait until each subprocess is complete
-            # red_sep_subprocess.communicate()
-            # green_sep_subprocess.communicate()
-            # blue_sep_subprocess.communicate()
-
-            # redsources=pickle.load(open(im_path + 'oscaasep.picklered', 'rb'))
-            # greensources=pickle.load(open(im_path + 'oscaasep.picklegreen', 'rb'))
-            # bluesources=pickle.load(open(im_path + 'oscaasep.pickleblue', 'rb'))
-
-            # if len(greensources) > 5:
             # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
             reprojection_failed = False
             crosscorrel_filename_waiter = []
@@ -738,9 +381,6 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                         smartStackFilename.replace(
                             smartstackid, smartstackid + str(colstack))
                 ):
-                    # if len(greensources) >= 5:
-                    # Store original image
-
                     if colstack == 'blue':
                         np.save(
                             obsid_path
@@ -750,10 +390,6 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                             newhdublue,
                         )
 
-                        # bluesources.write(obsid_path
-                        # + "smartstacks/"
-                        # + smartStackFilename.replace('.npy','blue.sep'), format='csv', overwrite=True)
-
                     if colstack == 'green':
                         np.save(
                             obsid_path
@@ -762,9 +398,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                                                          smartstackid + str(colstack)),
                             newhdugreen,
                         )
-                        # greensources.write(obsid_path
-                        # + "smartstacks/"
-                        # + smartStackFilename.replace('.npy','green.sep'), format='csv', overwrite=True)
+
                     if colstack == 'red':
                         np.save(
                             obsid_path
@@ -773,18 +407,6 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                                                          smartstackid + str(colstack)),
                             newhdured,
                         )
-                        # redsources.write(obsid_path
-                        # + "smartstacks/"
-                        # + smartStackFilename.replace('.npy','red.sep'), format='csv', overwrite=True)
-
-                    # # As soon as there is a reference image, delete the busy token
-                    # try:
-                    #     os.remove(jpeg_path + smartstackid +'.busy')
-                    # except:
-                    #     print ("COULDNT DELETE BUSY TOKEN! ALERT!")
-
-                    # else:
-                    #     reprojection_failed = True
 
                 else:
                     # Collect stored SmartStack
@@ -794,32 +416,16 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                             smartstackid, smartstackid + str(colstack))
                     )
 
-                    # ref_sources=ref_sources = Table.read(obsid_path
-                    # + "smartstacks/"
-                    # + smartStackFilename.replace('.npy',str(colstack)+'.sep'), format='csv')
-
                     if colstack == 'blue':
-                        # sources=bluesources
-                        imgdata = newhdublue
+                        imgdata=newhdublue
                     if colstack == 'red':
-                        # sources=redsources
-                        imgdata = newhdured
+                        imgdata=newhdured
                     if colstack == 'green':
-                        # sources=greensources
-                        imgdata = newhdugreen
-
-                    # sources=np.column_stack((sources['x'],sources['y']))
-                    # ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
-
-                    # if len(greensources) > 5:
-
-                    # try:
+                        imgdata=newhdugreen
 
                     # Send out each colstack to a subprocess to wait.
-
-                    output_filename = 'crosscorrel' + \
-                        str(colstack) + str(smartstackid) + '.npy'
-                    pickler = []
+                    output_filename='crosscorrel' + str(colstack) + str(smartstackid) + '.npy'
+                    pickler=[]
                     pickler.append(storedsStack)
                     pickler.append(imgdata)
                     pickler.append(obsid_path + "smartstacks/")
@@ -835,34 +441,12 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                     pickle.dump(
                         pickler, crosscorrelation_subprocess_array[counter].stdin)
 
-                    counter = counter+1
-
-               # breakpoint()
-
-                # counter=1
-
-                    # transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
-
-                    # reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
-
-                    # storedsStack = reprojectedimage + storedsStack
-
-                    #     reprojection_failed = False
-                    # except aa.MaxIterError:
-                    #     reprojection_failed = True
-                    # except Exception:
-                    #     reprojection_failed = True
-                    # else:
-                    #     reprojection_failed = True
-
             # Wait for the three crosscorrels to happen
             for waitfile in crosscorrel_filename_waiter:
                 while not os.path.exists(waitfile):
-                    #print ("waiting for " + str(waitfile))
                     time.sleep(0.2)
 
             if len(crosscorrel_filename_waiter) > 0:
-                # for colstack in ['blue', 'green', 'red']:
                 for waitfile in crosscorrel_filename_waiter:
 
                     storedsStack = np.load(waitfile)
@@ -900,24 +484,17 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                         newhdublue = storedsStack
                     del storedsStack
 
-                    # sub_stacker_array[:,:,counter] = np.load(waitfile)
-                    # counter=counter+1
-
-                    # Once the files are there, pick them back up again
-                    # Save new stack to disk
-
             # As soon as there is a reference image, delete the busy token
             try:
                 os.remove(jpeg_path + smartstackid + '.busy')
             except:
                 print("COULDNT DELETE BUSY TOKEN! ALERT!")
 
-            pickle.dump(reprojection_failed, open(
-                jpeg_path + 'smartstack.pickle', 'wb'))
+            pickle.dump(reprojection_failed, open(jpeg_path + 'smartstack.pickle', 'wb'))
 
-            newhdugreen[np.isnan(newhdugreen)] = imageMode
-            newhdured[np.isnan(newhdured)] = imageMode
-            newhdublue[np.isnan(newhdublue)] = imageMode
+            newhdugreen[np.isnan(newhdugreen)] =imageMode
+            newhdured[np.isnan(newhdured)] =imageMode
+            newhdublue[np.isnan(newhdublue)] =imageMode
 
             # NOW THAT WE HAVE THE INDIVIDUAL IMAGES THEN PUT THEM TOGETHER
             xshape = newhdugreen.shape[0]
@@ -1005,72 +582,10 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                 jpeg_path +
                 jpeg_name.replace('EX10', 'EX20').replace('.jpg', 'temp.jpg')
             )
-            os.rename(jpeg_path + jpeg_name.replace('EX10', 'EX20').replace('.jpg',
-                      'temp.jpg'), jpeg_path + jpeg_name.replace('EX10', 'EX20'))
-
-            # # Resizing the array to an appropriate shape for the jpg and the small fits
-            # iy, ix = final_image.size
-            # #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
-            # print('Zoom factor is:  ', zoom_factor)
-            # if zoom_factor is not False:
-            #     if not (zoom_factor in ['full', 'Full', '100%']):
-            #     #     zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
-            #     # el
-            #         if zoom_factor in ['square', 'Sqr.', 'small sq.']:
-            #             zoom = ((ix/iy -1)/2, 0.0, (ix/iy -1)/2, 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
-            #         elif zoom_factor in ['71%', '70.7%', '1.4X', '1.5X']:
-            #             r_sq2 = (1 - 1/sqrt(2))/2
-            #             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #         elif zoom_factor in ['50%', '2X']:
-            #             r_sq2 = (1 - 0.5)/2
-            #             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #         elif zoom_factor in ['35%', '2.8X', '3X']:
-            #             r_sq2 = (1 - 0.5/sqrt(2))/2
-            #             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #         elif zoom_factor in ['25%', '4X']:
-            #             r_sq2 = (1 - 0.25)/2
-            #             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #         elif zoom_factor in ['18%', '5.7X', '6X']:
-            #             r_sq2 = (1 - 0.25/sqrt(2))/2
-            #             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #         elif zoom_factor in ['12.5%', '13%', '12%', '8X']:
-            #             r_sq2 = (1 - 0.125)/2
-            #             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #         elif zoom_factor in ['9%', '11.3X', '11X', '12X']:
-            #             r_sq2 = (1 - 0.125/sqrt(2))/2
-            #             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #         elif zoom_factor in ['6%', '6.3%', '16X']:
-            #             r_sq2 = (1 - 0.0625)/2
-            #             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)
-            #         else:
-            #             zoom = (1.0, 1.0, 1.0, 1.0)
-            #         #breakpoint()
-            #         xl, yt, xr, yb = zoom
-            #         xl *= ix
-            #         yt *= iy
-            #         xr *= ix
-            #         yb *= iy
-            #         trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
-            #         ix, iy = trial_image.size
-            #         print("Zoomed Image size:", ix, iy)
-            #         final_image = trial_image
-            # breakpoint()
-            # if (
-            #     crop_preview
-            #     == True
-            # ):
-            #     final_image=final_image.crop((xl,yt,xr,yb))
-            #     iy, ix = final_image.size
-
-            # breakpoint()
+            os.rename(jpeg_path + jpeg_name.replace('EX10', 'EX20').replace('.jpg','temp.jpg'),jpeg_path + jpeg_name.replace('EX10', 'EX20'))
 
             # Resizing the array to an appropriate shape for the small jpg
-            #iy, ix = final_image.size
             ix, iy = final_image.size
-            # if (crop_preview == True):
-            #     final_image=final_image.crop((xl,yt,ix-xr,iy-yb))
-            #     ix, iy = final_image.size
-            # insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
             print('Zoom factor is:  ', zoom_factor)
             if zoom_factor is not False:
                 if zoom_factor in ['full', 'Full', '100%']:
@@ -1111,85 +626,15 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                     zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)
                 else:
                     zoom = (0.0, 0.0, 0.0, 0.0)
-                # breakpoint()
                 xl, yt, xr, yb = zoom
                 xl *= ix
                 yt *= iy
                 xr *= ix
                 yb *= iy
-                # breakpoint()
-                # trial_image=final_image.crop((int(xl),int(yt),int(iy-xr),int(ix-yb)))
-
-                # breakpoint()
-
-                trial_image = final_image.crop(
-                    (int(xl), int(yt), int(ix-xr), int(iy-yb)))
+                trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
                 ix, iy = trial_image.size
                 print("Zoomed Image size:", ix, iy)
                 final_image = trial_image
-
-            # # Resizing the array to an appropriate shape for the small jpg
-
-            # ix, iy = final_image.size
-            # #breakpoint()
-            # if (crop_preview == True):
-            #     #final_image=final_image.crop((xl,yt,ix-xr,iy-yb))
-            #     final_image=final_image.crop((xl,yt,iy-xr,ix-yb))
-            #     #iy, ix = final_image.size
-            #     #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
-            # #breakpoint()
-            # print('Zoom factor is:  ', zoom_factor)
-            # if zoom_factor is not False and not zoom_factor in ['full', 'Full', '100%'] :
-            #     if zoom_factor in ['full', 'Full', '100%']:
-            #         zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
-            #     elif zoom_factor in ['square', 'sqr.', 'small sq.']:
-            #         zoom = ((ix/iy -1)/2, 0.0, (ix/iy -1)/2, 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
-            #     elif zoom_factor in ['71%', '70.7%', '1.4x', '1.5x']:
-            #         r_sq2 = (1 - 1/sqrt(2))/2
-            #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #     elif zoom_factor in ['50%', '2x']:
-            #         r_sq2 = (1 - 0.5)/2
-            #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #     elif zoom_factor in ['35%', '2.8x', '3x']:
-            #         r_sq2 = (1 - 0.5/sqrt(2))/2
-            #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #     elif zoom_factor in ['25%', '4x']:
-            #         r_sq2 = (1 - 0.25)/2
-            #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #     elif zoom_factor in ['18%', '5.7x', '6x']:
-            #         r_sq2 = (1 - 0.25/sqrt(2))/2
-            #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #     elif zoom_factor in ['12.5%', '13%', '12%', '8x']:
-            #         r_sq2 = (1 - 0.125)/2
-            #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #     elif zoom_factor in ['9%', '11.3x', '11x', '12x']:
-            #         r_sq2 = (1 - 0.125/sqrt(2))/2
-            #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            #     elif zoom_factor in ['6%', '6.3%', '16x']:
-            #         r_sq2 = (1 - 0.0625)/2
-            #         zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)
-            #     else:
-            #         zoom = (0.0, 0.0, 0.0, 0.0)
-            #     #breakpoint()
-            #     xl, yt, xr, yb = zoom
-            #     xl *= ix
-            #     yt *= iy
-            #     xr *= ix
-            #     yb *= iy
-            #     #trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
-            #     trial_image=final_image.crop((int(xl),int(yt),int(iy-xr),int(ix-yb)))
-            #     ix, iy = trial_image.size
-            #     print("Zoomed Image size:", ix, iy)
-            #     final_image = trial_image
-
-            # iy, ix = final_image.size
-            # if iy == ix:
-            #     final_image = final_image.resize((900, 900))
-            # else:
-            #     if squash_on_x_axis:
-            #         final_image = final_image.resize((int(900 * iy / ix), 900))
-            #     else:
-            #         final_image = final_image.resize((900, int(900 * iy / ix)))
 
             iy, ix = final_image.size
             if ix == iy:
@@ -1204,10 +649,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                 jpeg_path + jpeg_name.replace('.jpg', 'temp.jpg')
             )
             del final_image
-            os.rename(jpeg_path + jpeg_name.replace('.jpg',
-                      'temp.jpg'), jpeg_path + jpeg_name)
-
-            # breakpoint()
+            os.rename(jpeg_path + jpeg_name.replace('.jpg','temp.jpg'),jpeg_path + jpeg_name)
 
     try:
         os.remove(red_path + red_name01.replace('.fits', '.head'))
@@ -1218,29 +660,6 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
         os.remove(red_path + red_name01.replace('.fits', '.npy'))
     except:
         pass
-
-    # Save reduced here.
-
-    # if selfconfig['keep_reduced_on_disk']:
-
-    #     # if selfconfig["save_to_alt_path"] == "yes":
-    #     #     selfalt_path = selfconfig[
-    #     #         "alt_path"
-    #     #     ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
-
-    #     #     if "reduced_hdusmalldata" in locals():
-
-    #     #         g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
-    #     #                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
-    #     if selfconfig["save_to_alt_path"] == "yes":
-    #         selfalt_path = selfconfig[
-    #             "alt_path"
-    #         ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
-    #     else:
-    #         selfalt_path = 'no'
-
-    # img[0].header
 
     try:
         imgdata.close()
