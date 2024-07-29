@@ -10,7 +10,7 @@ It also organises the various queues that process, send, slice and dice data.
 from dotenv import load_dotenv
 load_dotenv(".env")
 import ocs_ingester.exceptions
-from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
+from ocs_ingester.ingester import upload_file_and_ingest_to_archive
 from requests.adapters import HTTPAdapter, Retry
 import ephem
 import datetime
