@@ -49,8 +49,8 @@ from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
 from devices.mount import Mount
 from devices.rotator import Rotator
-from devices.selector import Selector
-from devices.screen import Screen
+#from devices.selector import Selector
+#from devices.screen import Screen
 from devices.sequencer import Sequencer
 import ptr_events
 
@@ -1010,12 +1010,8 @@ class Observatory:
                     device = Rotator(driver, name, self.config)
                 elif dev_type == "focuser":
                     device = Focuser(driver, name, self.config)
-                elif dev_type == "screen":
-                    device = Screen(driver, name, self.config)
                 elif dev_type == "filter_wheel":
-                    device = FilterWheel(driver, name, self.config)
-                elif dev_type == "selector":
-                    device = Selector(driver, name, self.config)
+                    device = FilterWheel(driver, name, self.config)                
                 elif dev_type == "camera":
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
