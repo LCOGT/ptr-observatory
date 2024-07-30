@@ -22,6 +22,7 @@ import sep
 import copy
 from auto_stretch.stretch import Stretch
 from astropy.io import fits
+import sys
 # from astropy.nddata import block_reduce
 # from colour_demosaicing import (
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
@@ -54,8 +55,8 @@ def radial_profile(data, center):
     return radialprofile
 
 
-#input_sep_info=pickle.load(sys.stdin.buffer)
-input_sep_info=pickle.load(open('testSEPpickle','rb'))
+input_sep_info=pickle.load(sys.stdin.buffer)
+#input_sep_info=pickle.load(open('testSEPpickle','rb'))
 
 #print ("HERE IS THE INCOMING. ")
 #print (input_sep_info)
