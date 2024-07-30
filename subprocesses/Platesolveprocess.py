@@ -79,8 +79,8 @@ def parse_platesolve_output(output_file):
 
     return results
 
-#input_psolve_info=pickle.load(sys.stdin.buffer)
-input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
+input_psolve_info=pickle.load(sys.stdin.buffer)
+#input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
 
 hdufocusdata=input_psolve_info[0]
 hduheader=input_psolve_info[1]
