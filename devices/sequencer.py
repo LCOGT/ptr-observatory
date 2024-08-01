@@ -1471,15 +1471,20 @@ class Sequencer:
                         filter_requested = 'None'
 
                     # Try next block in sequence
-                    try:
-                        if not (block_exposure_counter + 1) ==len(block['project']['exposures']):
-                            self.block_next_filter_requested=block['project']['exposures'][block_exposure_counter+1]['filter']
-                        else:
-                            self.block_next_filter_requested=block['project']['exposures'][0]['filter']
-                    except:
-                        plog(traceback.format_exc())
-                        #breakpoint()
+                    
+                    if g_dev["fil"].null_filterwheel == False:
+                        try:
+                            if not (block_exposure_counter + 1) ==len(block['project']['exposures']):
+                                self.block_next_filter_requested=block['project']['exposures'][block_exposure_counter+1]['filter']
+                            else:
+                                self.block_next_filter_requested=block['project']['exposures'][0]['filter']
+                        except:
+                            plog(traceback.format_exc())
+                            #breakpoint()
+                            self.block_next_filter_requested='None'
+                    else:
                         self.block_next_filter_requested='None'
+
 
                     exp_time =  float(exposure['exposure'])
                     #  We should add a frame repeat count
