@@ -3090,11 +3090,8 @@ class Camera:
         # This is here because a single exposure may have a flip in it, hence
         # we check here.
         if not g_dev['obs'].mountless_operation:
-            if not g_dev['mnt'].rapid_park_indicator: # and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-                #self.wait_for_slew(wait_after_slew=False)
-                #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
-                if g_dev['mnt'].pier_flip_detected == True  and not g_dev['obs'].auto_centering_off:
-                    breakpoint()
+            if not g_dev['mnt'].rapid_park_indicator:               
+                if g_dev['mnt'].pier_flip_detected == True  and not g_dev['obs'].auto_centering_off:                    
                     plog ("PIERFLIP DETECTED, RECENTERING.")
                     g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                     g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
@@ -3671,7 +3668,7 @@ class Camera:
             minimum_realistic_seeing=self.config['minimum_realistic_seeing']
             
             # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-            if True:
+            if False:
                 pickle.dump([septhread_filename, self.pixscale, self.camera_known_readnoise, avg_foc, focus_image, im_path, text_name, 'hduheader', cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,self.native_bin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
 
 
