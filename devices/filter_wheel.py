@@ -39,7 +39,6 @@ class FilterWheel:
         self.filter_offsets={}
 
 
-
         if driver is not None:
             self.null_filterwheel = False
             self.dual_filter = self.config["filter_wheel1"]["dual_wheel"]
@@ -189,6 +188,7 @@ class FilterWheel:
                 self.ascom = False
                 self.dual = True
                 self.custom = False
+
 
             elif "com" in driver.lower():
                 self.custom = True

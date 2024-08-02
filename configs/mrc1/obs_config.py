@@ -23,14 +23,14 @@ site_config = {
     'obs_id': 'mrc1',
 
     # Name, local and owner stuff
-    'name': 'Mountain Ranch Camp Observatory 0m35 f7.2',
+    'name': 'Mountain Ranch Camp Observatory 0m30 F3.8',
     'airport_code': 'SBA',
     'location': 'Near Santa Barbara CA,  USA',
-    'telescope_description': '0m35 f7.2 Planewave CDK',
+    'telescope_description': '0m305 F3/8 A-P Honders Astrograph',
     'observatory_url': 'https://starz-r-us.sky/clearskies',
     'observatory_logo': None,
     'mpc_code':  'ZZ23',  # This is made up for now.
-    'description':  '''
+    'dedication':  '''
                     Now is the time for all good persons
                     to get out and vote early and often lest
                     we lose charge of our democracy.
@@ -45,12 +45,12 @@ site_config = {
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 45,
-    'lowest_requestable_altitude': 15,  # Degrees. For normal pointing requests don't allow requests to go this low.
-    'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+    'lowest_requestable_altitude': 10,  # Degrees. For normal pointing requests don't allow requests to go this low.
+    'lowest_acceptable_altitude' : 0.0, # Below this altitude, it will automatically try to home and park the scope to recover.
     'degrees_to_avoid_zenith_area_for_calibrations': 5,
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
-    'temperature_at_which_obs_too_hot_for_camera_cooling' : 23,
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 30,
 
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
@@ -79,7 +79,7 @@ site_config = {
     'temporary_local_alt_archive_to_hold_files_while_copying' : 'D:/tempfolderforaltpath',
 
     # Setup of folders on local and network drives.
-    'client_hostname':  'mrc-0m35',  # This is also the long-name  Client is confusing!
+    'client_hostname':  'mrc-0m30',  # This is also the long-name  Client is confusing!
     'archive_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
     'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
@@ -153,7 +153,7 @@ site_config = {
     'auto_morn_bias_dark':  True,
 
     # FOCUS OPTIONS
-    'periodic_focus_time': 12.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+    'periodic_focus_time': 3.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_trigger': 0.75,  # What FWHM increase is needed to trigger an autofocus
 
@@ -214,11 +214,11 @@ site_config = {
             'east_flip_dec_correction': 0.0,  #
 
             # Activity before and after parking
-            'home_after_unpark': True,
-            'home_before_park': True,
+            'home_after_unpark': False,
+            'home_before_park': False,
             'settle_time_after_unpark' : 0,
             'settle_time_after_park' : 0,
-            'time_inactive_until_park': 3600.0,  # How many seconds of inactivity until it will park the telescope
+            'time_inactive_until_park': 1800.0,  # How many seconds of inactivity until it will park the telescope
 
             # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'
             'permissive_mount_reset': 'yes',
@@ -311,23 +311,23 @@ site_config = {
             'telescop': 'mrc1',  # The tenth telescope at mrc will be 'mrc10'. mrc2 already exists.
             # the important thing is sites contain only a to z, but the string may get longer.
             #  From the BZ perspective TELESCOP must be unique
-            'ptrtel': 'Planewave CDK 0.35m f7.2',
+            'ptrtel': 'Astro-Physics Honders 304mm F3.8 Astrograph.',
             'driver': 'None',  # Essentially this device is informational.  It is mostly about the optics.
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'collecting_area':  76147,  # 178*178*math.pi*0.765
-            'obscuration':  23.5,
-            'aperture': 356,
-            'f-ratio':  7.2,  # This and focal_length can be refined after a solve.
-            'focal_length': 2563,
+            'collecting_area':  60352.0, #  79410.55*0.76
+            'obscuration':  24.0,
+            'aperture': 305.0,
+            'f-ratio':  3.8,  # This and focal_length can be refined after a solve.
+            'focal_length': 1159.0,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
             'rotator_name':  'rotator1',
             'has_instrument_selector': False,  # This is a default for a single instrument system
             'selector_positions': 1,  # Note starts with 1
             'instrument names':  ['camera_1_1'],
-            'instrument aliases':  ['QHY600Mono'],
+            'instrument aliases':  ['QHY461Mono'],
             'configuration': {
                 "position1": ["darkslide1", "filter_wheel1", "filter_wheel2", "camera1"]
             },
@@ -509,49 +509,23 @@ site_config = {
                 'mono_Narrowband_colour_filters': ['ha', 'o3', 's2'],
                 'mono_Narrowband_relative_weights': [1.0, 2, 2.5],
 
-
-                # 'filter_data': [['air',     [0, 0], -1000,  2960,    [2, 17], 'ai'],  # 0 Surface ws 1400Lux at end of night run  Sun Akt 0,97 degrees
-                #                 # 1  330NB NB NB If this in series should change focus about 1mm more.
-                #                 ['dif',     [4, 0],     0,  16.00,   [2, 17], 'df'],
-                #                 ['w',       [2, 0],     0,  2740,    [2, 17], 'w '],  # 2 346
-                #                 ['PL',      [0, 4],     0,  2430,    [2, 17], "PL"],  # 3 317
-                #                 ['gp',      [0, 6],     0,  2200,    [2, 17], 'gp'],  # 4
-                #                 ['PB',      [0, 1],     0,  2050,    [2, 17], 'PB'],  # 5
-                #                 ['PG',      [0, 2],     0,  1185,    [2, 17], 'PG'],  # 6
-                #                 ['rp',      [0, 7],     0,  920,     [2, 17], 'rp'],  # 7
-                #                 ['PR',      [0, 3],     0,  450,     [2, 17], 'PR'],  # 8
-                #                 ['ip',      [0, 8],     0,  327,     [2, 17], 'ip'],  # 9
-                #                 ['z',       [5, 0],     0,  58,      [2, 17], 'z'],  # 10
-                #                 ['O3',      [7, 0],     0,  43,      [2, 17], '03'],  # 11
-                #                 ['CR',      [1, 0],     0,  33,      [2, 17], 'CR'],  # 12
-                #                 ['up',      [0, 5],     0,  29,      [1, 17], 'up'],  # 13
-                #                 ['N2',      [3, 0],     0,  17,      [2, 17], 'N2'],  # 14
-                #                 ['HA',      [6, 0],     0,  15.5,    [2, 17], 'HA'],  # 15
-                #                 ['S2',      [8, 0],     0,  15,      [2, 17], 'S2'],  # 16 20240109 eve  Clear bright sky perfect evening
-
-                #                 ['dark',    [8, 5],     0,  0.0,     [2, 17], 'dk']],  # 17
-
-
-                'filter_data': [['air',     [0, 0],  'ai'],  # 0 Surface ws 1400Lux at end of night run  Sun Akt 0,97 degrees
-                                # 1  330NB NB NB If this in series should change focus about 1mm more.
-                                #['dif',     [4, 0],   'df'],
-                                ['w',       [2, 0],  'w '],  # 2 346
-                                ['PL',      [0, 4],    "PL"],  # 3 317
-                                ['gp',      [0, 6],    'gp'],  # 4
-                                ['PB',      [0, 1],    'PB'],  # 5
-                                ['PG',      [0, 2],   'PG'],  # 6
+                'filter_data': [['air',     [0, 0],   'ai'],  # 1
+                                ['V',       [0, 1],   'V '],  # 2  Wheel closest to camera
+                                ['B',       [0, 2],   "B "],  # 3
+                                ['w',       [0, 4],   'w '],  # 4
+                                ['up',      [0, 5],   'up'],  # 5
+                                ['gp',      [0, 6],   'gp'],  # 6
                                 ['rp',      [0, 7],   'rp'],  # 7
-                                ['PR',      [0, 3],   'PR'],  # 8
-                                ['ip',      [0, 8],   'ip'],  # 9
-                                ['z',       [5, 0],   'z'],  # 10
-                                ['O3',      [7, 0],    '03'],  # 11
-                                ['CR',      [1, 0],    'CR'],  # 12
-                                ['up',      [0, 5],   'up'],  # 13
-                                ['N2',      [3, 0],   'N2'],  # 14
-                                ['HA',      [6, 0],    'HA'],  # 15
-                                ['S2',      [8, 0],     'S2'],  # 16 20240109 eve  Clear bright sky perfect evening
-
-                                ['dk',    [8, 5],     'dk']],  # 17
+                                ['ip',      [0, 8],   'ip'],  # 8
+                                ['sy',      [1, 0],   'sy'],  # 9  Wheel closest to rotator
+                                ['sb',      [2, 0],   'sb'],  # 10
+                                ['sx',      [3, 0],   'sv'],  # 11
+                                ['su',      [4, 0],   'su'],  # 12
+                                ['O3',      [5, 0],   'o3'],  # 13
+                                ['Hb',      [6, 0],   'hb'],  # 14
+                                ['Ha',      [7, 0],   'ha'],  # 15
+                                ['S2',      [8, 0],   's2'],  # 16
+                                ['dk',      [8, 5],   'dk']], # 17
 
                 'focus_filter' : 'w',
 
@@ -596,20 +570,20 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq009sm',  # Important because this points to a server file structure by that name.
-            'desc':  'Sony IMX455 BSI Mono',
+            'name': 'sq010sm',  # Important because this points to a server file structure by that name.
+            'desc':  'QHY 461PH BSI Mono',
             
             'overscan_trim' : 'none',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
-            'service_date': '20240615',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo. 
+            'service_date': '20240801',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo. 
             
             
             
-            'detector':  'Sony IMX455 BSI Mono',  # It would be good to build out a table of chip characteristics  6280 x 4210  Inspect: 62:4102, 4:6076  Sony 6244X4168 Active Optical black Hor 16, rear 0, Vert 22, rear 0
+            'detector':  'Sony IMX461 BSI Mono',  # It would be good to build out a table of chip characteristics  6280 x 4210  Inspect: 62:4102, 4:6076  Sony 6244X4168 Active Optical black Hor 16, rear 0, Vert 22, rear 0
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
-            'file_mode_path':  'Q:/archive/sq01/maxim/',  # NB NB all file_mode Maxim stuff should go!
+            'file_mode_path':  'Q:/archive/sq01s0m/maxim/',  # NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
             'settings': {
             
@@ -750,8 +724,8 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,     #Cooler is ambiguous nname
-                'temp_setpoint': 0,    # Verify we can go colder
-                'has_chiller': True,
+                'temp_setpoint': 10,    # Verify we can go colder
+                'has_chiller': False,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C
                 'day_warm': False,
@@ -762,7 +736,7 @@ site_config = {
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
-                'onebyone_pix_scale': 0.303,    #  This is the 1x1 binning pixelscale
+                'onebyone_pix_scale': 0.669,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
                 'y_pixel':  3.76     , # pixel size in microns
@@ -790,7 +764,7 @@ site_config = {
 
                 # This is the absolute minimum and maximum exposure for the camera
                 'min_exposure': 0.0001,
-                'max_exposure': 360.,
+                'max_exposure': 180.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'min_flat_exposure': 0.0001,
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
@@ -842,7 +816,7 @@ site_config = {
 
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,
-                'darkslide_com':  'COM15',
+                'darkslide_com':  'COM8',
                 'shutter_type': "Electronic",
                 'darkslide_type': "bistable",
 
