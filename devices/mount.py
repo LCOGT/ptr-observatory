@@ -64,6 +64,8 @@ import time
 DEBUG = False
 
 DEG_SYM = '°'
+MICRON = chr(956)
+
 PI = math.pi
 TWOPI = math.pi*2.
 PIOVER2 = math.pi/2.
