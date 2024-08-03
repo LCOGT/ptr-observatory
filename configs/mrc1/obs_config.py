@@ -417,7 +417,7 @@ site_config = {
 
             # When the focusser has no previous best focus values
             # start from this reference position
-            'reference': 7250,
+            'reference': 10500,
 
             # Limits and steps for the focuser.
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
@@ -537,10 +537,7 @@ site_config = {
 
             },
         },
-# =============================================================================
-#         'filter_wheel_2': {      #   >>>>
-#         },
-# =============================================================================
+
 
     },
 
