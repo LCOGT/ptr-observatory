@@ -94,9 +94,9 @@ site_config = {
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
     # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
-    'save_raw_to_disk': False,
+    'save_raw_to_disk': True,
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
-    'keep_reduced_on_disk': False,
+    'keep_reduced_on_disk': True,
     'keep_focus_images_on_disk': False,  # To save space, the focus file can not be saved.   
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,   
@@ -368,9 +368,9 @@ site_config = {
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
-            'reference': 13500,    #  20210313  Nominal at 10C Primary temperature            
+            'reference': 23100,    #  20210313  Nominal at 10C Primary temperature            
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
-            'maximum': 18000,   #12672 actually
+            'maximum': 50000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
             'throw' : 300,
@@ -415,7 +415,7 @@ site_config = {
             "dual_wheel": False,
             'settings': {
                 
-                'default_filter': "lum",
+                'default_filter': "pg",
                 
                 'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
                 'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
@@ -440,15 +440,18 @@ site_config = {
 
                        
                         ['lum',    [0,  0],    'PhLum'],    #1.
-                        ['ip',    [1,  1],      'PhRed'],    #2.
-                        ['v',    [2,  2],      'PhGreen'],    #3.
-                        ['pb',    [3,  3],     'PhBlue'],    #4.
-                        ['ha',    [4,  4],     'PhBlue'], 
-                        ['s2',    [5,  5],    'Halpha'],    #5.
-                        ['o3',    [6,  6],    'OIII']],  
+                        ['dk',    [1,  1],      'PhRed'],    #2.
+                        ['pb',    [2, 2 ],      'PhRed'],    #2.
+                        ['pg',    [3, 3],      'PhGreen'],    #3.
+                        ['pr',    [4,  4],     'PhBlue'],    #4.
+                        ['ha',    [5,5],     'PhBlue'], 
+                        ['o3',    [6,6],    'Halpha'],    #5.
+                        ['s2',    [7,7],    'OIII']],  
+                
+                        #['o3',    [7,  7],    'OIII']],  
 
                 
-                'focus_filter' : 'lum',
+                'focus_filter' : 'pg',
 
                 # 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
@@ -475,10 +478,10 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'ec002c',      #  Important because this points to a server file structure by that name.
+            'name': 'ec003zwo',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16803',
             
-            'overscan_trim' : 'SBIG16803',
+            'overscan_trim' : 'asi1600',
             'service_date': '20211111',
             'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
             
@@ -496,8 +499,14 @@ site_config = {
                 'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
 
                 
-                'squash_on_x_axis' : True,
+                'squash_on_x_axis' : False,
                 
+                
+                # There are some infuriating popups on theskyx that manually 
+                # need to be dealt with when doing darks and lights.
+                # This setting uses a workaround for that. This is just for CMOS
+                # CCDs are fine. 
+                'cmos_on_theskyx': True,
                 
                 
                 # These options set whether an OSC gets binned or interpolated for different functions
@@ -537,7 +546,7 @@ site_config = {
                'flipx_jpeg' : False,
                'flipy_jpeg' : False,
                'rotate180_jpeg' : False,
-               'rotate90_jpeg' : True,
+               'rotate90_jpeg' : False,
                'rotate270_jpeg' : False,
                
                # For large fields of view, crop the images down to solve faster.                 
@@ -565,9 +574,9 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -10,   
+                'temp_setpoint': 4,   
                 #'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
-                'day_warm': False,
+                'day_warm': True,
                 'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : True,
                 'cooler_on': True,
@@ -581,8 +590,8 @@ site_config = {
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
-                'min_exposure': 0.2,
-                'min_flat_exposure' : 2.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'min_exposure': 0.000001,
+                'min_flat_exposure' : 0.000001, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'reject_new_flat_by_known_gain' : True,
                 'max_exposure': 3600,
@@ -607,11 +616,11 @@ site_config = {
                 'read_mode':  'Normal',
                 'readout_mode':  'Normal',
                 'readout_speed': 0.08,
-                'readout_seconds': 12.5,
-                'smart_stack_exposure_time' : 45,
+                'readout_seconds': 1.0,
+                'smart_stack_exposure_time' : 15,
                 'substack': False, # Substack with this camera
                 
-                'smart_stack_exposure_NB_multiplier':  1,   #Michael's setting
+                'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
                 'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
@@ -619,7 +628,7 @@ site_config = {
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
                
-                'onebyone_pix_scale': 0.637,    #  This is the 1x1 binning pixelscale
+                'onebyone_pix_scale': 0.269,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 
                 # The drizzle_value is by the new pixelscale
@@ -636,7 +645,7 @@ site_config = {
                 'do_cosmics' : False,
                 'number_of_bias_to_collect' : 64,
                 'number_of_dark_to_collect' : 64,
-                'number_of_flat_to_collect' : 7,
+                'number_of_flat_to_collect' : 10,
                 'number_of_bias_to_store' : 64,
                 'number_of_dark_to_store' : 64,
                 'number_of_flat_to_store' : 64,

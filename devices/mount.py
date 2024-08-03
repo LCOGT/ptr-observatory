@@ -33,29 +33,17 @@ list here retained in user account.)
 
 """
 
-
-#import threading
 import win32com.client
-#import pythoncom
-# import serial
-# import time, json
 import datetime
 import traceback
-# import os
 import copy
 import shelve
 import threading
-# import queue
 from math import cos, radians    #"What plan do we have for making some imports be done this way, elg, import numpy as np...?"
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
-
 from astropy.time import Time
-
 from astropy import units as u
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun, get_moon, FK5#, ICRS
-
-#import short_utility as ptr_utility  #Once this works please undo this hack.
-
 import math
 import ephem
 from ptr_utility import plog
@@ -368,10 +356,6 @@ class Mount:
         try:
             self.longterm_storage_of_mount_references=mnt_shelf['longterm_storage_of_mount_references']
             self.longterm_storage_of_flip_references=mnt_shelf['longterm_storage_of_flip_references']
-
-            # self.longterm_storage_of_mount_references=[]
-            # self.longterm_storage_of_flip_references=[]
-
         except:
             plog ("Could not load the mount deviations from the shelf, starting again.")
             self.longterm_storage_of_mount_references=[]
@@ -456,7 +440,6 @@ class Mount:
         #DIRECT MOUNT POSITION READ #3
         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
-        #self.sidereal_time_directly_from_mount = copy.deepcopy(self.mount.SiderealTime)
         #Verified these set the rates additively to mount supplied refraction rate.20231221 WER
         self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount.RightAscensionRate)
         self.declination_rate_directly_from_mount = copy.deepcopy(self.mount.DeclinationRate)
@@ -467,14 +450,10 @@ class Mount:
         self.airmass = 1.5
         self.az = 160
         self.zen = 45
-
-
         self.inverse_icrs_and_rates_timer=time.time() - 180
-
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
-
         self.request_tracking_on = False
-        self.request_tracking_off =True    #Hopefull in case of a restart we do not run into pier
+        self.request_tracking_off = False
 
         self.request_set_RightAscensionRate=False
         self.request_set_DeclinationRate=False
@@ -537,18 +516,8 @@ class Mount:
 
         self.sync_mount_requested=False
 
-        self.syncToRA=12.0   #Moved these two variables up from below the next block of code WER
-        self.syncToDEC=-20.0 #And why these values?SidTime for RA might be better, or synch to Park5.
-        #This faults. WER 20240519  and why are we synching the mount here?
-        #Next mount_update.wincom does not exist yet, hence teh fault.
-        try:
-            #self.mount_update_wincom.SyncToCoordinates(self.syncToRA,self.syncToDEC)
-            pass
-        except:
-            pass
-
-
-
+        self.syncToRA=12.0   
+        self.syncToDEC=-20.0 
 
         self.unpark_requested=False
         self.park_requested=False
@@ -1044,11 +1013,7 @@ class Mount:
                             # quickly as possible
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-                            #self.sidereal_time_directly_from_mount= copy.deepcopy(self.mount_update_wincom.SiderealTime)
-                            # # Here we calculate the values that go to the status.
-                            # self.inverse_icrs_ra, self.inverse_icrs_dec, inverse_ra_vel, inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
-                            # #I left the above two velocities as local becuse we will not do anything with them.
-
+                            
                             if self.model_on:
                                 # Dont need to correct temporary slewing values as it is moving
                                 self.inverse_icrs_ra = self.right_ascension_directly_from_mount
@@ -1069,7 +1034,6 @@ class Mount:
                                 if self.sync_mount_requested:
                                     self.sync_mount_requested=False
                                     self.mount_update_wincom.SyncToCoordinates(self.syncToRA,self.syncToDEC)
-
 
                             if self.unpark_requested:
                                 self.unpark_requested=False
@@ -1141,12 +1105,6 @@ class Mount:
                                             pass  #This faults if mount is parked.
                                         self.DeclinationRate=self.inverse_dec_vel
 
-
-
-
-                                # if self.CanSetDeclinationRate:
-                                #     self.mount_update_wincom.DeclinationRate = 0
-
                             if self.request_tracking_on:
                                 self.request_tracking_on = False
                                 if  self.can_set_tracking:
@@ -1196,12 +1154,8 @@ class Mount:
                             #DIRECT MOUNT POSITION READ #5
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-                            #self.sidereal_time_directly_from_mount= copy.deepcopy(self.mount_update_wincom.SiderealTime)
                             self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
                             self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
-
-
-
 
                         except:
                             plog ("Issue in normal mount thread")
@@ -1216,7 +1170,6 @@ class Mount:
             except Exception as e:
                 plog ("some type of glitch in the mount thread: " + str(e))
                 plog(traceback.format_exc())
-        #END of Mount Update Thread.  Note it spins on the while True. line 446
 
     def wait_for_slew(self, wait_after_slew=True):
         try:
@@ -1229,9 +1182,8 @@ class Mount:
                     if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
                         plog('m>')
                         movement_reporting_timer = time.time()
-                    # if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
                     g_dev['mnt'].get_mount_coordinates_after_next_update()
-                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)#, dont_wait=True)
+                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
 
                 # Then wait for slew_time to settle
                 if actually_slewed and wait_after_slew:
@@ -1402,9 +1354,7 @@ class Mount:
             self.zen = zen
 
             self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
-            # if abs(self.current_sidereal - self.sidereal_time_directly_from_mount) > 0.0001:
-            #breakpoint()
-            #     pass
+
             if self.prior_roll_rate == 0:
                 pass
             ha = self.right_ascension_directly_from_mount - self.current_sidereal
@@ -1412,8 +1362,6 @@ class Mount:
                 ha  += 24
             if ha > 12:
                 ha -= 24
-
-
 
             if not self.model_on:
                 h = self.right_ascension_directly_from_mount
@@ -1425,7 +1373,6 @@ class Mount:
                 except:
                     h = 12.    #just to get this initilized
                     d = -55.
-
 
             #The above routine is not finished and will end up returning ICRS not observed.
             status = {
@@ -1457,11 +1404,6 @@ class Mount:
         else:
             plog('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
-
-
-
-
-
 
         self.previous_status = copy.deepcopy(status)
         self.currently_creating_status = False
@@ -1561,9 +1503,12 @@ class Mount:
             elif 'ha' in req:
                 result = self.go_command(ha=req['ha'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
 
-            if 'do_centering_routine' in opt and result != 'refused':
-                if opt['do_centering_routine']:
-                    g_dev['seq'].centering_exposure()
+            # BECAUSE THERE IS NOW NO SEPARATE BUTTON FOR SLEW AND CENTER
+            # ALL MANUALLY COMMANDED SHOTS HAVE TO BE CENTERED.
+            # if 'do_centering_routine' in opt and result != 'refused':
+            #     if opt['do_centering_routine']:
+            if result != 'refused':
+                g_dev['seq'].centering_exposure()
 
         elif action == "stop":
             self.stop_command(req, opt)
@@ -1765,7 +1710,7 @@ class Mount:
             elif ha != None:   #NB need to convert HA to an RA then proceed as if RA and DEC were supplied.
                 ha = float(ha)
                 dec = float(dec)
-                az, alt = self.transform_haDec_to_azAlt(ha, dec)
+                az, alt = self.transform_haDec_to_az_alt(ha, dec)
                 temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
                 altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
                 ra = altazskycoord.icrs.ra.deg /15
@@ -1940,11 +1885,7 @@ class Mount:
         else:
             delta_ra=0
             delta_dec=0
-
-
-
-
-
+            
         # First move, then check the pier side
         successful_move=0
         while successful_move==0:
@@ -2016,8 +1957,6 @@ class Mount:
                 # else:
                 #     ra=self.last_ra_requested + delta_ra
                 #     dec=self.last_dec_requested + delta_dec
-
-
 
                 ra = ra_fix_h(ra)
                 self.wait_for_slew(wait_after_slew=False)
@@ -2247,7 +2186,6 @@ class Mount:
         self.last_mount_reference_dec_offset =  deviation_dec
 
 
-        #breakpoint()
         # Add in latest point to the list of mount references
         # This has to be done in terms of hour angle due to changes over time.
         # We need to store time, HA, Dec, HA offset, Dec offset.

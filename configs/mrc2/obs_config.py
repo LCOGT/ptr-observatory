@@ -676,6 +676,12 @@ site_config = {
 
                 'osc_bayer': 'RGGB',
                 
+                # There are some infuriating popups on theskyx that manually 
+                # need to be dealt with when doing darks and lights.
+                # This setting uses a workaround for that. This is just for CMOS
+                # CCDs are fine. 
+                'cmos_on_theskyx': False,
+                
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  False,           #was False until WER put in FLI ascom shutter mod
 
