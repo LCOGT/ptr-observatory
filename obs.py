@@ -3175,7 +3175,7 @@ class Observatory:
                             platesolve_crop = 0.0
 
                             # yet another pickle debugger.
-                            if True:
+                            if False:
                                 pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
                                  pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
 
@@ -3460,13 +3460,13 @@ class Observatory:
                                         plog(
                                             "This is more than a simple nudge, so not nudging the scope."
                                         )
-                                        g_dev["obs"].send_to_user(
-                                            "Platesolve detects pointing far out, RA: "
-                                            + str(round(err_ha * 15 * 3600, 2))
-                                            + " DEC: "
-                                            + str(round(err_dec * 3600, 2))
-                                        )
-
+                                        # g_dev["obs"].send_to_user(
+                                        #     "Platesolve detects pointing far out, RA: "
+                                        #     + str(round(err_ha * 15 * 3600, 2))
+                                        #     + " DEC: "
+                                        #     + str(round(err_dec * 3600, 2))
+                                        # )
+                                        
                                     elif (
                                         self.time_of_last_slew
                                         > time_platesolve_requested

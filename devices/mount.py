@@ -1501,17 +1501,18 @@ class Mount:
 
         if action == "go":
             if 'ra' in req:
-                self.go_command(ra=req['ra'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
+                result = self.go_command(ra=req['ra'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
             elif 'az' in req:
-                self.go_command(az=req['az'], alt=req['alt'])   #  Entered from Target Explorer or Telescope tabs.
+                result = self.go_command(az=req['az'], alt=req['alt'])   #  Entered from Target Explorer or Telescope tabs.
             elif 'ha' in req:
-                self.go_command(ha=req['ha'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
+                result = self.go_command(ha=req['ha'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
 
             # BECAUSE THERE IS NOW NO SEPARATE BUTTON FOR SLEW AND CENTER
             # ALL MANUALLY COMMANDED SHOTS HAVE TO BE CENTERED.
             # if 'do_centering_routine' in opt and result != 'refused':
             #     if opt['do_centering_routine']:
-            g_dev['seq'].centering_exposure()
+            if result != 'refused':
+                g_dev['seq'].centering_exposure()
 
         elif action == "stop":
             self.stop_command(req, opt)
@@ -1713,7 +1714,7 @@ class Mount:
             elif ha != None:   #NB need to convert HA to an RA then proceed as if RA and DEC were supplied.
                 ha = float(ha)
                 dec = float(dec)
-                az, alt = self.transform_haDec_to_azAlt(ha, dec)
+                az, alt = self.transform_haDec_to_az_alt(ha, dec)
                 temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
                 altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
                 ra = altazskycoord.icrs.ra.deg /15

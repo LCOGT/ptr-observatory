@@ -124,7 +124,6 @@ if pointing_exposure:
     pointing_image=copy.deepcopy(hdufocusdata)
 
 googtime=time.time()
-
 # If this is an osc image, then interpolate so it is just the green filter image of the same size.
 if is_osc:   
     # Rapidly interpolate so that it is all one channel
@@ -237,10 +236,11 @@ if pixscale != None:
     y_size_degrees=hdufocusdata.shape[1] * (pixscale / 3600)
     y_size_pixel_needed= (hdufocusdata.shape[1] / (y_size_degrees)) / 2
     if y_size_degrees > 0.5:
-        crop_height=int(hdufocusdata.shape[1] - y_size_pixel_needed)
+        crop_height=int((hdufocusdata.shape[1] - y_size_pixel_needed)/2)
     else:
         crop_height=2
     
+    #breakpoint()
     hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
     
 
@@ -417,7 +417,7 @@ for i in range(len(pointvalues)):
                 # Amplitude has to be a substantial fraction of the peak value
                 # and the center of the gaussian needs to be near the center
                 if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, largest_deviation_from_center) :
-                    if True:
+                    if False:
                         plt.scatter(actualprofile[:,0],actualprofile[:,1])
                         plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
                         plt.axvline(x = 0, color = 'g', label = 'axvline - full height')

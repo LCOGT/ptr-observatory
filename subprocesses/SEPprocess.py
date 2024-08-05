@@ -25,6 +25,7 @@ import sep
 import copy
 from auto_stretch.stretch import Stretch
 from astropy.io import fits
+import sys
 # from astropy.nddata import block_reduce
 # from colour_demosaicing import (
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
