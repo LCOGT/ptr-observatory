@@ -3592,7 +3592,7 @@ class Camera:
         g_dev["obs"].exposure_halted_indicator = False
 
         # This command takes 0.1s to do, so happens just during the start of exposures
-        g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure, cur_pwm= (
+        g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure, cur_pwm = (
             g_dev['cam']._temperature())
 
         block_and_focus_check_done = False
