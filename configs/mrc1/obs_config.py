@@ -9,7 +9,13 @@ import json
                                                                                                    1         1         1       1
          1         2         3         4         5         6         7         8         9         0         1         2       2
 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
+
+
 '''
+
+LOUD = True
+ENG = True
+SERIAL = True
 
 obs_id = 'mrc1'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
@@ -413,11 +419,11 @@ site_config = {
             # Use previous best focus information to correct focuser for temperature change
             'correct_focus_for_temperature' : True,
             # highest value to consider as being in "good focus". Used to select last good focus value
-            'maximum_good_focus_in_arcsecond': 3.0,
+            'maximum_good_focus_in_arcsecond': 4,
 
             # When the focusser has no previous best focus values
             # start from this reference position
-            'reference': 10500,
+            'reference': 5150,
 
             # Limits and steps for the focuser.
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
@@ -519,7 +525,7 @@ site_config = {
                                 ['ip',      [0, 8],   'ip'],  # 8
                                 ['sy',      [1, 0],   'sy'],  # 9  Wheel closest to rotator
                                 ['sb',      [2, 0],   'sb'],  # 10
-                                ['sx',      [3, 0],   'sv'],  # 11
+                                ['sv',      [3, 0],   'sv'],  # 11
                                 ['su',      [4, 0],   'su'],  # 12
                                 ['O3',      [5, 0],   'o3'],  # 13
                                 ['Hb',      [6, 0],   'hb'],  # 14
@@ -725,10 +731,11 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,     #Cooler is ambiguous nname
-                'temp_setpoint': 10,    # Verify we can go colder
+                'temp_setpoint': 15,    # Verify we can go colder
                 'has_chiller': False,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C
+                "temp_setpoint_tolarance": 2.5,   #  C
                 'day_warm': False,
                 'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
@@ -737,10 +744,11 @@ site_config = {
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
-                'onebyone_pix_scale': 0.669,    #  This is the 1x1 binning pixelscale
-                'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
-                'x_pixel':  3.76, # pixel size in microns
-                'y_pixel':  3.76     , # pixel size in microns
+                'x_pixel':  3.76,  #  pixel size in microns
+                'y_pixel':  3.76,  #  pixel size in microns
+                'manual_onebyone_pix_scale': 0.66913,  #  This is the 1x1 binning pixelscale    3.76*206255/1159000
+                'native_bin': 1,   #  Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+
 
                 #Please do not remove the following:  9576*6388
                 # WAYNE - x field and y field are already calculated within camera.py on bootup and send up in the config
@@ -764,19 +772,19 @@ site_config = {
 
 
                 # This is the absolute minimum and maximum exposure for the camera
-                'min_exposure': 0.0001,
+                'min_exposure': 0.00005,
                 'max_exposure': 180.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'min_flat_exposure': 0.0001,
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
-                'max_daytime_exposure': 0.001,
+                'max_daytime_exposure': 0.5,
 
                 # One of the best cloud detections is to estimate the gain of the camera from the image
                 # If the variation, and hence gain, is too high according to gain + stdev, the flat can be easily rejected.
                 # Should be off for new observatories coming online until a real gain is known.
-                'reject_new_flat_by_known_gain' : True,
+                'reject_new_flat_by_known_gain' : False,
                 # These values are just the STARTING values. Once the software has been
                 # through a few nights of calibration images, it should automatically calculate these gains.
                 'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.

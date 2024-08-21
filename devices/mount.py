@@ -48,6 +48,7 @@ import math
 import ephem
 from ptr_utility import plog
 import time
+from obs_config import LOUD, ENG, SERIAL
 
 DEBUG = False
 

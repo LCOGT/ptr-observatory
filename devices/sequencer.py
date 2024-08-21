@@ -28,6 +28,7 @@ import threading
 from glob import glob
 import traceback
 from ptr_utility import plog
+from obs_config import LOUD, ENG, SERIAL
 import requests
 from requests.adapters import HTTPAdapter, Retry
 reqs = requests.Session()
@@ -4151,8 +4152,7 @@ class Sequencer:
             sky_exposure_snap_to_grid.append(narrowband_ss_biasdark_exp_time)
 
         # Load up the pickled list of gains or start a new one.
-        self.filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].alias + str(g_dev['obs'].name))
-
+        
         if len(self.filter_throughput_shelf)==0:
             plog ("Looks like a new filter throughput shelf.")
         else:
@@ -5601,7 +5601,7 @@ class Sequencer:
         prev_auto_centering = g_dev['obs'].auto_centering_off
         g_dev['obs'].auto_centering_off = True
         plog ("Note that mount references and auto-centering are automatically turned off for a tpoint run.")
-        plog("Starting pointing run. ")
+        #plog("Starting pointing run. ")
         time.sleep(0.1)
 
         g_dev['mnt'].unpark_command({}, {})

@@ -39,6 +39,7 @@ mpl.rcParams['path.simplify_threshold'] = 1.0
 
 warnings.simplefilter("ignore", category=RuntimeWarning)
 from devices.darkslide import Darkslide
+from obs_config import LOUD, ENG, SERIAL
 from PIL import Image#, ImageDraw
 from global_yard import g_dev
 from ptr_utility import plog
@@ -182,7 +183,7 @@ def dump_main_data_out_to_post_exposure_subprocess(payload):
 # Note this is a thread!
 def write_raw_file_out(packet):
 
-    (raw, raw_name, hdudata, hduheader, frame_type, current_icrs_ra, current_icrs_dec,altpath,altfolder) = packet
+    (raw, raw_name, hdudata, hduheader, frame_type, current_icrs_ra, current_icrs_dec, altpath, altfolder) = packet
 
     # Make sure normal paths exist
     os.makedirs(
@@ -855,6 +856,10 @@ class Camera:
 
         self.shutter_open = False # Initialise
         self.substacker = False # Initialise
+        self.pwm_percent = ' na%'
+        self.spt_C = '  naC'
+        self.temp_C = ' naC'
+        self.hum_percent = ' na%'
 
         """
         This section connects the appropriate methods for various
@@ -1086,10 +1091,10 @@ class Camera:
         ]:  # NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
             self._set_cooler_on()
         if self.theskyx:
-            temp, humid, pressure =self.camera.Temperature, 999.9, 999.9
+            temp, humid, pressure = self.camera.Temperature, 999.9, 999.9
         else:
-            temp, humid, pressure =self._temperature()
-        plog("Cooling beginning @:  ", temp)
+            temp, humid, pressure , pwm = self._temperature()
+        plog("Cooling beginning @:  ", temp, " PWM%:  ", pwm, 'SPT:  ', self.setpoint)
         if 1 <= humid <= 100 or 1 <= pressure <=1100:
             plog("Humidity and pressure:  ", humid, pressure)
         else:
@@ -1126,9 +1131,10 @@ class Camera:
             self.pixscale = bn.nanmedian(pixelscale_list)
             plog('1x1 pixel scale: ' + str(self.pixscale))
         except:
-            plog ("ALERT: PIXELSCALE SHELF CORRUPTED. WIPING AND STARTING AGAIN")
-            self.pixscale = None
-            plog(traceback.format_exc())
+            plog ("ALERT: PIXELSCALE Shelf is corrupt or not available. Pulling value from obs_config (...camera)")
+            with shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name)) as self.pixelscale_shelf:
+                self.pixelscale_shelf['pixelscale_list'] = self.pixscale = self.config["camera"][self.name]["settings"]['manual_onebyone_pix_scale']
+                plog("pix_scale established from config file.")
             try:
                 if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.dat'):
                     os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.dat')
@@ -1955,16 +1961,26 @@ class Camera:
     def _qhyccd_temperature(self):
         try:
 
-            temptemp=qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
-            humidity = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_HUMIDITY)
-            pressure = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_PRESSURE)
-            pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'],     qhycam.CONTROL_CURPWM)
-            manual_pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_MANULPWM)
-            #print(' QHY pwm:  ', pwm)
+            temptemp = qhycam.so.GetQHYCCDParam(
+                qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
+            humidity = qhycam.so.GetQHYCCDParam(
+                qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_HUMIDITY)
+            pressure = qhycam.so.GetQHYCCDParam(
+                qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_PRESSURE)
+            pwm = qhycam.so.GetQHYCCDParam(
+                qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURPWM)
+            manual_pwm = qhycam.so.GetQHYCCDParam(
+                qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_MANULPWM)
+            self.pwm_percent = " "+str(int(pwm*100.0/255))+"%"
+            self.spt_C = " "+str(round(self.current_setpoint,1))+"C"
+            self.temp_C = " "+str(round(temptemp, 1))+"C"
+            self.hum_percent = " "+str(int(humidity))+"%"
+
         except:
-            print ("failed at getting the CCD temperature, humidity or pressure.")
-            temptemp=999.9
-        return temptemp, humidity, pressure
+            print("failed at getting the CCD temperature, humidity or pressure.")
+            temptemp = 999.9
+
+        return temptemp, humidity, pressure, round(pwm*100.0/255,1)
 
     def _qhyccd_cooler_on(self):
         #print ("QHY DOESN'T HAVE AN IS COOLER ON METHOD)
@@ -2204,7 +2220,11 @@ class Camera:
         else:
             status["darkslide"] = "unknown"
 
-        cam_stat = self.config['camera'][self.name]['name'] + " connected." # self.camera.CameraState
+        cam_stat = self.config['camera'][self.name]['name'] + \
+            ", S " + self.spt_C + \
+            ", T " + self.temp_C + \
+            ", P " + self.pwm_percent + \
+            ", H " + self.hum_percent
         status[
             "status"
         ] = cam_stat  # The state could be expanded to be more meaningful. for instance report TEC % TEmp, temp setpoint...
@@ -2335,6 +2355,7 @@ class Camera:
                 g_dev['obs'].send_to_user("Refusing exposure request as the observatory is not enabled to observe.")
                 plog("Refusing exposure request as the observatory is not enabled to observe.")
                 self.running_an_exposure_set = False
+
                 return
 
         # Need to pick up exposure time here
@@ -2367,7 +2388,6 @@ class Camera:
         ) or a_dark_exposure:
             skip_daytime_check=True
             skip_calibration_check=True
-
 
         if not skip_daytime_check and g_dev['obs'].daytime_exposure_time_safety_on:
             sun_az, sun_alt = g_dev['evnt'].sun_az_alt_now()
@@ -2570,7 +2590,8 @@ class Camera:
                     if not g_dev['obs'].scope_in_manual_mode and not (g_dev['events']['End Eve Sky Flats'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second))):
                         plog ("Sorry, exposures are outside of night time.")
                         self.running_an_exposure_set = False
-                        return 'outsideofnighttime'
+                        if not ENG:    #The code above does not make sense to me yet.
+                            return 'outsideofnighttime'
 
             self.pre_mnt = []
             self.pre_rot = []
@@ -2812,7 +2833,7 @@ class Camera:
                             if (bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type or a_dark_exposure) and not manually_requested_calibration:
 
                                 # Check that the temperature is ok before accepting
-                                current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
+                                current_camera_temperature, cur_humidity, cur_pressure, cur_pwm = (g_dev['cam']._temperature())
                                 current_camera_temperature = float(current_camera_temperature)
                                 if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > self.temp_tolerance:
                                     plog ("temperature out of +/- range for calibrations ("+ str(current_camera_temperature)+"), NOT attempting calibration frame")
@@ -2904,7 +2925,7 @@ class Camera:
                                 else:
                                     plog ("Could not engage substacking as the appropriate biasdark")
 
-                            # Adjust pointing exposure time relative to known focus
+                            # Adjust pointing exposure time relative to known FWHM
                             if not g_dev['seq'].focussing and frame_type=='pointing':
                                 try:
                                     last_fwhm=g_dev['obs'].fwhmresult["FWHM"]
@@ -2918,35 +2939,36 @@ class Camera:
                                     elif last_fwhm > 2.0:
                                         exposure_time=exposure_time * 1.5
                                 except:
-                                    plog ("can't adjust exposure time for pointing if no previous focus known")
+                                    plog ("can't adjust exposure time for pointing if no previous FWHM known")
 
                             if g_dev["fil"].null_filterwheel == False:
                                 while g_dev['fil'].filter_changing:
                                     time.sleep(0.05)
 
-                            g_dev['foc'].adjust_focus()
+                            if not g_dev['obs'].scope_in_manual_mode:   # 20240809 WER during bring up we do not want focus changing back to an unknown default.
+                                g_dev['foc'].adjust_focus()
 
-                            reporty=0
-                            while g_dev['foc'].focuser_is_moving:
-                                if reporty==0:
-                                    reporty=1
-                                time.sleep(0.05)
-
-                            # For some focusers, there is a non-trivial vibration time to
-                            # wait until the mirror settles down before exposure
-                            # that isn't even caught in the focuser threads.
-                            # So if it has moved, as indicated by reporty
-                            # Then there is a further check before moving on
-                            if reporty==1:
-                                tempfocposition=g_dev['foc'].get_position_actual()
-                                while True:
-                                    time.sleep(0.2)
-                                    nowfocposition=g_dev['foc'].get_position_actual()
-                                    if tempfocposition==nowfocposition:
-                                        break
-                                    else:
-                                        plog("Detecting focuser still changing.")
-                                        tempfocposition=copy.deepcopy(nowfocposition)
+                                reporty=0
+                                while g_dev['foc'].focuser_is_moving:
+                                    if reporty==0:
+                                        reporty=1
+                                    time.sleep(0.05)
+    
+                                # For some focusers, there is a non-trivial vibration time to
+                                # wait until the mirror settles down before exposure
+                                # that isn't even caught in the focuser threads.
+                                # So if it has moved, as indicated by reporty
+                                # Then there is a further check before moving on
+                                if reporty==1:
+                                    tempfocposition=g_dev['foc'].get_position_actual()
+                                    while True:
+                                        time.sleep(0.2)
+                                        nowfocposition=g_dev['foc'].get_position_actual()
+                                        if tempfocposition==nowfocposition:
+                                            break
+                                        else:
+                                            plog("Detecting focuser still changing.")
+                                            tempfocposition=copy.deepcopy(nowfocposition)
 
 
                             # Initialise this variable here
@@ -2957,6 +2979,7 @@ class Camera:
                             self.shutter_open = True
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
+                            if ENG:  plog("Camera expse:  ", exposure_time, bias_dark_or_light_type_frame)
 
                             # After sending the exposure command, the camera is exposing
                             # So commands placed here are essentially "cost-free" in terms of overhead.
@@ -3303,7 +3326,7 @@ class Camera:
         g_dev["obs"].exposure_halted_indicator =False
 
         # This command takes 0.1s to do, so happens just during the start of exposures
-        g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure = (g_dev['cam']._temperature())
+        g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure, cur_pwm = (g_dev['cam']._temperature())
 
         block_and_focus_check_done=False
 
@@ -4039,9 +4062,11 @@ class Camera:
 
                 if self.shutter_open:
                     self.shutter_open=False
-                    plog ("Shutter Closed.")
+                    plog ("Camera 'virtual' shutter Closed.")
 
                 plog ("Exposure Complete")
+                
+    
 
 
 
@@ -4146,6 +4171,12 @@ class Camera:
                         try:
                             outputimg = self._getImageArray()#.astype(np.float32)
                             imageCollected = 1
+                            
+                            if ENG:
+                                height, width = outputimg.shape
+                                patch = outputimg[int(0.45*height):int(0.55*height), int(0.45*width):int(0.55*width)]
+                                print("ENG  10% central image patch:  ", np.median(patch))
+
                         except Exception as e:
 
                             if self.theskyx:
@@ -4191,7 +4222,7 @@ class Camera:
                     threading.Thread(target=dump_main_data_out_to_post_exposure_subprocess, args=(payload,)).start()
 
 
-################################################# HERE IS WHERE IN-LINE STUFF HAPPENS.
+################################################# HERE IS WHERE IN-LINE STUFF HAPPENS.   Meaning flats, biasdark, pointing exposoures are processed here in-line
 
 
                 # BIAS & DARK VETTING AND DISTRIBUTION AREA.
@@ -4201,11 +4232,12 @@ class Camera:
                 # e.g. the next flat exposure relies on the throughput results of the last
                 # or a focus exposure has a logic about whether it has successfully focussed or not
                 # So this is done in the main thread. Whereas normal exposures get done in the subprocess.
+
                 if (frame_type in ["bias", "dark"]  or a_dark_exposure or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(outputimg))
 
                     # Check that the temperature is ok before accepting
-                    current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
+                    current_camera_temperature, cur_humidity, cur_pressure, cur_pwm = (g_dev['cam']._temperature())
                     current_camera_temperature = float(current_camera_temperature)
                     if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:   #NB NB this might best be a config item.
                         plog ("temperature out of range for calibrations ("+ str(current_camera_temperature)+"), rejecting calibration frame")
@@ -4261,7 +4293,7 @@ class Camera:
                         plog ("Rejecting calibration because it has a disturbing amount of low value pixels.")
                         expresult = {}
                         expresult["error"] = True
-                        breakpoint()
+
                         return expresult
 
                     # For a dark, check that the debiased dark has an adequately low value
@@ -4856,7 +4888,7 @@ class Camera:
 
 def wait_for_slew(wait_after_slew=True):
     """
-    A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
+    A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.  # NB NB Should this include focus and rotator slewing? WER
     """
     if not g_dev['obs'].mountless_operation:
         try:

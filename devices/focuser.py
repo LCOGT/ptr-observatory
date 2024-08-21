@@ -13,6 +13,7 @@ import copy
 from global_yard import g_dev
 from ptr_utility import plog
 from dateutil import parser
+from obs_config import LOUD, ENG, SERIAL
 
 # Unused except for WMD
 def probeRead(com_port):

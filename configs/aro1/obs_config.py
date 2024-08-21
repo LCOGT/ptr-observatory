@@ -100,7 +100,7 @@ site_config = {
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': False,
     # LINKS TO PIPE FOLDER
-    'save_raws_to_pipe_folder_for_nightly_processing': True,
+    'save_raws_to_pipe_folder_for_nightly_processing': False,
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
     #'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # LINKS FOR OBS FOLDERS
@@ -417,12 +417,12 @@ site_config = {
 		    'com_port': 'COM13',    #AP 'COM5'  No Temp Probe on SRO AO Honders
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
-            'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
+            'maximum_good_focus_in_arcsecond': 3.5, # highest value to consider as being in "good focus". Used to select last good focus value
             'focuser_movement_settle_time': 3,
             #F.9 setup
-            'reference': 4700,    # 2024-04-13  F9 on 20240601
-            'ref_temp':  15.,
-            'temp_coeff': -20.45,     #Initial setting 20240413602    WER
+            'reference': 5150,    # 2024-04-13  F9 on 20240601
+            'ref_temp':  20.,
+            'temp_coeff': 0.0,     #Initial setting 20240413602    WER
             # Update when pinning reference
             #F4.9 setup
             #'reference': 5462.94, #5743,
@@ -434,7 +434,7 @@ site_config = {
             'maximum': 12600,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw': 300,    #Consider making larget for F9 configuration
+            'throw': 150,    #Consider making larget for F9 configuration
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
             'has_dial_indicator': False
@@ -518,7 +518,7 @@ site_config = {
                 #         ['dark', [1,  3],    0, 0.00,  [360 , 170], 'dk']],    #22     #Not a real filter.  Total 23
 
                 'filter_data': [
-                        ['Air',  [0,  0],   'AIR'],    #0
+                        ['air',  [0,  0],   'AIR'],    #0
                         ['PL',   [7,  0],   'Photo Luminance'],     #1
                         ['Exo',  [8,  0],   'Exoplanet'],      #2
                         ['PB',   [0,  6],   'Photo Blue'],    #3
@@ -846,15 +846,16 @@ site_config = {
 
 
 
-                # 'has_screen': False,
-                # 'screen_settings':  {
-                #     'screen_saturation':  157.0,   # This reflects WMD setting and needs proper values.
-                #     'screen_x4':  -4E-12,  # 'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
-                #     'screen_x3':  3E-08,
-                #     'screen_x2':  -9E-05,
-                #     'screen_x1':  .1258,
-                #     'screen_x0':  8.683
-                # },
+                'has_screen': True,
+                'screen_com': 'COM13',
+                'screen_settings':  {
+                    'screen_saturation':  157.0,   # This reflects WMD setting and needs proper values.
+                    'screen_x4':  -4E-12,  # 'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
+                    'screen_x3':  3E-08,
+                    'screen_x2':  -9E-05,
+                    'screen_x1':  .1258,
+                    'screen_x0':  8.683
+                },
             },
         },
 

@@ -15,6 +15,7 @@ from datetime import datetime
 import os
 import ephem
 from ptr_config import site_config
+from obs_config import LOUD, ENG, SERIAL
 from global_yard import g_dev
 
 from datetime import timezone, timedelta 

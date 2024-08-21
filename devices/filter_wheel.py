@@ -20,6 +20,8 @@ import copy
 import traceback
 from global_yard import g_dev
 from ptr_utility import plog
+from obs_config import LOUD, ENG, SERIAL
+
 
 class FilterWheel:
     """A filter wheel instrument."""
@@ -569,6 +571,11 @@ class FilterWheel:
         filter_default_throughputs['pg'] = 575.0
         filter_default_throughputs['pl'] = 2090.0
         filter_default_throughputs['pr'] = 360.0
+        filter_default_throughputs['su'] = 4.2
+        filter_default_throughputs['sv'] = 70.
+        filter_default_throughputs['sb'] = 145.
+        filter_default_throughputs['sy'] = 145
+        filter_default_throughputs['Hb'] = 31
 
         filter_default_throughputs['rp'] = 460.0
 

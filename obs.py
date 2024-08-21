@@ -44,6 +44,7 @@ import traceback
 import psutil
 from global_yard import g_dev
 import ptr_config
+from obs_config import LOUD, ENG, SERIAL
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
@@ -661,6 +662,12 @@ class Observatory:
         self.calendar_block_thread.daemon = True
         self.calendar_block_thread.start()
 
+        # Instantiate the helper class for astronomical events
+        # Soon the primary event / time values can come from AWS.  NB NB   I do not want these values depending on AWS WER
+        self.astro_events = ptr_events.Events(self.config)
+        self.astro_events.compute_day_directory()
+        self.astro_events.calculate_events()
+        self.astro_events.display_events()
         self.too_hot_temperature = self.config[
             "temperature_at_which_obs_too_hot_for_camera_cooling"
         ]
@@ -683,35 +690,42 @@ class Observatory:
         self.platesolve_is_processing = False
         self.stop_all_activity = False  # This is used to stop the camera or sequencer
         self.exposure_halted_indicator = False
-        self.camera_sufficiently_cooled_for_calibrations = True
+    
         self.last_slew_was_pointing_slew = False
         self.open_and_enabled_to_observe = False
         self.net_connection_dead = False
+        #  Set default obs safety settings at bootup        
+        if ENG:
+            self.scope_in_manual_mode =  False    #self.config["scope_in_manual_mode"]
 
-        # Set default obs safety settings at bootup
-        self.scope_in_manual_mode = self.config["scope_in_manual_mode"]
-        # self.scope_in_manual_mode = True
-        self.moon_checks_on = self.config["moon_checks_on"]
-        self.sun_checks_on = self.config["sun_checks_on"]
-        self.altitude_checks_on = self.config["altitude_checks_on"]
-        self.daytime_exposure_time_safety_on = self.config[
-            "daytime_exposure_time_safety_on"
-        ]
-        self.mount_reference_model_off = self.config["mount_reference_model_off"]
-        self.admin_owner_commands_only = False
-        self.assume_roof_open = False
-        self.auto_centering_off = False
+            self.moon_checks_on = False    #self.config["moon_checks_on"]
+            self.sun_checks_on = False    #self.config["sun_checks_on"]
+            self.altitude_checks_on = False    #self.config["altitude_checks_on"]
+            self.daytime_exposure_time_safety_on = False    # self.config["daytime_exposure_time_safety_on"]
+            self.mount_reference_model_off = False    #self.config["mount_reference_model_off"]
+            self.admin_owner_commands_only = True
+            self.assume_roof_open = True
+            self.auto_centering_off = True
+        else:
+            self.scope_in_manual_mode = self.config["scope_in_manual_mode"]
+            # self.scope_in_manual_mode = True
+            self.moon_checks_on = self.config["moon_checks_on"]
+            self.sun_checks_on = self.config["sun_checks_on"]
+            self.altitude_checks_on = self.config["altitude_checks_on"]
+            self.daytime_exposure_time_safety_on = self.config[
+                "daytime_exposure_time_safety_on"
+            ]
+            self.mount_reference_model_off = self.config["mount_reference_model_off"]
+            self.admin_owner_commands_only = False
+            self.assume_roof_open = False
+            self.auto_centering_off = False
 
-        # Instantiate the helper class for astronomical events
-        # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
-        self.astro_events = ptr_events.Events(self.config)
-        self.astro_events.compute_day_directory()
-        self.astro_events.calculate_events()
-        self.astro_events.display_events()
+
 
         # If the camera is detected as substantially (20 degrees) warmer than the setpoint
         # during safety checks, it will keep it warmer for about 20 minutes to make sure
         # the camera isn't overheating, then return it to its usual temperature.
+        self.camera_sufficiently_cooled_for_calibrations = True
         self.camera_overheat_safety_warm_on = False
         # self.camera_overheat_safety_warm_on = self.config['warm_camera_during_daytime_if_too_hot']
         self.camera_overheat_safety_timer = time.time()
@@ -719,7 +733,7 @@ class Observatory:
         self.camera_time_initialised = time.time()
         # You want to make sure that the camera has been cooling for a while at the setpoint
         # Before taking calibrations to ensure the sensor is evenly cooled
-        self.last_time_camera_was_warm = time.time() - 6000
+        self.last_time_camera_was_warm = time.time() - 600    # 10 minutes
 
         # If there is a pointing correction needed, then it is REQUESTED
         # by the platesolve thread and then the code will interject
@@ -2114,9 +2128,8 @@ class Observatory:
 
                 # Check that cooler is alive
                 if g_dev["cam"]._cooler_on():
-                    current_camera_temperature, cur_humidity, cur_pressure = g_dev[
-                        "cam"
-                    ]._temperature()
+                    current_camera_temperature, cur_humidity, cur_pressure,\
+                        cur_pwm = g_dev["cam"]._temperature()
                     current_camera_temperature = float(
                         current_camera_temperature)
 
@@ -2129,8 +2142,10 @@ class Observatory:
                     ):
                         self.camera_sufficiently_cooled_for_calibrations = False
                         self.last_time_camera_was_warm = time.time()
+                        plog("abs Cam temp diff too large Line 2143")
                     elif (time.time() - self.last_time_camera_was_warm) < 600:
                         self.camera_sufficiently_cooled_for_calibrations = False
+                        plog("Timeout is faulting Line 2146")
                     else:
                         self.camera_sufficiently_cooled_for_calibrations = True
                 else:
@@ -2185,6 +2200,11 @@ class Observatory:
                             plog(
                                 "Camera current temperature ("
                                 + str(current_camera_temperature)
+                                + ")."
+                            )
+                            plog(
+                                "Camera current pwm % ("
+                                + str(cur_pwm)
                                 + ")."
                             )
                             plog(
@@ -2786,7 +2806,7 @@ class Observatory:
                                 e
                             ) or "endpoint_resolver" in str(e):
                                 plog(
-                                    "Credential provider error for the ptrarchive, bunging a file back in the queue."
+                                    "Credential provider error for the pipe archive, bunging a file back in the queue."
                                 )
                                 time.sleep(10)
                                 self.ptrarchive_queue.put(
@@ -3108,6 +3128,7 @@ class Observatory:
                         < g_dev["events"]["Civil Dawn"]
                     ):
                         plog("Too bright to consider platesolving!")
+                        #breakpoint()
                     else:
                         try:
                             try:

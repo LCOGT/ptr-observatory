@@ -1,6 +1,7 @@
 from astropy.io import fits
 import numpy as np
 import time
+#from obs_config import LOUD, ENG, SERIAL
 """
 This product is based on software from the PixInsight project, developed by
 Pleiades Astrophoto and its contributors (http://pixinsight.com/).

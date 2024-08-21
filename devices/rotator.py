@@ -2,6 +2,7 @@ import time
 import win32com.client
 import psutil
 from global_yard import g_dev
+from obs_config import LOUD, ENG, SERIAL
 
 
 def findProcessIdByName(processName):

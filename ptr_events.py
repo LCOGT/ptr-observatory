@@ -13,7 +13,7 @@ import time
 from global_yard import g_dev
 from astropy.time import Time
 from ptr_utility import plog
-
+from obs_config import LOUD, ENG, SERIAL
 # DAY_Directory = None  # NB this is an evil use of Globals by WER.  20200408   WER
 # Day_tomorrow = None
 # dayNow = None
