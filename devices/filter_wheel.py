@@ -264,7 +264,7 @@ class FilterWheel:
                     self.filterwheel_update_wincom.LinkEnabled = True
                 except:
                     plog(traceback.format_exc())
-       
+
 
         # This stopping mechanism allows for threads to close cleanly.
         while True:
@@ -324,7 +324,7 @@ class FilterWheel:
                             except:
                                 pass
                             self.filter_offset = float(self.filter_data[self.filt_pointer][2])
-                            
+
                         elif self.maxim and self.dual:
                             try:
                                 self.filterwheel_update_wincom.Filter = self.filter_selections[0]
@@ -333,7 +333,7 @@ class FilterWheel:
 
                             except:
                                 plog(traceback.format_exc())
-                                
+
                         elif self.theskyx:
 
                             self.filterwheel_update_wincom.FilterIndexZeroBased = self.filter_data[self.filt_pointer][1][0]
@@ -518,7 +518,7 @@ class FilterWheel:
         except:
 
             plog ("not adjusting focus for filter change on bootup")
-       
+
         self.previous_filter_name=filter_name
         self.previous_filter_match=match
 
@@ -621,12 +621,12 @@ class FilterWheel:
 
         except:
             pass
-       
+
         # List of tuples containing ([requested filter groups], [priority order]).
         # If this list continues to grow, consider putting it in a separate file.
         # This is going to get messy when we add Stromgrens, so I suggest
         # Su, Sv, Sy, Sr, Hb and Hbc    -- WER
-        # next we need to purge for out sites and set them up with the correct defaults.
+        # next we need to purge for our sites and set them up with the correct defaults.
         #other filters in the offing:  Duo, Quad, LPR and NEB.
         filter_groups = [
             (["U", "JU", "BU", "up"], ["up", "U", "BU","JU"]),  # U broadband

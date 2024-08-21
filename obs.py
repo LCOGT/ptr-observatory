@@ -1811,9 +1811,7 @@ class Observatory:
                         "daytime_exposure_safety_mode"
                     ] = self.daytime_exposure_time_safety_on
                     status["obs_settings"]["daytime_exposure_time"] = 0.01
-                    status["obs_settings"][
-                        "auto_center_on"
-                    ] = not self.auto_centering_off
+                    status["obs_settings"]["auto_center_on"] = not self.auto_centering_off
                     status["obs_settings"][
                         "admin_owner_commands_only"
                     ] = self.admin_owner_commands_only
@@ -3466,7 +3464,7 @@ class Observatory:
                                         #     + " DEC: "
                                         #     + str(round(err_dec * 3600, 2))
                                         # )
-                                        
+
                                     elif (
                                         self.time_of_last_slew
                                         > time_platesolve_requested

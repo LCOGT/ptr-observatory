@@ -22,6 +22,36 @@ Dragonfly     Obsolete.
 Hubble V1  00:41:27.30 +41:10:10.4
 '''
 
+'''
+   Example : at 0.6 µm, at the F/D 6 focus of an instrument, the focusing tolerance which leads to a focusing \
+   precision better than l/8 is 8*62*0.0006*(1/8) = 0.02 mm, ie ± 20 microns.
+
+    F/d Tolerance
+        ± mm
+
+    2   0.0025
+
+    3   0.005
+
+    4   0.01
+
+    5   0.015
+
+    6   0.02
+
+    8   0.04
+
+    10  0.06
+
+    12  0.09
+
+    15  0.13
+
+    20  0.24
+
+    30  0.54
+'''
+
 #                                                                                                  1         1         1
 #                  2         3         4         5         6         7         8         9         0         1         2
 #23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
@@ -60,7 +90,7 @@ site_config = {
 
 
     # Default safety settings
-    'safety_check_period': 45,  # MF's original setting.
+    'safety_check_period': 120,  # MF's original setting was 45.
 
     # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_sun': 30,
@@ -70,13 +100,13 @@ site_config = {
     # Degrees. For normal pointing requests don't allow requests to go this low.
     'lowest_requestable_altitude': 15,
     # Below this altitude, it will automatically try to home and park the scope to recover.
-    'lowest_acceptable_altitude': -5.0,
+    'lowest_acceptable_altitude': -5.0,    #   What does this mean given the above?
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     'degrees_to_avoid_zenith_area_in_general': 0,
-    'maximum_hour_angle_requestable': 12,
+    'maximum_hour_angle_requestable': 9,
     # NB NB WER ARO Obs has a chiller
     'temperature_at_which_obs_too_hot_for_camera_cooling': 32,
-    'always_do_a_centering_exposure_regardless_of_nearby_reference':  True,
+
 
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
@@ -84,22 +114,23 @@ site_config = {
 
     # SAFESTART
 
-    'scope_in_manual_mode': False,
-    'mount_reference_model_off': False,
-    'sun_checks_on': True,
-    'moon_checks_on': True,
-    'altitude_checks_on': True,
-    'daytime_exposure_time_safety_on': True,
-
-    # QUICKSTART
-
-    # 'scope_in_manual_mode': True,
+    # 'scope_in_manual_mode': False,
     # 'mount_reference_model_off': True,
-    # 'sun_checks_on': False,
-    # 'moon_checks_on': False,
-    # 'altitude_checks_on': False,
+    # 'sun_checks_on': True,
+    # 'moon_checks_on': True,
+    # 'altitude_checks_on': True,
     # 'daytime_exposure_time_safety_on': False,
+    # 'always_do_a_centering_exposure_regardless_of_nearby_reference':  True,   #this is a qustionable setting
 
+    # ENGineering START
+
+    'scope_in_manual_mode': True,
+    'mount_reference_model_off': True,
+    'sun_checks_on': False,
+    'moon_checks_on': False,
+    'altitude_checks_on': False,
+    'daytime_exposure_time_safety_on': False,
+    'always_do_a_centering_exposure_regardless_of_nearby_reference':  False,
 
 
     # Setup of folders on local and network drives.
@@ -461,25 +492,28 @@ site_config = {
             'maximum_good_focus_in_arcsecond': 2.5,
             'focuser_movement_settle_time': 3,
             # F.9 setup
-            'reference': 4700,    # 2024-04-13  F9 on 20240601
-            'ref_temp':  15.,
-            'temp_coeff': -20.45,  # Initial setting 20240413602    WER
+            'reference':  4754,     #  20240820                         4943  Alternate solution
+            'ref_temp':   16.0,     #  Average for the fit                16
+            'temp_coeff': 2.9921,   #  What Excel says!  Odd though.    -8.2312   20240820
             # Update when pinning reference
             # F4.9 setup
             # 'reference': 5462.94, #5743,
             # 'temp_coeff': -20.4541,  #  Meas   -12 c to 4C so nominal -4C
             #  microns per degree of tube temperature
             'z_compression': 0.0,  # microns per degree of zenith distance
-            'z_coef_date':  '20240320',
-            # NB this area is confusing steps and microns, and need fixing.
+            'z_coef_date':  '20240820',
+            # NB this area is confusing steps and microns, and needs fixing.
             'minimum': 0,
             'maximum': 12600,  # 12672 actually
             'step_size': 1,
-            'backlash': 600,   #non- zero means enabled, + means over-travel when moving out, then come back IN  same amount.
-            'throw': 300,  # Consider making larget for F9 configuration
+            'backlash': 600,   # non-zero means enabled, + means over-travel when moving out, then come back IN  same amount.
+            'throw': 140,  # Start with 10X focus tolerance.
+            'focus_tolerance':  14.0,    #Microns
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
             'has_dial_indicator': False
+
+
         },
 
     },
@@ -650,10 +684,10 @@ site_config = {
                 'is_color': False,  # NB we also have a is_osc key.
                 'osc_bayer': 'RGGB',
 
-                # There are some infuriating popups on theskyx that manually 
+                # There are some infuriating popups on theskyx that manually
                 # need to be dealt with when doing darks and lights.
                 # This setting uses a workaround for that. This is just for CMOS
-                # CCDs are fine. 
+                # CCDs are fine.
                 'cmos_on_theskyx': False,
 
                 # For direct QHY usage we need to set the appropriate gain.
