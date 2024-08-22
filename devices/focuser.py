@@ -528,7 +528,7 @@ class Focuser:
         if focuser_was_moving:
             self.wait_for_focuser_update()              
         
-        if (self.current_focus_position*self.micron_to_steps) > to_focus-35 and (self.current_focus_position*self.micron_to_steps) < to_focus+35:
+        if (self.current_focus_position*self.micron_to_steps) > to_focus-16 and (self.current_focus_position*self.micron_to_steps) < to_focus+16:   #  Should be using config'ed focal tolerance.
             plog ("Not moving focus, focus already close to requested position")
         else:
 

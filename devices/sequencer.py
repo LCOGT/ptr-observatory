@@ -5257,23 +5257,52 @@ class Sequencer:
                 self.focussing=False
                 self.total_sequencer_control = False
                 return np.nan, np.nan
-
+            
             # What focus position should i be using?
-            if position_counter==1:
-                focus_position_this_loop=central_starting_focus
+            # if position_counter==1:
+            #     focus_position_this_loop=central_starting_focus
+            # elif position_counter==2:
+            #     focus_position_this_loop=central_starting_focus - throw
+            # elif position_counter==3:
+            #     focus_position_this_loop=central_starting_focus - 2* throw
+            # elif position_counter==4:
+            #     focus_position_this_loop=central_starting_focus + 4*throw
+            # elif position_counter==5:
+            #     focus_position_this_loop=central_starting_focus + 2*throw   #WER reversed these 2 on 20260618 & added backlash comp in focus move
+            # elif position_counter==6:
+            #     focus_position_this_loop=central_starting_focus + throw
+            # elif position_counter>6:
+            #     focus_position_this_loop=new_focus_position_to_attempt
+            focus_list = []
+            if position_counter==0:
+                focus_list.append(central_starting_focus + 6*throw) #  Overtravel a lot
+            elif position_counter==1:
+                focus_list.append(central_starting_focus + 2*throw)
             elif position_counter==2:
-                focus_position_this_loop=central_starting_focus - throw
+                focus_list.append(central_starting_focus + 1*throw)
             elif position_counter==3:
-                focus_position_this_loop=central_starting_focus - 2* throw
+                focus_list.append(central_starting_focus + 0*throw)
             elif position_counter==4:
-                focus_position_this_loop=central_starting_focus + throw
+                focus_list.append(central_starting_focus - 1*throw)   #WER reversed these 2 on 20260618 & added backlash comp in focus move
             elif position_counter==5:
-                focus_position_this_loop=central_starting_focus + 2* throw
-            elif position_counter>5:
-                focus_position_this_loop=new_focus_position_to_attempt
+                focus_list.append(central_starting_focus - 2*throw)
+            elif position_counter==6:
+                 focus_list.append(central_starting_focus + 6*throw) #  Overtravel a lot
+            elif position_counter==7:
+                focus_list.append(central_starting_focus + 1.5*throw)
+            elif position_counter==8:
+                focus_list.append(central_starting_focus + 0.5*throw)
+            elif position_counter==9:
+                focus_list.append(central_starting_focus + 0*throw)
+            elif position_counter==10:
+                focus_list.append(central_starting_focus - 0.5*throw)   #WER reversed these 2 on 20260618 & added backlash comp in focus move
+            elif position_counter==11:
+                 focus_list.append(central_starting_focus - 1.5*throw)
+            elif position_counter>=12:
+                focus_list.append(central_starting_focus)
 
             #  If more than 15 attempts, fail and bail out.
-            if position_counter > 15:
+            if position_counter > 11:
                 g_dev['foc'].set_initial_best_guess_for_focus()
                 if not dont_return_scope:
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -5289,7 +5318,7 @@ class Sequencer:
 
             spot=np.nan
             retry_attempts=0
-            spots_tried.append(focus_position_this_loop)
+            spots_tried.append(focus_list[position_counter])
             while retry_attempts < 3:
 
                 retry_attempts=retry_attempts+1
@@ -5310,9 +5339,75 @@ class Sequencer:
                     return
 
                 # Move the focuser
-                plog ("Changing focus to " + str(round(focus_position_this_loop,1)))
-                g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
+                plog ("Changing focus to " + str(round(focus_list[position_counter],1)))
+                g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
                 self.wait_for_slew(wait_after_slew=False)
+                if position_counter == 0 or position_counter == 6:  #Move in after an intention overtravel out  WER 20240618
+                    plog("Extra focus out-travel added")
+                    g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
+                    position_counter += 1
+                    self.wait_for_slew(wait_after_slew=False)
+                plog("Extra focus out-travel not reversing.")
+                g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
+                position_counter += 1
+                self.wait_for_slew(wait_after_slew=False)
+
+
+            # # What focus position should i be using?
+            # if position_counter==1:
+            #     focus_position_this_loop=central_starting_focus
+            # elif position_counter==2:
+            #     focus_position_this_loop=central_starting_focus - throw
+            # elif position_counter==3:
+            #     focus_position_this_loop=central_starting_focus - 2* throw
+            # elif position_counter==4:
+            #     focus_position_this_loop=central_starting_focus + throw
+            # elif position_counter==5:
+            #     focus_position_this_loop=central_starting_focus + 2* throw
+            # elif position_counter>5:
+            #     focus_position_this_loop=new_focus_position_to_attempt
+
+            # #  If more than 15 attempts, fail and bail out.
+            # if position_counter > 15:
+            #     g_dev['foc'].set_initial_best_guess_for_focus()
+            #     if not dont_return_scope:
+            #         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+            #         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+            #         g_dev['obs'].send_to_user("Attempt at V-curve Focus Failed, using calculated values", p_level='INFO')
+
+            #         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+            #         self.wait_for_slew(wait_after_slew=False)
+
+            #     self.focussing=False
+            #     self.total_sequencer_control = False
+            #     return np.nan, np.nan
+
+            # spot=np.nan
+            # retry_attempts=0
+            # spots_tried.append(focus_position_this_loop)
+            # while retry_attempts < 3:
+
+            #     retry_attempts=retry_attempts+1
+
+            #     # Check in with stop scripts and roof
+            #     if self.stop_script_called:
+            #         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+            #         g_dev['mnt'].park_command({}, {})
+            #         self.total_sequencer_control = False
+            #         self.focussing=False
+
+            #         return
+
+            #     if not g_dev['obs'].open_and_enabled_to_observe:
+            #         g_dev['mnt'].park_command({}, {})
+            #         self.total_sequencer_control = False
+            #         self.focussing=False
+            #         return
+
+            #     # Move the focuser
+            #     plog ("Changing focus to " + str(round(focus_position_this_loop,1)))
+            #     g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
+            #     self.wait_for_slew(wait_after_slew=False)
 
                 try:
                     while g_dev['rot'].rotator.IsMoving:
@@ -5331,7 +5426,7 @@ class Sequencer:
                 spot = g_dev['obs'].fwhmresult['FWHM']
                 foc_pos=g_dev['foc'].current_focus_position
 
-                g_dev['obs'].send_to_user("Focus at test position: " + str(focus_position_this_loop) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
+                g_dev['obs'].send_to_user("Focus at test position: " + str(foc_pos) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
 
                 if not np.isnan(spot):
                     if spot < 30.0:
@@ -6090,6 +6185,10 @@ class Sequencer:
         but the most important is centering the requested RA and Dec just prior to starting
         a longer project block.
         """
+        
+        if g_dev['obs'].auto_centering_off:  #Auto centering off means OFF!
+            plog('auto_centering is off.')
+            return
 
         if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
             plog("Too bright to consider platesolving!")

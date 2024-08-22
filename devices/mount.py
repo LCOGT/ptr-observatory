@@ -1521,8 +1521,9 @@ class Mount:
                 else:
                     plog (command)
                     try:
-
+                        #********NEED TO BE SURE the Heaader RA and DEC is correct!!!
                         # Need to convert image fraction into offset
+                        breakpoint()
                         image_y = req['image_x']
                         image_x = req['image_y']
                         # And the current pixel scale

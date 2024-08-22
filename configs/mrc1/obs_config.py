@@ -47,10 +47,10 @@ site_config = {
 
 
     # Default safety settings
-    'safety_check_period': 45,  # MF's original setting.
+    'safety_check_period': 120,  # MF's original setting.
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
-    'minimum_distance_from_the_moon_when_taking_flats': 45,
+    'minimum_distance_from_the_moon_when_taking_flats': 30,
     'lowest_requestable_altitude': 10,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'lowest_acceptable_altitude' : 0.0, # Below this altitude, it will automatically try to home and park the scope to recover.
     'degrees_to_avoid_zenith_area_for_calibrations': 5,
@@ -72,7 +72,7 @@ site_config = {
     # The pointing may never be quite good enough to center the object without
     # a centering exposure. On initial commissioning, it should be set to always autocenter
     # until you are convinced the natural pointing with empirical corrections is "good enough"
-    'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
     
     
 
