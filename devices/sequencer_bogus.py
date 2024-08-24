@@ -2819,7 +2819,7 @@ class Sequencer:
                 except Exception as e:
                     plog(traceback.format_exc())
                     plog ("Could not save dark frame: ",e)
-                    #breakpoint()
+                    breakpoint()
 
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
                 g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
@@ -2955,7 +2955,7 @@ class Sequencer:
                 except Exception as e:
                     plog(traceback.format_exc())
                     plog ("Could not save dark frame: ",e)
-                    #breakpoint()
+                    breakpoint()
 
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
                 g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
@@ -4999,7 +4999,7 @@ class Sequencer:
         if throw==None:
             throw= self.config['focuser']['focuser1']['throw']
 
-        if not ENG and((ephem.now() < g_dev['events']['End Eve Bias Dark'] ) or \
+        if not ENG and ((ephem.now() < g_dev['events']['End Eve Bias Dark'] ) or \
             (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset'])):
             plog ("NOT DOING AUTO FOCUS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("An auto focus was rejected as it is during the daytime.")
@@ -5165,29 +5165,30 @@ class Sequencer:
             # Wait for platesolve
             reported=0
             temptimer=time.time()
-            while True:
-                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                    break
-                else:
-                    if reported ==0:
-                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
-                        reported=1
-                    if (time.time() - temptimer) > 20:
-                        #g_dev["obs"].request_full_update()
-                        temptimer=time.time()
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                        self.focussing=False
-                        self.total_sequencer_control = False
-                        return np.nan, np.nan
-                    if not g_dev['obs'].open_and_enabled_to_observe:
-                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                        self.focussing=False
-                        self.total_sequencer_control = False
-                        return np.nan, np.nan
-                    pass
-
-                g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+            if not ENG:
+                while True:
+                    if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                        break
+                    else:
+                        if reported ==0:
+                            plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                            reported=1
+                        if (time.time() - temptimer) > 20:
+                            #g_dev["obs"].request_full_update()
+                            temptimer=time.time()
+                        if self.stop_script_called:
+                            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                            self.focussing=False
+                            self.total_sequencer_control = False
+                            return np.nan, np.nan
+                        if not g_dev['obs'].open_and_enabled_to_observe:
+                            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                            self.focussing=False
+                            self.total_sequencer_control = False
+                            return np.nan, np.nan
+                        pass
+    
+                    g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
 
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -5211,56 +5212,22 @@ class Sequencer:
             focus_exposure_time=focus_exposure_time*2
 
         # Boost Narrowband and low throughput broadband
-        if filter_choice.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", 'hb', 'hbc', "o3", "o", "s2", "s", "cr", "c", "n2", "n", 'su', 'sv', 'sb', 'sy']:
+        if filter_choice.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
             focus_exposure_time=focus_exposure_time*3
 
         req = {'time': focus_exposure_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
         opt = { 'count': 1, 'filter': filter_choice}
-        '''
-        Presumably this is meant to adjust for a filter offset needed if the
-        filter has changed from reference...
-        '''
+
         g_dev['foc'].guarded_move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
 
         # THE LOOP
-        position_counter = -1 # At various stages of the algorithm we attempt different things, this allows us to make that happen.
+        position_counter=0 # At various stages of the algorithm we attempt different things, this allows us to make that happen.
         central_starting_focus=copy.deepcopy(foc_pos0)
-        focus_spots = []
-        spots_tried = []
-        extra_tries = 0
+        focus_spots=[]
+        spots_tried=[]
+        extra_tries=0
         new_focus_position_to_attempt = central_starting_focus # Initialise this variable
-        #breakpoint()
-        focus_list = []
-        spot_list = []
-        focus_list.append(central_starting_focus + 5*throw) #  Overtravel a lot
-        focus_list.append(central_starting_focus + 2*throw)
-        focus_list.append(central_starting_focus + 1*throw)
-        focus_list.append(central_starting_focus + 0*throw)
-        focus_list.append(central_starting_focus - 1*throw)   #WER reversed these 2 on 20260618 & added backlash comp in focus move
-        focus_list.append(central_starting_focus - 2*throw)
-        focus_list.append(central_starting_focus + 6*throw) #  Overtravel a lot
-        focus_list.append(central_starting_focus + 2.5*throw)
-        focus_list.append(central_starting_focus + 1.5*throw)
-        focus_list.append(central_starting_focus + 0.5*throw)
-        focus_list.append(central_starting_focus + 0*throw)
-        focus_list.append(central_starting_focus - 0.5*throw)   #WER reversed these 2 on 20260618 & added backlash comp in focus move
-        focus_list.append(central_starting_focus - 1.5*throw)
-        focus_list.append(central_starting_focus - 2.5*throw)   #len = 14 positions
-        spot_list.append(2 + 5*0.75)   #These should be randomized
-        spot_list.append(2 + 2*0.75)
-        spot_list.append(2 + 1*0.75)
-        spot_list.append(2 + 0)
-        spot_list.append(2 + 1*0.75)
-        spot_list.append(2 + 2*0.75)
-        spot_list.append(2.25 + 6*0.75)
-        spot_list.append(2.25 + 2.5*0.75)
-        spot_list.append(2.25 + 1.5*0.75)
-        spot_list.append(2.25 + 0.5*0.75)
-        spot_list.append(2.25 + 0)
-        spot_list.append(2.25 + 0.5*0.75)
-        spot_list.append(2.25 + 1.5*0.75)
-        spot_list.append(2.25 + 2.5*0.5)
-        
+
         while True:
 
             im_path_r = g_dev['cam'].camera_path
@@ -5280,7 +5247,7 @@ class Sequencer:
                 + "00.txt"
             )
 
-            position_counter += 1
+            position_counter+1
             # General command bailout section
             g_dev['obs'].request_scan_requests()
             if self.stop_script_called:
@@ -5293,11 +5260,59 @@ class Sequencer:
                 self.focussing=False
                 self.total_sequencer_control = False
                 return np.nan, np.nan
-
-
+            
+            # What focus position should i be using?
+            # if position_counter==1:
+            #     focus_position_this_loop=central_starting_focus
+            # elif position_counter==2:
+            #     focus_position_this_loop=central_starting_focus - throw
+            # elif position_counter==3:
+            #     focus_position_this_loop=central_starting_focus - 2* throw
+            # elif position_counter==4:
+            #     focus_position_this_loop=central_starting_focus + 4*throw
+            # elif position_counter==5:
+            #     focus_position_this_loop=central_starting_focus + 2*throw   #WER reversed these 2 on 20260618 & added backlash comp in focus move
+            # elif position_counter==6:
+            #     focus_position_this_loop=central_starting_focus + throw
+            # elif position_counter>6:
+            #     focus_position_this_loop=new_focus_position_to_attempt
+            focus_list = []
+            spot_list = []
+            if position_counter==0:
+                focus_list.append(central_starting_focus + 6*throw) #  Overtravel a lot
+                focus_list.append(central_starting_focus + 2*throw)
+                focus_list.append(central_starting_focus + 1*throw)
+                focus_list.append(central_starting_focus + 0*throw)
+                focus_list.append(central_starting_focus - 1*throw)   #WER reversed these 2 on 20260618 & added backlash comp in focus move
+                focus_list.append(central_starting_focus - 2*throw)
+                focus_list.append(central_starting_focus + 7*throw) #  Overtravel a lot
+                focus_list.append(central_starting_focus + 2.5*throw)
+                focus_list.append(central_starting_focus + 1.5*throw)
+                focus_list.append(central_starting_focus + 0.5*throw)
+                focus_list.append(central_starting_focus + 0*throw)
+                focus_list.append(central_starting_focus - 0.5*throw)   #WER reversed these 2 on 20260618 & added backlash comp in focus move
+                focus_list.append(central_starting_focus - 1.5*throw)
+                focus_list.append(central_starting_focus - 2.5*throw)
+                #len = 14 positions
+                spot_list.append(2 + 6*0.75)   #These should be randomized
+                spot_list.append(2 + 2*0.75)
+                spot_list.append(2 + 1*0.75)
+                spot_list.append(2 + 0)
+                spot_list.append(2 - 1*0.75)
+                spot_list.append(2 - 2*0.75)
+                spot_list.append(2 + 7*0.75)
+                spot_list.append(2 + 2.5*0.75)
+                spot_list.append(2 + 1.5*0.75)
+                spot_list.append(2 + 0.5*0.75)
+                spot_list.append(2 + 0)
+                spot_list.append(2 - 0.5*0.75)
+                spot_list.append(2 - 1.5*0.75)
+                spot_list.append(2 - 2.5*0.5)
                 
+                
+
             #  If more than 15 attempts, fail and bail out.
-            if not ENG and (position_counter >= len(focus_list)):
+            if position_counter >= len(focus_list):
                 g_dev['foc'].set_initial_best_guess_for_focus()
                 if not dont_return_scope:
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -5305,7 +5320,7 @@ class Sequencer:
                     g_dev['obs'].send_to_user("Attempt at V-curve Focus Failed, using calculated values", p_level='INFO')
 
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                    self.wait_for_slew(wait_after_slew=False)          #wait for telescope slew!
+                    self.wait_for_slew(wait_after_slew=False)
 
                 self.focussing=False
                 self.total_sequencer_control = False
@@ -5313,10 +5328,10 @@ class Sequencer:
 
             spot=np.nan
             retry_attempts=0
-            #spots_tried.append(focus_list[position_counter])  THis was update too early and caught the overtravel, so moved down
+            spots_tried.append(focus_list[position_counter])
             while retry_attempts < 3:
 
-                retry_attempts += 1
+                retry_attempts=retry_attempts+1
 
                 # Check in with stop scripts and roof
                 if self.stop_script_called:
@@ -5334,25 +5349,20 @@ class Sequencer:
                     return
 
                 # Move the focuser
-                # plog ("Changing focus to " + str(focus_list[position_counter]))
-                # g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
-                # self.wait_for_slew(wait_after_slew=False)
-                if position_counter == 0 or position_counter == 6:  #Move in after an intention overtravel out  WER 20240618
-                    plog("Longer move out to remove backlash.")
-                    t1 = time.time()
-                    g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
-                    t2 = time.time()
-                    self.wait_for_slew(wait_after_slew=False)     #Why this call, it does not wait for the focus move!
-                    breakpoint()
-                    position_counter += 1
-                plog("Move to next focus position.")
-                t3 = time.time()
+                plog ("Changing focus to " + str(round(focus_list[position_counter],1)))
                 g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
-                t4 = time.time()
                 self.wait_for_slew(wait_after_slew=False)
-                print ("T",  t2 - t1, t3 - t2, t4 - t3)
+                if position_counter == 0 or position_counter == 6:  #Move in after an intention overtravel out  WER 20240618
+                    plog("Extra focus out-travel added")
+                    g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
+                    position_counter += 1
+                    self.wait_for_slew(wait_after_slew=False)
+                plog("Extra focus out-travel now reversing.")
+                g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
+                position_counter += 1
+                self.wait_for_slew(wait_after_slew=False)
                 try:
-                    while g_dev['rot'].rotator.IsMoving:    #For an alt az the rotator is always moving, just now slewing.
+                    while g_dev['rot'].rotator.IsMoving:
                         plog("flat rotator wait")
                         time.sleep(0.2)
                 except:
@@ -5362,23 +5372,24 @@ class Sequencer:
                 # to settle down after rotation complete
                 if g_dev['rot'] != None:
                     time.sleep(1)
+
+                # Take the shot
                 if not ENG:
-                    # Take the shot
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
                     spot = g_dev['obs'].fwhmresult['FWHM']
+                    foc_pos=g_dev['foc'].current_focus_position
+    
+                    g_dev['obs'].send_to_user("Focus at test position: " + str(foc_pos) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
+    
+                    if not np.isnan(spot):
+                        if spot < 30.0:
+                            focus_spots.append((foc_pos,spot))
+                            break
+                    else:
+                        plog ("retrying this position - could not get a FWHM")
                 else:
-                    spot = spot_list[position_counter]
-                foc_pos= int(g_dev['foc'].current_focus_position)
-                spots_tried.append(focus_list[position_counter])
-
-                g_dev['obs'].send_to_user("Focus at test position: " + str(foc_pos) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
-
-                if not np.isnan(spot):
-                    if spot < 30.0:
-                        focus_spots.append((foc_pos,spot))   #I see a race conditon, this list does not order correctly  WER                        breakpoint()                        
-                        break
-                else:
-                    plog ("retrying this position - could not get a FWHM")
+                    #here we append simulated results
+                    pass
 
             # If you have the starting of a v-curve then now you can decide what to do.
             # Start off by sorting in order of focus positions
@@ -5396,11 +5407,11 @@ class Sequencer:
                 y=np.asarray(y, dtype=float)
 
             if position_counter < 5:
-                if not ENG and len(focus_spots) > 0:
+                if len(focus_spots) > 0:
                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                     # Fling the jpeg up
                     g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
-                #NB NB NB Note this is the end of the While loop!
+
             else:
                 if len(focus_spots) == 0 or len(focus_spots) == 1:
                     plog ("Sheesh, not one spot found yet!")
@@ -5522,7 +5533,7 @@ class Sequencer:
                                     g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                             else:
-                                plog ("Fitted focus position: " + str(fitted_focus_position), x, y)
+                                plog ("focus pos: " + str(fitted_focus_position))
                                 fitted_focus_fwhm=f(fitted_focus_position)
                                 threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, f, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),fitted_focus_position,fitted_focus_fwhm),))).start()
                                 # Fling the jpeg up
