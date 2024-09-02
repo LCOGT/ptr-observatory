@@ -3362,8 +3362,8 @@ class Camera:
         # This is here because a single exposure may have a flip in it, hence
         # we check here.
         if not g_dev['obs'].mountless_operation:
-            if not g_dev['mnt'].rapid_park_indicator:               
-                if g_dev['mnt'].pier_flip_detected == True  and not g_dev['obs'].auto_centering_off:                    
+            if not g_dev['mnt'].rapid_park_indicator:
+                if g_dev['mnt'].pier_flip_detected == True  and not g_dev['obs'].auto_centering_off:
                     plog ("PIERFLIP DETECTED, RECENTERING.")
                     g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                     g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
@@ -3974,7 +3974,7 @@ class Camera:
 
 
             #breakpoint()
-            
+
             try:
                 sep_subprocess = subprocess.Popen(
                     ['python', 'subprocesses/SEPprocess.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
@@ -4495,6 +4495,12 @@ class Camera:
                         try:
                             outputimg = self._getImageArray()  # .astype(np.float32)
                             imageCollected = 1
+
+                            if True:
+                               height, width = outputimg.shape
+                               patch = outputimg[int(0.45*height):int(0.55*height), int(0.45*width):int(0.55*width)]
+                               print("Cam line 4502:  10% central image patch:  ", np.median(patch))
+
                         except Exception as e:
 
                             if self.theskyx:

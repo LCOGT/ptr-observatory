@@ -1526,7 +1526,7 @@ class Mount:
                 else:
                     plog (command)
                     try:
-                        breakpoint()
+
                         # Need to convert image fraction into offset
                         image_y = req['image_x']  #Fraction of image axis
                         image_x = req['image_y']

@@ -508,7 +508,7 @@ site_config = {
             'step_size': 1,
             'backlash': 600,   # non-zero means enabled, + means over-travel when moving out, then come back IN  same amount.
             'throw': 140,  # Start with 10X focus tolerance.
-            'focus_tolerance':  14.0,    #Microns
+            'focus_tolerance':  130,    #Microns  ??? used Golf Focus Caclulator
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
             'has_dial_indicator': False
