@@ -2130,8 +2130,8 @@ class Observatory:
                 if g_dev["cam"]._cooler_on():
                     current_camera_temperature, cur_humidity, cur_pressure,\
                         cur_pwm = g_dev["cam"]._temperature()
-                    current_camera_temperature = float(
-                        current_camera_temperature)
+                    current_camera_temperature = round(
+                        current_camera_temperature, 1)
 
                     if (
                         abs(
@@ -2142,10 +2142,10 @@ class Observatory:
                     ):
                         self.camera_sufficiently_cooled_for_calibrations = False
                         self.last_time_camera_was_warm = time.time()
-                        plog("abs Cam temp diff too large Line 2143")
-                    elif (time.time() - self.last_time_camera_was_warm) < 600:
+                        plog("abs Cam temp too large Obs Line 2145:  ", current_camera_temperature)
+                    elif (time.time() - self.last_time_camera_was_warm) < 300:
                         self.camera_sufficiently_cooled_for_calibrations = False
-                        plog("Timeout is faulting Line 2146")
+                        plog("Timeout is faulting Obs Line 2146")
                     else:
                         self.camera_sufficiently_cooled_for_calibrations = True
                 else:

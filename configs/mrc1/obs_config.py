@@ -47,7 +47,7 @@ site_config = {
 
 
     # Default safety settings
-    'safety_check_period': 120,  # MF's original setting.
+    'safety_check_period': 45,  # MF's original setting.
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 30,
@@ -415,7 +415,7 @@ site_config = {
             'focuser_movement_settle_time': 3,
 
             # Override the estimated best focus and start at the provided config value
-            'start_at_config_reference': False,
+            'start_at_config_reference': True,
             # Use previous best focus information to correct focuser for temperature change
             'correct_focus_for_temperature' : True,
             # highest value to consider as being in "good focus". Used to select last good focus value
@@ -423,7 +423,7 @@ site_config = {
 
             # When the focusser has no previous best focus values
             # start from this reference position
-            'reference': 5150,
+            'reference': 4400,  #20240904
 
             # Limits and steps for the focuser.
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
@@ -694,7 +694,7 @@ site_config = {
                 'transpose_jpeg': False,
                 'flipx_jpeg': False,
                 'flipy_jpeg': False,
-                'rotate180_jpeg': False,
+                'rotate180_jpeg': True,   #First try adjusting 461 camera 20240827
                 'rotate90_jpeg': False,
                 'rotate270_jpeg': False,
 
@@ -735,7 +735,7 @@ site_config = {
                 'has_chiller': False,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C
-                "temp_setpoint_tolarance": 2.5,   #  C
+                "temp_setpoint_tolerance": 2.5,   #  C
                 'day_warm': False,
                 'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
