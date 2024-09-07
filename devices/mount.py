@@ -1337,6 +1337,7 @@ class Mount:
                 'message': self.mount_message[:32]
             }
         elif self.tel == True:
+            #breakpoint()
             rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
             aa = AltAz(location=self.site_coordinates, obstime=Time.now())
             rd = rd.transform_to(aa)

@@ -1481,6 +1481,7 @@ class Observatory:
                     result = device.get_status()
                     if result is not None:
                         status[dev_type][device_name] = result
+                #breakpoint()
 
             status["timestamp"] = round((time.time()) / 2.0, 3)
             status["send_heartbeat"] = False
@@ -1504,7 +1505,7 @@ class Observatory:
 
             with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
                 r_date, r_time = light_rec.readline().split()[-2:]
-                plog(r_date, r_time)
+                #plog(r_date, r_time)
                 d_string = r_date + 'T' +r_time
                 d_time = datetime.datetime.fromisoformat(d_string)+datetime.timedelta(minutes=7.5)
                 distance = 10.001
@@ -1516,7 +1517,8 @@ class Observatory:
                             if s_range < distance:
                                 distance = s_range
                 else:
-                    plog("Lightning report is stale.")
+                    #plog("Lightning report is stale.")
+                    pass
             if distance <=  10.0:
                 plog("Lightning distance is:   ", distance, ' km away.')
             else:
@@ -3173,10 +3175,12 @@ class Observatory:
                             platesolve_crop = 0.0
 
                             # yet another pickle debugger.
-                            if False:
+                            if True:
                                 pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
                                  pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
 
+
+                            #breakpoint()
 
                             try:
                                 platesolve_subprocess = subprocess.Popen(
@@ -3287,7 +3291,7 @@ class Observatory:
 
                                 solved_ra = solve["ra_j2000_hours"]
                                 solved_dec = solve["dec_j2000_degrees"]
-                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                solved_arcsecperpixel = abs(solve["arcsec_per_pixel"])
                                 plog(
                                     "1x1 pixelscale solved: "
                                     + str(round(solved_arcsecperpixel, 3))
