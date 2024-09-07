@@ -35,6 +35,7 @@ from pathlib import Path
 from os import getcwd
 import time
 from astropy.utils.exceptions import AstropyUserWarning
+from astropy.table import Table
 import warnings
 import traceback
 import bottleneck as bn
@@ -125,7 +126,7 @@ if pointing_exposure:
 
 googtime=time.time()
 # If this is an osc image, then interpolate so it is just the green filter image of the same size.
-if is_osc:   
+if is_osc:
     # Rapidly interpolate so that it is all one channel
     # Wipe out red channel
     hdufocusdata[::2, ::2]=np.nan
@@ -148,7 +149,7 @@ if is_osc:
 
     #Maybe just try this? #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
     #hdufocusdata=hdufocusdata.astype("float32")
-    
+
 try:
     bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
     bkg.subfrom(hdufocusdata)
@@ -187,7 +188,7 @@ if pixscale != None:
     binnedthree=False
     # Just bin the image unless the pixelscale is high
     if pixscale < 0.5 and pixscale > 0.3:
-        
+
         hdufocusdata=np.divide(block_reduce(hdufocusdata,2,func=np.sum),2)
         pixscale=pixscale*2
         binnedtwo=True
@@ -229,20 +230,20 @@ if pixscale != None:
     x_size_degrees=hdufocusdata.shape[0] * (pixscale / 3600)
     x_size_pixel_needed= (hdufocusdata.shape[0] / (x_size_degrees)) / 2 # Size in pixels of a half degree sized image
     if x_size_degrees > 0.5:
-        crop_width=int((hdufocusdata.shape[0] - x_size_pixel_needed)/2) 
+        crop_width=int((hdufocusdata.shape[0] - x_size_pixel_needed)/2)
     else:
         crop_width=2
-    
+
     y_size_degrees=hdufocusdata.shape[1] * (pixscale / 3600)
     y_size_pixel_needed= (hdufocusdata.shape[1] / (y_size_degrees)) / 2
     if y_size_degrees > 0.5:
         crop_height=int((hdufocusdata.shape[1] - y_size_pixel_needed)/2)
     else:
         crop_height=2
-    
+
     #breakpoint()
     hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
-    
+
 
 def localMax(a, include_diagonal=True, threshold=-np.inf) :
     # Pad array so we can handle edges
@@ -349,7 +350,7 @@ for i in range(len(pointvalues)):
         temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
     except:
         print(traceback.format_exc())
-        
+
     #construct radial profile
     cut_x,cut_y=temp_array.shape
     cut_x_center=(cut_x/2)-1
@@ -438,99 +439,123 @@ failed=True
 
 if len(sources) >= 5:
 
-    if not pixscale == None:# or np.isnan(pixscale):
-        # Get size of original image
-        xpixelsize = hdufocusdata.shape[0]
-        ypixelsize = hdufocusdata.shape[1]
-        shape = (xpixelsize, ypixelsize)
 
-        # Make blank synthetic image with a sky background
-        synthetic_image = np.zeros([xpixelsize, ypixelsize])
-        synthetic_image = synthetic_image + 200
 
-        #Bullseye Star Shape
-        modelstar = [
-                    [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01],
-                    [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
-                    [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
-                    [ 0.2 , 0.4 , 0.8 , 1.2,  0.8, 0.4, 0.2],
-                    [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
-                    [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
-                    [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01]
 
-                    ]
+    print ("Attempting WSL astrometry.net fit")
 
-        modelstar=np.array(modelstar)       
+    wslfilename=cal_path + 'wsltemp' + str(time.time()).replace('.','') +'.fits'
 
-        # Add bullseye stars to blank image
-        for addingstar in sources:
-            x = round(addingstar[1] -1)
-            y = round(addingstar[0] -1)
-            peak = int(addingstar[2])
-            # Add star to numpy array as a slice
+
+
+    # save out the source list to a textfile for wsl fit
+    sources={'x': sources[:,0],'y': sources[:,1],'flux': sources[:,2]}
+
+    sources=Table(sources)
+
+    sources.write(wslfilename)
+
+    # recombobulate to access through the wsl filesystem
+    realwslfilename=wslfilename.split(':')
+    realwslfilename[0]=realwslfilename[0].lower()
+    realwslfilename='/mnt/'+ realwslfilename[0] + realwslfilename[1]
+
+
+    # Pick pixel scale range
+    if pixscale == None:
+        low_pixscale= 0.05
+        high_pixscale=10.0
+    else:
+        low_pixscale = 0.9 * pixscale
+        high_pixscale = 1.1 * pixscale
+
+
+    astoptions = '--crpix-center --tweak-order 2 --x-column y --y-column x --width ' + str(hdufocusdata.shape[0]) +' --height ' + str(hdufocusdata.shape[1]) + ' --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit 90 --overwrite --no-verify --no-plots'
+
+    print (astoptions)
+
+    os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
+
+
+    # If successful, then a file of the same name but ending in solved exists.
+    if os.path.exists(wslfilename):
+        print ("IT EXISTS! WCS SUCCESSFUL!")
+        wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
+        # wcsheader[0].header['CRVAL1']/15
+        # wcsheader[0].header['CRVAL2']
+        # wcsheader[0].header['CD1_2'] * 3600
+        solve={}
+        solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
+        solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
+        solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
+
+        if binnedtwo:
+            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+        elif binnedthree:
+            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+        print (solve)
+
+    else:
+    #breakpoint()
+
+        if not pixscale == None:# or np.isnan(pixscale):
+            # Get size of original image
+            xpixelsize = hdufocusdata.shape[0]
+            ypixelsize = hdufocusdata.shape[1]
+            shape = (xpixelsize, ypixelsize)
+
+            # Make blank synthetic image with a sky background
+            synthetic_image = np.zeros([xpixelsize, ypixelsize])
+            synthetic_image = synthetic_image + 200
+
+            #Bullseye Star Shape
+            modelstar = [
+                        [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01],
+                        [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
+                        [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
+                        [ 0.2 , 0.4 , 0.8 , 1.2,  0.8, 0.4, 0.2],
+                        [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
+                        [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
+                        [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01]
+
+                        ]
+
+            modelstar=np.array(modelstar)
+
+            # Add bullseye stars to blank image
+            for addingstar in sources:
+                x = round(addingstar[1] -1)
+                y = round(addingstar[0] -1)
+                peak = int(addingstar[2])
+                # Add star to numpy array as a slice
+                try:
+                    synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
+                except Exception as e:
+                    print (e)
+
+            # Make an int16 image for planewave solver
+            hdufocusdata = np.array(synthetic_image, dtype=np.int32)
+            hdufocusdata[hdufocusdata < 0] = 200
+            hdufocus = fits.PrimaryHDU()
+            hdufocus.data = hdufocusdata
+            hdufocus.header = hduheader
+            hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+            hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+            hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
+
             try:
-                synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
-            except Exception as e:
-                print (e)
+                hdufocus.close()
+            except:
+                pass
+            del hdufocusdata
+            del hdufocus
 
-        # Make an int16 image for planewave solver
-        hdufocusdata = np.array(synthetic_image, dtype=np.int32)
-        hdufocusdata[hdufocusdata < 0] = 200
-        hdufocus = fits.PrimaryHDU()
-        hdufocus.data = hdufocusdata
-        hdufocus.header = hduheader
-        hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-        hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-        hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
-        
-        try:
-            hdufocus.close()
-        except:
-            pass
-        del hdufocusdata
-        del hdufocus
-        
-        # First try with normal pixscale
-        failed = False
-        args = [
-            PS3CLI_EXE,
-            cal_path + 'platesolvetemp.fits',
-            str(pixscale),
-            output_file_path,
-            catalog_path
-        ]
-
-        process = Popen(
-                args,
-                stdout=None,
-                stderr=PIPE
-                )
-        (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
-        exit_code = process.wait() # Wait for process to complete and obtain the exit code
-
-        time.sleep(1)
-        process.kill()
-
-        try:
-            solve = parse_platesolve_output(output_file_path)
-            print (solve['arcsec_per_pixel'])
-            if binnedtwo:
-                solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
-            elif binnedthree:
-                solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
-        except:
-            failed=True
-
-
-        if failed:
-            failed=False
-
-            # Try again with a lower pixelscale... yes it makes no sense
-            # But I didn't write PS3.exe ..... but it works (MTF)
+            # First try with normal pixscale
+            failed = False
             args = [
                 PS3CLI_EXE,
                 cal_path + 'platesolvetemp.fits',
-                str(float(pixscale)/2.0),
+                str(pixscale),
                 output_file_path,
                 catalog_path
             ]
@@ -542,11 +567,9 @@ if len(sources) >= 5:
                     )
             (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
             exit_code = process.wait() # Wait for process to complete and obtain the exit code
+
             time.sleep(1)
             process.kill()
-
-            print (stdout)
-            print (stderr)
 
             try:
                 solve = parse_platesolve_output(output_file_path)
@@ -556,68 +579,105 @@ if len(sources) >= 5:
                 elif binnedthree:
                     solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
             except:
-                failed=True           
+                failed=True
 
-    # if unknown pixelscale do a search
-    print ("failed?")
-    print (failed)
-    if failed or pixscale == None:
 
-        #from astropy.table import Table
-        from astroquery.astrometry_net import AstrometryNet
-        AstrometryNet().api_key = 'pdxlsqwookogoivt'
-        AstrometryNet().key = 'pdxlsqwookogoivt'  
-        ast = AstrometryNet()
-        ast.api_key = 'pdxlsqwookogoivt'
-        ast.key = 'pdxlsqwookogoivt'       
+            if failed:
+                failed=False
 
-        if pixscale == None:
-            scale_lower=0.04
-            scale_upper=8.0
-        elif binnedtwo:
-            scale_lower=0.9* pixscale*2
-            scale_upper=1.1* pixscale*2
-        elif binnedthree:
-            scale_lower=0.9* pixscale*3
-            scale_upper=1.1* pixscale*3
-        else:
-            scale_lower=0.9* pixscale
-            scale_upper=1.1* pixscale
+                # Try again with a lower pixelscale... yes it makes no sense
+                # But I didn't write PS3.exe ..... but it works (MTF)
+                args = [
+                    PS3CLI_EXE,
+                    cal_path + 'platesolvetemp.fits',
+                    str(float(pixscale)/2.0),
+                    output_file_path,
+                    catalog_path
+                ]
 
-        image_width = fx
-        image_height = fy
+                process = Popen(
+                        args,
+                        stdout=None,
+                        stderr=PIPE
+                        )
+                (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
+                exit_code = process.wait() # Wait for process to complete and obtain the exit code
+                time.sleep(1)
+                process.kill()
 
-        # If searching for the first pixelscale,
-        # Then wait for a LONG time to get it.
-        # with a wider range
-        try:
-            if pixscale == None:# or np.isnan(pixscale):
-                wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
-                                                        image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=30.0,
-                                                        solve_timeout=1200)
-            else:
-                wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
-                                                        image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=12.0,
-                                                        solve_timeout=60)
-        except:
-            print ("a.net timed out or failed")
-            wcs_header={}
+                print (stdout)
+                print (stderr)
 
-        print (wcs_header)
-        print (len(wcs_header))
+                try:
+                    solve = parse_platesolve_output(output_file_path)
+                    print (solve['arcsec_per_pixel'])
+                    if binnedtwo:
+                        solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
+                    elif binnedthree:
+                        solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
+                except:
+                    failed=True
 
-        if wcs_header=={}:
-            solve = 'error'            
-        else:
-            solve={}
-            solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
-            solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
-            solve["arcsec_per_pixel"] = wcs_header['CD1_2'] *3600
+        # if unknown pixelscale do a search
+        print ("failed?")
+        print (failed)
+        if failed or pixscale == None:
 
-            if binnedtwo:
-                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+            #from astropy.table import Table
+            from astroquery.astrometry_net import AstrometryNet
+            AstrometryNet().api_key = 'pdxlsqwookogoivt'
+            AstrometryNet().key = 'pdxlsqwookogoivt'
+            ast = AstrometryNet()
+            ast.api_key = 'pdxlsqwookogoivt'
+            ast.key = 'pdxlsqwookogoivt'
+
+            if pixscale == None:
+                scale_lower=0.04
+                scale_upper=8.0
+            elif binnedtwo:
+                scale_lower=0.9* pixscale*2
+                scale_upper=1.1* pixscale*2
             elif binnedthree:
-                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+                scale_lower=0.9* pixscale*3
+                scale_upper=1.1* pixscale*3
+            else:
+                scale_lower=0.9* pixscale
+                scale_upper=1.1* pixscale
+
+            image_width = fx
+            image_height = fy
+
+            # If searching for the first pixelscale,
+            # Then wait for a LONG time to get it.
+            # with a wider range
+            try:
+                if pixscale == None:# or np.isnan(pixscale):
+                    wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
+                                                            image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=30.0,
+                                                            solve_timeout=1200)
+                else:
+                    wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
+                                                            image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=12.0,
+                                                            solve_timeout=60)
+            except:
+                print ("a.net timed out or failed")
+                wcs_header={}
+
+            print (wcs_header)
+            print (len(wcs_header))
+
+            if wcs_header=={}:
+                solve = 'error'
+            else:
+                solve={}
+                solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
+                solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
+                solve["arcsec_per_pixel"] = wcs_header['CD1_2'] *3600
+
+                if binnedtwo:
+                    solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+                elif binnedthree:
+                    solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
 
 else:
     solve = 'error'
@@ -625,6 +685,8 @@ else:
 
 print (cal_path+ 'platesolve.pickle')
 
+
+#sys.exit()
 
 pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
 

@@ -1,3 +1,7 @@
+'''
+rotator.py  rotator.py  rotator.py  rotator.py  rotator.py  rotator.py
+
+'''
 import time
 import win32com.client
 import psutil
@@ -27,13 +31,13 @@ class Rotator:
         g_dev["rot"] = self
         win32com.client.pythoncom.CoInitialize()
         self.driver=driver
-        self.rotator = win32com.client.Dispatch(driver)        
+        self.rotator = win32com.client.Dispatch(driver)
         time.sleep(3)
 
         self.rotator.Connected = True
         self.rotator_message = "-"
         print("Rotator connected,  at:  ", round(self.rotator.TargetPosition, 4))
-        
+
         # The telescope driver also needs to be connected
         self.rotator_telescope = win32com.client.Dispatch(driver.replace('Rotator','Telescope'))
         try:
@@ -44,7 +48,7 @@ class Rotator:
         self.TargetPosition=self.rotator.TargetPosition
         self.Position=self.rotator.Position
         self.IsMoving=self.rotator.IsMoving
-        
+
         self.rotator_meant_to_be_rotating = True
                     
     def get_status(self):
@@ -58,13 +62,13 @@ class Rotator:
         mechanical rotator position angle and the true Equatorial Position
         Angle of the imager, and compensate for any difference.
         """
-        
+
         self.TargetPosition=self.rotator.TargetPosition
         self.Position=self.rotator.Position
         self.IsMoving=self.rotator.IsMoving
         # NB we had an exception here with Target position.  mORE THAN ONE OF THESE! 220210709
         try:
-            
+
             status = {
                 "position_angle": round(self.TargetPosition, 4),
                 "rotator_moving": self.IsMoving,
@@ -145,4 +149,4 @@ class Rotator:
         """Sets the rotator to the home position."""
         print("rotator cmd: home")
         self.rotator.Action('HomeDevice',1)
-        
+

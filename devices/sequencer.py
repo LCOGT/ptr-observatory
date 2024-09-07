@@ -1,3 +1,8 @@
+'''
+
+sequencer.py  sequencer.py  sequencer.py  sequencer.py  sequencer.py
+
+'''
 import time
 import datetime
 from dateutil import tz
@@ -461,7 +466,7 @@ class Sequencer:
         if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
 
             self.nightly_reset_complete = False
-            
+
         not_slewing=False
         if g_dev['obs'].mountless_operation:
             not_slewing=True
@@ -494,7 +499,7 @@ class Sequencer:
 
 
                 # If the roof opens later then sync and refocus
-                if (g_dev['events']['Observing Begins'] < ephem_now < g_dev['events']['Observing Ends']):                    
+                if (g_dev['events']['Observing Begins'] < ephem_now < g_dev['events']['Observing Ends']):
 
                     self.total_sequencer_control=True
                     g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
@@ -1391,6 +1396,7 @@ class Sequencer:
             #plog ("Checking whether the pointing reference is nearby. If so, we can skip the centering exposure...")
             skip_centering=False
             HAtemp=g_dev['mnt'].current_sidereal-dest_ra
+            # NB NB WER 20240710  the long key was missing and the following code appeared to be looping forever....
             if g_dev['mnt'].rapid_pier_indicator == 0:
 
                 distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_mount_reference_ha - HAtemp)
@@ -1471,7 +1477,7 @@ class Sequencer:
                         filter_requested = 'None'
 
                     # Try next block in sequence
-                    
+
                     if g_dev["fil"].null_filterwheel == False:
                         try:
                             if not (block_exposure_counter + 1) ==len(block['project']['exposures']):
@@ -2954,7 +2960,7 @@ class Sequencer:
                 except Exception as e:
                     plog(traceback.format_exc())
                     plog ("Could not save dark frame: ",e)
-                    breakpoint()
+                    #breakpoint()
 
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
                 g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
@@ -4397,7 +4403,7 @@ class Sequencer:
                                     pixel_area=0.25
                                 else:
                                     pixel_area=pow(float(g_dev['cam'].pixscale),2)
-                                exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  
+                                exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))
                                 # snap the exposure time to a discrete grid
                                 if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
                                     exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
@@ -4741,7 +4747,7 @@ class Sequencer:
                                             if float(expentry) > exp_time:
                                                 try:
                                                     sky_exposure_snap_this_filter.remove(expentry)
-                                                except:                                                    
+                                                except:
                                                     plog(traceback.format_exc())
 
                                     elif not morn and (bright < (flat_saturation_level * 0.5)) and 0.85 < old_throughput_value/new_throughput_value < 1.15:
@@ -4753,7 +4759,7 @@ class Sequencer:
                                             if float(expentry) < exp_time:
                                                 try:
                                                     sky_exposure_snap_this_filter.remove(expentry)
-                                                except:                                                    
+                                                except:
                                                     plog(traceback.format_exc())
 
                                 else:
@@ -4790,7 +4796,7 @@ class Sequencer:
                                             if float(expentry) > exp_time:
                                                 try:
                                                     sky_exposure_snap_this_filter.remove(expentry)
-                                                except:                                                    
+                                                except:
                                                     plog(traceback.format_exc())
 
                                     elif not morn and (bright < (flat_saturation_level * 0.25)) and 0.85 < old_throughput_value/new_throughput_value < 1.15:
@@ -4801,7 +4807,7 @@ class Sequencer:
                                             if float(expentry) < exp_time:
                                                 try:
                                                     sky_exposure_snap_this_filter.remove(expentry)
-                                                except:                                                    
+                                                except:
                                                     plog(traceback.format_exc())
 
 
@@ -5244,7 +5250,7 @@ class Sequencer:
                 + "00.txt"
             )
 
-            position_counter=position_counter+1
+            #position_counter=position_counter+1
             # General command bailout section
             g_dev['obs'].request_scan_requests()
             if self.stop_script_called:
@@ -5259,21 +5265,50 @@ class Sequencer:
                 return np.nan, np.nan
 
             # What focus position should i be using?
-            if position_counter==1:
-                focus_position_this_loop=central_starting_focus
+            # if position_counter==1:
+            #     focus_position_this_loop=central_starting_focus
+            # elif position_counter==2:
+            #     focus_position_this_loop=central_starting_focus - throw
+            # elif position_counter==3:
+            #     focus_position_this_loop=central_starting_focus - 2* throw
+            # elif position_counter==4:
+            #     focus_position_this_loop=central_starting_focus + 4*throw
+            # elif position_counter==5:
+            #     focus_position_this_loop=central_starting_focus + 2*throw   #WER reversed these 2 on 20260618 & added backlash comp in focus move
+            # elif position_counter==6:
+            #     focus_position_this_loop=central_starting_focus + throw
+            # elif position_counter>6:
+            #     focus_position_this_loop=new_focus_position_to_attempt
+            focus_list = []
+            if position_counter==0:
+                focus_list.append(central_starting_focus + 6*throw) #  Overtravel a lot
+            elif position_counter==1:
+                focus_list.append(central_starting_focus + 2*throw)
             elif position_counter==2:
-                focus_position_this_loop=central_starting_focus - throw
+                focus_list.append(central_starting_focus + 1*throw)
             elif position_counter==3:
-                focus_position_this_loop=central_starting_focus - 2* throw
+                focus_list.append(central_starting_focus + 0*throw)
             elif position_counter==4:
-                focus_position_this_loop=central_starting_focus + throw
+                focus_list.append(central_starting_focus - 1*throw)   #WER reversed these 2 on 20260618 & added backlash comp in focus move
             elif position_counter==5:
-                focus_position_this_loop=central_starting_focus + 2* throw
-            elif position_counter>5:
-                focus_position_this_loop=new_focus_position_to_attempt
+                focus_list.append(central_starting_focus - 2*throw)
+            elif position_counter==6:
+                 focus_list.append(central_starting_focus + 6*throw) #  Overtravel a lot
+            elif position_counter==7:
+                focus_list.append(central_starting_focus + 1.5*throw)
+            elif position_counter==8:
+                focus_list.append(central_starting_focus + 0.5*throw)
+            elif position_counter==9:
+                focus_list.append(central_starting_focus + 0*throw)
+            elif position_counter==10:
+                focus_list.append(central_starting_focus - 0.5*throw)   #WER reversed these 2 on 20260618 & added backlash comp in focus move
+            elif position_counter==11:
+                 focus_list.append(central_starting_focus - 1.5*throw)
+            elif position_counter>=12:
+                focus_list.append(central_starting_focus)
 
             #  If more than 15 attempts, fail and bail out.
-            if position_counter > 15:
+            if position_counter > 11:
                 g_dev['foc'].set_initial_best_guess_for_focus()
                 if not dont_return_scope:
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -5289,7 +5324,7 @@ class Sequencer:
 
             spot=np.nan
             retry_attempts=0
-            spots_tried.append(focus_position_this_loop)
+            spots_tried.append(focus_list[position_counter])
             while retry_attempts < 3:
 
                 retry_attempts=retry_attempts+1
@@ -5310,9 +5345,24 @@ class Sequencer:
                     return
 
                 # Move the focuser
-                plog ("Changing focus to " + str(round(focus_position_this_loop,1)))
-                g_dev['foc'].guarded_move((focus_position_this_loop)*g_dev['foc'].micron_to_steps)
+                plog ("Changing focus to " + str(round(focus_list[position_counter],1)))
+                g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
                 self.wait_for_slew(wait_after_slew=False)
+                if position_counter == 0 or position_counter == 6:  #Move in after an intention overtravel out  WER 20240618
+                    plog("Extra focus out-travel added")
+                    g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
+                    position_counter += 1
+                    self.wait_for_slew(wait_after_slew=False)
+                plog("Extra focus out-travel not reversing.")
+                try:
+                    g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
+                except:
+                    plog(traceback.format_exc())
+                    breakpoint()
+                position_counter += 1
+                self.wait_for_slew(wait_after_slew=False)
+
+
 
                 try:
                     while g_dev['rot'].rotator.IsMoving:
@@ -5331,7 +5381,7 @@ class Sequencer:
                 spot = g_dev['obs'].fwhmresult['FWHM']
                 foc_pos=g_dev['foc'].current_focus_position
 
-                g_dev['obs'].send_to_user("Focus at test position: " + str(focus_position_this_loop) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
+                g_dev['obs'].send_to_user("Focus at test position: " + str(foc_pos) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
 
                 if not np.isnan(spot):
                     if spot < 30.0:
@@ -5355,7 +5405,7 @@ class Sequencer:
                 x=np.asarray(x, dtype=float)
                 y=np.asarray(y, dtype=float)
 
-            if position_counter < 5:
+            if position_counter < 6:
                 if len(focus_spots) > 0:
                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                     # Fling the jpeg up
@@ -5583,7 +5633,7 @@ class Sequencer:
                                             new_focus_position_to_attempt=focus_spots[-1][0] + throw
 
 
-    def equatorial_pointing_run(self, max_pointings=16, alt_minimum=15):
+    def equatorial_pointing_run(self, max_pointings=16, alt_minimum=22.5):
 
         g_dev['obs'].get_enclosure_status_from_aws()
         if not g_dev['obs'].assume_roof_open and 'Closed' in g_dev['obs'].enc_status['shutter_status']:
@@ -5615,6 +5665,11 @@ class Sequencer:
             for hour in ha_cat:
                 ra = ra_fix_h(sidereal_h - hour)  #This step could be done just before the seek below so hitting flips would be eliminated
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
+        elif max_pointings == 12:
+            ha_cat = [-3.5, -3, -2.5, -2, -1.5, -1,  1, 1.5, 2, 2.5, 3, 3.5]  #12points
+            for hour in ha_cat:
+                ra = ra_fix_h(sidereal_h - hour)
+                catalogue.append([round(ra*HTOD, 3), 0.0, 19])
         elif max_pointings == 16:
             ha_cat = [-4, -3.5, -3, -2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]  #16 points
             for hour in ha_cat:
@@ -5642,7 +5697,8 @@ class Sequencer:
             if alt > alt_minimum:
                 sweep_catalogue.append([catalogue[ctr][0],catalogue[ctr][1],catalogue[ctr][2],temppointingaltaz.alt.degree, temppointingaltaz.az.degree  ])
 
-        sweep_catalogue = sorted(sweep_catalogue, key= lambda az: az[4])
+        if max_pointings > 16:
+            sweep_catalogue = sorted(sweep_catalogue, key= lambda az: az[4])
         plog (len(sweep_catalogue), sweep_catalogue)
 
         del catalogue
@@ -5744,7 +5800,7 @@ class Sequencer:
 
             result=[ra_mount, dec_mount, g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
             deviation_catalogue_for_tpoint.append (result)
-            plog(result)
+            plog("Pointing run:  ", result)
 
             g_dev["obs"].request_update_status()
             count += 1
@@ -5766,6 +5822,7 @@ class Sequencer:
             latitude = float(g_dev['evnt'].wema_config['latitude'])
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
+
             if not np.isnan(entry[2]):
                 ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
                 dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
@@ -5783,8 +5840,10 @@ class Sequencer:
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
 
                     if latitude >= 0:
+                        #I think the signs below *may be* incorrect WER 20240618
                         dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
                     else:
+                        #These signs need testing and verification for the Southern Hemisphere.
                         dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ')
                 else:
                     pierstring='0  0'
@@ -6085,16 +6144,19 @@ class Sequencer:
     def centering_exposure(self, no_confirmation=False, try_hard=False, try_forever=False, calendar_event_id=None):
 
         """
-        A pretty regular occurance - the pointing on the scopes isn't great usually.
+        A pretty regular occurance - when the pointing on the scopes isn't tuned up.
         This gets the image within a few arcseconds usually. Called from a variety of spots,
         but the most important is centering the requested RA and Dec just prior to starting
         a longer project block.
         """
+        if g_dev['obs'].auto_centering_off:  #Auto centering off means OFF!
+            plog('auto_centering is off.')
+            return
 
         if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
             plog("Too bright to consider platesolving!")
             plog("Hence too bright to do a centering exposure.")
-            g_dev["obs"].send_to_user("Too bright to auto-center the image.")
+            g_dev["obs"].send_to_user("Too bright, or early, to auto-center the image.")
 
             return
 
@@ -6163,7 +6225,7 @@ class Sequencer:
             return
 
         if g_dev["obs"].stop_all_activity:
-            plog('stop_all_activity cancelling out of centering')
+            plog('stop_all_activity, so cancelling out of Centering')
             return
 
         # Wait for platesolve

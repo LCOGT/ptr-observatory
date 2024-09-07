@@ -1,3 +1,7 @@
+'''
+screen.py  screen.py  screen.py  screen.py  screen.py  screen.py  screen.py
+
+'''
 import win32com.client
 
 from global_yard import g_dev

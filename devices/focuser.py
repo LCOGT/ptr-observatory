@@ -1,3 +1,7 @@
+'''
+focuser.py focuser.py  focuser.py  focuser.py  focuser.py  focuser.py
+
+'''
 import datetime
 import json
 import shelve
@@ -30,16 +34,12 @@ class Focuser:
         self.name = name
         self.obsid_path = g_dev['obs'].obsid_path
         self.camera_name = config["camera"]["camera_1_1"]["name"]
-
         g_dev["foc"] = self
         self.config = config["focuser"]["focuser1"]
         self.throw = int(config["focuser"]["focuser1"]["throw"])
-
         win32com.client.pythoncom.CoInitialize()
-
         self.focuser = win32com.client.Dispatch(driver)
         self.driver = driver
-
         if driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
             self.theskyx=True
         else:
@@ -68,7 +68,6 @@ class Focuser:
         # Just to need to wait a little bit for PWI3 to boot up, otherwise it sends temperatures that are absolute zero (-273)
         if driver == 'ASCOM.PWI3.Focuser':
             time.sleep(4)
-
         if not self.theskyx:
             self.current_focus_position=self.focuser.Position * self.steps_to_micron
         else:
@@ -84,7 +83,6 @@ class Focuser:
         self.focuser_update_thread=threading.Thread(target=self.focuser_update_thread)
         self.focuser_update_thread.start()
         self.focuser_message = "-"
-
         if self.theskyx:
             plog(
                 "Focuser connected, at:  ",
@@ -107,11 +105,9 @@ class Focuser:
         self.last_focus_fwhm = None
         self.focus_tracker = [np.nan] * 10
         self.focus_needed = False # A variable that if the code detects that the focus has worsened it can trigger an autofocus
-
         self.focus_temp_slope = None
         self.focus_temp_intercept = None
         self.best_previous_focus_point = None
-        
         self.focuser_is_moving=False
         if self.theskyx:
             self.current_focus_temperature=self.focuser.focTemperature
@@ -119,7 +115,6 @@ class Focuser:
             self.current_focus_temperature=self.focuser.Temperature
 
         self.previous_focus_temperature = copy.deepcopy(self.current_focus_temperature)
-
         self.set_initial_best_guess_for_focus()
         try:
             self.last_filter_offset = g_dev["fil"].filter_offset
@@ -134,9 +129,7 @@ class Focuser:
     def focuser_update_thread(self):     
 
         win32com.client.pythoncom.CoInitialize()
-
         self.focuser_update_wincom = win32com.client.Dispatch(self.driver)
-
         try:
             self.focuser_update_wincom.Connected = True
         except:
@@ -418,7 +411,6 @@ class Focuser:
                 self.current_focus_temperature
             )
 
-
             plog(
                 "Focus position set from temp compensated value:  ",
                 self.reference,
@@ -483,7 +475,6 @@ class Focuser:
 
             # adjust for temperature if we have the correct information.
             if abs(temp_delta) > 0.1 and self.current_focus_temperature is not None and self.focus_temp_slope is not None and self.focus_temp_intercept is not None:
-
                 adjust = round(temp_delta * float(self.focus_temp_slope), 1)
                 
             # adjust for filter offset
@@ -523,7 +514,7 @@ class Focuser:
             focuser_was_moving=True
             plog ("guarded_move focuser wait")
             time.sleep(0.2)
-        
+
         if focuser_was_moving:
             self.wait_for_focuser_update()              
         
@@ -546,7 +537,6 @@ class Focuser:
         difference_in_position=int(position_string) * self.micron_to_steps
 
         self.guarded_move(self.current_focus_position + difference_in_position)
-
 
     def move_absolute_command(self, req: dict, opt: dict):
         """Sets the focus position by moving to an absolute position."""

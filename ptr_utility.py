@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+ptr_utility  ptr_utility  ptr_utility  ptr_utility  ptr_utility  ptr_utility
+
 Created on Sun Dec 11 23:27:31 2016
 
 @author: obs

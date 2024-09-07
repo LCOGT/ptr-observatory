@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+sep_process.py  sep_process.py  sep_process.py  sep_process.py  sep_process.py
+
 Created on Sun Apr 23 04:37:30 2023
 
 @author: observatory
@@ -17,6 +19,7 @@ import time
 import traceback
 import math
 import os
+import sys
 import json
 import sep
 import copy
@@ -28,14 +31,16 @@ import sys
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
 #     # demosaicing_CFA_Bayer_Malvar2004,
 #     demosaicing_CFA_Bayer_Menon2007)
-from PIL import Image, ImageDraw 
+from PIL import Image, ImageDraw
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 #import matplotlib.pyplot as plt
 
+
 from scipy.stats import binned_statistic
+
 
 
 def gaussian(x, amplitude, mean, stddev):
@@ -109,7 +114,8 @@ minimum_exposure_for_extended_stuff = 10
 
 print ("Time Limit: " + str(time_limit))
 
-# https://stackoverflow.com/questions/9111711/get-coordinates-of-local-maxima-in-2d-array-above-certain-value
+# https://stackoverflow.com/questions/9111711/get-coordinates-of-local-maxima \
+    #-in-2d-array-above-certain-value
 def localMax(a, include_diagonal=True, threshold=-np.inf) :
     # Pad array so we can handle edges
     ap = np.pad(a, ((1,1),(1,1)), constant_values=-np.inf )
@@ -165,6 +171,7 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
 
 else:
 
+
     if is_osc:
         # Rapidly interpolate so that it is all one channel
 
@@ -176,7 +183,7 @@ else:
         # To fill the checker board, roll the array in all four directions and take the average
         # Which is essentially the bilinear fill without excessive math or not using numpy
         # It moves true values onto nans and vice versa, so makes an array of true values
-        # where the original has nans and we use that as the fill        
+        # where the original has nans and we use that as the fill
         bilinearfill=np.roll(hdufocusdata,1,axis=0)
         bilinearfill=np.add(bilinearfill, np.roll(hdufocusdata,-1,axis=0))
         bilinearfill=np.add(bilinearfill, np.roll(hdufocusdata,1,axis=1))
@@ -191,9 +198,9 @@ else:
 
         fx, fy = hdufocusdata.shape        #
 
-        # if real_mode:
         bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
         bkg.subfrom(hdufocusdata)
+
         tempstd=np.std(hdufocusdata)
         hduheader["IMGSTDEV"] = ( tempstd, "Median Value of Image Array" )
         try:
@@ -259,7 +266,7 @@ else:
         fwhmlist=[]
         sources=[]
         photometry=[]
-        
+
         # The radius should be related to arcseconds on sky
         # And a reasonable amount - 12'
         try:
@@ -306,10 +313,10 @@ else:
             cvalue=hdufocusdata[int(cx)][int(cy)]
             try:
                 temp_array=hdufocusdata[cx-halfradius_of_radialprofile:cx+halfradius_of_radialprofile,cy-halfradius_of_radialprofile:cy+halfradius_of_radialprofile]
-                
+
             except:
                 print(traceback.format_exc())
-                
+
             #construct radial profile
             cut_x,cut_y=temp_array.shape
             cut_x_center=(cut_x/2)-1
@@ -332,7 +339,7 @@ else:
                         brightest_pixel_rdist=r_dist
                         brightest_pixel_value=temp_array[q][t]
                     counter=counter+1
-                    
+
             # If the brightest pixel is in the center-ish
             # then attempt a fit
             try:
@@ -367,7 +374,7 @@ else:
                     # Also remove any things that don't have many pixels above 20
                     # DO THIS SOON
                     if edgevalue_left < 0.6*cvalue and  edgevalue_right < 0.6*cvalue:
-                        
+
                         # Different faster fitter to consider
                         peak_value_index=np.argmax(actualprofile[:,1])
                         peak_value=actualprofile[peak_value_index][1]
@@ -390,8 +397,8 @@ else:
                             for spotty in range(number_of_positions_to_test):
                                 sum_of_positions_times_values=sum_of_positions_times_values+(actualprofile[peak_value_index-poswidth+spotty][1]*actualprofile[peak_value_index-poswidth+spotty][0])
                                 sum_of_values=sum_of_values+actualprofile[peak_value_index-poswidth+spotty][1]
-                            peak_position=(sum_of_positions_times_values / sum_of_values)                            
-                            temppos=abs(actualprofile[:,0] - peak_position).argmin()                           
+                            peak_position=(sum_of_positions_times_values / sum_of_values)
+                            temppos=abs(actualprofile[:,0] - peak_position).argmin()
                             tempvalue=actualprofile[temppos,1]
                             temppeakvalue=copy.deepcopy(tempvalue)
                             # Get lefthand quarter percentiles
@@ -469,7 +476,7 @@ else:
                                     else:
                                         #print ("gone through and sampled range enough")
                                         break
-                                
+
 
                                 # if it isn't a unreasonably small fwhm then measure it.
                                 if (2.355 * smallest_fpopt[2]) > (0.8 / pixscale) :
@@ -587,7 +594,7 @@ if frame_type=='expose':
     histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
     print ("Histogram: " + str(time.time()-googtime))
     imageinspection_json_snippets['histogram']= re.sub('\s+',' ',str(histogramdata))
-    
+
 try:
     hduheader["SEPSKY"] = sepsky
 except:
@@ -734,7 +741,7 @@ if do_sep and (not frame_type=='focus'):
 
         print ("Slices and Dices: " + str(time.time()-googtime))
         imageinspection_json_snippets['sliceanddice']=re.sub('\s+',' ',str(slice_n_dice)).replace('dtype=float32','').replace('array','')
-        
+
     except:
         pass
 

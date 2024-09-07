@@ -1,5 +1,7 @@
 
 """
+mount.py  mount.py  mount.py  mount.py  mount.py  mount.py  mount.py  mount.py
+
 20200310 WER
 General comments.  Note use of double quotes.  Maybe this is our convention for polemics and trading opinions then we strip
 out of the Production source?
@@ -347,10 +349,11 @@ class Mount:
         self.obs = ephem.Observer()
         self.obs.long = g_dev['evnt'].wema_config['longitude']*DTOR
         self.obs.lat = g_dev['evnt'].wema_config['latitude']*DTOR
-
+        self.tpt_timer = time.time()
         self.theskyx_tracking_rescues = 0
 
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
+
         try:
             self.longterm_storage_of_mount_references=mnt_shelf['longterm_storage_of_mount_references']
             self.longterm_storage_of_flip_references=mnt_shelf['longterm_storage_of_flip_references']
@@ -361,7 +364,7 @@ class Mount:
         mnt_shelf.close()
 
         plog ("Mount deviations, mount then flip:")
-        plog (self.longterm_storage_of_mount_references)
+        plog (self.longterm_storage_of_mount_references, '\n')
         plog (self.longterm_storage_of_flip_references)
 
         self.last_mount_reference_time=time.time() - 86400
@@ -514,8 +517,8 @@ class Mount:
 
         self.sync_mount_requested=False
 
-        self.syncToRA=12.0   
-        self.syncToDEC=-20.0 
+        self.syncToRA=12.0
+        self.syncToDEC=-20.0
 
         self.unpark_requested=False
         self.park_requested=False
@@ -860,7 +863,11 @@ class Mount:
                 self.decCorr = (dec_fix_r(corrPitch - pPitch_d*DTOR))*RTOS
                 # 20210328  Note this may not work at Pole.
                 #if enable:
-                if DEBUG: print("Corrections in asec:  ", round(self.raCorr, 2), round(self.decCorr, 2))
+
+                cur_time = time.time()
+                if self.tpt_timer + 45 < cur_time:
+                    #plog("Corrections in asec:  ", round(self.raCorr, 2), round(self.decCorr, 2))
+                    self.tpt_timer = cur_time
                 return (corrRoll*RTOH, corrPitch*RTOD )
             elif not GEM:
                 #if loud:
@@ -1011,7 +1018,7 @@ class Mount:
                             # quickly as possible
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-                            
+
                             if self.model_on:
                                 # Dont need to correct temporary slewing values as it is moving
                                 self.inverse_icrs_ra = self.right_ascension_directly_from_mount
@@ -1330,6 +1337,7 @@ class Mount:
                 'message': self.mount_message[:32]
             }
         elif self.tel == True:
+            #breakpoint()
             rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
             aa = AltAz(location=self.site_coordinates, obstime=Time.now())
             rd = rd.transform_to(aa)
@@ -1492,6 +1500,7 @@ class Mount:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
+        plog("Action for mount is:  ", action)
 
         if action == "go":
             if 'ra' in req:
@@ -1520,12 +1529,13 @@ class Mount:
                     try:
 
                         # Need to convert image fraction into offset
-                        image_y = req['image_x']
+                        image_y = req['image_x']  #Fraction of image axis
                         image_x = req['image_y']
-                        # And the current pixel scale
-                        pixscale=float(req['header_pixscale'])
-                        pixscale_hours=(pixscale/60/60) / 15
-                        pixscale_degrees=(pixscale/60/60)
+                        # And the current pixel scale.  Not however the Ra and DEc come from the displayed image header
+
+                        pixscale=float(req['header_pixscale'])  # asec/pixel
+                        pixscale_hours=(pixscale/60/60) / 15  # hrs/pixel ~ 10e-6
+                        pixscale_degrees=(pixscale/60/60)   # deg/pix  ~ 1.5e-4
                         # Calculate the RA and Dec of the pointing
                         center_image_ra=float(req['header_rahrs'])
                         center_image_dec=float(req['header_decdeg'])
@@ -1883,7 +1893,7 @@ class Mount:
         else:
             delta_ra=0
             delta_dec=0
-            
+
         # First move, then check the pier side
         successful_move=0
         while successful_move==0:
@@ -2168,7 +2178,7 @@ class Mount:
     def record_mount_reference(self, deviation_ha, deviation_dec, pointing_ra, pointing_dec):
 
         # The HA is for the actual requested HA, NOT the solved ra
-        HA=self.current_sidereal - pointing_ra + deviation_ha
+        HA= ha_fix_h(self.current_sidereal - pointing_ra + deviation_ha)
 
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = deviation_ha
@@ -2192,7 +2202,7 @@ class Mount:
         counter=0
         deleteList=[]
         for entry in self.longterm_storage_of_mount_references:
-            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
+            distance_from_new_reference= abs(ha_fix_h(entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
             if distance_from_new_reference < 2:
                 plog ("Found and removing an old reference close to new reference: " + str(entry))
                 #self.longterm_storage_of_mount_references.remove(entry)
@@ -2212,7 +2222,7 @@ class Mount:
     def record_flip_reference(self, deviation_ha, deviation_dec, pointing_ra, pointing_dec):
 
         # The HA is for the actual requested HA, NOT the solved ra
-        HA=self.current_sidereal - pointing_ra + deviation_ha
+        HA= ha_fix_h(self.current_sidereal - pointing_ra + deviation_ha)
 
         mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['flip_ra_cal_offset'] = deviation_ha    #NB NB NB maybe best to reverse signs here??
@@ -2245,7 +2255,7 @@ class Mount:
         counter=0
         deleteList=[]
         for entry in self.longterm_storage_of_flip_references:
-            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
+            distance_from_new_reference= abs(ha_fix_h(entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
             if distance_from_new_reference < 2:
                 plog ("Found and removing an old reference close to new reference: " + str(entry))
                 #self.longterm_storage_of_mount_references.remove(entry)
@@ -2263,7 +2273,8 @@ class Mount:
 
     def get_mount_reference(self, pointing_ra, pointing_dec):
 
-        HA = self.current_sidereal - pointing_ra
+        HA = ha_fix_h(self.current_sidereal - pointing_ra)  #  WER 20240817 added this reductin to Ha airthmetic
+
         # Have a look through shelf to find closest reference:
 
         # Removing older references
@@ -2271,7 +2282,7 @@ class Mount:
         found_close_reference= False
 
         for entry in self.longterm_storage_of_flip_references:
-            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec)
+            distance_from_new_reference= abs(ha_fix_h(entry[1] -HA) * 15) + abs(entry[2] - pointing_dec)
             if distance_from_new_reference < 5:
                 if distance_from_new_reference < distance_from_closest_reference:
                     found_close_reference=True
@@ -2289,7 +2300,7 @@ class Mount:
 
             return close_reference[3], close_reference[4]
 
-        distance_from_current_reference_in_ha = abs(self.last_mount_reference_ha - HA)
+        distance_from_current_reference_in_ha = abs(ha_fix_h(self.last_mount_reference_ha - HA))
         distance_from_current_reference_in_dec = abs(self.last_mount_reference_dec- pointing_dec)
         absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(pointing_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
 
@@ -2303,13 +2314,13 @@ class Mount:
 
     def get_flip_reference(self, pointing_ra, pointing_dec):
 
-        HA = self.current_sidereal - pointing_ra
+        HA = ha_fix_h(self.current_sidereal - pointing_ra)
 
         distance_from_closest_reference=180
         found_close_reference= False
 
         for entry in self.longterm_storage_of_flip_references:
-            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec)
+            distance_from_new_reference= abs(ha_fix_h(entry[1] -HA) * 15) + abs(entry[2] - pointing_dec)
             if distance_from_new_reference < 5:
                 if distance_from_new_reference < distance_from_closest_reference:
                     found_close_reference=True
@@ -2327,7 +2338,7 @@ class Mount:
 
             return close_reference[3], close_reference[4]
 
-        distance_from_current_reference_in_ha = abs(self.last_flip_reference_ha - HA)
+        distance_from_current_reference_in_ha = abs(ha_fix_h(self.last_flip_reference_ha - HA))
         distance_from_current_reference_in_dec = abs(self.last_flip_reference_dec- pointing_dec)
         absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(pointing_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
 

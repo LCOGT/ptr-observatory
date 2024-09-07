@@ -1,4 +1,5 @@
 """
+obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py
 Observatory is the central organising part of a given observatory system.
 
 It deals with connecting all the devices together and deals with decisions that
@@ -10,7 +11,9 @@ It also organises the various queues that process, send, slice and dice data.
 from dotenv import load_dotenv
 load_dotenv(".env")
 import ocs_ingester.exceptions
+
 from ocs_ingester.ingester import upload_file_and_ingest_to_archive
+
 from requests.adapters import HTTPAdapter, Retry
 import ephem
 import datetime
@@ -618,11 +621,11 @@ class Observatory:
         self.all_device_types = ptr_config["device_types"]  # May not be needed
         self.device_types = ptr_config[
             "device_types"
-        ] 
+        ]
 
         # VERY TEMPORARY UNTIL MOUNT IS FIXED - MTF
         self.mount_reboot_on_first_status = True
-        
+
         # Timers to only update status at regular specified intervals.
         self.observing_status_timer = datetime.datetime.now() - datetime.timedelta(
             days=1
@@ -635,7 +638,7 @@ class Observatory:
         self.obs_settings_upload_timer = time.time() - 20
         self.obs_settings_upload_period = 60
 
-        self.last_time_report_to_console = time.time() - 700
+        self.last_time_report_to_console = time.time() - 180  #NB changed fro
 
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         self.images_since_last_solve = 10000
@@ -719,7 +722,7 @@ class Observatory:
         self.camera_time_initialised = time.time()
         # You want to make sure that the camera has been cooling for a while at the setpoint
         # Before taking calibrations to ensure the sensor is evenly cooled
-        self.last_time_camera_was_warm = time.time() - 6000
+        self.last_time_camera_was_warm = time.time() - 60
 
         # If there is a pointing correction needed, then it is REQUESTED
         # by the platesolve thread and then the code will interject
@@ -1011,7 +1014,7 @@ class Observatory:
                 elif dev_type == "focuser":
                     device = Focuser(driver, name, self.config)
                 elif dev_type == "filter_wheel":
-                    device = FilterWheel(driver, name, self.config)                
+                    device = FilterWheel(driver, name, self.config)
                 elif dev_type == "camera":
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
@@ -1456,7 +1459,7 @@ class Observatory:
                 self.status_interval = self.status_upload_time + 0.25
                 while time.time() < (self.time_last_status + self.status_interval):
                     time.sleep(0.001)
-            
+
         # Don't make a new status during a slew unless the queue is empty, otherwise the green crosshairs on the UI lags.
         if (not not_slewing and self.send_status_queue.qsize() == 0) or not_slewing:
             # Send main batch of devices status
@@ -1478,6 +1481,7 @@ class Observatory:
                     result = device.get_status()
                     if result is not None:
                         status[dev_type][device_name] = result
+                #breakpoint()
 
             status["timestamp"] = round((time.time()) / 2.0, 3)
             status["send_heartbeat"] = False
@@ -1488,8 +1492,43 @@ class Observatory:
                     self.send_status_queue.put(
                         (obsy, lane, status), block=False)
 
-            self.time_last_status = time.time()
-            self.status_count += 1
+        """
+        Here we update lightning system.
+        Check if file exists and is not stale
+        If ok open file and look for instances of distance < specified
+        if there are any then assemble a file to write to transfer disk.
+
+
+        """
+
+        try:
+
+            with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
+                r_date, r_time = light_rec.readline().split()[-2:]
+                #plog(r_date, r_time)
+                d_string = r_date + 'T' +r_time
+                d_time = datetime.datetime.fromisoformat(d_string)+datetime.timedelta(minutes=7.5)
+                distance = 10.001
+
+                if datetime.datetime.now() < d_time:   #  Here validate if not stale before doing next line.
+                    for lin in light_rec.readlines():
+                        if 'distance' in lin:
+                            s_range = float(lin.split()[-2])
+                            if s_range < distance:
+                                distance = s_range
+                else:
+                    #plog("Lightning report is stale.")
+                    pass
+            if distance <=  10.0:
+                plog("Lightning distance is:   ", distance, ' km away.')
+            else:
+                pass
+                #plog('Lighting is > 10 km away,')
+        except:
+            plog('Lightning distance test did not work')
+
+        self.time_last_status = time.time()
+        self.status_count += 1
 
         self.currently_updating_status = False
 
@@ -1774,9 +1813,7 @@ class Observatory:
                         "daytime_exposure_safety_mode"
                     ] = self.daytime_exposure_time_safety_on
                     status["obs_settings"]["daytime_exposure_time"] = 0.01
-                    status["obs_settings"][
-                        "auto_center_on"
-                    ] = not self.auto_centering_off
+                    status["obs_settings"]["auto_center_on"] = not self.auto_centering_off
                     status["obs_settings"][
                         "admin_owner_commands_only"
                     ] = self.admin_owner_commands_only
@@ -1803,7 +1840,7 @@ class Observatory:
                 # Also it should generically save any telescope from pointing weirdly down
                 # or just tracking forever after being left tracking for far too long.
                 #
-                # Also an area to put things to irregularly check if things are still connected, e.g. cooler                
+                # Also an area to put things to irregularly check if things are still connected, e.g. cooler
 
                 # Adjust focus on a not-too-frequent period for temperature
                 if not self.mountless_operation:
@@ -2114,22 +2151,22 @@ class Observatory:
 
                 # Check that cooler is alive
                 if g_dev["cam"]._cooler_on():
-                    current_camera_temperature, cur_humidity, cur_pressure = g_dev[
+                    current_camera_temperature, cur_humidity, cur_pressure, cur_pwm = g_dev[
                         "cam"
                     ]._temperature()
-                    current_camera_temperature = float(
-                        current_camera_temperature)
-
+                    current_camera_temperature = round(
+                        current_camera_temperature, 1)
                     if (
                         abs(
                             float(current_camera_temperature)
                             - float(g_dev["cam"].setpoint)
                         )
-                        > 1.5
+                        > g_dev['cam'].config['camera']['camera_1_1']['settings']["temp_setpoint_tolerance"]  #1.5   #NB NB THis should be a config item
                     ):
+
                         self.camera_sufficiently_cooled_for_calibrations = False
                         self.last_time_camera_was_warm = time.time()
-                    elif (time.time() - self.last_time_camera_was_warm) < 600:
+                    elif (time.time() - self.last_time_camera_was_warm) < 120:  #NB NB THis should be a config item and in confict wth code below
                         self.camera_sufficiently_cooled_for_calibrations = False
                     else:
                         self.camera_sufficiently_cooled_for_calibrations = True
@@ -2157,12 +2194,10 @@ class Observatory:
                             plog("Camera cooler reconnect failed 2nd time.")
 
                 # Things that only rarely have to be reported go in this block.
-                if (time.time() - self.last_time_report_to_console) > 180:
-                    plog(ephem.now())
+                if (time.time() - self.last_time_report_to_console) > 180:   #NB NB This should be a config item WER
+                    #plog(ephem.now())
                     if self.camera_sufficiently_cooled_for_calibrations == False:
-                        if (
-                            time.time() - self.last_time_camera_was_warm
-                        ) < 180:  # Temporary NB WER 2024_04-13
+                        if (time.time() - self.last_time_camera_was_warm) < 180:  # Temporary NB WER 2024_04-13
                             plog(
                                 "Camera was recently out of the temperature range for calibrations"
                             )
@@ -2188,10 +2223,15 @@ class Observatory:
                                 + ")."
                             )
                             plog(
+                                "Camera current PWM% ("
+                                + str(cur_pwm)
+                                + ")."
+                            )
+                            plog(
                                 "Difference from setpoint: "
                                 + str(
-                                    (current_camera_temperature -
-                                     g_dev["cam"].setpoint)
+                                    round((current_camera_temperature -
+                                     g_dev["cam"].setpoint),2)
                                 )
                             )
                         else:
@@ -2203,10 +2243,12 @@ class Observatory:
                             plog(
                                 "Difference from setpoint: "
                                 + str(
-                                    (current_camera_temperature -
-                                     g_dev["cam"].setpoint)
+                                    round((current_camera_temperature -
+                                     g_dev["cam"].setpoint), 2)
                                 )
                             )
+                        self.last_time_camera_was_warm = time.time()
+
                     self.last_time_report_to_console = time.time()
 
                 if time.time() - g_dev["seq"].time_roof_last_opened < 10:
@@ -2230,7 +2272,7 @@ class Observatory:
                     # Check that the camera is not overheating.
                     # If it isn't overheating check that it is at the correct temperature
                     if self.camera_overheat_safety_warm_on:
-                        plog(time.time() - self.camera_overheat_safety_timer)
+                        #plog(time.time() - self.camera_overheat_safety_timer)
                         if (time.time() - self.camera_overheat_safety_timer) > 1201:
                             plog(
                                 "Camera OverHeating Safety Warm Cycle Complete. Resetting to normal temperature."
@@ -2867,7 +2909,7 @@ class Observatory:
     def calendar_block_thread(self):
         while True:
             if not self.calendar_block_queue.empty():
-                one_at_a_time = 1
+                #one_at_a_time = 1
                 self.calendar_block_queue.get(block=False)
                 self.currently_updating_calendar_blocks = True
                 g_dev["seq"].update_calendar_blocks()
@@ -3027,6 +3069,7 @@ class Observatory:
             else:
                 time.sleep(0.25)
 
+
     def platesolve_process(self):
         """This is the platesolve queue that happens in a different process
         than the main thread. Platesolves can take 5-10, up to 30 seconds sometimes
@@ -3058,6 +3101,7 @@ class Observatory:
                     image_or_reference,
                     exposure_time,
                 ) = self.platesolve_queue.get(block=False)
+
 
                 if np.isnan(pixscale) or pixscale == None:
                     timeout_time = 1200 + exposure_time + \
@@ -3127,13 +3171,16 @@ class Observatory:
                             if g_dev["seq"].block_guard and not g_dev["seq"].focussing:
                                 target_ra = g_dev["seq"].block_ra
                                 target_dec = g_dev["seq"].block_dec
-                                
+
                             platesolve_crop = 0.0
-                                
+
                             # yet another pickle debugger.
-                            if False:
+                            if True:
                                 pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
                                  pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
+
+
+                            #breakpoint()
 
                             try:
                                 platesolve_subprocess = subprocess.Popen(
@@ -3145,6 +3192,7 @@ class Observatory:
                             except OSError:
                                 plog(traceback.format_exc())
                                 pass
+
 
                             try:
                                 pickle.dump(
@@ -3229,7 +3277,7 @@ class Observatory:
                             else:
                                 self.enqueue_for_fastUI(
                                     "", jpeg_filename, exposure_time
-                                )                                
+                                )
 
                                 try:
                                     plog(
@@ -3243,7 +3291,7 @@ class Observatory:
 
                                 solved_ra = solve["ra_j2000_hours"]
                                 solved_dec = solve["dec_j2000_degrees"]
-                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                solved_arcsecperpixel = abs(solve["arcsec_per_pixel"])
                                 plog(
                                     "1x1 pixelscale solved: "
                                     + str(round(solved_arcsecperpixel, 3))
@@ -3356,7 +3404,7 @@ class Observatory:
                                     + ",  "
                                     + str(round(err_dec * 3600, 1)),
                                 )
-                                
+
                                 self.last_platesolved_ra = solve["ra_j2000_hours"]
                                 self.last_platesolved_dec = solve["dec_j2000_degrees"]
                                 self.last_platesolved_ra_err = target_ra - solved_ra
@@ -3367,7 +3415,7 @@ class Observatory:
                                 g_dev["obs"].last_solve_time = datetime.datetime.now()
                                 g_dev["obs"].images_since_last_solve = 0
 
-                                
+
                                 self.drift_tracker_counter = (
                                     self.drift_tracker_counter + 1
                                 )
@@ -3385,7 +3433,7 @@ class Observatory:
 
                                 # If we are WAY out of range, then reset the mount reference and attempt moving back there.
                                 elif not self.auto_centering_off:
-                                    
+
 
                                     # Used for calculating relative offset compared to image size
                                     dec_field_asec = (
@@ -3420,7 +3468,7 @@ class Observatory:
                                         #     + " DEC: "
                                         #     + str(round(err_dec * 3600, 2))
                                         # )
-                                        
+
                                     elif (
                                         self.time_of_last_slew
                                         > time_platesolve_requested
@@ -3428,7 +3476,7 @@ class Observatory:
                                         plog(
                                             "detected a slew since beginning platesolve... bailing out of platesolve."
                                         )
-                                        
+
 
                                     # Only recenter if out by more than 1%
                                     elif (
@@ -3577,6 +3625,7 @@ class Observatory:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
                 time.sleep(1)
 
+    #   Note this is a thread
     def slow_camera_process(self):
         """
         A place to process non-process dependant images from the camera pile.
@@ -3585,7 +3634,7 @@ class Observatory:
 
         while True:
             if not self.slow_camera_queue.empty():
-                one_at_a_time = 1
+                #one_at_a_time = 1
                 slow_process = self.slow_camera_queue.get(block=False)
                 slow_process = slow_process[1]
                 try:
@@ -4762,7 +4811,7 @@ class Observatory:
                                     plog(
                                         "Last ten FWHM (pixels): "
                                         + str(g_dev["foc"].focus_tracker)
-                                    ) 
+                                    )
                                     # If there hasn't been a focus yet, then it can't check it,
                                     # so make this image the last solved focus.
                                     if g_dev["foc"].last_focus_fwhm == None:
@@ -5074,7 +5123,7 @@ class Observatory:
         # This is now a queue--- it was actually slowing
         # everything down each time this was called!
         self.sendtouser_queue.put((p_log, p_level), block=False)
-   
+
     def check_platesolve_and_nudge(self, no_confirmation=True):
         """
         A function periodically called to check if there is a telescope nudge to re-center to undertake.
@@ -5115,7 +5164,7 @@ class Observatory:
             # If the platesolve requests such a thing.
             if (
                 self.pointing_correction_requested_by_platesolve_thread
-            ): 
+            ):
                 # Check it hasn't slewed since request, although ignore this check if in smartstack_loop due to dithering.
                 if (
                     self.pointing_correction_request_time > self.time_of_last_slew
