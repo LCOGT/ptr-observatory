@@ -2193,7 +2193,7 @@ class Observatory:
 
                 # Things that only rarely have to be reported go in this block.
                 if (time.time() - self.last_time_report_to_console) > 180:   #NB NB This should be a config item WER
-                    plog(ephem.now())
+                    #plog(ephem.now())
                     if self.camera_sufficiently_cooled_for_calibrations == False:
                         if (time.time() - self.last_time_camera_was_warm) < 180:  # Temporary NB WER 2024_04-13
                             plog(
@@ -2270,7 +2270,7 @@ class Observatory:
                     # Check that the camera is not overheating.
                     # If it isn't overheating check that it is at the correct temperature
                     if self.camera_overheat_safety_warm_on:
-                        plog(time.time() - self.camera_overheat_safety_timer)
+                        #plog(time.time() - self.camera_overheat_safety_timer)
                         if (time.time() - self.camera_overheat_safety_timer) > 1201:
                             plog(
                                 "Camera OverHeating Safety Warm Cycle Complete. Resetting to normal temperature."

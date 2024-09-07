@@ -100,7 +100,7 @@ site_config = {
     # Degrees. For normal pointing requests don't allow requests to go this low.
     'lowest_requestable_altitude': 15,
     # Below this altitude, it will automatically try to home and park the scope to recover.
-    'lowest_acceptable_altitude': -5.0,    #   What does this mean given the above?
+    'lowest_acceptable_altitude': 0,    #   What does this mean given the above?
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     'degrees_to_avoid_zenith_area_in_general': 0,
     'maximum_hour_angle_requestable': 9,
@@ -124,12 +124,12 @@ site_config = {
 
     # ENGineering START
 
-    'scope_in_manual_mode': True,
+    'scope_in_manual_mode': False,
     'mount_reference_model_off': True,
-    'sun_checks_on': False,
+    'sun_checks_on': True,
     'moon_checks_on': False,
     'altitude_checks_on': False,
-    'daytime_exposure_time_safety_on': False,
+    'daytime_exposure_time_safety_on': False,   #Perhaps condition by roof open/closed?
     'always_do_a_centering_exposure_regardless_of_nearby_reference':  False,
 
 
@@ -185,8 +185,7 @@ site_config = {
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
     # Particularly useful for focus
-    'minimum_realistic_seeing': 1.0,
-
+    'minimum_realistic_seeing': 1.5,
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
@@ -234,7 +233,7 @@ site_config = {
     'solve_timer': 0.05,  # Only solve every X minutes    NB WER  3 seconds????
     'threshold_mount_update': 45,  # only update mount zero point when X arcseconds away
     # units?  maximum radial drift allowed for a correction when running a block
-    'limit_mount_tweak': 15,
+    'limit_mount_tweak': 15,   #??? what is this
 
 
     'defaults': {
@@ -595,7 +594,9 @@ site_config = {
 
 
                 #         ['dark', [1,  3],    0, 0.00,  [360 , 170], 'dk']],    #22     #Not a real filter.  Total 23
-
+                #Front filter wheel is LCO  Square 50 mm 10 positions
+                #Back (near camera wheel is LCO 50mm rount with 13 positions so
+                #the capacity is  air + 23 filters.v)
                 'filter_data': [
                     ['Air',  [0,  0],   'AIR'],  # 0
                     ['PL',   [7,  0],   'Photo Luminance'],  # 1
@@ -615,7 +616,7 @@ site_config = {
                     ['O3',   [0,  2],   'Oxygen III'],  # 15    #guess
                     # 16    # NB ZP is a broader filter than zs.
                     ['zs',   [0,  9],   "Sloan z-short"],
-                    # ['CR',   [0,  5],   'Continuum Red - for Star subtraction'],  #17
+                  # ['CR',   [0,  5],   'Continuum Red - for Star subtraction'],  #17
                     ['HA',   [0,  3],   'Hydrogen Alpha'],  # 18
                     ['N2',   [13, 0],   'Nitrogen II'],  # 19
                     ['S2',   [0,  4],   'Sulphur II'],  # 20
@@ -839,13 +840,13 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': 10,  # 20240606, new camera installed 20240604
+                'temp_setpoint': 3,  # 20240606, new camera installed 20240604
                 # down from 1.5 that was built into the code.
                 'temp_setpoint_tolerance': 1.5,
-                'has_chiller': False,
+                'has_chiller': True,
                 # "temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp': 25.0,  # C 20240606
+                'chiller_ref_temp': 20,  # C 20240906
                 'day_warm': False,  # This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 0,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating': False,

@@ -4499,7 +4499,7 @@ class Camera:
                             if True:
                                height, width = outputimg.shape
                                patch = outputimg[int(0.45*height):int(0.55*height), int(0.45*width):int(0.55*width)]
-                               print("Cam line 4502:  10% central image patch:  ", np.median(patch))
+                               print("Cam line 4502: Imm. after readout; 10% central image patch:  ", np.median(patch))
 
                         except Exception as e:
 

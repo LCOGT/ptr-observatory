@@ -5354,7 +5354,11 @@ class Sequencer:
                     position_counter += 1
                     self.wait_for_slew(wait_after_slew=False)
                 plog("Extra focus out-travel not reversing.")
-                g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
+                try:
+                    g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
+                except:
+                    plog(traceback.format_exc())
+                    breakpoint()
                 position_counter += 1
                 self.wait_for_slew(wait_after_slew=False)
 

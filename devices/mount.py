@@ -866,7 +866,7 @@ class Mount:
 
                 cur_time = time.time()
                 if self.tpt_timer + 45 < cur_time:
-                    print("Corrections in asec:  ", round(self.raCorr, 2), round(self.decCorr, 2))
+                    #plog("Corrections in asec:  ", round(self.raCorr, 2), round(self.decCorr, 2))
                     self.tpt_timer = cur_time
                 return (corrRoll*RTOH, corrPitch*RTOD )
             elif not GEM:
@@ -1521,7 +1521,7 @@ class Mount:
 
         elif action == 'center_on_pixels':
             if g_dev['obs'].open_and_enabled_to_observe:
-                if False:
+                if True:
                     g_dev['obs'].send_to_user("Feature Not Implemented At This Moment.")
                 else:
                     plog (command)
