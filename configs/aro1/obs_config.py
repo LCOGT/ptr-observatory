@@ -127,14 +127,14 @@ site_config = {
     'scope_in_manual_mode': False,
     'mount_reference_model_off': True,
     'sun_checks_on': True,
-    'moon_checks_on': False,
-    'altitude_checks_on': False,
-    'daytime_exposure_time_safety_on': False,   #Perhaps condition by roof open/closed?
+    'moon_checks_on': True,
+    'altitude_checks_on': True,
+    'daytime_exposure_time_safety_on': True,   #Perhaps condition by roof open/closed?
     'always_do_a_centering_exposure_regardless_of_nearby_reference':  False,
 
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': False,
+    'ingest_raws_directly_to_archive': True,  # What archive are we talking about here.
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     # WER changed Z to X 20231113 @1:16 UTC
@@ -191,13 +191,13 @@ site_config = {
     # How many minutes with respect to eve sunset start flats
     'bias_dark interval':  135.,  # minutes
     # Was 55 WER 20240313 Before Sunset Minutes  neg means before, + after.
-    'eve_sky_flat_sunset_offset': -45.,
+    'eve_sky_flat_sunset_offset': -55.,
     # How many minutes after civilDusk to do....
-    'end_eve_sky_flats_offset': -5.,
+    'end_eve_sky_flats_offset': 10.,
     'clock_and_auto_focus_offset': -10,  # min before start of observing
     'astro_dark_buffer': 15,  # Min before and after AD to extend observing window
     'morn_flat_start_offset': -10.,  # min from Sunrise
-    'morn_flat_end_offset': +45.,  # min from Sunrise
+    'morn_flat_end_offset': +55.,  # min from Sunrise
     'end_night_processing_time':  60.,  # A guess
     # 'observing_begins_offset': -1,       #min from AstroDark
     # How many minutes before civilDawn to do ....
@@ -233,8 +233,7 @@ site_config = {
     'solve_timer': 0.05,  # Only solve every X minutes    NB WER  3 seconds????
     'threshold_mount_update': 45,  # only update mount zero point when X arcseconds away
     # units?  maximum radial drift allowed for a correction when running a block
-    'limit_mount_tweak': 15,   #??? what is this
-
+    'limit_mount_tweak': 15,
 
     'defaults': {
         'screen': 'screen1',
@@ -841,12 +840,11 @@ site_config = {
                 # This is the area for cooling related settings
                 'cooler_on': True,
                 'temp_setpoint': 3,  # 20240606, new camera installed 20240604
-                # down from 1.5 that was built into the code.
-                'temp_setpoint_tolerance': 1.5,
+                'temp_setpoint_tolerance': 2.5,
                 'has_chiller': True,
                 # "temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp': 20,  # C 20240906
+                'chiller_ref_temp': 25,  # C 20240906
                 'day_warm': False,  # This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 0,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating': False,
