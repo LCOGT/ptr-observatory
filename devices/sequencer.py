@@ -5272,12 +5272,10 @@ class Sequencer:
             elif position_counter==3:
                 focus_position_this_loop=central_starting_focus - 2* throw
             elif position_counter==4:
-                focus_position_this_loop=central_starting_focus + 4*throw
-            elif position_counter==5:
                 focus_position_this_loop=central_starting_focus + 2*throw
-            elif position_counter==6:
+            elif position_counter==5:
                 focus_position_this_loop=central_starting_focus + throw
-            elif position_counter>6:
+            elif position_counter>5:
                 focus_position_this_loop=new_focus_position_to_attempt
 
 

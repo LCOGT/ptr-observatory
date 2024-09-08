@@ -498,16 +498,16 @@ if len(sources) >= 5:
 
     else:
         solve = 'error'
-        
-    
+
+
     temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
     for f in temp_files_to_remove:
         try:
             os.remove(f)
         except:
             pass
-    
-    
+
+
     #breakpoint()
 
         # if not pixscale == None:# or np.isnan(pixscale):
@@ -853,6 +853,35 @@ def mid_stretch_jpeg(data):
     data[above]= x.reshape(shape)
 
     return data
+
+
+
+if solve == 'error':
+    pointing_image = mid_stretch_jpeg(pointing_image)
+    final_image = Image.fromarray(pointing_image)
+
+    ix, iy = final_image.size
+    if iy == ix:
+        final_image = final_image.resize(
+            (900, 900)
+        )
+    else:
+        if False:
+            final_image = final_image.resize(
+
+                (int(900 * iy / ix), 900)
+
+            )
+        else:
+            final_image = final_image.resize(
+
+                (900, int(900 * iy / ix))
+
+            )
+
+    final_image.save(jpeg_filename.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
+    os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
+
 
 
 if solve != 'error' and pointing_exposure and not pixscale == None:
