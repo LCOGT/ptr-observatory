@@ -3123,10 +3123,10 @@ class Observatory:
                     plog("waiting for platesolve token timed out")
                     solve = "error"
 
-                    try:
-                        os.system("taskkill /IM ps3cli.exe /F")
-                    except:
-                        pass
+                    # try:
+                    #     os.system("taskkill /IM ps3cli.exe /F")
+                    # except:
+                    #     pass
                 else:
                     if image_or_reference == "reference":
                         (imagefilename, imageMode) = pickle.load(
@@ -3175,7 +3175,7 @@ class Observatory:
                             platesolve_crop = 0.0
 
                             # yet another pickle debugger.
-                            if True:
+                            if False:
                                 pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
                                  pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
 
@@ -3238,10 +3238,10 @@ class Observatory:
                                 solve = "error"
                                 platesolve_subprocess.kill()
 
-                                try:
-                                    os.system("taskkill /IM ps3cli.exe /F")
-                                except:
-                                    pass
+                                # try:
+                                #     os.system("taskkill /IM ps3cli.exe /F")
+                                # except:
+                                #     pass
 
                             elif os.path.exists(
                                 self.local_calibration_path + "platesolve.pickle"
