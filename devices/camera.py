@@ -300,7 +300,7 @@ class Qcam:
 
     def __init__(self, dll_path):
 
-
+        
         self.so = windll.LoadLibrary(dll_path)
 
         self.so.GetQHYCCDParam.restype = c_double

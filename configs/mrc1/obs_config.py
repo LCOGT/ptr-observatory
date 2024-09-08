@@ -736,7 +736,7 @@ site_config = {
                 'temp_setpoint': 15,    # Verify we can go colder
                 'has_chiller': False,
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  15.0,  # C
+                'chiller_ref_temp':  25,  # C
                 "temp_setpoint_tolerance": 2.5,   #  C
                 'day_warm': False,
                 'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.

@@ -1,5 +1,5 @@
 """
-Observatory is the central organising part of a given observatory system.
+Observatory is the central organizing part of a given observatory system.
 
 It deals with connecting all the devices together and deals with decisions that
 involve multiple devices and fundamental operations of the OBS.
@@ -566,18 +566,18 @@ class Observatory:
         # There are some software that really benefits from being restarted from
         # scratch on Windows, so on bootup of obs.py, the system closes them down
         # Reconnecting the devices reboots the softwares later on.
-        try:
-            os.system('taskkill /IM "Gemini Software.exe" /F')
-        except:
-            pass
-        try:
-            os.system("taskkill /IM AltAzDSConfig.exe /F")
-        except:
-            pass
-        try:
-            os.system("taskkill /IM ASCOM.AltAzDS.exe /F")
-        except:
-            pass
+        # try:
+        #     os.system('taskkill /IM "Gemini Software.exe" /F')
+        # except:
+        #     pass
+        # try:
+        #     os.system("taskkill /IM AltAzDSConfig.exe /F")
+        # except:
+        #     pass
+        # try:
+        #     os.system("taskkill /IM ASCOM.AltAzDS.exe /F")
+        # except:
+        #     pass
         try:
             os.system('taskkill /IM "AstroPhysicsV2 Driver.exe" /F')
         except:
@@ -619,11 +619,11 @@ class Observatory:
         self.all_device_types = ptr_config["device_types"]  # May not be needed
         self.device_types = ptr_config[
             "device_types"
-        ] 
+        ]
 
         # VERY TEMPORARY UNTIL MOUNT IS FIXED - MTF
         self.mount_reboot_on_first_status = True
-        
+
         # Timers to only update status at regular specified intervals.
         self.observing_status_timer = datetime.datetime.now() - datetime.timedelta(
             days=1
@@ -690,11 +690,11 @@ class Observatory:
         self.platesolve_is_processing = False
         self.stop_all_activity = False  # This is used to stop the camera or sequencer
         self.exposure_halted_indicator = False
-    
+
         self.last_slew_was_pointing_slew = False
         self.open_and_enabled_to_observe = False
         self.net_connection_dead = False
-        #  Set default obs safety settings at bootup        
+        #  Set default obs safety settings at bootup
         if ENG:
             self.scope_in_manual_mode =  False    #self.config["scope_in_manual_mode"]
 
@@ -1025,7 +1025,7 @@ class Observatory:
                 elif dev_type == "focuser":
                     device = Focuser(driver, name, self.config)
                 elif dev_type == "filter_wheel":
-                    device = FilterWheel(driver, name, self.config)                
+                    device = FilterWheel(driver, name, self.config)
                 elif dev_type == "camera":
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
@@ -1470,7 +1470,7 @@ class Observatory:
                 self.status_interval = self.status_upload_time + 0.25
                 while time.time() < (self.time_last_status + self.status_interval):
                     time.sleep(0.001)
-            
+
         # Don't make a new status during a slew unless the queue is empty, otherwise the green crosshairs on the UI lags.
         if (not not_slewing and self.send_status_queue.qsize() == 0) or not_slewing:
             # Send main batch of devices status
@@ -1817,7 +1817,7 @@ class Observatory:
                 # Also it should generically save any telescope from pointing weirdly down
                 # or just tracking forever after being left tracking for far too long.
                 #
-                # Also an area to put things to irregularly check if things are still connected, e.g. cooler                
+                # Also an area to put things to irregularly check if things are still connected, e.g. cooler
 
                 # Adjust focus on a not-too-frequent period for temperature
                 if not self.mountless_operation:
@@ -2138,7 +2138,7 @@ class Observatory:
                             float(current_camera_temperature)
                             - float(g_dev["cam"].setpoint)
                         )
-                        > 1.5
+                        > 2.5
                     ):
                         self.camera_sufficiently_cooled_for_calibrations = False
                         self.last_time_camera_was_warm = time.time()
@@ -3148,9 +3148,9 @@ class Observatory:
                             if g_dev["seq"].block_guard and not g_dev["seq"].focussing:
                                 target_ra = g_dev["seq"].block_ra
                                 target_dec = g_dev["seq"].block_dec
-                                
+
                             platesolve_crop = 0.0
-                                
+
                             # yet another pickle debugger.
                             if False:
                                 pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
@@ -3250,7 +3250,7 @@ class Observatory:
                             else:
                                 self.enqueue_for_fastUI(
                                     "", jpeg_filename, exposure_time
-                                )                                
+                                )
 
                                 try:
                                     plog(
@@ -3377,7 +3377,7 @@ class Observatory:
                                     + ",  "
                                     + str(round(err_dec * 3600, 1)),
                                 )
-                                
+
                                 self.last_platesolved_ra = solve["ra_j2000_hours"]
                                 self.last_platesolved_dec = solve["dec_j2000_degrees"]
                                 self.last_platesolved_ra_err = target_ra - solved_ra
@@ -3388,7 +3388,7 @@ class Observatory:
                                 g_dev["obs"].last_solve_time = datetime.datetime.now()
                                 g_dev["obs"].images_since_last_solve = 0
 
-                                
+
                                 self.drift_tracker_counter = (
                                     self.drift_tracker_counter + 1
                                 )
@@ -3406,7 +3406,7 @@ class Observatory:
 
                                 # If we are WAY out of range, then reset the mount reference and attempt moving back there.
                                 elif not self.auto_centering_off:
-                                    
+
 
                                     # Used for calculating relative offset compared to image size
                                     dec_field_asec = (
@@ -3441,7 +3441,7 @@ class Observatory:
                                         #     + " DEC: "
                                         #     + str(round(err_dec * 3600, 2))
                                         # )
-                                        
+
                                     elif (
                                         self.time_of_last_slew
                                         > time_platesolve_requested
@@ -3449,7 +3449,7 @@ class Observatory:
                                         plog(
                                             "detected a slew since beginning platesolve... bailing out of platesolve."
                                         )
-                                        
+
 
                                     # Only recenter if out by more than 1%
                                     elif (
@@ -4783,7 +4783,7 @@ class Observatory:
                                     plog(
                                         "Last ten FWHM (pixels): "
                                         + str(g_dev["foc"].focus_tracker)
-                                    ) 
+                                    )
                                     # If there hasn't been a focus yet, then it can't check it,
                                     # so make this image the last solved focus.
                                     if g_dev["foc"].last_focus_fwhm == None:
@@ -5095,7 +5095,7 @@ class Observatory:
         # This is now a queue--- it was actually slowing
         # everything down each time this was called!
         self.sendtouser_queue.put((p_log, p_level), block=False)
-   
+
     def check_platesolve_and_nudge(self, no_confirmation=True):
         """
         A function periodically called to check if there is a telescope nudge to re-center to undertake.
@@ -5136,7 +5136,7 @@ class Observatory:
             # If the platesolve requests such a thing.
             if (
                 self.pointing_correction_requested_by_platesolve_thread
-            ): 
+            ):
                 # Check it hasn't slewed since request, although ignore this check if in smartstack_loop due to dithering.
                 if (
                     self.pointing_correction_request_time > self.time_of_last_slew
