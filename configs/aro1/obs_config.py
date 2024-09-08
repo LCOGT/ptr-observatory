@@ -487,7 +487,7 @@ site_config = {
             'start_at_config_reference': False,
             'correct_focus_for_temperature': True,
             # highest value to consider as being in "good focus". Used to select last good focus value
-            'maximum_good_focus_in_arcsecond': 2.5,
+            'maximum_good_focus_in_arcsecond': 3.0,
             'focuser_movement_settle_time': 3,
             # F.9 setup
             'reference':  4754,     #  20240820                         4943  Alternate solution
