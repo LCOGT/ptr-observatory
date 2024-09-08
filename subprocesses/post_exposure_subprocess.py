@@ -856,7 +856,7 @@ try:
         )
     else:
         hdu.header["PIXSCALE"] = (
-            float(pixscale),
+            round(pixscale,3),
             "[arcsec/pixel] Nominal pixel scale on sky",
         )
 
