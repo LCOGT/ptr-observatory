@@ -4569,7 +4569,7 @@ class Camera:
                     current_camera_temperature = float(
                         current_camera_temperature)
                     # NB NB this might best be a config item.
-                    if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
+                    if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > self.temp_tolerance:
                         plog("temperature out of range for calibrations (" +
                              str(current_camera_temperature)+"), rejecting calibration frame")
                         g_dev['obs'].camera_sufficiently_cooled_for_calibrations = False

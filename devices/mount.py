@@ -1671,6 +1671,7 @@ class Mount:
 
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle.
+
         try:
             sun_coords=get_sun(Time.now())
             if skyflatspot != None:

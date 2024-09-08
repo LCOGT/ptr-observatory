@@ -5358,7 +5358,7 @@ class Sequencer:
                     g_dev['foc'].guarded_move((focus_list[position_counter])*g_dev['foc'].micron_to_steps)
                 except:
                     plog(traceback.format_exc())
-                    breakpoint()
+
                 position_counter += 1
                 self.wait_for_slew(wait_after_slew=False)
 
@@ -5659,30 +5659,24 @@ class Sequencer:
         g_dev["obs"].request_update_status()
         sidereal_h = g_dev['mnt'].get_sidereal_time_h()
         catalogue = []
-
+        #This code is a bit ad-hoc since thw hour range was chosen for ARO...
         if max_pointings == 8:
-            ha_cat = [-4, -3, -2, -1, 1, 2, 3, 4]  #8 points
+            ha_cat = [3.5, 2.625, 1.75, .875, -0.875, -1.75, -2.625, -3.5]  #8 points
             for hour in ha_cat:
-                ra = ra_fix_h(sidereal_h - hour)  #This step could be done just before the seek below so hitting flips would be eliminated
+                ra = ra_fix_h(sidereal_h + hour)  #This step could be done just before the seek below so hitting flips would be eliminated
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
         elif max_pointings == 12:
-            ha_cat = [-3.5, -3, -2.5, -2, -1.5, -1,  1, 1.5, 2, 2.5, 3, 3.5]  #12points
+            ha_cat = [3.5, 3, 2.5, 2, 1.5, 1,  -1, -1.5, -2, -2.5,- 3, -3.5]  #12points
             for hour in ha_cat:
-                ra = ra_fix_h(sidereal_h - hour)
-                catalogue.append([round(ra*HTOD, 3), 0.0, 19])
-        elif max_pointings == 16:
-            ha_cat = [-4, -3.5, -3, -2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]  #16 points
-            for hour in ha_cat:
-                ra = ra_fix_h(sidereal_h - hour)
+                ra = ra_fix_h(sidereal_h + hour)
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
         else:
-            step = (180.0 - 2*alt_minimum)/max_pointings
-            ra = 0
-            catalogue = []
-            while ra < 360:
-                catalogue.append([round(ra, 3), 0.0, 19])
-                ra += step
-        # catalogue=self.pointing_catalogue
+            max_pointings == 16
+            ha_cat = [3.5, 3.25, 3, 2.5, 2, 1.5, 1, 0.5, -0.5, -1, -1.5, -2, -2.5, -3, -3.25, -3.5]  #16 points
+            for hour in ha_cat:
+                ra = ra_fix_h(sidereal_h + hour)
+                catalogue.append([round(ra*HTOD, 3), 0.0, 19])
+
 
         g_dev["obs"].send_to_user("Starting pointing run. Constructing altitude catalogue. This can take a while.")
         plog("Constructing sweep catalogue above altitude " + str(alt_minimum))
@@ -5694,7 +5688,7 @@ class Sequencer:
 
             temppointingaltaz=teststar.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
             alt = temppointingaltaz.alt.degree
-            if alt > alt_minimum:
+            if alt >= alt_minimum:
                 sweep_catalogue.append([catalogue[ctr][0],catalogue[ctr][1],catalogue[ctr][2],temppointingaltaz.alt.degree, temppointingaltaz.az.degree  ])
 
         if max_pointings > 16:
@@ -5712,7 +5706,6 @@ class Sequencer:
         deviation_catalogue_for_tpoint=[]
 
         plog ("Note that mount references and auto-centering are automatically turned off for a tpoint run.")
-
         for grid_star in sweep_catalogue:
             teststar = SkyCoord(ra = grid_star[0]*u.deg, dec = grid_star[1]*u.deg)
 
@@ -5723,20 +5716,25 @@ class Sequencer:
             g_dev["obs"].send_to_user(str(("Slewing to near grid field, RA: " + str(round(grid_star[0] / 15, 2)) + " DEC: " + str(round(grid_star[1], 2))+ " AZ: " + str(round(az, 2))+ " ALT: " + str(round(alt,2)))))
 
             plog("Slewing to near grid field " + str(grid_star) )
+            if count == 3 or count == 4:
+                pass   #Breaakpoint()
 
             # Use the mount RA and Dec to go directly there
             try:
                 g_dev['obs'].time_of_last_slew=time.time()
-                g_dev["mnt"].last_ra_requested = grid_star[0] / 15
+                g_dev["mnt"].last_ra_requested = grid_star[0]/15
                 g_dev["mnt"].last_dec_requested = grid_star[1]
-                print("sweep: ",grid_star[0] / 15 , grid_star[1])
+                print("sweep: ", grid_star[0]/15 , grid_star[1])
+                rah=grid_star[0]/15
+                decd=grid_star[1]
                 #g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
-                g_dev['mnt'].go_command(ra=grid_star[0] /15, dec=grid_star[1])
+
+                g_dev['mnt'].go_command(ra=rah, dec=decd)  # skip_open_test=True)  Goto takes keword ra and dec
             except:
                 plog ("Difficulty in directly slewing to object")
                 plog(traceback.format_exc())
                 if g_dev['mnt'].theskyx:
-                    self.kill_and_reboot_theskyx(grid_star[0] / 15, grid_star[1])
+                    self.kill_and_reboot_theskyx(grid_star[0]/15, grid_star[1])
                 else:
                     plog(traceback.format_exc())
 
@@ -5745,7 +5743,7 @@ class Sequencer:
             g_dev["obs"].update_status()
 
 
-            g_dev["mnt"].last_ra_requested=grid_star[0] / 15
+            g_dev["mnt"].last_ra_requested=grid_star[0]/15
             g_dev["mnt"].last_dec_requested=grid_star[1]
 
             req = { 'time': self.config['pointing_exposure_time'], 'smartstack': False, 'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}
