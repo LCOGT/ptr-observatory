@@ -471,7 +471,7 @@ if len(sources) >= 5:
         high_pixscale = 1.1 * pixscale
 
 
-    astoptions = '--crpix-center --tweak-order 2 --x-column y --y-column x --width ' + str(hdufocusdata.shape[0]) +' --height ' + str(hdufocusdata.shape[1]) + ' --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit 90 --overwrite --no-verify --no-plots'
+    astoptions = '--crpix-center --tweak-order 2 --x-column y --y-column x --width ' + str(hdufocusdata.shape[0]) +' --height ' + str(hdufocusdata.shape[1]) + ' --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit 30 --overwrite --no-verify --no-plots'
 
     print (astoptions)
 
