@@ -501,6 +501,15 @@ def test_sequence(pCamera):
 
 def reset_sequence(pCamera):
     try:
+        # Remove any broken files first.
+        temp_shelf_list=glob.glob(g_dev['obs'].obsid_path + "ptr_night_shelf/" +
+        str(pCamera) + str(g_dev['obs'].name)+ '*')
+        for file in temp_shelf_list:            
+            try:
+                os.remove(file)
+            except:
+                pass
+            
         camShelf = shelve.open(
             g_dev['obs'].obsid_path + "ptr_night_shelf/" +
             str(pCamera) + str(g_dev['obs'].name)
@@ -513,6 +522,8 @@ def reset_sequence(pCamera):
         camShelf.close()
         return seq
     except:
+        plog(traceback.format_exc())
+        breakpoint()
         plog("Nothing on the cam shelf in reset_sequence")
         return None
 
