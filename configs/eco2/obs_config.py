@@ -572,6 +572,8 @@ site_config = {
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
                 'temp_setpoint': 3,    #Verify we can go colder, this system has a chiller
+                
+                'temp_setpoint_tolerance': 2.5,
                 'has_chiller': True,
 
                 'day_warm': True,
