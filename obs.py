@@ -1500,32 +1500,32 @@ class Observatory:
 
 
         """
-
-        try:
-
-            with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
-                r_date, r_time = light_rec.readline().split()[-2:]
-                #plog(r_date, r_time)
-                d_string = r_date + 'T' +r_time
-                d_time = datetime.datetime.fromisoformat(d_string)+datetime.timedelta(minutes=7.5)
-                distance = 10.001
-
-                if datetime.datetime.now() < d_time:   #  Here validate if not stale before doing next line.
-                    for lin in light_rec.readlines():
-                        if 'distance' in lin:
-                            s_range = float(lin.split()[-2])
-                            if s_range < distance:
-                                distance = s_range
+        if self.config["obs_id"] == 'aro1':
+            try:
+    
+                with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
+                    r_date, r_time = light_rec.readline().split()[-2:]
+                    #plog(r_date, r_time)
+                    d_string = r_date + 'T' +r_time
+                    d_time = datetime.datetime.fromisoformat(d_string)+datetime.timedelta(minutes=7.5)
+                    distance = 10.001
+    
+                    if datetime.datetime.now() < d_time:   #  Here validate if not stale before doing next line.
+                        for lin in light_rec.readlines():
+                            if 'distance' in lin:
+                                s_range = float(lin.split()[-2])
+                                if s_range < distance:
+                                    distance = s_range
+                    else:
+                        #plog("Lightning report is stale.")
+                        pass
+                if distance <=  10.0:
+                    plog("Lightning distance is:   ", distance, ' km away.')
                 else:
-                    #plog("Lightning report is stale.")
                     pass
-            if distance <=  10.0:
-                plog("Lightning distance is:   ", distance, ' km away.')
-            else:
-                pass
-                #plog('Lighting is > 10 km away,')
-        except:
-            plog('Lightning distance test did not work')
+                    #plog('Lighting is > 10 km away,')
+            except:
+                plog('Lightning distance test did not work')
 
         self.time_last_status = time.time()
         self.status_count += 1
