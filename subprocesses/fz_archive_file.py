@@ -54,7 +54,7 @@ if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
 if not selfconfig["camera"]['camera_1_1']["settings"]["is_osc"]:
 
 
-    # This routine saves the file ready for uploading to AWS   
+    # This routine saves the file ready for uploading to AWS
     hdufz = fits.CompImageHDU(
         np.array(slow_process[2], dtype=np.float32), temphduheader
     )
@@ -70,9 +70,9 @@ if not selfconfig["camera"]['camera_1_1']["settings"]["is_osc"]:
         hdufz.writeto(
             slow_process[1].replace('.fits','.tempfits'), overwrite=True
         )  # Save full fz file locally
-        
-        del hdufz  # remove file from memory now that we are doing with it
-        
+
+        del hdufz  # remove file from memory now that we are done with it
+
         os.rename(slow_process[1].replace('.fits','.tempfits'), slow_process[1])
 
 else:  # Is an OSC
@@ -102,7 +102,7 @@ else:  # Is an OSC
         temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
         tempfilter = temphduheader['FILTER']
         tempfilename = slow_process[1] + '.fz'
-        
+
         # Save and send R1
         temphduheader['FILTER'] = tempfilter + '_R1'
         temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('-EX', 'R1-EX') + '.fz'
@@ -116,12 +116,12 @@ else:  # Is an OSC
                 pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
             )
             os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
-            
+
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
 
             hdufz.writeto(
                 tempfilename.replace('-EX', 'R1-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
-            )  # Save full fz file locally            
+            )  # Save full fz file locally
             os.rename(tempfilename.replace('-EX', 'R1-EX').replace('.fits','.tempfits'), tempfilename.replace('-EX', 'R1-EX') )
 
 
@@ -135,17 +135,17 @@ else:  # Is an OSC
             np.array(GTRonly, dtype=np.float32), temphduheader
         )
 
-        if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:            
+        if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
             hdufz.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
             )
             os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
-            
+
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
 
             hdufz.writeto(
                 tempfilename.replace('-EX', 'G1-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
-            )  # Save full fz file locally           
+            )  # Save full fz file locally
             os.rename(tempfilename.replace('-EX', 'G1-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'G1-EX'))
 
         del GTRonly
@@ -163,7 +163,7 @@ else:  # Is an OSC
                 pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
             )
             os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
-            
+
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
 
             hdufz.writeto(
@@ -189,7 +189,7 @@ else:  # Is an OSC
                 pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'), overwrite=True
             )
             os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
-            
+
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
 
             hdufz.writeto(
@@ -216,7 +216,7 @@ else:  # Is an OSC
                 pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'), overwrite=True
             )
             os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
-           
+
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
 
             hdufz.writeto(
@@ -229,7 +229,7 @@ else:  # Is an OSC
     else:
         print("this bayer grid not implemented yet")
 
-print ("TIME: " + str(time.time()-googtime))
+print (" FZ_archive took:   " + str(time.time()-googtime))
 
 try:
     os.remove(sys.argv[1])

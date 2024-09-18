@@ -468,8 +468,10 @@ class Mount:
 
         tempunparked=False
         # if mount is parked, temporarily unpark it quickly to test pierside functions.
+        time.sleep(2)
         if self.mount.AtPark:
             self.mount.Unpark()
+            time.sleep(3)
             tempunparked=True
             self.rapid_park_indicator=False
 
@@ -1522,10 +1524,10 @@ class Mount:
 
         elif action == 'center_on_pixels':
             if g_dev['obs'].open_and_enabled_to_observe:
-                if True:
+                if False:
                     g_dev['obs'].send_to_user("Feature Not Implemented At This Moment.")
                 else:
-                    plog (command)
+                    plog ('center on pixels entered, good luck! and clear skies.')
                     try:
 
                         # Need to convert image fraction into offset

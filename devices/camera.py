@@ -2421,7 +2421,8 @@ class Camera:
             ", S " + self.spt_C + \
             ", T " + self.temp_C + \
             ", P " + self.pwm_percent + \
-            ", H " + self.hum_percent
+            ", H " + self.hum_percent +\
+            ", A " + str(round(g_dev['foc'].current_focus_temperature, 1))
         status[
             "status"
         ] = cam_stat  # The state could be expanded to be more meaningful. for instance report TEC % TEmp, temp setpoint...
@@ -2437,15 +2438,12 @@ class Camera:
             self.last_user_id = self.user_id
         self.user_name = command["user_name"]
 
-        if (
-            "object_name" in opt
-        ):
+        if ("object_name" in opt):
             if opt["object_name"] == "":
                 opt["object_name"] = "Unspecified"
-            plog("Target Name:  ", opt["object_name"])
-        else:
-            opt["object_name"] = "Unspecified"
-            plog("Target Name:  ", opt["object_name"])
+                plog("Target Name:  ", opt["object_name"])
+            else:
+                plog("Target Name:  ", opt["object_name"])
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose":  # and not self.running_an_exposure_set:
@@ -2811,7 +2809,7 @@ class Camera:
             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
 
             if g_dev["fil"].null_filterwheel == False:
-                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
+                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
                     # For narrowband and low throughput filters, increase base exposure time.
                     ssExp = ssExp * ssNBmult
                 #
@@ -2826,7 +2824,7 @@ class Camera:
                 exposure_time = ssExp
                 SmartStackID = (
                     datetime.datetime.now().strftime("%d%m%y%H%M%S"))
-                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
+                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
                     smartstackinfo = 'narrowband'
                 else:
                     smartstackinfo = 'broadband'
@@ -3175,7 +3173,7 @@ class Camera:
                             if not g_dev['seq'].focussing and frame_type == 'pointing':
                                 try:
                                     last_fwhm = g_dev['obs'].fwhmresult["FWHM"]
-
+                                    #  NB NB WER this can be evil is telescope is not well set up. Should not adjust in Eng mode.
                                     if last_fwhm > 4.0:
                                         exposure_time = exposure_time * 4
                                     elif last_fwhm > 3:
@@ -3513,7 +3511,7 @@ class Camera:
                 p_level="INFO",
             )
 
-        # , 'y', 'up', 'u']:
+        # , 'y', 'up', 'u']:   NB NB we should create a code-wide list of Narrow bands, broadbands and widebands so we do not have mulitiple lists to manage.
         elif Nsmartstack > 1 and self.current_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr']:
             plog("Starting narrowband " + str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
                  + str(opt["object_name"])
@@ -4552,7 +4550,7 @@ class Camera:
 ################################################# HERE IS WHERE IN-LINE STUFF HAPPENS.
 
 
-                # BIAS & DARK VETTING AND DISTRIBUTION AREA.
+                # BIAS & DARK, flat, focus and pointing VETTING AND DISTRIBUTION AREA.
 
                 # For biases, darks, flats, focus and pointing images, it doesn't go to the subprocess.
                 # It either doesn't buy us any time OR the results of one image relies on the next....
