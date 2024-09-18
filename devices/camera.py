@@ -3172,7 +3172,7 @@ class Camera:
                                     plog("Could not engage substacking as the appropriate biasdark")
 
                             # Adjust pointing exposure time relative to known focus
-                            if not g_dev['seq'].focussing and frame_type == 'pointing':
+                            if not g_dev['seq'].focussing and not g_dev['obs'].scope_in_manual_mode and frame_type == 'pointing':
                                 try:
                                     last_fwhm = g_dev['obs'].fwhmresult["FWHM"]
 
@@ -3192,7 +3192,8 @@ class Camera:
                                 while g_dev['fil'].filter_changing:
                                     time.sleep(0.05)
 
-                            g_dev['foc'].adjust_focus()
+                            if not g_dev['obs'].scope_in_manual_mode:
+                                g_dev['foc'].adjust_focus()
 
                             reporty = 0
                             while g_dev['foc'].focuser_is_moving:
@@ -4498,8 +4499,8 @@ class Camera:
 
                             if True:
                                height, width = outputimg.shape
-                               patch = outputimg[int(0.45*height):int(0.55*height), int(0.45*width):int(0.55*width)]
-                               print("Cam line 4502: Imm. after readout; 10% central image patch:  ", np.median(patch))
+                               patch = outputimg[int(0.35*height):int(0.65*height), int(0.35*width):int(0.65*width)]
+                               print("Cam line 4502: Imm. after readout; 20% central image patch:  ", np.median(patch))
 
                         except Exception as e:
 
@@ -4620,12 +4621,12 @@ class Camera:
                     plog (next_seq)
 
                     # If there are too many unnaturally negative pixels, then reject the calibration
-                    if len(countypixels) > 100:
+                    if len(countypixels) > 256:  #Up from 100 for 100 megapix camera
                         plog(
-                            "Rejecting calibration because it has a disturbing amount of low value pixels.")
+                            "Rejecting calibration because it has a high amount of low value pixels.", countypixels, " !!!!!!!!!!!!!!!!!")
                         expresult = {}
                         expresult["error"] = True
-                        breakpoint()
+                        #breakpoint()
                         return expresult
 
                     # For a dark, check that the debiased dark has an adequately low value
