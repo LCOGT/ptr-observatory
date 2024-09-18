@@ -61,23 +61,25 @@ site_config = {
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': False,
-    'mount_reference_model_off': False,
+    'scope_in_manual_mode': True,
+    'mount_reference_model_off': True,
     'sun_checks_on': False,
     'moon_checks_on': False,
     'altitude_checks_on': False,
     'daytime_exposure_time_safety_on': False,
-    
+
     # Depending on the pointing capacity of the scope OR the field of view OR both
     # The pointing may never be quite good enough to center the object without
     # a centering exposure. On initial commissioning, it should be set to always autocenter
     # until you are convinced the natural pointing with empirical corrections is "good enough"
     'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
-    
-    
+
+    # NB NB NB we should specify has_pipe# has_redis   and IP of redis   WER
+
+
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': True,
+    'ingest_raws_directly_to_archive': True,   #which archive? I assume not the datalab / ptrarchive   WER
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': False,
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
@@ -119,6 +121,7 @@ site_config = {
     # This allows culling of unphysical results in photometry and other things
     # Particularly useful for focus
     'minimum_realistic_seeing': 1.0,
+    "has_ligntning_detector": False,
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
@@ -184,7 +187,7 @@ site_config = {
         #'telescope',
         'screen',    #  We do have one!  >>>>
         'rotator',
-        
+
         'selector',     #  Right now not used  >>>>
         'filter_wheel',
         'focuser',        #CHANGER ORDER 20240704 wer
@@ -415,7 +418,7 @@ site_config = {
             'focuser_movement_settle_time': 3,
 
             # Override the estimated best focus and start at the provided config value
-            'start_at_config_reference': True,
+            'start_at_config_reference': False,
             # Use previous best focus information to correct focuser for temperature change
             'correct_focus_for_temperature' : True,
             # highest value to consider as being in "good focus". Used to select last good focus value
@@ -423,14 +426,14 @@ site_config = {
 
             # When the focusser has no previous best focus values
             # start from this reference position
-            'reference': 4400,  #20240904
+            'reference': 5000,  #20240904
 
             # Limits and steps for the focuser.
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
             'step_size': 1,
             'backlash':  0,
-            'throw': 250,
+            'throw': 100,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  # Taken from Gemini at mid-range.
         },
@@ -524,7 +527,7 @@ site_config = {
                                 ['gp',      [0, 6],   'gp'],  # 7
                                 ['rp',      [0, 7],   'rp'],  # 8
                                 ['ip',      [0, 8],   'ip'],  # 9
-                                
+
                                 ['sy',      [1, 0],   'sy'],  # 10 Wheel closest to rotator
                                 ['sb',      [2, 0],   'sb'],  # 11
                                 ['sv',      [3, 0],   'sv'],  # 12
@@ -577,29 +580,29 @@ site_config = {
             'parent': 'telescope1',
             'name': 'sq010sm',  # Important because this points to a server file structure by that name.
             'desc':  'QHY 461PH BSI Mono',
-            
+
             'overscan_trim' : 'none',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
-            'service_date': '20240801',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo. 
-            
-            
-            
+            'service_date': '20240801',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo.
+
+
+
             'detector':  'Sony IMX461 BSI Mono',  # It would be good to build out a table of chip characteristics  6280 x 4210  Inspect: 62:4102, 4:6076  Sony 6244X4168 Active Optical black Hor 16, rear 0, Vert 22, rear 0
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
             'file_mode_path':  'Q:/archive/sq01s0m/maxim/',  # NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
             'settings': {
-            
+
                 # These are the offsets in degrees of the actual telescope from the latitude and longitude of the WEMA settings
                 'north_offset': 0.0,  # These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,
-            
-            
+
+
                 # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
                 'hold_flats_in_memory': True,
-            
+
                 # Simple Camera Properties
                 'is_cmos':  True,
                 'is_osc': False,
@@ -642,10 +645,10 @@ site_config = {
 
 
 
-                # There are some infuriating popups on theskyx that manually 
+                # There are some infuriating popups on theskyx that manually
                 # need to be dealt with when doing darks and lights.
                 # This setting uses a workaround for that. This is just for CMOS
-                # CCDs are fine. 
+                # CCDs are fine.
                 'cmos_on_theskyx': False,
 
                 # These options set whether an OSC gets binned or interpolated for different functions
@@ -807,7 +810,7 @@ site_config = {
                 'smart_stack_exposure_time': 30,
 
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
-                
+
                 'substack': True, # Substack with this camera
 
 

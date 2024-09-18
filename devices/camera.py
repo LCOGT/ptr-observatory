@@ -2432,7 +2432,8 @@ class Camera:
             ", S " + self.spt_C + \
             ", T " + self.temp_C + \
             ", P " + self.pwm_percent + \
-            ", H " + self.hum_percent
+            ", H " + self.hum_percent +\
+            ", A " + str(round(g_dev['foc'].current_focus_temperature, 1))
         status[
             "status"
         ] = cam_stat  # The state could be expanded to be more meaningful. for instance report TEC % TEmp, temp setpoint...
@@ -2448,15 +2449,12 @@ class Camera:
             self.last_user_id = self.user_id
         self.user_name = command["user_name"]
 
-        if (
-            "object_name" in opt
-        ):
+        if ("object_name" in opt):
             if opt["object_name"] == "":
                 opt["object_name"] = "Unspecified"
-            plog("Target Name:  ", opt["object_name"])
-        else:
-            opt["object_name"] = "Unspecified"
-            plog("Target Name:  ", opt["object_name"])
+                plog("Target Name:  ", opt["object_name"])
+            else:
+                plog("Target Name:  ", opt["object_name"])
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose":  # and not self.running_an_exposure_set:
@@ -2822,7 +2820,7 @@ class Camera:
             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
 
             if g_dev["fil"].null_filterwheel == False:
-                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
+                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
                     # For narrowband and low throughput filters, increase base exposure time.
                     ssExp = ssExp * ssNBmult
                 #
@@ -2837,7 +2835,7 @@ class Camera:
                 exposure_time = ssExp
                 SmartStackID = (
                     datetime.datetime.now().strftime("%d%m%y%H%M%S"))
-                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
+                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
                     smartstackinfo = 'narrowband'
                 else:
                     smartstackinfo = 'broadband'
@@ -3183,10 +3181,10 @@ class Camera:
                                     plog("Could not engage substacking as the appropriate biasdark")
 
                             # Adjust pointing exposure time relative to known focus
-                            if not g_dev['seq'].focussing and frame_type == 'pointing':
+                            if not g_dev['seq'].focussing and not g_dev['obs'].scope_in_manual_mode and frame_type == 'pointing':
                                 try:
                                     last_fwhm = g_dev['obs'].fwhmresult["FWHM"]
-
+                                    #  NB NB WER this can be evil is telescope is not well set up. Should not adjust in Eng mode.
                                     if last_fwhm > 4.0:
                                         exposure_time = exposure_time * 4
                                     elif last_fwhm > 3:
@@ -3203,7 +3201,8 @@ class Camera:
                                 while g_dev['fil'].filter_changing:
                                     time.sleep(0.05)
 
-                            g_dev['foc'].adjust_focus()
+                            if not g_dev['obs'].scope_in_manual_mode:
+                                g_dev['foc'].adjust_focus()
 
                             reporty = 0
                             while g_dev['foc'].focuser_is_moving:
@@ -3524,7 +3523,7 @@ class Camera:
                 p_level="INFO",
             )
 
-        # , 'y', 'up', 'u']:
+        # , 'y', 'up', 'u']:   NB NB we should create a code-wide list of Narrow bands, broadbands and widebands so we do not have mulitiple lists to manage.
         elif Nsmartstack > 1 and self.current_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr']:
             plog("Starting narrowband " + str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
                  + str(opt["object_name"])
@@ -4513,8 +4512,8 @@ class Camera:
 
                             if True:
                                height, width = outputimg.shape
-                               patch = outputimg[int(0.45*height):int(0.55*height), int(0.45*width):int(0.55*width)]
-                               print("Cam line 4502: Imm. after readout; 10% central image patch:  ", np.median(patch))
+                               patch = outputimg[int(0.35*height):int(0.65*height), int(0.35*width):int(0.65*width)]
+                               print("Cam line 4502: Imm. after readout; 20% central image patch:  ", np.median(patch))
 
                         except Exception as e:
 
@@ -4567,7 +4566,7 @@ class Camera:
 ################################################# HERE IS WHERE IN-LINE STUFF HAPPENS.
 
 
-                # BIAS & DARK VETTING AND DISTRIBUTION AREA.
+                # BIAS & DARK, flat, focus and pointing VETTING AND DISTRIBUTION AREA.
 
                 # For biases, darks, flats, focus and pointing images, it doesn't go to the subprocess.
                 # It either doesn't buy us any time OR the results of one image relies on the next....
@@ -4635,12 +4634,12 @@ class Camera:
                     plog (next_seq)
 
                     # If there are too many unnaturally negative pixels, then reject the calibration
-                    if len(countypixels) > 100:
+                    if len(countypixels) > 256:  #Up from 100 for 100 megapix camera
                         plog(
-                            "Rejecting calibration because it has a disturbing amount of low value pixels.")
+                            "Rejecting calibration because it has a high amount of low value pixels.", countypixels, " !!!!!!!!!!!!!!!!!")
                         expresult = {}
                         expresult["error"] = True
-                        breakpoint()
+                        #breakpoint()
                         return expresult
 
                     # For a dark, check that the debiased dark has an adequately low value

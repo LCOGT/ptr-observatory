@@ -130,11 +130,11 @@ site_config = {
     'moon_checks_on': True,
     'altitude_checks_on': True,
     'daytime_exposure_time_safety_on': True,   #Perhaps condition by roof open/closed?
-    'always_do_a_centering_exposure_regardless_of_nearby_reference':  False,
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
 
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': True,  # What archive are we talking about here.
+    'ingest_raws_directly_to_archive': True,  # What archive are we talking about here?
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     # WER changed Z to X 20231113 @1:16 UTC
@@ -189,16 +189,16 @@ site_config = {
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
-    'bias_dark interval':  135.,  # minutes
+    'bias_dark interval':  150.,  # minutes
     # Was 55 WER 20240313 Before Sunset Minutes  neg means before, + after.
-    'eve_sky_flat_sunset_offset': -55.,
+    'eve_sky_flat_sunset_offset': -60.,
     # How many minutes after civilDusk to do....
-    'end_eve_sky_flats_offset': 10.,
+    'end_eve_sky_flats_offset': 15.,
     'clock_and_auto_focus_offset': -10,  # min before start of observing
     'astro_dark_buffer': 15,  # Min before and after AD to extend observing window
     'morn_flat_start_offset': -10.,  # min from Sunrise
-    'morn_flat_end_offset': +55.,  # min from Sunrise
-    'end_night_processing_time':  60.,  # A guess
+    'morn_flat_end_offset': +60.,  # min from Sunrise
+    'end_night_processing_time':  90.,  # A guess
     # 'observing_begins_offset': -1,       #min from AstroDark
     # How many minutes before civilDawn to do ....
 
@@ -839,14 +839,14 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': 3,  # 20240606, new camera installed 20240604
-                'temp_setpoint_tolerance': 2.5,
+                'temp_setpoint': 10,  # 20240914 up from 3C, new camera installed 20240604
+                'temp_setpoint_tolerance': 3,
                 'has_chiller': True,
                 # "temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp': 25,  # C 20240906
                 'day_warm': False,  # This is converted to a 0 or 1 depending on the Boolean value
-                'day_warm_degrees': 0,  # Assuming the Chiller is working.
+                'day_warm_degrees': 10,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating': False,
 
                 # These are the physical values for the camera

@@ -5792,7 +5792,7 @@ class Sequencer:
 
 
                 if entry[7] == 0:
-                    #NEED TO BREKPOINT HERE AND FIX
+                    #NEED TO BREAKPOINT HERE AND FIX
                     pierstring='0  1'
                     entry[2] += 12.
                     while entry[2] >= 24:
@@ -5814,7 +5814,7 @@ class Sequencer:
 
 
                 sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]
-                writeline = ra_wanted + " " + dec_wanted + " " + ra_got + " " + dec_got + " "+ sid_str + " "+ pierstring
+                writeline = ra_wanted + " " + dec_wanted + " " + ra_got + " " + dec_got + " " + sid_str + " " + pierstring
                 with open(tpointnamefile, "a+") as f:
                     	f.write(writeline+"\n")
                 plog(writeline)
