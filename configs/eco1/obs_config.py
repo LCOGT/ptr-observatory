@@ -574,7 +574,9 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': 4,   
+                'temp_setpoint': 4,  
+                
+                'temp_setpoint_tolerance': 2.5,
                 #'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': True,
                 'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.

@@ -61,25 +61,25 @@ googtime=time.time()
 def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-((x - mean) / 4 / stddev)**2)
 
-def parse_platesolve_output(output_file):
-    f = open(output_file)
+# def parse_platesolve_output(output_file):
+#     f = open(output_file)
 
-    results = {}
+#     results = {}
 
-    for line in f.readlines():
-        line = line.strip()
-        if line == "":
-            continue
+#     for line in f.readlines():
+#         line = line.strip()
+#         if line == "":
+#             continue
 
-        fields = line.split("=")
-        if len(fields) != 2:
-            continue
+#         fields = line.split("=")
+#         if len(fields) != 2:
+#             continue
 
-        keyword, value = fields
+#         keyword, value = fields
 
-        results[keyword] = float(value)
+#         results[keyword] = float(value)
 
-    return results
+#     return results
 
 """
 Here is the start of the subprocessing
@@ -176,18 +176,18 @@ if False:
 
 
 parentPath = Path(getcwd())
-PS3CLI_EXE = str(parentPath).replace('\subprocesses','') +'/subprocesses/ps3cli/ps3cli.exe'
+#PS3CLI_EXE = str(parentPath).replace('\subprocesses','') +'/subprocesses/ps3cli/ps3cli.exe'
 
-output_file_path = os.path.join(cal_path + "ps3cli_results.txt")
-try:
-    os.remove(output_file_path)
-except:
-    pass
-try:
-    os.remove(cal_path + 'platesolvetemp.fits')
-except:
-    pass
-catalog_path = os.path.expanduser("~\\Documents\\Kepler")
+# output_file_path = os.path.join(cal_path + "ps3cli_results.txt")
+# try:
+#     os.remove(output_file_path)
+# except:
+#     pass
+# try:
+#     os.remove(cal_path + 'platesolvetemp.fits')
+# except:
+#     pass
+#catalog_path = os.path.expanduser("~\\Documents\\Kepler")
 
 if pixscale != None:
     binnedtwo=False
@@ -346,7 +346,7 @@ sources=[]
 
 for i in range(len(pointvalues)):
 
-    if len(sources) > 2000:
+    if len(sources) > 200:
         break
 
     cx= (pointvalues[i][0])
@@ -436,8 +436,8 @@ for i in range(len(pointvalues)):
 
 # Keep top 200
 sources=np.asarray(sources)
-if len(sources) > 200:
-    sources=sources[:200,:]
+# if len(sources) > 200:
+#     sources=sources[:200,:]
 
 print ("Constructor " + str(time.time()-googtime))
 googtime=time.time()

@@ -1500,17 +1500,16 @@ class Observatory:
 
 
         """
+
         # NB NB this needs to be conditoned on the site having lightning detection!
         if self.check_lightning:
-            try:
-
+            try:    
                 with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
                     r_date, r_time = light_rec.readline().split()[-2:]
                     #plog(r_date, r_time)
                     d_string = r_date + 'T' +r_time
                     d_time = datetime.datetime.fromisoformat(d_string)+datetime.timedelta(minutes=7.5)
                     distance = 10.001
-
                     if datetime.datetime.now() < d_time:   #  Here validate if not stale before doing next line.
                         for lin in light_rec.readlines():
                             if 'distance' in lin:

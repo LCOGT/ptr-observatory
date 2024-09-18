@@ -501,6 +501,15 @@ def test_sequence(pCamera):
 
 def reset_sequence(pCamera):
     try:
+        # Remove any broken files first.
+        temp_shelf_list=glob.glob(g_dev['obs'].obsid_path + "ptr_night_shelf/" +
+        str(pCamera) + str(g_dev['obs'].name)+ '*')
+        for file in temp_shelf_list:            
+            try:
+                os.remove(file)
+            except:
+                pass
+            
         camShelf = shelve.open(
             g_dev['obs'].obsid_path + "ptr_night_shelf/" +
             str(pCamera) + str(g_dev['obs'].name)
@@ -513,6 +522,8 @@ def reset_sequence(pCamera):
         camShelf.close()
         return seq
     except:
+        plog(traceback.format_exc())
+        breakpoint()
         plog("Nothing on the cam shelf in reset_sequence")
         return None
 
@@ -1221,7 +1232,7 @@ class Camera:
         ]:  # NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
             self._set_cooler_on()
         if self.theskyx:
-            temp, humid, pressure = self.camera.Temperature, 999.9, 999.9
+            temp, humid, pressure, pwm = self.camera.Temperature, 999.9, 999.9, 0.0
         else:
             temp, humid, pressure , pwm = self._temperature()
         plog("Cooling beginning @:  ", temp, " PWM%:  ", pwm)
@@ -1505,7 +1516,7 @@ class Camera:
             self.theskyx_cooleron = True
             self.theskyx_set_setpoint_trigger = True
             self.theskyx_set_setpoint_value = self.setpoint
-            self.theskyx_temperature = self.camera.Temperature, 999.9, 999.9
+            self.theskyx_temperature = self.camera.Temperature, 999.9, 999.9, 0
             self.camera_update_period = 5
             self.camera_update_timer = time.time() - 2 * self.camera_update_period
             self.camera_updates = 0
@@ -1817,7 +1828,7 @@ class Camera:
                     self.camera_update_reboot = False
 
                 try:
-                    self.theskyx_temperature = self.camera_update_wincom.Temperature, 999.9, 999.9
+                    self.theskyx_temperature = self.camera_update_wincom.Temperature, 999.9, 999.9, 0
 
                     self.theskyx_cooleron = self.camera_update_wincom.RegulateTemperature
 
@@ -3668,19 +3679,23 @@ class Camera:
         im_path = im_path_r + g_dev["day"] + "/to_AWS/"
         im_type = "EX"
         f_ext = "-"
-        cal_name = (
-            self.config["obs_id"]
-            + "-"
-            + self.config["camera"][self.name]["name"]
-            + "-"
-            + g_dev["day"]
-            + "-"
-            + next_seq
-            + f_ext
-            + "-"
-            + im_type
-            + "00.fits"
-        )
+        try:
+            cal_name = (
+                self.config["obs_id"]
+                + "-"
+                + self.config["camera"][self.name]["name"]
+                + "-"
+                + g_dev["day"]
+                + "-"
+                + next_seq
+                + f_ext
+                + "-"
+                + im_type
+                + "00.fits"
+            )
+        except:
+            plog(traceback.format_exc())
+            breakpoint()
         cal_path = im_path_r + g_dev["day"] + "/calib/"
 
         jpeg_name = (
