@@ -32,8 +32,8 @@ from astropy.nddata.utils import extract_array
 from astropy.io import fits
 #from subprocess import Popen, PIPE
 import os
-from pathlib import Path
-from os import getcwd
+#from pathlib import Path
+#from os import getcwd
 import time
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.table import Table
@@ -112,8 +112,12 @@ target_ra=input_psolve_info[19]
 target_dec=input_psolve_info[20]
 
 try:
-    os.remove(cal_path + 'platesolve.temppickle')
     os.remove(cal_path + 'platesolve.pickle')
+except:
+    pass
+
+try:
+    os.remove(cal_path + 'platesolve.temppickle')
 except:
     pass
 
@@ -175,7 +179,7 @@ if False:
     hdufocus.writeto(cal_path + 'background.fits', overwrite=True, output_verify='silentfix')
 
 
-parentPath = Path(getcwd())
+#parentPath = Path(getcwd())
 #PS3CLI_EXE = str(parentPath).replace('\subprocesses','') +'/subprocesses/ps3cli/ps3cli.exe'
 
 # output_file_path = os.path.join(cal_path + "ps3cli_results.txt")
@@ -715,17 +719,24 @@ except:
 
 os.rename(cal_path + 'platesolve.temppickle',cal_path + 'platesolve.pickle')
 
+time.sleep(0.25)
+
+try:
+    os.remove(cal_path + 'platesolve.temppickle')
+except:
+    pass
+
 time.sleep(1)
 
 
-try:
-    os.remove(cal_path + 'platesolvetemp.fits')
-except:
-    pass
-try:
-    os.remove(output_file_path)
-except:
-    pass
+# try:
+#     os.remove(cal_path + 'platesolvetemp.fits')
+# except:
+#     pass
+# try:
+#     os.remove(output_file_path)
+# except:
+#     pass
 
 
 print (solve)
