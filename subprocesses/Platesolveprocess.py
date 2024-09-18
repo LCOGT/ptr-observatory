@@ -81,6 +81,11 @@ def parse_platesolve_output(output_file):
 
     return results
 
+"""
+Here is the start of the subprocessing
+
+"""
+
 input_psolve_info=pickle.load(sys.stdin.buffer)
 #input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
 
