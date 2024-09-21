@@ -622,7 +622,7 @@ class Observatory:
         self.device_types = ptr_config[
             "device_types"
         ]
-        self.check_lightning = self.config["has_ligntning_detector"]
+        #self.check_lightning = True:  ##self.config["has_lightning_detector"]
         # VERY TEMPORARY UNTIL MOUNT IS FIXED - MTF
         self.mount_reboot_on_first_status = True
 
@@ -1502,8 +1502,8 @@ class Observatory:
         """
 
         # NB NB this needs to be conditoned on the site having lightning detection!
-        if self.check_lightning:
-            try:    
+        if True:
+            try:
                 with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
                     r_date, r_time = light_rec.readline().split()[-2:]
                     #plog(r_date, r_time)
