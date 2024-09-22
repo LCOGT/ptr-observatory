@@ -59,8 +59,13 @@ def radial_profile(data, center):
     radialprofile = tbin / nr
     return radialprofile
 
-
+#try:
 input_sep_info=pickle.load(sys.stdin.buffer)
+# except:
+#     print("No input to the SEP Process.")
+#     breakpoint()
+#     print ("Post breakpoint print statement.")
+
 #input_sep_info=pickle.load(open('testSEPpickle','rb'))
 
 #print ("HERE IS THE INCOMING. ")
