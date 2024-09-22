@@ -320,6 +320,46 @@ This device works on cameras and getting images and header info back to the obs 
 """
 dgs = "°"
 
+
+
+
+def wait_for_slew(wait_after_slew=True):
+    """
+    A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
+    ???NB NB Should this include testing rotator slewing  and focuser moving?? WER
+    """
+    if not g_dev['obs'].mountless_operation:
+        try:
+            actually_slewed = False
+            if not g_dev['mnt'].rapid_park_indicator:
+                movement_reporting_timer = time.time()
+                while g_dev['mnt'].return_slewing():
+                    if actually_slewed == False:
+                        actually_slewed = True
+                    if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
+                        plog('m>')
+                        movement_reporting_timer = time.time()
+                    # if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                    g_dev['mnt'].get_mount_coordinates_after_next_update()
+                    # , dont_wait=True)
+                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+
+                # Then wait for slew_time to settle
+                if actually_slewed and wait_after_slew:
+                    time.sleep(g_dev['mnt'].wait_after_slew_time)
+
+        except Exception as e:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            if 'pywintypes.com_error' in str(e):
+                plog("Mount disconnected. Recovering.....")
+                time.sleep(5)
+                g_dev['mnt'].reboot_mount()
+            else:
+                pass
+        return
+
+
 # This class is for QHY camera control
 
 
@@ -504,12 +544,12 @@ def reset_sequence(pCamera):
         # Remove any broken files first.
         temp_shelf_list=glob.glob(g_dev['obs'].obsid_path + "ptr_night_shelf/" +
         str(pCamera) + str(g_dev['obs'].name)+ '*')
-        for file in temp_shelf_list:            
+        for file in temp_shelf_list:
             try:
                 os.remove(file)
             except:
                 pass
-            
+
         camShelf = shelve.open(
             g_dev['obs'].obsid_path + "ptr_night_shelf/" +
             str(pCamera) + str(g_dev['obs'].name)
@@ -4779,7 +4819,7 @@ class Camera:
                     del hdu
                     return copy.deepcopy(expresult)
 
-# IN-LINE REDUCED FRAMES (POINTING AND FOCUS) AREA
+                # IN-LINE REDUCED FRAMES (POINTING AND FOCUS) AREA
 
                 # If this is a pointing or a focus frame, we need to do an
                 # in-line flash reduction
@@ -5292,37 +5332,3 @@ class Camera:
                         return expresult
 
 
-def wait_for_slew(wait_after_slew=True):
-    """
-    A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
-    """
-    if not g_dev['obs'].mountless_operation:
-        try:
-            actually_slewed = False
-            if not g_dev['mnt'].rapid_park_indicator:
-                movement_reporting_timer = time.time()
-                while g_dev['mnt'].return_slewing():
-                    if actually_slewed == False:
-                        actually_slewed = True
-                    if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
-                        plog('m>')
-                        movement_reporting_timer = time.time()
-                    # if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                    g_dev['mnt'].get_mount_coordinates_after_next_update()
-                    # , dont_wait=True)
-                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
-
-                # Then wait for slew_time to settle
-                if actually_slewed and wait_after_slew:
-                    time.sleep(g_dev['mnt'].wait_after_slew_time)
-
-        except Exception as e:
-            plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            if 'pywintypes.com_error' in str(e):
-                plog("Mount disconnected. Recovering.....")
-                time.sleep(5)
-                g_dev['mnt'].reboot_mount()
-            else:
-                pass
-        return
