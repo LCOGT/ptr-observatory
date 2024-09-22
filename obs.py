@@ -1502,8 +1502,8 @@ class Observatory:
         """
 
         # NB NB this needs to be conditoned on the site having lightning detection!
-        if self.check_lightning:
-            try:    
+        if False:  #self.check_lightning:
+            try:
                 with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
                     r_date, r_time = light_rec.readline().split()[-2:]
                     #plog(r_date, r_time)
