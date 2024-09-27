@@ -5625,20 +5625,20 @@ class Sequencer:
         catalogue = []
         #This code is a bit ad-hoc since thw hour range was chosen for ARO...
         if max_pointings == 8:
-            ha_cat = [3.5, 2.625, 1.75, .875, -0.875, -1.75, -2.625, -3.5]  #8 points
+            ha_cat = [3.5, 2.625, 1.75, .875, 0,  -0.875, -1.75, -2.625, -3.5]  #8 points
             for hour in ha_cat:
                 ra = ra_fix_h(sidereal_h + hour)  #This step could be done just before the seek below so hitting flips would be eliminated
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
         elif max_pointings == 12:
-            ha_cat = [3.5, 3, 2.5, 2, 1.5, 1,  -1, -1.5, -2, -2.5,- 3, -3.5]  #12points
+            ha_cat = [3.5, 3, 2.5, 2, 1.5, 1, 0,  -1, -1.5, -2, -2.5,- 3, -3.5]  #12points
             for hour in ha_cat:
                 ra = ra_fix_h(sidereal_h + hour)
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
         else:
             max_pointings == 16
-            ha_cat = [3.5, 3.25, 3, 2.5, 2, 1.5, 1, 0.5, -0.5, -1, -1.5, -2, -2.5, -3, -3.25, -3.5]  #16 points
+            ha_cat = [3.5, 3.25,  3, 2.5, 2, 1.5, 1, 0.5, 0, -0.5, -1, -1.5, -2, -2.5, -3, -3.25, -3.5]  #16 points
             for hour in ha_cat:
-                ra = ra_fix_h(sidereal_h + hour)
+                ra = ra_fix_h(sidereal_h + hour)  #Take note of the odd sign change.
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
 
 
@@ -5671,7 +5671,7 @@ class Sequencer:
 
         plog ("Note that mount references and auto-centering are automatically turned off for a tpoint run.")
         for grid_star in sweep_catalogue:
-            teststar = SkyCoord(ra = grid_star[0]*u.deg, dec = grid_star[1]*u.deg)
+            teststar = SkyCoord(ra=grid_star[0]*u.deg, dec=grid_star[1]*u.deg)
 
             temppointingaltaz=teststar.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
             alt = temppointingaltaz.alt.degree
@@ -5680,16 +5680,16 @@ class Sequencer:
             g_dev["obs"].send_to_user(str(("Slewing to near grid field, RA: " + str(round(grid_star[0] / 15, 2)) + " DEC: " + str(round(grid_star[1], 2))+ " AZ: " + str(round(az, 2))+ " ALT: " + str(round(alt,2)))))
 
             plog("Slewing to near grid field " + str(grid_star) )
-            if count == 3 or count == 4:
-                pass   #Breaakpoint()
+            # if count == 3 or count == 4:
+            #     pass   #Breaakpoint()
 
             # Use the mount RA and Dec to go directly there
             try:
                 g_dev['obs'].time_of_last_slew=time.time()
-                g_dev["mnt"].last_ra_requested = grid_star[0]/15
+                g_dev["mnt"].last_ra_requested = grid_star[0]/15.
                 g_dev["mnt"].last_dec_requested = grid_star[1]
-                print("sweep: ", grid_star[0]/15 , grid_star[1])
-                rah=grid_star[0]/15
+                print("sweep: ", grid_star[0]/15. , grid_star[1])
+                rah=grid_star[0]/15.
                 decd=grid_star[1]
                 #g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
 
@@ -5707,13 +5707,14 @@ class Sequencer:
             g_dev["obs"].update_status()
 
 
-            g_dev["mnt"].last_ra_requested=grid_star[0]/15
+            g_dev["mnt"].last_ra_requested=grid_star[0]/15.
             g_dev["mnt"].last_dec_requested=grid_star[1]
 
             req = { 'time': self.config['pointing_exposure_time'], 'smartstack': False, 'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}
-            opt = { 'count': 1,  'filter': 'pointing'}
+            opt = { 'count': 1,  'filter': 'w'} #  pointing'} WNB NB WER20240927
+            sid1 = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             result = g_dev['cam'].expose_command(req, opt)
-
+            sid2 = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             #NB should we check for a valid result from the exposure? WER 2240319
 
             g_dev["obs"].send_to_user("Platesolving image.")
@@ -5742,8 +5743,8 @@ class Sequencer:
 
             g_dev["obs"].send_to_user("Finished platesolving")
             plog ("Finished platesolving")
-
-            sid = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+            ##NB this time is after the exposure and the platesolve!  Needs to be closer to reality.
+            sid = (sid1 + sid2)/2.0  #float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
             # Get RA, DEC, ra deviation, dec deviation and add to the list
             try:
@@ -5759,11 +5760,11 @@ class Sequencer:
             #ra_2 = g_dev['obs'].last_platesolved_ra
             #dec_2 = g_dev['obs'].last_platesolved_dec
 
-
+            # NB NB Note if the platsove thorows back a nan the last_latesolved may be a stale value
             result=[ra_mount, dec_mount, g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
             deviation_catalogue_for_tpoint.append (result)
             plog("Pointing run:  ", result)
-
+            plog("Deviation Catalog:  ", deviation_catalogue_for_tpoint)
             g_dev["obs"].request_update_status()
             count += 1
             plog('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
@@ -5785,14 +5786,14 @@ class Sequencer:
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
 
-            if not np.isnan(entry[2]):
+            if (not np.isnan(entry[2]))and (not np.isnan(entry[3])):
                 ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
                 dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
                 ra_got=Angle(entry[2], u.hour).to_string(sep=' ')
 
 
                 if entry[7] == 0:
-                    #NEED TO BREAKPOINT HERE AND FIX
+                    #NEED TO BREAKPOINT HERE AND FIX  NB NB What is the unit of the vales like entry[3]???
                     pierstring='0  1'
                     entry[2] += 12.
                     while entry[2] >= 24:

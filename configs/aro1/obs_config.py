@@ -303,7 +303,7 @@ site_config = {
             # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'permissive_mount_reset': 'no',
             # How many seconds of inactivity until it will park the telescope
-            'time_inactive_until_park': 1800.0,
+            'time_inactive_until_park': 900.0,
 
             # final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_ra_correction': 0.0,
@@ -422,7 +422,7 @@ site_config = {
             'has_fans':  True,
             'has_cover':  False,
             # East is negative  These will vary per telescope.
-            'axis_offset_east': -19.5,
+            'axis_offset_east': -19.5,  #Inches appently!
             'axis_offset_south': -8,  # South is negative
 
             'settings': {
@@ -790,7 +790,7 @@ site_config = {
                 'flipy_fits': False,
                 'rotate180_fits': False,  # This also should be flipxy!
                 'rotate90_fits': False,
-                'rotate270_fits': False,
+                'rotate270_fits': True,
                 'squash_on_x_axis': False,
 
                 # What number of pixels to crop around the edges of a REDUCED image

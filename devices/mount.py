@@ -363,8 +363,8 @@ class Mount:
             self.longterm_storage_of_flip_references=[]
         mnt_shelf.close()
 
-        plog ("Mount deviations, mount then flip:")
-        plog (self.longterm_storage_of_mount_references, '\n')
+        plog ("Mount deviations, for mount then for flipflip:")
+        plog (self.longterm_storage_of_mount_references, '\n\n')
         plog (self.longterm_storage_of_flip_references)
 
         self.last_mount_reference_time=time.time() - 86400
@@ -423,7 +423,7 @@ class Mount:
         self.previous_pier_side = self.mount.sideOfPier
         self.pier_side_last_check = self.mount.sideOfPier
         self.request_new_pierside=False
-        self.request_new_pierside_ra=1.0
+        self.request_new_pierside_ra=1.0   #Why these values?
         self.request_new_pierside_dec=1.0
 
         self.can_park = self.mount.CanPark
@@ -584,7 +584,7 @@ class Mount:
     def apply_refraction_in_alt(self, pApp_alt):  # Deg, C. , mmHg     #note change to mbar
 
         # From Astronomical Algorithms.  Max error 0.89" at 0 elev.
-        # 20210328 This code does not the right thing if star is below the Pole and is refracted above it.
+        # 20210328 This code does not do the right thing if star is below the Pole and is refracted above it.
 
         if not self.refr_on:
             return pApp_alt, 0.0
