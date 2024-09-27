@@ -186,6 +186,7 @@ site_config = {
     # This allows culling of unphysical results in photometry and other things
     # Particularly useful for focus
     'minimum_realistic_seeing': 1.5,
+    'has_lightning_detector':  True,
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
@@ -505,7 +506,7 @@ site_config = {
             'maximum': 12600,  # 12672 actually
             'step_size': 1,
             'backlash': 600,   # non-zero means enabled, + means over-travel when moving out, then come back IN  same amount.
-            'throw': 140,  # Start with 10X focus tolerance.
+            'throw': 90., #20240925 reduced from: #140,  # Start with 10X focus tolerance.
             'focus_tolerance':  130,    #Microns  ??? used Golf Focus Caclulator
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
