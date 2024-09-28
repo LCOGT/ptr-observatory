@@ -66,11 +66,15 @@ red_name01=input_sstk_info[32]
 
 
 
+file_wait_timeout_timer=time.time()
+
 # So wait for the image to be available in this smartstack run
-while not os.path.exists(smartstackthread_filename):
+while (not os.path.exists(smartstackthread_filename)) and (time.time()-file_wait_timeout_timer < 600):
     time.sleep(0.2)
 
-
+if time.time()-file_wait_timeout_timer > 599:
+    sys.exit()
+    
 (image_filename, imageMode) = pickle.load(
     open(smartstackthread_filename, 'rb'))
 
@@ -443,9 +447,15 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
 
             # Wait for the three crosscorrels to happen
             for waitfile in crosscorrel_filename_waiter:
-                while not os.path.exists(waitfile):
+                
+                file_wait_timeout_timer=time.time()                
+                    
+                while (not os.path.exists(waitfile)) and (time.time()-file_wait_timeout_timer < 600):
                     time.sleep(0.2)
-
+                    
+                if time.time()-file_wait_timeout_timer > 599:
+                    sys.exit()
+                    
             if len(crosscorrel_filename_waiter) > 0:
                 for waitfile in crosscorrel_filename_waiter:
 
