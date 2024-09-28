@@ -3784,7 +3784,8 @@ class Sequencer:
                                 cge_median=bn.nanmedian(camera_gain_estimate_image)
                                 cge_stdev=bn.nanstd(camera_gain_estimate_image)
                                 cge_sqrt=pow(cge_median,0.5)
-                                cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
+                                #cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
+                                cge_gain=pow(cge_sqrt/cge_stdev, 2)
                                 plog ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
 
                                 if cge_median > 0:
