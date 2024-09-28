@@ -622,7 +622,10 @@ class Observatory:
         self.device_types = ptr_config[
             "device_types"
         ]
-        self.check_lightning = self.config["has_ligntning_detector"]
+        try:
+            self.check_lightning = self.config["has_lightning_detector"]
+        except:
+            self.check_lightning = False
         # VERY TEMPORARY UNTIL MOUNT IS FIXED - MTF
         self.mount_reboot_on_first_status = True
 
