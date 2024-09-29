@@ -5134,7 +5134,8 @@ class Camera:
                                 camera_gain_estimate_image)
                             cge_stdev = np.nanstd(camera_gain_estimate_image)
                             cge_sqrt = pow(cge_median, 0.5)
-                            cge_gain = 1/pow(cge_sqrt/cge_stdev, 2)
+                            #cge_gain = 1/pow(cge_sqrt/cge_stdev, 2)
+                            cge_gain = pow(cge_sqrt/cge_stdev, 2)
 
                             # We should only check whether the gain is good IF we have a good gain.
                             commissioning_flats = False

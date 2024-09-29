@@ -117,12 +117,22 @@ if substack:
     exp_of_substacks=int(exposure_time / len(substacker_filenames))
     # Get list of substack files needed and wait for them.
     waiting_for_substacker_filenames=copy.deepcopy(substacker_filenames)
-    while len(waiting_for_substacker_filenames) > 0:
+    
+    # This process is set to spin up early, so it loads
+    # and waits for a filename token to get started.    
+    file_wait_timeout_timer=time.time()
+
+
+    
+    while ((len(waiting_for_substacker_filenames)) > 0) and (time.time()-file_wait_timeout_timer < 600):
         for tempfilename in waiting_for_substacker_filenames:
             if os.path.exists(tempfilename):
                 waiting_for_substacker_filenames.remove(tempfilename)
         time.sleep(0.2)
-
+    
+    if time.time()-file_wait_timeout_timer > 599:
+        sys.exit()
+        
     temporary_substack_directory=localcalibrationdirectory + "substacks/" + str(time.time()).replace('.','')
 
     if not os.path.exists(localcalibrationdirectory + "substacks/"):
@@ -247,9 +257,16 @@ if substack:
     counter=1
 
     for waitfile in crosscorrel_filename_waiter:
-        while not os.path.exists(waitfile):
+        
+               
+        
+        file_wait_timeout_timer=time.time()
+        while (not os.path.exists(waitfile)) and (time.time()-file_wait_timeout_timer < 600) :
             #print ("waiting for " + str(waitfile))
             time.sleep(0.2)
+
+        if time.time()-file_wait_timeout_timer > 599:
+            sys.exit()
 
         sub_stacker_array[:,:,counter] = np.load(waitfile)
         counter=counter+1

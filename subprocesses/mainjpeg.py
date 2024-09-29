@@ -65,8 +65,12 @@ jpeg_name = input_jpeg_info[26]
 
 # This process is set to spin up early, so it loads
 # and waits for a filename token to get started.    
-while not os.path.exists(mainjpegthread_filename):    
+file_wait_timeout_timer=time.time()
+while (not os.path.exists(mainjpegthread_filename)) and (time.time()-file_wait_timeout_timer < 600):    
     time.sleep(0.2)    
+if time.time()-file_wait_timeout_timer > 599:
+    sys.exit()
+
 
 (image_filename,edgefillvalue)=pickle.load(open(mainjpegthread_filename,'rb'))
 hdusmalldata=np.load(image_filename)

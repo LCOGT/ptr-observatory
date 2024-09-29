@@ -25,7 +25,7 @@ import sep
 import copy
 from auto_stretch.stretch import Stretch
 from astropy.io import fits
-import sys
+#import sys
 # from astropy.nddata import block_reduce
 # from colour_demosaicing import (
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
@@ -99,8 +99,15 @@ exposure_time=input_sep_info[28]
 ############ WAITER FOR
 # the filename token to arrive to start processing
 print (septhread_filename)
-while not os.path.exists(septhread_filename):
+
+file_wait_timeout_timer=time.time()
+
+while (not os.path.exists(septhread_filename)) and (time.time()-file_wait_timeout_timer < 600):
     time.sleep(0.2)
+
+if time.time()-file_wait_timeout_timer > 599:
+    sys.exit()
+
 
 (image_filename,imageMode, unique, counts)=pickle.load(open(septhread_filename,'rb'))
 
