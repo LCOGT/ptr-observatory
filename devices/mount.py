@@ -133,26 +133,26 @@ def dec_fix_r(pDec):   #NB NB Note this limits not fixes!!!
 def ra_dec_fix_r(ra, dec): #Note this is not a mechanical (TPOINT) transformation of dec and HA/RA
     if dec > PIOVER2:
         dec = PI - dec
-        ra -= PI
+        ra += PI
     if dec < -PIOVER2:
         dec = -PI - dec
         ra += PI
-    if ra < 0:
+    while ra < 0:
         ra += TWOPI
-    if ra >= TWOPI:
+    while ra >= TWOPI:
         ra -= TWOPI
     return ra, dec
 
 def ra_dec_fix_h(ra, dec):
     if dec > 90:
         dec = 180 - dec
-        ra -= 12
+        ra += 12
     if dec < -90:
         dec = -180 - dec
         ra += 12
-    if ra >= 24:
+    while ra >= 24:
         ra -= 24
-    if ra < 0:
+    while ra < 0:
         ra += 24
     return ra, dec
 
@@ -1531,9 +1531,10 @@ class Mount:
                     try:
 
                         # Need to convert image fraction into offset
+                        # NB NB Need to change x and y names, they are backwards. REproting is OK though.
                         image_y = req['image_x']  #Fraction of image axis
                         image_x = req['image_y']
-                        # And the current pixel scale.  Not however the Ra and DEc come from the displayed image header
+                        # And the current pixel scale.  Note however the Ra and DEc come from the displayed image header
 
                         pixscale=float(req['header_pixscale'])  # asec/pixel
                         pixscale_hours=(pixscale/60/60) / 15  # hrs/pixel ~ 10e-6
@@ -1552,17 +1553,20 @@ class Mount:
                         #y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
                         x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
                         y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
-                        plog ("X pixel shift: " + str(x_pixel_shift))
-                        plog ("Y pixel shift: " + str(y_pixel_shift))
+                        plog ("X pixel shift: " + str(y_pixel_shift))
+                        plog ("Y pixel shift: " + str(x_pixel_shift))
+
 
                         gora=center_image_ra + (y_pixel_shift * pixscale_hours)
                         godec=center_image_dec - (x_pixel_shift * pixscale_degrees)
 
-                        plog ("X centre shift (asec): " + str((x_pixel_shift * pixscale)))
-                        plog ("Y centre shift (asec): " + str(((y_pixel_shift * pixscale))))
+                        plog ("X centre shift (asec): " + str(((y_pixel_shift * pixscale))))
+                        plog ("Y centre shift (asec): " + str((x_pixel_shift * pixscale)))
 
-                        plog ("X centre shift (hours): " + str((x_pixel_shift * pixscale_hours)))
-                        plog ("Y centre shift (degrees): " + str(((y_pixel_shift * pixscale_degrees))))
+
+                        plog ("X centre shift (degrees): " + str(((y_pixel_shift * pixscale_degrees))))
+                        plog ("Y centre shift (hours): " + str((x_pixel_shift * pixscale_hours)))
+
                         #plog ("New RA: " + str(req['ra']))
                         #plog ("New DEC: " + str(req['dec']))
 

@@ -100,7 +100,7 @@ site_config = {
     # Degrees. For normal pointing requests don't allow requests to go this low.
     'lowest_requestable_altitude': 15,
     # Below this altitude, it will automatically try to home and park the scope to recover.
-    'lowest_acceptable_altitude': 0,    #   What does this mean given the above?
+    'lowest_acceptable_altitude': -10,
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     'degrees_to_avoid_zenith_area_in_general': 0,
     'maximum_hour_angle_requestable': 9,
@@ -134,7 +134,7 @@ site_config = {
 
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': True,  # What archive are we talking about here?
+    'ingest_raws_directly_to_archive': True,  # This it the OCS-archive, archive-photonranch.org
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     # WER changed Z to X 20231113 @1:16 UTC
@@ -790,7 +790,7 @@ site_config = {
                 'flipy_fits': False,
                 'rotate180_fits': False,  # This also should be flipxy!
                 'rotate90_fits': False,
-                'rotate270_fits': True,
+                'rotate270_fits': False,
                 'squash_on_x_axis': False,
 
                 # What number of pixels to crop around the edges of a REDUCED image
@@ -806,9 +806,9 @@ site_config = {
                 'transpose_jpeg': False,
                 'flipx_jpeg': False,
                 'flipy_jpeg': False,
-                'rotate180_jpeg': True,
                 'rotate90_jpeg': False,
-                'rotate270_jpeg': False,
+                'rotate180_jpeg': False,
+                'rotate270_jpeg': True,
 
                 # This is purely to crop the preview jpeg for the UI
                 'crop_preview': False,

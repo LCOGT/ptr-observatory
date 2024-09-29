@@ -107,7 +107,7 @@ def ra_fix(ra):
 def ra_dec_fix_hd(ra, dec):
     if dec > 90:
         dec = 180 - dec
-        ra -= 12
+        ra += 12
     if dec < -90:
         dec = -180 - dec
         ra += 12
@@ -2824,7 +2824,7 @@ class Sequencer:
                 except Exception as e:
                     plog(traceback.format_exc())
                     plog ("Could not save dark frame: ",e)
-                    breakpoint()
+                    # # breakpoint()
 
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
                 g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
@@ -4125,7 +4125,7 @@ class Sequencer:
             temp_separation=((ephem.separation( (flatspotaz,flatspotalt), (moondata.az.deg,moondata.alt.deg))))
 
             if (moondata.alt.deg < -5):
-                plog ("Moon is far below the ground, alt " + str(moondata.alt.deg) + ", sky flats going ahead.")
+                plog ("Moon is far below the horizon, alt: " + str(moondata.alt.deg) + ", sky flats going ahead.")
             elif temp_separation < math.radians(self.config['minimum_distance_from_the_moon_when_taking_flats']): #and (ephem.Moon(datetime.datetime.now()).moon_phase) > 0.05:
                 plog ("Moon is in the sky and less than " + str(self.config['minimum_distance_from_the_moon_when_taking_flats']) + " degrees ("+str(temp_separation)+") away from the flat spot, skipping this flat time.")
                 self.flats_being_collected = False
@@ -5625,12 +5625,12 @@ class Sequencer:
         catalogue = []
         #This code is a bit ad-hoc since thw hour range was chosen for ARO...
         if max_pointings == 8:
-            ha_cat = [3.5, 2.625, 1.75, .875, 0,  -0.875, -1.75, -2.625, -3.5]  #8 points
+            ha_cat = [3., 2., 1., .5,   -0.5, -1., -2., -3.]  #8 points
             for hour in ha_cat:
                 ra = ra_fix_h(sidereal_h + hour)  #This step could be done just before the seek below so hitting flips would be eliminated
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
         elif max_pointings == 12:
-            ha_cat = [3.5, 3, 2.5, 2, 1.5, 1, 0,  -1, -1.5, -2, -2.5,- 3, -3.5]  #12points
+            ha_cat = [3.5, 3, 2.5, 2, 1.5, 1, 0.5,  -1, -1.5, -2, -2.5,- 3]  #12points
             for hour in ha_cat:
                 ra = ra_fix_h(sidereal_h + hour)
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
@@ -5756,7 +5756,7 @@ class Sequencer:
                 plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
             ra_mount=g_dev["mnt"].last_ra_requested #g_dev['mnt'].return_right_ascension()
             dec_mount = g_dev["mnt"].last_dec_requested #g_dev['mnt'].return_declination()
-
+            # # # breakpoint()
             #ra_2 = g_dev['obs'].last_platesolved_ra
             #dec_2 = g_dev['obs'].last_platesolved_dec
 
@@ -5801,13 +5801,13 @@ class Sequencer:
                     while entry[2] < 0:   #This case should never occur
                         entry[2] += 24.
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
-
+                    # # # breakpoint()
                     if latitude >= 0:
                         #I think the signs below *may be* incorrect WER 20240618
-                        dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
+                        dec_got=Angle((180 - entry[3]),u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
                     else:
                         #These signs need testing and verification for the Southern Hemisphere.
-                        dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ')
+                        dec_got=Angle((-180 + entry[3]),u.degree).to_string(sep=' ')
                 else:
                     pierstring='0  0'
                     ra_got=Angle(entry[2], u.hour).to_string(sep=' ')
@@ -6029,6 +6029,7 @@ class Sequencer:
                 plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
             ra_mount=g_dev['mnt'].return_right_ascension()
             dec_mount = g_dev['mnt'].return_declination()
+            # # # breakpoint()
             result=[ra_mount, dec_mount, g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
             deviation_catalogue_for_tpoint.append (result)
             plog(result)
@@ -6054,7 +6055,7 @@ class Sequencer:
             latitude = float(g_dev['evnt'].wema_config['latitude'])
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
-            if not np.isnan(entry[2]):
+            if (not np.isnan(entry[2])) and (not np.isnan(entry[3]) ):
                 ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
                 dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
                 ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
@@ -6064,13 +6065,13 @@ class Sequencer:
                     while entry[2] >= 24:
                         entry[2] -= 24.
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
-
+                    # # breakpoint()
                     if latitude >= 0:
-                        dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
+                        dec_got=Angle((180 - entry[3]),u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
                     else:
                         dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ')
                 else:
-                    pierstring='0  0'
+                    pierstring='0  0'  #NB NB I think this is supposed to be '1   0'.  WER
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
                     dec_got=Angle(entry[3],u.degree).to_string(sep=' ')
                 sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]
