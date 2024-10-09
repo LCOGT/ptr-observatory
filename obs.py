@@ -706,9 +706,9 @@ class Observatory:
             "daytime_exposure_time_safety_on"
         ]
         self.mount_reference_model_off = self.config["mount_reference_model_off"]
-        self.admin_owner_commands_only = False
-        self.assume_roof_open = False
-        self.auto_centering_off = False
+        self.admin_owner_commands_only = self.config["owner_only_commands"]
+        self.assume_roof_open = self.config["simulate_open_roof"]  #Note NB NB this is conusing with the attribut above...about 9 lines.
+        self.auto_centering_off = self.config["auto_centering_off"]
 
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
@@ -2800,7 +2800,7 @@ class Observatory:
                         except ocs_ingester.exceptions.DoNotRetryError:
                             plog("Couldn't upload to PTR archive: " + str(filepath))
                             plog(traceback.format_exc())
-                            # breakpoint()
+                            #breakpoint()
                             broken = 1
                         except Exception as e:
                             if "urllib3.exceptions.ConnectTimeoutError" in str(

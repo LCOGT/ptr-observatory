@@ -112,25 +112,35 @@ site_config = {
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
 
-    # SAFESTART
+    # # Engineering start
 
-    # 'scope_in_manual_mode': False,
+    # 'scope_in_manual_mode': True,
+    # 'scope_in_engineering_mode': True,
     # 'mount_reference_model_off': True,
-    # 'sun_checks_on': True,
-    # 'moon_checks_on': True,
-    # 'altitude_checks_on': True,
+    # 'sun_checks_on': False,
+    # 'moon_checks_on': False,
+    # 'altitude_checks_on': False,
     # 'daytime_exposure_time_safety_on': False,
-    # 'always_do_a_centering_exposure_regardless_of_nearby_reference':  True,   #this is a qustionable setting
+    # 'simulate_open_roof': True,
+    # 'auto_centering_off': True,
+    # 'self_guide_on': False,
+    # 'always_do_a_centering_exposure_regardless_of_nearby_reference':  False,   #this is a qustionable setting
+    # 'owner_only_commands':True,
 
-    # ENGineering START
+    # #SAFESTART
 
     'scope_in_manual_mode': False,
-    'mount_reference_model_off': True,
+    'scope_in_engineering_mode': False,
+    'mount_reference_model_off': False,
     'sun_checks_on': True,
     'moon_checks_on': True,
     'altitude_checks_on': True,
     'daytime_exposure_time_safety_on': True,   #Perhaps condition by roof open/closed?
+    'simulate_open_roof': True,
+    'auto_centering_off': False,
+    'self_guide_on': True,
     'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
+    'owner_only_commands': False,
 
 
     # Setup of folders on local and network drives.
@@ -807,8 +817,8 @@ site_config = {
                 'flipx_jpeg': False,
                 'flipy_jpeg': False,
                 'rotate90_jpeg': False,
-                'rotate180_jpeg': False,
-                'rotate270_jpeg': True,
+                'rotate180_jpeg':False,
+                'rotate270_jpeg': False,
 
                 # This is purely to crop the preview jpeg for the UI
                 'crop_preview': False,

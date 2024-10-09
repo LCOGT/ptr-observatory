@@ -218,7 +218,7 @@ def dump_main_data_out_to_post_exposure_subprocess(payload):
 
 #     # output, error = post_processing_subprocess.communicate()
 #     # print (output)
-#     # breakpoint()
+#     #breakpoint()
 
 # =======
     if False:
@@ -563,7 +563,7 @@ def reset_sequence(pCamera):
         return seq
     except:
         plog(traceback.format_exc())
-        breakpoint()
+        #breakpoint()
         plog("Nothing on the cam shelf in reset_sequence")
         return None
 
@@ -1044,7 +1044,7 @@ class Camera:
             else:
                 plog("ERROR:  ASCOM camera is not connected:  ",
                      self._connect(True))
-            # breakpoint()
+            #breakpoint()
 
             self.imagesize_x = self.camera.CameraXSize
             self.imagesize_y = self.camera.CameraYSize
@@ -2479,6 +2479,8 @@ class Camera:
         ] = cam_stat  # The state could be expanded to be more meaningful. for instance report TEC % TEmp, temp setpoint...
         return status
 
+
+
     def parse_command(self, command):
 
         req = command["required_params"]
@@ -2498,6 +2500,34 @@ class Camera:
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose":  # and not self.running_an_exposure_set:
+
+            "First we parse the hint"
+            if 'hint' in opt and len(opt['hint']) > 0:
+                plog("hint:  ", opt['hint'])
+                hint = opt['hint'].split(";")
+                for item in hint:
+                    term, chg = item.split("=")
+                    term = term.strip(' ')
+                    if term in ['refr', 'modl', 'rate', 'drft']:
+                        if term == 'modl':
+                            g_dev['mnt'].model_on = bool(chg)
+                        if term == 'refr':
+                            g_dev['mnt'].refr_on = bool(chg)
+                        if term == 'rate':
+                            g_dev['mnt'].rates_on = bool(chg)
+                        if term == 'drft':
+                            g_dev['mnt'].drift_on = bool(chg)
+
+                    else:
+                        if chg[0] == '+':  #Increment
+                            g_dev['mnt'].model[term] += math.radians(float(chg[1:])/3600.)
+                        elif chg[0:2] == '--':  #Decrement
+                            g_dev['mnt'].model[term] -= math.radians(float(chg[2:])/3600.)
+                        else:  #Assign value
+                            g_dev['mnt'].model[term] = math.radians(float(chg)/3600.)
+                        print(' R, M, model:  ', g_dev['mnt'].refr_on, g_dev['mnt'].model_on, g_dev['mnt'].model)
+                pass
+
             if self.running_an_exposure_set:
                 plog(
                     "Cannot expose, camera is currently busy, waiting for exposures to clear")
@@ -2912,6 +2942,7 @@ class Camera:
                 if not g_dev['obs'].mountless_operation:
                     if not g_dev['mnt'].rapid_park_indicator:
                         if g_dev['mnt'].pier_flip_detected==True and not g_dev['obs'].auto_centering_off:
+                            #breakpoint()
                             plog ("PIERFLIP DETECTED, RECENTERING.")
                             g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                             g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
@@ -3415,6 +3446,7 @@ class Camera:
             if not g_dev['mnt'].rapid_park_indicator:
                 if g_dev['mnt'].pier_flip_detected == True  and not g_dev['obs'].auto_centering_off:
                     plog ("PIERFLIP DETECTED, RECENTERING.")
+                    #breakpoint()
                     g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                     g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
                     g_dev['obs'].pointing_correction_request_time = time.time()
@@ -3735,7 +3767,7 @@ class Camera:
             )
         except:
             plog(traceback.format_exc())
-            breakpoint()
+            #breakpoint()
         cal_path = im_path_r + g_dev["day"] + "/calib/"
 
         jpeg_name = (
