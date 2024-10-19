@@ -3079,7 +3079,7 @@ class Observatory:
         """This is the platesolve queue that happens in a different process
         than the main thread. Platesolves can take 5-10, up to 30 seconds sometimes
         to run, so it is an overhead we can't have hanging around. This thread attempts
-        a platesolve and uses the solution and requests a telescope nudge/center
+        a platesolve and uses the solution and requests a telescope nudge/i
         if the telescope has not slewed in the intervening time between beginning
         the platesolving process and completing it.
 
