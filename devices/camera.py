@@ -3178,11 +3178,13 @@ class Camera:
                                 self.running_an_exposure_set = False
                                 return 'cancelled'
 
-                            if not g_dev['obs'].mountless_operation and not g_dev['mnt'].rapid_park_indicator:
+                            if not g_dev['obs'].mountless_operation and not g_dev['mnt'].rapid_park_indicator \
+                                and not  g_dev['obs'].mount_reference_model_off \
+                                and not  g_dev['obs'].auto_centering_off:      #NB NB this last two may be and 'OR' ?? WER
                                 # self.wait_for_slew(wait_after_slew=False)
                                 if g_dev['mnt'].pier_flip_detected == True:
                                     plog(
-                                        "Detected a pier flip just before exposure!")
+                                        "Detected a pier flip just before exposure! Line 3105 in Camera.")
                                     g_dev["obs"].send_to_user(
                                         "Pier Flip detected, recentering.")
                                     g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
@@ -3197,7 +3199,7 @@ class Camera:
                                     Nsmartstack = 1
                                     sskcounter = 2
                                     self.currently_in_smartstack_loop = False
-                                    break
+
 
                             if imtype in ['bias', 'dark'] or a_dark_exposure:
                                 # Artifical wait time for bias and dark
@@ -3445,7 +3447,7 @@ class Camera:
         if not g_dev['obs'].mountless_operation:
             if not g_dev['mnt'].rapid_park_indicator:
                 if g_dev['mnt'].pier_flip_detected == True  and not g_dev['obs'].auto_centering_off:
-                    plog ("PIERFLIP DETECTED, RECENTERING.")
+                    plog ("!!!!!!!!!!!PIERFLIP DETECTED, RECENTERING!!!!!!!!!!!!!!!!!")
                     #breakpoint()
                     g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                     g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True

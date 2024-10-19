@@ -522,6 +522,7 @@ class Mount:
 
         self.syncToRA=12.0
         self.syncToDEC=-20.0
+        breakpoint()
 
         self.unpark_requested=False
         self.park_requested=False
@@ -1042,6 +1043,7 @@ class Mount:
                             if self.can_sync_mount:
                                 if self.sync_mount_requested:
                                     self.sync_mount_requested=False
+                                    breakpoint()
                                     self.mount_update_wincom.SyncToCoordinates(self.syncToRA,self.syncToDEC)
 
                             if self.unpark_requested:
