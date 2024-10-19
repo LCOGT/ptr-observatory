@@ -13,11 +13,6 @@ import json
 
 '''
 
-<<<<<<< Updated upstream
-=======
-
-
->>>>>>> Stashed changes
 
 obs_id = 'mrc1'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
@@ -95,30 +90,7 @@ site_config = {
     'degrees_to_avoid_zenith_area_in_general' : 0,  #Hill prevents seeing much below pole @ MRC
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 30,
 
-<<<<<<< Updated upstream
-=======
-    # These are the default values that will be set for the obs
-    # on a reboot of obs.py. They are safety checks that
-    # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': True,
-    'mount_reference_model_off': True,
-    'sun_checks_on': False,
-    'moon_checks_on': False,
-    'altitude_checks_on': False,
-    'daytime_exposure_time_safety_on': False,
-    'automatic_center_on': False,
-    'pre_focus_pointing_on': False,
-    # Depending on the pointing capacity of the scope OR the field of view OR both
-    # The pointing may never be quite good enough to center the object without
-    # a centering exposure. On initial commissioning, it should be set to always autocenter
-    # until you are convinced the natural pointing with empirical corrections is "good enough"
-    'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
 
-    # NB NB NB we should specify has_pipe# has_redis   and IP of redis   WER
-
-
-
->>>>>>> Stashed changes
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': True,   #which archive? I assume not the datalab / ptrarchive , but 'injest' implies LCO archive  WER
     'save_calib_and_misc_files': True,
@@ -468,11 +440,9 @@ site_config = {
 
             # When the focusser has no previous best focus values
             # start from this reference position
-<<<<<<< Updated upstream
+
             'reference': 5800,  #20240904
-=======
-            'reference': 4800,  #20240922  Guess
->>>>>>> Stashed changes
+
 
             # Limits and steps for the focuser.
             'minimum': 0,    #  Units are microns
