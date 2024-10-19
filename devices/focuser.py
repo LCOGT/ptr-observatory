@@ -2,6 +2,36 @@
 focuser.py focuser.py  focuser.py  focuser.py  focuser.py  focuser.py
 
 '''
+
+'''
+   Example : at 0.6 µm, at the F/D 6 focus of an instrument, the focusing tolerance which leads to a focusing \
+   precision better than l/8 is 8*62*0.0006*(1/8) = 0.02 mm, ie ± 20 microns.
+
+    F/d Tolerance
+        ± mm
+
+    2   0.0025 mm!  Note the units
+
+    3   0.005
+
+    4   0.010
+
+    5   0.015
+
+    6   0.020
+
+    8   0.040
+
+    10  0.060
+
+    12  0.090
+
+    15  0.130
+
+    20  0.240
+
+    30  0.540
+'''
 import datetime
 import json
 import shelve
