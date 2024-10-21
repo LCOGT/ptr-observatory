@@ -86,8 +86,8 @@ Here is the start of the subprocessing
 
 """
 
-input_psolve_info=pickle.load(sys.stdin.buffer)
-#input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
+#input_psolve_info=pickle.load(sys.stdin.buffer)
+input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
 
 hdufocusdata=input_psolve_info[0]
 hduheader=input_psolve_info[1]
@@ -703,7 +703,7 @@ if len(sources) >= 5:
 else:
     solve = 'error'
 
-solve = 'error'
+#solve = 'error'
 #########################
 
 ####### THE BLOB PLATESOLVER
@@ -740,8 +740,11 @@ if solve == 'error':
             minarea = 5
         sep.set_extract_pixstack(int(ix*iy - 1))
         sep.set_sub_object_limit(int(300000))
-        
-        sources = sep.extract(hdufocusdata, 4.0, minarea=minarea)
+        try:
+            sources = sep.extract(hdufocusdata, 4.0, minarea=minarea)
+        except:
+            hdufocusdata=hdufocusdata.astype("float").copy(order="C")
+            sources = sep.extract(hdufocusdata, 4.0, minarea=minarea)
         #sources.sort(order="cflux")
         
         
@@ -810,8 +813,8 @@ if solve == 'error':
             #sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
             sources = sources[sources['FWHM'] != 0]
             
-            # Sources that are bigger than 10 arcseconds, remove
-            #sources = sources[sources['FWHM'] < (10 / (pixscale))]
+            # Sources that are bigger than 20 arcseconds, remove
+            sources = sources[sources['FWHM'] < (20 / (pixscale))]
     
             # BANZAI prune nans from table
             nan_in_row = np.zeros(len(sources), dtype=bool)
@@ -829,7 +832,8 @@ if solve == 'error':
         #sources.remove_columns(source_delete)
         
         print("No. of detections:  ", len(sources))   
-        
+        sources.sort('flux')
+        sources.reverse()
         # Create astrometry table
         # if len(sources) > 10:
             
