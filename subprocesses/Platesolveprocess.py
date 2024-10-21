@@ -814,7 +814,7 @@ if solve == 'error':
             sources = sources[sources['FWHM'] != 0]
             
             # Sources that are bigger than 20 arcseconds, remove
-            sources = sources[sources['FWHM'] < (20 / (pixscale))]
+            #sources = sources[sources['FWHM'] < (20 / (pixscale))]
     
             # BANZAI prune nans from table
             nan_in_row = np.zeros(len(sources), dtype=bool)
