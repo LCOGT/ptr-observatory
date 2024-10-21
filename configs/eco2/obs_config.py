@@ -360,7 +360,7 @@ site_config = {
             'maximum': 30000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 200,
+            'throw' : 400,
             'unit': 'counts',
             'unit_conversion': 1.0,
             'has_dial_indicator': False

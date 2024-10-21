@@ -740,11 +740,12 @@ if solve == 'error':
             minarea = 5
         sep.set_extract_pixstack(int(ix*iy - 1))
         sep.set_sub_object_limit(int(300000))
+        sepbkgerr=bkg.globalrms
         try:
-            sources = sep.extract(hdufocusdata, 4.0, minarea=minarea)
+            sources = sep.extract(hdufocusdata, 4.0, err=sepbkgerr, minarea=minarea)
         except:
             hdufocusdata=hdufocusdata.astype("float").copy(order="C")
-            sources = sep.extract(hdufocusdata, 4.0, minarea=minarea)
+            sources = sep.extract(hdufocusdata, 4.0, err=sepbkgerr, minarea=minarea)
         #sources.sort(order="cflux")
         
         
