@@ -4900,6 +4900,19 @@ class Camera:
                     fwhm_dict = self.in_line_quick_focus(
                         outputimg, im_path, text_name)
                     focus_image = False
+                    
+                    
+                    # If the FWHM is pretty small, then go ahead. If the FWHM is above 3.0 arcseconds,
+                    # Lets go the slow route.
+                    
+                    breakpoint()
+                    
+
+
+
+
+
+                    ########################################################################################
 
                     g_dev['obs'].fwhmresult['FWHM'] = float(fwhm_dict['rfr'])
                     g_dev['obs'].fwhmresult['No_of_sources'] = float(

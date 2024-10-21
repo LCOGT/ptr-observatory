@@ -703,6 +703,246 @@ if len(sources) >= 5:
 else:
     solve = 'error'
 
+solve = 'error'
+#########################
+
+####### THE BLOB PLATESOLVER
+# If the gaussian approach doesn't work, take a slower blobby object approach
+# This can handle donuts and trailed stars etc.
+#
+# This is the slower sep routine from the EVA pipeline.
+
+if solve == 'error':
+    
+    print ("TRYING THE BLOB APPROACH")
+    try:
+        # Export a binary table for astrometry.net
+        # sepimg = objdeflat.astype("float").copy(order="C")
+        # del objdeflat
+        # sepbkg = sep.Background(sepimg, bw=32, bh=32, fw=3, fh=3)
+        
+        # sepbkg.subfrom(sepimg)
+        # #sepsky = (bn.nanmedian(sepbkg), "Sky background estimated by SEP")
+        
+        # #sepimg = sepimg - sepbkg
+        # sepbkgerr=sepbkg.globalrms
+        
+        ix, iy = hdufocusdata.shape
+        #print (sepimg.shape)
+        #border_x = int(ix * 0.1)
+        #border_y = int(iy * 0.1)
+        
+        #pixscale = float(header['PIXSCALE'])
+        #image_saturation_level = float(header['SATURATE'])
+        
+        minarea= (-9.2421 * pixscale) + 16.553
+        if minarea < 5:  # There has to be a min minarea though!
+            minarea = 5
+        sep.set_extract_pixstack(int(ix*iy - 1))
+        sep.set_sub_object_limit(int(300000))
+        
+        sources = sep.extract(hdufocusdata, 4.0, minarea=minarea)
+        #sources.sort(order="cflux")
+        
+        
+        sources = Table(sources)
+        sources = sources[sources['flag'] < 8]
+        
+        sources = sources[sources["peak"] < 0.8 * image_saturation_level ]
+        sources = sources[sources["cpeak"] < 0.8 * image_saturation_level ]
+        #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
+        #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
+        sources = sources[sources["flux"] > 750]
+        #sources = sources[sources["x"] < ix - border_x]
+        #sources = sources[sources["x"] > border_x]
+        #sources = sources[sources["y"] < iy - border_y]
+        #sources = sources[sources["y"] > border_y]
+        
+        # BANZAI prune nans from table
+        nan_in_row = np.zeros(len(sources), dtype=bool)
+        for col in sources.colnames:
+            nan_in_row |= np.isnan(sources[col])
+        sources = sources[~nan_in_row]
+        
+        # sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
+        # sources = sources[sources['ellipticity'] < 0.6]
+        
+        
+        # # Calculate the kron radius (Thanks BANZAI)
+        # kronrad, krflag = sep.kron_radius(sepimg , sources['x'], sources['y'],
+        #                                   sources['a'], sources['b'],
+        #                                   sources['theta'], 6.0)
+        # sources['flag'] |= krflag
+        # sources['kronrad'] = kronrad
+    
+        # Calculate uncertainty of image (thanks BANZAI)
+        
+        #uncertainty = float(readnoise) * np.ones(sepimg.shape,
+        #                                         dtype=sepimg.dtype) / float(readnoise)
+    
+    
+        # # DONUT IMAGE DETECTOR.        
+        # xdonut=numpy.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale
+        # ydonut=numpy.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale
+        
+        # Calcuate the equivilent of flux_auto (Thanks BANZAI)
+        # This is the preferred best photometry SEP can do.        
+        try:
+            # flux, fluxerr, flag = sep.sum_ellipse(sepimg, sources['x'], sources['y'],
+            #                                   sources['a'], sources['b'],
+            #                                   numpy.pi / 2.0, 2.5 * kronrad,
+            #                                   subpix=1)#, err=uncertainty)
+            
+                
+            #sources['flux'] = flux
+            #sources['fluxerr'] = fluxerr
+            #sources['flag'] |= flag
+            sources['FWHM'], _ = sep.flux_radius(hdufocusdata, sources['x'], sources['y'], sources['a'], 0.5,
+                                                 subpix=5)
+            # If image has been binned for focus we need to multiply some of these things by the binning
+            # To represent the original image
+            # sources['FWHM'] = (sources['FWHM'] * 2) 
+    
+            # Need to reject any stars that have FWHM that are less than a extremely
+            # perfect night as artifacts
+            
+            sources = sources[sources['FWHM'] > (0.8 / (pixscale))]
+            #sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
+            sources = sources[sources['FWHM'] != 0]
+            
+            # Sources that are bigger than 10 arcseconds, remove
+            #sources = sources[sources['FWHM'] < (10 / (pixscale))]
+    
+            # BANZAI prune nans from table
+            nan_in_row = np.zeros(len(sources), dtype=bool)
+            for col in sources.colnames:
+                nan_in_row |= np.isnan(sources[col])
+            sources = sources[~nan_in_row]
+
+        except:
+            print ("couldn't do blob photometry: ")
+            print(traceback.format_exc()) 
+            
+        # source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
+        #                  'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
+        
+        #sources.remove_columns(source_delete)
+        
+        print("No. of detections:  ", len(sources))   
+        
+        # Create astrometry table
+        # if len(sources) > 10:
+            
+        #     # flipping parity and fixing 0 vs 1 starting pixel
+        #     sources['xnew'] = sources['y'] 
+        #     sources['ynew'] = sources['x']
+            
+        #     sources['x'] = copy.deepcopy(sources['xnew'])
+        #     sources['y'] = copy.deepcopy(sources['ynew'])
+        #     sources.sort('flux')
+        #     sources.reverse()
+            
+        #     if len(sources) > 5000:
+        #         sources=sources[1:5001]
+            
+            #numpy_sources=np.array([sources['x'],sources['x'],sources['flux']])          
+            
+            
+            #np_sources=np.column_stack((np.array(sources['x']), np.array(sources['y']), np.array(sources['flux'])))
+            
+            # sources={'x': source_catalogues[catalogue_number][:,0],'y': source_catalogues[catalogue_number][:,1],'flux': source_catalogues[catalogue_number][:,2]}
+            
+            #sources=Table(sources)
+            
+            #sources.write('ASTROMTABLE'+ file.split('/')[-1].split('SATURATE')[-1].replace('.npy','.fits'))
+            
+        if len(sources) > 200:
+            sources=sources[1:199]
+            
+    except:
+        print("Failed to make a binary source table for astrometry.net")
+    
+        print(traceback.format_exc())
+    
+    
+    print ("Attempting WSL astrometry.net fit")
+
+    wslfilename=cal_path + 'wsltemp' + str(time.time()).replace('.','') +'.fits'
+
+
+
+    # save out the source list to a textfile for wsl fit
+    #sources={'x': sources[:,0],'y': sources[:,1],'flux': sources[:,2]}
+    sources={'x': sources['x'],'y': sources['y'],'flux': sources['flux']}
+
+    sources=Table(sources)
+
+    sources.write(wslfilename)
+
+    # recombobulate to access through the wsl filesystem
+    realwslfilename=wslfilename.split(':')
+    realwslfilename[0]=realwslfilename[0].lower()
+    realwslfilename='/mnt/'+ realwslfilename[0] + realwslfilename[1]
+
+
+    # Pick pixel scale range
+    if pixscale == None:
+        low_pixscale= 0.05
+        high_pixscale=10.0
+    else:
+        low_pixscale = 0.9 * pixscale
+        high_pixscale = 1.1 * pixscale
+
+
+    astoptions = '--crpix-center --tweak-order 2 --x-column y --y-column x --width ' + str(hdufocusdata.shape[0]) +' --height ' + str(hdufocusdata.shape[1]) + ' --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit 30 --overwrite --no-verify --no-plots'
+
+    print (astoptions)
+
+    os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
+
+
+    # If successful, then a file of the same name but ending in solved exists.
+    if os.path.exists(wslfilename):
+        print ("IT EXISTS! WCS SUCCESSFUL!")
+        wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
+        # wcsheader[0].header['CRVAL1']/15
+        # wcsheader[0].header['CRVAL2']
+        # wcsheader[0].header['CD1_2'] * 3600
+        solve={}
+        solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
+        solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
+        solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
+
+        if binnedtwo:
+            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+        elif binnedthree:
+            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+        print (solve)
+
+    else:
+        solve = 'error'
+
+
+    temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
+    for f in temp_files_to_remove:
+        try:
+            os.remove(f)
+        except:
+            pass
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+##################################
 
 print (cal_path+ 'platesolve.pickle')
 
