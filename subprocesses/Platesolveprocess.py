@@ -86,8 +86,8 @@ Here is the start of the subprocessing
 
 """
 
-#input_psolve_info=pickle.load(sys.stdin.buffer)
-input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
+input_psolve_info=pickle.load(sys.stdin.buffer)
+#input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
 
 hdufocusdata=input_psolve_info[0]
 hduheader=input_psolve_info[1]
