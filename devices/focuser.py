@@ -410,7 +410,6 @@ class Focuser:
         return int(self.current_focus_position)
 
     def set_initial_best_guess_for_focus(self):
-
         try:
             self.best_previous_focus_point, last_successful_focus_time, self.focus_temp_slope, self.focus_temp_intercept=self.get_af_log()
 
@@ -440,6 +439,7 @@ class Focuser:
             self.reference = self.calculate_compensation(
                 self.current_focus_temperature
             )
+
 
             plog(
                 "Focus position set from temp compensated value:  ",
