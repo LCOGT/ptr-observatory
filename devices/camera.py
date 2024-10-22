@@ -326,7 +326,7 @@ dgs = "°"
 def wait_for_slew(wait_after_slew=True):
     """
     A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
-    ???NB NB Should this include testing rotator slewing  and focuser moving?? WER
+    NB NB Should this include testing rotator slewing  and focuser moving? WER
     """
     if not g_dev['obs'].mountless_operation:
         try:
