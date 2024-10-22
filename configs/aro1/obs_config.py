@@ -200,15 +200,15 @@ site_config = {
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
-    'bias_dark interval':  150.,  # minutes
+    'bias_dark interval':  120.,  # minutes
     # Was 55 WER 20240313 Before Sunset Minutes  neg means before, + after.
-    'eve_sky_flat_sunset_offset': -60.,
+    'eve_sky_flat_sunset_offset': -30.,
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 15.,
     'clock_and_auto_focus_offset': -10,  # min before start of observing
-    'astro_dark_buffer': 15,  # Min before and after AD to extend observing window
+    'astro_dark_buffer': 10,  # Min before and after AD to extend observing window
     'morn_flat_start_offset': -10.,  # min from Sunrise
-    'morn_flat_end_offset': +60.,  # min from Sunrise
+    'morn_flat_end_offset': +40.,  # min from Sunrise
     'end_night_processing_time':  90.,  # A guess
     # 'observing_begins_offset': -1,       #min from AstroDark
     # How many minutes before civilDawn to do ....
@@ -850,7 +850,7 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': 10,  # 20240914 up from 3C, new camera installed 20240604
+                'temp_setpoint': 6,  # 20240914 up from 3C, new camera installed 20240604
                 'temp_setpoint_tolerance': 3,
                 'has_chiller': True,
                 # "temp_setpoint_tolarance": 1.5,

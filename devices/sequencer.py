@@ -5626,18 +5626,18 @@ class Sequencer:
         catalogue = []
         #This code is a bit ad-hoc since thw hour range was chosen for ARO...
         if max_pointings == 8:
-            ha_cat = [3., 2., 1., .5, -0.5, -1., -2., -3.]  #8 points
+            ha_cat = [3., 2., 1., .5, -0.5, -1., -2., -2.4]  #8 points
             for hour in ha_cat:
                 ra = ra_fix_h(sidereal_h + hour)  #This step could be done just before the seek below so hitting flips would be eliminated
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
         elif max_pointings == 12:
-            ha_cat = [3.5, 3, 2.5, 2, 1.5, 1, 0.5, -0.5,  -1, -1.5, -2, -2.5 ,-3.0, -3.5]  #114oints
+            ha_cat = [3.5, 3, 2.5, 2, 1.5, 1, 0.5, -0.5,  -1, -1.5, -2, -2.2 ,-2.4]  #114oints
             for hour in ha_cat:
                 ra = ra_fix_h(sidereal_h + hour)  # NB Note my stupid sign change! WER
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
         else:
             max_pointings == 16
-            ha_cat = [3.5, 3.25, 3. , 2.75, 2.5, 2.25, 2, 1.75, 1.5, 1.25, 1, 0.75,  0.5, 0.25, -.25, -0.5, -0.75 -1, -1.25, -1.5, -1.75, -2, -2.25,  -2.5,-2.75 -3, -3.25, -3.5]  #28 points
+            ha_cat = [3.5, 3.25, 3. , 2.75, 2.5, 2.25, 2, 1.75, 1.5, 1.25, 1, 0.75,  0.5, 0.25, -.25, -0.5, -0.75 -1, -1.25, -1.5, -1.75, -2, -2.1,  -2.25,-2.5 ]  #28 points
             for hour in ha_cat:
                 ra = ra_fix_h(sidereal_h + hour)  #Take note of the odd sign change.
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])

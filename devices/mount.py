@@ -522,7 +522,7 @@ class Mount:
 
         self.syncToRA=12.0
         self.syncToDEC=-20.0
-        breakpoint()
+
 
         self.unpark_requested=False
         self.park_requested=False
@@ -1043,7 +1043,7 @@ class Mount:
                             if self.can_sync_mount:
                                 if self.sync_mount_requested:
                                     self.sync_mount_requested=False
-                                    breakpoint()
+                                    #breakpoint()
                                     self.mount_update_wincom.SyncToCoordinates(self.syncToRA,self.syncToDEC)
 
                             if self.unpark_requested:
@@ -2153,7 +2153,7 @@ class Mount:
             home_alt = self.settings["home_altitude"]
             home_az = self.settings["home_azimuth"]
             g_dev['obs'].time_of_last_slew=time.time()
-            g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)#, skyflatspot=True)
+            g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True, skyflatspot=True)
 
             self.wait_for_slew(wait_after_slew=False)
         self.wait_for_slew(wait_after_slew=False)
