@@ -859,12 +859,16 @@ class Observatory:
         # essentially wiping the command queue coming from AWS.
         # This prevents commands from previous nights/runs suddenly running
         # when obs.py is booted (has happened a bit in the past!)
-        reqs.request(
-            "POST",
-            "https://jobs.photonranch.org/jobs/getnewjobs",
-            data=json.dumps({"site": self.name}),
-            timeout=30,
-        ).json()
+        try:
+            reqs.request(
+                "POST",
+                "https://jobs.photonranch.org/jobs/getnewjobs",
+                data=json.dumps({"site": self.name}),
+                timeout=30,
+            ).json()
+
+        except:
+            plog ("getnewjobs connection glitch on startup")
 
         # On startup, collect orphaned fits files that may have been dropped from the queue
         # when the site crashed or was rebooted.
