@@ -136,7 +136,7 @@ site_config = {
     'moon_checks_on': True,
     'altitude_checks_on': True,
     'daytime_exposure_time_safety_on': True,   #Perhaps condition by roof open/closed?
-    'simulate_open_roof': True,
+    'simulate_open_roof': False,
     'auto_centering_off': False,
     'self_guide_on': True,
     'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
@@ -850,14 +850,14 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': 6,  # 20240914 up from 3C, new camera installed 20240604
-                'temp_setpoint_tolerance': 3,
+                'temp_setpoint': 1,  # 20240914 up from 3C, new camera installed 20240604
+                'temp_setpoint_tolerance': 2,
                 'has_chiller': True,
                 # "temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp': 25,  # C 20240906
-                'day_warm': False,  # This is converted to a 0 or 1 depending on the Boolean value
-                'day_warm_degrees': 10,  # Assuming the Chiller is working.
+                'day_warm': True,  # This is converted to a 0 or 1 depending on the Boolean value
+                'day_warm_degrees': 9,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating': False,
 
                 # These are the physical values for the camera

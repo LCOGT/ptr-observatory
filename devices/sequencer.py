@@ -5815,6 +5815,8 @@ class Sequencer:
                     dec_got=Angle(entry[3], u.degree).to_string(sep=' ')
 
 
+
+
                 sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]
                 writeline = ra_wanted + " " + dec_wanted + " " + ra_got + " " + dec_got + " " + sid_str + " " + pierstring
                 with open(tpointnamefile, "a+") as f:
