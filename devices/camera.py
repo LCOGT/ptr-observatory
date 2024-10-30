@@ -1250,7 +1250,7 @@ class Camera:
             self.config["camera"][self.name]["settings"]["temp_setpoint"])
         try:
             self.temp_tolerance = float(
-                self.config["camera"][self.name]["settings"]["temp_setpoint_tolarance"])
+                self.config["camera"][self.name]["settings"]["temp_setpoint_tolerance"])
         except:
             self.temp_tolerance = 1.5
             plog("temp tolerance isn't set in obs config, using 1.5 degrees")

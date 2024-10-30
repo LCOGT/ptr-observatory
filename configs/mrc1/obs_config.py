@@ -70,7 +70,7 @@ site_config = {
     'moon_checks_on': True,
     'altitude_checks_on': True,
     'daytime_exposure_time_safety_on': True,   #Perhaps condition by roof open/closed?
-    'simulate_open_roof': True,
+    'simulate_open_roof': False,
     'auto_centering_off': False,
     'self_guide_on': True,
     'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
@@ -449,7 +449,7 @@ site_config = {
             'maximum': 12700,
             'step_size': 1,   #  This is misnamed!
             'backlash':  0,
-            'throw': 100,
+            'throw': 50,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  #  Steps per micron
         },
