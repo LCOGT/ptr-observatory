@@ -52,14 +52,18 @@ az_asec_per_major_grad = 3.7*60
 IH =+2574
 ID =  -3767
 
+  #20241022-3   455  Errors doubled and wrong sign.
 MA = +598
-  #20240524-3   455  Errors doubled and wrong sign.
-
 ME = +4103
-
-
-  #Both signs verified   620
-
+  #20240524-3   455  Errors doubled and wrong sign.
+MA = -216
+ME = +7852
+   #20241025-5
+MA = -89
+ME = +216
+   #20241026-95
+MA = -13
+ME = +91
 
 
 alt = round(ME -(aro_lift), 1)  #  Per TPOINT Manual. Positive means Raise
