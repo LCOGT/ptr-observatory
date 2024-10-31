@@ -543,26 +543,26 @@ class Observatory:
             self.local_calibration_path + "smartstacks/local_reduce_file_subprocess.py",
         )
 
-        # Clear out substacks directory
-        try:
-            shutil.rmtree(self.local_calibration_path + "substacks")
-        except:
-            pass
-        if not os.path.exists(self.local_calibration_path + "substacks"):
-            os.makedirs(self.local_calibration_path + "substacks")
+        # # Clear out substacks directory     #This is redundant
+        # try:
+        #     shutil.rmtree(self.local_calibration_path + "substacks")
+        # except:
+        #     pass
+        # if not os.path.exists(self.local_calibration_path + "substacks"):
+        #     os.makedirs(self.local_calibration_path + "substacks")
 
-        # Orphan and Broken paths
-        self.orphan_path = (
-            self.config["archive_path"] + "/" + self.name + "/" + "orphans/"
-        )
-        if not os.path.exists(self.orphan_path):
-            os.makedirs(self.orphan_path)
+        # # Orphan and Broken paths
+        # self.orphan_path = (
+        #     self.config["archive_path"] + "/" + self.name + "/" + "orphans/"
+        # )
+        # if not os.path.exists(self.orphan_path):
+        #     os.makedirs(self.orphan_path)
 
-        self.broken_path = (
-            self.config["archive_path"] + "/" + self.name + "/" + "broken/"
-        )
-        if not os.path.exists(self.broken_path):
-            os.makedirs(self.broken_path)
+        # self.broken_path = (
+        #     self.config["archive_path"] + "/" + self.name + "/" + "broken/"
+        # )
+        # if not os.path.exists(self.broken_path):
+        #     os.makedirs(self.broken_path)
 
         # Software Kills.
         # There are some software that really benefits from being restarted from
@@ -618,7 +618,7 @@ class Observatory:
         self.status_upload_time = 0.5
         self.time_last_status = time.time() - 3000
 
-        self.all_device_types = ptr_config["device_types"]  # May not be needed
+        self.all_device_types = ptr_config["device_types"]  # Is needed!
         self.device_types = ptr_config[
             "device_types"
         ]
@@ -626,8 +626,8 @@ class Observatory:
             self.check_lightning = self.config["has_lightning_detector"]
         except:
             self.check_lightning = False
-        # VERY TEMPORARY UNTIL MOUNT IS FIXED - MTF
-        self.mount_reboot_on_first_status = True
+        ##VERY TEMPORARY UNTIL MOUNT IS FIXED - MTF
+        ##self.mount_reboot_on_first_status = True
 
         # Timers to only update status at regular specified intervals.
         self.observing_status_timer = datetime.datetime.now() - datetime.timedelta(
@@ -1510,7 +1510,7 @@ class Observatory:
 
         # NB NB this needs to be conditoned on the site having lightning detection!
         if self.check_lightning:
-            try:    
+            try:
                 with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
                     r_date, r_time = light_rec.readline().split()[-2:]
                     #plog(r_date, r_time)
@@ -5161,7 +5161,7 @@ class Observatory:
                         g_dev["seq"].mosaic_center_dec
                         + g_dev["seq"].current_mosaic_displacement_dec
                     )
-                    new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
+                    new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)   #This probably has to do with taking a mosaic near the poles.
                     wait_for_slew(wait_after_slew=False)
                     g_dev["mnt"].slew_async_directly(ra=new_ra, dec=new_dec)
                     wait_for_slew(wait_after_slew=False)
