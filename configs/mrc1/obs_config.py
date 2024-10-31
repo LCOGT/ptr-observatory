@@ -445,7 +445,7 @@ site_config = {
             'maximum': 12700,
             'step_size': 1,
             'backlash':  0,
-            'throw': 100,
+            'throw': 40,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  # Taken from Gemini at mid-range.
         },
