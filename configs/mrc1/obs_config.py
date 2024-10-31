@@ -1,6 +1,18 @@
 # -*- coding: utf-8 -*-
 '''
 Config for MRC1
+
+October_30 Version.  Generally trying to simplify and streamline the code and improve breakpoint- and debug-ability.
+
+Re-organizing obs-config to better cluster common themes like safety settings, camera configuration ...
+
+On Threads and Concurency:
+
+    The inner loop for the active cameras must be able to run fast.  So as an example, breaking out of it to read overall
+    ASCOM status, or tending to the incoming command queue looking for  STOP/Cancel is not a good idea.  However just how
+    precise in time status has to be is debatable, since we can reliably platesolve.
+
+
 '''
 import json
 
@@ -84,11 +96,30 @@ site_config = {
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 30,
-    'lowest_requestable_altitude': 10,  # Degrees. For normal pointing requests don't allow requests to go this low.
-    'lowest_acceptable_altitude' : 0.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+    'lowest_requestable_altitude': 15,  # Degrees. For normal pointing requests don't allow requests to go this low.
+    'lowest_acceptable_altitude' : 10, # Below this altitude, it will automatically try to home and park the scope to recover.
     'degrees_to_avoid_zenith_area_for_calibrations': 5,
     'degrees_to_avoid_zenith_area_in_general' : 0,  #Hill prevents seeing much below pole @ MRC
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 30,
+
+    # These are the default values that will be set for the obs
+    # on a reboot of obs.py. They are safety checks that
+    # can be toggled by an admin in the Observe tab.
+    'scope_in_manual_mode': True,   #This is poorly named  the Enclosure is Manual vs Auto
+    'mount_reference_model_off': True,
+    'sun_checks_on': False,
+    'moon_checks_on': False,
+    'altitude_checks_on': False,
+    'daytime_exposure_time_safety_on': False,
+
+    # Depending on the pointing capacity of the scope OR the field of view OR both
+    # The pointing may never be quite good enough to center the object without
+    # a centering exposure. On initial commissioning, it should be set to always autocenter
+    # until you are convinced the natural pointing with empirical corrections is "good enough"
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
+
+    # NB NB NB we should specify has_pipe# has_redis   and IP of redis   WER
+
 
 
     # Setup of folders on local and network drives.
@@ -449,7 +480,7 @@ site_config = {
             'maximum': 12700,
             'step_size': 1,   #  This is misnamed!
             'backlash':  0,
-            'throw': 50,
+            'throw': 40,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  #  Steps per micron
         },

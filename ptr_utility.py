@@ -68,9 +68,11 @@ def plog(*args, loud = True):
     '''
 
     try:
+                
         if len(args) == 1 and args[0] in ['.', '>']:
             print(args[0])
             return
+        
         args_to_str = ''
         exposure_report = False
         for item in args:

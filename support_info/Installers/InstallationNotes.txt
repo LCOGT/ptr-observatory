@@ -1,0 +1,1 @@
+Time is important! https://www.timesynctool.com/ <--- install this and get it to update every 30 minutes. Windows Time can fail (it has happened already to an observatory)
