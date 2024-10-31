@@ -19,6 +19,7 @@ import matplotlib as mpl
 import subprocess
 import warnings
 from astropy.utils.exceptions import AstropyUserWarning
+from astropy.table import Table
 import threading
 import sep
 import math
@@ -4900,6 +4901,201 @@ class Camera:
                     fwhm_dict = self.in_line_quick_focus(
                         outputimg, im_path, text_name)
                     focus_image = False
+                    
+                    
+                    # If the FWHM is pretty small, then go ahead. If the FWHM is above 4.0 arcseconds,
+                    # Lets go the slow route and check for donutes etc..                  
+                    
+                    blocky=True
+                    if blocky:
+                        
+                        plog ("high FWHM - ")
+                        print ("TRYING THE BLOB APPROACH")
+                        try:
+                            # Export a binary table for astrometry.net
+                            # sepimg = objdeflat.astype("float").copy(order="C")
+                            # del objdeflat
+                            # sepbkg = sep.Background(sepimg, bw=32, bh=32, fw=3, fh=3)
+                            
+                            # sepbkg.subfrom(sepimg)
+                            # #sepsky = (bn.nanmedian(sepbkg), "Sky background estimated by SEP")
+                            
+                            # #sepimg = sepimg - sepbkg
+                            # sepbkgerr=sepbkg.globalrms
+                            
+                            #ix, iy = outputimg.shape
+                            #print (sepimg.shape)
+                            #border_x = int(ix * 0.1)
+                            #border_y = int(iy * 0.1)
+                            
+                            #pixscale = float(header['PIXSCALE'])
+                            #image_saturation_level = float(header['SATURATE'])
+                            
+                            # Cut down focus image to central degree
+                            fx, fy = outputimg.shape
+                            # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
+                            # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
+                            # So we chop the image down to a degree by a degree
+                            # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
+                            fx_degrees = (fx * self.pixscale) / 3600
+                            fy_degrees = (fy * self.pixscale) / 3600
+                            crop_x = 0
+                            crop_y = 0
+                            if fx_degrees > 1.0:
+                                ratio_crop = 1/fx_degrees
+                                crop_x = int((fx - (ratio_crop * fx))/2)
+                            if fy_degrees > 1.0:
+                                ratio_crop = 1/fy_degrees
+                                crop_y = int((fy - (ratio_crop * fy))/2)
+                            if crop_x > 0 or crop_y > 0:
+                                if crop_x == 0:
+                                    crop_x = 2
+                                if crop_y == 0:
+                                    crop_y = 2
+                                # Make sure it is an even number for OSCs
+                                if (crop_x % 2) != 0:
+                                    crop_x = crop_x+1
+                                if (crop_y % 2) != 0:
+                                    crop_y = crop_y+1
+                                outputimg = outputimg[crop_x:-crop_x, crop_y:-crop_y]
+                            
+                            try:
+                                sepbkg = sep.Background(outputimg, bw=32, bh=32, fw=3, fh=3)
+                            except:
+                                outputimg=outputimg.astype("float").copy(order="C")
+                                sepbkg = sep.Background(outputimg, bw=32, bh=32, fw=3, fh=3)
+                            
+                            sepbkg.subfrom(outputimg)
+                            
+                            ix, iy = outputimg.shape
+                            
+                            minarea= (-9.2421 * self.pixscale) + 16.553
+                            if minarea < 5:  # There has to be a min minarea though!
+                                minarea = 5
+                            sep.set_extract_pixstack(int(ix*iy - 1))
+                            sep.set_sub_object_limit(int(300000))
+                            
+                            sepbkgerr=sepbkg.globalrms
+                            
+                            try:
+                                sources = sep.extract(outputimg, 4.0, err=sepbkgerr, minarea=minarea)
+                            except:
+                                print(traceback.format_exc())
+                                breakpoint()
+                            
+                            # try:
+                            #     sources = sep.extract(outputimg, 4.0, minarea=minarea)
+                            # except:
+                            #     print(traceback.format_exc())
+                            #     breakpoint()
+                            #     outputimg=outputimg.astype("float").copy(order="C")
+                            #     sources = sep.extract(outputimg, 4.0, minarea=minarea)
+                            #sources.sort(order="cflux")
+                            
+                            
+                            sources = Table(sources)
+                            sources = sources[sources['flag'] < 8]
+                            
+                            image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                            
+                            sources = sources[sources["peak"] < 0.8 * image_saturation_level ]
+                            sources = sources[sources["cpeak"] < 0.8 * image_saturation_level ]
+                            #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
+                            #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
+                            sources = sources[sources["flux"] > 750]
+                            #sources = sources[sources["x"] < ix - border_x]
+                            #sources = sources[sources["x"] > border_x]
+                            #sources = sources[sources["y"] < iy - border_y]
+                            #sources = sources[sources["y"] > border_y]
+                            
+                            # BANZAI prune nans from table
+                            nan_in_row = np.zeros(len(sources), dtype=bool)
+                            for col in sources.colnames:
+                                nan_in_row |= np.isnan(sources[col])
+                            sources = sources[~nan_in_row]
+                            
+                            # sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
+                            # sources = sources[sources['ellipticity'] < 0.6]
+                            
+                            
+                            # # Calculate the kron radius (Thanks BANZAI)
+                            # kronrad, krflag = sep.kron_radius(sepimg , sources['x'], sources['y'],
+                            #                                   sources['a'], sources['b'],
+                            #                                   sources['theta'], 6.0)
+                            # sources['flag'] |= krflag
+                            # sources['kronrad'] = kronrad
+                        
+                            # Calculate uncertainty of image (thanks BANZAI)
+                            
+                            #uncertainty = float(readnoise) * np.ones(sepimg.shape,
+                            #                                         dtype=sepimg.dtype) / float(readnoise)
+                        
+                        
+                            # # DONUT IMAGE DETECTOR.        
+                            # xdonut=numpy.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale
+                            # ydonut=numpy.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale
+                            
+                            # Calcuate the equivilent of flux_auto (Thanks BANZAI)
+                            # This is the preferred best photometry SEP can do.        
+                            try:
+                                # flux, fluxerr, flag = sep.sum_ellipse(sepimg, sources['x'], sources['y'],
+                                #                                   sources['a'], sources['b'],
+                                #                                   numpy.pi / 2.0, 2.5 * kronrad,
+                                #                                   subpix=1)#, err=uncertainty)
+                                
+                                    
+                                #sources['flux'] = flux
+                                #sources['fluxerr'] = fluxerr
+                                #sources['flag'] |= flag
+                                sources['FWHM'], _ = sep.flux_radius(outputimg, sources['x'], sources['y'], sources['a'], 0.5,
+                                                                     subpix=5)
+                                # If image has been binned for focus we need to multiply some of these things by the binning
+                                # To represent the original image
+                                # sources['FWHM'] = (sources['FWHM'] * 2) 
+                        
+                                # Need to reject any stars that have FWHM that are less than a extremely
+                                # perfect night as artifacts
+                                
+                                sources = sources[sources['FWHM'] > (0.8 / (self.pixscale))]
+                                #sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
+                                sources = sources[sources['FWHM'] != 0]
+                                
+                                # Sources that are bigger than 10 arcseconds, remove
+                                #sources = sources[sources['FWHM'] < (10 / (pixscale))]
+                        
+                                # BANZAI prune nans from table
+                                nan_in_row = np.zeros(len(sources), dtype=bool)
+                                for col in sources.colnames:
+                                    nan_in_row |= np.isnan(sources[col])
+                                sources = sources[~nan_in_row]
+                    
+                            except:
+                                print ("couldn't do blob photometry: ")
+                                print(traceback.format_exc()) 
+                            
+                        # source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
+                        #                  'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
+                        
+                        #sources.remove_columns(source_delete)
+                        except:
+                            print ("couldn't do blob photometry: ")
+                            print(traceback.format_exc()) 
+                        print("No. of detections:  ", len(sources))   
+                                        
+                        #fwhm_dict
+                        
+                        fwhm_dict = {}
+                        fwhm_dict['rfp'] = np.median(sources['FWHM']) * 2
+                        fwhm_dict['rfr'] = np.median(sources['FWHM']) * self.pixscale * 2
+                        fwhm_dict['rfs'] = np.std(sources['FWHM']) * self.pixscale * 2
+                        fwhm_dict['sky'] = 200 #str(imageMedian)
+                        fwhm_dict['sources'] = str(len(sources))
+
+
+
+
+
+                    ########################################################################################
 
                     g_dev['obs'].fwhmresult['FWHM'] = float(fwhm_dict['rfr'])
                     g_dev['obs'].fwhmresult['No_of_sources'] = float(
