@@ -540,6 +540,8 @@ class Focuser:
 
     def guarded_move(self, to_focus):
 
+
+
         focuser_was_moving=False
         while self.focuser_is_moving:
             focuser_was_moving=True
@@ -549,7 +551,8 @@ class Focuser:
         if focuser_was_moving:
             self.wait_for_focuser_update()
 
-        if (self.current_focus_position*self.micron_to_steps) > to_focus-35 and (self.current_focus_position*self.micron_to_steps) < to_focus+35:
+        if (self.current_focus_position*self.micron_to_steps) > to_focus-35 and \
+            (self.current_focus_position*self.micron_to_steps) < to_focus+35:
             plog ("Not moving focus, focus already close to requested position")
         else:
 
@@ -572,12 +575,12 @@ class Focuser:
 
     def move_absolute_command(self, req: dict, opt: dict):
         """Sets the focus position by moving to an absolute position."""
-
+        #
         self.focuser_is_moving=True
         position = int(float(req["position"])) * self.micron_to_steps
         self.guarded_move(position)
         self.last_known_focus = position
-        plog("Forces last knov focus to be new position Line 551 in focuser WER 20400917")
+        plog("Forces last known focus to be new position Line 551 in focuser WER 20400917")
 
     def stop_command(self, req: dict, opt: dict):
         """stop focuser movement"""
