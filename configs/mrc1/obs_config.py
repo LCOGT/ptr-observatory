@@ -24,6 +24,7 @@ import json
 
 
 '''
+#pOWER SWITCH ON 10.15.0.60  CHANNEL 3 not the ones marked Camera
 
 
 obs_id = 'mrc1'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
