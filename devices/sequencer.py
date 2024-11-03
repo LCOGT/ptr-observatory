@@ -5281,7 +5281,8 @@ class Sequencer:
 
 
             #  If more than 15 attempts, fail and bail out.
-            if position_counter > 15:
+            # But don't bail out if the scope isn't commissioned yet, keep on finding.
+            if position_counter > 15 and g_dev['foc'].focus_commissioned:
                 g_dev['foc'].set_initial_best_guess_for_focus()
                 if not dont_return_scope:
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -5407,7 +5408,11 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[-1][0] + throw
 
                     else:
-                        if minimum_value > self.config["focuser"]["focuser1"]['maximum_good_focus_in_arcsecond']:
+                        # If the seeing is too poor to bother focussing, bail o ut
+                        # But ONLY if the focus is commissioned. If the focus is not
+                        # commissioned then it is highly likely just to be in the wrong
+                        # focus region
+                        if (minimum_value > self.config["focuser"]["focuser1"]['maximum_good_focus_in_arcsecond']) and g_dev['foc'].focus_commissioned:
                             plog ("Minimum value: " + str(minimum_value) + " is too high to bother focussing, just going with the estimated value from previous focus")
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                             g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
@@ -5438,7 +5443,7 @@ class Sequencer:
                         # Then check whether the values on the edge are high enough.
 
                         # If left side is too low get another dot
-                        elif focus_spots[0][1] < (minimum_value * 1.5):
+                        elif focus_spots[0][1] < (minimum_value * 1.8):
 
                             plog ("Left hand side of curve is too low for a good fit, getting another dot")
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
@@ -5447,17 +5452,27 @@ class Sequencer:
                             g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                         # If right hand side is too low get another dot
-                        elif focus_spots[0][1] < (minimum_value * 1.5):
+                        elif focus_spots[-1][1] < (minimum_value * 1.8):
                             plog ("Right hand side of curve is too low for a good fit, getting another dot")
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
+
+                        # If the parabola is not centered roughly on the minimum point, then get another dot on
+                        # The necessary side
+                        # elif True:
+                            # I've hit a point where it tries to solve, but it is the wrong point at the moment!
+                            # breakpoint()
+
+
                         # Otherwise if it seems vaguely plausible to get a fit... give it a shot
                         else:
                             # If you can fit a parabola, then you've got the focus
                             # If fit, then break
+
+
 
                             fit_failed=False
                             try:
@@ -5474,6 +5489,8 @@ class Sequencer:
                                 plog ("crit points didn't work dunno y yet.")
                                 plog(traceback.format_exc())
                                 fit_failed=True
+
+                            breakpoint()
 
                             if fit_failed:
                                 plog ("Fit failed. Usually due to a lack of data on one side of the curve. Grabbing another dot on the smaller side of the curve")

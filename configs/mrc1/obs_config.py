@@ -472,7 +472,7 @@ site_config = {
             # When the focusser has no previous best focus values
             # start from this reference position
 
-            'reference': 4630,  #20240904
+            'reference': 4900,  #20240904
 
 
             # Limits and steps for the focuser.
