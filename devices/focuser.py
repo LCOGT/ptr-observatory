@@ -516,7 +516,12 @@ class Focuser:
         if self.theskyx:
             temp_delta = self.current_focus_temperature - self.previous_focus_temperature
         else:
-            temp_delta = self.current_focus_temperature - self.previous_focus_temperature
+            try:
+                temp_delta = self.current_focus_temperature - self.previous_focus_temperature
+            except:
+                temp_delta = 0
+                plog (traceback.format_exc())
+                plog ("something fishy in the focus temperature")
 
         try:
             adjust = 0.0

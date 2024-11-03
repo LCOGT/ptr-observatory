@@ -5443,7 +5443,7 @@ class Sequencer:
                         # Then check whether the values on the edge are high enough.
 
                         # If left side is too low get another dot
-                        elif focus_spots[0][1] < (minimum_value * 1.8):
+                        elif focus_spots[0][1] < (minimum_value * 1.5):
 
                             plog ("Left hand side of curve is too low for a good fit, getting another dot")
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
@@ -5452,7 +5452,7 @@ class Sequencer:
                             g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                         # If right hand side is too low get another dot
-                        elif focus_spots[-1][1] < (minimum_value * 1.8):
+                        elif focus_spots[-1][1] < (minimum_value * 1.5):
                             plog ("Right hand side of curve is too low for a good fit, getting another dot")
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
