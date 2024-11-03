@@ -4971,9 +4971,9 @@ class Camera:
                     focus_position = g_dev['foc'].current_focus_position
 
                     pixfoc=False
-                    if pixscale == None:
+                    if self.pixscale == None:
                         pixfoc=True
-                    elif pixscale > 1.0:
+                    elif self.pixscale > 1.0:
                         pixfoc=True
 
                     # Instead of waiting for the photometry process we quickly measure the FWHM
@@ -5176,7 +5176,7 @@ class Camera:
                         fwhm_dict['sky'] = 200 #str(imageMedian)
                         fwhm_dict['sources'] = str(len(sources))
                         
-                        plog ("FWHM from blob: " + str(fwhm_dict['rfr'])
+                        plog ("FWHM from blob: " + str(fwhm_dict['rfr']))
 
 
 
