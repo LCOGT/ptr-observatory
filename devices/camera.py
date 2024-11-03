@@ -4970,18 +4970,29 @@ class Camera:
                     del hdu
                     focus_position = g_dev['foc'].current_focus_position
 
+                    pixfoc=False
+                    if self.pixscale == None:
+                        pixfoc=True
+                    elif self.pixscale > 1.0:
+                        pixfoc=True
+
                     # Instead of waiting for the photometry process we quickly measure the FWHM
                     # in-line. Necessary particularly because the photometry subprocess can bank up.
-                    fwhm_dict = self.in_line_quick_focus(
-                        outputimg, im_path, text_name)
-                    focus_image = False
                     
+                    if True:
+                    #if not pixfoc and (g_dev['foc'].focus_commissioned):
+                        fwhm_dict = self.in_line_quick_focus(
+                            outputimg, im_path, text_name)
+                        focus_image = False
+                        
+                        plog ("FWHM from gaussian: " + str(fwhm_dict['rfr']))
                     
                     # If the FWHM is pretty small, then go ahead. If the FWHM is above 4.0 arcseconds,
-                    # Lets go the slow route and check for donutes etc..                  
+                    # Lets go the slow route and check for donutes etc..                        
                     
-                    blocky=True
-                    if blocky:
+                    
+                    if pixfoc or not (g_dev['foc'].focus_commissioned) or True:
+                    
                         
                         plog ("high FWHM - ")
                         print ("TRYING THE BLOB APPROACH")
@@ -5164,7 +5175,8 @@ class Camera:
                         fwhm_dict['rfs'] = np.std(sources['FWHM']) * self.pixscale * 2
                         fwhm_dict['sky'] = 200 #str(imageMedian)
                         fwhm_dict['sources'] = str(len(sources))
-
+                        
+                        plog ("FWHM from blob: " + str(fwhm_dict['rfr']))
 
 
 
