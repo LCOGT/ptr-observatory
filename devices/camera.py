@@ -67,6 +67,14 @@ mpl.rcParams['path.simplify_threshold'] = 1.0
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
 
+#This function computes the factor of the argument passed
+def print_factors(x):
+   print("The factors of",x,"are:")
+   for i in range(1, x + 1):
+       if x % i == 0:
+           print(i)
+
+
 def mid_stretch_jpeg(data):
     """
     This product is based on software from the PixInsight project, developed by
@@ -219,7 +227,7 @@ def dump_main_data_out_to_post_exposure_subprocess(payload):
 
 #     # output, error = post_processing_subprocess.communicate()
 #     # print (output)
-#     # breakpoint()
+#     #breakpoint()
 
 # =======
     if False:
@@ -320,6 +328,46 @@ def localMax(a, include_diagonal=True, threshold=-np.inf):
 This device works on cameras and getting images and header info back to the obs queues.
 """
 dgs = "°"
+
+
+
+
+def wait_for_slew(wait_after_slew=True):
+    """
+    A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
+    NB NB Should this include testing rotator slewing  and focuser moving? WER
+    """
+    if not g_dev['obs'].mountless_operation:
+        try:
+            actually_slewed = False
+            if not g_dev['mnt'].rapid_park_indicator:
+                movement_reporting_timer = time.time()
+                while g_dev['mnt'].return_slewing():
+                    if actually_slewed == False:
+                        actually_slewed = True
+                    if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
+                        plog('m>')
+                        movement_reporting_timer = time.time()
+                    # if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                    g_dev['mnt'].get_mount_coordinates_after_next_update()
+                    # , dont_wait=True)
+                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+
+                # Then wait for slew_time to settle
+                if actually_slewed and wait_after_slew:
+                    time.sleep(g_dev['mnt'].wait_after_slew_time)
+
+        except Exception as e:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            if 'pywintypes.com_error' in str(e):
+                plog("Mount disconnected. Recovering.....")
+                time.sleep(5)
+                g_dev['mnt'].reboot_mount()
+            else:
+                pass
+        return
+
 
 # This class is for QHY camera control
 
@@ -505,12 +553,12 @@ def reset_sequence(pCamera):
         # Remove any broken files first.
         temp_shelf_list=glob.glob(g_dev['obs'].obsid_path + "ptr_night_shelf/" +
         str(pCamera) + str(g_dev['obs'].name)+ '*')
-        for file in temp_shelf_list:            
+        for file in temp_shelf_list:
             try:
                 os.remove(file)
             except:
                 pass
-            
+
         camShelf = shelve.open(
             g_dev['obs'].obsid_path + "ptr_night_shelf/" +
             str(pCamera) + str(g_dev['obs'].name)
@@ -524,7 +572,7 @@ def reset_sequence(pCamera):
         return seq
     except:
         plog(traceback.format_exc())
-        breakpoint()
+        #breakpoint()
         plog("Nothing on the cam shelf in reset_sequence")
         return None
 
@@ -743,7 +791,7 @@ class Camera:
         g_dev[name + "_cam_retry_config"] = config
         g_dev[name + "_cam_retry_doit"] = False
         g_dev[name] = self
-        if name == "camera_1_1":  # NBDefaults sets up Selected 'cam'
+        if name == "camera_1_1":  # NB  Default sets up Selected 'cam'
             g_dev["cam"] = self
         self.config = config
         self.alias = config["camera"][self.name]["name"]
@@ -1005,7 +1053,7 @@ class Camera:
             else:
                 plog("ERROR:  ASCOM camera is not connected:  ",
                      self._connect(True))
-            # breakpoint()
+            #breakpoint()
 
             self.imagesize_x = self.camera.CameraXSize
             self.imagesize_y = self.camera.CameraYSize
@@ -1211,7 +1259,7 @@ class Camera:
             self.config["camera"][self.name]["settings"]["temp_setpoint"])
         try:
             self.temp_tolerance = float(
-                self.config["camera"][self.name]["settings"]["temp_setpoint_tolarance"])
+                self.config["camera"][self.name]["settings"]["temp_setpoint_tolerance"])
         except:
             self.temp_tolerance = 1.5
             plog("temp tolerance isn't set in obs config, using 1.5 degrees")
@@ -1489,6 +1537,7 @@ class Camera:
         # Camera overscan values
         self.overscan_values={}
         self.overscan_values['QHY600']=[0,38,32,0]
+        self.overscan_values['QHY461']=[2,2,50,50]
         self.overscan_values['SBIG16803']=[0,0,0,0]
 
         self.overscan_values['asi1600']=[0,0,0,0]
@@ -2223,8 +2272,7 @@ class Camera:
             if subexposure == 0:
                 self.substack_start_time = time.time()
             self.expected_endpoint_of_substack_exposure = time.time() + exp_of_substacks
-            self.sub_stacker_midpoints.append(
-                copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
+            self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
             qhycam.so.ExpQHYCCDSingleFrame(
                 qhycam.camera_params[qhycam_id]['handle'])
             exposure_timer = time.time()
@@ -2440,6 +2488,8 @@ class Camera:
         ] = cam_stat  # The state could be expanded to be more meaningful. for instance report TEC % TEmp, temp setpoint...
         return status
 
+
+
     def parse_command(self, command):
 
         req = command["required_params"]
@@ -2459,6 +2509,34 @@ class Camera:
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose":  # and not self.running_an_exposure_set:
+
+            "First we parse the hint"
+            if 'hint' in opt and len(opt['hint']) > 0:
+                plog("hint:  ", opt['hint'])
+                hint = opt['hint'].split(";")
+                for item in hint:
+                    term, chg = item.split("=")
+                    term = term.strip(' ')
+                    if term in ['refr', 'modl', 'rate', 'drft']:
+                        if term == 'modl':
+                            g_dev['mnt'].model_on = bool(chg)
+                        if term == 'refr':
+                            g_dev['mnt'].refr_on = bool(chg)
+                        if term == 'rate':
+                            g_dev['mnt'].rates_on = bool(chg)
+                        if term == 'drft':
+                            g_dev['mnt'].drift_on = bool(chg)
+
+                    else:
+                        if chg[0] == '+':  #Increment
+                            g_dev['mnt'].model[term] += math.radians(float(chg[1:])/3600.)
+                        elif chg[0:2] == '--':  #Decrement
+                            g_dev['mnt'].model[term] -= math.radians(float(chg[2:])/3600.)
+                        else:  #Assign value
+                            g_dev['mnt'].model[term] = math.radians(float(chg)/3600.)
+                        print(' R, M, model:  ', g_dev['mnt'].refr_on, g_dev['mnt'].model_on, g_dev['mnt'].model)
+                pass
+
             if self.running_an_exposure_set:
                 plog(
                     "Cannot expose, camera is currently busy, waiting for exposures to clear")
@@ -2873,6 +2951,7 @@ class Camera:
                 if not g_dev['obs'].mountless_operation:
                     if not g_dev['mnt'].rapid_park_indicator:
                         if g_dev['mnt'].pier_flip_detected==True and not g_dev['obs'].auto_centering_off:
+                            #breakpoint()
                             plog ("PIERFLIP DETECTED, RECENTERING.")
                             g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                             g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
@@ -2892,6 +2971,7 @@ class Camera:
 
                     if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread:
                         g_dev['obs'].check_platesolve_and_nudge()
+                        plog("Tel was just nudged after pier flip")
 
                 self.tempStartupExposureTime = time.time()
 
@@ -3046,7 +3126,7 @@ class Camera:
 
                             self.current_exposure_time = exposure_time
 
-                            # Always check rotator just before exposure  The Rot jitters wehn parked so
+                            # Always check rotator just before exposure
                             if not g_dev['obs'].mountless_operation:
                                 rot_report = 0
                                 if g_dev['rot'] != None:
@@ -3108,11 +3188,13 @@ class Camera:
                                 self.running_an_exposure_set = False
                                 return 'cancelled'
 
-                            if not g_dev['obs'].mountless_operation and not g_dev['mnt'].rapid_park_indicator:
+                            if not g_dev['obs'].mountless_operation and not g_dev['mnt'].rapid_park_indicator \
+                                and not  g_dev['obs'].mount_reference_model_off \
+                                and not  g_dev['obs'].auto_centering_off:      #NB NB this last two may be and 'OR' ?? WER
                                 # self.wait_for_slew(wait_after_slew=False)
                                 if g_dev['mnt'].pier_flip_detected == True:
                                     plog(
-                                        "Detected a pier flip just before exposure!")
+                                        "Detected a pier flip just before exposure! Line 3105 in Camera.")
                                     g_dev["obs"].send_to_user(
                                         "Pier Flip detected, recentering.")
                                     g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
@@ -3127,7 +3209,7 @@ class Camera:
                                     Nsmartstack = 1
                                     sskcounter = 2
                                     self.currently_in_smartstack_loop = False
-                                    break
+
 
                             if imtype in ['bias', 'dark'] or a_dark_exposure:
                                 # Artifical wait time for bias and dark
@@ -3185,7 +3267,7 @@ class Camera:
                             if not g_dev['seq'].focussing and not g_dev['obs'].scope_in_manual_mode and frame_type == 'pointing':
                                 try:
                                     last_fwhm = g_dev['obs'].fwhmresult["FWHM"]
-                                    #  NB NB WER this can be evil is telescope is not well set up. Should not adjust in Eng mode.
+                                    #  NB NB WER this can be evil if telescope is not well set up. Should not adjust in Eng mode.
                                     if last_fwhm > 4.0:
                                         exposure_time = exposure_time * 4
                                     elif last_fwhm > 3:
@@ -3375,7 +3457,8 @@ class Camera:
         if not g_dev['obs'].mountless_operation:
             if not g_dev['mnt'].rapid_park_indicator:
                 if g_dev['mnt'].pier_flip_detected == True  and not g_dev['obs'].auto_centering_off:
-                    plog ("PIERFLIP DETECTED, RECENTERING.")
+                    plog ("!!!!!!!!!!!PIERFLIP DETECTED, RECENTERING!!!!!!!!!!!!!!!!!")
+                    #breakpoint()
                     g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                     g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
                     g_dev['obs'].pointing_correction_request_time = time.time()
@@ -3525,7 +3608,7 @@ class Camera:
             )
 
         # , 'y', 'up', 'u']:   NB NB we should create a code-wide list of Narrow bands, broadbands and widebands so we do not have mulitiple lists to manage.
-        elif Nsmartstack > 1 and self.current_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr']:
+        elif Nsmartstack > 1 and self.current_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr', 'su', 'sv', 'sb', 'sy', 'hd', 'hg']:
             plog("Starting narrowband " + str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
                  + str(opt["object_name"])
                  + " by user: " + str(observer_user_name))
@@ -3566,7 +3649,7 @@ class Camera:
             # As the readouts are all done in the substack thread.
             #stacking_overhead= 0.0005*pow(exposure_time,2) + 0.0334*exposure_time
             # , 'y', 'up', 'u']
-            if self.current_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr']:
+            if self.current_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr', 'su', 'sv', 'sb', 'sy', 'hd', 'hg']:
                 cycle_time = exposure_time + \
                     ((exposure_time / 30)) * \
                     self.readout_time  # + stacking_overhead
@@ -3696,7 +3779,7 @@ class Camera:
             )
         except:
             plog(traceback.format_exc())
-            breakpoint()
+            #breakpoint()
         cal_path = im_path_r + g_dev["day"] + "/calib/"
 
         jpeg_name = (
@@ -4538,7 +4621,7 @@ class Camera:
                             time.sleep(3)
                             retrycounter = retrycounter + 1
 
-
+                #breakpoint()
 ################################################# CUTOFF FOR THE POSTPROCESSING QUEUE
 
 ################################ START OFF THE MAIN POST_PROCESSING SUBTHREAD
@@ -4780,7 +4863,7 @@ class Camera:
                     del hdu
                     return copy.deepcopy(expresult)
 
-# IN-LINE REDUCED FRAMES (POINTING AND FOCUS) AREA
+                # IN-LINE REDUCED FRAMES (POINTING AND FOCUS) AREA
 
                 # If this is a pointing or a focus frame, we need to do an
                 # in-line flash reduction
@@ -4896,19 +4979,30 @@ class Camera:
                     del hdu
                     focus_position = g_dev['foc'].current_focus_position
 
+                    pixfoc=False
+                    if self.pixscale == None:
+                        pixfoc=True
+                    elif self.pixscale > 1.0:
+                        pixfoc=True
+
                     # Instead of waiting for the photometry process we quickly measure the FWHM
                     # in-line. Necessary particularly because the photometry subprocess can bank up.
-                    fwhm_dict = self.in_line_quick_focus(
-                        outputimg, im_path, text_name)
-                    focus_image = False
-                    
-                    
+
+                    if True:
+                    #if not pixfoc and (g_dev['foc'].focus_commissioned):
+                        fwhm_dict = self.in_line_quick_focus(
+                            outputimg, im_path, text_name)
+                        focus_image = False
+
+                        plog ("FWHM from gaussian: " + str(fwhm_dict['rfr']))
+
                     # If the FWHM is pretty small, then go ahead. If the FWHM is above 4.0 arcseconds,
-                    # Lets go the slow route and check for donutes etc..                  
-                    
-                    blocky=True
-                    if blocky:
-                        
+                    # Lets go the slow route and check for donutes etc..
+
+
+                    if pixfoc or not (g_dev['foc'].focus_commissioned) or True:
+
+
                         plog ("high FWHM - ")
                         print ("TRYING THE BLOB APPROACH")
                         try:
@@ -4916,21 +5010,21 @@ class Camera:
                             # sepimg = objdeflat.astype("float").copy(order="C")
                             # del objdeflat
                             # sepbkg = sep.Background(sepimg, bw=32, bh=32, fw=3, fh=3)
-                            
+
                             # sepbkg.subfrom(sepimg)
                             # #sepsky = (bn.nanmedian(sepbkg), "Sky background estimated by SEP")
-                            
+
                             # #sepimg = sepimg - sepbkg
                             # sepbkgerr=sepbkg.globalrms
-                            
+
                             #ix, iy = outputimg.shape
                             #print (sepimg.shape)
                             #border_x = int(ix * 0.1)
                             #border_y = int(iy * 0.1)
-                            
+
                             #pixscale = float(header['PIXSCALE'])
                             #image_saturation_level = float(header['SATURATE'])
-                            
+
                             # Cut down focus image to central degree
                             fx, fy = outputimg.shape
                             # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
@@ -4958,31 +5052,31 @@ class Camera:
                                 if (crop_y % 2) != 0:
                                     crop_y = crop_y+1
                                 outputimg = outputimg[crop_x:-crop_x, crop_y:-crop_y]
-                            
+
                             try:
                                 sepbkg = sep.Background(outputimg, bw=32, bh=32, fw=3, fh=3)
                             except:
                                 outputimg=outputimg.astype("float").copy(order="C")
                                 sepbkg = sep.Background(outputimg, bw=32, bh=32, fw=3, fh=3)
-                            
+
                             sepbkg.subfrom(outputimg)
-                            
+
                             ix, iy = outputimg.shape
-                            
+
                             minarea= (-9.2421 * self.pixscale) + 16.553
                             if minarea < 5:  # There has to be a min minarea though!
                                 minarea = 5
                             sep.set_extract_pixstack(int(ix*iy - 1))
                             sep.set_sub_object_limit(int(300000))
-                            
+
                             sepbkgerr=sepbkg.globalrms
-                            
+
                             try:
                                 sources = sep.extract(outputimg, 4.0, err=sepbkgerr, minarea=minarea)
                             except:
                                 print(traceback.format_exc())
                                 breakpoint()
-                            
+
                             # try:
                             #     sources = sep.extract(outputimg, 4.0, minarea=minarea)
                             # except:
@@ -4991,13 +5085,13 @@ class Camera:
                             #     outputimg=outputimg.astype("float").copy(order="C")
                             #     sources = sep.extract(outputimg, 4.0, minarea=minarea)
                             #sources.sort(order="cflux")
-                            
-                            
+
+
                             sources = Table(sources)
                             sources = sources[sources['flag'] < 8]
-                            
+
                             image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                            
+
                             sources = sources[sources["peak"] < 0.8 * image_saturation_level ]
                             sources = sources[sources["cpeak"] < 0.8 * image_saturation_level ]
                             #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
@@ -5007,43 +5101,43 @@ class Camera:
                             #sources = sources[sources["x"] > border_x]
                             #sources = sources[sources["y"] < iy - border_y]
                             #sources = sources[sources["y"] > border_y]
-                            
+
                             # BANZAI prune nans from table
                             nan_in_row = np.zeros(len(sources), dtype=bool)
                             for col in sources.colnames:
                                 nan_in_row |= np.isnan(sources[col])
                             sources = sources[~nan_in_row]
-                            
+
                             # sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
                             # sources = sources[sources['ellipticity'] < 0.6]
-                            
-                            
+
+
                             # # Calculate the kron radius (Thanks BANZAI)
                             # kronrad, krflag = sep.kron_radius(sepimg , sources['x'], sources['y'],
                             #                                   sources['a'], sources['b'],
                             #                                   sources['theta'], 6.0)
                             # sources['flag'] |= krflag
                             # sources['kronrad'] = kronrad
-                        
+
                             # Calculate uncertainty of image (thanks BANZAI)
-                            
+
                             #uncertainty = float(readnoise) * np.ones(sepimg.shape,
                             #                                         dtype=sepimg.dtype) / float(readnoise)
-                        
-                        
-                            # # DONUT IMAGE DETECTOR.        
+
+
+                            # # DONUT IMAGE DETECTOR.
                             # xdonut=numpy.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale
                             # ydonut=numpy.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale
-                            
+
                             # Calcuate the equivilent of flux_auto (Thanks BANZAI)
-                            # This is the preferred best photometry SEP can do.        
+                            # This is the preferred best photometry SEP can do.
                             try:
                                 # flux, fluxerr, flag = sep.sum_ellipse(sepimg, sources['x'], sources['y'],
                                 #                                   sources['a'], sources['b'],
                                 #                                   numpy.pi / 2.0, 2.5 * kronrad,
                                 #                                   subpix=1)#, err=uncertainty)
-                                
-                                    
+
+
                                 #sources['flux'] = flux
                                 #sources['fluxerr'] = fluxerr
                                 #sources['flag'] |= flag
@@ -5051,46 +5145,47 @@ class Camera:
                                                                      subpix=5)
                                 # If image has been binned for focus we need to multiply some of these things by the binning
                                 # To represent the original image
-                                # sources['FWHM'] = (sources['FWHM'] * 2) 
-                        
+                                # sources['FWHM'] = (sources['FWHM'] * 2)
+
                                 # Need to reject any stars that have FWHM that are less than a extremely
                                 # perfect night as artifacts
-                                
+
                                 sources = sources[sources['FWHM'] > (0.8 / (self.pixscale))]
                                 #sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
                                 sources = sources[sources['FWHM'] != 0]
-                                
+
                                 # Sources that are bigger than 10 arcseconds, remove
                                 #sources = sources[sources['FWHM'] < (10 / (pixscale))]
-                        
+
                                 # BANZAI prune nans from table
                                 nan_in_row = np.zeros(len(sources), dtype=bool)
                                 for col in sources.colnames:
                                     nan_in_row |= np.isnan(sources[col])
                                 sources = sources[~nan_in_row]
-                    
+
                             except:
                                 print ("couldn't do blob photometry: ")
-                                print(traceback.format_exc()) 
-                            
+                                print(traceback.format_exc())
+
                         # source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
                         #                  'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
-                        
+
                         #sources.remove_columns(source_delete)
                         except:
                             print ("couldn't do blob photometry: ")
-                            print(traceback.format_exc()) 
-                        print("No. of detections:  ", len(sources))   
-                                        
+                            print(traceback.format_exc())
+                        print("No. of detections:  ", len(sources))
+
                         #fwhm_dict
-                        
+
                         fwhm_dict = {}
-                        fwhm_dict['rfp'] = np.median(sources['FWHM']) * 2
-                        fwhm_dict['rfr'] = np.median(sources['FWHM']) * self.pixscale * 2
-                        fwhm_dict['rfs'] = np.std(sources['FWHM']) * self.pixscale * 2
+                        fwhm_dict['rfp'] = np.median(sources['FWHM']) * 2 * 1.5
+                        fwhm_dict['rfr'] = np.median(sources['FWHM']) * self.pixscale * 2 * 1.5
+                        fwhm_dict['rfs'] = np.std(sources['FWHM']) * self.pixscale * 2 * 1.5
                         fwhm_dict['sky'] = 200 #str(imageMedian)
                         fwhm_dict['sources'] = str(len(sources))
 
+                        plog ("FWHM from blob: " + str(fwhm_dict['rfr']))
 
 
 
@@ -5489,37 +5584,3 @@ class Camera:
                         return expresult
 
 
-def wait_for_slew(wait_after_slew=True):
-    """
-    A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
-    """
-    if not g_dev['obs'].mountless_operation:
-        try:
-            actually_slewed = False
-            if not g_dev['mnt'].rapid_park_indicator:
-                movement_reporting_timer = time.time()
-                while g_dev['mnt'].return_slewing():
-                    if actually_slewed == False:
-                        actually_slewed = True
-                    if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
-                        plog('m>')
-                        movement_reporting_timer = time.time()
-                    # if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                    g_dev['mnt'].get_mount_coordinates_after_next_update()
-                    # , dont_wait=True)
-                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
-
-                # Then wait for slew_time to settle
-                if actually_slewed and wait_after_slew:
-                    time.sleep(g_dev['mnt'].wait_after_slew_time)
-
-        except Exception as e:
-            plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            if 'pywintypes.com_error' in str(e):
-                plog("Mount disconnected. Recovering.....")
-                time.sleep(5)
-                g_dev['mnt'].reboot_mount()
-            else:
-                pass
-        return

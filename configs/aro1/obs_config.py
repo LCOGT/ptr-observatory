@@ -100,7 +100,7 @@ site_config = {
     # Degrees. For normal pointing requests don't allow requests to go this low.
     'lowest_requestable_altitude': 15,
     # Below this altitude, it will automatically try to home and park the scope to recover.
-    'lowest_acceptable_altitude': 0,    #   What does this mean given the above?
+    'lowest_acceptable_altitude': -10,
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     'degrees_to_avoid_zenith_area_in_general': 0,
     'maximum_hour_angle_requestable': 9,
@@ -112,29 +112,39 @@ site_config = {
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
 
-    # SAFESTART
+    # # Engineering start
 
-    # 'scope_in_manual_mode': False,
+    # 'scope_in_manual_mode': True,
+    # 'scope_in_engineering_mode': True,
     # 'mount_reference_model_off': True,
-    # 'sun_checks_on': True,
-    # 'moon_checks_on': True,
-    # 'altitude_checks_on': True,
+    # 'sun_checks_on': False,
+    # 'moon_checks_on': False,
+    # 'altitude_checks_on': False,
     # 'daytime_exposure_time_safety_on': False,
-    # 'always_do_a_centering_exposure_regardless_of_nearby_reference':  True,   #this is a qustionable setting
+    # 'simulate_open_roof': True,
+    # 'auto_centering_off': True,
+    # 'self_guide_on': False,
+    # 'always_do_a_centering_exposure_regardless_of_nearby_reference':  False,   #this is a qustionable setting
+    # 'owner_only_commands':True,
 
-    # ENGineering START
+    # #SAFESTART
 
     'scope_in_manual_mode': False,
-    'mount_reference_model_off': True,
+    'scope_in_engineering_mode': False,
+    'mount_reference_model_off': False,
     'sun_checks_on': True,
     'moon_checks_on': True,
     'altitude_checks_on': True,
     'daytime_exposure_time_safety_on': True,   #Perhaps condition by roof open/closed?
+    'simulate_open_roof': False,
+    'auto_centering_off': False,
+    'self_guide_on': True,
     'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
+    'owner_only_commands': False,
 
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': True,  # What archive are we talking about here?
+    'ingest_raws_directly_to_archive': True,  # This it the OCS-archive, archive-photonranch.org
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     # WER changed Z to X 20231113 @1:16 UTC
@@ -186,18 +196,19 @@ site_config = {
     # This allows culling of unphysical results in photometry and other things
     # Particularly useful for focus
     'minimum_realistic_seeing': 1.5,
+    'has_lightning_detector':  True,
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
-    'bias_dark interval':  150.,  # minutes
+    'bias_dark interval':  120.,  # minutes
     # Was 55 WER 20240313 Before Sunset Minutes  neg means before, + after.
-    'eve_sky_flat_sunset_offset': -60.,
+    'eve_sky_flat_sunset_offset': -30.,
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 15.,
     'clock_and_auto_focus_offset': -10,  # min before start of observing
-    'astro_dark_buffer': 15,  # Min before and after AD to extend observing window
+    'astro_dark_buffer': 10,  # Min before and after AD to extend observing window
     'morn_flat_start_offset': -10.,  # min from Sunrise
-    'morn_flat_end_offset': +60.,  # min from Sunrise
+    'morn_flat_end_offset': +40.,  # min from Sunrise
     'end_night_processing_time':  90.,  # A guess
     # 'observing_begins_offset': -1,       #min from AstroDark
     # How many minutes before civilDawn to do ....
@@ -302,7 +313,7 @@ site_config = {
             # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'permissive_mount_reset': 'no',
             # How many seconds of inactivity until it will park the telescope
-            'time_inactive_until_park': 1800.0,
+            'time_inactive_until_park': 900.0,
 
             # final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_ra_correction': 0.0,
@@ -347,9 +358,9 @@ site_config = {
                     'id':   0.0,
                     'eho':  0.0,  # East Hour angle Offset -- NOTE an offset
                     'edo':  0.0,  # East Dec Offset
-                    'ma':   0.0,  # Azimuth error of polar axis
-                    'me':   0.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
-                    'ch':   0.0,  # Optical axis not perp to dec axis
+                    'ma':   73.0,  # Azimuth error of polar axis
+                    'me':   300.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
+                    'ch':   -115.0,  # Optical axis not perp to dec axis
                     'np':   0.0,  # Non-perp of polar and dec axis
                     'tf':   0.0,  # Sin flexure -- Hook's law.
                     'tx':   0.0,  # Tangent flexure
@@ -421,7 +432,7 @@ site_config = {
             'has_fans':  True,
             'has_cover':  False,
             # East is negative  These will vary per telescope.
-            'axis_offset_east': -19.5,
+            'axis_offset_east': -19.5,  #Inches appently!
             'axis_offset_south': -8,  # South is negative
 
             'settings': {
@@ -505,7 +516,7 @@ site_config = {
             'maximum': 12600,  # 12672 actually
             'step_size': 1,
             'backlash': 600,   # non-zero means enabled, + means over-travel when moving out, then come back IN  same amount.
-            'throw': 140,  # Start with 10X focus tolerance.
+            'throw': 90., #20240925 reduced from: #140,  # Start with 10X focus tolerance.
             'focus_tolerance':  130,    #Microns  ??? used Golf Focus Caclulator
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
@@ -805,8 +816,8 @@ site_config = {
                 'transpose_jpeg': False,
                 'flipx_jpeg': False,
                 'flipy_jpeg': False,
-                'rotate180_jpeg': True,
                 'rotate90_jpeg': False,
+                'rotate180_jpeg':False,
                 'rotate270_jpeg': False,
 
                 # This is purely to crop the preview jpeg for the UI
@@ -839,14 +850,14 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': 10,  # 20240914 up from 3C, new camera installed 20240604
-                'temp_setpoint_tolerance': 3,
+                'temp_setpoint': 1,  # 20240914 up from 3C, new camera installed 20240604
+                'temp_setpoint_tolerance': 2,
                 'has_chiller': True,
                 # "temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp': 25,  # C 20240906
-                'day_warm': False,  # This is converted to a 0 or 1 depending on the Boolean value
-                'day_warm_degrees': 10,  # Assuming the Chiller is working.
+                'day_warm': True,  # This is converted to a 0 or 1 depending on the Boolean value
+                'day_warm_degrees': 4,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating': False,
 
                 # These are the physical values for the camera

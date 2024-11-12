@@ -622,6 +622,7 @@ class Observatory:
         self.device_types = ptr_config[
             "device_types"
         ]
+
         try:
             self.check_lightning = self.config["has_lightning_detector"]
         except:
@@ -704,9 +705,9 @@ class Observatory:
             "daytime_exposure_time_safety_on"
         ]
         self.mount_reference_model_off = self.config["mount_reference_model_off"]
-        self.admin_owner_commands_only = False
-        self.assume_roof_open = False
-        self.auto_centering_off = False
+        self.admin_owner_commands_only = self.config["owner_only_commands"]
+        self.assume_roof_open = self.config["simulate_open_roof"]  #Note NB NB this is conusing with the attribut above...about 9 lines.
+        self.auto_centering_off = self.config["auto_centering_off"]
 
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
@@ -1509,7 +1510,9 @@ class Observatory:
         """
 
         # NB NB this needs to be conditoned on the site having lightning detection!
-        if self.check_lightning:
+
+        if self.config['has_lightning_detector']:
+
             try:
                 with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
                     r_date, r_time = light_rec.readline().split()[-2:]
@@ -2802,7 +2805,7 @@ class Observatory:
                         except ocs_ingester.exceptions.DoNotRetryError:
                             plog("Couldn't upload to PTR archive: " + str(filepath))
                             plog(traceback.format_exc())
-                            # breakpoint()
+                            #breakpoint()
                             broken = 1
                         except Exception as e:
                             if "urllib3.exceptions.ConnectTimeoutError" in str(
@@ -3081,7 +3084,7 @@ class Observatory:
         """This is the platesolve queue that happens in a different process
         than the main thread. Platesolves can take 5-10, up to 30 seconds sometimes
         to run, so it is an overhead we can't have hanging around. This thread attempts
-        a platesolve and uses the solution and requests a telescope nudge/center
+        a platesolve and uses the solution and requests a telescope nudge/i
         if the telescope has not slewed in the intervening time between beginning
         the platesolving process and completing it.
 
@@ -3635,7 +3638,7 @@ class Observatory:
     #   Note this is a thread
     def slow_camera_process(self):
         """
-        A place to process non-process dependant images from the camera pile.
+        A place to process non-process dependent images from the camera pile.
         Usually long-term saves to disk and such things
         """
 
@@ -3678,7 +3681,11 @@ class Observatory:
                         del hdufocus
 
                     if slow_process[0] == "numpy_array_save":
-                        np.save(slow_process[1], slow_process[2])
+                        try:
+                            np.save(slow_process[1], slow_process[2])
+                        except:
+                            plog ("numpy file save issue")
+                            plog(traceback.format_exc())
 
                     if slow_process[0] == "fits_file_save":
                         fits.writeto(
@@ -4891,7 +4898,7 @@ class Observatory:
 
                     if filepath == "":
                         plog(
-                            "found an empty thing in the fast_queue? Why? MTF finding out."
+                            "found an empty thing in the fast_queue."     #? Why? MTF finding out."
                         )
                     else:
                         try:
@@ -5058,7 +5065,7 @@ class Observatory:
 
                     if filepath == "":
                         plog(
-                            "found an empty thing in the medium_queue? Why? MTF finding out."
+                            "found an empty thing in the medium_queue."  #"? Why? MTF finding out."
                         )
                     else:
                         # If the file is there now

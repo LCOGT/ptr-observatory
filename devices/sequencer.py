@@ -107,7 +107,7 @@ def ra_fix(ra):
 def ra_dec_fix_hd(ra, dec):
     if dec > 90:
         dec = 180 - dec
-        ra -= 12
+        ra += 12
     if dec < -90:
         dec = -180 - dec
         ra += 12
@@ -2824,7 +2824,7 @@ class Sequencer:
                 except Exception as e:
                     plog(traceback.format_exc())
                     plog ("Could not save dark frame: ",e)
-                    breakpoint()
+                    # # breakpoint()
 
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
                 g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
@@ -3015,7 +3015,6 @@ class Sequencer:
         # Get list of biases
         plog ("Regenerating bias")
         calibration_timer=time.time()
-
         darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
         archiveDate=str(datetime.date.today()).replace('-','')
@@ -3086,41 +3085,39 @@ class Sequencer:
                 plog ("There is a new bias frame since the last super-bias was made")
 
                 # Store the biases in the memmap file
-                PLDrive= [None] * len(inputList)
+                PLDrive = [None] * len(inputList)
                 i=0
                 for file in inputList:
                     PLDrive[i] = np.load(file, mmap_mode='r')
                     i=i+1
-
                 # finalImage array
                 finalImage=np.zeros(shapeImage, dtype=np.float32)
-
 
                 try:
                     # create an empty array to hold each chunk
                     # the size of this array will determine the amount of RAM usage
+
 
                     # Get a chunk size that evenly divides the array
                     chunk_size=8
                     while not ( shapeImage[0] % chunk_size ==0):
                         chunk_size=chunk_size+1
                     chunk_size=int(shapeImage[0]/chunk_size)
-
+                    #plog("Calculated chunk_size:  ", chunk_size)
                     holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
-
 
                     # iterate through the input, replace with ones, and write to output
 
                     # Maybe also only reform the memmap if chunk size bigger.
                     reloader_trigger=0
                     for i in range(shapeImage[0]):
+                        #plog("Line 3117 @  ", time.time(), "i= ", i)
                         if i % chunk_size == 0:
                             counter=0
                             for imagefile in range(len(PLDrive)):
                                 holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
                                 counter=counter+1
                             finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
-
                             reloader_trigger=reloader_trigger+chunk_size
                             if reloader_trigger > 1000:
                                 # Wipe and restore files in the memmap file
@@ -3131,7 +3128,6 @@ class Sequencer:
                                     PLDrive[i] = np.load(file, mmap_mode='r')
                                     i=i+1
                                 reloader_trigger=0
-
 
                 except:
                     plog(traceback.format_exc())
@@ -4126,7 +4122,7 @@ class Sequencer:
             temp_separation=((ephem.separation( (flatspotaz,flatspotalt), (moondata.az.deg,moondata.alt.deg))))
 
             if (moondata.alt.deg < -5):
-                plog ("Moon is far below the ground, alt " + str(moondata.alt.deg) + ", sky flats going ahead.")
+                plog ("Moon is far below the horizon, alt: " + str(moondata.alt.deg) + ", sky flats going ahead.")
             elif temp_separation < math.radians(self.config['minimum_distance_from_the_moon_when_taking_flats']): #and (ephem.Moon(datetime.datetime.now()).moon_phase) > 0.05:
                 plog ("Moon is in the sky and less than " + str(self.config['minimum_distance_from_the_moon_when_taking_flats']) + " degrees ("+str(temp_separation)+") away from the flat spot, skipping this flat time.")
                 self.flats_being_collected = False
@@ -5281,7 +5277,8 @@ class Sequencer:
 
 
             #  If more than 15 attempts, fail and bail out.
-            if position_counter > 15:
+            # But don't bail out if the scope isn't commissioned yet, keep on finding.
+            if position_counter > 15 and g_dev['foc'].focus_commissioned:
                 g_dev['foc'].set_initial_best_guess_for_focus()
                 if not dont_return_scope:
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -5407,7 +5404,11 @@ class Sequencer:
                             new_focus_position_to_attempt=focus_spots[-1][0] + throw
 
                     else:
-                        if minimum_value > self.config["focuser"]["focuser1"]['maximum_good_focus_in_arcsecond']:
+                        # If the seeing is too poor to bother focussing, bail o ut
+                        # But ONLY if the focus is commissioned. If the focus is not
+                        # commissioned then it is highly likely just to be in the wrong
+                        # focus region
+                        if (minimum_value > self.config["focuser"]["focuser1"]['maximum_good_focus_in_arcsecond']) and g_dev['foc'].focus_commissioned:
                             plog ("Minimum value: " + str(minimum_value) + " is too high to bother focussing, just going with the estimated value from previous focus")
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                             g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
@@ -5447,17 +5448,27 @@ class Sequencer:
                             g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
                         # If right hand side is too low get another dot
-                        elif focus_spots[0][1] < (minimum_value * 1.5):
+                        elif focus_spots[-1][1] < (minimum_value * 1.5):
                             plog ("Right hand side of curve is too low for a good fit, getting another dot")
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
 
+
+                        # If the parabola is not centered roughly on the minimum point, then get another dot on
+                        # The necessary side
+                        # elif True:
+                            # I've hit a point where it tries to solve, but it is the wrong point at the moment!
+                            # breakpoint()
+
+
                         # Otherwise if it seems vaguely plausible to get a fit... give it a shot
                         else:
                             # If you can fit a parabola, then you've got the focus
                             # If fit, then break
+
+
 
                             fit_failed=False
                             try:
@@ -5474,6 +5485,8 @@ class Sequencer:
                                 plog ("crit points didn't work dunno y yet.")
                                 plog(traceback.format_exc())
                                 fit_failed=True
+
+                            #breakpoint()
 
                             if fit_failed:
                                 plog ("Fit failed. Usually due to a lack of data on one side of the curve. Grabbing another dot on the smaller side of the curve")
@@ -5626,20 +5639,20 @@ class Sequencer:
         catalogue = []
         #This code is a bit ad-hoc since thw hour range was chosen for ARO...
         if max_pointings == 8:
-            ha_cat = [3.5, 2.625, 1.75, .875, -0.875, -1.75, -2.625, -3.5]  #8 points
+            ha_cat = [3., 2., 1., .5, -0.5, -1., -2., -2.4]  #8 points
             for hour in ha_cat:
                 ra = ra_fix_h(sidereal_h + hour)  #This step could be done just before the seek below so hitting flips would be eliminated
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
         elif max_pointings == 12:
-            ha_cat = [3.5, 3, 2.5, 2, 1.5, 1,  -1, -1.5, -2, -2.5,- 3, -3.5]  #12points
+            ha_cat = [3.5, 3, 2.5, 2, 1.5, 1, 0.5, -0.5,  -1, -1.5, -2, -2.2 ,-2.4]  #114oints
             for hour in ha_cat:
-                ra = ra_fix_h(sidereal_h + hour)
+                ra = ra_fix_h(sidereal_h + hour)  # NB Note my stupid sign change! WER
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
         else:
             max_pointings == 16
-            ha_cat = [3.5, 3.25, 3, 2.5, 2, 1.5, 1, 0.5, -0.5, -1, -1.5, -2, -2.5, -3, -3.25, -3.5]  #16 points
+            ha_cat = [3.5, 3.25, 3. , 2.75, 2.5, 2.25, 2, 1.75, 1.5, 1.25, 1, 0.75,  0.5, 0.25, -.25, -0.5, -0.75 -1, -1.25, -1.5, -1.75, -2, -2.1,  -2.25,-2.5 ]  #28 points
             for hour in ha_cat:
-                ra = ra_fix_h(sidereal_h + hour)
+                ra = ra_fix_h(sidereal_h + hour)  #Take note of the odd sign change.
                 catalogue.append([round(ra*HTOD, 3), 0.0, 19])
 
 
@@ -5672,7 +5685,7 @@ class Sequencer:
 
         plog ("Note that mount references and auto-centering are automatically turned off for a tpoint run.")
         for grid_star in sweep_catalogue:
-            teststar = SkyCoord(ra = grid_star[0]*u.deg, dec = grid_star[1]*u.deg)
+            teststar = SkyCoord(ra=grid_star[0]*u.deg, dec=grid_star[1]*u.deg)
 
             temppointingaltaz=teststar.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
             alt = temppointingaltaz.alt.degree
@@ -5681,16 +5694,16 @@ class Sequencer:
             g_dev["obs"].send_to_user(str(("Slewing to near grid field, RA: " + str(round(grid_star[0] / 15, 2)) + " DEC: " + str(round(grid_star[1], 2))+ " AZ: " + str(round(az, 2))+ " ALT: " + str(round(alt,2)))))
 
             plog("Slewing to near grid field " + str(grid_star) )
-            if count == 3 or count == 4:
-                pass   #Breaakpoint()
+            # if count == 3 or count == 4:
+            #     pass   #Breaakpoint()
 
             # Use the mount RA and Dec to go directly there
             try:
                 g_dev['obs'].time_of_last_slew=time.time()
-                g_dev["mnt"].last_ra_requested = grid_star[0]/15
+                g_dev["mnt"].last_ra_requested = grid_star[0]/15.
                 g_dev["mnt"].last_dec_requested = grid_star[1]
-                print("sweep: ", grid_star[0]/15 , grid_star[1])
-                rah=grid_star[0]/15
+                print("sweep: ", grid_star[0]/15. , grid_star[1])
+                rah=grid_star[0]/15.
                 decd=grid_star[1]
                 #g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
 
@@ -5708,13 +5721,14 @@ class Sequencer:
             g_dev["obs"].update_status()
 
 
-            g_dev["mnt"].last_ra_requested=grid_star[0]/15
+            g_dev["mnt"].last_ra_requested=grid_star[0]/15.
             g_dev["mnt"].last_dec_requested=grid_star[1]
 
             req = { 'time': self.config['pointing_exposure_time'], 'smartstack': False, 'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}
-            opt = { 'count': 1,  'filter': 'pointing'}
+            opt = { 'count': 1,  'filter': 'w'} #  pointing'} WNB NB WER20240927
+            sid1 = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             result = g_dev['cam'].expose_command(req, opt)
-
+            sid2 = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             #NB should we check for a valid result from the exposure? WER 2240319
 
             g_dev["obs"].send_to_user("Platesolving image.")
@@ -5743,8 +5757,8 @@ class Sequencer:
 
             g_dev["obs"].send_to_user("Finished platesolving")
             plog ("Finished platesolving")
-
-            sid = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+            ##NB this time is after the exposure and the platesolve!  Needs to be closer to reality.
+            sid = (sid1 + sid2)/2.0  #float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
             # Get RA, DEC, ra deviation, dec deviation and add to the list
             try:
@@ -5756,15 +5770,15 @@ class Sequencer:
                 plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
             ra_mount=g_dev["mnt"].last_ra_requested #g_dev['mnt'].return_right_ascension()
             dec_mount = g_dev["mnt"].last_dec_requested #g_dev['mnt'].return_declination()
-
+            # # # breakpoint()
             #ra_2 = g_dev['obs'].last_platesolved_ra
             #dec_2 = g_dev['obs'].last_platesolved_dec
 
-
+            # NB NB Note if the platsove thorows back a nan the last_latesolved may be a stale value
             result=[ra_mount, dec_mount, g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
             deviation_catalogue_for_tpoint.append (result)
             plog("Pointing run:  ", result)
-
+            plog("Deviation Catalog:  ", deviation_catalogue_for_tpoint)
             g_dev["obs"].request_update_status()
             count += 1
             plog('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
@@ -5786,14 +5800,14 @@ class Sequencer:
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
 
-            if not np.isnan(entry[2]):
+            if (not np.isnan(entry[2]))and (not np.isnan(entry[3])):
                 ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
                 dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
                 ra_got=Angle(entry[2], u.hour).to_string(sep=' ')
 
 
                 if entry[7] == 0:
-                    #NEED TO BREAKPOINT HERE AND FIX
+                    #NEED TO BREAKPOINT HERE AND FIX  NB NB What is the unit of the vales like entry[3]???
                     pierstring='0  1'
                     entry[2] += 12.
                     while entry[2] >= 24:
@@ -5801,17 +5815,19 @@ class Sequencer:
                     while entry[2] < 0:   #This case should never occur
                         entry[2] += 24.
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
-
+                    # # # breakpoint()
                     if latitude >= 0:
                         #I think the signs below *may be* incorrect WER 20240618
-                        dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
+                        dec_got=Angle((180 - entry[3]),u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
                     else:
                         #These signs need testing and verification for the Southern Hemisphere.
-                        dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ')
+                        dec_got=Angle((-180 + entry[3]),u.degree).to_string(sep=' ')
                 else:
                     pierstring='0  0'
                     ra_got=Angle(entry[2], u.hour).to_string(sep=' ')
                     dec_got=Angle(entry[3], u.degree).to_string(sep=' ')
+
+
 
 
                 sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]
@@ -6029,6 +6045,7 @@ class Sequencer:
                 plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
             ra_mount=g_dev['mnt'].return_right_ascension()
             dec_mount = g_dev['mnt'].return_declination()
+            # # # breakpoint()
             result=[ra_mount, dec_mount, g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
             deviation_catalogue_for_tpoint.append (result)
             plog(result)
@@ -6054,7 +6071,7 @@ class Sequencer:
             latitude = float(g_dev['evnt'].wema_config['latitude'])
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
-            if not np.isnan(entry[2]):
+            if (not np.isnan(entry[2])) and (not np.isnan(entry[3]) ):
                 ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
                 dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
                 ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
@@ -6064,13 +6081,13 @@ class Sequencer:
                     while entry[2] >= 24:
                         entry[2] -= 24.
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
-
+                    # # breakpoint()
                     if latitude >= 0:
-                        dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
+                        dec_got=Angle((180 - entry[3]),u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
                     else:
                         dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ')
                 else:
-                    pierstring='0  0'
+                    pierstring='0  0'  #NB NB I think this is supposed to be '1   0'.  WER
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
                     dec_got=Angle(entry[3],u.degree).to_string(sep=' ')
                 sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]

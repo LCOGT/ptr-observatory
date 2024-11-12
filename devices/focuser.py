@@ -2,6 +2,36 @@
 focuser.py focuser.py  focuser.py  focuser.py  focuser.py  focuser.py
 
 '''
+
+'''
+   Example : at 0.6 µm, at the F/D 6 focus of an instrument, the focusing tolerance which leads to a focusing \
+   precision better than l/8 is 8*62*0.0006*(1/8) = 0.02 mm, ie ± 20 microns.
+
+    F/d Tolerance
+        ± mm
+
+    2   0.0025 mm!  Note the units
+
+    3   0.005
+
+    4   0.010
+
+    5   0.015
+
+    6   0.020
+
+    8   0.040
+
+    10  0.060
+
+    12  0.090
+
+    15  0.130
+
+    20  0.240
+
+    30  0.540
+'''
 import datetime
 import json
 import shelve
@@ -108,6 +138,13 @@ class Focuser:
         self.focus_temp_slope = None
         self.focus_temp_intercept = None
         self.best_previous_focus_point = None
+
+        # If sufficient previous focus estimates have not been achieved
+        # (10 usually) then the focus routines will try hard to find
+        # the true focus rather than assume it is somewhere in the ballpark
+        # already or "commissioned".
+        self.focus_commissioned=False
+
         self.focuser_is_moving=False
         if self.theskyx:
             self.current_focus_temperature=self.focuser.focTemperature
@@ -381,14 +418,23 @@ class Focuser:
 
     def set_initial_best_guess_for_focus(self):
 
+        self.focus_commissioned=True
+
         try:
             self.best_previous_focus_point, last_successful_focus_time, self.focus_temp_slope, self.focus_temp_intercept=self.get_af_log()
 
             if last_successful_focus_time != None:
+
                 self.time_of_last_focus=parser.parse(last_successful_focus_time)
+            else:
+                self.focus_commissioned=False
 
             if self.best_previous_focus_point==None:
+                self.focus_commissioned=False
                 self.best_previous_focus_point=self.config["reference"]
+
+            if self.focus_temp_slope==None:
+                self.focus_commissioned=False
 
         except:
             self.set_focal_ref_reset_log(self.config["reference"])
@@ -411,6 +457,7 @@ class Focuser:
                 self.current_focus_temperature
             )
 
+
             plog(
                 "Focus position set from temp compensated value:  ",
                 self.reference,
@@ -429,6 +476,7 @@ class Focuser:
             plog("Focus reference updated from best recent focus from Night Shelf:  ", self.reference)
 
         self.guarded_move(int(float(self.reference) * self.micron_to_steps))
+        #breakpoint()
 
     def adjust_focus(self, force_change=False):
         """Adjusts the focus relative to the last formal focus procedure.
@@ -468,7 +516,12 @@ class Focuser:
         if self.theskyx:
             temp_delta = self.current_focus_temperature - self.previous_focus_temperature
         else:
-            temp_delta = self.current_focus_temperature - self.previous_focus_temperature
+            try:
+                temp_delta = self.current_focus_temperature - self.previous_focus_temperature
+            except:
+                temp_delta = 0
+                plog (traceback.format_exc())
+                plog ("something fishy in the focus temperature")
 
         try:
             adjust = 0.0
@@ -510,6 +563,8 @@ class Focuser:
 
     def guarded_move(self, to_focus):
 
+
+
         focuser_was_moving=False
         while self.focuser_is_moving:
             focuser_was_moving=True
@@ -519,7 +574,8 @@ class Focuser:
         if focuser_was_moving:
             self.wait_for_focuser_update()
 
-        if (self.current_focus_position*self.micron_to_steps) > to_focus-35 and (self.current_focus_position*self.micron_to_steps) < to_focus+35:
+        if (self.current_focus_position*self.micron_to_steps) > to_focus-35 and \
+            (self.current_focus_position*self.micron_to_steps) < to_focus+35:
             plog ("Not moving focus, focus already close to requested position")
         else:
 
@@ -542,12 +598,12 @@ class Focuser:
 
     def move_absolute_command(self, req: dict, opt: dict):
         """Sets the focus position by moving to an absolute position."""
-
+        #
         self.focuser_is_moving=True
         position = int(float(req["position"])) * self.micron_to_steps
         self.guarded_move(position)
         self.last_known_focus = position
-        plog("Forces last knov focus to be new position Line 551 in focuser WER 20400917")
+        plog("Forces last known focus to be new position Line 551 in focuser WER 20400917")
 
     def stop_command(self, req: dict, opt: dict):
         """stop focuser movement"""

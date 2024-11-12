@@ -29,7 +29,7 @@ import traceback
 # Note this is a thread!
 def write_raw_file_out(packet):
 
-    (raw, raw_name, hdudata, hduheader, frame_type, current_icrs_ra, current_icrs_dec,altpath,altfolder, dayobs, camera_path, altpath) = packet
+    (raw, raw_name, hdudata, hduheader, frame_type, current_icrs_ra, current_icrs_dec, altpath, altfolder, dayobs, camera_path, altpath) = packet
 
     # Make sure normal paths exist
     os.makedirs(
@@ -113,26 +113,26 @@ localcalibmastersdirectory= localcalibrationdirectory+ "archive/" + camalias + "
 #breakpoint()
 
 # Get the calibrated image whether that is a substack or a normal image.
-if substack:   #NB it appears substack is always true since this is the only path that does bias/dark/flat processing
+if substack:
     exp_of_substacks=int(exposure_time / len(substacker_filenames))
     # Get list of substack files needed and wait for them.
     waiting_for_substacker_filenames=copy.deepcopy(substacker_filenames)
-    
+
     # This process is set to spin up early, so it loads
-    # and waits for a filename token to get started.    
+    # and waits for a filename token to get started.
     file_wait_timeout_timer=time.time()
 
 
-    
+
     while ((len(waiting_for_substacker_filenames)) > 0) and (time.time()-file_wait_timeout_timer < 600):
         for tempfilename in waiting_for_substacker_filenames:
             if os.path.exists(tempfilename):
                 waiting_for_substacker_filenames.remove(tempfilename)
         time.sleep(0.2)
-    
+
     if time.time()-file_wait_timeout_timer > 599:
         sys.exit()
-        
+
     temporary_substack_directory=localcalibrationdirectory + "substacks/" + str(time.time()).replace('.','')
 
     if not os.path.exists(localcalibrationdirectory + "substacks/"):
@@ -161,7 +161,7 @@ if substack:   #NB it appears substack is always true since this is the only pat
             print ("Couldn't biasdark substack")
             pass
         try:
-            substackimage = copy.deepcopy(np.divide(substackimage, np.load(localcalibrationdirectory  + 'archive/' + camalias + '/calibmasters/' + 'masterFlat_'+this_exposure_filter + "_bin" + str(1) +'.npy')))
+            substackimage = copy.deepcopy(np.divide(substackimage, np.load(localcalibrationdirectory  + 'archive/' + camalias + '/calibmasters/' + 'masterFlat_' + this_exposure_filter + "_bin" + str(1) +'.npy')))
         except:
             print ("couldn't flat field substack")
             #breakpoint()
@@ -257,9 +257,9 @@ if substack:   #NB it appears substack is always true since this is the only pat
     counter=1
 
     for waitfile in crosscorrel_filename_waiter:
-        
-               
-        
+
+
+
         file_wait_timeout_timer=time.time()
         while (not os.path.exists(waitfile)) and (time.time()-file_wait_timeout_timer < 600) :
             #print ("waiting for " + str(waitfile))

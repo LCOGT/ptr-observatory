@@ -29,6 +29,7 @@ class Rotator:
     def __init__(self, driver: str, name: str, config: dict):
         self.name = name
         g_dev["rot"] = self
+
         win32com.client.pythoncom.CoInitialize()
         self.driver=driver
         self.rotator = win32com.client.Dispatch(driver)
@@ -43,14 +44,14 @@ class Rotator:
         try:
             self.rotator_telescope.Connected = True
         except:
-            breakpoint()            
-        
+            breakpoint()
+
         self.TargetPosition=self.rotator.TargetPosition
         self.Position=self.rotator.Position
         self.IsMoving=self.rotator.IsMoving
 
         self.rotator_meant_to_be_rotating = True
-                    
+
     def get_status(self):
         """
         The position is expressed as an angle from 0 up to but not including

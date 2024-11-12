@@ -9,19 +9,14 @@ we need to monitor pointing and keep scopes dead on target.
 
 There is a windswept and interesting way that platesolve frames lead to
 slight nudges during observing, but they are all triggered from values
-from this subprocess... which actually sub-sub-processes the platesolve3 platesolver from planewave.
-
-However, we have no control over the photometry within platesolve3, hence
-part of the subprocess is to create a 'bullseye' image that is constructed
-from our own SEP source process to present to the platesove3 so that whatever
-photometric algorithm they are using they can't fail to accurately measure positions.
-(The insinuation is that they have previously failed to measure accurate postions,
- this is true... there have been some crazy alarming false positives prior to the bullseye method.
- The bullseye method also works better in cloudy patchy conditions as well.)
+from this subprocess...
 
 """
-
 import sys
+# sys.path.append('../')
+# from ptr_utility import plog
+
+
 import pickle
 import copy
 from astropy.nddata import block_reduce
@@ -57,7 +52,7 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 
 
 from scipy import optimize
-googtime=time.time()
+
 def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-((x - mean) / 4 / stddev)**2)
 
@@ -85,6 +80,10 @@ def gaussian(x, amplitude, mean, stddev):
 Here is the start of the subprocessing
 
 """
+
+
+
+#plog ("PLATESOLVE THREAD: STARTING PLATESOLVING")
 
 input_psolve_info=pickle.load(sys.stdin.buffer)
 #input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
@@ -130,6 +129,18 @@ except:
 print ("Pixelscale")
 print (pixscale)
 
+
+subprocessplogtime=time.time()
+
+def subprocessplog(string_incoming):
+
+    with open(cal_path + 'subprocessplog_' + str(subprocessplogtime).replace('.','') +'_PlatesolvePlog.txt', 'a') as file:
+        file.write(string_incoming)
+
+
+if True:
+   subprocessplog("PLATESOLVE PROCESSING")
+
 # Keep a copy of the normal image if this is a pointing image
 if pointing_exposure:
     pointing_image=copy.deepcopy(hdufocusdata)
@@ -170,7 +181,7 @@ except:
 
 
 # If this is set to true, then it will output a sample of the background image.
-if False:
+if True:
     hdufocus = fits.PrimaryHDU()
     hdufocus.data = bkg
     hdufocus.header = hduheader

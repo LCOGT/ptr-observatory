@@ -24,10 +24,8 @@ import json
 
 
 '''
+#pOWER SWITCH ON 10.15.0.60  CHANNEL 3 not the ones marked Camera
 
-LOUD = True
-ENG = True
-SERIAL = True
 
 obs_id = 'mrc1'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
@@ -57,8 +55,44 @@ site_config = {
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
 
+    # These are the default values that will be set for the obs
+    # on a reboot of obs.py. They are safety checks that
+    # can be toggled by an admin in the Observe tab.
+
+    # # Engineering start
+
+    # 'scope_in_manual_mode': True,
+    # 'scope_in_engineering_mode': True,
+    # 'mount_reference_model_off': True,
+    # 'sun_checks_on': False,
+    # 'moon_checks_on': False,
+    # 'altitude_checks_on': False,
+    # 'daytime_exposure_time_safety_on': False,
+    # 'simulate_open_roof': True,
+    # 'auto_centering_off': True,
+    # 'self_guide_on': False,
+    # 'always_do_a_centering_exposure_regardless_of_nearby_reference':  False,   #this is a qustionable setting
+    # 'owner_only_commands':True,
+
+    # #SAFESTART
+
+    'scope_in_manual_mode': False,
+    'scope_in_engineering_mode': False,
+    'mount_reference_model_off': False,
+    'sun_checks_on': True,
+    'moon_checks_on': True,
+    'altitude_checks_on': True,
+    'daytime_exposure_time_safety_on': True,   #Perhaps condition by roof open/closed?
+    'simulate_open_roof': False,
+    'auto_centering_off': False,
+    'self_guide_on': True,
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
+    'owner_only_commands': False,
+
 
     # Default safety settings
+    'eng_mode': True,
+    'has_lightning_detector': False,
     'safety_check_period': 45,  # MF's original setting.
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
@@ -66,15 +100,14 @@ site_config = {
     'lowest_requestable_altitude': 15,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'lowest_acceptable_altitude' : 10, # Below this altitude, it will automatically try to home and park the scope to recover.
     'degrees_to_avoid_zenith_area_for_calibrations': 5,
-    'degrees_to_avoid_zenith_area_in_general' : 0,
-    'maximum_hour_angle_requestable' : 12,
+    'degrees_to_avoid_zenith_area_in_general' : 0,  #Hill prevents seeing much below pole @ MRC
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 30,
 
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': True,   #This is poorly named  the Enclosure is Manual vs Auto
-    'mount_reference_model_off': True,
+    'scope_in_manual_mode': False,   #This is poorly named  the Enclosure is Manual vs Auto
+    'mount_reference_model_off': False,
     'sun_checks_on': False,
     'moon_checks_on': False,
     'altitude_checks_on': False,
@@ -91,21 +124,20 @@ site_config = {
 
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': True,   #which archive? I assume not the datalab / ptrarchive   WER
+    'ingest_raws_directly_to_archive': True,   #which archive? I assume not the datalab / ptrarchive , but 'injest' implies LCO archive  WER
+    'save_calib_and_misc_files': True,
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': False,
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'D:/tempfolderforpipeline',
     'temporary_local_alt_archive_to_hold_files_while_copying' : 'D:/tempfolderforaltpath',
-
-    # Setup of folders on local and network drives.
     'client_hostname':  'mrc-0m30',  # This is also the long-name  Client is confusing!
     'archive_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
     'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/mrc1/',  # place where night logs can be found.
     'save_to_alt_path': 'no',
-    'archive_age': 7,  # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age': 2,  # Number of days to keep files in the local archive before deletion. Negative means never delete
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
@@ -133,7 +165,7 @@ site_config = {
     # This allows culling of unphysical results in photometry and other things
     # Particularly useful for focus
     'minimum_realistic_seeing': 1.0,
-    "has_ligntning_detector": False,
+    'has_lightning_detector': False,
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
@@ -182,6 +214,8 @@ site_config = {
     'solve_nth_image': 1,  # Only solve every nth image
     'solve_timer': 0.05,  # Only solve every X minutes
     'threshold_mount_update': 45,  # only update mount when X arcseconds away
+
+
 
     'defaults': {
         'mount': 'mount1',
@@ -438,16 +472,18 @@ site_config = {
 
             # When the focusser has no previous best focus values
             # start from this reference position
-            'reference': 5000,  #20240904
+
+            'reference': 4900,  #20240904
+
 
             # Limits and steps for the focuser.
-            'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
+            'minimum': 0,    #  Units are microns
             'maximum': 12700,
-            'step_size': 1,
+            'step_size': 1,   #  This is misnamed!
             'backlash':  0,
             'throw': 40,
             'unit': 'micron',
-            'unit_conversion':  9.09090909091,  # Taken from Gemini at mid-range.
+            'unit_conversion':  9.09090909091,  #  Steps per micron
         },
 # =============================================================================
 #         'focuser2': {         # >>>>
@@ -593,7 +629,7 @@ site_config = {
             'name': 'sq010sm',  # Important because this points to a server file structure by that name.
             'desc':  'QHY 461PH BSI Mono',
 
-            'overscan_trim' : 'none',
+            'overscan_trim' : 'QHY461',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
@@ -693,7 +729,7 @@ site_config = {
                 'transpose_fits': False,
                 'flipx_fits': False,
                 'flipy_fits': False,
-                'rotate180_fits': False,  # This also should be flipxy!
+                'rotate180_fits': True,  # This also should be flipxy!
                 'rotate90_fits': False,
                 'rotate270_fits': False,
                 'squash_on_x_axis': False,
@@ -711,7 +747,7 @@ site_config = {
                 'transpose_jpeg': False,
                 'flipx_jpeg': False,
                 'flipy_jpeg': False,
-                'rotate180_jpeg': True,   #First try adjusting 461 camera 20240827
+                'rotate180_jpeg': False,
                 'rotate90_jpeg': False,
                 'rotate270_jpeg': False,
 
@@ -748,13 +784,13 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,     #Cooler is ambiguous nname
-                'temp_setpoint': 15,    # Verify we can go colder
+                'temp_setpoint': 2,    # Verify we can go colder
                 'has_chiller': False,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  25,  # C
                 "temp_setpoint_tolerance": 2.5,   #  C
                 'day_warm': False,
-                'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
+                'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
 
 
@@ -791,7 +827,7 @@ site_config = {
                 # This is the absolute minimum and maximum exposure for the camera
                 'min_exposure': 0.00005,
                 'max_exposure': 180.,
-                # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                # For certain shutters, short exposures aren't good for /VIGNETTE/ flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'min_flat_exposure': 0.0001,
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
@@ -843,7 +879,7 @@ site_config = {
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,
                 'darkslide_com':  'COM8',
-                'shutter_type': "Electronic",
+                'shutter_type': "Iris",
                 'darkslide_type': "bistable",
 
                 # 'has_screen': True,

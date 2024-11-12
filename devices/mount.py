@@ -133,26 +133,26 @@ def dec_fix_r(pDec):   #NB NB Note this limits not fixes!!!
 def ra_dec_fix_r(ra, dec): #Note this is not a mechanical (TPOINT) transformation of dec and HA/RA
     if dec > PIOVER2:
         dec = PI - dec
-        ra -= PI
+        ra += PI
     if dec < -PIOVER2:
         dec = -PI - dec
         ra += PI
-    if ra < 0:
+    while ra < 0:
         ra += TWOPI
-    if ra >= TWOPI:
+    while ra >= TWOPI:
         ra -= TWOPI
     return ra, dec
 
 def ra_dec_fix_h(ra, dec):
     if dec > 90:
         dec = 180 - dec
-        ra -= 12
+        ra += 12
     if dec < -90:
         dec = -180 - dec
         ra += 12
-    if ra >= 24:
+    while ra >= 24:
         ra -= 24
-    if ra < 0:
+    while ra < 0:
         ra += 24
     return ra, dec
 
@@ -254,6 +254,7 @@ class Mount:
         self.current_mechanical_dec = self.mount.Declination
         self.current_mechanical_sidereal = self.mount.SiderealTime
         try:
+
             self.ICRS2000 = config["mount"]["mount1"]["settings"]['ICRS2000_input_coords']
             self.refr_on = config["mount"]["mount1"]["settings"]["refraction_on"]
             self.model_on = config["mount"]["mount1"]["settings"]["model_on"]
@@ -320,7 +321,7 @@ class Mount:
         self.west_clutch_ra_correction = config['mount']['mount1']['west_clutch_ra_correction']
         self.west_clutch_dec_correction = config['mount']['mount1']['west_clutch_dec_correction']
         self.east_flip_ra_correction = config['mount']['mount1']['east_flip_ra_correction']
-        self.east_flip_dec_correction = config['mount']['mount1']['east_flip_dec_correction']
+        self.east_flip_dec_correction  = config['mount']['mount1']['east_flip_dec_correction']
         self.settle_time_after_unpark = config['mount']['mount1']['settle_time_after_unpark']
         self.settle_time_after_park = config['mount']['mount1']['settle_time_after_park']
 
@@ -363,8 +364,8 @@ class Mount:
             self.longterm_storage_of_flip_references=[]
         mnt_shelf.close()
 
-        plog ("Mount deviations, mount then flip:")
-        plog (self.longterm_storage_of_mount_references, '\n')
+        plog ("Mount deviations, for mount then for flipflip:")
+        plog (self.longterm_storage_of_mount_references, '\n\n')
         plog (self.longterm_storage_of_flip_references)
 
         self.last_mount_reference_time=time.time() - 86400
@@ -423,7 +424,7 @@ class Mount:
         self.previous_pier_side = self.mount.sideOfPier
         self.pier_side_last_check = self.mount.sideOfPier
         self.request_new_pierside=False
-        self.request_new_pierside_ra=1.0
+        self.request_new_pierside_ra=1.0   #Why these values?
         self.request_new_pierside_dec=1.0
 
         self.can_park = self.mount.CanPark
@@ -522,6 +523,7 @@ class Mount:
         self.syncToRA=12.0
         self.syncToDEC=-20.0
 
+
         self.unpark_requested=False
         self.park_requested=False
         self.slewtoRA = 1.0
@@ -584,7 +586,7 @@ class Mount:
     def apply_refraction_in_alt(self, pApp_alt):  # Deg, C. , mmHg     #note change to mbar
 
         # From Astronomical Algorithms.  Max error 0.89" at 0 elev.
-        # 20210328 This code does not the right thing if star is below the Pole and is refracted above it.
+        # 20210328 This code does not do the right thing if star is below the Pole and is refracted above it.
 
         if not self.refr_on:
             return pApp_alt, 0.0
@@ -763,10 +765,11 @@ class Mount:
         if not self.model_on:
             return (pRoll_h, pPitch_d)
         else:
-
+            #print('MA, ME: ', math.degrees(self.model['ma']), math.degrees(self.model['me']))
             # R to HD convention
             # pRoll  in Hours
             # pPitch in degrees
+            # NB Incoming model terms should be in radians.
             #Apply IH and ID to incoming coordinates, and if needed GEM correction.
             rRoll = math.radians(pRoll_h * HTOD) - self.model['ih']  #This is the basic calibration for Park Position.
             rPitch = math.radians(pPitch_d) - self.model['id']
@@ -1040,6 +1043,7 @@ class Mount:
                             if self.can_sync_mount:
                                 if self.sync_mount_requested:
                                     self.sync_mount_requested=False
+                                    #breakpoint()
                                     self.mount_update_wincom.SyncToCoordinates(self.syncToRA,self.syncToDEC)
 
                             if self.unpark_requested:
@@ -1505,12 +1509,13 @@ class Mount:
         plog("Action for mount is:  ", action)
 
         if action == "go":
+            object_name = opt['object']
             if 'ra' in req:
-                result = self.go_command(ra=req['ra'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
+                result = self.go_command(ra=req['ra'], dec=req['dec'],objectname=object_name)   #  Entered from Target Explorer or Telescope tabs.
             elif 'az' in req:
-                result = self.go_command(az=req['az'], alt=req['alt'])   #  Entered from Target Explorer or Telescope tabs.
+                result = self.go_command(az=req['az'], alt=req['alt'],objectname=object_name)   #  Entered from Target Explorer or Telescope tabs.
             elif 'ha' in req:
-                result = self.go_command(ha=req['ha'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
+                result = self.go_command(ha=req['ha'], dec=req['dec'],objectname=object_name)   #  Entered from Target Explorer or Telescope tabs.
 
             # BECAUSE THERE IS NOW NO SEPARATE BUTTON FOR SLEW AND CENTER
             # ALL MANUALLY COMMANDED SHOTS HAVE TO BE CENTERED.
@@ -1531,9 +1536,10 @@ class Mount:
                     try:
 
                         # Need to convert image fraction into offset
+                        # NB NB Need to change x and y names, they are backwards. REproting is OK though.
                         image_y = req['image_x']  #Fraction of image axis
                         image_x = req['image_y']
-                        # And the current pixel scale.  Not however the Ra and DEc come from the displayed image header
+                        # And the current pixel scale.  Note however the Ra and DEc come from the displayed image header
 
                         pixscale=float(req['header_pixscale'])  # asec/pixel
                         pixscale_hours=(pixscale/60/60) / 15  # hrs/pixel ~ 10e-6
@@ -1552,17 +1558,20 @@ class Mount:
                         #y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
                         x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
                         y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
-                        plog ("X pixel shift: " + str(x_pixel_shift))
                         plog ("Y pixel shift: " + str(y_pixel_shift))
+                        plog ("X pixel shift: " + str(x_pixel_shift))
+
 
                         gora=center_image_ra + (y_pixel_shift * pixscale_hours)
                         godec=center_image_dec - (x_pixel_shift * pixscale_degrees)
 
-                        plog ("X centre shift (asec): " + str((x_pixel_shift * pixscale)))
-                        plog ("Y centre shift (asec): " + str(((y_pixel_shift * pixscale))))
+                        plog ("X center shift (asec): " + str((x_pixel_shift * pixscale)))
+                        plog ("Y center shift (asec): " + str(((y_pixel_shift * pixscale))))
 
-                        plog ("X centre shift (hours): " + str((x_pixel_shift * pixscale_hours)))
-                        plog ("Y centre shift (degrees): " + str(((y_pixel_shift * pixscale_degrees))))
+                        plog ("X center shift (hours): " + str((x_pixel_shift * pixscale_hours)))
+                        plog ("Y center shift (degrees): " + str(((y_pixel_shift * pixscale_degrees))))
+
+
                         #plog ("New RA: " + str(req['ra']))
                         #plog ("New DEC: " + str(req['dec']))
 
@@ -1596,6 +1605,8 @@ class Mount:
 
 
         elif action == "home":
+            #breakpoint()
+            # pass
             self.home_command(req, opt)
         elif action == "tracking":
             self.tracking_command(req, opt)
@@ -1606,6 +1617,7 @@ class Mount:
         elif action == "park":
             self.park_command(req, opt)
         elif action == "unpark":
+            #breakpoint()
             self.unpark_command(req, opt)
         elif action == 'sky_flat_position':
             g_dev['mnt'].go_command(skyflatspot=True)
@@ -1774,8 +1786,10 @@ class Mount:
 
         self.unpark_command()   #can we qualify this?
 
+        #  NB NB This list should be expanded to include the Planets, Ceres, Vesta, and maybe the key ice-giant moons.
+        #  NB NB in addition input from a TLE may make sense, particulary a list of say 24 Geosats.
 
-        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
+        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna', 'Lun', 'lun']:
             self.obs.date = ephem.now()
             moon = ephem.Moon()
             moon.compute(self.obs)
@@ -1789,6 +1803,75 @@ class Mount:
             dec=dec1
             tracking_rate_ra=dra_moon
             tracking_rate_dec = ddec_moon
+            plog("Moon:  ", ra, dec, dra_moon, ddec_moon)
+
+        if self.object in ['Sun', 'sun', 'Sol', 'sol']:
+            #breakpoint()
+            self.obs.date = ephem.now()
+            sun = ephem.Sun()
+            sun.compute(self.obs)
+            ra1, dec1 = sun.ra*RTOH, sun.dec*RTOD
+            self.obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
+            sun.compute(self.obs)
+            ra2, dec2 =sun.ra*RTOH, sun.dec*RTOD
+            dra_sun = (ra2 - ra1)*15*3600/3600
+            ddec_sun = (dec2 - dec1)*3600/3600
+            ra=ra1
+            dec=dec1
+            tracking_rate_ra=dra_sun
+            tracking_rate_dec = ddec_sun
+            plog("Sun:  ", ra, dec, dra_sun, ddec_sun)
+
+        if self.object in ['Venus', 'venus', 'Ven', 'ven']:
+             #breakpoint()
+             self.obs.date = ephem.now()
+             venus = ephem.Venus()
+             venus.compute(self.obs)
+             ra1, dec1 = venus.ra*RTOH, venus.dec*RTOD
+             self.obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
+             venus.compute(self.obs)
+             ra2, dec2 =venus.ra*RTOH, venus.dec*RTOD
+             dra_venus = (ra2 - ra1)*15*3600/3600
+             ddec_venus = (dec2 - dec1)*3600/3600
+             ra=ra1
+             dec=dec1
+             tracking_rate_ra=dra_venus
+             tracking_rate_dec = ddec_venus
+             plog("Venus:  ", ra, dec, dra_venus, ddec_venus)
+
+        if  self.object in ['Saturn', 'Saturn', 'Sat', 'sat']:
+              #breakpoint()
+              self.obs.date = ephem.now()
+              saturn = ephem.Saturn()
+              saturn.compute(self.obs)
+              ra1, dec1 = saturn.ra*RTOH, saturn.dec*RTOD
+              self.obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
+              saturn.compute(self.obs)
+              ra2, dec2 =saturn.ra*RTOH, saturn.dec*RTOD
+              dra_saturn = (ra2 - ra1)*15*3600/3600
+              ddec_saturn = (dec2 - dec1)*3600/3600
+              ra=ra1
+              dec=dec1
+              tracking_rate_ra=dra_saturn
+              tracking_rate_dec = ddec_saturn
+              plog("Saturn:  ", ra, dec, dra_saturn, ddec_saturn)
+
+        if  self.object in ['Neptune', 'neptune', 'Nep', 'nep']:
+              #breakpoint()
+              self.obs.date = ephem.now()
+              neptune = ephem.Neptune()
+              neptune.compute(self.obs)
+              ra1, dec1 = neptune.ra*RTOH, neptune.dec*RTOD
+              self.obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
+              neptune.compute(self.obs)
+              ra2, dec2 =neptune.ra*RTOH, neptune.dec*RTOD
+              dra_neptune = (ra2 - ra1)*15*3600/3600
+              ddec_neptune = (dec2 - dec1)*3600/3600
+              ra=ra1
+              dec=dec1
+              tracking_rate_ra=dra_neptune
+              tracking_rate_dec = ddec_neptune
+              plog("Neptune:  ", ra, dec, dra_neptune, ddec_neptune)
 
         # During flats the scope is so continuously nudged as to make reporting of nudges meaningless... so don't report.
         if not skyflatspot:
@@ -1809,7 +1892,7 @@ class Mount:
 
         self.previous_pier_side=self.rapid_pier_indicator
 
-        plog ("RA and Dec pre icrs to mech: " + str(round(ra,6))+ " " + str(round(dec,6)))
+        plog ("RA and Dec ICRS prior to mech: " + str(round(ra,6))+ " " + str(round(dec,6)))
 
         ###################################### HERE IS WHERE THE NEW WAYNE STUFF SHOULD GO
 
@@ -2070,7 +2153,7 @@ class Mount:
             home_alt = self.settings["home_altitude"]
             home_az = self.settings["home_azimuth"]
             g_dev['obs'].time_of_last_slew=time.time()
-            g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)#, skyflatspot=True)
+            g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True, skyflatspot=True)
 
             self.wait_for_slew(wait_after_slew=False)
         self.wait_for_slew(wait_after_slew=False)
