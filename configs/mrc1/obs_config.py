@@ -106,8 +106,8 @@ site_config = {
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': True,   #This is poorly named  the Enclosure is Manual vs Auto
-    'mount_reference_model_off': True,
+    'scope_in_manual_mode': False,   #This is poorly named  the Enclosure is Manual vs Auto
+    'mount_reference_model_off': False,
     'sun_checks_on': False,
     'moon_checks_on': False,
     'altitude_checks_on': False,
@@ -137,7 +137,7 @@ site_config = {
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/mrc1/',  # place where night logs can be found.
     'save_to_alt_path': 'no',
-    'archive_age': 7,  # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age': 2,  # Number of days to keep files in the local archive before deletion. Negative means never delete
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
@@ -629,7 +629,7 @@ site_config = {
             'name': 'sq010sm',  # Important because this points to a server file structure by that name.
             'desc':  'QHY 461PH BSI Mono',
 
-            'overscan_trim' : 'none',
+            'overscan_trim' : 'QHY461',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
@@ -784,13 +784,13 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,     #Cooler is ambiguous nname
-                'temp_setpoint': 15,    # Verify we can go colder
+                'temp_setpoint': 2,    # Verify we can go colder
                 'has_chiller': False,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  25,  # C
                 "temp_setpoint_tolerance": 2.5,   #  C
                 'day_warm': False,
-                'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
+                'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
 
 

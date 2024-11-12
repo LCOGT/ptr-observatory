@@ -3015,7 +3015,6 @@ class Sequencer:
         # Get list of biases
         plog ("Regenerating bias")
         calibration_timer=time.time()
-
         darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
         archiveDate=str(datetime.date.today()).replace('-','')
@@ -3086,41 +3085,39 @@ class Sequencer:
                 plog ("There is a new bias frame since the last super-bias was made")
 
                 # Store the biases in the memmap file
-                PLDrive= [None] * len(inputList)
+                PLDrive = [None] * len(inputList)
                 i=0
                 for file in inputList:
                     PLDrive[i] = np.load(file, mmap_mode='r')
                     i=i+1
-
                 # finalImage array
                 finalImage=np.zeros(shapeImage, dtype=np.float32)
-
 
                 try:
                     # create an empty array to hold each chunk
                     # the size of this array will determine the amount of RAM usage
+
 
                     # Get a chunk size that evenly divides the array
                     chunk_size=8
                     while not ( shapeImage[0] % chunk_size ==0):
                         chunk_size=chunk_size+1
                     chunk_size=int(shapeImage[0]/chunk_size)
-
+                    #plog("Calculated chunk_size:  ", chunk_size)
                     holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
-
 
                     # iterate through the input, replace with ones, and write to output
 
                     # Maybe also only reform the memmap if chunk size bigger.
                     reloader_trigger=0
                     for i in range(shapeImage[0]):
+                        #plog("Line 3117 @  ", time.time(), "i= ", i)
                         if i % chunk_size == 0:
                             counter=0
                             for imagefile in range(len(PLDrive)):
                                 holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
                                 counter=counter+1
                             finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
-
                             reloader_trigger=reloader_trigger+chunk_size
                             if reloader_trigger > 1000:
                                 # Wipe and restore files in the memmap file
@@ -3131,7 +3128,6 @@ class Sequencer:
                                     PLDrive[i] = np.load(file, mmap_mode='r')
                                     i=i+1
                                 reloader_trigger=0
-
 
                 except:
                     plog(traceback.format_exc())
@@ -5490,7 +5486,7 @@ class Sequencer:
                                 plog(traceback.format_exc())
                                 fit_failed=True
 
-                            breakpoint()
+                            #breakpoint()
 
                             if fit_failed:
                                 plog ("Fit failed. Usually due to a lack of data on one side of the curve. Grabbing another dot on the smaller side of the curve")

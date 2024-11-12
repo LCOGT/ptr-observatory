@@ -3638,7 +3638,7 @@ class Observatory:
     #   Note this is a thread
     def slow_camera_process(self):
         """
-        A place to process non-process dependant images from the camera pile.
+        A place to process non-process dependent images from the camera pile.
         Usually long-term saves to disk and such things
         """
 
@@ -4894,7 +4894,7 @@ class Observatory:
 
                     if filepath == "":
                         plog(
-                            "found an empty thing in the fast_queue? Why? MTF finding out."
+                            "found an empty thing in the fast_queue."     #? Why? MTF finding out."
                         )
                     else:
                         try:
@@ -5061,7 +5061,7 @@ class Observatory:
 
                     if filepath == "":
                         plog(
-                            "found an empty thing in the medium_queue? Why? MTF finding out."
+                            "found an empty thing in the medium_queue."  #"? Why? MTF finding out."
                         )
                     else:
                         # If the file is there now
