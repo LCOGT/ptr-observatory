@@ -181,7 +181,7 @@ except:
 
 
 # If this is set to true, then it will output a sample of the background image.
-if False:
+if True:
     hdufocus = fits.PrimaryHDU()
     hdufocus.data = bkg
     hdufocus.header = hduheader

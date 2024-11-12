@@ -791,7 +791,7 @@ class Camera:
         g_dev[name + "_cam_retry_config"] = config
         g_dev[name + "_cam_retry_doit"] = False
         g_dev[name] = self
-        if name == "camera_1_1":  # NBDefaults sets up Selected 'cam'
+        if name == "camera_1_1":  # NB  Default sets up Selected 'cam'
             g_dev["cam"] = self
         self.config = config
         self.alias = config["camera"][self.name]["name"]
@@ -2272,8 +2272,7 @@ class Camera:
             if subexposure == 0:
                 self.substack_start_time = time.time()
             self.expected_endpoint_of_substack_exposure = time.time() + exp_of_substacks
-            self.sub_stacker_midpoints.append(
-                copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
+            self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
             qhycam.so.ExpQHYCCDSingleFrame(
                 qhycam.camera_params[qhycam_id]['handle'])
             exposure_timer = time.time()
@@ -2972,6 +2971,7 @@ class Camera:
 
                     if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread:
                         g_dev['obs'].check_platesolve_and_nudge()
+                        plog("Tel was just nudged after pier flip")
 
                 self.tempStartupExposureTime = time.time()
 
@@ -3126,7 +3126,7 @@ class Camera:
 
                             self.current_exposure_time = exposure_time
 
-                            # Always check rotator just before exposure  The Rot jitters wehn parked so
+                            # Always check rotator just before exposure
                             if not g_dev['obs'].mountless_operation:
                                 rot_report = 0
                                 if g_dev['rot'] != None:
@@ -3267,7 +3267,7 @@ class Camera:
                             if not g_dev['seq'].focussing and not g_dev['obs'].scope_in_manual_mode and frame_type == 'pointing':
                                 try:
                                     last_fwhm = g_dev['obs'].fwhmresult["FWHM"]
-                                    #  NB NB WER this can be evil is telescope is not well set up. Should not adjust in Eng mode.
+                                    #  NB NB WER this can be evil if telescope is not well set up. Should not adjust in Eng mode.
                                     if last_fwhm > 4.0:
                                         exposure_time = exposure_time * 4
                                     elif last_fwhm > 3:

@@ -358,9 +358,9 @@ site_config = {
                     'id':   0.0,
                     'eho':  0.0,  # East Hour angle Offset -- NOTE an offset
                     'edo':  0.0,  # East Dec Offset
-                    'ma':   0.0,  # Azimuth error of polar axis
-                    'me':   0.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
-                    'ch':   0.0,  # Optical axis not perp to dec axis
+                    'ma':   73.0,  # Azimuth error of polar axis
+                    'me':   300.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
+                    'ch':   -115.0,  # Optical axis not perp to dec axis
                     'np':   0.0,  # Non-perp of polar and dec axis
                     'tf':   0.0,  # Sin flexure -- Hook's law.
                     'tx':   0.0,  # Tangent flexure
@@ -857,7 +857,7 @@ site_config = {
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp': 25,  # C 20240906
                 'day_warm': True,  # This is converted to a 0 or 1 depending on the Boolean value
-                'day_warm_degrees': 9,  # Assuming the Chiller is working.
+                'day_warm_degrees': 4,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating': False,
 
                 # These are the physical values for the camera

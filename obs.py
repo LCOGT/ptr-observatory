@@ -3681,7 +3681,11 @@ class Observatory:
                         del hdufocus
 
                     if slow_process[0] == "numpy_array_save":
-                        np.save(slow_process[1], slow_process[2])
+                        try:
+                            np.save(slow_process[1], slow_process[2])
+                        except:
+                            plog ("numpy file save issue")
+                            plog(traceback.format_exc())
 
                     if slow_process[0] == "fits_file_save":
                         fits.writeto(
