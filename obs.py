@@ -705,10 +705,20 @@ class Observatory:
             "daytime_exposure_time_safety_on"
         ]
         self.mount_reference_model_off = self.config["mount_reference_model_off"]
-        self.admin_owner_commands_only = self.config["owner_only_commands"]
-        self.assume_roof_open = self.config["simulate_open_roof"]  #Note NB NB this is conusing with the attribut above...about 9 lines.
-        self.auto_centering_off = self.config["auto_centering_off"]
-
+        
+        try:
+            self.admin_owner_commands_only = self.config["owner_only_commands"]
+        except:
+        
+            self.admin_owner_commands_only = False
+        try:
+            self.assume_roof_open = self.config["simulate_open_roof"]  #Note NB NB this is conusing with the attribut above...about 9 lines.
+        except:
+            self.assume_roof_open = False
+        try:
+            self.auto_centering_off = self.config["auto_centering_off"]
+        except:
+            self.auto_centering_off = False
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
         self.astro_events = ptr_events.Events(self.config)
@@ -1510,32 +1520,35 @@ class Observatory:
         """
 
         # NB NB this needs to be conditoned on the site having lightning detection!
-
-        if self.config['has_lightning_detector']:
-
-            try:
-                with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
-                    r_date, r_time = light_rec.readline().split()[-2:]
-                    #plog(r_date, r_time)
-                    d_string = r_date + 'T' +r_time
-                    d_time = datetime.datetime.fromisoformat(d_string)+datetime.timedelta(minutes=7.5)
-                    distance = 10.001
-                    if datetime.datetime.now() < d_time:   #  Here validate if not stale before doing next line.
-                        for lin in light_rec.readlines():
-                            if 'distance' in lin:
-                                s_range = float(lin.split()[-2])
-                                if s_range < distance:
-                                    distance = s_range
+        try:
+            if self.config['has_lightning_detector']:
+    
+                try:
+                    with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
+                        r_date, r_time = light_rec.readline().split()[-2:]
+                        #plog(r_date, r_time)
+                        d_string = r_date + 'T' +r_time
+                        d_time = datetime.datetime.fromisoformat(d_string)+datetime.timedelta(minutes=7.5)
+                        distance = 10.001
+                        if datetime.datetime.now() < d_time:   #  Here validate if not stale before doing next line.
+                            for lin in light_rec.readlines():
+                                if 'distance' in lin:
+                                    s_range = float(lin.split()[-2])
+                                    if s_range < distance:
+                                        distance = s_range
+                        else:
+                            #plog("Lightning report is stale.")
+                            pass
+                    if distance <=  10.0:
+                        plog("Lightning distance is:   ", distance, ' km away.')
                     else:
-                        #plog("Lightning report is stale.")
                         pass
-                if distance <=  10.0:
-                    plog("Lightning distance is:   ", distance, ' km away.')
-                else:
-                    pass
-                    #plog('Lighting is > 10 km away,')
-            except:
-                plog('Lightning distance test did not work')
+                        #plog('Lighting is > 10 km away,')
+                except:
+                    plog('Lightning distance test did not work')
+
+        except:
+            pass
 
         self.time_last_status = time.time()
         self.status_count += 1
