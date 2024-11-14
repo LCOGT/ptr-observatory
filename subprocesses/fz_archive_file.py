@@ -47,8 +47,10 @@ temphduheader["BSCALE"] = 1  # Make sure there is no integer scaling left over
 if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
     pipefolder = selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])
     if not os.path.exists(selfconfig['pipe_archive_folder_path']+'/'+ str(temphduheader['INSTRUME'])):
+        os.umask(0)
         os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']))
     if not os.path.exists(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])):
+        os.umask(0)
         os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS']))
 
 if not selfconfig["camera"]['camera_1_1']["settings"]["is_osc"]:

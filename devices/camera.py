@@ -3489,8 +3489,9 @@ class Camera:
             if len(real_time_files) > 0:
                 pipetokenfolder = self.config['pipe_archive_folder_path'] + '/tokens'
                 if not os.path.exists(self.config['pipe_archive_folder_path'] + '/tokens'):
+                    os.umask(0)
                     os.makedirs(
-                        self.config['pipe_archive_folder_path'] + '/tokens')
+                        self.config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
                 with open(pipetokenfolder + "/" + token_name, 'w') as f:
                     json.dump(real_time_files, f, indent=2)
 
