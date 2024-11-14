@@ -16,7 +16,7 @@ pip install -U ocs_ingester
 pip install -U astroquery
 pip install -U ephem
 pip install -U pyowm
-pip install -U serial
+pip install -U pyserial
 pip install -U xmltodict
 pip install -U image_registration
 
