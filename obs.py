@@ -172,31 +172,31 @@ class Observatory:
         ).replace("//", "/")
         g_dev["obsid_path"] = self.obsid_path
         if not os.path.exists(self.obsid_path):
-            os.makedirs(self.obsid_path)
+            os.makedirs(self.obsid_path, mode=0o777)
         self.local_calibration_path = (
             ptr_config["local_calibration_path"] + self.config["obs_id"] + "/"
         )
         if not os.path.exists(ptr_config["local_calibration_path"]):
-            os.makedirs(ptr_config["local_calibration_path"])
+            os.makedirs(ptr_config["local_calibration_path"], mode=0o777)
         if not os.path.exists(self.local_calibration_path):
-            os.makedirs(self.local_calibration_path)
+            os.makedirs(self.local_calibration_path, mode=0o777)
 
         if self.config["save_to_alt_path"] == "yes":
             self.alt_path = ptr_config["alt_path"] + \
                 self.config["obs_id"] + "/"
             if not os.path.exists(ptr_config["alt_path"]):
-                os.makedirs(ptr_config["alt_path"])
+                os.makedirs(ptr_config["alt_path"], mode=0o777)
             if not os.path.exists(self.alt_path):
-                os.makedirs(self.alt_path)
+                os.makedirs(self.alt_path, mode=0o777)
 
         if not os.path.exists(self.obsid_path + "ptr_night_shelf"):
-            os.makedirs(self.obsid_path + "ptr_night_shelf")
+            os.makedirs(self.obsid_path + "ptr_night_shelf", mode=0o777)
         if not os.path.exists(self.obsid_path + "archive"):
-            os.makedirs(self.obsid_path + "archive")
+            os.makedirs(self.obsid_path + "archive", mode=0o777)
         if not os.path.exists(self.obsid_path + "tokens"):
-            os.makedirs(self.obsid_path + "tokens")
+            os.makedirs(self.obsid_path + "tokens", mode=0o777)
         if not os.path.exists(self.obsid_path + "astropycache"):
-            os.makedirs(self.obsid_path + "astropycache")
+            os.makedirs(self.obsid_path + "astropycache", mode=0o777)
 
         # Local Calibration Paths
         camera_name = self.config["camera"]["camera_1_1"]["name"]
@@ -204,7 +204,7 @@ class Observatory:
             self.local_calibration_path + "archive/" + camera_name + "/calibmasters"
         ):
             os.makedirs(
-                self.local_calibration_path + "archive/" + camera_name + "/calibmasters"
+                self.local_calibration_path + "archive/" + camera_name + "/calibmasters", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -216,7 +216,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations"
+                + "/localcalibrations", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -228,7 +228,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks"
+                + "/localcalibrations/darks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -240,7 +240,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/narrowbanddarks"
+                + "/localcalibrations/darks/narrowbanddarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -252,7 +252,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/broadbanddarks"
+                + "/localcalibrations/darks/broadbanddarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -264,7 +264,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/pointzerozerofourfivedarks"
+                + "/localcalibrations/darks/pointzerozerofourfivedarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -276,7 +276,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/onepointfivepercentdarks"
+                + "/localcalibrations/darks/onepointfivepercentdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -288,7 +288,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/fivepercentdarks"
+                + "/localcalibrations/darks/fivepercentdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -300,7 +300,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/tenpercentdarks"
+                + "/localcalibrations/darks/tenpercentdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -312,7 +312,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/quartersecdarks"
+                + "/localcalibrations/darks/quartersecdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -324,7 +324,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/halfsecdarks"
+                + "/localcalibrations/darks/halfsecdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -336,7 +336,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/sevenfivepercentdarks"
+                + "/localcalibrations/darks/sevenfivepercentdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -348,7 +348,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/onesecdarks"
+                + "/localcalibrations/darks/onesecdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -360,7 +360,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/oneandahalfsecdarks"
+                + "/localcalibrations/darks/oneandahalfsecdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -372,7 +372,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/twosecdarks"
+                + "/localcalibrations/darks/twosecdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -384,7 +384,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/threepointfivesecdarks"
+                + "/localcalibrations/darks/threepointfivesecdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -396,7 +396,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/fivesecdarks"
+                + "/localcalibrations/darks/fivesecdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -408,7 +408,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/sevenpointfivesecdarks"
+                + "/localcalibrations/darks/sevenpointfivesecdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -420,7 +420,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/tensecdarks"
+                + "/localcalibrations/darks/tensecdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -432,7 +432,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/fifteensecdarks"
+                + "/localcalibrations/darks/fifteensecdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -444,7 +444,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/twentysecdarks"
+                + "/localcalibrations/darks/twentysecdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -456,7 +456,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/darks/thirtysecdarks"
+                + "/localcalibrations/darks/thirtysecdarks", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -468,7 +468,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/biases"
+                + "/localcalibrations/biases", mode=0o777
             )
         if not os.path.exists(
             self.local_calibration_path
@@ -480,7 +480,7 @@ class Observatory:
                 self.local_calibration_path
                 + "archive/"
                 + camera_name
-                + "/localcalibrations/flats"
+                + "/localcalibrations/flats", mode=0o777
             )
 
         self.calib_masters_folder = (
@@ -518,12 +518,12 @@ class Observatory:
             self.config["archive_path"] + "/" + self.name + "/" + "orphans/"
         )
         if not os.path.exists(self.orphan_path):
-            os.makedirs(self.orphan_path)
+            os.makedirs(self.orphan_path, mode=0o777)
         self.broken_path = (
             self.config["archive_path"] + "/" + self.name + "/" + "broken/"
         )
         if not os.path.exists(self.broken_path):
-            os.makedirs(self.broken_path)
+            os.makedirs(self.broken_path, mode=0o777)
 
         # Clear out smartstacks directory
         try:
@@ -531,7 +531,7 @@ class Observatory:
         except:
             pass
         if not os.path.exists(self.local_calibration_path + "smartstacks"):
-            os.makedirs(self.local_calibration_path + "smartstacks")
+            os.makedirs(self.local_calibration_path + "smartstacks", mode=0o777)
 
         # Copy in the latest fz_archive subprocess file to the smartstacks folder
         shutil.copy(
@@ -3735,19 +3735,19 @@ class Observatory:
                                     self.local_dark_folder + "/localcalibrations"
                                 ):
                                     os.makedirs(
-                                        self.local_dark_folder + "/localcalibrations"
+                                        self.local_dark_folder + "/localcalibrations", mode=0o777
                                     )
 
                                 if "dark" in slow_process[4]:
                                     if not os.path.exists(self.local_dark_folder):
-                                        os.makedirs(self.local_dark_folder)
+                                        os.makedirs(self.local_dark_folder, mode=0o777)
                                     if not os.path.exists(
                                         self.local_dark_folder
                                         + "/localcalibrations/darks/narrowbanddarks"
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/narrowbanddarks"
+                                            + "/localcalibrations/darks/narrowbanddarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3755,7 +3755,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/broadbanddarks"
+                                            + "/localcalibrations/darks/broadbanddarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3763,7 +3763,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/pointzerozerofourfivedarks"
+                                            + "/localcalibrations/darks/pointzerozerofourfivedarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3771,7 +3771,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/onepointfivepercentdarks"
+                                            + "/localcalibrations/darks/onepointfivepercentdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3779,7 +3779,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/fivepercentdarks"
+                                            + "/localcalibrations/darks/fivepercentdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3787,7 +3787,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/tenpercentdarks"
+                                            + "/localcalibrations/darks/tenpercentdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3795,7 +3795,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/quartersecdarks"
+                                            + "/localcalibrations/darks/quartersecdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3803,7 +3803,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/halfsecdarks"
+                                            + "/localcalibrations/darks/halfsecdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3811,7 +3811,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/sevenfivepercentdarks"
+                                            + "/localcalibrations/darks/sevenfivepercentdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3819,7 +3819,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/onesecdarks"
+                                            + "/localcalibrations/darks/onesecdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3827,7 +3827,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/oneandahalfsecdarks"
+                                            + "/localcalibrations/darks/oneandahalfsecdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3835,7 +3835,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/twosecdarks"
+                                            + "/localcalibrations/darks/twosecdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3843,7 +3843,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/threepointfivesecdarks"
+                                            + "/localcalibrations/darks/threepointfivesecdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3851,7 +3851,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/fivesecdarks"
+                                            + "/localcalibrations/darks/fivesecdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3859,7 +3859,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/sevenpointfivesecdarks"
+                                            + "/localcalibrations/darks/sevenpointfivesecdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3867,7 +3867,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/tensecdarks"
+                                            + "/localcalibrations/darks/tensecdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3875,7 +3875,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/fifteensecdarks"
+                                            + "/localcalibrations/darks/fifteensecdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3883,7 +3883,7 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/twentysecdarks"
+                                            + "/localcalibrations/darks/twentysecdarks", mode=0o777
                                         )
                                     if not os.path.exists(
                                         self.local_dark_folder
@@ -3891,18 +3891,18 @@ class Observatory:
                                     ):
                                         os.makedirs(
                                             self.local_dark_folder
-                                            + "/localcalibrations/darks/thirtysecdarks"
+                                            + "/localcalibrations/darks/thirtysecdarks", mode=0o777
                                         )
 
                                 if "flat" in slow_process[4]:
                                     if not os.path.exists(self.local_flat_folder):
-                                        os.makedirs(self.local_flat_folder)
+                                        os.makedirs(self.local_flat_folder, mode=0o777)
 
                                 # Figure out which folder to send the calibration file to
                                 # and delete any old files over the maximum amount to store
                                 if slow_process[4] == "bias":
                                     if not os.path.exists(self.local_bias_folder):
-                                        os.makedirs(self.local_bias_folder)
+                                        os.makedirs(self.local_bias_folder, mode=0o777)
                                     tempfilename = (
                                         self.local_bias_folder
                                         + slow_process[1].replace(".fits", ".npy")
@@ -4701,7 +4701,7 @@ class Observatory:
                                         self.local_flat_folder + tempfilter
                                     ):
                                         os.makedirs(
-                                            self.local_flat_folder + tempfilter)
+                                            self.local_flat_folder + tempfilter, mode=0o777)
                                     tempfilename = (
                                         self.local_flat_folder
                                         + tempfilter

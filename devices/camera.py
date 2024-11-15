@@ -250,30 +250,30 @@ def write_raw_file_out(packet):
 
     # Make sure normal paths exist
     os.makedirs(
-        g_dev['cam'].camera_path + g_dev["day"], exist_ok=True
+        g_dev['cam'].camera_path + g_dev["day"], exist_ok=True, mode=0o777
     )
     os.makedirs(
-        g_dev['cam'].camera_path + g_dev["day"] + "/raw/", exist_ok=True
+        g_dev['cam'].camera_path + g_dev["day"] + "/raw/", exist_ok=True, mode=0o777
     )
     os.makedirs(
-        g_dev['cam'].camera_path + g_dev["day"] + "/reduced/", exist_ok=True
+        g_dev['cam'].camera_path + g_dev["day"] + "/reduced/", exist_ok=True, mode=0o777
     )
     os.makedirs(
-        g_dev['cam'].camera_path + g_dev["day"] + "/calib/", exist_ok=True)
+        g_dev['cam'].camera_path + g_dev["day"] + "/calib/", exist_ok=True, mode=0o777)
 
     # Make  sure the alt paths exist
     if raw == 'raw_alt_path':
         os.makedirs(
-            altpath + g_dev["day"], exist_ok=True
+            altpath + g_dev["day"], exist_ok=True, mode=0o777
         )
         os.makedirs(
-            altpath + g_dev["day"] + "/raw/", exist_ok=True
+            altpath + g_dev["day"] + "/raw/", exist_ok=True, mode=0o777
         )
         os.makedirs(
-            altpath + g_dev["day"] + "/reduced/", exist_ok=True
+            altpath + g_dev["day"] + "/reduced/", exist_ok=True, mode=0o777
         )
         os.makedirs(
-            altpath + g_dev["day"] + "/calib/", exist_ok=True)
+            altpath + g_dev["day"] + "/calib/", exist_ok=True, mode=0o777)
 
     hdu = fits.PrimaryHDU()
     hdu.data = hdudata
@@ -811,22 +811,22 @@ class Camera:
         # Sets up paths and structures
         self.obsid_path = g_dev['obs'].obsid_path
         if not os.path.exists(self.obsid_path):
-            os.makedirs(self.obsid_path)
+            os.makedirs(self.obsid_path, mode=0o777)
         self.local_calibration_path = g_dev['obs'].local_calibration_path
         if not os.path.exists(self.local_calibration_path):
-            os.makedirs(self.local_calibration_path)
+            os.makedirs(self.local_calibration_path, mode=0o777)
 
         self.archive_path = self.config["archive_path"] + \
             self.config['obs_id'] + '/' + "archive/"
         if not os.path.exists(self.config["archive_path"] + '/' + self.config['obs_id']):
             os.makedirs(self.config["archive_path"] +
-                        '/' + self.config['obs_id'])
+                        '/' + self.config['obs_id'], mode=0o777)
         if not os.path.exists(self.config["archive_path"] + '/' + self.config['obs_id'] + '/' + "archive/"):
             os.makedirs(self.config["archive_path"] + '/' +
-                        self.config['obs_id'] + '/' + "archive/")
+                        self.config['obs_id'] + '/' + "archive/", mode=0o777)
         self.camera_path = self.archive_path + self.alias + "/"
         if not os.path.exists(self.camera_path):
-            os.makedirs(self.camera_path)
+            os.makedirs(self.camera_path, mode=0o777)
         self.alt_path = self.config[
             "alt_path"
         ] + '/' + self.config['obs_id'] + '/'  # NB NB this should come from config file, it is site dependent.
@@ -835,10 +835,10 @@ class Camera:
         ]):
             os.makedirs(self.config[
                 "alt_path"
-            ])
+            ], mode=0o777)
 
         if not os.path.exists(self.alt_path):
-            os.makedirs(self.alt_path)
+            os.makedirs(self.alt_path, mode=0o777)
 
         # Just need to initialise this filter thing
         self.current_offset = 0
@@ -3826,13 +3826,13 @@ class Camera:
         cal_path = im_path_r + g_dev["day"] + "/calib/"
 
         if not os.path.exists(im_path_r):
-            os.makedirs(im_path_r)
+            os.makedirs(im_path_r, mode=0o777)
         if not os.path.exists(im_path_r + g_dev["day"]):
-            os.makedirs(im_path_r + g_dev["day"])
+            os.makedirs(im_path_r + g_dev["day"], mode=0o777)
         if not os.path.exists(im_path_r + g_dev["day"] + "/calib"):
-            os.makedirs(im_path_r + g_dev["day"] + "/calib")
+            os.makedirs(im_path_r + g_dev["day"] + "/calib", mode=0o777)
         if not os.path.exists(im_path_r + g_dev["day"] + "/to_AWS"):
-            os.makedirs(im_path_r + g_dev["day"] + "/to_AWS")
+            os.makedirs(im_path_r + g_dev["day"] + "/to_AWS", mode=0o777)
 
         if self.config["save_to_alt_path"] == "yes":
             self.alt_path = self.config[
@@ -3840,15 +3840,15 @@ class Camera:
             ] + '/' + self.config['obs_id'] + '/'  # NB NB this should come from config file, it is site dependent.
 
             os.makedirs(
-                self.alt_path, exist_ok=True
+                self.alt_path, exist_ok=True, mode=0o777
             )
 
             os.makedirs(
-                self.alt_path + g_dev["day"], exist_ok=True
+                self.alt_path + g_dev["day"], exist_ok=True, mode=0o777
             )
 
             os.makedirs(
-                self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
+                self.alt_path + g_dev["day"] + "/raw/", exist_ok=True, mode=0o777
             )
 
         raw_path = im_path_r + g_dev['day'] + "/raw/"
@@ -4830,11 +4830,11 @@ class Camera:
                         im_path_r = self.camera_path
                         raw_path = im_path_r + g_dev["day"] + "/raw/"
                         os.makedirs(
-                            self.camera_path + g_dev["day"], exist_ok=True
+                            self.camera_path + g_dev["day"], exist_ok=True, mode=0o777
                         )
 
                         os.makedirs(
-                            raw_path, exist_ok=True
+                            raw_path, exist_ok=True, mode=0o777
                         )
 
                         threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header,
@@ -4848,15 +4848,15 @@ class Camera:
                         ] + '/' + self.config['obs_id'] + '/'
 
                         os.makedirs(
-                            self.alt_path, exist_ok=True
+                            self.alt_path, exist_ok=True, mode=0o777
                         )
 
                         os.makedirs(
-                            self.alt_path + g_dev["day"], exist_ok=True
+                            self.alt_path + g_dev["day"], exist_ok=True, mode=0o777
                         )
 
                         os.makedirs(
-                            self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
+                            self.alt_path + g_dev["day"] + "/raw/", exist_ok=True, mode=0o777
                         )
                         threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header,
                                                                                          frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, altpath, 'deprecated')),)).start()
@@ -5496,11 +5496,11 @@ class Camera:
                         # Similarly to the above. This saves the RAW file to disk
                         if self.config['save_raw_to_disk']:
                             os.makedirs(
-                                self.camera_path + g_dev["day"], exist_ok=True
+                                self.camera_path + g_dev["day"], exist_ok=True, mode=0o777
                             )
 
                             os.makedirs(
-                                raw_path, exist_ok=True
+                                raw_path, exist_ok=True, mode=0o777
                             )
                             threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header,
                                              frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, 'no', 'deprecated')),)).start()
