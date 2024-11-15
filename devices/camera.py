@@ -2831,7 +2831,15 @@ class Camera:
             plog("Camera filter setup:  ", e)
             plog(traceback.format_exc())
 
-        this_exposure_filter = self.current_filter
+
+        plog ("REQUESTED FILTER NAME: " + str(requested_filter_name))
+        plog ("CURRENT FILTER: " + str(self.current_filter))
+
+
+        this_exposure_filter = copy.deepcopy( self.current_filter)
+        plog ("THIS EXPOSURE FILTER: " + str(this_exposure_filter))
+
+        
         if g_dev["fil"].null_filterwheel == False:
             exposure_filter_offset = self.current_offset
         else:
@@ -2899,7 +2907,7 @@ class Camera:
             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
 
             if g_dev["fil"].null_filterwheel == False:
-                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
+                if this_exposure_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
                     # For narrowband and low throughput filters, increase base exposure time.
                     ssExp = ssExp * ssNBmult
                 #
@@ -2914,7 +2922,7 @@ class Camera:
                 exposure_time = ssExp
                 SmartStackID = (
                     datetime.datetime.now().strftime("%d%m%y%H%M%S"))
-                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
+                if this_exposure_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
                     smartstackinfo = 'narrowband'
                 else:
                     smartstackinfo = 'broadband'
@@ -2925,7 +2933,7 @@ class Camera:
                 exposure_time = incoming_exposure_time
 
             # Create a unique yet arbitrary code for the token
-            real_time_token = g_dev['name'] + '_' + self.alias + '_' + g_dev["day"] + '_' + self.current_filter.lower() + '_' + smartstackinfo + '_' + str(ssBaseExp) + "_" + str(
+            real_time_token = g_dev['name'] + '_' + self.alias + '_' + g_dev["day"] + '_' + this_exposure_filter.lower() + '_' + smartstackinfo + '_' + str(ssBaseExp) + "_" + str(
                 ssBaseExp * ssNBmult) + '_' + str(dark_exp_time) + '_' + str(datetime.datetime.now()).replace(' ', '').replace('-', '').replace(':', '').replace('.', '')
             real_time_files = []
 
@@ -3561,7 +3569,7 @@ class Camera:
             opt["object_name"] = 'Unknown'
 
         try:
-            filter_ui_info = opt['filter']
+            filter_ui_info = this_exposure_filter
         except:
             filter_ui_info = 'filterless'
 
@@ -3609,7 +3617,7 @@ class Camera:
             )
 
         # , 'y', 'up', 'u']:   NB NB we should create a code-wide list of Narrow bands, broadbands and widebands so we do not have mulitiple lists to manage.
-        elif Nsmartstack > 1 and self.current_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr', 'su', 'sv', 'sb', 'sy', 'hd', 'hg']:
+        elif Nsmartstack > 1 and this_exposure_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr', 'su', 'sv', 'sb', 'sy', 'hd', 'hg']:
             plog("Starting narrowband " + str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
                  + str(opt["object_name"])
                  + " by user: " + str(observer_user_name))
@@ -3650,7 +3658,7 @@ class Camera:
             # As the readouts are all done in the substack thread.
             #stacking_overhead= 0.0005*pow(exposure_time,2) + 0.0334*exposure_time
             # , 'y', 'up', 'u']
-            if self.current_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr', 'su', 'sv', 'sb', 'sy', 'hd', 'hg']:
+            if this_exposure_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr', 'su', 'sv', 'sb', 'sy', 'hd', 'hg']:
                 cycle_time = exposure_time + \
                     ((exposure_time / 30)) * \
                     self.readout_time  # + stacking_overhead
@@ -4806,7 +4814,7 @@ class Camera:
                         hdu.header['PIXSCALE'] = -99
                     hdu.header['EXPTIME'] = exposure_time
                     hdu.header['OBSTYPE'] = 'flat'
-                    hdu.header['FILTER'] = self.current_filter
+                    hdu.header['FILTER'] = this_exposure_filter
 
                     # If the files are local calibrations, save them out to the local calibration directory
                     if not manually_requested_calibration:
@@ -4943,7 +4951,7 @@ class Camera:
                     )
 
                     hdu.header["ORIGNAME"] = str(raw_name00 + ".fz")
-                    hdu.header["FILTER"] = g_dev['cam'].current_filter
+                    hdu.header["FILTER"] = this_exposure_filter
                     hdu.header["SMARTSTK"] = 'no'
                     hdu.header["SSTKNUM"] = 1
                     hdu.header["SUBSTACK"] = substack
@@ -5393,9 +5401,9 @@ class Camera:
                             commissioning_flats = False
 
                             # Check if we have MOST of the flats we need
-                            if os.path.exists(g_dev['obs'].local_flat_folder + g_dev['cam'].current_filter):
+                            if os.path.exists(g_dev['obs'].local_flat_folder + this_exposure_filter):
                                 files_in_folder = glob.glob(
-                                    g_dev['obs'].local_flat_folder + g_dev['cam'].current_filter + '/' + '*.n*')
+                                    g_dev['obs'].local_flat_folder + this_exposure_filter + '/' + '*.n*')
                                 files_in_folder = [
                                     x for x in files_in_folder if "tempcali" not in x]
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_flat_to_store']
@@ -5486,7 +5494,7 @@ class Camera:
                         hdu.header['EXPTIME'] = exposure_time
 
                         hdu.header['OBSTYPE'] = 'flat'
-                        hdu.header['FILTER'] = self.current_filter
+                        hdu.header['FILTER'] = this_exposure_filter
 
                         # If the files are local calibrations, save them out to the local calibration directory
                         if not manually_requested_calibration:
@@ -5517,7 +5525,7 @@ class Camera:
                 expresult["calc_sky"] = 0  # avg_ocn[7]
                 expresult["temperature"] = 0  # avg_foc[2]
                 expresult["gain"] = 0
-                expresult["filter"] = self.current_filter
+                expresult["filter"] = this_exposure_filter
                 expresult["error"] = False
 
                 blockended = False
