@@ -573,6 +573,10 @@ class Observatory:
         except:
             pass
         try:
+            os.system('taskkill /IM "OptecGHCommander.exe" /F')
+        except:
+            pass
+        try:
             os.system("taskkill /IM AltAzDSConfig.exe /F")
         except:
             pass
