@@ -5,7 +5,7 @@ pip install -U colour-science colour_demosaicing
 wget https://aka.ms/vs/17/release/vs_BuildTools.exe -O vsBuildTools.exe
 .\vs_BuildTools.exe
 del vsBuildTools.exe
-pip install -U astropy==5.3.4 numpy scipy matplotlib pandas fuzzytm
+pip install -U astropy==5.3.4 numpy scipy matplotlib pandas fuzzytm astroscrappy reproject
 pip install -U streamlit
 pip install -U sep
 pip install -U Pillow
