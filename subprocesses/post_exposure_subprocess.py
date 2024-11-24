@@ -374,43 +374,91 @@ try:
             timetakenquickdark=time.time()
             try:
                 if smartstackid == 'no':
-                    # Initially debias the image
-                    hdu.data = hdu.data - np.load(localcalibmastersdirectory + tempfrontcalib + 'BIAS_master_bin1.npy') #g_dev['cam'].biasFiles[str(1)]
-                    # Sort out an intermediate dark
+                    
+                    do_bias_also=False
+                    
+                    
+                    # Variable to sort out an intermediate dark when between two scalable darks.
                     fraction_through_range=0
                     
-                    # If exactly the right exposure time, use the biasdark that exists
-                    0.00004, 0.0004, 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, 30
-                    
-                    
-                    if exposure_time < 0.5:
+                    # If exactly the right exposure time, use the biasdark that exists                    
+                    if exposure_time == 0.00004:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'fortymicrosecondBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 0.0004:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'fourhundredmicrosecondBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 0.0045:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'pointzerozerofourfiveBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 0.015:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'onepointfivepercentBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 0.05:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'fivepercentBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 0.1:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'tenpercentBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 0.25:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'quartersecBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 0.5:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'halfsecBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 0.75:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'onepointfivepercentBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 1.0:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'onesecBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 1.5:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'oneandahalfsecBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 2.0:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'twosecBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 3.5:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'threepointfivesecBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 5.0:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'fivesecBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 7.5:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'sevenpointfivesecBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 10:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 15:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'fifteensecBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 20:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'twentysecBIASDARK_master_bin1.npy'))
+                    elif exposure_time == 30:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
+                    elif exposure_time == broadband_ss_biasdark_exp_time:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.npy'))
+                    elif exposure_time == narrowband_ss_biasdark_exp_time:
+                        hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.npy'))
+                    elif exposure_time < 0.5:                        
                         hdu.data=hdu.data-np.load(localcalibmastersdirectory + tempfrontcalib + 'halfsecondDARK_master_bin1.npy')#np.load(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
+                        do_bias_also=True
                     elif exposure_time < 2.0:
                         fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
                         tempmasterDark=(fraction_through_range * np.load(localcalibmastersdirectory + tempfrontcalib + '2secondDARK_master_bin1.npy')) + ((1-fraction_through_range) * np.load(localcalibmastersdirectory + tempfrontcalib + 'halfsecondDARK_master_bin1.npy'))
                         hdu.data=hdu.data-(tempmasterDark*exposure_time)
+                        do_bias_also=True
                         del tempmasterDark
                     elif exposure_time < 10.0:
                         fraction_through_range=(exposure_time-2)/(10.0-2.0)
                         tempmasterDark=(fraction_through_range * np.load(localcalibmastersdirectory + tempfrontcalib + '10secondDARK_master_bin1.npy')) + ((1-fraction_through_range) * np.load(localcalibmastersdirectory + tempfrontcalib + '2secondDARK_master_bin1.npy'))
                         hdu.data=hdu.data-(tempmasterDark*exposure_time)
+                        do_bias_also=True
                         del tempmasterDark
                     elif exposure_time < broadband_ss_biasdark_exp_time:
                         fraction_through_range=(exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
                         tempmasterDark=(fraction_through_range * np.load(localcalibmastersdirectory + tempfrontcalib + 'broadbandssDARK_master_bin1.npy')) + ((1-fraction_through_range) * np.load(localcalibmastersdirectory + tempfrontcalib + '10secondDARK_master_bin1.npy'))
                         hdu.data=hdu.data-(tempmasterDark*exposure_time)
+                        do_bias_also=True
                         del tempmasterDark
                     elif exposure_time < narrowband_ss_biasdark_exp_time:
                         fraction_through_range=(exposure_time-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
                         tempmasterDark=(fraction_through_range * np.load(localcalibmastersdirectory + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy')) + ((1-fraction_through_range) * np.load(localcalibmastersdirectory + tempfrontcalib + 'broadbandssDARK_master_bin1.npy'))
                         hdu.data=hdu.data-(tempmasterDark*exposure_time)
+                        do_bias_also=True
                         del tempmasterDark
                     elif dark_exp_time > narrowband_ss_biasdark_exp_time:
                         fraction_through_range=(exposure_time-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
                         tempmasterDark=(fraction_through_range * np.load(localcalibmastersdirectory + tempfrontcalib + 'DARK_master_bin1.npy')) + ((1-fraction_through_range) * np.load(localcalibmastersdirectory + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy'))
                         hdu.data=hdu.data-(tempmasterDark*exposure_time)
+                        do_bias_also=True
                         del tempmasterDark
                     else:
+                        do_bias_also=True
                         hdu.data=hdu.data-(np.load(localcalibmastersdirectory + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy')*exposure_time)
                 elif exposure_time == broadband_ss_biasdark_exp_time:
                     hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.npy'))
@@ -428,6 +476,12 @@ try:
                     print ("Could not bias or dark file.")
         except Exception as e:
             print("debias/darking light frame failed: ", e)
+
+        # If using a scaled dark remove the bias as well
+        if do_bias_also:
+            hdu.data = hdu.data - np.load(localcalibmastersdirectory + tempfrontcalib + 'BIAS_master_bin1.npy') #g_dev['cam'].biasFiles[str(1)]
+        
+
 
         # Quick flat flat frame
         #breakpoint()
