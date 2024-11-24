@@ -4877,10 +4877,10 @@ class Camera:
                     if not manually_requested_calibration:
                         if not g_dev['obs'].mountless_operation:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', copy.deepcopy(raw_name00), copy.deepcopy(hdu.data), copy.deepcopy(
-                                hdu.header), copy.deepcopy(frame_type), copy.deepcopy(g_dev["mnt"].current_icrs_ra), copy.deepcopy(g_dev["mnt"].current_icrs_dec)))
+                                hdu.header), copy.deepcopy(frame_type), copy.deepcopy(g_dev["mnt"].current_icrs_ra), copy.deepcopy(g_dev["mnt"].current_icrs_dec, current_camera_temperature)))
                         else:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', copy.deepcopy(raw_name00), copy.deepcopy(
-                                hdu.data), copy.deepcopy(hdu.header), copy.deepcopy(frame_type), None, None))
+                                hdu.data), copy.deepcopy(hdu.header), copy.deepcopy(frame_type), None, None,current_camera_temperature))
 
                     # Make  sure the alt paths exist
                     if g_dev['obs'].config["save_to_alt_path"] == "yes":
@@ -5556,7 +5556,7 @@ class Camera:
                         # If the files are local calibrations, save them out to the local calibration directory
                         if not manually_requested_calibration:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data,
-                                                         hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                                                         hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, current_camera_temperature))
 
                         # Similarly to the above. This saves the RAW file to disk
                         if self.config['save_raw_to_disk']:
