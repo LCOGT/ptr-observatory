@@ -378,6 +378,11 @@ try:
                     hdu.data = hdu.data - np.load(localcalibmastersdirectory + tempfrontcalib + 'BIAS_master_bin1.npy') #g_dev['cam'].biasFiles[str(1)]
                     # Sort out an intermediate dark
                     fraction_through_range=0
+                    
+                    # If exactly the right exposure time, use the biasdark that exists
+                    0.00004, 0.0004, 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, 30
+                    
+                    
                     if exposure_time < 0.5:
                         hdu.data=hdu.data-np.load(localcalibmastersdirectory + tempfrontcalib + 'halfsecondDARK_master_bin1.npy')#np.load(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
                     elif exposure_time < 2.0:
