@@ -3757,7 +3757,7 @@ class Observatory:
                                         self.local_dark_folder + "/localcalibrations", mode=0o777
                                     )
 
-                                if "dark" in slow_process[4]:
+                                if "dark" in slow_process[4]: 
                                     if not os.path.exists(self.local_dark_folder):
                                         os.makedirs(self.local_dark_folder, mode=0o777)
                                     if not os.path.exists(
@@ -3971,8 +3971,8 @@ class Observatory:
                                     tempfilename = (
                                         self.local_dark_folder
                                         + slow_process[1].replace(
-                                            ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                            ".fits", "_" + 
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4012,7 +4012,7 @@ class Observatory:
                                         + "broadbanddarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = (
@@ -4052,7 +4052,7 @@ class Observatory:
                                         + "narrowbanddarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = (
@@ -4095,7 +4095,7 @@ class Observatory:
                                         + "fortymicroseconddarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4135,7 +4135,7 @@ class Observatory:
                                         + "fourhundredmicroseconddarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4175,7 +4175,7 @@ class Observatory:
                                         + "pointzerozerofourfivedarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4215,7 +4215,7 @@ class Observatory:
                                         + "onepointfivepercentdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4252,7 +4252,7 @@ class Observatory:
                                         + "fivepercentdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4289,7 +4289,7 @@ class Observatory:
                                         + "tenpercentdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4326,7 +4326,7 @@ class Observatory:
                                         + "quartersecdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4363,7 +4363,7 @@ class Observatory:
                                         + "halfsecdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4400,7 +4400,7 @@ class Observatory:
                                         + "sevenfivepercentdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4437,7 +4437,7 @@ class Observatory:
                                         + "onesecdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4474,7 +4474,7 @@ class Observatory:
                                         + "oneandahalfsecdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4511,7 +4511,7 @@ class Observatory:
                                         + "twosecdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4550,7 +4550,7 @@ class Observatory:
                                         + "threepointfivesecdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4587,7 +4587,7 @@ class Observatory:
                                         + "fivesecdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4626,7 +4626,7 @@ class Observatory:
                                         + "sevenpointfivesecdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4663,7 +4663,7 @@ class Observatory:
                                         + "tensecdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = (
@@ -4703,7 +4703,7 @@ class Observatory:
                                         + "fifteensecdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4740,7 +4740,7 @@ class Observatory:
                                         + "twentysecdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4777,7 +4777,7 @@ class Observatory:
                                         + "thirtysecdarks/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
                                     max_files = self.config["camera"]["camera_1_1"][
@@ -4825,7 +4825,7 @@ class Observatory:
                                         + "/"
                                         + slow_process[1].replace(
                                             ".fits", "_" +
-                                            str(tempexposure) + "_.npy"
+                                             str(slow_process[7]) + "_" + str(tempexposure) + "_.npy"
                                         )
                                     )
 
