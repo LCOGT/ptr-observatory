@@ -1255,22 +1255,29 @@ class Camera:
 
         # Camera cooling setup
         # This is the config setpoint
-        self.setpoint = float(
-            self.config["camera"][self.name]["settings"]["temp_setpoint"])
-        try:
-            self.temp_tolerance = float(
-                self.config["camera"][self.name]["settings"]["temp_setpoint_tolerance"])
-        except:
-            self.temp_tolerance = 1.5
-            plog("temp tolerance isn't set in obs config, using 1.5 degrees")
-        # This setpoint can change if there is camera warming during the day etc.
-        self.current_setpoint = float(
-            self.config["camera"][self.name]["settings"]["temp_setpoint"])
-        self._set_setpoint(self.setpoint)
-        self.day_warm = float(
-            self.config["camera"][self.name]["settings"]['day_warm'])
-        self.day_warm_degrees = float(
-            self.config["camera"][self.name]["settings"]['day_warm_degrees'])
+        
+        if self.config["camera"][self.name]["settings"]['set_temp_setpoint_by_season']:
+            breakpoint()       
+            
+        else:
+            self.setpoint = float(
+                self.config["camera"][self.name]["settings"]["temp_setpoint"])
+            try:
+                self.temp_tolerance = float(
+                    self.config["camera"][self.name]["settings"]["temp_setpoint_tolerance"])
+            except:
+                self.temp_tolerance = 1.5
+                plog("temp tolerance isn't set in obs config, using 1.5 degrees")
+            # This setpoint can change if there is camera warming during the day etc.
+            self.current_setpoint = float(
+                self.config["camera"][self.name]["settings"]["temp_setpoint"])
+            self._set_setpoint(self.setpoint)
+            self.day_warm = float(
+                self.config["camera"][self.name]["settings"]['day_warm'])
+            self.day_warm_degrees = float(
+                self.config["camera"][self.name]["settings"]['day_warm_degrees'])
+        
+        
         self.protect_camera_from_overheating = float(
             self.config["camera"][self.name]["settings"]['protect_camera_from_overheating'])
 
