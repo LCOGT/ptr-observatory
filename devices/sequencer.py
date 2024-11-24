@@ -1055,6 +1055,30 @@ class Sequencer:
                                                 g_dev['obs'].request_scan_requests()
                                                 if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
                                                     return
+                                            
+                                            # COLLECTING A 0.0004 Second EXPOSURE DARK FRAME
+                                            if min_flat_exposure <= 0.0004:
+                                                plog("Expose " + str(5*stride) +" 1x1 0.0004 second exposure dark frames.")
+                                                req = {'time': 0.0004,  'script': 'True', 'image_type': 'fortymicrosecond_exposure_dark'}
+                                                opt = {'count':  min_to_do,  \
+                                                       'filter': 'dk'}
+                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                g_dev['obs'].request_scan_requests()
+                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                    return
+                                            
+                                            # COLLECTING A 0.00004 Second EXPOSURE DARK FRAME
+                                            if min_flat_exposure <= 0.00004:
+                                                plog("Expose " + str(5*stride) +" 1x1 0.00004 second exposure dark frames.")
+                                                req = {'time': 0.00004,  'script': 'True', 'image_type': 'fourhundredmicrosecond_exposure_dark'}
+                                                opt = {'count':  min_to_do,  \
+                                                       'filter': 'dk'}
+                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                g_dev['obs'].request_scan_requests()
+                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
+                                                    return
 
                                             # COLLECTING A 0.015 Second EXPOSURE DARK FRAME
                                             if min_flat_exposure <= 0.015:
@@ -2163,6 +2187,42 @@ class Sequencer:
                         self.bias_dark_latch = False
                         break
                     g_dev['obs'].request_scan_requests()
+                
+                
+                # COLLECTING A 0.0004 Second EXPOSURE DARK FRAME
+                if min_flat_exposure <= 0.0004:
+                    plog("Expose " + str(5*stride) +" 1x1 0.0004 second exposure dark frames.")
+                    req = {'time': 0.0004,  'script': 'True', 'image_type': 'fortymicrosecond_exposure_dark'}
+                    opt = {'count':  min_to_do,  \
+                           'filter': 'dk'}
+                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+                        self.bias_dark_latch = False
+                        return
+                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                        self.bias_dark_latch = False
+                        break
+                    g_dev['obs'].request_scan_requests()
+                
+                # COLLECTING A 0.00004 Second EXPOSURE DARK FRAME
+                if min_flat_exposure <= 0.00004:
+                    plog("Expose " + str(5*stride) +" 1x1 0.00004 second exposure dark frames.")
+                    req = {'time': 0.00004,  'script': 'True', 'image_type': 'fourhundredmicrosecond_exposure_dark'}
+                    opt = {'count':  min_to_do,  \
+                           'filter': 'dk'}
+                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+                        self.bias_dark_latch = False
+                        return
+                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                        self.bias_dark_latch = False
+                        break
+                    g_dev['obs'].request_scan_requests()
+                
 
                 # COLLECTING A 0.015 Second EXPOSURE DARK FRAME
                 if min_flat_exposure <= 0.015:
@@ -2945,12 +3005,12 @@ class Sequencer:
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib +filename_start+'_master_bin1.fits' ))
 
 
-                    if filename_start in ['tensecBIASDARK','thirtysecBIASDARK']:
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.npy', copy.deepcopy(masterDark)))
+                    #if filename_start in ['tensecBIASDARK','thirtysecBIASDARK']:
+                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.npy', copy.deepcopy(masterDark)))
 
 
 
-                     # Store a version of the bias for the archive too
+                    # Store a version of the bias for the archive too
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
 
@@ -3225,9 +3285,15 @@ class Sequencer:
                 [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssBIASDARK', 'broadband_ss_biasdark']
                 ]
 
-            # There is no point creating biasdark exposures below the min_flat_exposure time aside from the scaled dark values.
-            min_flat_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
-
+            # There is no point creating biasdark exposures below the min_flat_exposure or min_exposure time aside from the scaled dark values.
+            min_flat_exposure = min(float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure']),float(self.config['camera']['camera_1_1']['settings']['min_exposure']))
+            
+            if min_flat_exposure <= 0.00004:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'fortymicroseconddarks/', 'fortymicrosecondBIASDARK','fortymicrosecond' ])
+            
+            if min_flat_exposure <= 0.0004:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'fourhundredmicroseconddarks/', 'fourhundredmicrosecondBIASDARK','fourhundredmicrosecond' ])
+            
             if min_flat_exposure <= 0.0045:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'pointzerozerofourfivedarks/', 'pointzerozerofourfiveBIASDARK','pointzerozerofourfive' ])
 
@@ -3435,8 +3501,11 @@ class Sequencer:
                                             # This try/except is here because if there is a missing dark
                                             # we can always just revert to using the long dark.
                                             try:
-
-                                                if hdu1exp == 0.0045 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy'):
+                                                if hdu1exp == 0.00004 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fortymicrosecond' +'tempbiasdark.npy'):
+                                                    flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fortymicrosecond' +'tempbiasdark.npy')
+                                                elif hdu1exp == 0.0004 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fourhundredmicrosecond' +'tempbiasdark.npy'):
+                                                    flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fourhundredmicrosecond' +'tempbiasdark.npy')
+                                                elif hdu1exp == 0.0045 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy'):
                                                     flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy')
                                                 elif hdu1exp == 0.015 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'onepointfivepercent' +'tempbiasdark.npy'):
                                                     flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'onepointfivepercent' +'tempbiasdark.npy')
@@ -4148,7 +4217,7 @@ class Sequencer:
         exp_time = min_exposure
         broadband_ss_biasdark_exp_time = float(self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time'])
         narrowband_ss_biasdark_exp_time = float(broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier'])
-        sky_exposure_snap_to_grid = [ 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, 30, broadband_ss_biasdark_exp_time]
+        sky_exposure_snap_to_grid = [ 0.00004, 0.0004, 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, 30, broadband_ss_biasdark_exp_time]
 
         if not g_dev["fil"].null_filterwheel:
             sky_exposure_snap_to_grid.append(narrowband_ss_biasdark_exp_time)
@@ -4402,7 +4471,7 @@ class Sequencer:
                                     pixel_area=pow(float(g_dev['cam'].pixscale),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))
                                 # snap the exposure time to a discrete grid
-                                if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
+                                if exp_time > 0.00002 and len(sky_exposure_snap_this_filter) > 0:
                                     exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                                 else:
                                     exp_time = 0.5*min_exposure
@@ -4414,21 +4483,21 @@ class Sequencer:
                                 else:
                                     exp_time = min_exposure
                                     # snap the exposure time to a discrete grid
-                                    if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
+                                    if exp_time > 0.00002 and len(sky_exposure_snap_this_filter) > 0:
                                         exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                                     else:
                                         exp_time = 0.5*min_exposure
                         elif in_wait_mode:
                             exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
                             # snap the exposure time to a discrete grid
-                            if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
+                            if exp_time > 0.00002 and len(sky_exposure_snap_this_filter) > 0:
                                 exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                             else:
                                 exp_time = 0.5*min_exposure
                         else:
                             exp_time = scale * exp_time
                             # snap the exposure time to a discrete grid
-                            if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
+                            if exp_time > 0.00002 and len(sky_exposure_snap_this_filter) > 0:
                                 exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                             else:
                                 exp_time = 0.5*min_exposure
@@ -4492,7 +4561,7 @@ class Sequencer:
                              self.next_flat_observe = time.time() + 5
                              exp_time = min_exposure
                              # snap the exposure time to a discrete grid
-                             if exp_time > 0.002:
+                             if exp_time > 0.00002:
                                  exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                              else:
                                  exp_time = 0.5*min_exposure
@@ -4501,7 +4570,7 @@ class Sequencer:
                             in_wait_mode=False
                             exp_time = round(exp_time, 5)
                             # snap the exposure time to a discrete grid
-                            if exp_time > 0.002:
+                            if exp_time > 0.00002:
                                 exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                             else:
                                 exp_time = 0.5*min_exposure

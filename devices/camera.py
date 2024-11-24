@@ -2658,7 +2658,7 @@ class Camera:
         skip_daytime_check = False
         skip_calibration_check = False
 
-        if imtype.lower() in ['pointzerozerofourfive_exposure_dark', 'onepointfivepercent_exposure_dark', 'fivepercent_exposure_dark', 'tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark', 'threequartersec_exposure_dark', 'onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark', 'threepointfivesec_exposure_dark', 'fivesec_exposure_dark',  'sevenpointfivesec_exposure_dark', 'tensec_exposure_dark', 'fifteensec_exposure_dark', 'twentysec_exposure_dark', 'thirtysec_exposure_dark', 'broadband_ss_biasdark', 'narrowband_ss_biasdark']:
+        if imtype.lower() in ['fortymicrosecond_exposure_dark', 'fourhundredmicrosecond_exposure_dark','pointzerozerofourfive_exposure_dark', 'onepointfivepercent_exposure_dark', 'fivepercent_exposure_dark', 'tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark', 'threequartersec_exposure_dark', 'onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark', 'threepointfivesec_exposure_dark', 'fivesec_exposure_dark',  'sevenpointfivesec_exposure_dark', 'tensec_exposure_dark', 'fifteensec_exposure_dark', 'twentysec_exposure_dark', 'thirtysec_exposure_dark', 'broadband_ss_biasdark', 'narrowband_ss_biasdark']:
             a_dark_exposure = True
         else:
             a_dark_exposure = False
@@ -2867,7 +2867,7 @@ class Camera:
                         return
 
         num_retries = 0
-        incoming_exposure_time = exposure_time
+        incoming_exposure_time = copy.deepcopy(exposure_time)
         g_dev['obs'].request_scan_requests()
         if g_dev['seq'].blockend != None:
             g_dev['obs'].request_update_calendar_blocks()
@@ -2930,7 +2930,13 @@ class Camera:
                 Nsmartstack = 1
                 SmartStackID = 'no'
                 smartstackinfo = 'no'
-                exposure_time = incoming_exposure_time
+                
+                # Here is where we quantise the exposure time for short exposures
+                if incoming_exposure_time < 2:
+                    exposure_snap_to_grid = [ 0.00004, 0.0004, 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0]
+                    exposure_time=min(exposure_snap_to_grid, key=lambda x:abs(x-incoming_exposure_time))
+                else:
+                    exposure_time = incoming_exposure_time
 
             # Create a unique yet arbitrary code for the token
             real_time_token = g_dev['name'] + '_' + self.alias + '_' + g_dev["day"] + '_' + this_exposure_filter.lower() + '_' + smartstackinfo + '_' + str(ssBaseExp) + "_" + str(
@@ -4768,7 +4774,7 @@ class Camera:
                             plog ("Exposure time: " + str(exposure_time))
 
                             #Short exposures are inherently much more variable, so their limit is set much higher.
-                            if frame_type in ['pointzerozerofourfive_exposure_dark','onepointfivepercent_exposure_dark','fivepercent_exposure_dark','tenpercent_exposure_dark']:
+                            if frame_type in ['fortymicrosecond_exposure_dark', 'fourhundredmicrosecond_exposure_dark','pointzerozerofourfive_exposure_dark','onepointfivepercent_exposure_dark','fivepercent_exposure_dark','tenpercent_exposure_dark']:
                                 plog ("This exposure is too short for the dark rejecter to be particularly reliable.")
                             elif frame_type in ['quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark']:
                                 if debiaseddarkmedian > 10*dark_limit_adu:
