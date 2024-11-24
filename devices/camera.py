@@ -1257,27 +1257,71 @@ class Camera:
         # This is the config setpoint
         
         if self.config["camera"][self.name]["settings"]['set_temp_setpoint_by_season']:
-            breakpoint()       
+            
+            self.temp_setpoint_by_season=True
+            
+            tempmonth = datetime.datetime.now().month
+            tempday= datetime.datetime.now().day
+            
+            if tempmonth == 12 or tempmonth == 1 or (tempmonth ==11 and tempday >15) or (tempmonth ==2 and tempday <=15):
+                self.setpoint = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_nov_to_feb'][0])
+                self.day_warm = self.config["camera"][self.name]["settings"]['temp_setpoint_nov_to_feb'][2]
+                self.day_warm_degrees = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_nov_to_feb'][1])
+            
+            elif tempmonth == 3 or tempmonth == 4 or (tempmonth ==2 and tempday >15) or (tempmonth ==5 and tempday <=15):
+                self.setpoint = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_feb_to_may'][0])
+                self.day_warm = self.config["camera"][self.name]["settings"]['temp_setpoint_feb_to_may'][2]
+                self.day_warm_degrees = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_feb_to_may'][1])
+            
+            
+            elif tempmonth == 6 or tempmonth == 7 or (tempmonth ==5 and tempday >15) or (tempmonth ==8 and tempday <=15):
+            
+                self.setpoint = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_may_to_aug'][0])
+                self.day_warm = self.config["camera"][self.name]["settings"]['temp_setpoint_may_to_aug'][2]
+                self.day_warm_degrees = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_may_to_aug'][1])    
+            
+            elif tempmonth == 9 or tempmonth == 10 or (tempmonth ==8 and tempday >15) or (tempmonth ==11 and tempday <=15):
+            
+                self.setpoint = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_aug_to_nov'][0])
+                self.day_warm = self.config["camera"][self.name]["settings"]['temp_setpoint_aug_to_nov'][2]
+                self.day_warm_degrees = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_aug_to_nov'][1])    
+            
+        
             
         else:
+            
+            self.temp_setpoint_by_season=False            
+            
             self.setpoint = float(
-                self.config["camera"][self.name]["settings"]["temp_setpoint"])
-            try:
-                self.temp_tolerance = float(
-                    self.config["camera"][self.name]["settings"]["temp_setpoint_tolerance"])
-            except:
-                self.temp_tolerance = 1.5
-                plog("temp tolerance isn't set in obs config, using 1.5 degrees")
-            # This setpoint can change if there is camera warming during the day etc.
-            self.current_setpoint = float(
-                self.config["camera"][self.name]["settings"]["temp_setpoint"])
-            self._set_setpoint(self.setpoint)
+                self.config["camera"][self.name]["settings"]["temp_setpoint"])         
+            
+            
             self.day_warm = float(
                 self.config["camera"][self.name]["settings"]['day_warm'])
             self.day_warm_degrees = float(
                 self.config["camera"][self.name]["settings"]['day_warm_degrees'])
         
         
+        
+        # This setpoint can change if there is camera warming during the day etc.
+        self.current_setpoint = self.setpoint
+        
+        self._set_setpoint(self.setpoint)
+        
+        try:
+            self.temp_tolerance = float(
+                self.config["camera"][self.name]["settings"]["temp_setpoint_tolerance"])
+        except:
+            self.temp_tolerance = 1.5
+            plog("temp tolerance isn't set in obs config, using 1.5 degrees")
         self.protect_camera_from_overheating = float(
             self.config["camera"][self.name]["settings"]['protect_camera_from_overheating'])
 
