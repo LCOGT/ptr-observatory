@@ -578,7 +578,7 @@ site_config = {
                 
                 'temp_setpoint_tolerance': 2.5,
                 #'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
-                'day_warm': True,
+                'day_warm': False,
                 'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : True,
                 'cooler_on': True,

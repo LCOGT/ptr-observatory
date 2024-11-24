@@ -256,19 +256,19 @@ class Observatory:
             )
             
         if not os.path.exists(
-            self.local_dark_folder
+            self.local_calibration_path
             + "/localcalibrations/darks/fortymicroseconddarks"
         ):
             os.makedirs(
-                self.local_dark_folder
+                self.local_calibration_path
                 + "/localcalibrations/darks/fortymicroseconddarks", mode=0o777
             )
         if not os.path.exists(
-            self.local_dark_folder
+            self.local_calibration_path
             + "/localcalibrations/darks/fourhundredmicroseconddarks"
         ):
             os.makedirs(
-                self.local_dark_folder
+                self.local_calibration_path
                 + "/localcalibrations/darks/fourhundredmicroseconddarks", mode=0o777
             )
         
