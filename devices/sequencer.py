@@ -926,6 +926,48 @@ class Sequencer:
                                 if (moondata.alt.deg < -15):
                                     # If the moon is way below the horizon
                                     if g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
+                                        
+                                        
+                                        # When we are getting darks, we are collecting darks for the NEXT night's temperature
+                                        # not tonights. So if tomrorow night the season changes and the camera temperature changes
+                                        # We need to have the bias/darks already.             
+                                        if g_dev['cam'].temp_setpoint_by_season:
+                                            
+                                            current_night_setpoint=copy.deepcopy(g_dev['cam'].setpoint)
+                                            
+                                            tomorrow_night=datetime.datetime.now() +datetime.timedelta(days=1)
+                                            tempmonth = tomorrow_night.month
+                                            tempday= tomorrow_night.day
+                                            
+                                            if tempmonth == 12 or tempmonth == 1 or (tempmonth ==11 and tempday >15) or (tempmonth ==2 and tempday <=15):
+                                                tommorow_night_setpoint=  float(
+                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_nov_to_feb'][0])
+                                            
+                                            elif tempmonth == 3 or tempmonth == 4 or (tempmonth ==2 and tempday >15) or (tempmonth ==5 and tempday <=15):
+                                                tommorow_night_setpoint=  float(
+                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_feb_to_may'][0])                
+                                            
+                                            elif tempmonth == 6 or tempmonth == 7 or (tempmonth ==5 and tempday >15) or (tempmonth ==8 and tempday <=15):
+                                            
+                                                tommorow_night_setpoint=  float(
+                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_may_to_aug'][0])
+                                            
+                                            elif tempmonth == 9 or tempmonth == 10 or (tempmonth ==8 and tempday >15) or (tempmonth ==11 and tempday <=15):
+                                            
+                                                tommorow_night_setpoint=  float(
+                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_aug_to_nov'][0])
+                                            
+                                            # Here change the setpoint tomorrow nights setpoint
+                                            g_dev['cam'].current_setpoint = tommorow_night_setpoint
+                                            g_dev['cam'].setpoint = tommorow_night_setpoint
+                                            g_dev['cam']._set_setpoint(tommorow_night_setpoint)
+                                            
+                                            if abs(tommorow_night_setpoint-current_night_setpoint) > 4:
+                                                plog("waiting an extra three minutes for camera to cool to different temperature")
+                                                time.sleep(180)
+                                        
+                                        
+                                        
                                         if self.nightime_bias_counter < (self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect'] / 4):
                                             plog ("It is dark and the moon isn't up! Lets do a bias!")
                                             g_dev['mnt'].park_command({}, {})
@@ -985,6 +1027,12 @@ class Sequencer:
                                                 check_exposure = frame[3] if len(frame) > 3 else False
                                                 if not self.collect_midnight_frame(exposure_time, image_type, count_multiplier, stride, min_exposure, check_exposure):
                                                     break
+                                            
+                                            if g_dev['cam'].temp_setpoint_by_season:
+                                                # Here change the setpoint back to tonight's setpoint
+                                                g_dev['cam'].current_setpoint = current_night_setpoint
+                                                g_dev['cam'].setpoint = current_night_setpoint
+                                                g_dev['cam']._set_setpoint(current_night_setpoint)
 
                                             # these exposures shouldn't reset these timers
                                             g_dev['obs'].time_of_last_exposure = time.time() - 840
@@ -1748,10 +1796,43 @@ class Sequencer:
             ####
             # When we are getting darks, we are collecting darks for the NEXT night's temperature
             # not tonights. So if tomrorow night the season changes and the camera temperature changes
-            # We need to have the bias/darks already. 
+            # We need to have the bias/darks already.             
+            if g_dev['cam'].temp_setpoint_by_season:
+                
+                current_night_setpoint=copy.deepcopy(g_dev['cam'].setpoint)
+                
+                tomorrow_night=datetime.datetime.now() +datetime.timedelta(days=1)
+                tempmonth = tomorrow_night.month
+                tempday= tomorrow_night.day
+                
+                if tempmonth == 12 or tempmonth == 1 or (tempmonth ==11 and tempday >15) or (tempmonth ==2 and tempday <=15):
+                    tommorow_night_setpoint=  float(
+                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_nov_to_feb'][0])
+                
+                elif tempmonth == 3 or tempmonth == 4 or (tempmonth ==2 and tempday >15) or (tempmonth ==5 and tempday <=15):
+                    tommorow_night_setpoint=  float(
+                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_feb_to_may'][0])                
+                
+                elif tempmonth == 6 or tempmonth == 7 or (tempmonth ==5 and tempday >15) or (tempmonth ==8 and tempday <=15):
+                
+                    tommorow_night_setpoint=  float(
+                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_may_to_aug'][0])
+                
+                elif tempmonth == 9 or tempmonth == 10 or (tempmonth ==8 and tempday >15) or (tempmonth ==11 and tempday <=15):
+                
+                    tommorow_night_setpoint=  float(
+                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_aug_to_nov'][0])
+                
+                # Here change the setpoint tomorrow nights setpoint
+                g_dev['cam'].current_setpoint = tommorow_night_setpoint
+                g_dev['cam'].setpoint = tommorow_night_setpoint
+                g_dev['cam']._set_setpoint(tommorow_night_setpoint)
+                
+                if abs(tommorow_night_setpoint-current_night_setpoint) > 4:
+                    plog("waiting an extra three minutes for camera to cool to different temperature")
+                    time.sleep(180)
             
-            
-            breakpoint()
+            #breakpoint()
             
 
             # Before parking, set the darkslide to close
@@ -1854,6 +1935,12 @@ class Sequencer:
             self.bias_dark_latch = False
             break
         self.bias_dark_latch = False
+
+        if g_dev['cam'].temp_setpoint_by_season:
+            # Here change the setpoint back to tonight's setpoint
+            g_dev['cam'].current_setpoint = current_night_setpoint
+            g_dev['cam'].setpoint = current_night_setpoint
+            g_dev['cam']._set_setpoint(current_night_setpoint)
 
         g_dev['obs'].flush_command_queue()
         self.total_sequencer_control=False

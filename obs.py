@@ -200,323 +200,57 @@ class Observatory:
 
         # Local Calibration Paths
         camera_name = self.config["camera"]["camera_1_1"]["name"]
-        if not os.path.exists(
-            self.local_calibration_path + "archive/" + camera_name + "/calibmasters"
-        ):
-            os.makedirs(
-                self.local_calibration_path + "archive/" + camera_name + "/calibmasters", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/narrowbanddarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/narrowbanddarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/broadbanddarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/broadbanddarks", mode=0o777
-            )
-            
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/fortymicroseconddarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/fortymicroseconddarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/fourhundredmicroseconddarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/fourhundredmicroseconddarks", mode=0o777
-            )
+        
+        # Base path and camera name
+        base_path = self.local_calibration_path
+        camera_name = camera_name
         
         
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/pointzerozerofourfivedarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/pointzerozerofourfivedarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/onepointfivepercentdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/onepointfivepercentdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/fivepercentdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/fivepercentdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/tenpercentdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/tenpercentdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/quartersecdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/quartersecdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/halfsecdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/halfsecdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/sevenfivepercentdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/sevenfivepercentdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/onesecdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/onesecdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/oneandahalfsecdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/oneandahalfsecdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/twosecdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/twosecdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/threepointfivesecdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/threepointfivesecdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/fivesecdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/fivesecdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/sevenpointfivesecdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/sevenpointfivesecdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/tensecdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/tensecdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/fifteensecdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/fifteensecdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/twentysecdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/twentysecdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/darks/thirtysecdarks"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/darks/thirtysecdarks", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/biases"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/biases", mode=0o777
-            )
-        if not os.path.exists(
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/localcalibrations/flats"
-        ):
-            os.makedirs(
-                self.local_calibration_path
-                + "archive/"
-                + camera_name
-                + "/localcalibrations/flats", mode=0o777
-            )
-
-        self.calib_masters_folder = (
-            self.local_calibration_path
-            + "archive/"
-            + camera_name
-            + "/calibmasters"
-            + "/"
-        )
+        def create_directories(base_path, camera_name, subdirectories):
+            """
+            Create directories if they do not already exist.
+            """
+            for subdir in subdirectories:
+                path = os.path.join(base_path, "archive", camera_name, subdir)
+                if not os.path.exists(path):
+                    os.makedirs(path, mode=0o777)
+        
+        # Subdirectories to create
+        subdirectories = [
+            "calibmasters",
+            "localcalibrations",
+            "localcalibrations/darks",
+            "localcalibrations/darks/narrowbanddarks",
+            "localcalibrations/darks/broadbanddarks",
+            "localcalibrations/darks/fortymicroseconddarks",
+            "localcalibrations/darks/fourhundredmicroseconddarks",
+            "localcalibrations/darks/pointzerozerofourfivedarks",
+            "localcalibrations/darks/onepointfivepercentdarks",
+            "localcalibrations/darks/fivepercentdarks",
+            "localcalibrations/darks/tenpercentdarks",
+            "localcalibrations/darks/quartersecdarks",
+            "localcalibrations/darks/halfsecdarks",
+            "localcalibrations/darks/sevenfivepercentdarks",
+            "localcalibrations/darks/onesecdarks",
+            "localcalibrations/darks/oneandahalfsecdarks",
+            "localcalibrations/darks/twosecdarks",
+            "localcalibrations/darks/threepointfivesecdarks",
+            "localcalibrations/darks/fivesecdarks",
+            "localcalibrations/darks/sevenpointfivesecdarks",
+            "localcalibrations/darks/tensecdarks",
+            "localcalibrations/darks/fifteensecdarks",
+            "localcalibrations/darks/twentysecdarks",
+            "localcalibrations/darks/thirtysecdarks",
+            "localcalibrations/biases",
+            "localcalibrations/flats",
+        ]
+        
+        # Create the directories
+        create_directories(base_path, camera_name, subdirectories)
+        
+        # Set calib masters folder
+        self.calib_masters_folder = os.path.join(base_path, "archive", camera_name, "calibmasters") + "/"
+        
         self.local_dark_folder = (
             self.local_calibration_path
             + "archive/"
