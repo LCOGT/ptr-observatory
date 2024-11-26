@@ -239,6 +239,8 @@ class Sequencer:
         self.master_restack_thread.start()
 
 
+        self.check_incoming_darks_for_light_leaks=True
+
         self.rebooting_theskyx=False
 
 
@@ -962,11 +964,59 @@ class Sequencer:
                                             g_dev['cam'].setpoint = tommorow_night_setpoint
                                             g_dev['cam']._set_setpoint(tommorow_night_setpoint)
                                             
+                                            # Need to trim th ecalibration directories of all files
+                                            # Not within the tolerance limit from the setpoint
+                                            darks_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/darks/'
+                                            bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
+                                            
+                                            # First check darks in root directory
+                                            print ("ROOT DIRECTORY DARKS")
+                                            for darkfile in glob(darks_path + '*.npy'):
+                                                tempdarktemp=float(darkfile.split('_')[-3])
+                                                #print (tempdarktemp)
+                                                if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                                    try:
+                                                        os.remove(darkfile)
+                                                    except:
+                                                        pass
+                                            
+                                            # Then check each of the darks folder
+                                            for darkfolder in glob(darks_path + "*/"):
+                                                print (darkfolder)
+                                                for darkfile in glob(darkfolder + '*.npy'):
+                                                    tempdarktemp=float(darkfile.split('_')[-3])
+                                                    #print (tempdarktemp)
+                                                    if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                                        try:
+                                                            os.remove(darkfile)
+                                                        except:
+                                                            pass
+                                            
+                                            # NEED TO CHECK BIASES LATER!
+                                            # First check darks in root directory
+                                            print ("ROOT DIRECTORY BIASES")
+                                            for darkfile in glob(bias_path + '*.npy'):
+                                                tempdarktemp=float(darkfile.split('_')[-3])
+                                                #print (tempdarktemp)
+                                                if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                                    try:
+                                                        os.remove(darkfile)
+                                                    except:
+                                                        pass
+                                            
+                                            
                                             if abs(tommorow_night_setpoint-current_night_setpoint) > 4:
                                                 plog("waiting an extra three minutes for camera to cool to different temperature")
                                                 time.sleep(180)
                                         
+                                        # If there are no biases, then don't check for lightleaks.
+                                        # This catches a bias and dark refresh... manually or at the transition of seasons.
+                                        bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
                                         
+                                        if len (glob(bias_path + '*.npy')) == 0:
+                                            self.check_incoming_darks_for_light_leaks=False
+                                        else:
+                                            self.check_incoming_darks_for_light_leaks=True
                                         
                                         if self.nightime_bias_counter < (self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect'] / 4):
                                             plog ("It is dark and the moon isn't up! Lets do a bias!")
@@ -1828,12 +1878,61 @@ class Sequencer:
                 g_dev['cam'].setpoint = tommorow_night_setpoint
                 g_dev['cam']._set_setpoint(tommorow_night_setpoint)
                 
+                
+                # Need to trim th ecalibration directories of all files
+                # Not within the tolerance limit from the setpoint
+                darks_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/darks/'
+                bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
+                
+                # First check darks in root directory
+                print ("ROOT DIRECTORY DARKS")
+                for darkfile in glob(darks_path + '*.npy'):
+                    tempdarktemp=float(darkfile.split('_')[-3])
+                    #print (tempdarktemp)
+                    if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                        try:
+                            os.remove(darkfile)
+                        except:
+                            pass
+                
+                # Then check each of the darks folder
+                for darkfolder in glob(darks_path + "*/"):
+                    print (darkfolder)
+                    for darkfile in glob(darkfolder + '*.npy'):
+                        tempdarktemp=float(darkfile.split('_')[-3])
+                        #print (tempdarktemp)
+                        if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                            try:
+                                os.remove(darkfile)
+                            except:
+                                pass
+                
+                # NEED TO CHECK BIASES LATER!
+                # First check darks in root directory
+                print ("ROOT DIRECTORY BIASES")
+                for darkfile in glob(bias_path + '*.npy'):
+                    tempdarktemp=float(darkfile.split('_')[-3])
+                    #print (tempdarktemp)
+                    if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                        try:
+                            os.remove(darkfile)
+                        except:
+                            pass
+                                
                 if abs(tommorow_night_setpoint-current_night_setpoint) > 4:
                     plog("waiting an extra three minutes for camera to cool to different temperature")
                     time.sleep(180)
             
-            #breakpoint()
+            # If there are no biases, then don't check for lightleaks.
+            # This catches a bias and dark refresh... manually or at the transition of seasons.
+            bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
             
+            if len (glob(bias_path + '*.npy')) == 0:
+                self.check_incoming_darks_for_light_leaks=False
+            else:
+                self.check_incoming_darks_for_light_leaks=True
+            #breakpoint()
+            #breakpoint()
 
             # Before parking, set the darkslide to close
             if g_dev['cam'].has_darkslide:
