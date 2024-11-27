@@ -2892,7 +2892,7 @@ class Observatory:
                     timeout_time = 120# + exposure_time + \
                         #g_dev["cam"].readout_time
                 else:
-                    timeout_time = 35# + exposure_time + \
+                    timeout_time = 60# + exposure_time + \
                         #g_dev["cam"].readout_time
 
                 platesolve_timeout_timer = time.time()
