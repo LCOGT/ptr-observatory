@@ -1773,7 +1773,8 @@ class Mount:
                 return 'refused'
 
         # Fourth thing, check that the roof is open and we are enabled to observe
-        if (g_dev['obs'].open_and_enabled_to_observe==False )  and not g_dev['obs'].scope_in_manual_mode:
+        # if the skip open test variable is not set.
+        if (g_dev['obs'].open_and_enabled_to_observe==False ) and not skip_open_test and not g_dev['obs'].scope_in_manual_mode:
             g_dev['obs'].send_to_user("Refusing pointing request as the observatory is not enabled to observe.")
             plog(g_dev['obs'].open_and_enabled_to_observe)
             plog("Refusing pointing request as the observatory is not enabled to observe.")
@@ -2239,7 +2240,7 @@ class Mount:
                             home_alt = self.settings["home_altitude"]
                             home_az = self.settings["home_azimuth"]
                             self.wait_for_slew(wait_after_slew=False)
-                            g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True, skyflatspot=True)
+                            g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)
                             self.wait_for_slew(wait_after_slew=False)
                         except:
                             if g_dev['mnt'].theskyx:
@@ -2254,7 +2255,7 @@ class Mount:
                                 self.wait_for_slew(wait_after_slew=False)
                                 home_alt = self.settings["home_altitude"]
                                 home_az = self.settings["home_azimuth"]
-                                g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True, skyflatspot=True)
+                                g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)
                             else:
                                 plog (traceback.format_exc())
                     self.wait_for_slew(wait_after_slew=False)
