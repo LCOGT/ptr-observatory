@@ -117,6 +117,10 @@ def ra_dec_fix_hd(ra, dec):
         ra += 24
     return ra, dec
 
+
+
+
+
 class Sequencer:
 
     def __init__(self, driver: str, name: str, config: dict, astro_events):
@@ -234,6 +238,8 @@ class Sequencer:
         self.master_restack_thread.daemon = True
         self.master_restack_thread.start()
 
+
+        self.check_incoming_darks_for_light_leaks=True
 
         self.rebooting_theskyx=False
 
@@ -416,6 +422,27 @@ class Sequencer:
         except:
             plog("Park not executed during Park and Close" )
 
+
+    def collect_midnight_frame(self, time, image_type, count, stride, min_exposure=0, check_exposure=False):
+        if check_exposure and min_exposure > time:
+            return
+    
+        plog(f"Expose {count * stride} 1x1 {time}s {image_type.replace('_', ' ')} frames.")
+        req = {'time': time, 'script': 'True', 'image_type': image_type}
+        opt = {'count': count, 'filter': 'dk'}
+    
+        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False,
+                                    do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+        g_dev['obs'].request_scan_requests()
+    
+        if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or (
+            not (g_dev['events']['Astro Dark'] <= ephem.now() < g_dev['events']['End Astro Dark'])
+        ):
+            plog(self.stop_script_called)
+            plog(g_dev['obs'].open_and_enabled_to_observe)
+            plog(not (g_dev['events']['Astro Dark'] <= ephem.now() < g_dev['events']['End Astro Dark']))
+            return False
+        return True
 
 
     ###############################
@@ -901,6 +928,96 @@ class Sequencer:
                                 if (moondata.alt.deg < -15):
                                     # If the moon is way below the horizon
                                     if g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
+                                        
+                                        
+                                        # When we are getting darks, we are collecting darks for the NEXT night's temperature
+                                        # not tonights. So if tomrorow night the season changes and the camera temperature changes
+                                        # We need to have the bias/darks already.             
+                                        if g_dev['cam'].temp_setpoint_by_season:
+                                            
+                                            current_night_setpoint=copy.deepcopy(g_dev['cam'].setpoint)
+                                            
+                                            tomorrow_night=datetime.datetime.now() +datetime.timedelta(days=1)
+                                            tempmonth = tomorrow_night.month
+                                            tempday= tomorrow_night.day
+                                            
+                                            if tempmonth == 12 or tempmonth == 1 or (tempmonth ==11 and tempday >15) or (tempmonth ==2 and tempday <=15):
+                                                tommorow_night_setpoint=  float(
+                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_nov_to_feb'][0])
+                                            
+                                            elif tempmonth == 3 or tempmonth == 4 or (tempmonth ==2 and tempday >15) or (tempmonth ==5 and tempday <=15):
+                                                tommorow_night_setpoint=  float(
+                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_feb_to_may'][0])                
+                                            
+                                            elif tempmonth == 6 or tempmonth == 7 or (tempmonth ==5 and tempday >15) or (tempmonth ==8 and tempday <=15):
+                                            
+                                                tommorow_night_setpoint=  float(
+                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_may_to_aug'][0])
+                                            
+                                            elif tempmonth == 9 or tempmonth == 10 or (tempmonth ==8 and tempday >15) or (tempmonth ==11 and tempday <=15):
+                                            
+                                                tommorow_night_setpoint=  float(
+                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_aug_to_nov'][0])
+                                            
+                                            # Here change the setpoint tomorrow nights setpoint
+                                            g_dev['cam'].current_setpoint = tommorow_night_setpoint
+                                            g_dev['cam'].setpoint = tommorow_night_setpoint
+                                            g_dev['cam']._set_setpoint(tommorow_night_setpoint)
+                                            
+                                            # Need to trim th ecalibration directories of all files
+                                            # Not within the tolerance limit from the setpoint
+                                            darks_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/darks/'
+                                            bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
+                                            
+                                            # First check darks in root directory
+                                            print ("ROOT DIRECTORY DARKS")
+                                            for darkfile in glob(darks_path + '*.npy'):
+                                                tempdarktemp=float(darkfile.split('_')[-3])
+                                                #print (tempdarktemp)
+                                                if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                                    try:
+                                                        os.remove(darkfile)
+                                                    except:
+                                                        pass
+                                            
+                                            # Then check each of the darks folder
+                                            for darkfolder in glob(darks_path + "*/"):
+                                                print (darkfolder)
+                                                for darkfile in glob(darkfolder + '*.npy'):
+                                                    tempdarktemp=float(darkfile.split('_')[-3])
+                                                    #print (tempdarktemp)
+                                                    if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                                        try:
+                                                            os.remove(darkfile)
+                                                        except:
+                                                            pass
+                                            
+                                            # NEED TO CHECK BIASES LATER!
+                                            # First check darks in root directory
+                                            print ("ROOT DIRECTORY BIASES")
+                                            for darkfile in glob(bias_path + '*.npy'):
+                                                tempdarktemp=float(darkfile.split('_')[-3])
+                                                #print (tempdarktemp)
+                                                if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                                    try:
+                                                        os.remove(darkfile)
+                                                    except:
+                                                        pass
+                                            
+                                            
+                                            if abs(tommorow_night_setpoint-current_night_setpoint) > 4:
+                                                plog("waiting an extra three minutes for camera to cool to different temperature")
+                                                time.sleep(180)
+                                        
+                                        # If there are no biases, then don't check for lightleaks.
+                                        # This catches a bias and dark refresh... manually or at the transition of seasons.
+                                        bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
+                                        
+                                        if len (glob(bias_path + '*.npy')) == 0:
+                                            self.check_incoming_darks_for_light_leaks=False
+                                        else:
+                                            self.check_incoming_darks_for_light_leaks=True
+                                        
                                         if self.nightime_bias_counter < (self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect'] / 4):
                                             plog ("It is dark and the moon isn't up! Lets do a bias!")
                                             g_dev['mnt'].park_command({}, {})
@@ -922,254 +1039,50 @@ class Sequencer:
                                             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
 
                                             # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.
-                                            min_flat_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
+                                            min_exposure = min(float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure']), float(self.config['camera']['camera_1_1']['settings']['min_exposure']))
                                             stride=1
                                             min_to_do=1
-                                            # COLLECTING A TWO SECOND EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1 2s exposure dark frames.")
-                                            req = {'time': 2,  'script': 'True', 'image_type': 'twosec_exposure_dark'}
-                                            opt = {'count': min_to_do,  \
-                                                   'filter': 'dk'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                plog (self.stop_script_called)
-                                                plog (g_dev['obs'].open_and_enabled_to_observe)
-                                                plog ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
-                                                return
-
-                                            # COLLECTING A Three point five sec SECOND EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1 3.5s exposure dark frames.")
-                                            req = {'time': 3.5,  'script': 'True', 'image_type': 'threepointfivesec_exposure_dark'}
-                                            opt = {'count': min_to_do,  \
-                                                   'filter': 'dk'}
-
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                plog (self.stop_script_called)
-                                                plog (g_dev['obs'].open_and_enabled_to_observe)
-                                                plog ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark']))
-                                                return
-
-
-                                            # COLLECTING A FIVE SECOND EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1 5s exposure dark frames.")
-                                            req = {'time': 5,  'script': 'True', 'image_type': 'fivesec_exposure_dark'}
-                                            opt = {'count': min_to_do,  \
-                                                   'filter': 'dk'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
-
-                                            # COLLECTING A SEVENPOINTFIVE SECOND EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1 7.5s exposure dark frames.")
-                                            req = {'time': 7.5,  'script': 'True', 'image_type': 'sevenpointfivesec_exposure_dark'}
-                                            opt = {'count': min_to_do,  \
-                                                   'filter': 'dk'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
-
-                                            # COLLECTING A TEN SECOND EXPOSURE DARK FRAME
-                                            plog("Expose " + str(2*stride) +" 1x1 ten second exposure dark frames.")
-                                            req = {'time': 10,  'script': 'True', 'image_type': 'tensec_exposure_dark'}
-                                            opt = {'count': 2*min_to_do,  \
-                                                   'filter': 'dk'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
-
-                                            # COLLECTING A FIFTEEN SECOND EXPOSURE DARK FRAME
-                                            plog("Expose " + str(2*stride) +" 1x1 15 second exposure dark frames.")
-                                            req = {'time': 15,  'script': 'True', 'image_type': 'fifteensec_exposure_dark'}
-                                            opt = {'count': min_to_do,  \
-                                                   'filter': 'dk'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
-
-                                            # COLLECTING A TWENTY SECOND EXPOSURE DARK FRAME
-                                            plog("Expose " + str(2*stride) +" 1x1 20 second exposure dark frames.")
-                                            req = {'time': 20,  'script': 'True', 'image_type': 'twentysec_exposure_dark'}
-                                            opt = {'count': min_to_do,  \
-                                                   'filter': 'dk'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
-
-                                            # COLLECTING A THIRTY SECOND EXPOSURE DARK FRAME
-                                            plog("Expose " + str(2*stride) +" 1x1 30 second exposure dark frames.")
-                                            req = {'time': 30,  'script': 'True', 'image_type': 'thirtysec_exposure_dark'}
-                                            opt = {'count': 2*min_to_do,  \
-                                                   'filter': 'dk'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
-
-                                            # COLLECTING A BROADBAND SMARTSTACK BIASDARK FRAME
-                                            plog("Expose " + str(stride) +" 1x1 broadband smstack biasdark frames.")
-                                            req = {'time': broadband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'broadband_ss_biasdark'}
-                                            opt = {'count': 2*min_to_do,  \
-                                                   'filter': 'dk'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
-
-                                            # COLLECTING A NARROWBAND SMARTSTACK BIASDARK FRAME
-                                            if not g_dev["fil"].null_filterwheel:
-                                                plog("Expose " + str(stride) +" 1x1 narrowband smstack biasdark frames.")
-                                                req = {'time': narrowband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'narrowband_ss_biasdark'}
-                                                opt = {'count': 2*min_to_do,  \
-                                                       'filter': 'dk'}
-                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                                g_dev['obs'].request_scan_requests()
-                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                    return
-
-                                            # COLLECTING A 0.0045 Second EXPOSURE DARK FRAME
-                                            if min_flat_exposure <= 0.0045:
-                                                plog("Expose " + str(5*stride) +" 1x1 0.0045 second exposure dark frames.")
-                                                req = {'time': 0.0045,  'script': 'True', 'image_type': 'pointzerozerofourfive_exposure_dark'}
-                                                opt = {'count':  min_to_do,  \
-                                                       'filter': 'dk'}
-                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                                g_dev['obs'].request_scan_requests()
-                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                    return
-
-                                            # COLLECTING A 0.015 Second EXPOSURE DARK FRAME
-                                            if min_flat_exposure <= 0.015:
-                                                plog("Expose " + str(5*stride) +" 1x1 0.015 second exposure dark frames.")
-                                                req = {'time': 0.015,  'script': 'True', 'image_type': 'onepointfivepercent_exposure_dark'}
-                                                opt = {'count':  min_to_do,  \
-                                                       'filter': 'dk'}
-                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                                g_dev['obs'].request_scan_requests()
-                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                    return
-
-                                            # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
-                                            if min_flat_exposure <= 0.05:
-                                                plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
-                                                req = {'time': 0.05,  'script': 'True', 'image_type': 'fivepercent_exposure_dark'}
-                                                opt = {'count':  min_to_do,  \
-                                                       'filter': 'dk'}
-                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                                g_dev['obs'].request_scan_requests()
-                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                    return
-
-                                            # COLLECTING A 0.1 Second EXPOSURE DARK FRAME
-                                            if min_flat_exposure <= 0.1:
-                                                plog("Expose " + str(5*stride) +" 1x1 0.1 second exposure dark frames.")
-                                                req = {'time': 0.1,  'script': 'True', 'image_type': 'tenpercent_exposure_dark'}
-                                                opt = {'count':  min_to_do,  \
-                                                       'filter': 'dk'}
-                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                                g_dev['obs'].request_scan_requests()
-                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                    return
-
-                                            # COLLECTING A 0.25 Second EXPOSURE DARK FRAME
-                                            if min_flat_exposure <= 0.25:
-                                                plog("Expose " + str(5*stride) +" 1x1 0.25 second exposure dark frames.")
-                                                req = {'time': 0.25,  'script': 'True', 'image_type': 'quartersec_exposure_dark'}
-                                                opt = {'count':  min_to_do,  \
-                                                       'filter': 'dk'}
-                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                                g_dev['obs'].request_scan_requests()
-                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                    return
-
-                                            # COLLECTING A Half Second EXPOSURE DARK FRAME
-                                            plog("Expose " + str(5*stride) +" 1x1 half-second exposure dark frames.")
-                                            req = {'time': 0.5,  'script': 'True', 'image_type': 'halfsec_exposure_dark'}
-                                            opt = {'count':  min_to_do,  \
-                                                   'filter': 'dk'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
-
-                                            # COLLECTING A 0.75 Second EXPOSURE DARK FRAME
-                                            if min_flat_exposure <= 0.75:
-                                                plog("Expose " + str(5*stride) +" 1x1 0.75 second exposure dark frames.")
-                                                req = {'time': 0.75,  'script': 'True', 'image_type': 'threequartersec_exposure_dark'}
-                                                opt = {'count':  min_to_do,  \
-                                                       'filter': 'dk'}
-                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                                g_dev['obs'].request_scan_requests()
-                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                    return
-
-                                            # COLLECTING A one Second EXPOSURE DARK FRAME
-                                            if min_flat_exposure <= 1.0:
-                                                plog("Expose " + str(5*stride) +" 1x1  1 second exposure dark frames.")
-                                                req = {'time': 1,  'script': 'True', 'image_type': 'onesec_exposure_dark'}
-                                                opt = {'count':  min_to_do,  \
-                                                       'filter': 'dk'}
-                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                                g_dev['obs'].request_scan_requests()
-                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                    return
-
-                                            # COLLECTING A one and a half Second EXPOSURE DARK FRAME
-                                            if min_flat_exposure <= 1.5:
-                                                plog("Expose " + str(5*stride) +" 1x1  1.5 second exposure dark frames.")
-                                                req = {'time': 1.5,  'script': 'True', 'image_type': 'oneandahalfsec_exposure_dark'}
-                                                opt = {'count':  min_to_do,  \
-                                                       'filter': 'dk'}
-                                                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                                g_dev['obs'].request_scan_requests()
-                                                if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                    return
-
-                                            # COLLECTING A BIAS FRAME
-                                            # COLLECT BIAS FRAMES LATER as there is no way to know whether bias frames are affected
-                                            # by slowly-closing shutters... whereas darks can be rejected.
-                                            plog("Expose " + str(stride) +" 1x1 bias frames.")
-                                            req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                                            opt = {'count': min_to_do,  \
-                                                   'filter': 'dk'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            g_dev['obs'].request_scan_requests()
-                                            if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return
-
-                                            plog("Expose 1x1 dark of " \
-                                                 + str(1) + " using exposure:  " + str(dark_exp_time) )
-                                            req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
-                                            opt = {'count': 1, 'filter': 'dk'}
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                               do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                            
+                                            
+                                            # Define frames to collect
+                                            frames_to_collect = [
+                                                (2, "twosec_exposure_dark", 5),
+                                                (3.5, "threepointfivesec_exposure_dark", 5),
+                                                (5, "fivesec_exposure_dark", 5),
+                                                (7.5, "sevenpointfivesec_exposure_dark", 5),
+                                                (10, "tensec_exposure_dark", 2),
+                                                (15, "fifteensec_exposure_dark", 2),
+                                                (20, "twentysec_exposure_dark", 2),
+                                                (30, "thirtysec_exposure_dark", 2),
+                                                (broadband_ss_biasdark_exp_time, "broadband_ss_biasdark", 2),
+                                                (narrowband_ss_biasdark_exp_time, "narrowband_ss_biasdark", 2, True),
+                                                (0.0045, "pointzerozerofourfive_exposure_dark", 5, True),
+                                                (0.0004, "fortymicrosecond_exposure_dark", 5, True),
+                                                (0.00004, "fourhundredmicrosecond_exposure_dark", 5, True),
+                                                (0.015, "onepointfivepercent_exposure_dark", 5, True),
+                                                (0.05, "fivepercent_exposure_dark", 5, True),
+                                                (0.1, "tenpercent_exposure_dark", 5, True),
+                                                (0.25, "quartersec_exposure_dark", 5, True),
+                                                (0.5, "halfsec_exposure_dark", 5),
+                                                (0.75, "threequartersec_exposure_dark", 5, True),
+                                                (1.0, "onesec_exposure_dark", 5, True),
+                                                (1.5, "oneandahalfsec_exposure_dark", 5, True),
+                                                (0.0, "bias", min_to_do),
+                                                (dark_exp_time, "dark", 1),
+                                            ]
+                                            
+                                            # Collect frames
+                                            for frame in frames_to_collect:
+                                                exposure_time, image_type, count_multiplier = frame[:3]
+                                                check_exposure = frame[3] if len(frame) > 3 else False
+                                                if not self.collect_midnight_frame(exposure_time, image_type, count_multiplier, stride, min_exposure, check_exposure):
+                                                    break
+                                            
+                                            if g_dev['cam'].temp_setpoint_by_season:
+                                                # Here change the setpoint back to tonight's setpoint
+                                                g_dev['cam'].current_setpoint = current_night_setpoint
+                                                g_dev['cam'].setpoint = current_night_setpoint
+                                                g_dev['cam']._set_setpoint(current_night_setpoint)
 
                                             # these exposures shouldn't reset these timers
                                             g_dev['obs'].time_of_last_exposure = time.time() - 840
@@ -1833,6 +1746,54 @@ class Sequencer:
         g_dev['obs'].flush_command_queue()
         self.total_sequencer_control=False
         return block_specification
+    
+    
+    def collect_dark_frame(self, exposure_time, image_type, count, stride, min_to_do, dark_exp_time, cycle_time, ending):
+        plog(f"Expose {count * stride} 1x1 {exposure_time}s exposure dark frames.")
+        req = {'time': exposure_time, 'script': 'True', 'image_type': image_type}
+        opt = {'count': count, 'filter': 'dk'}
+    
+        # Ensure the mount is parked
+        if not g_dev['obs'].mountless_operation:
+            g_dev['mnt'].park_command({}, {})
+    
+        # Trigger exposure
+        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system',
+                                    no_AWS=False, do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+    
+        # Handle cancellation or timeout
+        if self.stop_script_called:
+            g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+            self.bias_dark_latch = False
+            return False
+        if ephem.now() + (dark_exp_time + cycle_time + 30) / 86400 > ending:
+            self.bias_dark_latch = False
+            return False
+    
+        g_dev['obs'].request_scan_requests()
+        return True
+    
+    def collect_bias_frame(self, count, stride, min_to_do, dark_exp_time, cycle_time, ending):
+        plog(f"Expose {count * stride} 1x1 bias frames.")
+        req = {'time': 0.0, 'script': 'True', 'image_type': 'bias'}
+        opt = {'count': min_to_do, 'filter': 'dk'}
+    
+        if not g_dev['obs'].mountless_operation:
+            g_dev['mnt'].park_command({}, {})
+    
+        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system',
+                                    no_AWS=False, do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+    
+        if self.stop_script_called:
+            g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+            self.bias_dark_latch = False
+            return False
+        if ephem.now() + (dark_exp_time + cycle_time + 30) / 86400 > ending:
+            self.bias_dark_latch = False
+            return False
+    
+        g_dev['obs'].request_scan_requests()
+        return True
 
 
     def bias_dark_script(self, req=None, opt=None, morn=False, ending=None):
@@ -1879,7 +1840,99 @@ class Sequencer:
             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
             # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.
-            min_flat_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
+            min_exposure = min(float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure']),float(self.config['camera']['camera_1_1']['settings']['min_exposure']))           
+            
+            
+            ####
+            # When we are getting darks, we are collecting darks for the NEXT night's temperature
+            # not tonights. So if tomrorow night the season changes and the camera temperature changes
+            # We need to have the bias/darks already.             
+            if g_dev['cam'].temp_setpoint_by_season:
+                
+                current_night_setpoint=copy.deepcopy(g_dev['cam'].setpoint)
+                
+                tomorrow_night=datetime.datetime.now() +datetime.timedelta(days=1)
+                tempmonth = tomorrow_night.month
+                tempday= tomorrow_night.day
+                
+                if tempmonth == 12 or tempmonth == 1 or (tempmonth ==11 and tempday >15) or (tempmonth ==2 and tempday <=15):
+                    tommorow_night_setpoint=  float(
+                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_nov_to_feb'][0])
+                
+                elif tempmonth == 3 or tempmonth == 4 or (tempmonth ==2 and tempday >15) or (tempmonth ==5 and tempday <=15):
+                    tommorow_night_setpoint=  float(
+                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_feb_to_may'][0])                
+                
+                elif tempmonth == 6 or tempmonth == 7 or (tempmonth ==5 and tempday >15) or (tempmonth ==8 and tempday <=15):
+                
+                    tommorow_night_setpoint=  float(
+                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_may_to_aug'][0])
+                
+                elif tempmonth == 9 or tempmonth == 10 or (tempmonth ==8 and tempday >15) or (tempmonth ==11 and tempday <=15):
+                
+                    tommorow_night_setpoint=  float(
+                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_aug_to_nov'][0])
+                
+                # Here change the setpoint tomorrow nights setpoint
+                g_dev['cam'].current_setpoint = tommorow_night_setpoint
+                g_dev['cam'].setpoint = tommorow_night_setpoint
+                g_dev['cam']._set_setpoint(tommorow_night_setpoint)
+                
+                
+                # Need to trim th ecalibration directories of all files
+                # Not within the tolerance limit from the setpoint
+                darks_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/darks/'
+                bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
+                
+                # First check darks in root directory
+                print ("ROOT DIRECTORY DARKS")
+                for darkfile in glob(darks_path + '*.npy'):
+                    tempdarktemp=float(darkfile.split('_')[-3])
+                    #print (tempdarktemp)
+                    if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                        try:
+                            os.remove(darkfile)
+                        except:
+                            pass
+                
+                # Then check each of the darks folder
+                for darkfolder in glob(darks_path + "*/"):
+                    print (darkfolder)
+                    for darkfile in glob(darkfolder + '*.npy'):
+                        tempdarktemp=float(darkfile.split('_')[-3])
+                        #print (tempdarktemp)
+                        if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                            try:
+                                os.remove(darkfile)
+                            except:
+                                pass
+                
+                # NEED TO CHECK BIASES LATER!
+                # First check darks in root directory
+                print ("ROOT DIRECTORY BIASES")
+                for darkfile in glob(bias_path + '*.npy'):
+                    tempdarktemp=float(darkfile.split('_')[-3])
+                    #print (tempdarktemp)
+                    if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                        try:
+                            os.remove(darkfile)
+                        except:
+                            pass
+                                
+                if abs(tommorow_night_setpoint-current_night_setpoint) > 4:
+                    plog("waiting an extra three minutes for camera to cool to different temperature")
+                    time.sleep(180)
+            
+            # If there are no biases, then don't check for lightleaks.
+            # This catches a bias and dark refresh... manually or at the transition of seasons.
+            bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
+            
+            if len (glob(bias_path + '*.npy')) == 0:
+                self.check_incoming_darks_for_light_leaks=False
+            else:
+                self.check_incoming_darks_for_light_leaks=True
+            #breakpoint()
+            #breakpoint()
 
             # Before parking, set the darkslide to close
             if g_dev['cam'].has_darkslide:
@@ -1929,444 +1982,45 @@ class Sequencer:
                 min_to_do = 1
                 b_d_to_do -= 1
 
-                # COLLECTING A TWO SECOND EXPOSURE DARK FRAME
-                plog("Expose " + str(5*stride) +" 1x1 2s exposure dark frames.")
-                req = {'time': 2,  'script': 'True', 'image_type': 'twosec_exposure_dark'}
-                opt = {'count': min_to_do,  \
-                       'filter': 'dk'}
-
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                if not g_dev['obs'].mountless_operation:
-                    g_dev['mnt'].park_command({}, {})
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A THREEPOINTFIVE SECOND EXPOSURE DARK FRAME
-                plog("Expose " + str(5*stride) +" 1x1 3.5s exposure dark frames.")
-                req = {'time': 3.5,  'script': 'True', 'image_type': 'threepointfivesec_exposure_dark'}
-                opt = {'count': min_to_do,  \
-                       'filter': 'dk'}
-
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                if not g_dev['obs'].mountless_operation:
-                    g_dev['mnt'].park_command({}, {})
-
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A FIVE SECOND EXPOSURE DARK FRAME
-                plog("Expose " + str(5*stride) +" 1x1 5s exposure dark frames.")
-                req = {'time': 5,  'script': 'True', 'image_type': 'fivesec_exposure_dark'}
-                opt = {'count': min_to_do,  \
-                       'filter': 'dk'}
-
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                if not g_dev['obs'].mountless_operation:
-                    g_dev['mnt'].park_command({}, {})
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-
-                # COLLECTING A SEVENPOINTFIVE SECOND EXPOSURE DARK FRAME
-                plog("Expose " + str(5*stride) +" 1x1 7.5s exposure dark frames.")
-                req = {'time': 7.5,  'script': 'True', 'image_type': 'sevenpointfivesec_exposure_dark'}
-                opt = {'count': min_to_do,  \
-                       'filter': 'dk'}
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                if not g_dev['obs'].mountless_operation:
-                    g_dev['mnt'].park_command({}, {})
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A TEN SECOND EXPOSURE DARK FRAME
-                plog("Expose " + str(2*stride) +" 1x1 ten second exposure dark frames.")
-                req = {'time': 10,  'script': 'True', 'image_type': 'tensec_exposure_dark'}
-                opt = {'count': 2*min_to_do,  \
-                       'filter': 'dk'}
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                if not g_dev['obs'].mountless_operation:
-                    g_dev['mnt'].park_command({}, {})
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A FIFTEEN SECOND EXPOSURE DARK FRAME
-                plog("Expose " + str(2*stride) +" 1x1 15 second exposure dark frames.")
-                req = {'time': 15,  'script': 'True', 'image_type': 'fifteensec_exposure_dark'}
-                opt = {'count': min_to_do,  \
-                       'filter': 'dk'}
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                if not g_dev['obs'].mountless_operation:
-                    g_dev['mnt'].park_command({}, {})
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A TWENTY SECOND EXPOSURE DARK FRAME
-                plog("Expose " + str(2*stride) +" 1x1 20 second exposure dark frames.")
-                req = {'time': 20,  'script': 'True', 'image_type': 'twentysec_exposure_dark'}
-                opt = {'count': min_to_do,  \
-                       'filter': 'dk'}
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                if not g_dev['obs'].mountless_operation:
-                    g_dev['mnt'].park_command({}, {})
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A THIRTY SECOND EXPOSURE DARK FRAME
-                plog("Expose " + str(2*stride) +" 1x1 30 second exposure dark frames.")
-                req = {'time': 30,  'script': 'True', 'image_type': 'thirtysec_exposure_dark'}
-                opt = {'count': 2*min_to_do,  \
-                       'filter': 'dk'}
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                if not g_dev['obs'].mountless_operation:
-                    g_dev['mnt'].park_command({}, {})
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A BROADBAND SMARTSTACK BIASDARK FRAME
-                plog("Expose " + str(stride) +" 1x1 broadband smstack biasdark frames.")
-                req = {'time': broadband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'broadband_ss_biasdark'}
-                opt = {'count': 2*min_to_do,  \
-                       'filter': 'dk'}
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                if not g_dev['obs'].mountless_operation:
-                    g_dev['mnt'].park_command({}, {})
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A NARROWBAND SMARTSTACK BIASDARK FRAME
-                # But only if there is a filterwheel, otherwise no point.
+                # Define exposure parameters
+                exposures = [
+                    (2, "twosec_exposure_dark", 5),
+                    (3.5, "threepointfivesec_exposure_dark", 5),
+                    (5, "fivesec_exposure_dark", 5),
+                    (7.5, "sevenpointfivesec_exposure_dark", 5),
+                    (10, "tensec_exposure_dark", 2),
+                    (15, "fifteensec_exposure_dark", 2),
+                    (20, "twentysec_exposure_dark", 2),
+                    (30, "thirtysec_exposure_dark", 2),
+                    (0.0045, "pointzerozerofourfive_exposure_dark", 5),
+                    (0.0004, "fortymicrosecond_exposure_dark", 5),
+                    (0.00004, "fourhundredmicrosecond_exposure_dark", 5),
+                    (0.015, "onepointfivepercent_exposure_dark", 5),
+                    (0.05, "fivepercent_exposure_dark", 5),
+                    (0.1, "tenpercent_exposure_dark", 5),
+                    (0.25, "quartersec_exposure_dark", 5),
+                    (0.5, "halfsec_exposure_dark", 5),
+                    (0.75, "threequartersec_exposure_dark", 5),
+                    (1.0, "onesec_exposure_dark", 5),
+                    (1.5, "oneandahalfsec_exposure_dark", 5),
+                ]
+                
+                # Iterate over exposure settings
+                for exposure_time, image_type, count_multiplier in exposures:
+                    if exposure_time >= min_exposure:
+                        if not self.collect_dark_frame(exposure_time, image_type, count_multiplier, stride, min_to_do, dark_exp_time, cycle_time, ending):
+                            break
+                
+                # Collect additional frames
+                if not self.collect_bias_frame(stride, stride, min_to_do, dark_exp_time, cycle_time, ending):
+                    pass
+                
+                # Check for narrowband frame
                 if not g_dev["fil"].null_filterwheel:
-                    plog("Expose " + str(stride) +" 1x1 narrowband smstack biasdark frames.")
-                    req = {'time': narrowband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'narrowband_ss_biasdark'}
-                    opt = {'count': 2*min_to_do,  \
-                           'filter': 'dk'}
-                    # Check it is in the park position and not pointing at the sky.
-                    # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                    if not g_dev['obs'].mountless_operation:
-                        g_dev['mnt'].park_command({}, {})
-                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                        self.bias_dark_latch = False
-                        return
-                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                        self.bias_dark_latch = False
-                        break
-                    g_dev['obs'].request_scan_requests()
-
-
-                # If we've been collecting bias darks for TWO HOURS, bail out... someone has asked for too many!
-                if time.time() - bias_darks_started > 7200:
-                    self.bias_dark_latch = False
-                    break
-
-                # COLLECTING A 0.0045 Second EXPOSURE DARK FRAME
-                if min_flat_exposure <= 0.0045:
-                    plog("Expose " + str(5*stride) +" 1x1 0.0045 second exposure dark frames.")
-                    req = {'time': 0.0045,  'script': 'True', 'image_type': 'pointzerozerofourfive_exposure_dark'}
-                    opt = {'count':  min_to_do,  \
-                           'filter': 'dk'}
-                    # Check it is in the park position and not pointing at the sky.
-                    # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                    if not g_dev['obs'].mountless_operation:
-                        g_dev['mnt'].park_command({}, {})
-                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                        self.bias_dark_latch = False
-                        return
-                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                        self.bias_dark_latch = False
-                        break
-                    g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A 0.015 Second EXPOSURE DARK FRAME
-                if min_flat_exposure <= 0.015:
-                    plog("Expose " + str(5*stride) +" 1x1 0.015 second exposure dark frames.")
-                    req = {'time': 0.015,  'script': 'True', 'image_type': 'onepointfivepercent_exposure_dark'}
-                    opt = {'count':  min_to_do,  \
-                           'filter': 'dk'}
-                    # Check it is in the park position and not pointing at the sky.
-                    # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                    if not g_dev['obs'].mountless_operation:
-                        g_dev['mnt'].park_command({}, {})
-                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                        self.bias_dark_latch = False
-                        return
-                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                        self.bias_dark_latch = False
-                        break
-                    g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
-                if min_flat_exposure <= 0.05:
-                    plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
-                    req = {'time': 0.05,  'script': 'True', 'image_type': 'fivepercent_exposure_dark'}
-                    opt = {'count':  min_to_do,  \
-                           'filter': 'dk'}
-                    # Check it is in the park position and not pointing at the sky.
-                    # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                    if not g_dev['obs'].mountless_operation:
-                        g_dev['mnt'].park_command({}, {})
-                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                        self.bias_dark_latch = False
-                        return
-                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                        self.bias_dark_latch = False
-                        break
-                    g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A 0.1 Second EXPOSURE DARK FRAME
-                if min_flat_exposure <= 0.1:
-                    plog("Expose " + str(5*stride) +" 1x1 0.1 second exposure dark frames.")
-                    req = {'time': 0.1,  'script': 'True', 'image_type': 'tenpercent_exposure_dark'}
-                    opt = {'count':  min_to_do,  \
-                           'filter': 'dk'}
-                    # Check it is in the park position and not pointing at the sky.
-                    # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                    if not g_dev['obs'].mountless_operation:
-                        g_dev['mnt'].park_command({}, {})
-                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                        self.bias_dark_latch = False
-                        return
-                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                        self.bias_dark_latch = False
-                        break
-                    g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A 0.25 Second EXPOSURE DARK FRAME
-                if min_flat_exposure <= 0.25:
-                    plog("Expose " + str(5*stride) +" 1x1 0.25 second exposure dark frames.")
-                    req = {'time': 0.25,  'script': 'True', 'image_type': 'quartersec_exposure_dark'}
-                    opt = {'count':  min_to_do,  \
-                           'filter': 'dk'}
-                    # Check it is in the park position and not pointing at the sky.
-                    # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                    if not g_dev['obs'].mountless_operation:
-                        g_dev['mnt'].park_command({}, {})
-                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                        self.bias_dark_latch = False
-                        return
-                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                        self.bias_dark_latch = False
-                        break
-                    g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A Half Second EXPOSURE DARK FRAME
-                plog("Expose " + str(5*stride) +" 1x1 half-second exposure dark frames.")
-                req = {'time': 0.5,  'script': 'True', 'image_type': 'halfsec_exposure_dark'}
-                opt = {'count':  min_to_do,  \
-                       'filter': 'dk'}
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                if not g_dev['obs'].mountless_operation:
-                    g_dev['mnt'].park_command({}, {})
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A 0.75 Second EXPOSURE DARK FRAME
-                if min_flat_exposure <= 0.75:
-                    plog("Expose " + str(5*stride) +" 1x1 0.75 second exposure dark frames.")
-                    req = {'time': 0.75,  'script': 'True', 'image_type': 'threequartersec_exposure_dark'}
-                    opt = {'count': min_to_do,  \
-                           'filter': 'dk'}
-                    # Check it is in the park position and not pointing at the sky.
-                    # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                    if not g_dev['obs'].mountless_operation:
-                        g_dev['mnt'].park_command({}, {})
-                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A one Second EXPOSURE DARK FRAME
-                if min_flat_exposure <= 1.0:
-                    plog("Expose " + str(5*stride) +" 1x1  1 second exposure dark frames.")
-                    req = {'time': 1,  'script': 'True', 'image_type': 'onesec_exposure_dark'}
-                    opt = {'count':  min_to_do,  \
-                           'filter': 'dk'}
-                    # Check it is in the park position and not pointing at the sky.
-                    # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                    if not g_dev['obs'].mountless_operation:
-                        g_dev['mnt'].park_command({}, {})
-                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                        self.bias_dark_latch = False
-                        return
-                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                        self.bias_dark_latch = False
-                        break
-                    g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A one and a half Second EXPOSURE DARK FRAME
-                if min_flat_exposure <= 1.5:
-                    plog("Expose " + str(5*stride) +" 1x1  1.5 second exposure dark frames.")
-                    req = {'time': 1.5,  'script': 'True', 'image_type': 'oneandahalfsec_exposure_dark'}
-                    opt = {'count':  min_to_do,  \
-                           'filter': 'dk'}
-                    # Check it is in the park position and not pointing at the sky.
-                    # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                    if not g_dev['obs'].mountless_operation:
-                        g_dev['mnt'].park_command({}, {})
-                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                        self.bias_dark_latch = False
-                        return
-                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                        self.bias_dark_latch = False
-                        break
-                    g_dev['obs'].request_scan_requests()
-
-
-                # COLLECTING A BIAS FRAME
-                # COLLECT BIAS FRAMES LATER as there is no way to know whether bias frames are affected
-                # by slowly-closing shutters... whereas darks can be rejected.
-                plog("Expose " + str(stride) +" 1x1 bias frames.")
-                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'count': min_to_do,  \
-                       'filter': 'dk'}
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                if not g_dev['obs'].mountless_operation:
-                    g_dev['mnt'].park_command({}, {})
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-                plog("Expose 1x1 dark of " \
-                     + str(dark_count) + " using exposure:  " + str(dark_exp_time) )
-                req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
-                opt = {'count': 1, 'filter': 'dk'}
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                   do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
+                    self.collect_dark_frame(narrowband_ss_biasdark_exp_time, "narrowband_ss_biasdark", 2, stride, min_to_do, dark_exp_time, cycle_time, ending)
+                
+                # Final long-exposure dark frame
+                self.collect_dark_frame(dark_exp_time, "dark", 1, stride, min_to_do, dark_exp_time, cycle_time, ending)
 
                 g_dev['obs'].request_scan_requests()
                 if ephem.now() + 30/86400 >= ending:
@@ -2380,6 +2034,12 @@ class Sequencer:
             self.bias_dark_latch = False
             break
         self.bias_dark_latch = False
+
+        if g_dev['cam'].temp_setpoint_by_season:
+            # Here change the setpoint back to tonight's setpoint
+            g_dev['cam'].current_setpoint = current_night_setpoint
+            g_dev['cam'].setpoint = current_night_setpoint
+            g_dev['cam']._set_setpoint(current_night_setpoint)
 
         g_dev['obs'].flush_command_queue()
         self.total_sequencer_control=False
@@ -2490,6 +2150,19 @@ class Sequencer:
                     elif ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
                         deleteDirectories.append(directories[q])
                         deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
+                    # Check that there isn't empty directories lying around - 
+                    # this happens with theskyx
+                    # Check if the directory is empty
+                    if not os.listdir(directories[q]):
+                        # Remove the empty directory
+                        try:
+                            os.rmdir(directories[q])
+                            plog(f"The directory {directories[q]} was empty and has been removed.")
+                        except:
+                            pass
+                        
+                    # else:
+                    #     p(f"The directory {directories[q]} is not empty.")
                 plog ("These are the directories earmarked for  ")
                 plog ("Eternal destruction. And how old they are")
                 plog ("in weeks\n")
@@ -2945,12 +2618,12 @@ class Sequencer:
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib +filename_start+'_master_bin1.fits' ))
 
 
-                    if filename_start in ['tensecBIASDARK','thirtysecBIASDARK']:
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.npy', copy.deepcopy(masterDark)))
+                    #if filename_start in ['tensecBIASDARK','thirtysecBIASDARK']:
+                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.npy', copy.deepcopy(masterDark)))
 
 
 
-                     # Store a version of the bias for the archive too
+                    # Store a version of the bias for the archive too
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
 
@@ -3225,9 +2898,15 @@ class Sequencer:
                 [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssBIASDARK', 'broadband_ss_biasdark']
                 ]
 
-            # There is no point creating biasdark exposures below the min_flat_exposure time aside from the scaled dark values.
-            min_flat_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
-
+            # There is no point creating biasdark exposures below the min_flat_exposure or min_exposure time aside from the scaled dark values.
+            min_flat_exposure = min(float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure']),float(self.config['camera']['camera_1_1']['settings']['min_exposure']))
+            
+            if min_flat_exposure <= 0.00004:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'fortymicroseconddarks/', 'fortymicrosecondBIASDARK','fortymicrosecond' ])
+            
+            if min_flat_exposure <= 0.0004:
+                bias_darklist.append([g_dev['obs'].local_dark_folder+ 'fourhundredmicroseconddarks/', 'fourhundredmicrosecondBIASDARK','fourhundredmicrosecond' ])
+            
             if min_flat_exposure <= 0.0045:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'pointzerozerofourfivedarks/', 'pointzerozerofourfiveBIASDARK','pointzerozerofourfive' ])
 
@@ -3435,8 +3114,11 @@ class Sequencer:
                                             # This try/except is here because if there is a missing dark
                                             # we can always just revert to using the long dark.
                                             try:
-
-                                                if hdu1exp == 0.0045 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy'):
+                                                if hdu1exp == 0.00004 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fortymicrosecond' +'tempbiasdark.npy'):
+                                                    flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fortymicrosecond' +'tempbiasdark.npy')
+                                                elif hdu1exp == 0.0004 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fourhundredmicrosecond' +'tempbiasdark.npy'):
+                                                    flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fourhundredmicrosecond' +'tempbiasdark.npy')
+                                                elif hdu1exp == 0.0045 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy'):
                                                     flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'pointzerozerofourfive' +'tempbiasdark.npy')
                                                 elif hdu1exp == 0.015 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'onepointfivepercent' +'tempbiasdark.npy'):
                                                     flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'onepointfivepercent' +'tempbiasdark.npy')
@@ -4148,7 +3830,7 @@ class Sequencer:
         exp_time = min_exposure
         broadband_ss_biasdark_exp_time = float(self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time'])
         narrowband_ss_biasdark_exp_time = float(broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier'])
-        sky_exposure_snap_to_grid = [ 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, 30, broadband_ss_biasdark_exp_time]
+        sky_exposure_snap_to_grid = [ 0.00004, 0.0004, 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, 30, broadband_ss_biasdark_exp_time]
 
         if not g_dev["fil"].null_filterwheel:
             sky_exposure_snap_to_grid.append(narrowband_ss_biasdark_exp_time)
@@ -4402,7 +4084,7 @@ class Sequencer:
                                     pixel_area=pow(float(g_dev['cam'].pixscale),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))
                                 # snap the exposure time to a discrete grid
-                                if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
+                                if exp_time > 0.00002 and len(sky_exposure_snap_this_filter) > 0:
                                     exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                                 else:
                                     exp_time = 0.5*min_exposure
@@ -4414,21 +4096,21 @@ class Sequencer:
                                 else:
                                     exp_time = min_exposure
                                     # snap the exposure time to a discrete grid
-                                    if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
+                                    if exp_time > 0.00002 and len(sky_exposure_snap_this_filter) > 0:
                                         exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                                     else:
                                         exp_time = 0.5*min_exposure
                         elif in_wait_mode:
                             exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
                             # snap the exposure time to a discrete grid
-                            if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
+                            if exp_time > 0.00002 and len(sky_exposure_snap_this_filter) > 0:
                                 exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                             else:
                                 exp_time = 0.5*min_exposure
                         else:
                             exp_time = scale * exp_time
                             # snap the exposure time to a discrete grid
-                            if exp_time > 0.002 and len(sky_exposure_snap_this_filter) > 0:
+                            if exp_time > 0.00002 and len(sky_exposure_snap_this_filter) > 0:
                                 exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                             else:
                                 exp_time = 0.5*min_exposure
@@ -4492,7 +4174,7 @@ class Sequencer:
                              self.next_flat_observe = time.time() + 5
                              exp_time = min_exposure
                              # snap the exposure time to a discrete grid
-                             if exp_time > 0.002:
+                             if exp_time > 0.00002:
                                  exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                              else:
                                  exp_time = 0.5*min_exposure
@@ -4501,7 +4183,7 @@ class Sequencer:
                             in_wait_mode=False
                             exp_time = round(exp_time, 5)
                             # snap the exposure time to a discrete grid
-                            if exp_time > 0.002:
+                            if exp_time > 0.00002:
                                 exp_time=min(sky_exposure_snap_this_filter, key=lambda x:abs(x-exp_time))
                             else:
                                 exp_time = 0.5*min_exposure

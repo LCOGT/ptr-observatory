@@ -1255,22 +1255,73 @@ class Camera:
 
         # Camera cooling setup
         # This is the config setpoint
-        self.setpoint = float(
-            self.config["camera"][self.name]["settings"]["temp_setpoint"])
+        
+        if self.config["camera"][self.name]["settings"]['set_temp_setpoint_by_season']:
+            
+            self.temp_setpoint_by_season=True
+            
+            tempmonth = datetime.datetime.now().month
+            tempday= datetime.datetime.now().day
+            
+            if tempmonth == 12 or tempmonth == 1 or (tempmonth ==11 and tempday >15) or (tempmonth ==2 and tempday <=15):
+                self.setpoint = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_nov_to_feb'][0])
+                self.day_warm = self.config["camera"][self.name]["settings"]['temp_setpoint_nov_to_feb'][2]
+                self.day_warm_degrees = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_nov_to_feb'][1])
+            
+            elif tempmonth == 3 or tempmonth == 4 or (tempmonth ==2 and tempday >15) or (tempmonth ==5 and tempday <=15):
+                self.setpoint = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_feb_to_may'][0])
+                self.day_warm = self.config["camera"][self.name]["settings"]['temp_setpoint_feb_to_may'][2]
+                self.day_warm_degrees = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_feb_to_may'][1])
+            
+            
+            elif tempmonth == 6 or tempmonth == 7 or (tempmonth ==5 and tempday >15) or (tempmonth ==8 and tempday <=15):
+            
+                self.setpoint = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_may_to_aug'][0])
+                self.day_warm = self.config["camera"][self.name]["settings"]['temp_setpoint_may_to_aug'][2]
+                self.day_warm_degrees = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_may_to_aug'][1])    
+            
+            elif tempmonth == 9 or tempmonth == 10 or (tempmonth ==8 and tempday >15) or (tempmonth ==11 and tempday <=15):
+            
+                self.setpoint = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_aug_to_nov'][0])
+                self.day_warm = self.config["camera"][self.name]["settings"]['temp_setpoint_aug_to_nov'][2]
+                self.day_warm_degrees = float(
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_aug_to_nov'][1])    
+            
+        
+            
+        else:
+            
+            self.temp_setpoint_by_season=False            
+            
+            self.setpoint = float(
+                self.config["camera"][self.name]["settings"]["temp_setpoint"])         
+            
+            
+            self.day_warm = float(
+                self.config["camera"][self.name]["settings"]['day_warm'])
+            self.day_warm_degrees = float(
+                self.config["camera"][self.name]["settings"]['day_warm_degrees'])
+        
+        
+        
+        # This setpoint can change if there is camera warming during the day etc.
+        self.current_setpoint = self.setpoint
+        
+        self._set_setpoint(self.setpoint)
+        
         try:
             self.temp_tolerance = float(
                 self.config["camera"][self.name]["settings"]["temp_setpoint_tolerance"])
         except:
             self.temp_tolerance = 1.5
             plog("temp tolerance isn't set in obs config, using 1.5 degrees")
-        # This setpoint can change if there is camera warming during the day etc.
-        self.current_setpoint = float(
-            self.config["camera"][self.name]["settings"]["temp_setpoint"])
-        self._set_setpoint(self.setpoint)
-        self.day_warm = float(
-            self.config["camera"][self.name]["settings"]['day_warm'])
-        self.day_warm_degrees = float(
-            self.config["camera"][self.name]["settings"]['day_warm_degrees'])
         self.protect_camera_from_overheating = float(
             self.config["camera"][self.name]["settings"]['protect_camera_from_overheating'])
 
@@ -2658,7 +2709,7 @@ class Camera:
         skip_daytime_check = False
         skip_calibration_check = False
 
-        if imtype.lower() in ['pointzerozerofourfive_exposure_dark', 'onepointfivepercent_exposure_dark', 'fivepercent_exposure_dark', 'tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark', 'threequartersec_exposure_dark', 'onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark', 'threepointfivesec_exposure_dark', 'fivesec_exposure_dark',  'sevenpointfivesec_exposure_dark', 'tensec_exposure_dark', 'fifteensec_exposure_dark', 'twentysec_exposure_dark', 'thirtysec_exposure_dark', 'broadband_ss_biasdark', 'narrowband_ss_biasdark']:
+        if imtype.lower() in ['fortymicrosecond_exposure_dark', 'fourhundredmicrosecond_exposure_dark','pointzerozerofourfive_exposure_dark', 'onepointfivepercent_exposure_dark', 'fivepercent_exposure_dark', 'tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark', 'threequartersec_exposure_dark', 'onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark', 'threepointfivesec_exposure_dark', 'fivesec_exposure_dark',  'sevenpointfivesec_exposure_dark', 'tensec_exposure_dark', 'fifteensec_exposure_dark', 'twentysec_exposure_dark', 'thirtysec_exposure_dark', 'broadband_ss_biasdark', 'narrowband_ss_biasdark']:
             a_dark_exposure = True
         else:
             a_dark_exposure = False
@@ -2867,7 +2918,7 @@ class Camera:
                         return
 
         num_retries = 0
-        incoming_exposure_time = exposure_time
+        incoming_exposure_time = copy.deepcopy(exposure_time)
         g_dev['obs'].request_scan_requests()
         if g_dev['seq'].blockend != None:
             g_dev['obs'].request_update_calendar_blocks()
@@ -2930,7 +2981,13 @@ class Camera:
                 Nsmartstack = 1
                 SmartStackID = 'no'
                 smartstackinfo = 'no'
-                exposure_time = incoming_exposure_time
+                
+                # Here is where we quantise the exposure time for short exposures
+                if incoming_exposure_time < 2:
+                    exposure_snap_to_grid = [ 0.00004, 0.0004, 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0]
+                    exposure_time=min(exposure_snap_to_grid, key=lambda x:abs(x-incoming_exposure_time))
+                else:
+                    exposure_time = incoming_exposure_time
 
             # Create a unique yet arbitrary code for the token
             real_time_token = g_dev['name'] + '_' + self.alias + '_' + g_dev["day"] + '_' + this_exposure_filter.lower() + '_' + smartstackinfo + '_' + str(ssBaseExp) + "_" + str(
@@ -4768,7 +4825,9 @@ class Camera:
                             plog ("Exposure time: " + str(exposure_time))
 
                             #Short exposures are inherently much more variable, so their limit is set much higher.
-                            if frame_type in ['pointzerozerofourfive_exposure_dark','onepointfivepercent_exposure_dark','fivepercent_exposure_dark','tenpercent_exposure_dark']:
+                            if not g_dev['seq'].check_incoming_darks_for_light_leaks:
+                                plog ("Light Leak checks for darks turned off, usually for a new batch of darks.")
+                            elif frame_type in ['fortymicrosecond_exposure_dark', 'fourhundredmicrosecond_exposure_dark','pointzerozerofourfive_exposure_dark','onepointfivepercent_exposure_dark','fivepercent_exposure_dark','tenpercent_exposure_dark']:
                                 plog ("This exposure is too short for the dark rejecter to be particularly reliable.")
                             elif frame_type in ['quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark']:
                                 if debiaseddarkmedian > 10*dark_limit_adu:
@@ -4820,10 +4879,10 @@ class Camera:
                     if not manually_requested_calibration:
                         if not g_dev['obs'].mountless_operation:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', copy.deepcopy(raw_name00), copy.deepcopy(hdu.data), copy.deepcopy(
-                                hdu.header), copy.deepcopy(frame_type), copy.deepcopy(g_dev["mnt"].current_icrs_ra), copy.deepcopy(g_dev["mnt"].current_icrs_dec)))
+                                hdu.header), copy.deepcopy(frame_type), copy.deepcopy(g_dev["mnt"].current_icrs_ra), copy.deepcopy(g_dev["mnt"].current_icrs_dec), current_camera_temperature))
                         else:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', copy.deepcopy(raw_name00), copy.deepcopy(
-                                hdu.data), copy.deepcopy(hdu.header), copy.deepcopy(frame_type), None, None))
+                                hdu.data), copy.deepcopy(hdu.header), copy.deepcopy(frame_type), None, None,current_camera_temperature))
 
                     # Make  sure the alt paths exist
                     if g_dev['obs'].config["save_to_alt_path"] == "yes":
@@ -5499,7 +5558,7 @@ class Camera:
                         # If the files are local calibrations, save them out to the local calibration directory
                         if not manually_requested_calibration:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data,
-                                                         hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                                                         hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, current_camera_temperature))
 
                         # Similarly to the above. This saves the RAW file to disk
                         if self.config['save_raw_to_disk']:

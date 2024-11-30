@@ -856,6 +856,22 @@ site_config = {
                 # "temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp': 25,  # C 20240906
+                
+                
+                
+                
+                # This is the yearly range of temperatures.
+                # Based on New Mexico and Melbourne's variation... sorta similar.
+                # There is a cold bit and a hot bit and an inbetween bit.
+                # from the 15th of the month to the 15 of the month 
+                # 
+                # ( setpoint, day_warm_difference, day_warm troe our false)
+                'set_temp_setpoint_by_season' : True,
+                'temp_setpoint_nov_to_feb' : ( -8, 6, True),
+                'temp_setpoint_feb_to_may' : ( 3, 8, True),
+                'temp_setpoint_may_to_aug' : ( 6, 8, True),
+                'temp_setpoint_aug_to_nov' : ( 3, 8, True),
+                
                 'day_warm': True,  # This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 4,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating': False,

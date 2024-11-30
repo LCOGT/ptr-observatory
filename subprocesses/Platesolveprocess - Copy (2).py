@@ -517,53 +517,7 @@ if len(sources) >= 5:
         print (solve)
 
     else:
-        
-        # If the quick routine doesn't work, use native source extractor
-        
-        # Remove the previous attempt which was just a table fits
-        temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
-        for f in temp_files_to_remove:
-            try:
-                os.remove(f)
-            except:
-                pass        
-        
-        # Save an image to the disk to use with source-extractor        
-        hdufocus = fits.PrimaryHDU()
-        hdufocus.data = hdufocusdata
-        hdufocus.header = hduheader
-        hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-        hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-        hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
-        
-        # run again
-        
-        astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit 30 --overwrite --no-verify --no-plots'
-
-        print (astoptions)
-
-        os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
-        
-        # If successful, then a file of the same name but ending in solved exists.
-        if os.path.exists(wslfilename):
-            print ("IT EXISTS! WCS SUCCESSFUL!")
-            wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
-            # wcsheader[0].header['CRVAL1']/15
-            # wcsheader[0].header['CRVAL2']
-            # wcsheader[0].header['CD1_2'] * 3600
-            solve={}
-            solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
-            solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
-            solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
-
-            if binnedtwo:
-                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
-            elif binnedthree:
-                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-            print (solve)
-
-        else:
-            solve = 'error'
+        solve = 'error'
 
 
     temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
@@ -771,9 +725,6 @@ else:
 
 if solve == 'error':
     
-    
-    # Make a third attempt with a different method (which usually doesn't work as well as
-    # native source-extractor, but it is worth a shot!
     print ("TRYING THE BLOB APPROACH")
     try:
         # Export a binary table for astrometry.net
@@ -984,11 +935,53 @@ if solve == 'error':
             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
         print (solve)
 
-    
-        
     else:
-    
-        solve = 'error'
+        
+        # Remove the previous attempt which was just a table fits
+        temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
+        for f in temp_files_to_remove:
+            try:
+                os.remove(f)
+            except:
+                pass        
+        
+        # Save an image to the disk to use with source-extractor        
+        hdufocus = fits.PrimaryHDU()
+        hdufocus.data = hdufocusdata
+        hdufocus.header = hduheader
+        hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+        hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+        hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
+        
+        # run again
+        
+        astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit 30 --overwrite --no-verify --no-plots'
+
+        print (astoptions)
+
+        os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
+        
+        # If successful, then a file of the same name but ending in solved exists.
+        if os.path.exists(wslfilename):
+            print ("IT EXISTS! WCS SUCCESSFUL!")
+            wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
+            # wcsheader[0].header['CRVAL1']/15
+            # wcsheader[0].header['CRVAL2']
+            # wcsheader[0].header['CD1_2'] * 3600
+            solve={}
+            solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
+            solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
+            solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
+
+            if binnedtwo:
+                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+            elif binnedthree:
+                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+            print (solve)
+        
+        else:
+        
+            solve = 'error'
 
 
     temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
