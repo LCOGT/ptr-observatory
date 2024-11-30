@@ -829,6 +829,20 @@ site_config = {
                 'chiller_ref_temp':  14,  # C  15 - 45 = -30 so do not exceed that target or run
                                             #TEC above 85% -- better more like 80%.  FLI 50100 at -20 uses 85% power with actual ambient
                                             # of 18C.  60% at -15C, so -17.5 seems good. Really hot days mean the TEC ha do do more work.
+                                            
+                                            
+                # This is the yearly range of temperatures.
+                # Based on New Mexico and Melbourne's variation... sorta similar.
+                # There is a cold bit and a hot bit and an inbetween bit.
+                # from the 15th of the month to the 15 of the month 
+                # 
+                # ( setpoint, day_warm_difference, day_warm troe our false)
+                'set_temp_setpoint_by_season' : True,
+                'temp_setpoint_nov_to_feb' : ( 5, 8, True),
+                'temp_setpoint_feb_to_may' : ( 5, 8, True),
+                'temp_setpoint_may_to_aug' : ( 1, 8, True),
+                'temp_setpoint_aug_to_nov' : ( 5, 8, True),                            
+                
                 'day_warm': False,
                 'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,

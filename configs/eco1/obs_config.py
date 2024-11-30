@@ -584,7 +584,7 @@ site_config = {
                 # 
                 # ( setpoint, day_warm_difference, day_warm troe our false)
                 'set_temp_setpoint_by_season' : True,
-                'temp_setpoint_nov_to_feb' : ( 5, 8, False),
+                'temp_setpoint_nov_to_feb' : ( 5, 8, True),
                 'temp_setpoint_feb_to_may' : ( 5, 8, True),
                 'temp_setpoint_may_to_aug' : ( 1, 8, True),
                 'temp_setpoint_aug_to_nov' : ( 5, 8, True),

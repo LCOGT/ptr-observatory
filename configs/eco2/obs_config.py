@@ -575,6 +575,18 @@ site_config = {
                 
                 'temp_setpoint_tolerance': 2.5,
                 'has_chiller': True,
+                
+                # This is the yearly range of temperatures.
+                # Based on New Mexico and Melbourne's variation... sorta similar.
+                # There is a cold bit and a hot bit and an inbetween bit.
+                # from the 15th of the month to the 15 of the month 
+                # 
+                # ( setpoint, day_warm_difference, day_warm troe our false)
+                'set_temp_setpoint_by_season' : True,
+                'temp_setpoint_nov_to_feb' : ( 5, 8, True),
+                'temp_setpoint_feb_to_may' : ( 5, 8, True),
+                'temp_setpoint_may_to_aug' : ( 1, 8, True),
+                'temp_setpoint_aug_to_nov' : ( 5, 8, True),
 
                 'day_warm': True,
                 'day_warm_degrees' : 6, # Number of degrees to warm during the daytime.
