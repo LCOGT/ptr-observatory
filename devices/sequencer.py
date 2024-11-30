@@ -2150,6 +2150,19 @@ class Sequencer:
                     elif ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
                         deleteDirectories.append(directories[q])
                         deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
+                    # Check that there isn't empty directories lying around - 
+                    # this happens with theskyx
+                    # Check if the directory is empty
+                    if not os.listdir(directories[q]):
+                        # Remove the empty directory
+                        try:
+                            os.rmdir(directories[q])
+                            plog(f"The directory {directories[q]} was empty and has been removed.")
+                        except:
+                            pass
+                        
+                    # else:
+                    #     p(f"The directory {directories[q]} is not empty.")
                 plog ("These are the directories earmarked for  ")
                 plog ("Eternal destruction. And how old they are")
                 plog ("in weeks\n")
