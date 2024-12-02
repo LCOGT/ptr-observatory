@@ -1255,67 +1255,67 @@ class Camera:
 
         # Camera cooling setup
         # This is the config setpoint
-        
+
         if self.config["camera"][self.name]["settings"]['set_temp_setpoint_by_season']:
-            
+
             self.temp_setpoint_by_season=True
-            
+
             tempmonth = datetime.datetime.now().month
             tempday= datetime.datetime.now().day
-            
+
             if tempmonth == 12 or tempmonth == 1 or (tempmonth ==11 and tempday >15) or (tempmonth ==2 and tempday <=15):
                 self.setpoint = float(
                     self.config["camera"][self.name]["settings"]['temp_setpoint_nov_to_feb'][0])
                 self.day_warm = self.config["camera"][self.name]["settings"]['temp_setpoint_nov_to_feb'][2]
                 self.day_warm_degrees = float(
                     self.config["camera"][self.name]["settings"]['temp_setpoint_nov_to_feb'][1])
-            
+
             elif tempmonth == 3 or tempmonth == 4 or (tempmonth ==2 and tempday >15) or (tempmonth ==5 and tempday <=15):
                 self.setpoint = float(
                     self.config["camera"][self.name]["settings"]['temp_setpoint_feb_to_may'][0])
                 self.day_warm = self.config["camera"][self.name]["settings"]['temp_setpoint_feb_to_may'][2]
                 self.day_warm_degrees = float(
                     self.config["camera"][self.name]["settings"]['temp_setpoint_feb_to_may'][1])
-            
-            
+
+
             elif tempmonth == 6 or tempmonth == 7 or (tempmonth ==5 and tempday >15) or (tempmonth ==8 and tempday <=15):
-            
+
                 self.setpoint = float(
                     self.config["camera"][self.name]["settings"]['temp_setpoint_may_to_aug'][0])
                 self.day_warm = self.config["camera"][self.name]["settings"]['temp_setpoint_may_to_aug'][2]
                 self.day_warm_degrees = float(
-                    self.config["camera"][self.name]["settings"]['temp_setpoint_may_to_aug'][1])    
-            
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_may_to_aug'][1])
+
             elif tempmonth == 9 or tempmonth == 10 or (tempmonth ==8 and tempday >15) or (tempmonth ==11 and tempday <=15):
-            
+
                 self.setpoint = float(
                     self.config["camera"][self.name]["settings"]['temp_setpoint_aug_to_nov'][0])
                 self.day_warm = self.config["camera"][self.name]["settings"]['temp_setpoint_aug_to_nov'][2]
                 self.day_warm_degrees = float(
-                    self.config["camera"][self.name]["settings"]['temp_setpoint_aug_to_nov'][1])    
-            
-        
-            
+                    self.config["camera"][self.name]["settings"]['temp_setpoint_aug_to_nov'][1])
+
+
+
         else:
-            
-            self.temp_setpoint_by_season=False            
-            
+
+            self.temp_setpoint_by_season=False
+
             self.setpoint = float(
-                self.config["camera"][self.name]["settings"]["temp_setpoint"])         
-            
-            
+                self.config["camera"][self.name]["settings"]["temp_setpoint"])
+
+
             self.day_warm = float(
                 self.config["camera"][self.name]["settings"]['day_warm'])
             self.day_warm_degrees = float(
                 self.config["camera"][self.name]["settings"]['day_warm_degrees'])
-        
-        
-        
+
+
+
         # This setpoint can change if there is camera warming during the day etc.
         self.current_setpoint = self.setpoint
-        
+
         self._set_setpoint(self.setpoint)
-        
+
         try:
             self.temp_tolerance = float(
                 self.config["camera"][self.name]["settings"]["temp_setpoint_tolerance"])
@@ -2890,7 +2890,7 @@ class Camera:
         this_exposure_filter = copy.deepcopy( self.current_filter)
         plog ("THIS EXPOSURE FILTER: " + str(this_exposure_filter))
 
-        
+
         if g_dev["fil"].null_filterwheel == False:
             exposure_filter_offset = self.current_offset
         else:
@@ -2981,7 +2981,7 @@ class Camera:
                 Nsmartstack = 1
                 SmartStackID = 'no'
                 smartstackinfo = 'no'
-                
+
                 # Here is where we quantise the exposure time for short exposures
                 if incoming_exposure_time < 2:
                     exposure_snap_to_grid = [ 0.00004, 0.0004, 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0]
@@ -5327,6 +5327,8 @@ class Camera:
 # FLAT ACQUISITION SECTION
 
                 if frame_type[-4:] == "flat":
+                    current_camera_temperature, cur_humidity, cur_pressure, cur_pwm = (
+                        g_dev['cam']._temperature())
                     image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
                     if self.config["camera"][self.name]["settings"]['is_osc']:
                         temp_is_osc = True

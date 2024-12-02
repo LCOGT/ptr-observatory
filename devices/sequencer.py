@@ -426,15 +426,15 @@ class Sequencer:
     def collect_midnight_frame(self, time, image_type, count, stride, min_exposure=0, check_exposure=False):
         if check_exposure and min_exposure > time:
             return
-    
+
         plog(f"Expose {count * stride} 1x1 {time}s {image_type.replace('_', ' ')} frames.")
         req = {'time': time, 'script': 'True', 'image_type': image_type}
         opt = {'count': count, 'filter': 'dk'}
-    
+
         g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False,
                                     do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
         g_dev['obs'].request_scan_requests()
-    
+
         if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or (
             not (g_dev['events']['Astro Dark'] <= ephem.now() < g_dev['events']['End Astro Dark'])
         ):
@@ -928,47 +928,47 @@ class Sequencer:
                                 if (moondata.alt.deg < -15):
                                     # If the moon is way below the horizon
                                     if g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
-                                        
-                                        
+
+
                                         # When we are getting darks, we are collecting darks for the NEXT night's temperature
                                         # not tonights. So if tomrorow night the season changes and the camera temperature changes
-                                        # We need to have the bias/darks already.             
+                                        # We need to have the bias/darks already.
                                         if g_dev['cam'].temp_setpoint_by_season:
-                                            
+
                                             current_night_setpoint=copy.deepcopy(g_dev['cam'].setpoint)
-                                            
+
                                             tomorrow_night=datetime.datetime.now() +datetime.timedelta(days=1)
                                             tempmonth = tomorrow_night.month
                                             tempday= tomorrow_night.day
-                                            
+
                                             if tempmonth == 12 or tempmonth == 1 or (tempmonth ==11 and tempday >15) or (tempmonth ==2 and tempday <=15):
                                                 tommorow_night_setpoint=  float(
                                                     g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_nov_to_feb'][0])
-                                            
+
                                             elif tempmonth == 3 or tempmonth == 4 or (tempmonth ==2 and tempday >15) or (tempmonth ==5 and tempday <=15):
                                                 tommorow_night_setpoint=  float(
-                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_feb_to_may'][0])                
-                                            
+                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_feb_to_may'][0])
+
                                             elif tempmonth == 6 or tempmonth == 7 or (tempmonth ==5 and tempday >15) or (tempmonth ==8 and tempday <=15):
-                                            
+
                                                 tommorow_night_setpoint=  float(
                                                     g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_may_to_aug'][0])
-                                            
+
                                             elif tempmonth == 9 or tempmonth == 10 or (tempmonth ==8 and tempday >15) or (tempmonth ==11 and tempday <=15):
-                                            
+
                                                 tommorow_night_setpoint=  float(
                                                     g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_aug_to_nov'][0])
-                                            
+
                                             # Here change the setpoint tomorrow nights setpoint
                                             g_dev['cam'].current_setpoint = tommorow_night_setpoint
                                             g_dev['cam'].setpoint = tommorow_night_setpoint
                                             g_dev['cam']._set_setpoint(tommorow_night_setpoint)
-                                            
+
                                             # Need to trim th ecalibration directories of all files
                                             # Not within the tolerance limit from the setpoint
                                             darks_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/darks/'
                                             bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
-                                            
+
                                             # First check darks in root directory
                                             print ("ROOT DIRECTORY DARKS")
                                             for darkfile in glob(darks_path + '*.npy'):
@@ -979,7 +979,7 @@ class Sequencer:
                                                         os.remove(darkfile)
                                                     except:
                                                         pass
-                                            
+
                                             # Then check each of the darks folder
                                             for darkfolder in glob(darks_path + "*/"):
                                                 print (darkfolder)
@@ -991,7 +991,7 @@ class Sequencer:
                                                             os.remove(darkfile)
                                                         except:
                                                             pass
-                                            
+
                                             # NEED TO CHECK BIASES LATER!
                                             # First check darks in root directory
                                             print ("ROOT DIRECTORY BIASES")
@@ -1003,21 +1003,21 @@ class Sequencer:
                                                         os.remove(darkfile)
                                                     except:
                                                         pass
-                                            
-                                            
+
+
                                             if abs(tommorow_night_setpoint-current_night_setpoint) > 4:
                                                 plog("waiting an extra three minutes for camera to cool to different temperature")
                                                 time.sleep(180)
-                                        
+
                                         # If there are no biases, then don't check for lightleaks.
                                         # This catches a bias and dark refresh... manually or at the transition of seasons.
                                         bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
-                                        
+
                                         if len (glob(bias_path + '*.npy')) == 0:
                                             self.check_incoming_darks_for_light_leaks=False
                                         else:
                                             self.check_incoming_darks_for_light_leaks=True
-                                        
+
                                         if self.nightime_bias_counter < (self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect'] / 4):
                                             plog ("It is dark and the moon isn't up! Lets do a bias!")
                                             g_dev['mnt'].park_command({}, {})
@@ -1042,8 +1042,8 @@ class Sequencer:
                                             min_exposure = min(float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure']), float(self.config['camera']['camera_1_1']['settings']['min_exposure']))
                                             stride=1
                                             min_to_do=1
-                                            
-                                            
+
+
                                             # Define frames to collect
                                             frames_to_collect = [
                                                 (2, "twosec_exposure_dark", 5),
@@ -1070,14 +1070,14 @@ class Sequencer:
                                                 (0.0, "bias", min_to_do),
                                                 (dark_exp_time, "dark", 1),
                                             ]
-                                            
+
                                             # Collect frames
                                             for frame in frames_to_collect:
                                                 exposure_time, image_type, count_multiplier = frame[:3]
                                                 check_exposure = frame[3] if len(frame) > 3 else False
                                                 if not self.collect_midnight_frame(exposure_time, image_type, count_multiplier, stride, min_exposure, check_exposure):
                                                     break
-                                            
+
                                             if g_dev['cam'].temp_setpoint_by_season:
                                                 # Here change the setpoint back to tonight's setpoint
                                                 g_dev['cam'].current_setpoint = current_night_setpoint
@@ -1406,6 +1406,11 @@ class Sequencer:
 
 
                     exp_time =  float(exposure['exposure'])
+                    try:
+                        repeat_count = int(exposure['repeat'])
+                        if repeat_count < 1: repeat_count = 1
+                    except:
+                        repeat_count = 1
                     #  We should add a frame repeat count
                     imtype = exposure['imtype']
 
@@ -1627,7 +1632,7 @@ class Sequencer:
 
                             # Set up options for exposure and take exposure.
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'substack': substackswitch, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
-                            opt = {'count': 1, 'filter': filter_requested, \
+                            opt = {'count': repeat_count, 'filter': filter_requested, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane, 'zoom': zoom_factor}
                             plog('Seq Blk sent to camera:  ', req, opt)
 
@@ -1746,21 +1751,21 @@ class Sequencer:
         g_dev['obs'].flush_command_queue()
         self.total_sequencer_control=False
         return block_specification
-    
-    
+
+
     def collect_dark_frame(self, exposure_time, image_type, count, stride, min_to_do, dark_exp_time, cycle_time, ending):
         plog(f"Expose {count * stride} 1x1 {exposure_time}s exposure dark frames.")
         req = {'time': exposure_time, 'script': 'True', 'image_type': image_type}
         opt = {'count': count, 'filter': 'dk'}
-    
+
         # Ensure the mount is parked
         if not g_dev['obs'].mountless_operation:
             g_dev['mnt'].park_command({}, {})
-    
+
         # Trigger exposure
         g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system',
                                     no_AWS=False, do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
-    
+
         # Handle cancellation or timeout
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -1769,21 +1774,21 @@ class Sequencer:
         if ephem.now() + (dark_exp_time + cycle_time + 30) / 86400 > ending:
             self.bias_dark_latch = False
             return False
-    
+
         g_dev['obs'].request_scan_requests()
         return True
-    
+
     def collect_bias_frame(self, count, stride, min_to_do, dark_exp_time, cycle_time, ending):
         plog(f"Expose {count * stride} 1x1 bias frames.")
         req = {'time': 0.0, 'script': 'True', 'image_type': 'bias'}
         opt = {'count': min_to_do, 'filter': 'dk'}
-    
+
         if not g_dev['obs'].mountless_operation:
             g_dev['mnt'].park_command({}, {})
-    
+
         g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system',
                                     no_AWS=False, do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
-    
+
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
             self.bias_dark_latch = False
@@ -1791,7 +1796,7 @@ class Sequencer:
         if ephem.now() + (dark_exp_time + cycle_time + 30) / 86400 > ending:
             self.bias_dark_latch = False
             return False
-    
+
         g_dev['obs'].request_scan_requests()
         return True
 
@@ -1840,50 +1845,50 @@ class Sequencer:
             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
             # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.
-            min_exposure = min(float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure']),float(self.config['camera']['camera_1_1']['settings']['min_exposure']))           
-            
-            
+            min_exposure = min(float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure']),float(self.config['camera']['camera_1_1']['settings']['min_exposure']))
+
+
             ####
             # When we are getting darks, we are collecting darks for the NEXT night's temperature
             # not tonights. So if tomrorow night the season changes and the camera temperature changes
-            # We need to have the bias/darks already.             
+            # We need to have the bias/darks already.
             if g_dev['cam'].temp_setpoint_by_season:
-                
+
                 current_night_setpoint=copy.deepcopy(g_dev['cam'].setpoint)
-                
+
                 tomorrow_night=datetime.datetime.now() +datetime.timedelta(days=1)
                 tempmonth = tomorrow_night.month
                 tempday= tomorrow_night.day
-                
+
                 if tempmonth == 12 or tempmonth == 1 or (tempmonth ==11 and tempday >15) or (tempmonth ==2 and tempday <=15):
                     tommorow_night_setpoint=  float(
                         g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_nov_to_feb'][0])
-                
+
                 elif tempmonth == 3 or tempmonth == 4 or (tempmonth ==2 and tempday >15) or (tempmonth ==5 and tempday <=15):
                     tommorow_night_setpoint=  float(
-                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_feb_to_may'][0])                
-                
+                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_feb_to_may'][0])
+
                 elif tempmonth == 6 or tempmonth == 7 or (tempmonth ==5 and tempday >15) or (tempmonth ==8 and tempday <=15):
-                
+
                     tommorow_night_setpoint=  float(
                         g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_may_to_aug'][0])
-                
+
                 elif tempmonth == 9 or tempmonth == 10 or (tempmonth ==8 and tempday >15) or (tempmonth ==11 and tempday <=15):
-                
+
                     tommorow_night_setpoint=  float(
                         g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_aug_to_nov'][0])
-                
+
                 # Here change the setpoint tomorrow nights setpoint
                 g_dev['cam'].current_setpoint = tommorow_night_setpoint
                 g_dev['cam'].setpoint = tommorow_night_setpoint
                 g_dev['cam']._set_setpoint(tommorow_night_setpoint)
-                
-                
+
+
                 # Need to trim th ecalibration directories of all files
                 # Not within the tolerance limit from the setpoint
                 darks_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/darks/'
                 bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
-                
+
                 # First check darks in root directory
                 print ("ROOT DIRECTORY DARKS")
                 for darkfile in glob(darks_path + '*.npy'):
@@ -1894,7 +1899,7 @@ class Sequencer:
                             os.remove(darkfile)
                         except:
                             pass
-                
+
                 # Then check each of the darks folder
                 for darkfolder in glob(darks_path + "*/"):
                     print (darkfolder)
@@ -1906,7 +1911,7 @@ class Sequencer:
                                 os.remove(darkfile)
                             except:
                                 pass
-                
+
                 # NEED TO CHECK BIASES LATER!
                 # First check darks in root directory
                 print ("ROOT DIRECTORY BIASES")
@@ -1918,15 +1923,15 @@ class Sequencer:
                             os.remove(darkfile)
                         except:
                             pass
-                                
+
                 if abs(tommorow_night_setpoint-current_night_setpoint) > 4:
                     plog("waiting an extra three minutes for camera to cool to different temperature")
                     time.sleep(180)
-            
+
             # If there are no biases, then don't check for lightleaks.
             # This catches a bias and dark refresh... manually or at the transition of seasons.
             bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
-            
+
             if len (glob(bias_path + '*.npy')) == 0:
                 self.check_incoming_darks_for_light_leaks=False
             else:
@@ -2004,21 +2009,21 @@ class Sequencer:
                     (1.0, "onesec_exposure_dark", 5),
                     (1.5, "oneandahalfsec_exposure_dark", 5),
                 ]
-                
+
                 # Iterate over exposure settings
                 for exposure_time, image_type, count_multiplier in exposures:
                     if exposure_time >= min_exposure:
                         if not self.collect_dark_frame(exposure_time, image_type, count_multiplier, stride, min_to_do, dark_exp_time, cycle_time, ending):
                             break
-                
+
                 # Collect additional frames
                 if not self.collect_bias_frame(stride, stride, min_to_do, dark_exp_time, cycle_time, ending):
                     pass
-                
+
                 # Check for narrowband frame
                 if not g_dev["fil"].null_filterwheel:
                     self.collect_dark_frame(narrowband_ss_biasdark_exp_time, "narrowband_ss_biasdark", 2, stride, min_to_do, dark_exp_time, cycle_time, ending)
-                
+
                 # Final long-exposure dark frame
                 self.collect_dark_frame(dark_exp_time, "dark", 1, stride, min_to_do, dark_exp_time, cycle_time, ending)
 
@@ -2150,7 +2155,7 @@ class Sequencer:
                     elif ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
                         deleteDirectories.append(directories[q])
                         deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
-                    # Check that there isn't empty directories lying around - 
+                    # Check that there isn't empty directories lying around -
                     # this happens with theskyx
                     # Check if the directory is empty
                     if not os.listdir(directories[q]):
@@ -2160,7 +2165,7 @@ class Sequencer:
                             plog(f"The directory {directories[q]} was empty and has been removed.")
                         except:
                             pass
-                        
+
                     # else:
                     #     p(f"The directory {directories[q]} is not empty.")
                 plog ("These are the directories earmarked for  ")
@@ -2900,13 +2905,13 @@ class Sequencer:
 
             # There is no point creating biasdark exposures below the min_flat_exposure or min_exposure time aside from the scaled dark values.
             min_flat_exposure = min(float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure']),float(self.config['camera']['camera_1_1']['settings']['min_exposure']))
-            
+
             if min_flat_exposure <= 0.00004:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'fortymicroseconddarks/', 'fortymicrosecondBIASDARK','fortymicrosecond' ])
-            
+
             if min_flat_exposure <= 0.0004:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'fourhundredmicroseconddarks/', 'fourhundredmicrosecondBIASDARK','fourhundredmicrosecond' ])
-            
+
             if min_flat_exposure <= 0.0045:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'pointzerozerofourfivedarks/', 'pointzerozerofourfiveBIASDARK','pointzerozerofourfive' ])
 
