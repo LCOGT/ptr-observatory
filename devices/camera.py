@@ -4616,7 +4616,7 @@ class Camera:
                     # Then get ready for the next set of exposures by changing the filter and adjusting the focus
                     # Hopefully this occurs while the slew occurs
                     # If there is a block guard, there is a running block
-                    if g_dev['seq'].block_guard and not g_dev['seq'].focussing and not frame_type == 'pointing':
+                    if g_dev['seq'].block_guard and not g_dev['seq'].focussing and not frame_type == 'pointing' and not g_dev['seq'].currently_mosaicing:
                         # If this is the end of a smartstack set or it is a single shot then check the filter and change
                         if (Nsmartstack == 1 or (Nsmartstack == sskcounter+1)):
                             if not g_dev['seq'].block_next_filter_requested == 'None':
