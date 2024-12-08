@@ -3035,8 +3035,9 @@ class Camera:
                             pass
 
                     if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread:
-                        g_dev['obs'].check_platesolve_and_nudge()
-                        plog("Tel was just nudged after pier flip")
+                        if not  g_dev['obs'].auto_centering_off:
+                            g_dev['obs'].check_platesolve_and_nudge()
+                            plog("Tel was just nudged after pier flip")
 
                 self.tempStartupExposureTime = time.time()
 
@@ -3175,7 +3176,8 @@ class Camera:
                                     self.darkslide_state = 'Closed'
 
                             # Good spot to check if we need to nudge the telescope
-                            g_dev['obs'].check_platesolve_and_nudge()
+                            if not  g_dev['obs'].auto_centering_off:
+                                g_dev['obs'].check_platesolve_and_nudge()
                             g_dev['obs'].time_of_last_exposure = time.time()
 
                             observer_user_name = user_name
@@ -4455,7 +4457,8 @@ class Camera:
                                                     )
 
                                 elif g_dev['obs'].pointing_recentering_requested_by_platesolve_thread or g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
-                                    g_dev['obs'].check_platesolve_and_nudge()
+                                    if not  g_dev['obs'].auto_centering_off:
+                                        g_dev['obs'].check_platesolve_and_nudge()
 
                                 # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
                                 elif self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
@@ -4560,7 +4563,8 @@ class Camera:
                     # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
                     if not g_dev['obs'].mountless_operation:
                         if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread or g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
-                            g_dev['obs'].check_platesolve_and_nudge()
+                           if not  g_dev['obs'].auto_centering_off:
+                               g_dev['obs'].check_platesolve_and_nudge()
 
                         # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
                         elif self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:

@@ -500,14 +500,14 @@ site_config = {
             # highest value to consider as being in "good focus". Used to select last good focus value
             'maximum_good_focus_in_arcsecond': 3.0,
             'focuser_movement_settle_time': 3,
-            # F.9 setup
-            'reference':  4754,     #  20240820                         4943  Alternate solution
-            'ref_temp':   16.0,     #  Average for the fit                16
-            'temp_coeff': 2.9921,   #  What Excel says!  Odd though.    -8.2312   20240820
-            # Update when pinning reference
             # F4.9 setup
-            # 'reference': 5462.94, #5743,
-            # 'temp_coeff': -20.4541,  #  Meas   -12 c to 4C so nominal -4C
+            'reference':  5221.2,    #  20241204
+            'ref_temp':   7.5,       #  Average for the fit ~ 27.5 degrees wide +20 to -75
+            'temp_coeff': -24.974,   #  R^2 = 0.769
+
+            # F9 setup
+            # 'reference': unknown,
+            # 'temp_coeff': unknown,  #  Meas   -12 c to 4C so nominal -4C
             #  microns per degree of tube temperature
             'z_compression': 0.0,  # microns per degree of zenith distance
             'z_coef_date':  '20240820',
@@ -798,7 +798,7 @@ site_config = {
                 'transpose_fits': False,
                 'flipx_fits': False,
                 'flipy_fits': False,
-                'rotate180_fits': False,  # This also should be flipxy!
+                'rotate180_fits':True,  # This also should be flipxy!
                 'rotate90_fits': False,
                 'rotate270_fits': False,
                 'squash_on_x_axis': False,
