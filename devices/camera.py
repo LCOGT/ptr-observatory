@@ -2307,7 +2307,11 @@ class Camera:
         # Make blank synthetic image with a sky background
         synthetic_image = np.zeros([xpixelsize, ypixelsize])
         # Add in noise to background as well 
-        synthetic_image = synthetic_image + np.random.uniform(low=-15, high=15, size=(xpixelsize, ypixelsize)) + 100
+        #synthetic_image = synthetic_image + np.random.uniform(low=-15, high=15, size=(xpixelsize, ypixelsize)) + 100
+
+        synthetic_image = synthetic_image + np.random.normal(loc=100,
+                                       scale=5,
+                                       size=synthetic_image.shape)
 
         #Bullseye Star Shape
         modelstar = [
@@ -2332,7 +2336,7 @@ class Camera:
                     x = round(addingstar[1] -1)
                     y = round(addingstar[0] -1)
                     #peak = int(addingstar[2])
-                    peak = int(pow(10,-0.4 * (addingstar[2] -23))) /10
+                    peak = int(pow(10,-0.4 * (addingstar[2] -23)))
                     # Add star to numpy array as a slice
                     try:
                         synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
