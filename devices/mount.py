@@ -266,7 +266,7 @@ class Mount:
             #self.current_mount_sidereal = self.mount.SiderealTime
             self.current_mechanical_ra = self.mount.RightAscension
             self.current_mechanical_dec = self.mount.Declination
-            self.current_mechanical_sidereal = self.mount.SiderealTime
+            #self.current_mechanical_sidereal = self.mount.SiderealTime
         else:
         
             self.current_icrs_ra = 1.0  #this _icrs_ reference is used in saftey check..
@@ -274,7 +274,7 @@ class Mount:
             #self.current_mount_sidereal = 1.0
             self.current_mechanical_ra = 1.0
             self.current_mechanical_dec = 1.0
-            self.current_mechanical_sidereal = 1.0
+            #self.current_mechanical_sidereal = 1.0
         
         
         
@@ -1292,6 +1292,11 @@ class Mount:
                                 
                                 self.right_ascension_directly_from_mount = copy.deepcopy(self.slewtoRA)
                                 self.declination_directly_from_mount = copy.deepcopy(self.slewtoDEC)
+                                self.current_icrs_ra = copy.deepcopy(self.slewtoRA)  #this _icrs_ reference is used in saftey check..
+                                self.current_icrs_dec =  copy.deepcopy(self.slewtoDEC)
+                                #self.current_mount_sidereal = self.mount.SiderealTime
+                                self.current_mechanical_ra = copy.deepcopy(self.slewtoRA)
+                                self.current_mechanical_dec =  copy.deepcopy(self.slewtoDEC)
 
                             
                             self.mount_updates=self.mount_updates + 1  #A monotonic increasing integer counter
