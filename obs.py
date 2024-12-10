@@ -3599,10 +3599,23 @@ class Observatory:
                                     if not folder_path:
                                         return  # Skip unsupported file types
                                 
-                                    os.makedirs(folder_path, exist_ok=True)
+                                    
                                 
                                     tempexposure = temphduheader.get("EXPTIME", "")
                                     tempfilter = temphduheader.get("FILTER", "")
+                                    
+                                    #breakpoint()
+                                    # if it is a flat observation, it needs to go in a filtered directory
+                                    # 
+                                    if 'flat' in str(file_type):
+                                        if not os.path.exists(self.local_flat_folder):
+                                            os.makedirs(self.local_flat_folder, mode=0o777, exist_ok=True)
+                                        folder_path=folder_path+ str(tempfilter) + '/'
+                                    
+                                    if not os.path.exists(folder_path):
+                                        os.makedirs(folder_path, mode=0o777, exist_ok=True)
+                                    
+                                    
                                     file_suffix = f"_{slow_process[7]}_{tempexposure}_.npy" if "flat" not in file_type else f"_{slow_process[7]}_{tempfilter}_{tempexposure}_.npy"
                                     tempfilename = os.path.join(folder_path, slow_process[1].replace(".fits", file_suffix))
                                 
@@ -3616,6 +3629,8 @@ class Observatory:
                                 
                                 # Example usage
                                 tempfilename=process_file(slow_process, temphduheader, self.config)
+                                
+                                
 
                                 # Save the file as an uncompressed numpy binary
                                 temparray = np.array(

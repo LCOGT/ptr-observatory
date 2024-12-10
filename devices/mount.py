@@ -1145,7 +1145,24 @@ class Mount:
 
                             if self.request_find_home:
                                 self.request_find_home=False
-                                self.mount_update_wincom.FindHome()
+                                try:
+                                    self.mount_update_wincom.FindHome()
+                                except:
+                                    plog("Perhaps Mount cannot find home?")
+                                    plog(traceback.format_exc())
+                                    try:
+                                        plog("Mount is not capable of finding home. Slewing to home_alt and home_az from config")                                        
+                                        alt = float(self.settings["home_altitude"])
+                                        az = float(self.settings["home_azimuth"])                                        
+                                        #temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
+                                        altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
+                                        ra = altazskycoord.icrs.ra.deg /15
+                                        dec = altazskycoord.icrs.dec.deg                                        
+                                        self.mount_update_wincom.SlewToCoordinatesAsync(ra , dec)
+                                        self.currently_slewing=True
+                                        
+                                    except:
+                                        plog(traceback.format_exc())
 
                             self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
 
