@@ -499,7 +499,8 @@ if len(sources) >= 5:
 
 
     # If successful, then a file of the same name but ending in solved exists.
-    if os.path.exists(wslfilename):
+    if os.path.exists(wslfilename.replace('.fits','.wcs')):
+        #breakpoint()
         print ("IT EXISTS! WCS SUCCESSFUL!")
         wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
         # wcsheader[0].header['CRVAL1']/15
@@ -545,7 +546,7 @@ if len(sources) >= 5:
         os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
         
         # If successful, then a file of the same name but ending in solved exists.
-        if os.path.exists(wslfilename):
+        if os.path.exists(wslfilename.replace('.fits','.wcs')):
             print ("IT EXISTS! WCS SUCCESSFUL!")
             wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
             # wcsheader[0].header['CRVAL1']/15
@@ -967,7 +968,7 @@ if solve == 'error':
 
 
     # If successful, then a file of the same name but ending in solved exists.
-    if os.path.exists(wslfilename):
+    if os.path.exists(wslfilename.replace('.fits','.wcs')):
         print ("IT EXISTS! WCS SUCCESSFUL!")
         wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
         # wcsheader[0].header['CRVAL1']/15
