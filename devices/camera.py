@@ -2292,7 +2292,7 @@ class Camera:
         x_pixels = (ra_offset / pixel_scale).value + image_size[0] / 2
         y_pixels = (dec_offset / pixel_scale).value + image_size[1] / 2
         
-        # Combine x and y pixel locations
+        # Combine x and y pixel locations and fluxes
         pixel_positions = np.column_stack((x_pixels, y_pixels, np.asarray(star_positions)[:,2]))
         
         # Print results
@@ -2307,42 +2307,110 @@ class Camera:
         # Make blank synthetic image with a sky background
         synthetic_image = np.zeros([xpixelsize, ypixelsize])
         # Add in noise to background as well 
-        #synthetic_image = synthetic_image + np.random.uniform(low=-15, high=15, size=(xpixelsize, ypixelsize)) + 100
+        synthetic_image = synthetic_image + np.random.uniform(low=-15, high=15, size=(xpixelsize, ypixelsize)) + 100
 
-        synthetic_image = synthetic_image + np.random.normal(loc=100,
-                                       scale=5,
-                                       size=synthetic_image.shape)
+        # synthetic_image = synthetic_image + np.random.normal(loc=100,
+        #                                scale=5,
+        #                                size=synthetic_image.shape)
 
-        #Bullseye Star Shape
-        modelstar = [
-                    [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01],
-                    [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
-                    [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
-                    [ 0.2 , 0.4 , 0.8 , 1.2,  0.8, 0.4, 0.2],
-                    [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
-                    [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
-                    [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01]
+        # #Bullseye Star Shape
+        # modelstar = [
+        #             [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01],
+        #             [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
+        #             [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
+        #             [ 0.2 , 0.4 , 0.8 , 1.2,  0.8, 0.4, 0.2],
+        #             [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
+        #             [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
+        #             [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01]
 
-                    ]
+        #             ]
 
-        modelstar=np.array(modelstar)
+        # modelstar=np.array(modelstar)
 
-        # Add bullseye stars to blank image
-        for addingstar in pixel_positions:
+        # # Add bullseye stars to blank image
+        # for addingstar in pixel_positions:
             
-            if addingstar[0] > 50 and addingstar[0] < 2350:
-                if addingstar[1] > 50 and addingstar[1] < 2350:    
+        #     if addingstar[0] > 50 and addingstar[0] < 2350:
+        #         if addingstar[1] > 50 and addingstar[1] < 2350:    
             
-                    x = round(addingstar[1] -1)
-                    y = round(addingstar[0] -1)
-                    #peak = int(addingstar[2])
-                    peak = int(pow(10,-0.4 * (addingstar[2] -23)))
-                    # Add star to numpy array as a slice
+        #             x = round(addingstar[1] -1)
+        #             y = round(addingstar[0] -1)
+        #             #peak = int(addingstar[2])
+        #             peak = int(pow(10,-0.4 * (addingstar[2] -23)))
+        #             # Add star to numpy array as a slice
+        #             try:
+        #                 synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
+        #             except Exception as e:
+        #                 print (e)
+        # #breakpoint()
+        
+        
+        def create_gaussian_psf(fwhm, size=11):
+            """
+            Create a 2D Gaussian kernel with a given FWHM.
+            
+            Parameters:
+            - fwhm: Full Width at Half Maximum of the Gaussian PSF.
+            - size: Size of the kernel (should be large enough to capture most of the PSF).
+            
+            Returns:
+            - psf: 2D numpy array representing the Gaussian PSF.
+            """
+            sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))  # Convert FWHM to sigma
+            center = size // 2
+            y, x = np.mgrid[0:size, 0:size]
+            psf = np.exp(-((x - center)**2 + (y - center)**2) / (2 * sigma**2))
+            psf /= psf.sum()  # Normalize to ensure total flux is 1
+            return psf
+        
+        def add_star_with_psf(image_array, x, y, flux, psf):
+            """
+            Add a single star with a Gaussian PSF to the image array.
+            
+            Parameters:
+            - image_array: 2D numpy array representing the image.
+            - x, y: Pixel coordinates of the star.
+            - flux: Total flux of the star.
+            - psf: 2D numpy array representing the normalized PSF.
+            """
+            psf_size = psf.shape[0]
+            psf_center = psf_size // 2
+            x_start = max(0, x - psf_center)
+            x_end = min(image_array.shape[1], x + psf_center + 1)
+            y_start = max(0, y - psf_center)
+            y_end = min(image_array.shape[0], y + psf_center + 1)
+        
+            psf_x_start = psf_center - (x - x_start)
+            psf_x_end = psf_center + (x_end - x)
+            psf_y_start = psf_center - (y - y_start)
+            psf_y_end = psf_center + (y_end - y)
+        
+            # Add scaled PSF to the image
+            image_array[y_start:y_end, x_start:x_end] += flux * psf[
+                psf_y_start:psf_y_end, psf_x_start:psf_x_end
+            ]
+        
+        # Example usage
+        # image_array = np.zeros((100, 100))  # Initialize a 2D image array
+        # x_pixels = pixel_positions[:,0]   # x coordinates of stars
+        # y_pixels = pixel_positions[:,1]   # y coordinates of stars
+        # fluxes = pixel_positions[:,2]  # Flux values of the stars
+        
+        # Create the PSF kernel
+        fwhm = 5
+        psf = create_gaussian_psf(fwhm, size=21)
+        
+        # Add each star to the image
+        #for x, y, flux in zip(x_pixels, y_pixels, fluxes):
+        for starstat in pixel_positions:
+            if starstat[0] > 50 and starstat[0] < 2350:
+                if starstat[1] > 50 and starstat[1] < 2350:  
                     try:
-                        synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
-                    except Exception as e:
-                        print (e)
-        #breakpoint()
+                        add_star_with_psf(synthetic_image, int(starstat[0]), int( starstat[1]),  int(pow(10,-0.4 * (starstat[2] -23))), psf)
+                    except:
+                        plog(traceback.format_exc())
+                        breakpoint()
+        
         
         return synthetic_image
         
