@@ -2305,13 +2305,13 @@ class Camera:
         #shape = (xpixelsize, ypixelsize)
 
         # Make blank synthetic image with a sky background
-        synthetic_image = np.zeros([xpixelsize, ypixelsize])
+        synthetic_image = np.zeros([xpixelsize, ypixelsize]) + 100
         # Add in noise to background as well 
-        synthetic_image = synthetic_image + np.random.uniform(low=-15, high=15, size=(xpixelsize, ypixelsize)) + 100
+        #synthetic_image = synthetic_image + np.random.uniform(low=-15, high=15, size=(xpixelsize, ypixelsize)) + 100
 
-        # synthetic_image = synthetic_image + np.random.normal(loc=100,
-        #                                scale=5,
-        #                                size=synthetic_image.shape)
+        synthetic_image = synthetic_image + np.random.normal(loc=100,
+                                        scale=10,
+                                        size=synthetic_image.shape)
 
         # #Bullseye Star Shape
         # modelstar = [
