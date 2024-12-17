@@ -1084,8 +1084,21 @@ class Mount:
                                         time.sleep(0.2)
                                 except:
                                     plog ("mount thread camera wait failed.")
-
-                                self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
+                                try:
+                                    self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
+                                except:
+                                    plog(traceback.format_exc())
+                                    if self.theskyx:
+                                        
+                                        #if not self.mount_update_wincom.AtHome:
+                                        plog ("Occasionally theskyx clunks out when the scope isn't homed, so trying a home first")
+                                        try:
+                                            self.mount_update_wincom.FindHome()
+                                            self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
+                                        except:
+                                            plog ("failed the find home then slew")
+                                            plog(traceback.format_exc())
+                                        
                                 self.currently_slewing=True
 
                             # If we aren't slewing this update and we haven't
