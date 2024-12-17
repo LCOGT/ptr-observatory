@@ -67,28 +67,44 @@ class Focuser:
         g_dev["foc"] = self
         self.config = config["focuser"]["focuser1"]
         self.throw = int(config["focuser"]["focuser1"]["throw"])
-        win32com.client.pythoncom.CoInitialize()
-        self.focuser = win32com.client.Dispatch(driver)
+        
+        
+        # Set the dummy flag
+        if driver == 'dummy':
+            self.dummy=True
+        else:
+            self.dummy=False
+        
+        
+        if not self.dummy:
+            win32com.client.pythoncom.CoInitialize()
+            self.focuser = win32com.client.Dispatch(driver)
+        else:
+            self.focuser = 'dummy'
+            
         self.driver = driver
         if driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
             self.theskyx=True
         else:
             self.theskyx=False
 
-        try:
-            self.focuser.Connected = True
-        except:
+
+        if not self.dummy:
+
             try:
-                self.focuser.focConnect()
+                self.focuser.Connected = True
             except:
-                if self.focuser.Link == True:
-                    plog ("focuser doesn't have ASCOM Connected keyword, but reports a positive link")
-                else:
-                    try:
-                        self.focuser.Link = True
-                        plog ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
-                    except:
-                        plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
+                try:
+                    self.focuser.focConnect()
+                except:
+                    if self.focuser.Link == True:
+                        plog ("focuser doesn't have ASCOM Connected keyword, but reports a positive link")
+                    else:
+                        try:
+                            self.focuser.Link = True
+                            plog ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
+                        except:
+                            plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
 
         self.micron_to_steps = float(
             config["focuser"]["focuser1"]["unit_conversion"]
@@ -98,10 +114,14 @@ class Focuser:
         # Just to need to wait a little bit for PWI3 to boot up, otherwise it sends temperatures that are absolute zero (-273)
         if driver == 'ASCOM.PWI3.Focuser':
             time.sleep(4)
-        if not self.theskyx:
-            self.current_focus_position=self.focuser.Position * self.steps_to_micron
+        
+        if not self.dummy:
+            if not self.theskyx:
+                self.current_focus_position=self.focuser.Position * self.steps_to_micron
+            else:
+                self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
         else:
-            self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
+            self.current_focus_position=2000
 
         self.focuser_update_period=15   #WER changed from 3 20231214
         self.focuser_updates=0
@@ -113,16 +133,19 @@ class Focuser:
         self.focuser_update_thread=threading.Thread(target=self.focuser_update_thread)
         self.focuser_update_thread.start()
         self.focuser_message = "-"
-        if self.theskyx:
-            plog(
-                "Focuser connected, at:  ",
-                round(self.focuser.focPosition() * self.steps_to_micron, 1),
-            )
+        if not self.dummy:
+            if self.theskyx:
+                plog(
+                    "Focuser connected, at:  ",
+                    round(self.focuser.focPosition() * self.steps_to_micron, 1),
+                )
+            else:
+                plog(
+                    "Focuser connected, at:  ",
+                    round(self.focuser.Position * self.steps_to_micron, 1),
+                )
         else:
-            plog(
-                "Focuser connected, at:  ",
-                round(self.focuser.Position * self.steps_to_micron, 1),
-            )
+            plog ("Dummy focusser connected.")
         self.reference = None
         self.last_known_focus = None
         self.last_source = None
@@ -146,10 +169,14 @@ class Focuser:
         self.focus_commissioned=False
 
         self.focuser_is_moving=False
-        if self.theskyx:
-            self.current_focus_temperature=self.focuser.focTemperature
+        
+        if not self.dummy:
+            if self.theskyx:
+                self.current_focus_temperature=self.focuser.focTemperature
+            else:
+                self.current_focus_temperature=self.focuser.Temperature
         else:
-            self.current_focus_temperature=self.focuser.Temperature
+            self.current_focus_temperature=10.0
 
         self.previous_focus_temperature = copy.deepcopy(self.current_focus_temperature)
         self.set_initial_best_guess_for_focus()
@@ -165,22 +192,23 @@ class Focuser:
     # Note this is a thread!
     def focuser_update_thread(self):
 
-        win32com.client.pythoncom.CoInitialize()
-        self.focuser_update_wincom = win32com.client.Dispatch(self.driver)
-        try:
-            self.focuser_update_wincom.Connected = True
-        except:
+        if not self.dummy:
+            win32com.client.pythoncom.CoInitialize()
+            self.focuser_update_wincom = win32com.client.Dispatch(self.driver)
             try:
-                self.focuser_update_wincom.focConnect()
+                self.focuser_update_wincom.Connected = True
             except:
-                if self.focuser_update_wincom.Link == True:
-                    plog ("focuser doesn't have ASCOM Connected keyword, but reports a positive link")
-                else:
-                    try:
-                        self.focuser_update_wincom.Link = True
-                        plog ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
-                    except:
-                        plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
+                try:
+                    self.focuser_update_wincom.focConnect()
+                except:
+                    if self.focuser_update_wincom.Link == True:
+                        plog ("focuser doesn't have ASCOM Connected keyword, but reports a positive link")
+                    else:
+                        try:
+                            self.focuser_update_wincom.Link = True
+                            plog ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
+                        except:
+                            plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
 
 
         # This stopping mechanism allows for threads to close cleanly.
@@ -197,38 +225,43 @@ class Focuser:
                 self.focuser_is_moving=True
 
                 try:
-                     if self.theskyx:
-                        requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
-                        difference_in_position=self.focuser_update_wincom.focPosition() - requestedPosition
-                        absdifference_in_position=abs(self.focuser_update_wincom.focPosition() - requestedPosition)
-                        print (difference_in_position)
-                        print (absdifference_in_position)
-                        if difference_in_position < 0 :
-                            self.focuser_update_wincom.focMoveOut(absdifference_in_position)
+                    if not self.dummy:
+                    
+                        if self.theskyx:
+                           requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
+                           difference_in_position=self.focuser_update_wincom.focPosition() - requestedPosition
+                           absdifference_in_position=abs(self.focuser_update_wincom.focPosition() - requestedPosition)
+                           print (difference_in_position)
+                           print (absdifference_in_position)
+                           if difference_in_position < 0 :
+                               self.focuser_update_wincom.focMoveOut(absdifference_in_position)
+                           else:
+                               self.focuser_update_wincom.focMoveIn(absdifference_in_position)
+                           print (self.focuser_update_wincom.focPosition())
+    
+                           time.sleep(self.config['focuser_movement_settle_time'])
+                           self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
+    
+    
                         else:
-                            self.focuser_update_wincom.focMoveIn(absdifference_in_position)
-                        print (self.focuser_update_wincom.focPosition())
-
-                        time.sleep(self.config['focuser_movement_settle_time'])
-                        self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
-
-
-                     else:
-                        self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))
-                        time.sleep(0.1)
-                        movement_report=0
-
-                        while self.focuser_update_wincom.IsMoving:
-                            if movement_report==0:
-                                plog("Focuser is moving.....")
-                                movement_report=1
-                            self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
-
-                            time.sleep(0.3)
-
-                        time.sleep(self.config['focuser_movement_settle_time'])
-
-                        self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
+                           self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))
+                           time.sleep(0.1)
+                           movement_report=0
+    
+                           while self.focuser_update_wincom.IsMoving:
+                               if movement_report==0:
+                                   plog("Focuser is moving.....")
+                                   movement_report=1
+                               self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
+    
+                               time.sleep(0.3)
+    
+                           time.sleep(self.config['focuser_movement_settle_time'])
+    
+                           self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
+                    else:
+                        # Currently just a fummy focuser report
+                        self.current_focus_position=2000
 
                 except:
                     plog("AF Guarded move failed.")
@@ -247,24 +280,29 @@ class Focuser:
 
             elif self.focuser_update_timer < time.time() - self.focuser_update_period:
 
-                try:
-                    if self.theskyx:
-                        self.current_focus_temperature=self.focuser_update_wincom.focTemperature
+                
+                if not self.dummy: 
+                    try:
+                        if self.theskyx:
+                            self.current_focus_temperature=self.focuser_update_wincom.focTemperature
+                        else:
+                            try:
+                                self.current_focus_temperature=self.focuser_update_wincom.Temperature
+                            except:
+                                self.current_focus_temperature = None
+                                plog("Focus temp set to None as couldn't read temperature. Thats ok.")
+                    except:
+                        plog ("glitch in getting focus temperature")
+                        plog (traceback.format_exc())
+    
+                    if not self.theskyx:
+                        self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
+    
                     else:
-                        try:
-                            self.current_focus_temperature=self.focuser_update_wincom.Temperature
-                        except:
-                            self.current_focus_temperature = None
-                            plog("Focus temp set to None as couldn't read temperature. Thats ok.")
-                except:
-                    plog ("glitch in getting focus temperature")
-                    plog (traceback.format_exc())
-
-                if not self.theskyx:
-                    self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
-
+                        self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
                 else:
-                    self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
+                    # NOTHING DOING FOR DUMMY FOCUSSING AT THIS STAGE
+                    pass
 
                 self.focuser_update_timer = time.time()
             else:

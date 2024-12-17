@@ -30,6 +30,12 @@ class FilterWheel:
         self.config = config["filter_wheel"]
         self.previous_filter_name='none'
 
+        # Set the dummy flag
+        if driver == 'dummy':
+            self.dummy=True
+        else:
+            self.dummy=False
+
         self.driver = driver
         # Load filter offset shelf if avaiable
         self.filter_offsets={}
@@ -60,7 +66,16 @@ class FilterWheel:
             self.filterwheel_update_thread=threading.Thread(target=self.filterwheel_update_thread)
             self.filterwheel_update_thread.start()
 
-            if driver == "LCO.dual":
+            
+            
+            if driver =='dummy':
+                self.maxim = False
+                self.theskyx = False
+                self.ascom = False
+                self.dual = False
+                self.custom = False
+                self.dummy=True
+            elif driver == "LCO.dual":
                 # home the wheel and get responses, which indicates it is connected.
                 # set current_0 and _1 to [0, 0] position to default of w/L filter.
                 r0 = requests.get(self.ip + "/filterwheel/0/position", timeout=5)
@@ -243,7 +258,7 @@ class FilterWheel:
     # Note this is a thread!
     def filterwheel_update_thread(self):
 
-        if not self.driver == "LCO.dual":
+        if not self.driver == "LCO.dual" and not self.dummy:
             win32com.client.pythoncom.CoInitialize()
 
             self.filterwheel_update_wincom = win32com.client.Dispatch(self.driver)
@@ -337,6 +352,10 @@ class FilterWheel:
                         elif self.theskyx:
 
                             self.filterwheel_update_wincom.FilterIndexZeroBased = self.filter_data[self.filt_pointer][1][0]
+
+                        elif self.dummy:
+
+                            plog ("Yup. Dummy changed the filter")
 
                         else:
                             try:
