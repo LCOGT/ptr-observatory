@@ -1117,6 +1117,7 @@ class Mount:
                         self.mount_updates=self.mount_updates + 1
                         self.mount_update_timer=time.time()
                     else:
+
                         if not self.dummy:
                             #  Starting here ae tha vari0us mount commands and reads...
                             try:
@@ -1159,6 +1160,7 @@ class Mount:
                                     self.slewtoAsyncRequested=False
     
                                     # Don't slew while exposing!
+
                                     try:
                                         while g_dev['cam'].shutter_open:
                                             plog ("mount thread waiting for camera")
