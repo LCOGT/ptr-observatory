@@ -689,15 +689,15 @@ try:
     hdu.header['SHUTTYPE'] = (selfconfig["camera"][selfname]["settings"]["shutter_type"],
                               'Type of shutter')
     hdu.header["GAIN"] = (
-        camera_known_gain,
+        round(camera_known_gain,3),
         "[e-/ADU] Pixel gain",
     )
     hdu.header["ORIGGAIN"] = (
-        camera_known_gain,
+        round(camera_known_gain,3),
         "[e-/ADU] Original Pixel gain",
     )
     hdu.header["RDNOISE"] = (
-        camera_known_readnoise,
+        round(camera_known_readnoise,3),
         "[e-/pixel] Read noise",
     )
     hdu.header["OSCCAM"] = (is_osc, "Is OSC camera")
