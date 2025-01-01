@@ -5050,9 +5050,10 @@ class Camera:
                         g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
                     # Really need to thresh the image
-                    int_array_flattened=outputimg.astype(int).ravel()
-                    int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-                    unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                    # int_array_flattened=outputimg.astype(int).ravel()
+                    # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+                    # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                    unique,counts=np.unique(outputimg.ravel()[~np.isnan(outputimg.ravel())].astype(int), return_counts=True)
                     m=counts.argmax()
                     imageMode=unique[m]
                     histogramdata=np.column_stack([unique,counts]).astype(np.int32)

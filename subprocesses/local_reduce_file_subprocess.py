@@ -48,9 +48,10 @@ hdureduced.header["DATE"] = (
 hdureduced.data = hdureduced.data.astype("float32")
 
 
-int_array_flattened=hdureduced.data.astype(int).ravel()
-int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+# int_array_flattened=hdureduced.data.astype(int).ravel()
+# int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+# unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+unique,counts=np.unique(hdureduced.ravel()[~np.isnan(hdureduced.ravel())].astype(int), return_counts=True)
 m=counts.argmax()
 imageMode=unique[m]
 
