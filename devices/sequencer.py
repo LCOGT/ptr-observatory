@@ -1546,7 +1546,8 @@ class Sequencer:
                         self.total_sequencer_control=False
                         return block_specification
 
-                    for displacement in offset:
+                    for displacement in offset:     #NB it would be convenient for odd panel mosaics
+                                                    #if we start in the center and then wrap around.
                         if self.currently_mosaicing:
                             plog ("Moving to new position of mosaic")
                             plog (displacement)
@@ -1577,42 +1578,42 @@ class Sequencer:
                                     g_dev['seq'].kill_and_reboot_theskyx(new_ra,new_dec)
 
                             self.wait_for_slew(wait_after_slew=False)
+                            # try:
+                            # if result == 'blockend':
+                            #     plog ("End of Block, exiting project block.")
+                            #     self.blockend = None
+                            #     self.currently_mosaicing = False
+                            #     self.total_sequencer_control=False
+                            #     return block_specification
 
-                            if result == 'blockend':
-                                plog ("End of Block, exiting project block.")
-                                self.blockend = None
-                                self.currently_mosaicing = False
-                                self.total_sequencer_control=False
-                                return block_specification
+                            # if result == 'calendarend':
+                            #     plog ("Calendar Item containing block removed from calendar")
+                            #     plog ("Site bailing out of running project")
+                            #     self.blockend = None
+                            #     self.currently_mosaicing = False
+                            #     self.total_sequencer_control=False
+                            #     return block_specification
 
-                            if result == 'calendarend':
-                                plog ("Calendar Item containing block removed from calendar")
-                                plog ("Site bailing out of running project")
-                                self.blockend = None
-                                self.currently_mosaicing = False
-                                self.total_sequencer_control=False
-                                return block_specification
+                            # if result == 'roofshut':
+                            #     plog ("Roof Shut, Site bailing out of Project")
+                            #     self.blockend = None
+                            #     self.currently_mosaicing = False
+                            #     self.total_sequencer_control=False
+                            #     return block_specification
 
-                            if result == 'roofshut':
-                                plog ("Roof Shut, Site bailing out of Project")
-                                self.blockend = None
-                                self.currently_mosaicing = False
-                                self.total_sequencer_control=False
-                                return block_specification
+                            # if result == 'outsideofnighttime':
+                            #     plog ("Outside of Night Time. Site bailing out of Project")
+                            #     self.blockend = None
+                            #     self.currently_mosaicing = False
+                            #     self.total_sequencer_control=False
+                            #     return block_specification
 
-                            if result == 'outsideofnighttime':
-                                plog ("Outside of Night Time. Site bailing out of Project")
-                                self.blockend = None
-                                self.currently_mosaicing = False
-                                self.total_sequencer_control=False
-                                return block_specification
-
-                            if g_dev["obs"].stop_all_activity:
-                                plog('stop_all_activity cancelling out of Project')
-                                self.blockend = None
-                                self.currently_mosaicing = False
-                                self.total_sequencer_control=False
-                                return block_specification
+                            # if g_dev["obs"].stop_all_activity:
+                            #     plog('stop_all_activity cancelling out of Project')
+                            #     self.blockend = None
+                            #     self.currently_mosaicing = False
+                            #     self.total_sequencer_control=False
+                            #     return block_specification
 
                         if imtype in ['light']:
 

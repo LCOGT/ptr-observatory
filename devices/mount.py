@@ -213,24 +213,24 @@ class Mount:
         self.settings = settings
 
         win32com.client.pythoncom.CoInitialize()
-        
+
         # Set the dummy flag
         if driver == 'dummy':
             self.dummy=True
         else:
             self.dummy=False
-        
-        
+
+
         if not self.dummy:
-            
+
             self.mount = win32com.client.Dispatch(driver)
-    
+
             try:
                 self.mount.Connected = True
             except:
                 self.mount_busy=False
                 plog(traceback.format_exc())
-        
+
         else:
             self.mount='dummy'
 
@@ -268,18 +268,18 @@ class Mount:
             self.current_mechanical_dec = self.mount.Declination
             #self.current_mechanical_sidereal = self.mount.SiderealTime
         else:
-        
+
             self.current_icrs_ra = 1.0  #this _icrs_ reference is used in saftey check..
             self.current_icrs_dec = 1.0
             #self.current_mount_sidereal = 1.0
             self.current_mechanical_ra = 1.0
             self.current_mechanical_dec = 1.0
             #self.current_mechanical_sidereal = 1.0
-        
-        
-        
-        
-        
+
+
+
+
+
         try:
 
             self.ICRS2000 = config["mount"]["mount1"]["settings"]['ICRS2000_input_coords']
@@ -439,7 +439,7 @@ class Mount:
                 plog ("CANNOT Set RightAscensionRate")
                 self.CanSetRightAscensionRate=False
             self.RightAscensionRate = self.mount.RightAscensionRate
-    
+
             if self.mount.CanSetDeclinationRate:
                 self.CanSetDeclinationRate = True
                 plog ("Can Set DeclinationRate")
@@ -450,7 +450,7 @@ class Mount:
         else:
             self.CanSetRightAscensionRate=False
             self.CanSetDeclinationRate = False
-            
+
 
         #IMPORTANT Ap1600 Info.
 
@@ -459,18 +459,18 @@ class Mount:
                   #The rates display on the AP GpTo ASCOM driver (tall skinny window)
                   #is correct and shows the input asec/sec values.
 
-        if not self.dummy: 
-            self.EquatorialSystem = self.mount.EquatorialSystem    
+        if not self.dummy:
+            self.EquatorialSystem = self.mount.EquatorialSystem
             self.previous_pier_side = self.mount.sideOfPier
             self.pier_side_last_check = self.mount.sideOfPier
-            
+
         else:
-            
-            self.EquatorialSystem = 'J2000'   
+
+            self.EquatorialSystem = 'J2000'
             self.previous_pier_side = 1
             self.pier_side_last_check = 1
-            
-            
+
+
         self.request_new_pierside=False
         self.request_new_pierside_ra=1.0   #Why these values?
         self.request_new_pierside_dec=1.0
@@ -491,7 +491,7 @@ class Mount:
         if not self.dummy:
             self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
             self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
-    
+
             #DIRECT MOUNT POSITION READ #3
             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
             self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
@@ -502,7 +502,7 @@ class Mount:
         else:
             self.rapid_park_indicator=True
             self.rapid_pier_indicator=1
-    
+
             #DIRECT MOUNT POSITION READ #3
             self.right_ascension_directly_from_mount = 1.0
             self.declination_directly_from_mount = 1.0
@@ -522,7 +522,7 @@ class Mount:
             self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
         else:
             self.current_tracking_state=True
-            
+
         self.request_tracking_on = False
         self.request_tracking_off = False
 
@@ -531,7 +531,7 @@ class Mount:
 
         if not self.dummy:
             self.CanFindHome = self.mount.CanFindHome
-        else:            
+        else:
             self.CanFindHome = False
 
         # This is a latch to prevent multiple commands being sent to latch at the same time.
@@ -542,7 +542,7 @@ class Mount:
         tempunparked=False
         # if mount is parked, temporarily unpark it quickly to test pierside functions.
         time.sleep(2)
-        
+
         if not self.dummy:
             if self.mount.AtPark:
                 self.mount.Unpark()
@@ -1053,7 +1053,7 @@ class Mount:
 
         if not self.dummy:
             win32com.client.pythoncom.CoInitialize()
-    
+
             self.mount_update_wincom = win32com.client.Dispatch(self.driver)
             try:
                 self.mount_update_wincom.Connected = True
@@ -1086,7 +1086,7 @@ class Mount:
 
                 if self.currently_slewing or (((self.mount_update_timer < time.time() - self.mount_update_period) and not self.mount_update_paused)):# or (no(self.currently_slewing) and not self.mount_update_paused):
 
-                    
+
                     if not self.dummy:
                         self.currently_slewing= self.mount_update_wincom.Slewing
                     else:
@@ -1121,23 +1121,23 @@ class Mount:
                         if not self.dummy:
                             #  Starting here ae tha vari0us mount commands and reads...
                             try:
-    
+
                                 if self.can_sync_mount:
                                     if self.sync_mount_requested:
                                         self.sync_mount_requested=False
                                         #breakpoint()
                                         self.mount_update_wincom.SyncToCoordinates(self.syncToRA,self.syncToDEC)
-    
+
                                 if self.unpark_requested:
                                     self.unpark_requested=False
                                     self.mount_update_wincom.Unpark()
                                     self.rapid_park_indicator=False
-    
+
                                 if self.park_requested:
                                     self.park_requested=False
                                     self.mount_update_wincom.Park()
                                     self.rapid_park_indicator=True
-    
+
                                 if self.find_home_requested:
                                     self.find_home_requested=False
                                     if self.mount_update_wincom.AtHome:
@@ -1146,19 +1146,19 @@ class Mount:
                                         g_dev['obs'].time_of_last_slew=time.time()
                                         if self.mount_update_wincom.AtPark:
                                             self.mount_update_wincom.Unpark()
-    
+
                                         while self.mount_update_wincom.Slewing:
                                             plog("waiting for slew before homing")
                                             time.sleep(0.2)
                                         self.mount_update_wincom.FindHome()
-    
+
                                 if self.abort_slew_requested:
                                     self.abort_slew_requested=False
                                     self.mount_update_wincom.AbortSlew()
-    
+
                                 if self.slewtoAsyncRequested:
                                     self.slewtoAsyncRequested=False
-    
+
                                     # Don't slew while exposing!
 
                                     try:
@@ -1167,19 +1167,19 @@ class Mount:
                                             time.sleep(0.2)
                                     except:
                                         plog ("mount thread camera wait failed.")
-    
+
                                     self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                                     self.currently_slewing=True
-    
+
                                 # If we aren't slewing this update and we haven't
                                 # updated the position for half a minute, update the position.
                                 elif (time.time() - self.inverse_icrs_and_rates_timer) > 30:
-    
+
                                     if self.model_on:
-    
+
                                         self.inverse_icrs_ra, self.inverse_icrs_dec, self.inverse_ra_vel, self.inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
                                         self.inverse_icrs_and_rates_timer=time.time()
-    
+
                                         if self.CanSetRightAscensionRate:
                                             self.request_set_RightAscensionRate=False
                                             try:
@@ -1189,7 +1189,7 @@ class Mount:
                                                 pass  #This faults if mount is parked.
                                             self.RightAscensionRate=self.inverse_ra_vel
                                             #plog ("new RA rate set: " +str(self.RightAscensionRate))
-    
+
                                         if self.CanSetDeclinationRate:
                                             self.request_set_DeclinationRate=False
                                             try:
@@ -1198,34 +1198,34 @@ class Mount:
                                             except:
                                                 pass  #This faults if mount is parked.
                                             self.DeclinationRate=self.inverse_dec_vel
-    
+
                                 if self.request_tracking_on:
                                     self.request_tracking_on = False
                                     if  self.can_set_tracking:
                                         self.mount_update_wincom.Tracking = True
-    
+
                                 if self.request_tracking_off:
                                     self.request_tracking_off = False
                                     if  self.can_set_tracking:
                                         self.mount_update_wincom.Tracking = False
-    
+
                                 if self.request_new_pierside:
                                     self.request_new_pierside=False
                                     if self.can_report_destination_pierside:
                                         self.new_pierside=self.mount_update_wincom.DestinationSideOfPier(self.request_new_pierside_ra, self.request_new_pierside_dec)
-    
+
                                 if self.request_set_RightAscensionRate and self.CanSetRightAscensionRate:
                                     self.request_set_RightAscensionRate=False
                                     self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
                                     self.RightAscensionRate=self.request_new_RightAscensionRate
                                     #plog ("new RA rate set: " +str(self.RightAscensionRate))
-    
+
                                 if self.request_set_DeclinationRate and self.CanSetDeclinationRate:
                                     self.request_set_DeclinationRate=False
                                     self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
                                     self.DeclinationRate=self.request_new_DeclinationRate
                                     #plog ("new DEC rate set: " +str(self.DeclinationRate))
-    
+
                                 if self.request_find_home:
                                     self.request_find_home=False
                                     try:
@@ -1234,21 +1234,21 @@ class Mount:
                                         plog("Perhaps Mount cannot find home?")
                                         plog(traceback.format_exc())
                                         try:
-                                            plog("Mount is not capable of finding home. Slewing to home_alt and home_az from config")                                        
+                                            plog("Mount is not capable of finding home. Slewing to home_alt and home_az from config")
                                             alt = float(self.settings["home_altitude"])
-                                            az = float(self.settings["home_azimuth"])                                        
+                                            az = float(self.settings["home_azimuth"])
                                             #temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
                                             altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
                                             ra = altazskycoord.icrs.ra.deg /15
-                                            dec = altazskycoord.icrs.dec.deg                                        
+                                            dec = altazskycoord.icrs.dec.deg
                                             self.mount_update_wincom.SlewToCoordinatesAsync(ra , dec)
                                             self.currently_slewing=True
-                                            
+
                                         except:
                                             plog(traceback.format_exc())
-    
+
                                 self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
-    
+
                                 if not self.rapid_park_indicator:
                                     if self.can_report_pierside:
                                         self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
@@ -1261,22 +1261,22 @@ class Mount:
                                             plog ("missing pier_side_last_check variable probs")
                                             plog(traceback.format_exc())
                                         g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
-    
+
                                 #DIRECT MOUNT POSITION READ #5
                                 self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                                 self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
                                 self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
                                 self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
-                                
+
                             except:
                                 plog ("Issue in normal mount thread")
                                 plog(traceback.format_exc())
                             self.mount_updates=self.mount_updates + 1
                             self.mount_update_timer=time.time()
-                            
+
                         else:
                             #print ("mount dummy loop")
-                            
+
                             if self.slewtoAsyncRequested:
                                 self.slewtoAsyncRequested=False
 
@@ -1289,9 +1289,9 @@ class Mount:
                                 #     plog ("mount thread camera wait failed.")
 
                                 #self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-                                
+
                                 #self.currently_slewing=True
-                                
+
                                 self.right_ascension_directly_from_mount = copy.deepcopy(self.slewtoRA)
                                 self.declination_directly_from_mount = copy.deepcopy(self.slewtoDEC)
                                 self.current_icrs_ra = copy.deepcopy(self.slewtoRA)  #this _icrs_ reference is used in saftey check..
@@ -1300,10 +1300,10 @@ class Mount:
                                 self.current_mechanical_ra = copy.deepcopy(self.slewtoRA)
                                 self.current_mechanical_dec =  copy.deepcopy(self.slewtoDEC)
 
-                            
+
                             self.mount_updates=self.mount_updates + 1  #A monotonic increasing integer counter
                             self.mount_update_timer=time.time()
-                        
+
 
                 else:
                     if not self.currently_slewing:
@@ -1672,7 +1672,8 @@ class Mount:
                         image_x = req['image_y']
                         # And the current pixel scale.  Note however the Ra and DEc come from the displayed image header
 
-                        pixscale=float(req['header_pixscale'])  # asec/pixel
+                        #pixscale=  0.5283 ## asec/pixel  BIG TEMP HACK!
+                        pixscale = float(req['header_pixscale'])
                         pixscale_hours=(pixscale/60/60) / 15  # hrs/pixel ~ 10e-6
                         pixscale_degrees=(pixscale/60/60)   # deg/pix  ~ 1.5e-4
                         # Calculate the RA and Dec of the pointing
