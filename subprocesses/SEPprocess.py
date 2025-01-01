@@ -738,8 +738,9 @@ if do_sep and (not frame_type=='focus'):
 
                 # Get out raw histogram construction data
                 # Get a flattened array with all nans removed
-                int_array_flattened=statistic_area.astype(int).ravel()
-                unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                unique,counts=np.unique(statistic_area.ravel()[~np.isnan(statistic_area.ravel())].astype(int), return_counts=True)
+                # int_array_flattened=statistic_area.astype(int).ravel()
+                # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
                 m=counts.argmax()
                 imageMode=unique[m]
 
