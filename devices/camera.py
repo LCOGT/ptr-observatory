@@ -483,6 +483,7 @@ def pnp_out(cam_id):
     print("cam   - %s" % cam_id.decode('utf-8'))
 
 # MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
+# WER - It is mission critical. Do not disturb!
 
 
 def init_camera_param(cam_id):
@@ -588,7 +589,7 @@ def multiprocess_fast_gaussian_photometry(package):
 
         (cvalue, cx, cy, radprofile, pixscale) = package
 
-        # Reduce data down to make faster solvinging
+        # Reduce data down to make faster solving
         upperbin = math.floor(max(radprofile[:, 0]))
         lowerbin = math.ceil(min(radprofile[:, 0]))
         # Only need a quarter of an arcsecond bin.
@@ -792,14 +793,14 @@ class Camera:
 
         self.name = name
         self.driver = driver
-        
-        
+
+
         # Set the dummy flag
         if driver == 'dummy':
             self.dummy=True
         else:
             self.dummy=False
-        
+
         g_dev[name + "_cam_retry_driver"] = driver
         g_dev[name + "_cam_retry_name"] = name
         g_dev[name + "_cam_retry_config"] = config
@@ -814,14 +815,14 @@ class Camera:
         if not self.dummy:
             win32com.client.pythoncom.CoInitialize()
             plog(driver, name)
-    
+
             if not driver == "QHYCCD_Direct_Control":
                 self.camera = win32com.client.Dispatch(driver)
             else:
                 self.camera = None
         else:
             self.camera = None
-            
+
         # This is needed for TheSkyx (and maybe future programs) where the
         self.async_exposure_lock = False
         # exposure has to be called from a separate thread and then waited
@@ -1176,8 +1177,12 @@ class Camera:
 
             qhycam.camera_params[qhycam_id]['mem_len'] = qhycam.so.GetQHYCCDMemLength(
                 qhycam.camera_params[qhycam_id]['handle'])
+            c_w = qhycam.camera_params[qhycam_id]['chip_width'].value
+            c_h = qhycam.camera_params[qhycam_id]['chip_height'].value
             i_w = qhycam.camera_params[qhycam_id]['image_width'].value
             i_h = qhycam.camera_params[qhycam_id]['image_height'].value
+            o_w = c_w - i_w
+            o_h = c_h - i_h
 
             qhycam.camera_params[qhycam_id]['prev_img_data'] = (
                 c_uint16 * int(qhycam.camera_params[qhycam_id]['mem_len'] / 2))()
@@ -1185,7 +1190,9 @@ class Camera:
             success = qhycam.QHYCCD_ERROR
 
             qhycam.so.SetQHYCCDResolution(qhycam.camera_params[qhycam_id]['handle'], c_uint32(0), c_uint32(0), c_uint32(i_w),
-                                          c_uint32(i_h))
+                                           c_uint32(i_h))
+            #qhycam.so.SetQHYCCDResolution(qhycam.camera_params[qhycam_id]['handle'], c_uint32(0), c_uint32(0), c_uint32(c_w),
+            #                              c_uint32(c_h))
             image_width_byref = c_uint32()
             image_height_byref = c_uint32()
             bits_per_pixel_byref = c_uint32()
@@ -1229,7 +1236,7 @@ class Camera:
             self.qhydirect = True
 
             # Initialise Camera Size here
-            self.imagesize_x = int(i_h)
+            self.imagesize_x = int(i_h)   #20250101  Was i_h   WER
             self.imagesize_y = int(i_w)
 
         elif driver == 'maxim':
@@ -1263,7 +1270,7 @@ class Camera:
 
             plog("Control is via Maxim camera interface, not ASCOM.")
             plog("Please note telescope is NOT connected to Maxim.")
-        
+
         elif driver == 'dummy':
             # NB NB NB Considerputting this up higher.
             plog("Maxim camera is initializing.")
@@ -1443,10 +1450,10 @@ class Camera:
                     if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) + '.bak'):
                         os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
                                   'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name) + '.bak')
-    
+
                 except:
                     plog(traceback.format_exc())
-    
+
 
         """
         TheSkyX runs on a file mode approach to images rather
@@ -2228,17 +2235,17 @@ class Camera:
     def _dummy_imageavailable(self):
         return True
 
-    def _dummy_getImageArray(self):      
-        
-        
+    def _dummy_getImageArray(self):
+
+
         ra=g_dev['mnt'].right_ascension_directly_from_mount * 15
         dec=g_dev['mnt'].declination_directly_from_mount
-        
+
         cutout_size = 30 / 60  # Convert 30 arcminutes to degrees
 
         # Create a SkyCoord object for the center
         center = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg))
-        
+
         # Query APASS catalog from Vizier
         Vizier.ROW_LIMIT = -1  # Remove row limit to get all results
         catalogs = Vizier.query_region(
@@ -2246,7 +2253,7 @@ class Camera:
             radius=cutout_size * u.deg,
             catalog="II/336"  # APASS DR9 catalog ID in Vizier
         )
-        
+
         # Check if data is available
         if "II/336/apass9" in catalogs.keys():
             apass_data = catalogs["II/336/apass9"]
@@ -2255,58 +2262,58 @@ class Camera:
             #print(stars)
         else:
             print("No data found in the APASS catalog for the given region.")
-            
-        
-        
+
+
+
         # Parameters
         image_size = (2400, 2400)  # Image size (width, height)
         pixel_scale = 0.75  # Pixel scale in arcseconds/pixel
         ra_center = ra  # RA of the image center in degrees
         dec_center = dec   # Dec of the image center in degrees
-        
+
         # # List of RA and Dec positions of stars
         # star_positions = [
         #     (180.01, 0.01),  # Example: RA=180.01, Dec=0.01
         #     (179.99, -0.01), # Example: RA=179.99, Dec=-0.01
         #     # Add more positions as needed
         # ]
-        
+
         star_positions=[]
         for star in stars:
             if '-' not in str(star[2]):
                 star_positions.append((star[0],star[1],star[2]))
-                
-        
-        
+
+
+
         # Convert star positions to SkyCoord
         center_coord = SkyCoord(ra=ra_center, dec=dec_center, unit=(u.deg, u.deg))
         star_coords = SkyCoord(ra=[pos[0] for pos in star_positions],
                                dec=[pos[1] for pos in star_positions],
                                unit=(u.deg, u.deg))
-        
+
         # Calculate offsets in arcseconds
         ra_offset = (star_coords.ra - center_coord.ra).to(u.arcsec)
         dec_offset = (star_coords.dec - center_coord.dec).to(u.arcsec)
-        
+
         # Convert offsets to pixels
         x_pixels = (ra_offset / pixel_scale).value + image_size[0] / 2
         y_pixels = (dec_offset / pixel_scale).value + image_size[1] / 2
-        
+
         # Combine x and y pixel locations and fluxes
         pixel_positions = np.column_stack((x_pixels, y_pixels, np.asarray(star_positions)[:,2]))
-        
+
         # Print results
         print("Star positions in pixel coordinates (x, y):")
         print(pixel_positions)
-        
-        
+
+
         xpixelsize = 2400
         ypixelsize = 2400
         #shape = (xpixelsize, ypixelsize)
 
         # Make blank synthetic image with a sky background
         synthetic_image = np.zeros([xpixelsize, ypixelsize]) + 100
-        # Add in noise to background as well 
+        # Add in noise to background as well
         #synthetic_image = synthetic_image + np.random.uniform(low=-15, high=15, size=(xpixelsize, ypixelsize)) + 100
 
         synthetic_image = synthetic_image + np.random.normal(loc=100,
@@ -2329,10 +2336,10 @@ class Camera:
 
         # # Add bullseye stars to blank image
         # for addingstar in pixel_positions:
-            
+
         #     if addingstar[0] > 50 and addingstar[0] < 2350:
-        #         if addingstar[1] > 50 and addingstar[1] < 2350:    
-            
+        #         if addingstar[1] > 50 and addingstar[1] < 2350:
+
         #             x = round(addingstar[1] -1)
         #             y = round(addingstar[0] -1)
         #             #peak = int(addingstar[2])
@@ -2343,16 +2350,16 @@ class Camera:
         #             except Exception as e:
         #                 print (e)
         # #breakpoint()
-        
-        
+
+
         def create_gaussian_psf(fwhm, size=11):
             """
             Create a 2D Gaussian kernel with a given FWHM.
-            
+
             Parameters:
             - fwhm: Full Width at Half Maximum of the Gaussian PSF.
             - size: Size of the kernel (should be large enough to capture most of the PSF).
-            
+
             Returns:
             - psf: 2D numpy array representing the Gaussian PSF.
             """
@@ -2362,11 +2369,11 @@ class Camera:
             psf = np.exp(-((x - center)**2 + (y - center)**2) / (2 * sigma**2))
             psf /= psf.sum()  # Normalize to ensure total flux is 1
             return psf
-        
+
         def add_star_with_psf(image_array, x, y, flux, psf):
             """
             Add a single star with a Gaussian PSF to the image array.
-            
+
             Parameters:
             - image_array: 2D numpy array representing the image.
             - x, y: Pixel coordinates of the star.
@@ -2379,41 +2386,41 @@ class Camera:
             x_end = min(image_array.shape[1], x + psf_center + 1)
             y_start = max(0, y - psf_center)
             y_end = min(image_array.shape[0], y + psf_center + 1)
-        
+
             psf_x_start = psf_center - (x - x_start)
             psf_x_end = psf_center + (x_end - x)
             psf_y_start = psf_center - (y - y_start)
             psf_y_end = psf_center + (y_end - y)
-        
+
             # Add scaled PSF to the image
             image_array[y_start:y_end, x_start:x_end] += flux * psf[
                 psf_y_start:psf_y_end, psf_x_start:psf_x_end
             ]
-        
+
         # Example usage
         # image_array = np.zeros((100, 100))  # Initialize a 2D image array
         # x_pixels = pixel_positions[:,0]   # x coordinates of stars
         # y_pixels = pixel_positions[:,1]   # y coordinates of stars
         # fluxes = pixel_positions[:,2]  # Flux values of the stars
-        
+
         # Create the PSF kernel
         fwhm = 5
         psf = create_gaussian_psf(fwhm, size=21)
-        
+
         # Add each star to the image
         #for x, y, flux in zip(x_pixels, y_pixels, fluxes):
         for starstat in pixel_positions:
             if starstat[0] > 50 and starstat[0] < 2350:
-                if starstat[1] > 50 and starstat[1] < 2350:  
+                if starstat[1] > 50 and starstat[1] < 2350:
                     try:
                         add_star_with_psf(synthetic_image, int(starstat[0]), int( starstat[1]),  int(pow(10,-0.4 * (starstat[2] -23))), psf)
                     except:
                         plog(traceback.format_exc())
                         breakpoint()
-        
-        
+
+
         return synthetic_image
-        
+
         #return np.random.randint(0, 65536, size=(2400, 2400), dtype=np.uint16)
 
 
@@ -4966,9 +4973,9 @@ class Camera:
 
                             if True:
                                height, width = outputimg.shape
-                               patch = outputimg[int(0.35*height):int(0.65*height), int(0.35*width):int(0.65*width)]
-                               print("Cam line 4502: Imm. after readout; 20% central image patch:  ", np.median(patch))
-
+                               patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
+                               print(">>>>  20% central image patch, std:  ", np.median(patch), round(np.std(patch), 2))
+                               print(width, height)
                         except Exception as e:
 
                             if self.theskyx:

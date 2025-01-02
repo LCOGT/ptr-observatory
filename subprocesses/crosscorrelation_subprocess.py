@@ -15,13 +15,14 @@ import os
 import copy
 import bottleneck as bn
 #from astropy.stats import sigma_clip
+from joblib import Parallel, delayed
 
 payload=pickle.load(sys.stdin.buffer)
 #payload=pickle.load(open('crosscorrelprocess.pickle','rb'))
 
 def deviation_from_surroundings(data, window_size=20, weight_type="gaussian"):
     """
-    Computes the deviation of each entry from its surrounding ±window_size pixels, 
+    Computes the deviation of each entry from its surrounding ±window_size pixels,
     weighted more heavily to nearby pixels.
 
     Parameters:
@@ -53,27 +54,90 @@ def deviation_from_surroundings(data, window_size=20, weight_type="gaussian"):
 
     return deviations
 
-def sigma_clip_mad(data, sigma=2.5, maxiters=10):
+def sigma_clip_mad_chunk(data_chunk, sigma=2.5, maxiters=10):
     """
-    Perform sigma clipping using MAD as a robust standard deviation estimate.
-    
+    Perform sigma clipping on a chunk of data using MAD as a robust standard deviation estimate.
+    """
+    if data_chunk.size == 0:
+        return data_chunk
+
+    clipped_data = data_chunk.copy()
+    mad_scale = 1.4826  # Scaling factor for MAD to approximate standard deviation
+
+    for iter in range(maxiters):
+        median = bn.nanmedian(clipped_data)
+
+        if iter < (maxiters - 1):
+            std = bn.nanstd(clipped_data)
+        else:
+            mad = bn.nanmedian(np.abs(clipped_data - median))
+            std = mad * mad_scale
+
+        mask = np.abs(clipped_data - median) > sigma * std
+
+        if not np.any(mask):
+            break
+
+        clipped_data[mask] = np.nan
+
+    return clipped_data
+
+def sigma_clip_mad_parallel(data, sigma=2.5, maxiters=10, n_jobs=-1, chunk_size=None):
+    """
+    Perform sigma clipping using MAD in parallel.
+
     Parameters:
         data (numpy.ndarray): Input array.
         sigma (float): Sigma threshold for clipping.
         maxiters (int): Maximum number of iterations.
-    
+        n_jobs (int): Number of parallel jobs (-1 for all CPUs).
+        chunk_size (int): Size of each chunk for processing.
+
+    Returns:
+        numpy.ndarray: Array with values outside the sigma range replaced by np.nan.
+    """
+    if data.size == 0:
+        return data  # Handle empty input
+
+    if chunk_size is None or chunk_size > len(data):
+        chunk_size = max(1, len(data) // (n_jobs * 4))
+
+    # Split data into chunks
+    chunks = [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
+
+    # Process each chunk in parallel with error handling
+    try:
+        results = Parallel(n_jobs=n_jobs)(delayed(sigma_clip_mad_chunk)(chunk, sigma, maxiters) for chunk in chunks)
+    except Exception as e:
+        raise RuntimeError(f"Error during parallel processing: {e}")
+
+    if not results:
+        raise ValueError("No results were returned from the parallel processing.")
+
+    # Concatenate results
+    return np.concatenate(results)
+
+def sigma_clip_mad(data, sigma=2.5, maxiters=10):
+    """
+    Perform sigma clipping using MAD as a robust standard deviation estimate.
+
+    Parameters:
+        data (numpy.ndarray): Input array.
+        sigma (float): Sigma threshold for clipping.
+        maxiters (int): Maximum number of iterations.
+
     Returns:
         numpy.ndarray: Array with values outside the sigma range replaced by np.nan.
     """
     clipped_data = data.copy()  # Copy the data to avoid modifying the original array
-    
+
     for iter in range(maxiters):
 
         if iter < (maxiters-1):
             # Compute the mean and standard deviation, ignoring NaN values
             median = bn.nanmedian(clipped_data)
             std = bn.nanstd(clipped_data)
-            
+
             # Identify the mask of outliers
             mask = np.abs(clipped_data - median) > sigma * std
         else:
@@ -82,17 +146,17 @@ def sigma_clip_mad(data, sigma=2.5, maxiters=10):
             # Compute the MAD and scale it to approximate standard deviation
             mad = bn.nanmedian(np.abs(clipped_data - median))
             mad_std = mad * 1.4826
-            
+
             # Identify the mask of outliers
             mask = np.abs(clipped_data - median) > sigma * mad_std
-        
+
         # If no more values are being clipped, break the loop
         if not np.any(mask):
             break
-        
+
         # Replace outliers with np.nan
         clipped_data[mask] = np.nan
-    
+
     return clipped_data
 
 def linear_interpolate(arr):
@@ -104,32 +168,32 @@ def linear_interpolate(arr):
 def debanding (bandeddata):
 
     # Store the current nans as a mask to reapply later
-    nan_mask=copy.deepcopy(np.isnan(bandeddata))    
+    nan_mask=copy.deepcopy(np.isnan(bandeddata))
 
     ysize=bandeddata.shape[1]
 
-    sigma_clipped_array=copy.deepcopy(bandeddata)    
-    sigma_clipped_array = sigma_clip_mad(sigma_clipped_array, sigma=2.5, maxiters=4)
-    
+    sigma_clipped_array=copy.deepcopy(bandeddata)
+    sigma_clipped_array = sigma_clip_mad_parallel(sigma_clipped_array, sigma=2.5, maxiters=4)
+
     # Do rows
-    rows_median = bn.nanmedian(sigma_clipped_array,axis=1)    
-    rows_deviations=deviation_from_surroundings(rows_median, window_size=20, weight_type="gaussian")    
-    
+    rows_median = bn.nanmedian(sigma_clipped_array,axis=1)
+    rows_deviations=deviation_from_surroundings(rows_median, window_size=20, weight_type="gaussian")
+
     #remove nans
     rows_deviations=linear_interpolate(rows_deviations)
 
     row_debanded_image=bandeddata-np.tile(rows_deviations[:,None],(1,ysize))
     row_debanded_image= np.subtract(bandeddata,rows_deviations[:,None])
-    
+
     # Then run this on columns
-    sigma_clipped_array=copy.deepcopy(row_debanded_image)
-    sigma_clipped_array = sigma_clip_mad(sigma_clipped_array, sigma=2.5, maxiters=4)
-    columns_median = bn.nanmedian(sigma_clipped_array,axis=0)        
+    # sigma_clipped_array=copy.deepcopy(row_debanded_image)
+    # sigma_clipped_array = sigma_clip_mad(sigma_clipped_array, sigma=2.5, maxiters=4)
+    columns_median = bn.nanmedian(sigma_clipped_array,axis=0)
     columns_deviations=deviation_from_surroundings(columns_median, window_size=20, weight_type="gaussian")
-    
+
     #remove nans
     columns_deviations=linear_interpolate(columns_deviations)
-    
+
     both_debanded_image= row_debanded_image-columns_deviations[None,:]
 
     #Reapply the original nans after debanding
@@ -174,20 +238,20 @@ while (breaker != 0):
                                         if not (imageMode-counter-9) in zeroValueArray[:,0]:
                                             if not (imageMode-counter-10) in zeroValueArray[:,0]:
                                                 if not (imageMode-counter-11) in zeroValueArray[:,0]:
-                                                    if not (imageMode-counter-12) in zeroValueArray[:,0]:                                                        
+                                                    if not (imageMode-counter-12) in zeroValueArray[:,0]:
                                                         if not (imageMode-counter-13) in zeroValueArray[:,0]:
                                                             if not (imageMode-counter-14) in zeroValueArray[:,0]:
                                                                 if not (imageMode-counter-15) in zeroValueArray[:,0]:
-                                                                    if not (imageMode-counter-16) in zeroValueArray[:,0]: 
+                                                                    if not (imageMode-counter-16) in zeroValueArray[:,0]:
                                                                         zeroValue=(imageMode-counter)
                                                                         breaker =0
-                                                        
+
 substackimage[substackimage < zeroValue] = np.nan
 
 substackimage = debanding(substackimage)
 
 edge_crop=100
-xoff, yoff = cross_correlation_shifts(block_reduce(reference_image[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean), block_reduce(substackimage[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean),zeromean=False)  
+xoff, yoff = cross_correlation_shifts(block_reduce(reference_image[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean), block_reduce(substackimage[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean),zeromean=False)
 imageshift=[round(-yoff*3),round(-xoff*3)]
 
 if imageshift[0] > 100 or imageshift[1] > 100:
@@ -220,6 +284,6 @@ try:
         substackimage=np.roll(substackimage, imageshiftabs*imageshiftsign, axis=1)
 except:
     print(traceback.format_exc())
-    
+
 np.save( temporary_substack_directory + output_filename +'temp', substackimage )
 os.rename(temporary_substack_directory + output_filename +'temp.npy' ,temporary_substack_directory + output_filename)

@@ -26,29 +26,29 @@ import subprocess
 import traceback
 #from image_registration import cross_correlation_shifts
 #from astropy.stats import sigma_clip
-
+from joblib import Parallel, delayed
 
 def sigma_clip_mad(data, sigma=2.5, maxiters=10):
     """
     Perform sigma clipping using MAD as a robust standard deviation estimate.
-    
+
     Parameters:
         data (numpy.ndarray): Input array.
         sigma (float): Sigma threshold for clipping.
         maxiters (int): Maximum number of iterations.
-    
+
     Returns:
         numpy.ndarray: Array with values outside the sigma range replaced by np.nan.
     """
     clipped_data = data.copy()  # Copy the data to avoid modifying the original array
-    
+
     for iter in range(maxiters):
 
         if iter < (maxiters-1):
             # Compute the mean and standard deviation, ignoring NaN values
             median = bn.nanmedian(clipped_data)
             std = bn.nanstd(clipped_data)
-            
+
             # Identify the mask of outliers
             mask = np.abs(clipped_data - median) > sigma * std
         else:
@@ -57,18 +57,82 @@ def sigma_clip_mad(data, sigma=2.5, maxiters=10):
             # Compute the MAD and scale it to approximate standard deviation
             mad = bn.nanmedian(np.abs(clipped_data - median))
             mad_std = mad * 1.4826
-            
+
             # Identify the mask of outliers
             mask = np.abs(clipped_data - median) > sigma * mad_std
-        
+
         # If no more values are being clipped, break the loop
         if not np.any(mask):
             break
-        
+
         # Replace outliers with np.nan
         clipped_data[mask] = np.nan
-    
+
     return clipped_data
+
+
+def sigma_clip_mad_chunk(data_chunk, sigma=2.5, maxiters=10):
+    """
+    Perform sigma clipping on a chunk of data using MAD as a robust standard deviation estimate.
+    """
+    if data_chunk.size == 0:
+        return data_chunk
+
+    clipped_data = data_chunk.copy()
+    mad_scale = 1.4826  # Scaling factor for MAD to approximate standard deviation
+
+    for iter in range(maxiters):
+        median = bn.nanmedian(clipped_data)
+
+        if iter < (maxiters - 1):
+            std = bn.nanstd(clipped_data)
+        else:
+            mad = bn.nanmedian(np.abs(clipped_data - median))
+            std = mad * mad_scale
+
+        mask = np.abs(clipped_data - median) > sigma * std
+
+        if not np.any(mask):
+            break
+
+        clipped_data[mask] = np.nan
+
+    return clipped_data
+
+def sigma_clip_mad_parallel(data, sigma=2.5, maxiters=10, n_jobs=-1, chunk_size=None):
+    """
+    Perform sigma clipping using MAD in parallel.
+
+    Parameters:
+        data (numpy.ndarray): Input array.
+        sigma (float): Sigma threshold for clipping.
+        maxiters (int): Maximum number of iterations.
+        n_jobs (int): Number of parallel jobs (-1 for all CPUs).
+        chunk_size (int): Size of each chunk for processing.
+
+    Returns:
+        numpy.ndarray: Array with values outside the sigma range replaced by np.nan.
+    """
+    if data.size == 0:
+        return data  # Handle empty input
+
+    if chunk_size is None or chunk_size > len(data):
+        chunk_size = max(1, len(data) // (n_jobs * 4))
+
+    # Split data into chunks
+    chunks = [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
+
+    # Process each chunk in parallel with error handling
+    try:
+        results = Parallel(n_jobs=n_jobs)(delayed(sigma_clip_mad_chunk)(chunk, sigma, maxiters) for chunk in chunks)
+    except Exception as e:
+        raise RuntimeError(f"Error during parallel processing: {e}")
+
+    if not results:
+        raise ValueError("No results were returned from the parallel processing.")
+
+    # Concatenate results
+    return np.concatenate(results)
 
 
 def linear_interpolate(arr):
@@ -79,7 +143,7 @@ def linear_interpolate(arr):
 
 def deviation_from_surroundings(data, window_size=20, weight_type="gaussian"):
     """
-    Computes the deviation of each entry from its surrounding ±window_size pixels, 
+    Computes the deviation of each entry from its surrounding ±window_size pixels,
     weighted more heavily to nearby pixels.
 
     Parameters:
@@ -114,32 +178,32 @@ def deviation_from_surroundings(data, window_size=20, weight_type="gaussian"):
 def debanding (bandeddata):
 
     # Store the current nans as a mask to reapply later
-    nan_mask=copy.deepcopy(np.isnan(bandeddata))    
+    nan_mask=copy.deepcopy(np.isnan(bandeddata))
 
     ysize=bandeddata.shape[1]
 
-    sigma_clipped_array=copy.deepcopy(bandeddata)    
-    sigma_clipped_array = sigma_clip_mad(sigma_clipped_array, sigma=2.5, maxiters=4)
-    
+    sigma_clipped_array=copy.deepcopy(bandeddata)
+    sigma_clipped_array = sigma_clip_mad_parallel(sigma_clipped_array, sigma=2.5, maxiters=4)
+
     # Do rows
-    rows_median = bn.nanmedian(sigma_clipped_array,axis=1)    
-    rows_deviations=deviation_from_surroundings(rows_median, window_size=20, weight_type="gaussian")    
-    
+    rows_median = bn.nanmedian(sigma_clipped_array,axis=1)
+    rows_deviations=deviation_from_surroundings(rows_median, window_size=20, weight_type="gaussian")
+
     #remove nans
     rows_deviations=linear_interpolate(rows_deviations)
 
     row_debanded_image=bandeddata-np.tile(rows_deviations[:,None],(1,ysize))
     row_debanded_image= np.subtract(bandeddata,rows_deviations[:,None])
-    
+
     # Then run this on columns
-    sigma_clipped_array=copy.deepcopy(row_debanded_image)
-    sigma_clipped_array = sigma_clip_mad(sigma_clipped_array, sigma=2.5, maxiters=4)
-    columns_median = bn.nanmedian(sigma_clipped_array,axis=0)        
+    # sigma_clipped_array=copy.deepcopy(row_debanded_image)
+    # sigma_clipped_array = sigma_clip_mad(sigma_clipped_array, sigma=2.5, maxiters=4)
+    columns_median = bn.nanmedian(sigma_clipped_array,axis=0)
     columns_deviations=deviation_from_surroundings(columns_median, window_size=20, weight_type="gaussian")
-    
+
     #remove nans
     columns_deviations=linear_interpolate(columns_deviations)
-    
+
     both_debanded_image= row_debanded_image-columns_deviations[None,:]
 
     #Reapply the original nans after debanding
@@ -420,7 +484,7 @@ if substack:
 # We don't actually send absolutely raw frames to s3 or the PIPE anymore
 # As it adds unnecessary costs to s3 (multiple downloads) and is really sorta unnecessary just in general for the PIPE
 # But we still dump out the absolutely raw frame for telops at the site.
-# So this holds onto the original frame until the very end. 
+# So this holds onto the original frame until the very end.
 absolutely_raw_frame=copy.deepcopy(img)
 
 obsid_path = str(selfconfig["archive_path"] + '/' + obsname + '/').replace('//','/')
@@ -483,13 +547,13 @@ try:
             img.astype('float32')
         )
     del img
-    
+
     selfnative_bin = selfconfig["camera"][selfname]["settings"]["native_bin"]
 
     broadband_ss_biasdark_exp_time = selfconfig['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
     narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * selfconfig['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
     dark_exp_time = selfconfig['camera']['camera_1_1']['settings']['dark_exposure']
-    
+
     #ALL images are calibrated at the site.... WHY WOULD YOU NOT?
     #The cost is largely I/O and to do that on multiple computers at multiple times
     #Is a large bottleneck and cost in time and, in s3, $
@@ -500,14 +564,14 @@ try:
             timetakenquickdark=time.time()
             try:
                 if smartstackid == 'no':
-                    
+
                     do_bias_also=False
-                    
-                    
+
+
                     # Variable to sort out an intermediate dark when between two scalable darks.
                     fraction_through_range=0
-                    
-                    # If exactly the right exposure time, use the biasdark that exists                    
+
+                    # If exactly the right exposure time, use the biasdark that exists
                     if exposure_time == 0.00004:
                         hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'fortymicrosecondBIASDARK_master_bin1.npy'))
                     elif exposure_time == 0.0004:
@@ -550,7 +614,7 @@ try:
                         hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.npy'))
                     elif exposure_time == narrowband_ss_biasdark_exp_time:
                         hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.npy'))
-                    elif exposure_time < 0.5:                        
+                    elif exposure_time < 0.5:
                         hdu.data=hdu.data-np.load(localcalibmastersdirectory + tempfrontcalib + 'halfsecondDARK_master_bin1.npy')#np.load(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
                         do_bias_also=True
                     elif exposure_time < 2.0:
@@ -606,7 +670,7 @@ try:
         # If using a scaled dark remove the bias as well
         if do_bias_also:
             hdu.data = hdu.data - np.load(localcalibmastersdirectory + tempfrontcalib + 'BIAS_master_bin1.npy') #g_dev['cam'].biasFiles[str(1)]
-        
+
 
 
         # Quick flat flat frame
@@ -621,19 +685,21 @@ try:
 
         except Exception as e:
             print("Bad Pixel Masking light frame failed: ", e)
-    
-    
+
+
+
+
     # DITTO HERE, this is a routine that rejects very low pixel counts
     # Based on expectations that the sky distribution drops to zero to the left of the mode value
     # Without doing it here, we end up doing it twice... we need to do it here anyway for local smartstacks
-    # So we should just do it at site and save the PIPE some time. 
+    # So we should just do it at site and save the PIPE some time.
     # Really need to thresh the image
     googtime=time.time()
-    
-    
+
+
     unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(int), return_counts=True)
-    
-    
+
+
     # int_array_flattened=hdu.data.astype(int).ravel()
     # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
     # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
@@ -672,87 +738,14 @@ try:
 
     print ("Zero Threshing Image: " +str(time.time()-googtime))
 
+    hdu.data = debanding(hdu.data)
 
     googtime=time.time()
+##########################################
 
-    #Check there are no nans in the image upon receipt
-    # This is necessary as nans aren't interpolated in the main thread.
-    # Fast next-door-neighbour in-fill algorithm
-    #num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
-    x_size=hdu.data.shape[0]
-    y_size=hdu.data.shape[1]
-    # this is actually faster than np.nanmean
-    #imageMode=bn.nanmedian(hdusmalldata)
 
-    #np.divide(np.nansum(hdusmalldata),(x_size*y_size)-num_of_nans)
-    #imageMode=imageMode
-    #breakpoint()
-    # while num_of_nans > 0:
-    #     # List the coordinates that are nan in the array
-    #
-    nan_coords=np.argwhere(np.isnan(hdu.data))
 
-    # For each coordinate try and find a non-nan-neighbour and steal its value
-    for nancoord in nan_coords:
-        x_nancoord=nancoord[0]
-        y_nancoord=nancoord[1]
-        done=False
 
-        # Because edge pixels can tend to form in big clumps
-        # Masking the array just with the mean at the edges
-        # makes this MUCH faster to no visible effect for humans.
-        # Also removes overscan
-        if x_nancoord < 100:
-            hdu.data[x_nancoord,y_nancoord]=imageMode
-            done=True
-        elif x_nancoord > (x_size-100):
-            hdu.data[x_nancoord,y_nancoord]=imageMode
-
-            done=True
-        elif y_nancoord < 100:
-            hdu.data[x_nancoord,y_nancoord]=imageMode
-
-            done=True
-        elif y_nancoord > (y_size-100):
-            hdu.data[x_nancoord,y_nancoord]=imageMode
-            done=True
-
-        # left
-        if not done:
-            if x_nancoord != 0:
-                value_here=hdu.data[x_nancoord-1,y_nancoord]
-                if not np.isnan(value_here):
-                    hdu.data[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # right
-        if not done:
-            if x_nancoord != (x_size-1):
-                value_here=hdu.data[x_nancoord+1,y_nancoord]
-                if not np.isnan(value_here):
-                    hdu.data[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # below
-        if not done:
-            if y_nancoord != 0:
-                value_here=hdu.data[x_nancoord,y_nancoord-1]
-                if not np.isnan(value_here):
-                    hdu.data[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # above
-        if not done:
-            if y_nancoord != (y_size-1):
-                value_here=hdu.data[x_nancoord,y_nancoord+1]
-                if not np.isnan(value_here):
-                    hdu.data[x_nancoord,y_nancoord]=value_here
-                    done=True
-
-    hdu.data[np.isnan(hdu.data)] = imageMode
-        #num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
-
-    print ("Denan Image: " +str(time.time()-googtime))
-    
-    
-    
 
     # assign the keyword values and comment of the keyword as a tuple to write both to header.
     hdu.header["BUNIT"] = ("adu", "Unit of array values")
@@ -1467,8 +1460,8 @@ try:
     hdu.header["CRVAL2"] = tempDECdeg
     hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
     hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
-    
-    # This is the header item that LCO uses 
+
+    # This is the header item that LCO uses
     hdu.header["SITERED"] = (True, 'Has this file been reduced at site')
 
     try:  #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
@@ -1514,12 +1507,12 @@ try:
         focus_image = False
 
     # Given that the datalab is our primary "customer" in the sense that we want the data to get to the datalab ASAP
-    # Even though a live observer might be waiting in realtime, we dump out the creation of that file here 
+    # Even though a live observer might be waiting in realtime, we dump out the creation of that file here
     # i.e. ASAP
     if frame_type.lower() in ['fivepercent_exposure_dark','tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark', 'fivesec_exposure_dark', 'tensec_exposure_dark', 'fifteensec_exposure_dark', 'twentysec_exposure_dark', 'thirtysec_exposure_dark', 'broadband_ss_biasdark', 'narrowband_ss_biasdark']:
         a_dark_exposure=True
     else:
-        a_dark_exposure=False    
+        a_dark_exposure=False
     if not ( frame_type.lower() in [
         "bias",
         "dark"
@@ -1534,6 +1527,75 @@ try:
         pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
 
         subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=localcalibrationdirectory + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+
+
+    # NOW THAT THE FILE HAS BEEN FZED AND SENT OFF TO THE PIPE,
+    # WE CAN NOW DENAN THE IMAGE FOR THE JPEGS AND SUCH
+
+    # Fast next-door-neighbour in-fill algorithm
+    x_size=hdu.data.shape[0]
+    y_size=hdu.data.shape[1]
+
+    nan_coords=np.argwhere(np.isnan(hdu.data))
+
+    # For each coordinate try and find a non-nan-neighbour and steal its value
+    for nancoord in nan_coords:
+        x_nancoord=nancoord[0]
+        y_nancoord=nancoord[1]
+        done=False
+
+        # Because edge pixels can tend to form in big clumps
+        # Masking the array just with the mean at the edges
+        # makes this MUCH faster to no visible effect for humans.
+        # Also removes overscan
+        if x_nancoord < 100:
+            hdu.data[x_nancoord,y_nancoord]=imageMode
+            done=True
+        elif x_nancoord > (x_size-100):
+            hdu.data[x_nancoord,y_nancoord]=imageMode
+
+            done=True
+        elif y_nancoord < 100:
+            hdu.data[x_nancoord,y_nancoord]=imageMode
+
+            done=True
+        elif y_nancoord > (y_size-100):
+            hdu.data[x_nancoord,y_nancoord]=imageMode
+            done=True
+
+        # left
+        if not done:
+            if x_nancoord != 0:
+                value_here=hdu.data[x_nancoord-1,y_nancoord]
+                if not np.isnan(value_here):
+                    hdu.data[x_nancoord,y_nancoord]=value_here
+                    done=True
+        # right
+        if not done:
+            if x_nancoord != (x_size-1):
+                value_here=hdu.data[x_nancoord+1,y_nancoord]
+                if not np.isnan(value_here):
+                    hdu.data[x_nancoord,y_nancoord]=value_here
+                    done=True
+        # below
+        if not done:
+            if y_nancoord != 0:
+                value_here=hdu.data[x_nancoord,y_nancoord-1]
+                if not np.isnan(value_here):
+                    hdu.data[x_nancoord,y_nancoord]=value_here
+                    done=True
+        # above
+        if not done:
+            if y_nancoord != (y_size-1):
+                value_here=hdu.data[x_nancoord,y_nancoord+1]
+                if not np.isnan(value_here):
+                    hdu.data[x_nancoord,y_nancoord]=value_here
+                    done=True
+
+    hdu.data[np.isnan(hdu.data)] = imageMode
+        #num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
+
+    print ("Denan Image: " +str(time.time()-googtime))
 
 
 
@@ -1607,7 +1669,7 @@ try:
         )
 
 
-        
+
 
         # Actually save out ONE reduced file for different threads to use.
         image_filename=localcalibrationdirectory + "smartstacks/reducedimage" + str(time.time()).replace('.','') + '.npy'
@@ -1651,7 +1713,7 @@ try:
 
         # This puts the file into the smartstack queue
         # And gets it underway ASAP.
-        
+
 
         if ( not frame_type.lower() in [
             "bias",
@@ -1746,7 +1808,7 @@ try:
                     # wait for the platesolve and nudge before starting the next smartstack.
 
 
-        
+
 
 
 
@@ -1754,11 +1816,11 @@ try:
         # Similarly to the above. This saves the RAW file to disk
         # it works 99.9999% of the time.
         if selfconfig['save_raw_to_disk']:
-            
-            
+
+
             hdu.header["SITERED"] = (False, 'Has this file been reduced at site')
 
-            
+
             os.makedirs(
                 raw_path, exist_ok=True
             )

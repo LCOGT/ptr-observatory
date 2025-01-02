@@ -758,8 +758,8 @@ site_config = {
 
                 # HERE IS THE POTENTIAL MODE 1 SETTINGS
                 'direct_qhy_readout_mode': 1,  #High Gain mode
-                'direct_qhy_gain': 58,   #Above low noise setting
-                'direct_qhy_offset': 10,
+                'direct_qhy_gain': 58,   #Above the QHY low noise Knee for High Gain mode.
+                'direct_qhy_offset': 10,    #means a basic bias level of around 70 ADU's
                 # 'direct_qhy_usb_speed' : 50,
                 'direct_qhy_usb_traffic': 50,
                 # The pattern before came and went. Now consitent at 50.  Changing to 45.
@@ -868,12 +868,11 @@ site_config = {
                 # ( setpoint, day_warm_difference, day_warm troe our false)
                 'set_temp_setpoint_by_season' : True,
                 'temp_setpoint_nov_to_feb' : ( -8, 6, True),
-                'temp_setpoint_feb_to_may' : ( 3, 8, True),
-                'temp_setpoint_may_to_aug' : ( 6, 8, True),
-                'temp_setpoint_aug_to_nov' : ( 3, 8, True),
-
+                'temp_setpoint_feb_to_may' : ( -8, 6, True),
+                'temp_setpoint_may_to_aug' : ( -3, 8, True),
+                'temp_setpoint_aug_to_nov' : ( -3, 8, True),
+                #Prsumably this is setpoint by season if it is False:
                 'day_warm': True,  # This is converted to a 0 or 1 depending on the Boolean value
-
                 'day_warm_degrees': 4,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating': False,
 
