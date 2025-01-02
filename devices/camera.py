@@ -4979,6 +4979,7 @@ class Camera:
                                print(width, height)
 # =======
 #                                patch = outputimg[int(0.35*height):int(0.65*height), int(0.35*width):int(0.65*width)]
+#                                print("Cam line 4970: Imm. after readout; 20% central image patch:  ", np.median(patch))
 
 # >>>>>>> Stashed changes
                         except Exception as e:
