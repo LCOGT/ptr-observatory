@@ -71,6 +71,46 @@ def sigma_clip_mad(data, sigma=2.5, maxiters=10):
     return clipped_data
 
 
+def linear_interpolate(arr):
+    nans = np.isnan(arr)
+    x = np.arange(len(arr))
+    arr[nans] = np.interp(x[nans], x[~nans], arr[~nans])
+    return arr
+
+def deviation_from_surroundings(data, window_size=20, weight_type="gaussian"):
+    """
+    Computes the deviation of each entry from its surrounding ±window_size pixels, 
+    weighted more heavily to nearby pixels.
+
+    Parameters:
+        data (np.ndarray): The 1D input array.
+        window_size (int): The range around each pixel to consider (default is 20).
+        weight_type (str): Type of weighting ('gaussian' or 'triangular').
+
+    Returns:
+        np.ndarray: The array of deviations.
+    """
+    # Create weights
+    if weight_type == "gaussian":
+        sigma = window_size / 2.0
+        weights = np.exp(-0.5 * (np.arange(-window_size, window_size + 1) / sigma) ** 2)
+    elif weight_type == "triangular":
+        weights = 1 - (np.abs(np.arange(-window_size, window_size + 1)) / (window_size + 1))
+    else:
+        raise ValueError("Unsupported weight_type. Use 'gaussian' or 'triangular'.")
+
+    # Normalize weights to sum to 1
+    weights /= weights.sum()
+
+    # Convolve the data with the weights to get the weighted moving average
+    padded_data = np.pad(data, (window_size, window_size), mode="reflect")
+    weighted_avg = np.convolve(padded_data, weights, mode="valid")
+
+    # Calculate deviations
+    deviations = data - weighted_avg
+
+    return deviations
+
 def debanding (bandeddata):
 
     # Store the current nans as a mask to reapply later
@@ -82,22 +122,32 @@ def debanding (bandeddata):
     sigma_clipped_array = sigma_clip_mad(sigma_clipped_array, sigma=2.5, maxiters=4)
     
     # Do rows
-    rows_median = bn.nanmedian(sigma_clipped_array,axis=1)
-    rows_median[np.isnan(rows_median)] = bn.nanmedian(rows_median)
-    row_debanded_image=bandeddata-np.tile(rows_median[:,None],(1,ysize))
-    row_debanded_image= np.subtract(bandeddata,rows_median[:,None])
+    rows_median = bn.nanmedian(sigma_clipped_array,axis=1)    
+    rows_deviations=deviation_from_surroundings(rows_median, window_size=20, weight_type="gaussian")    
+    
+    #remove nans
+    rows_deviations=linear_interpolate(rows_deviations)
 
+    row_debanded_image=bandeddata-np.tile(rows_deviations[:,None],(1,ysize))
+    row_debanded_image= np.subtract(bandeddata,rows_deviations[:,None])
+    
     # Then run this on columns
     sigma_clipped_array=copy.deepcopy(row_debanded_image)
     sigma_clipped_array = sigma_clip_mad(sigma_clipped_array, sigma=2.5, maxiters=4)
-    columns_median = bn.nanmedian(sigma_clipped_array,axis=0)
-    columns_median[np.isnan(columns_median)] = bn.nanmedian(columns_median)
-    both_debanded_image= row_debanded_image-columns_median[None,:]
+    columns_median = bn.nanmedian(sigma_clipped_array,axis=0)        
+    columns_deviations=deviation_from_surroundings(columns_median, window_size=20, weight_type="gaussian")
+    
+    #remove nans
+    columns_deviations=linear_interpolate(columns_deviations)
+    
+    both_debanded_image= row_debanded_image-columns_deviations[None,:]
 
     #Reapply the original nans after debanding
     both_debanded_image[nan_mask] = np.nan
 
     return both_debanded_image
+
+
 
 # Note this is a thread!
 def write_raw_file_out(packet):
