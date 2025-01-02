@@ -26,6 +26,48 @@ import subprocess
 import traceback
 #from image_registration import cross_correlation_shifts
 
+
+def debanding (bandeddata):
+
+    # Store the current nans as a mask to reapply later
+    nan_mask=copy.deepcopy(np.isnan(bandeddata))    
+
+    ysize=bandeddata.shape[1]
+
+    sigma_clipped_array=copy.deepcopy(bandeddata)
+    tempstd=bn.nanstd(sigma_clipped_array)
+    tempmedian=bn.nanmedian(sigma_clipped_array)
+    clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
+    sigma_clipped_array[clipped_areas] = np.nan
+    clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
+    sigma_clipped_array[clipped_areas] = np.nan       
+
+    # Do rows
+    rows_median = bn.nanmedian(sigma_clipped_array,axis=1)
+    rows_median[np.isnan(rows_median)] = bn.nanmedian(rows_median)
+    row_debanded_image=bandeddata-np.tile(rows_median[:,None],(1,ysize))
+    row_debanded_image= np.subtract(bandeddata,rows_median[:,None])
+
+
+    # Then run this on columns
+    sigma_clipped_array=copy.deepcopy(row_debanded_image)
+    tempstd=bn.nanstd(sigma_clipped_array)
+    tempmedian=bn.nanmedian(sigma_clipped_array)
+    clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
+    sigma_clipped_array[clipped_areas] = np.nan
+    clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
+    sigma_clipped_array[clipped_areas] = np.nan
+        
+
+    columns_median = bn.nanmedian(sigma_clipped_array,axis=0)
+    columns_median[np.isnan(columns_median)] = bn.nanmedian(columns_median)
+    both_debanded_image= row_debanded_image-columns_median[None,:]
+
+    #Reapply the original nans after debanding
+    both_debanded_image[nan_mask] = np.nan
+
+    return both_debanded_image
+
 # Note this is a thread!
 def write_raw_file_out(packet):
 
@@ -223,6 +265,8 @@ if substack:
 
             substackimage[substackimage < zeroValue] = np.nan
 
+            # Deband the image
+            substackimage = debanding(substackimage)
 
             sub_stacker_array[:,:,0] = copy.deepcopy(substackimage)
 

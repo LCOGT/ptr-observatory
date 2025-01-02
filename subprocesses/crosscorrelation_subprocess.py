@@ -12,9 +12,53 @@ from astropy.nddata import block_reduce
 import numpy as np
 import traceback
 import os
+import copy
+import bottleneck as bn
 
 payload=pickle.load(sys.stdin.buffer)
 #payload=pickle.load(open('crosscorrelprocess.pickle','rb'))
+
+
+def debanding (bandeddata):
+
+    # Store the current nans as a mask to reapply later
+    nan_mask=copy.deepcopy(np.isnan(bandeddata))    
+
+    ysize=bandeddata.shape[1]
+
+    sigma_clipped_array=copy.deepcopy(bandeddata)
+    tempstd=bn.nanstd(sigma_clipped_array)
+    tempmedian=bn.nanmedian(sigma_clipped_array)
+    clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
+    sigma_clipped_array[clipped_areas] = np.nan
+    clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
+    sigma_clipped_array[clipped_areas] = np.nan       
+
+    # Do rows
+    rows_median = bn.nanmedian(sigma_clipped_array,axis=1)
+    rows_median[np.isnan(rows_median)] = bn.nanmedian(rows_median)
+    row_debanded_image=bandeddata-np.tile(rows_median[:,None],(1,ysize))
+    row_debanded_image= np.subtract(bandeddata,rows_median[:,None])
+
+
+    # Then run this on columns
+    sigma_clipped_array=copy.deepcopy(row_debanded_image)
+    tempstd=bn.nanstd(sigma_clipped_array)
+    tempmedian=bn.nanmedian(sigma_clipped_array)
+    clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
+    sigma_clipped_array[clipped_areas] = np.nan
+    clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
+    sigma_clipped_array[clipped_areas] = np.nan
+        
+
+    columns_median = bn.nanmedian(sigma_clipped_array,axis=0)
+    columns_median[np.isnan(columns_median)] = bn.nanmedian(columns_median)
+    both_debanded_image= row_debanded_image-columns_median[None,:]
+
+    #Reapply the original nans after debanding
+    both_debanded_image[nan_mask] = np.nan
+
+    return both_debanded_image
 
 
 reference_image=payload[0]
@@ -62,6 +106,8 @@ while (breaker != 0):
                                                                         breaker =0
                                                         
 substackimage[substackimage < zeroValue] = np.nan
+
+substackimage = debanding(substackimage)
 
 edge_crop=100
 xoff, yoff = cross_correlation_shifts(block_reduce(reference_image[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean), block_reduce(substackimage[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean),zeromean=False)  
