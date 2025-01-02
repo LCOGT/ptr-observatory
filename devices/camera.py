@@ -4973,9 +4973,14 @@ class Camera:
 
                             if True:
                                height, width = outputimg.shape
+#<<<<<<< Updated upstream
                                patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
                                print(">>>>  20% central image patch, std:  ", np.median(patch), round(np.std(patch), 2))
                                print(width, height)
+# =======
+#                                patch = outputimg[int(0.35*height):int(0.65*height), int(0.35*width):int(0.65*width)]
+
+# >>>>>>> Stashed changes
                         except Exception as e:
 
                             if self.theskyx:
