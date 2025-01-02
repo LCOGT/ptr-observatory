@@ -25,6 +25,50 @@ from astropy.nddata import block_reduce
 import subprocess
 import traceback
 #from image_registration import cross_correlation_shifts
+#from astropy.stats import sigma_clip
+
+
+def sigma_clip_mad(data, sigma=2.5, maxiters=10):
+    """
+    Perform sigma clipping using MAD as a robust standard deviation estimate.
+    
+    Parameters:
+        data (numpy.ndarray): Input array.
+        sigma (float): Sigma threshold for clipping.
+        maxiters (int): Maximum number of iterations.
+    
+    Returns:
+        numpy.ndarray: Array with values outside the sigma range replaced by np.nan.
+    """
+    clipped_data = data.copy()  # Copy the data to avoid modifying the original array
+    
+    for iter in range(maxiters):
+
+        if iter < (maxiters-1):
+            # Compute the mean and standard deviation, ignoring NaN values
+            median = bn.nanmedian(clipped_data)
+            std = bn.nanstd(clipped_data)
+            
+            # Identify the mask of outliers
+            mask = np.abs(clipped_data - median) > sigma * std
+        else:
+            # Compute the median of the current data
+            median = bn.nanmedian(clipped_data)
+            # Compute the MAD and scale it to approximate standard deviation
+            mad = bn.nanmedian(np.abs(clipped_data - median))
+            mad_std = mad * 1.4826
+            
+            # Identify the mask of outliers
+            mask = np.abs(clipped_data - median) > sigma * mad_std
+        
+        # If no more values are being clipped, break the loop
+        if not np.any(mask):
+            break
+        
+        # Replace outliers with np.nan
+        clipped_data[mask] = np.nan
+    
+    return clipped_data
 
 
 def debanding (bandeddata):
@@ -34,31 +78,18 @@ def debanding (bandeddata):
 
     ysize=bandeddata.shape[1]
 
-    sigma_clipped_array=copy.deepcopy(bandeddata)
-    tempstd=bn.nanstd(sigma_clipped_array)
-    tempmedian=bn.nanmedian(sigma_clipped_array)
-    clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
-    sigma_clipped_array[clipped_areas] = np.nan
-    clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
-    sigma_clipped_array[clipped_areas] = np.nan       
-
+    sigma_clipped_array=copy.deepcopy(bandeddata)    
+    sigma_clipped_array = sigma_clip_mad(sigma_clipped_array, sigma=2.5, maxiters=4)
+    
     # Do rows
     rows_median = bn.nanmedian(sigma_clipped_array,axis=1)
     rows_median[np.isnan(rows_median)] = bn.nanmedian(rows_median)
     row_debanded_image=bandeddata-np.tile(rows_median[:,None],(1,ysize))
     row_debanded_image= np.subtract(bandeddata,rows_median[:,None])
 
-
     # Then run this on columns
     sigma_clipped_array=copy.deepcopy(row_debanded_image)
-    tempstd=bn.nanstd(sigma_clipped_array)
-    tempmedian=bn.nanmedian(sigma_clipped_array)
-    clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
-    sigma_clipped_array[clipped_areas] = np.nan
-    clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
-    sigma_clipped_array[clipped_areas] = np.nan
-        
-
+    sigma_clipped_array = sigma_clip_mad(sigma_clipped_array, sigma=2.5, maxiters=4)
     columns_median = bn.nanmedian(sigma_clipped_array,axis=0)
     columns_median[np.isnan(columns_median)] = bn.nanmedian(columns_median)
     both_debanded_image= row_debanded_image-columns_median[None,:]
