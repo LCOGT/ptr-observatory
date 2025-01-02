@@ -1632,32 +1632,18 @@ class Observatory:
                     self.obs_settings_upload_timer = time.time()
                     status = {}
                     status["obs_settings"] = {}
-                    status["obs_settings"][
-                        "scope_in_manual_mode"
-                    ] = self.scope_in_manual_mode
+                    status["obs_settings"]["scope_in_manual_mode"] = self.scope_in_manual_mode
                     status["obs_settings"]["sun_safety_mode"] = self.sun_checks_on
                     status["obs_settings"]["moon_safety_mode"] = self.moon_checks_on
-                    status["obs_settings"][
-                        "altitude_safety_mode"
-                    ] = self.altitude_checks_on
+                    status["obs_settings"]["altitude_safety_mode"] = self.altitude_checks_on
                     status["obs_settings"]["lowest_altitude"] = -5
-                    status["obs_settings"][
-                        "daytime_exposure_safety_mode"
-                    ] = self.daytime_exposure_time_safety_on
+                    status["obs_settings"]["daytime_exposure_safety_mode"] = self.daytime_exposure_time_safety_on
                     status["obs_settings"]["daytime_exposure_time"] = 0.01
                     status["obs_settings"]["auto_center_on"] = not self.auto_centering_off
-                    status["obs_settings"][
-                        "admin_owner_commands_only"
-                    ] = self.admin_owner_commands_only
-                    status["obs_settings"][
-                        "simulating_open_roof"
-                    ] = self.assume_roof_open
-                    status["obs_settings"][
-                        "pointing_reference_on"
-                    ] = not self.mount_reference_model_off
-                    status["obs_settings"]["morning_flats_done"] = g_dev[
-                        "seq"
-                    ].morn_flats_done
+                    status["obs_settings"]["admin_owner_commands_only"] = self.admin_owner_commands_only
+                    status["obs_settings"]["simulating_open_roof"] = self.assume_roof_open
+                    status["obs_settings"]["pointing_reference_on"] = not self.mount_reference_model_off
+                    status["obs_settings"]["morning_flats_done"] = g_dev["seq"].morn_flats_done
                     status["obs_settings"]["timedottime_of_last_upload"] = time.time()
                     lane = "obs_settings"
                     try:
@@ -2995,7 +2981,8 @@ class Observatory:
                     is_osc = self.devices["main_cam"].settings["is_osc"]
 
                     # Do not bother platesolving unless it is dark enough!!
-                    if not (
+                    #TB
+                    if True or not (
                         g_dev["events"]["Civil Dusk"]
                         < ephem.now()
                         < g_dev["events"]["Civil Dawn"]

@@ -3,6 +3,8 @@
 sequencer.py  sequencer.py  sequencer.py  sequencer.py  sequencer.py
 
 '''
+from devices.sequencer_helpers import pointing_is_ok
+from devices.sequencer_helpers import validate_project_format
 import time
 import datetime
 from dateutil import tz
@@ -632,7 +634,6 @@ class Sequencer:
                  self.nightly_reset_complete = True
 
         if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
-
             self.nightly_reset_complete = False
 
         not_slewing=False
@@ -642,7 +643,12 @@ class Sequencer:
             not_slewing=True
 
         # Don't attempt to start a sequence during an exposure OR when a function (usually TPOINT) has taken total control OR if it is doing something else or waiting to readjust.
-        if not self.total_sequencer_control and not g_dev['cam'].running_an_exposure_set and not_slewing and not g_dev['obs'].pointing_recentering_requested_by_platesolve_thread and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+        if (not self.total_sequencer_control and
+            not g_dev['cam'].running_an_exposure_set and
+            not_slewing and
+            not g_dev['obs'].pointing_recentering_requested_by_platesolve_thread and
+            not g_dev['obs'].pointing_correction_requested_by_platesolve_thread):
+
             ###########################################################################
             # While in this part of the sequencer, we need to have manual UI commands
             # turned off.  So that if a sequencer script starts running, we don't get
@@ -664,7 +670,6 @@ class Sequencer:
                 self.nightly_reset_complete = False
                 self.cool_down_latch = True
                 self.reset_completes()
-
 
                 # If the roof opens later then sync and refocus
                 if (g_dev['events']['Observing Begins'] < ephem_now < g_dev['events']['Observing Ends']):
@@ -751,9 +756,15 @@ class Sequencer:
 
                 self.sync_and_refocus()
 
-            if  (events['Observing Begins'] <= ephem_now \
-                                       < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].running_an_exposure_set\
-                                       and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
+            # TB override the daytime check here; remove the `True or` before merging
+            if  (True or
+                 (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and
+                 not self.block_guard and
+                 not g_dev["cam"].running_an_exposure_set and
+                 (time.time() - self.project_call_timer > 10) and
+                 not g_dev['obs'].scope_in_manual_mode and
+                 g_dev['obs'].open_and_enabled_to_observe and
+                 self.clock_focus_latch == False):
 
                 try:
                     self.nightly_reset_complete = False
@@ -805,72 +816,64 @@ class Sequencer:
 
                                 if identified_block == None:
                                     plog ("identified block is None")
-                                    pointing_good=False
 
                                 elif identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
                                     plog ("identified block is real_time or none")
-                                    pointing_good=False
 
                                 elif identified_block['project'] == None:
                                     plog (identified_block)
                                     plog ("Skipping a block that contains an empty project")
-                                    pointing_good=False
 
                                 elif identified_block['project'] != None:
-                                    pointing_good=True
-                                    # If a block is identified, check it is in the sky and not in a poor location
-                                    target=identified_block['project']['project_targets'][0]
-                                    ra = float(target['ra'])
-                                    dec = float(target['dec'])
-                                    temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
-                                    temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
-                                    alt = temppointingaltaz.alt.degree
-                                    # Check the moon isn't right in front of the project target
-                                    moon_coords=get_body("moon", time=Time.now())
-                                    moon_dist = moon_coords.separation(temppointing)
-                                    if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
-                                        g_dev['obs'].send_to_user("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                                        plog("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                                        pointing_good=False
-                                    if alt < self.config['lowest_requestable_altitude']:
-                                        g_dev['obs'].send_to_user("Not running project as it is too low: " + str(alt) + " degrees.")
-                                        plog("Not running project as it is too low: " + str(alt) + " degrees.")
-                                        pointing_good=False
-
-                                if pointing_good:
-                                    completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
-                                    #
-                                    try:
-                                        self.append_completes(completed_block['event_id'])
-                                    except:
-                                        plog ("block complete append didn't work")
-                                        plog(traceback.format_exc())
+                                    if pointing_is_ok(identified_block, self.config):
+                                        #TB
+                                        # Temporary branch to handle the two different types of projects
+                                        print('block origin: ', identified_block['origin'])
+                                        if identified_block['origin'] == 'LCO':
+                                            completed_block = self.execute_project_from_lco(identified_block)
+                                        else:
+                                            completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
+                                        #TB
+                                        # Ignore this for now for testing purposes.
+                                        # Maybe even long timer, if the scheduler is handling completion.
+                                        # try:
+                                        #     self.append_completes(completed_block['event_id'])
+                                        # except:
+                                        #     plog ("block complete append didn't work")
+                                        #     plog(traceback.format_exc())
                                     self.blockend = None
                                 elif identified_block is None:
                                     self.blockend = None
                                 else:
                                     plog ("Something didn't work, cancelling out of doing this project and putting it in the completes pile.")
                                     plog (block)
-                                    self.append_completes(block['event_id'])
-                                    self.blockend = None
-
-                    self.block_guard=False
-                    self.currently_mosaicing = False
-                    self.blockend = None
+                                    #TB
+                                    # Temporarily ignore the 'completes pile' whle developing
+                                    plog('Skipping putting the project in the completes pile for development')
+                                    # self.append_completes(block['event_id'])
+                                    # self.blockend = None
 
                 except:
                     plog(traceback.format_exc())
                     plog("Hang up in sequencer.")
-                    self.blockend = None
-                    self.block_guard=False
-                    self.currently_mosaicing = False
 
-                # Double check
+                self.currently_mosaicing = False
+                self.blockend = None
                 self.block_guard = False
 
 
-            if ((time.time() - self.time_roof_last_opened > self.config['time_to_wait_after_roof_opens_to_take_flats'] ) or g_dev['obs'].assume_roof_open) and not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
-                    self.config['auto_morn_sky_flat'])  and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
+            # Morning Sky Flat Routine
+            time_since_roof_opened = time.time() - self.time_roof_last_opened
+            enough_time_since_roof_open = time_since_roof_opened > self.config['time_to_wait_after_roof_opens_to_take_flats'] or g_dev['obs'].assume_roof_open
+            auto_morning_sky_flats_enabled = self.config['auto_morn_sky_flat']
+            is_in_morning_sky_flat_window = events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']
+            nothing_overriding_flats = not g_dev['obs'].scope_in_manual_mode and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe
+            if (enough_time_since_roof_open and
+                auto_morning_sky_flats_enabled and
+                is_in_morning_sky_flat_window and
+                nothing_overriding_flats and
+                not self.morn_sky_flat_latch and
+                not self.morn_flats_done):
 
                 self.morn_sky_flat_latch = True
                 self.current_script = "Morn Sky Flat script starting"
@@ -887,6 +890,8 @@ class Sequencer:
                 self.morn_sky_flat_latch = False
                 self.morn_flats_done = True
 
+
+            # Morning Bias Dark Routine
             if not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                       self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
 
@@ -1240,24 +1245,18 @@ class Sequencer:
                 plog ("rotator hasn't been homed this evening, doing that now")
                 # Homing Rotator for the evening.
                 try:
-                    while g_dev['rot'].rotator.IsMoving:
-                        plog("home rotator wait")
-                        time.sleep(1)
+                    self.wait_for_rotator(msg='home rotator wait')
                     g_dev['obs'].send_to_user("Rotator being homed as this has not been done this evening.", p_level='INFO')
                     time.sleep(0.5)
                     g_dev['rot'].home_command({},{})
-                    while g_dev['rot'].rotator.IsMoving:
-                        plog("home rotator wait")
-                        time.sleep(1)
+                    self.wait_for_rotator(msg='home rotator wait')
                     # Store last home time.
                     homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
                     homerotator_time_shelf['lasthome'] = time.time()
                     homerotator_time_shelf.close()
                     g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
                     g_dev['mnt'].wait_for_slew(wait_after_slew=False)
-                    while g_dev['rot'].rotator.IsMoving:
-                        plog("home rotator wait")
-                        time.sleep(1)
+                    self.wait_for_rotator(msg='home rotator wait')
                     self.rotator_has_been_homed_this_evening=True
                     g_dev['obs'].rotator_has_been_checked_since_last_slew = True
 
@@ -3734,12 +3733,11 @@ class Sequencer:
                     if not self.rotator_has_been_homed_this_evening:
                         plog ("If rotator isn't homed, waiting for the zenith is a great time to do this!")
                         try:
-                            while g_dev['rot'].rotator.IsMoving:
-                                plog("home rotator wait")
-                                time.sleep(1)
+                            self.wait_for_rotator(msg='home rotator wait')
                             g_dev['obs'].send_to_user("Rotator being homed to be certain of appropriate skyflat positioning.", p_level='INFO')
                             time.sleep(0.5)
                             g_dev['rot'].home_command({},{})
+                            #TB? is temptimer doing anything here? if not, let's remove it.
                             temptimer=time.time()
                             while g_dev['rot'].rotator.IsMoving:
                                 plog("home rotator wait")
@@ -3754,9 +3752,7 @@ class Sequencer:
                             self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=dont_wait_after_slew)
                             if not dont_wait_after_slew:
                                 g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
-                            while g_dev['rot'].rotator.IsMoving:
-                                plog("home rotator wait")
-                                time.sleep(1)
+                            self.wait_for_rotator(msg='home rotator wait')
                             self.rotator_has_been_homed_this_evening=True
                             g_dev['obs'].rotator_has_been_checked_since_last_slew = True
 
@@ -3972,15 +3968,11 @@ class Sequencer:
         if not self.rotator_has_been_homed_this_evening:
             # Homing Rotator for the evening.
             try:
-                while g_dev['rot'].rotator.IsMoving:
-                    plog("home rotator wait")
-                    time.sleep(1)
+                self.wait_for_rotator(msg='home rotator wait')
                 g_dev['obs'].send_to_user("Rotator being homed to be certain of appropriate skyflat positioning.", p_level='INFO')
                 time.sleep(0.5)
                 g_dev['rot'].home_command({},{})
-                while g_dev['rot'].rotator.IsMoving:
-                    plog("home rotator wait")
-                    time.sleep(1)
+                self.wait_for_rotator(msg='home rotator wait')
                 # Store last home time.
                 homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
                 homerotator_time_shelf['lasthome'] = time.time()
@@ -3989,9 +3981,7 @@ class Sequencer:
                 self.check_zenith_and_move_to_flat_spot(ending=self.flats_ending)
                 self.time_of_next_slew = time.time() + 600
                 g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
-                while g_dev['rot'].rotator.IsMoving:
-                    plog("home rotator wait")
-                    time.sleep(1)
+                self.wait_for_rotator(msg='home rotator wait')
                 self.rotator_has_been_homed_this_evening=True
                 g_dev['obs'].rotator_has_been_checked_since_last_slew = True
 
@@ -4293,6 +4283,7 @@ class Sequencer:
                                 # Particularly for AltAz, the slew and rotator rotation must have ended before exposing.
                                 g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                                 try:
+                                    self.wait_for_rotator(msg='flat rotator wait', sleep_interval_s=0.2)
                                     while g_dev['rot'].rotator.IsMoving:
                                         plog("flat rotator wait")
                                         time.sleep(0.2)
@@ -4754,7 +4745,6 @@ class Sequencer:
 
 
     def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, dont_return_scope=False, dont_log_focus=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
-
         self.focussing=True
         self.total_sequencer_control = True
 
@@ -4800,7 +4790,8 @@ class Sequencer:
                 return np.nan, np.nan
 
         g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow()
-
+        #TB don't do autofocus in simulation mode
+        return
         # Reset focus tracker
         g_dev['foc'].focus_tracker = [np.nan] * 10
         throw = g_dev['foc'].throw
@@ -5102,9 +5093,7 @@ class Sequencer:
                 g_dev['mnt'].wait_for_slew(wait_after_slew=False)
 
                 try:
-                    while g_dev['rot'].rotator.IsMoving:
-                        plog("flat rotator wait")
-                        time.sleep(0.2)
+                    self.wait_for_rotator(msg='flat rotator wait', sleep_interval_s=0.2)
                 except:
                     pass
 
@@ -5215,6 +5204,7 @@ class Sequencer:
 
                         # First check if the minimum is too close to the edge
                         if minimum_index == 0 or minimum_index == 1:
+                            plog ('minimum index: ', minimum_index)
                             plog ("Minimum too close to the sampling edge, getting another dot")
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
@@ -5225,6 +5215,8 @@ class Sequencer:
                             g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
                         elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
+                            plog ('minimum index: ', minimum_index)
+                            plog ('minimum find: ', minimumfind)
 
                             plog ("Minimum too close to the sampling edge, getting another dot")
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
