@@ -3599,8 +3599,6 @@ class Observatory:
                                     if not folder_path:
                                         return  # Skip unsupported file types
 
-
-
                                     tempexposure = temphduheader.get("EXPTIME", "")
                                     tempfilter = temphduheader.get("FILTER", "")
 

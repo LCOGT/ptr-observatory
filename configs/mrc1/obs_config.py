@@ -412,7 +412,7 @@ site_config = {
             'parent': 'telescope1',
             'name': 'rotator',
             'desc':  'Opetc Gemini',
-            'driver': 'ASCOM.AltAzDS.Rotator',
+            'driver': 'ASCOM.AltAzDS.Rotator',   #ASCOM.OptecGemini1.Rotator, ASCOM.OptecGemini.Rotator
             'telescope_driver': 'ASCOM.AltAzDS.Telescope',
             'com_port':  None,
             'minimum': -180.0,
