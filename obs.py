@@ -200,12 +200,12 @@ class Observatory:
 
         # Local Calibration Paths
         camera_name = self.config["camera"]["camera_1_1"]["name"]
-        
+
         # Base path and camera name
         base_path = self.local_calibration_path
         camera_name = camera_name
-        
-        
+
+
         def create_directories(base_path, camera_name, subdirectories):
             """
             Create directories if they do not already exist.
@@ -214,7 +214,7 @@ class Observatory:
                 path = os.path.join(base_path, "archive", camera_name, subdir)
                 if not os.path.exists(path):
                     os.makedirs(path, mode=0o777)
-        
+
         # Subdirectories to create
         subdirectories = [
             "calibmasters",
@@ -244,13 +244,13 @@ class Observatory:
             "localcalibrations/biases",
             "localcalibrations/flats",
         ]
-        
+
         # Create the directories
         create_directories(base_path, camera_name, subdirectories)
-        
+
         # Set calib masters folder
         self.calib_masters_folder = os.path.join(base_path, "archive", camera_name, "calibmasters") + "/"
-        
+
         self.local_dark_folder = (
             self.local_calibration_path
             + "archive/"
@@ -258,7 +258,7 @@ class Observatory:
             + "/localcalibrations/darks"
             + "/"
         )
-        
+
 
         self.local_bias_folder = (
             self.local_calibration_path
@@ -471,11 +471,11 @@ class Observatory:
             "daytime_exposure_time_safety_on"
         ]
         self.mount_reference_model_off = self.config["mount_reference_model_off"]
-        
+
         try:
             self.admin_owner_commands_only = self.config["owner_only_commands"]
         except:
-        
+
             self.admin_owner_commands_only = False
         try:
             self.assume_roof_open = self.config["simulate_open_roof"]  #Note NB NB this is conusing with the attribut above...about 9 lines.
@@ -1288,7 +1288,7 @@ class Observatory:
         # NB NB this needs to be conditoned on the site having lightning detection!
         try:
             if self.config['has_lightning_detector']:
-    
+
                 try:
                     with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
                         r_date, r_time = light_rec.readline().split()[-2:]
@@ -3504,7 +3504,7 @@ class Observatory:
                                         self.local_dark_folder + "/localcalibrations", mode=0o777
                                     )
 
-                                if "dark" in slow_process[4]: 
+                                if "dark" in slow_process[4]:
                                     # Define the base path and subdirectories
                                     base_path = self.local_dark_folder
                                     subdirectories = [
@@ -3531,7 +3531,7 @@ class Observatory:
                                         "/localcalibrations/darks/twentysecdarks",
                                         "/localcalibrations/darks/thirtysecdarks",
                                     ]
-                                    
+
                                     # Create directories if they do not exist
                                     for subdir in subdirectories:
                                         path = base_path + subdir
@@ -3559,8 +3559,8 @@ class Observatory:
                                         except:
                                             self.laterdelete_queue.put(oldest_file, block=False)
                                         files = glob.glob(f"{folder_path}/*.n*")
-                                
-                                
+
+
                                 def process_file(slow_process, temphduheader, config):
                                     """
                                     Processes a single file based on its type and manages storage for the corresponding folder.
@@ -3593,44 +3593,44 @@ class Observatory:
                                         "skyflat": self.local_flat_folder,
                                         "screenflat": self.local_flat_folder,
                                     }
-                                
+
                                     file_type = slow_process[4]
                                     folder_path = base_folder_mapping.get(file_type)
                                     if not folder_path:
                                         return  # Skip unsupported file types
-                                
-                                    
-                                
+
+
+
                                     tempexposure = temphduheader.get("EXPTIME", "")
                                     tempfilter = temphduheader.get("FILTER", "")
-                                    
+
                                     #breakpoint()
                                     # if it is a flat observation, it needs to go in a filtered directory
-                                    # 
+                                    #
                                     if 'flat' in str(file_type):
                                         if not os.path.exists(self.local_flat_folder):
                                             os.makedirs(self.local_flat_folder, mode=0o777, exist_ok=True)
                                         folder_path=folder_path+ str(tempfilter) + '/'
-                                    
+
                                     if not os.path.exists(folder_path):
                                         os.makedirs(folder_path, mode=0o777, exist_ok=True)
-                                    
-                                    
+
+
                                     file_suffix = f"_{slow_process[7]}_{tempexposure}_.npy" if "flat" not in file_type else f"_{slow_process[7]}_{tempfilter}_{tempexposure}_.npy"
                                     tempfilename = os.path.join(folder_path, slow_process[1].replace(".fits", file_suffix))
-                                
+
                                     # Manage files based on type
                                     max_files = config["camera"]["camera_1_1"]["settings"].get(f"number_of_{file_type}_to_store", 10)
                                     exclude_pattern = "tempbiasdark" if "dark" in file_type else "tempcali" if "flat" in file_type else None
                                     manage_files(folder_path, max_files, exclude_pattern)
-                                    
+
                                     return tempfilename
-                                
-                                
+
+
                                 # Example usage
                                 tempfilename=process_file(slow_process, temphduheader, self.config)
-                                
-                                
+
+
 
                                 # Save the file as an uncompressed numpy binary
                                 temparray = np.array(

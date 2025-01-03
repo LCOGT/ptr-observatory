@@ -45,7 +45,7 @@ from math import cos, radians    #"What plan do we have for making some imports 
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
 from astropy.time import Time
 from astropy import units as u
-from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun, get_moon, FK5#, ICRS
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun,  FK5, get_body#, ICRS
 import math
 import ephem
 from ptr_utility import plog
@@ -1889,7 +1889,7 @@ class Mount:
             if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
                 plog("Moon Request detected")
             else:
-                moon_coords=get_moon(Time.now())
+                moon_coords=get_body('moon', Time.now())  #20250103  Per deprication warning.
                 moon_dist = moon_coords.separation(temppointing)
                 if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
                     g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
