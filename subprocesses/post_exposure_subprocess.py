@@ -920,11 +920,11 @@ try:
         )
 
         hdu.header["EXPTIME"] = (
-            expected_endpoint_of_substack_exposure - substack_start_time,
+            round(expected_endpoint_of_substack_exposure - substack_start_time,6),
             "[s] Actual exposure length",
         )  # This is the exposure in seconds specified by the user
         hdu.header["EFFEXPT"] = (
-            exposure_time,
+            round(exposure_time,6),
             "[s] Integrated exposure length",
         )
 
@@ -996,23 +996,23 @@ try:
         )
 
         hdu.header["EXPTIME"] = (
-            exposure_time,
+            round(exposure_time,6),
             "[s] Actual exposure length",
         )  # This is the exposure in seconds specified by the
 
         hdu.header["EXPREQ"] = (
-            exposure_time,
+            round(exposure_time,6),
             "[s] Requested Exposure Time",
         )  # This is the exposure in seconds specified by the user
 
         if not smartstackid == 'no':
             hdu.header["EXPREQSE"] = (
-                exposure_time,
+                round(exposure_time,6),
                 "[s] Open Shutter Time of this smartstack element",
             )  # This is the exposure in seconds specified by the user
 
         hdu.header["EFFEXPT"] = (
-            exposure_time,
+            round(exposure_time,6),
             "[s] Integrated exposure length",
         )
         hdu.header["EFFEXPN"] = (
@@ -1023,7 +1023,7 @@ try:
         hdu.header[
             "EXPOSURE"
         ] = (
-            exposure_time,
+            round(exposure_time,6),
             "[s] Actual exposure length",
         )  # Ideally this needs to be calculated from actual times
 
@@ -1392,21 +1392,21 @@ try:
     tempointing=tempointing.to_string("hmsdms").split(' ')
 
     hdu.header["RA"] = (
-        tempointing[0],
+        round(tempointing[0],8),
         "[hms] Telescope right ascension",
     )
     hdu.header["DEC"] = (
-        tempointing[1],
+        round(tempointing[1],8),
         "[dms] Telescope declination",
     )
     hdu.header["ORIGRA"] = hdu.header["RA"]
     hdu.header["ORIGDEC"] = hdu.header["DEC"]
     hdu.header["RAhrs"] = (
-        corrected_ra_for_header,
+        round(corrected_ra_for_header,8),
         "[hrs] Telescope right ascension",
     )
-    hdu.header["RADEG"] = tempRAdeg
-    hdu.header["DECDEG"] = tempDECdeg
+    hdu.header["RADEG"] = round(tempRAdeg,8)
+    hdu.header["DECDEG"] = round(tempDECdeg,8)
 
     hdu.header["TARG-CHK"] = (
         (ra_at_time_of_exposure * 15)
