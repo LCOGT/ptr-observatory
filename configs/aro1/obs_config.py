@@ -358,9 +358,9 @@ site_config = {
                     'id':   0.0,
                     'eho':  0.0,  # East Hour angle Offset -- NOTE an offset
                     'edo':  0.0,  # East Dec Offset
-                    'ma':   73.0,  # Azimuth error of polar axis
-                    'me':   300.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
-                    'ch':   -115.0,  # Optical axis not perp to dec axis
+                    'ma':   0.0,  # Azimuth error of polar axis
+                    'me':   0.0,  # Elev error of polar axisDefault is about -60 asec above pole for ARO
+                    'ch':   0.0,  # Optical axis not perp to dec axis
                     'np':   0.0,  # Non-perp of polar and dec axis
                     'tf':   0.0,  # Sin flexure -- Hook's law.
                     'tx':   0.0,  # Tangent flexure

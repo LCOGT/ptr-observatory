@@ -2873,6 +2873,7 @@ class Camera:
                 plog("hint:  ", opt['hint'])
                 hint = opt['hint'].split(";")
                 for item in hint:
+                    #breakpoint() #2025
                     term, chg = item.split("=")
                     term = term.strip(' ')
                     if term in ['refr', 'modl', 'rate', 'drft']:
@@ -4977,6 +4978,7 @@ class Camera:
                                patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
                                print(">>>>  20% central image patch, std:  ", np.median(patch), round(np.std(patch), 2))
                                print(width, height)
+                               #breakpoint()
 # =======
 #                                patch = outputimg[int(0.35*height):int(0.65*height), int(0.35*width):int(0.65*width)]
 #                                print("Cam line 4970: Imm. after readout; 20% central image patch:  ", np.median(patch))
@@ -5461,7 +5463,7 @@ class Camera:
                                 sources = sep.extract(outputimg, 4.0, err=sepbkgerr, minarea=minarea)
                             except:
                                 print(traceback.format_exc())
-                                breakpoint()
+                                #breakpoint()
 
                             # try:
                             #     sources = sep.extract(outputimg, 4.0, minarea=minarea)

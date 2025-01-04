@@ -1392,11 +1392,11 @@ try:
     tempointing=tempointing.to_string("hmsdms").split(' ')
 
     hdu.header["RA"] = (
-        round(tempointing[0],8),
+        tempointing[0],
         "[hms] Telescope right ascension",
     )
     hdu.header["DEC"] = (
-        round(tempointing[1],8),
+        tempointing[1],
         "[dms] Telescope declination",
     )
     hdu.header["ORIGRA"] = hdu.header["RA"]
