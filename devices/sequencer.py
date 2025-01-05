@@ -624,7 +624,7 @@ class Sequencer:
             if False and (time.time()-self.MTF_temporary_flat_timer > 300):
                 self.MTF_temporary_flat_timer=time.time()
                 # plog ("EVESKY FLAG HUNTING")
-                # plog ("Roof open time: " + str(time.time() - g_dev['seq'].time_roof_last_opened))
+                # plog ("Roof open time: " + str(time.time() - self.time_roof_last_opened))
                 # plog ("Sky flat latch: " + str(self.eve_sky_flat_latch))
                 # plog ("Scope in manual mode: " + str(g_dev['obs'].scope_in_manual_mode))
                 # plog ("Eve sky start: " + str(events['Eve Sky Flats']))
@@ -643,7 +643,7 @@ class Sequencer:
                 plog(self.clock_focus_latch)
 
 
-            if ((time.time() - g_dev['seq'].time_roof_last_opened > self.config['time_to_wait_after_roof_opens_to_take_flats'] ) or g_dev['obs'].assume_roof_open) and \
+            if ((time.time() - self.time_roof_last_opened > self.config['time_to_wait_after_roof_opens_to_take_flats'] ) or g_dev['obs'].assume_roof_open) and \
                    not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and \
                    (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                    and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and\
@@ -762,7 +762,7 @@ class Sequencer:
                     # only need to bother with the rest if there is more than 0 blocks.
                     if not len(self.blocks) > 0:
                         self.block_guard=False
-                        g_dev['seq'].blockend= None
+                        self.blockend= None
                     else:
                         now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
                         identified_block=None
@@ -860,7 +860,7 @@ class Sequencer:
                 self.block_guard = False
 
 
-            if ((time.time() - g_dev['seq'].time_roof_last_opened > self.config['time_to_wait_after_roof_opens_to_take_flats'] ) or g_dev['obs'].assume_roof_open) and not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
+            if ((time.time() - self.time_roof_last_opened > self.config['time_to_wait_after_roof_opens_to_take_flats'] ) or g_dev['obs'].assume_roof_open) and not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
                     self.config['auto_morn_sky_flat'])  and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
 
                 self.morn_sky_flat_latch = True
@@ -1353,10 +1353,10 @@ class Sequencer:
                     for tempblock in self.blocks:
                         if tempblock['event_id'] == calendar_event_id :
                             foundcalendar=True
-                            g_dev['seq'].blockend=tempblock['end']
+                            self.blockend=tempblock['end']
                             now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
-                            if g_dev['seq'].blockend != None:
-                                if now_date_timeZ >= g_dev['seq'].blockend :
+                            if self.blockend != None:
+                                if now_date_timeZ >= self.blockend :
                                     plog ("Block ended.")
                                     g_dev["obs"].send_to_user("Calendar Block Ended. Stopping project run.")
                                     left_to_do=0
@@ -1578,7 +1578,7 @@ class Sequencer:
                                     plog("The SkyX had an error.")
                                     plog("Usually this is because of a broken connection.")
                                     plog("Killing then waiting 60 seconds then reconnecting")
-                                    g_dev['seq'].kill_and_reboot_theskyx(new_ra,new_dec)
+                                    self.kill_and_reboot_theskyx(new_ra,new_dec)
 
                             self.wait_for_slew(wait_after_slew=False)
                             # try:
@@ -1635,14 +1635,14 @@ class Sequencer:
                                 substackswitch=True
 
                             # Set up options for exposure and take exposure.
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'substack': substackswitch, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'substack': substackswitch, 'block_end' : self.blockend}   #  NB Should pick up filter and constants from config
                             opt = {'count': repeat_count, 'filter': filter_requested, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane, 'zoom': zoom_factor}
                             plog('Seq Blk sent to camera:  ', req, opt)
 
                             now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
-                            if g_dev['seq'].blockend != None:
-                                if now_date_timeZ >= g_dev['seq'].blockend :
+                            if self.blockend != None:
+                                if now_date_timeZ >= self.blockend :
                                     left_to_do=0
                                     self.blockend = None
                                     self.currently_mosaicing = False
@@ -1695,8 +1695,8 @@ class Sequencer:
                             now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
                             events = g_dev['events']
                             blockended=False
-                            if g_dev['seq'].blockend != None:
-                                blockended = now_date_timeZ >= g_dev['seq'].blockend
+                            if self.blockend != None:
+                                blockended = now_date_timeZ >= self.blockend
                             ended = left_to_do <= 0 or blockended \
                                     or ephem.now() >= events['Observing Ends']
                             if ephem.now() >= events['Observing Ends']:
@@ -2227,7 +2227,7 @@ class Sequencer:
         plog(self.description)
         self.af_guard = False
         self.block_guard = False
-        g_dev['seq'].blockend= None
+        self.blockend= None
         self.time_of_next_slew = time.time()
         self.bias_dark_latch = False
 
@@ -3800,7 +3800,7 @@ class Sequencer:
         # So that a proper full flat script is run after the estimates
         self.new_throughtputs_detected_in_flat_run=False
 
-        g_dev['seq'].blockend= None
+        self.blockend= None
 
         # Moon check.
         if (skip_moon_check==False):
@@ -5509,7 +5509,7 @@ class Sequencer:
         tpointnamefile=self.config['archive_path'] +'/'+'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT'
 
         with open(tpointnamefile, "a+") as f:
-            	f.write(self.config["name"] +"\n")
+            f.write(self.config["name"] +"\n")
         with open(tpointnamefile, "a+") as f:
             f.write(":NODA\n")
             f.write(":EQUAT\n")
@@ -5550,7 +5550,7 @@ class Sequencer:
                 sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]
                 writeline = ra_wanted + " " + dec_wanted + " " + ra_got + " " + dec_got + " " + sid_str + " " + pierstring
                 with open(tpointnamefile, "a+") as f:
-                    	f.write(writeline+"\n")
+                    f.write(writeline+"\n")
                 plog(writeline)
 
         try:
@@ -5781,7 +5781,7 @@ class Sequencer:
         tpointnamefile=self.config['archive_path'] +'/'+'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT'
 
         with open(tpointnamefile, "a+") as f:
-            	f.write(self.config["name"] +"\n")
+            f.write(self.config["name"] +"\n")
         with open(tpointnamefile, "a+") as f:
             f.write(":NODA\n")
             f.write(":EQUAT\n")
@@ -5810,7 +5810,7 @@ class Sequencer:
                 sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]
                 writeline = ra_wanted + " " + dec_wanted + " " + ra_got + " " + dec_got + " "+ sid_str + " "+ pierstring
                 with open(tpointnamefile, "a+") as f:
-                    	f.write(writeline+"\n")
+                    f.write(writeline+"\n")
                 plog(writeline)
 
         try:
@@ -6147,11 +6147,11 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
 
                 # test for blockend
-                if g_dev['seq'].blockend != None:
+                if self.blockend != None:
                     g_dev['obs'].request_update_calendar_blocks()
                     endOfExposure = datetime.datetime.utcnow() + datetime.timedelta(seconds=float(self.config['pointing_exposure_time']) * 3)
                     now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
-                    blockended = now_date_timeZ  >= g_dev['seq'].blockend
+                    blockended = now_date_timeZ  >= self.blockend
                     if blockended:
                         plog ("End of Block, exiting Centering.")
                         return
@@ -6169,16 +6169,16 @@ class Sequencer:
 
                     foundcalendar=False
 
-                    for tempblock in g_dev['seq'].blocks:
+                    for tempblock in self.blocks:
                         try:
                             if tempblock['event_id'] == calendar_event_id :
                                 foundcalendar=True
-                                g_dev['seq'].blockend=tempblock['end']
+                                self.blockend=tempblock['end']
                         except:
                             plog("glitch in calendar finder")
                             plog(str(tempblock))
                     now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
-                    if foundcalendar == False or now_date_timeZ >= g_dev['seq'].blockend:
+                    if foundcalendar == False or now_date_timeZ >= self.blockend:
                         plog ("could not find calendar entry, cancelling out of block.")
                         plog ("And Cancelling SmartStacks.")
                         return 'calendarend'

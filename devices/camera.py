@@ -1136,7 +1136,7 @@ class Camera:
             qhycam.camera_params[qhycam_id]['handle'] = qhycam.so.OpenQHYCCD(
                 qhycam_id)
             if qhycam.camera_params[qhycam_id]['handle'] is None:
-                print('open camera error %s' % cam_id)
+                print('open camera error %s' % qhycam_id)
 
             read_mode = self.config["camera"][self.name]["settings"]['direct_qhy_readout_mode']
             numModes = c_int32()

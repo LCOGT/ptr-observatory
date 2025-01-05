@@ -547,7 +547,7 @@ class Focuser:
             # realistically we need to wait for it to stop.
             if self.focuser_is_moving:
                 reporty=0
-                while g_dev['foc'].focuser_is_moving:
+                while self.focuser_is_moving:
                     if reporty==0:
                         plog ("Waiting for focuser to finish moving before adjusting focus")
                         reporty=1

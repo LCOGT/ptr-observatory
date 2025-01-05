@@ -257,7 +257,7 @@ class Mount:
         self.has_paddle = config['mount']['mount1']['has_paddle']
 
         self.object = "Unspecified"
-        self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+        self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
         #DIRECT MOUNT POSITION READ #1
         #NB NB this is toally incorrect.  The mount is mechanical. self.current_icrs_ra is used!
@@ -555,7 +555,7 @@ class Mount:
         # not keep calling the mount to ask for it, which is slow and prone
         # to an ascom crash.
         try:
-            self.pier_side = g_dev["mnt"].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
+            self.pier_side = self.mount.sideOfPier  # 0 == Tel Looking West, is flipped.
             self.can_report_pierside = True
         except Exception:
             plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
@@ -565,7 +565,7 @@ class Mount:
 
         # Similarly for DestinationSideOfPier
         try:
-            g_dev["mnt"].mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
+            self.mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
             self.can_report_destination_pierside = True
         except Exception:
             plog ("Mount cannot report destination pierside. Setting the code not to ask again.")
@@ -762,7 +762,7 @@ class Mount:
         ra_app_h, dec_app_d = ra_dec_fix_h(ra, dec)
 
         #First, convert Ra to Ha
-        self.sid_now_h = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+        self.sid_now_h = float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
         #First, convert Ra to Ha
         ha_app_h = ha_fix_h(self.sid_now_h - ra_app_h)
@@ -1081,7 +1081,7 @@ class Mount:
 
                     self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                     self.currently_slewing=False
-                    g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
+                    self.pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
 
 
                     self.mount_updates=self.mount_updates + 1  #A monotonic increasing integer counter
@@ -1256,13 +1256,13 @@ class Mount:
                                         self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
                                         self.current_tracking_state=self.mount_update_wincom.Tracking
                                         try:
-                                            if not (g_dev['mnt'].pier_side_last_check==g_dev['mnt'].rapid_pier_indicator):
+                                            if not (self.pier_side_last_check==self.rapid_pier_indicator):
                                                 self.pier_flip_detected=True
                                                 plog ("PIERFLIP DETECTED!")
                                         except:
                                             plog ("missing pier_side_last_check variable probs")
                                             plog(traceback.format_exc())
-                                        g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
+                                        self.pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
 
                                 #DIRECT MOUNT POSITION READ #5
                                 self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
@@ -1318,20 +1318,20 @@ class Mount:
     def wait_for_slew(self, wait_after_slew=True):
         try:
             actually_slewed=False
-            if not g_dev['mnt'].rapid_park_indicator:
+            if not self.rapid_park_indicator:
                 movement_reporting_timer = time.time()
-                while g_dev['mnt'].return_slewing():
+                while self.return_slewing():
                     if actually_slewed==False:
                         actually_slewed=True
                     if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
                         plog('m>')
                         movement_reporting_timer = time.time()
-                    g_dev['mnt'].get_mount_coordinates_after_next_update()
+                    self.get_mount_coordinates_after_next_update()
                     g_dev['obs'].update_status(mount_only=True, dont_wait=True)
 
                 # Then wait for slew_time to settle
                 if actually_slewed and wait_after_slew:
-                    time.sleep(g_dev['mnt'].wait_after_slew_time)
+                    time.sleep(self.wait_after_slew_time)
 
         except: #  Exception as e:
             self.mount_busy=False
@@ -1559,7 +1559,7 @@ class Mount:
         pre.append(time.time())
         pre.append(self.current_icrs_ra)
         pre.append(self.current_icrs_dec)
-        pre.append(float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle))
+        pre.append(float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle))
         pre.append(0.0)
         pre.append(0.0)
         pre.append(self.az)
@@ -1745,7 +1745,7 @@ class Mount:
         elif action == "tracking":
             self.tracking_command(req, opt)
         elif action in ["pivot", 'zero', 'ra=sid, dec=0']:
-            ra =  (Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle
+            ra =  (Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle
             dec = 0.0
             self.go_command(ra=ra, dec=dec, offset=False)
         elif action == "park":
@@ -1754,7 +1754,7 @@ class Mount:
             #breakpoint()
             self.unpark_command(req, opt)
         elif action == 'sky_flat_position':
-            g_dev['mnt'].go_command(skyflatspot=True)
+            self.go_command(skyflatspot=True)
         else:
             plog(f"Command <{action}> not recognized.")
 
@@ -2023,7 +2023,7 @@ class Mount:
         self.last_tracking_rate_dec = tracking_rate_dec
         self.last_seek_time = time.time() - 5000
 
-        self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+        self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
         self.previous_pier_side=self.rapid_pier_indicator
 
@@ -2121,7 +2121,7 @@ class Mount:
             try:
                 self.wait_for_slew(wait_after_slew=False)
                 g_dev['obs'].time_of_last_slew=time.time()
-                g_dev['mnt'].last_slew_was_pointing_slew = True
+                self.last_slew_was_pointing_slew = True
 
                 #### Slew to CoordinatesAsync block
                 self.slewtoRA = ra
@@ -2143,7 +2143,7 @@ class Mount:
                     retry=0
                     while retry <3:
                         try:
-                            if g_dev['mnt'].theskyx:
+                            if self.theskyx:
                                 plog (traceback.format_exc())
                                 #breakpoint()
                                 plog("The SkyX had an error.")
@@ -2177,8 +2177,8 @@ class Mount:
                     self.mount_busy=False
                     plog (traceback.format_exc())
 
-            g_dev["mnt"].pier_side=self.rapid_pier_indicator
-            if self.previous_pier_side == g_dev["mnt"].pier_side or self.can_report_destination_pierside:
+            self.pier_side=self.rapid_pier_indicator
+            if self.previous_pier_side == self.pier_side or self.can_report_destination_pierside:
                 successful_move=1
             else:
                 # if g_dev['obs'].mount_reference_model_off:
@@ -2189,7 +2189,7 @@ class Mount:
 
                 ra = ra_fix_h(ra)
                 self.wait_for_slew(wait_after_slew=False)
-                g_dev['mnt'].last_slew_was_pointing_slew = True
+                self.last_slew_was_pointing_slew = True
                 #### Slew to CoordinatesAsync block
                 self.slewtoRA = ra
                 self.slewtoDEC = dec
@@ -2217,7 +2217,7 @@ class Mount:
                 self.mount_busy=False
                 if "Property write Tracking is not implemented in this driver" in str(traceback.format_exc()):
                     pass
-                elif g_dev['mnt'].theskyx:
+                elif self.theskyx:
                     plog (traceback.format_exc())
                     plog("The SkyX had an error.")
                     plog("Usually this is because of a broken connection.")
@@ -2288,7 +2288,7 @@ class Mount:
             home_alt = self.settings["home_altitude"]
             home_az = self.settings["home_azimuth"]
             g_dev['obs'].time_of_last_slew=time.time()
-            g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)
+            self.go_command(alt=home_alt,az= home_az, skip_open_test=True)
 
             self.wait_for_slew(wait_after_slew=False)
         self.wait_for_slew(wait_after_slew=False)
@@ -2374,10 +2374,10 @@ class Mount:
                             home_alt = self.settings["home_altitude"]
                             home_az = self.settings["home_azimuth"]
                             self.wait_for_slew(wait_after_slew=False)
-                            g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)
+                            self.go_command(alt=home_alt,az= home_az, skip_open_test=True)
                             self.wait_for_slew(wait_after_slew=False)
                         except:
-                            if g_dev['mnt'].theskyx:
+                            if self.theskyx:
 
                                 plog("The SkyX had an error.")
                                 plog("Usually this is because of a broken connection.")
@@ -2389,7 +2389,7 @@ class Mount:
                                 self.wait_for_slew(wait_after_slew=False)
                                 home_alt = self.settings["home_altitude"]
                                 home_az = self.settings["home_azimuth"]
-                                g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)
+                                self.go_command(alt=home_alt,az= home_az, skip_open_test=True)
                             else:
                                 plog (traceback.format_exc())
                     self.wait_for_slew(wait_after_slew=False)
