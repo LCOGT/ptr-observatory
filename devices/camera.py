@@ -5036,7 +5036,9 @@ class Camera:
 
                     # It actually takes a few seconds to spin up the main subprocess, so we farm this out to a thread
                     # So the code can continue more quickly to the next exposure.
-                    threading.Thread(target=dump_main_data_out_to_post_exposure_subprocess, args=(payload,)).start()
+                    thread = threading.Thread(target=dump_main_data_out_to_post_exposure_subprocess, args=(payload,))
+                    thread.daemon = True
+                    thread.start()
 
 
 ################################################# HERE IS WHERE IN-LINE STUFF HAPPENS.
@@ -5231,8 +5233,10 @@ class Camera:
                             raw_path, exist_ok=True, mode=0o777
                         )
 
-                        threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header,
-                                         frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, altpath, 'deprecated')),)).start()
+                        thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header,
+                                         frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, altpath, 'deprecated')),))
+                        thread.daemon = True
+                        thread.start()
 
                     # For sites that have "save_to_alt_path" enabled, this routine
                     # Saves the raw and reduced fits files out to the provided directories
@@ -5252,8 +5256,10 @@ class Camera:
                         os.makedirs(
                             self.alt_path + g_dev["day"] + "/raw/", exist_ok=True, mode=0o777
                         )
-                        threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header,
-                                                                                         frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, altpath, 'deprecated')),)).start()
+                        thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header,
+                                                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, altpath, 'deprecated')),))
+                        thread.daemon = True
+                        thread.start()
 
                     del hdu
                     return copy.deepcopy(expresult)
@@ -5900,14 +5906,20 @@ class Camera:
                             os.makedirs(
                                 raw_path, exist_ok=True, mode=0o777
                             )
-                            threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header,
-                                             frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, 'no', 'deprecated')),)).start()
+                            thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header,
+                                             frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, 'no', 'deprecated')),))
+                            thread.daemon = True
+                            thread.start()
+
+
 
                         # For sites that have "save_to_alt_path" enabled, this routine
                         # Saves the raw and reduced fits files out to the provided directories
                         if self.config["save_to_alt_path"] == "yes":
-                            threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header,
-                                                                                             frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, 'no', 'deprecated')),)).start()
+                            thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header,
+                                                                                             frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, 'no', 'deprecated')),))
+                            thread.daemon = True
+                            thread.start()
 
                         del hdu
                         return copy.deepcopy(expresult)

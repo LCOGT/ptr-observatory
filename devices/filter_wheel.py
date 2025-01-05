@@ -64,6 +64,7 @@ class FilterWheel:
             self.filterwheel_updates=0
             #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
             self.filterwheel_update_thread=threading.Thread(target=self.filterwheel_update_thread)
+            self.filterwheel_update_thread.daemon = True
             self.filterwheel_update_thread.start()
 
 

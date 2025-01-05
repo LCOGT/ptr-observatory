@@ -131,6 +131,7 @@ class Focuser:
 
         self.focuser_update_timer=time.time() - 2* self.focuser_update_period
         self.focuser_update_thread=threading.Thread(target=self.focuser_update_thread)
+        self.focuser_update_thread.daemon=True
         self.focuser_update_thread.start()
         self.focuser_message = "-"
         if not self.dummy:

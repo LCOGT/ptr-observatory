@@ -612,6 +612,7 @@ class Mount:
         self.mount_update_reboot=False
 
         self.mount_update_thread=threading.Thread(target=self.mount_update_thread)
+        self.mount_update_thread.daemon = True
         self.mount_update_thread.start()
 
         self.wait_for_mount_update()
