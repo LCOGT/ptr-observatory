@@ -1,8 +1,49 @@
 from ptr_utility import plog
 from global_yard import g_dev
-from astropy.coordinates import SkyCoord, AltAz, get_body
+from astropy.coordinates import SkyCoord, AltAz, get_body, Distance
 from astropy.time import Time
 from astropy import units as u
+
+
+def compute_target_coordinates(target: dict) -> dict:
+    """ Apply proper motion and parallax to the target coordinates to get the observed position.
+    Reference: https://docs.astropy.org/en/stable/coordinates/apply_space_motion.html
+
+    Input dict should have the following
+        ra: float, right ascension in degrees
+        dec: float, declination in degrees
+        proper_motion_ra: float, proper motion in right ascension in mas/yr
+        proper_motion_dec: float, proper motion in declination in mas/yr
+        parallax: float, parallax in mas
+        epoch: float, epoch in Julian years
+    Output dict will have the following
+        ra: float, right ascension in hours
+        dec: float, declination in degrees
+    """
+
+    # Define target parameters
+    ra = target.get('ra') * u.deg
+    dec = target.get('dec') * u.deg
+    pm_ra = target.get('proper_motion_ra', 0) * u.mas/u.yr
+    pm_dec = target.get('proper_motion_dec', 0) * u.mas/u.yr
+    parallax = target.get('parallax') * u.mas
+    epoch = Time(target.get('epoch'), format='jyear')
+    observation_time = Time.now()
+    distance = Distance(parallax=parallax)
+
+    # Define the target's initial position
+    target = SkyCoord(ra=ra,
+                     dec=dec,
+                     distance=Distance(parallax=parallax),
+                     pm_ra_cosdec=pm_ra,
+                     pm_dec=pm_dec,
+                     obstime=epoch)
+
+    # Apply proper motion to calculate position at the observation time
+    target_observed = target.apply_space_motion(new_obstime=observation_time)
+   
+    # Return with ra in hours (0 to 24) and dec in degrees (-90 to 90)
+    return {'ra': target_observed.ra.hour, 'dec': target_observed.dec.degree}
 
 
 def validate_project_format(project):
