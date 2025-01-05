@@ -24,10 +24,11 @@ from ptr_utility import plog
 class FilterWheel:
     """A filter wheel instrument."""
 
-    def __init__(self, driver, name: str, config: dict):
+    def __init__(self, driver, name: str, config: dict, devices: dict):
         self.name = name
         g_dev["fil"] = self
         self.config = config["filter_wheel"]
+        self.devices = devices # This dict includes all device instances that have been created
         self.previous_filter_name='none'
 
         # Set the dummy flag

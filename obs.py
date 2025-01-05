@@ -792,19 +792,19 @@ class Observatory:
                             "http://localhost:8220/mount/connect")
                         time.sleep(5)
                     device = Mount(
-                        driver, name, settings, self.config, self.astro_events, tel=True
+                        driver, name, settings, self.config, self.all_devices, self.astro_events, tel=True
                     )
                 elif dev_type == "rotator":
-                    device = Rotator(driver, name, self.config)
+                    device = Rotator(driver, name, self.config, self.all_devices)
                 elif dev_type == "focuser":
-                    device = Focuser(driver, name, self.config)
+                    device = Focuser(driver, name, self.config, self.all_devices)
                 elif dev_type == "filter_wheel":
-                    device = FilterWheel(driver, name, self.config)
+                    device = FilterWheel(driver, name, self.config, self.all_devices)
                 elif dev_type == "camera":
-                    device = Camera(driver, name, self.config)
+                    device = Camera(driver, name, self.config, self.all_devices)
                 elif dev_type == "sequencer":
                     device = Sequencer(
-                        driver, name, self.config, self.astro_events)
+                        driver, name, self.config, self.all_devices, self.astro_events)
                 self.all_devices[dev_type][name] = device
 
         plog("Finished creating devices.")

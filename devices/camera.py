@@ -780,7 +780,7 @@ class Camera:
     to be created by a camera factory.
     """
 
-    def __init__(self, driver: str, name: str, config: dict):
+    def __init__(self, driver: str, name: str, config: dict, devices: dict):
         """
         Added monkey patches to make ASCOM/Maxim/TheSkyX/QHY differences
         go away from the bulk of the in-line code.
@@ -810,6 +810,7 @@ class Camera:
             g_dev["cam"] = self
         self.config = config
         self.alias = config["camera"][self.name]["name"]
+        self.devices = devices # This dict includes all device instances that have been created
 
 
         if not self.dummy:

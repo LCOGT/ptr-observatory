@@ -201,7 +201,7 @@ class Mount:
     that is rarely disturbed or removed.
     '''
 
-    def __init__(self, driver: str, name: str, settings: dict, config: dict, astro_events, tel=False):
+    def __init__(self, driver: str, name: str, settings: dict, config: dict, devices: dict, astro_events, tel=False):
         self.name = name
         self.astro_events = astro_events
         g_dev['mnt'] = self
@@ -209,6 +209,7 @@ class Mount:
         self.obsid = config['obs_id']
         self.obsid_path = g_dev['obs'].obsid_path
         self.config = config
+        self.devices = devices # This dict includes all device instances that have been created
         self.device_name = name
         self.settings = settings
 

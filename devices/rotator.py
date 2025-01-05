@@ -26,7 +26,7 @@ def findProcessIdByName(processName):
     return listOfProcessObjects
 
 class Rotator:
-    def __init__(self, driver: str, name: str, config: dict):
+    def __init__(self, driver: str, name: str, config: dict, devices: dict):
         self.name = name
         g_dev["rot"] = self
 
@@ -34,6 +34,7 @@ class Rotator:
         win32com.client.pythoncom.CoInitialize()
         self.driver=driver
         self.rotator = win32com.client.Dispatch(driver)
+        self.devices = devices # This dict includes all device instances that have been created
         time.sleep(3)
 
         self.rotator.Connected = True

@@ -123,10 +123,11 @@ def ra_dec_fix_hd(ra, dec):
 
 class Sequencer:
 
-    def __init__(self, driver: str, name: str, config: dict, astro_events):
+    def __init__(self, driver: str, name: str, config: dict, devices: dict, astro_events):
         self.name = name
         self.astro_events = astro_events
         self.config = config
+        self.devices = devices # This dict includes all device instances that have been created
 
         g_dev['seq'] = self
         self.connected = True

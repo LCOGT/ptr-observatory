@@ -59,13 +59,14 @@ def probeRead(com_port):
 
 
 class Focuser:
-    def __init__(self, driver: str, name: str, config: dict):
+    def __init__(self, driver: str, name: str, config: dict, devices: dict):
         self.obsid = config["obs_id"]
         self.name = name
         self.obsid_path = g_dev['obs'].obsid_path
         self.camera_name = config["camera"]["camera_1_1"]["name"]
         g_dev["foc"] = self
         self.config = config["focuser"]["focuser1"]
+        self.devices = devices # This dict includes all device instances that have been created
         self.throw = int(config["focuser"]["focuser1"]["throw"])
         
         
