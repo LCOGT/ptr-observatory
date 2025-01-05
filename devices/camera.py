@@ -1245,8 +1245,7 @@ class Camera:
             plog("Please note telescope is NOT connected to Maxim.")
 
         elif driver == 'dummy':
-            # NB NB NB Considerputting this up higher.
-            plog("Maxim camera is initializing.")
+            plog("Simulated camera is initializing.")
             self._connected = self._dummy_connected
             self._connect = self._dummy_connect
             self._set_setpoint = self._dummy_set_setpoint
@@ -1259,23 +1258,17 @@ class Camera:
             self._imageavailable = self._dummy_imageavailable
             self._getImageArray = self._dummy_getImageArray
 
-            self.description = "DUMMY"
+            self.description = "Simulated Camera"
             self.zwo=False
             self.maxim = False
             self.ascom = False
             self.theskyx = False
             self.qhydirect = False
-            plog("Maxim is connected:  ", self._connect(True))
-            # self.app = win32com.client.Dispatch("Maxim.Application")
-            # plog(self.camera)
-            # self.camera.SetFullFrame()
-            # self.camera.SetFullFrame
+            plog("Simulated camera is connected:  ", self._connect(True))
 
             self.imagesize_x = 2400
             self.imagesize_y = 2400
 
-            plog("Control is via Maxim camera interface, not ASCOM.")
-            plog("Please note telescope is NOT connected to Maxim.")
 
         # Before anything, abort any exposures because sometimes a long exposure
         # e.g. 500s could keep on going with theskyx (and maybe Maxim)
@@ -2596,10 +2589,10 @@ class Camera:
             # image = np.ctypeslib.as_array(
             #     qhycam.camera_params[qhycam_id]['prev_img_data'])
 
-            
+
 
             #breakpoint()
-            
+
             while zwocamera.get_exposure_status() == 1:
                 #print ('waitingforzeo')
                 time.sleep(0.05)
@@ -2914,7 +2907,7 @@ class Camera:
                 qhycam.camera_params[qhycam_id]['handle'])
         else:
 
-            
+
             # Boost Narrowband and low throughput broadband
             if not self.current_filter == None:
                 if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n"]:
@@ -3180,7 +3173,9 @@ class Camera:
             skip_open_check=False,
             skip_daytime_check=False,
             manually_requested_calibration=False,
-            useastrometrynet=False):
+            useastrometrynet=False,
+            observation_metadata={}
+        ):
 
         self.running_an_exposure_set = True
 
