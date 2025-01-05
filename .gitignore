@@ -1,5 +1,6 @@
 env/
 venv/
+local_dev_stuff/
 .env
 .credentials
 local_dev_stuff/
