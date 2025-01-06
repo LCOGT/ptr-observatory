@@ -1461,9 +1461,11 @@ class Sequencer:
                         # Then calculate the central coordinate offsets.
                         mosaic_length_fields_ra = requested_mosaic_length_ra / ra_field_deg
                         mosaic_length_fields_dec = requested_mosaic_length_dec / dec_field_deg
-                        if mosaic_length_fields_ra % 1 > 0.8:
+                        #if mosaic_length_fields_ra % 1 > 0.8:
+                        if mosaic_length_fields_ra % 1 > 0.6:
                             mosaic_length_fields_ra += 1
-                        if mosaic_length_fields_dec % 1 > 0.8:
+                        #if mosaic_length_fields_dec % 1 > 0.8:
+                        if mosaic_length_fields_dec % 1 > 0.6:
                             mosaic_length_fields_dec += 1
                         mosaic_length_fields_ra = np.ceil(mosaic_length_fields_ra)
                         mosaic_length_fields_dec = np.ceil(mosaic_length_fields_dec)
