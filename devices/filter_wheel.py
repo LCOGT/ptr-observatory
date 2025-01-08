@@ -66,8 +66,8 @@ class FilterWheel:
             self.filterwheel_update_thread=threading.Thread(target=self.filterwheel_update_thread)
             self.filterwheel_update_thread.start()
 
-            
-            
+
+
             if driver =='dummy':
                 self.maxim = False
                 self.theskyx = False
@@ -290,6 +290,7 @@ class FilterWheel:
                     if self.filter_change_requested:
                         self.filter_change_requested=False
                         self.filter_changing=True
+
                         if self.dual and self.custom:
                             r0 = self.r0
                             r1 = self.r1
@@ -429,7 +430,7 @@ class FilterWheel:
                 plog("Found filter disconnected, reconnecting!")
                 self.maxim_connect(True)
         if action == "set_position":
-            self.set_position_command(req, opt)
+             self.set_position_command(req, opt)
         elif action == "set_name":
             self.set_name_command(req, opt)
         elif action == "home":

@@ -375,7 +375,7 @@ site_config = {
             'obscuration':  24.0,
             'aperture': 305.0,
             'f-ratio':  3.8,  # This and focal_length can be refined after a solve.
-            'focal_length': 1159.0,
+            'focal_length':  1159.0,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
             'rotator_name':  'rotator1',
@@ -626,8 +626,8 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq010sm',  # Important because this points to a server file structure by that name.
-            'desc':  'QHY 461PH BSI Mono',
+            'name': 'sq100sm',  # Important because this points to a server file structure by that name.
+            'desc':  'QHY 461 BSI Mono',
 
             'overscan_trim' : 'QHY461',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
@@ -789,21 +789,21 @@ site_config = {
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  25,  # C
                 "temp_setpoint_tolerance": 2.5,   #  C
-                
-                
+
+
                 # This is the yearly range of temperatures.
                 # Based on New Mexico and Melbourne's variation... sorta similar.
                 # There is a cold bit and a hot bit and an inbetween bit.
-                # from the 15th of the month to the 15 of the month 
-                # 
+                # from the 15th of the month to the 15 of the month
+                #
                 # ( setpoint, day_warm_difference, day_warm troe our false)
                 'set_temp_setpoint_by_season' : True,
                 'temp_setpoint_nov_to_feb' : ( 2, 6, True),
                 'temp_setpoint_feb_to_may' : ( 2, 8, True),
                 'temp_setpoint_may_to_aug' : ( 2, 8, True),
                 'temp_setpoint_aug_to_nov' : ( 2, 8, True),
-                
-                
+
+
                 'day_warm': False,
                 'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
@@ -835,7 +835,7 @@ site_config = {
                 # If you have a higher resolution pixelscale it will use that instead.
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.
-                'drizzle_value_for_later_stacking': 0.5,
+                'drizzle_value_for_later_stacking':  0.5,
                 'dither_enabled':  True,      #Set this way for tracking testing
 
 

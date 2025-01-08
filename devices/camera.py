@@ -1513,13 +1513,15 @@ class Camera:
         self.darkslide_state = "N.A."
         if self.config["camera"][self.name]["settings"]["has_darkslide"]:
             self.has_darkslide = True
+
             self.darkslide_state = 'Unknown'
             self.darkslide_type = self.config["camera"][self.name]["settings"]['darkslide_type']
 
             com_port = self.config["camera"][self.name]["settings"]["darkslide_com"]
+            self.com_port = com_port
             if self.darkslide_type == 'bistable':
                 self.darkslide_instance = Darkslide(com_port)
-            # As it takes 12seconds to open, make sure it is either Open or Shut at startup
+            # As it takes 12 seconds to open, make sure it is either Open or Shut at startup  NB NB 20250107 Should be closed!!!
             if self.darkslide_state != 'Open':
                 if self.darkslide_type is not None:
                     self.darkslide_instance.openDarkslide()
@@ -1688,6 +1690,7 @@ class Camera:
             self.camera_update_thread.start()
 
     def openDarkslide(self):
+
         if self.darkslide_state != 'Open':
             if self.darkslide_type is not None:
                 opened = self.darkslide_instance.openDarkslide()
@@ -1701,6 +1704,7 @@ class Camera:
                 return True
 
     def closeDarkslide(self):
+
         if self.darkslide_state != 'Closed':
             if self.darkslide_type is not None:
                 closed = self.darkslide_instance.closeDarkslide()
@@ -2416,7 +2420,7 @@ class Camera:
                         add_star_with_psf(synthetic_image, int(starstat[0]), int( starstat[1]),  int(pow(10,-0.4 * (starstat[2] -23))), psf)
                     except:
                         plog(traceback.format_exc())
-                        breakpoint()
+                        #breakpoint()
 
 
         return synthetic_image
@@ -2929,14 +2933,16 @@ class Camera:
             self.active_script = None
 
         elif action == "darkslide_close":
-            if self.darkslide_type == 'COM':
+
+            if self.darkslide_type == 'bistable':
                 g_dev["drk"].closeDarkslide()
             elif self.darkslide_type == 'ASCOM_FLI_SHUTTER':
                 self.camera.Action('SetShutter', 'close')
             plog("Closing the darkslide.")
             self.darkslide_state = 'Closed'
         elif action == "darkslide_open":
-            if self.darkslide_type == 'COM':
+
+            if self.darkslide_type == 'bistable':
                 g_dev["drk"].openDarkslide()
             elif self.darkslide_type == 'ASCOM_FLI_SHUTTER':
                 self.camera.Action('SetShutter', 'open')
@@ -4974,16 +4980,11 @@ class Camera:
 
                             if True:
                                height, width = outputimg.shape
-#<<<<<<< Updated upstream
                                patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
                                print(">>>>  20% central image patch, std:  ", np.median(patch), round(np.std(patch), 2))
                                print(width, height)
                                #breakpoint()
-# =======
-#                                patch = outputimg[int(0.35*height):int(0.65*height), int(0.35*width):int(0.65*width)]
-#                                print("Cam line 4970: Imm. after readout; 20% central image patch:  ", np.median(patch))
 
-# >>>>>>> Stashed changes
                         except Exception as e:
 
                             if self.theskyx:
@@ -5044,7 +5045,7 @@ class Camera:
                 # So this is done in the main thread. Whereas normal exposures get done in the subprocess.
                 if (frame_type in ["bias", "dark"] or a_dark_exposure or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ",
-                         np.median(outputimg))
+                         np.median(outputimg), np.std(outputimg))
 
                     # Check that the temperature is ok before accepting
                     current_camera_temperature, cur_humidity, cur_pressure, cur_pwm = (
