@@ -533,7 +533,7 @@ class Observatory:
 
         g_dev["obs"] = self
         obsid_str = ptr_config["obs_id"]
-        g_dev["obsid"]: obsid_str
+        g_dev["obsid"] = obsid_str
         self.g_dev = g_dev
 
         self.currently_updating_status = False
