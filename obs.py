@@ -56,7 +56,7 @@ from devices.rotator import Rotator
 #from devices.selector import Selector
 #from devices.screen import Screen
 from devices.sequencer import Sequencer
-import ptr_events
+from ptr_events import Events
 
 from ptr_utility import plog
 from astropy.utils.exceptions import AstropyUserWarning
@@ -488,7 +488,7 @@ class Observatory:
             self.auto_centering_off = False
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
-        self.astro_events = ptr_events.Events(self.config)
+        self.astro_events = Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.calculate_events()
         self.astro_events.display_events()
@@ -663,11 +663,11 @@ class Observatory:
 
         # Report previously calculated Camera Gains as part of bootup
         textfilename = (
-            g_dev["obs"].obsid_path
+            self.obsid_path
             + "ptr_night_shelf/"
             + "cameragain"
             + g_dev["cam"].alias
-            + str(g_dev["obs"].name)
+            + str(self.name)
             + ".txt"
         )
         if os.path.exists(textfilename):
@@ -682,11 +682,11 @@ class Observatory:
 
         # Report filter throughputs as part of bootup
         filter_throughput_shelf = shelve.open(
-            g_dev["obs"].obsid_path
+            self.obsid_path
             + "ptr_night_shelf/"
             + "filterthroughput"
             + g_dev["cam"].alias
-            + str(g_dev["obs"].name)
+            + str(self.name)
         )
 
         if len(filter_throughput_shelf) == 0:
@@ -703,11 +703,11 @@ class Observatory:
 
         # Boot up filter offsets
         filteroffset_shelf = shelve.open(
-            g_dev["obs"].obsid_path
+            self.obsid_path
             + "ptr_night_shelf/"
             + "filteroffsets_"
             + g_dev["cam"].alias
-            + str(g_dev["obs"].name)
+            + str(self.name)
         )
         plog("Filter Offsets")
         for filtername in filteroffset_shelf:
@@ -719,12 +719,12 @@ class Observatory:
 
         # On bootup, detect the roof status and set the obs to observe or not.
         try:
-            g_dev["obs"].enc_status = g_dev["obs"].get_enclosure_status_from_aws()
+            self.enc_status = self.get_enclosure_status_from_aws()
             # If the roof is open, then it is open and enabled to observe
-            if not g_dev["obs"].enc_status == None:
-                if "Open" in g_dev["obs"].enc_status["shutter_status"]:
+            if not self.enc_status == None:
+                if "Open" in self.enc_status["shutter_status"]:
                     if (
-                        not "NoObs" in g_dev["obs"].enc_status["shutter_status"]
+                        not "NoObs" in self.enc_status["shutter_status"]
                         and not self.net_connection_dead
                     ) or self.assume_roof_open:
                         self.open_and_enabled_to_observe = True
@@ -744,7 +744,7 @@ class Observatory:
         self.safety_and_monitoring_checks_loop_thread.daemon = True
         self.safety_and_monitoring_checks_loop_thread.start()
 
-        g_dev["obs"].drift_tracker_timer = time.time()
+        self.drift_tracker_timer = time.time()
         self.drift_tracker_counter = 0
 
         self.currently_scan_requesting = False
@@ -848,8 +848,8 @@ class Observatory:
             plog(response)
 
     def cancel_all_activity(self):
-        g_dev["obs"].stop_all_activity = True
-        g_dev["obs"].stop_all_activity_timer = time.time()
+        self.stop_all_activity = True
+        self.stop_all_activity_timer = time.time()
         plog("Stop_all_activity is now set True.")
         self.send_to_user(
             "Cancel/Stop received. Exposure stopped, camera may begin readout, then will discard image."
@@ -873,8 +873,8 @@ class Observatory:
             plog(traceback.format_exc())
             g_dev["cam"].running_an_exposure_set = False
 
-        g_dev["obs"].exposure_halted_indicator = True
-        g_dev["obs"].exposure_halted_indicator_timer = time.time()
+        self.exposure_halted_indicator = True
+        self.exposure_halted_indicator_timer = time.time()
 
     def scan_requests(self, cancel_check=False):
         """Gets commands from AWS, and post a STOP/Cancel flag.
@@ -929,13 +929,13 @@ class Observatory:
                         ):
                             # A stop script command flags to the running scripts that it is time to stop
                             # activity and return. This period runs for about 30 seconds.
-                            g_dev["obs"].send_to_user(
+                            self.send_to_user(
                                 "A Cancel/Stop has been called. Cancelling out of running scripts over 30 seconds."
                             )
                             g_dev["seq"].stop_script_called = True
                             g_dev["seq"].stop_script_called_time = time.time()
                             # Cancel out of all running exposures.
-                            g_dev["obs"].cancel_all_activity()
+                            self.cancel_all_activity()
                         else:
                             try:
                                 action = cmd["action"]
@@ -953,14 +953,14 @@ class Observatory:
                                 if cmd["action"] == "configure_pointing_reference_off":
                                     self.mount_reference_model_off = True
                                     plog("mount_reference_model_off")
-                                    g_dev["obs"].send_to_user(
+                                    self.send_to_user(
                                         "mount_reference_model_off."
                                     )
 
                                 elif cmd["action"] == "configure_pointing_reference_on":
                                     self.mount_reference_model_off = False
                                     plog("mount_reference_model_on")
-                                    g_dev["obs"].send_to_user(
+                                    self.send_to_user(
                                         "mount_reference_model_on."
                                     )
 
@@ -968,13 +968,13 @@ class Observatory:
                                     if cmd["required_params"]["mode"] == "manual":
                                         self.scope_in_manual_mode = True
                                         plog("Manual Mode Engaged.")
-                                        g_dev["obs"].send_to_user(
+                                        self.send_to_user(
                                             "Manual Mode Engaged."
                                         )
                                     else:
                                         self.scope_in_manual_mode = False
                                         plog("Manual Mode Turned Off.")
-                                        g_dev["obs"].send_to_user(
+                                        self.send_to_user(
                                             "Manual Mode Turned Off."
                                         )
 
@@ -982,36 +982,36 @@ class Observatory:
                                     if cmd["required_params"]["mode"] == "on":
                                         self.moon_checks_on = True
                                         plog("Moon Safety On")
-                                        g_dev["obs"].send_to_user(
+                                        self.send_to_user(
                                             "Moon Safety On")
                                     else:
                                         self.moon_checks_on = False
                                         plog("Moon Safety Off")
-                                        g_dev["obs"].send_to_user(
+                                        self.send_to_user(
                                             "Moon Safety Off")
 
                                 elif cmd["action"] == "configure_sun_safety":
                                     if cmd["required_params"]["mode"] == "on":
                                         self.sun_checks_on = True
                                         plog("Sun Safety On")
-                                        g_dev["obs"].send_to_user(
+                                        self.send_to_user(
                                             "Sun Safety On")
                                     else:
                                         self.sun_checks_on = False
                                         plog("Sun Safety Off")
-                                        g_dev["obs"].send_to_user(
+                                        self.send_to_user(
                                             "Sun Safety Off")
 
                                 elif cmd["action"] == "configure_altitude_safety":
                                     if cmd["required_params"]["mode"] == "on":
                                         self.altitude_checks_on = True
                                         plog("Altitude Safety On")
-                                        g_dev["obs"].send_to_user(
+                                        self.send_to_user(
                                             "Altitude Safety On")
                                     else:
                                         self.altitude_checks_on = False
                                         plog("Altitude Safety Off")
-                                        g_dev["obs"].send_to_user(
+                                        self.send_to_user(
                                             "Altitude Safety Off")
 
                                 elif (
@@ -1020,20 +1020,20 @@ class Observatory:
                                     if cmd["required_params"]["mode"] == "on":
                                         self.daytime_exposure_time_safety_on = True
                                         plog("Daytime Exposure Safety On")
-                                        g_dev["obs"].send_to_user(
+                                        self.send_to_user(
                                             "Daytime Exposure Safety On"
                                         )
                                     else:
                                         self.daytime_exposure_time_safety_on = False
                                         plog("Daytime Exposure Safety Off")
-                                        g_dev["obs"].send_to_user(
+                                        self.send_to_user(
                                             "Daytime Exposure Safety Off"
                                         )
 
                                 elif cmd["action"] == "start_simulating_open_roof":
                                     self.assume_roof_open = True
                                     self.open_and_enabled_to_observe = True
-                                    g_dev["obs"].enc_status = g_dev[
+                                    self.enc_status = g_dev[
                                         "obs"
                                     ].get_enclosure_status_from_aws()
                                     self.enclosure_status_timer = (
@@ -1042,13 +1042,13 @@ class Observatory:
                                     plog(
                                         "Roof is now assumed to be open. WEMA shutter status is ignored."
                                     )
-                                    g_dev["obs"].send_to_user(
+                                    self.send_to_user(
                                         "Roof is now assumed to be open. WEMA shutter status is ignored."
                                     )
 
                                 elif cmd["action"] == "stop_simulating_open_roof":
                                     self.assume_roof_open = False
-                                    g_dev["obs"].enc_status = g_dev[
+                                    self.enc_status = g_dev[
                                         "obs"
                                     ].get_enclosure_status_from_aws()
                                     self.enclosure_status_timer = (
@@ -1057,7 +1057,7 @@ class Observatory:
                                     plog(
                                         "Roof is now NOT assumed to be open. Reading WEMA shutter status."
                                     )
-                                    g_dev["obs"].send_to_user(
+                                    self.send_to_user(
                                         "Roof is now NOT assumed to be open. Reading WEMA shutter status."
                                     )
 
@@ -1072,7 +1072,7 @@ class Observatory:
                                         plog(
                                             "Scope set to only accept admin or owner commands"
                                         )
-                                        g_dev["obs"].send_to_user(
+                                        self.send_to_user(
                                             "Scope set to only accept admin or owner commands"
                                         )
                                     else:
@@ -1080,21 +1080,21 @@ class Observatory:
                                         plog(
                                             "Scope now open to all user commands, not just admin or owner."
                                         )
-                                        g_dev["obs"].send_to_user(
+                                        self.send_to_user(
                                             "Scope now open to all user commands, not just admin or owner."
                                         )
 
                                 elif cmd["action"] == "obs_configure_auto_center_on":
                                     self.auto_centering_off = False
                                     plog("Scope set to automatically center.")
-                                    g_dev["obs"].send_to_user(
+                                    self.send_to_user(
                                         "Scope set to automatically center."
                                     )
 
                                 elif cmd["action"] == "obs_configure_auto_center_off":
                                     self.auto_centering_off = True
                                     plog("Scope set to not automatically center.")
-                                    g_dev["obs"].send_to_user(
+                                    self.send_to_user(
                                         "Scope set to not automatically center."
                                     )
 
@@ -1119,7 +1119,7 @@ class Observatory:
                                 plog(
                                     "Request rejected as flats can only be commanded by admin user."
                                 )
-                                g_dev["obs"].send_to_user(
+                                self.send_to_user(
                                     "Request rejected as flats can only be commanded by admin user."
                                 )
                             elif (
@@ -1133,7 +1133,7 @@ class Observatory:
                                 plog(
                                     "Request rejected as flats can only be commanded by admin user."
                                 )
-                                g_dev["obs"].send_to_user(
+                                self.send_to_user(
                                     "Request rejected as flats can only be commanded by admin user."
                                 )
                             elif (
@@ -1147,7 +1147,7 @@ class Observatory:
                                 plog(
                                     "Request rejected as pointing runs can only be commanded by admin user."
                                 )
-                                g_dev["obs"].send_to_user(
+                                self.send_to_user(
                                     "Request rejected as pointing runs can only be commanded by admin user."
                                 )
                             elif (
@@ -1161,7 +1161,7 @@ class Observatory:
                                 plog(
                                     "Request rejected as bias and darks can only be commanded by admin user."
                                 )
-                                g_dev["obs"].send_to_user(
+                                self.send_to_user(
                                     "Request rejected as bias and darks can only be commanded by admin user."
                                 )
                             elif (
@@ -1175,7 +1175,7 @@ class Observatory:
                                 plog(
                                     "Request rejected as focus offset estimation can only be commanded by admin user."
                                 )
-                                g_dev["obs"].send_to_user(
+                                self.send_to_user(
                                     "Request rejected as focus offset estimation can only be commanded by admin user."
                                 )
                             # Check here for irrelevant commands
@@ -1184,7 +1184,7 @@ class Observatory:
                                 and self.config["screen"]["screen1"]["driver"] == None
                             ):
                                 plog("Refusing command as there is no screen")
-                                g_dev["obs"].send_to_user(
+                                self.send_to_user(
                                     "Request rejected as site has no flat screen."
                                 )
                             elif (
@@ -1192,19 +1192,19 @@ class Observatory:
                                 and self.config["rotator"]["rotator1"]["driver"] == None
                             ):
                                 plog("Refusing command as there is no rotator")
-                                g_dev["obs"].send_to_user(
+                                self.send_to_user(
                                     "Request rejected as site has no rotator."
                                 )
                             # If not irrelevant, queue the command
                             else:
-                                g_dev["obs"].stop_all_activity = False
+                                self.stop_all_activity = False
                                 self.cmd_queue.put(cmd)
                         if cancel_check:
                             return  # Note we do not process any commands.
 
                     else:
                         plog("Request rejected as obs in admin or owner mode.")
-                        g_dev["obs"].send_to_user(
+                        self.send_to_user(
                             "Request rejected as obs in admin or owner mode."
                         )
             except:
@@ -1346,10 +1346,10 @@ class Observatory:
             if not self.mountless_operation:
                 try:
                     # If the roof is open, then it is open and enabled to observe
-                    if not g_dev["obs"].enc_status == None:
-                        if "Open" in g_dev["obs"].enc_status["shutter_status"]:
+                    if not self.enc_status == None:
+                        if "Open" in self.enc_status["shutter_status"]:
                             if (
-                                not "NoObs" in g_dev["obs"].enc_status["shutter_status"]
+                                not "NoObs" in self.enc_status["shutter_status"]
                                 and not self.net_connection_dead
                             ) or self.assume_roof_open:
                                 self.open_and_enabled_to_observe = True
@@ -1388,7 +1388,7 @@ class Observatory:
                                     < self.config["closest_distance_to_the_sun"]
                                     and not g_dev["mnt"].rapid_park_indicator
                                 ):
-                                    g_dev["obs"].send_to_user(
+                                    self.send_to_user(
                                         "Found telescope pointing too close to the sun: "
                                         + str(sun_dist.degree)
                                         + " degrees."
@@ -1398,7 +1398,7 @@ class Observatory:
                                         + str(sun_dist.degree)
                                         + " degrees."
                                     )
-                                    g_dev["obs"].send_to_user(
+                                    self.send_to_user(
                                         "Parking scope and cancelling all activity"
                                     )
                                     plog(
@@ -1439,19 +1439,19 @@ class Observatory:
                 if g_dev["seq"].stop_script_called and (
                     (time.time() - g_dev["seq"].stop_script_called_time) > 35
                 ):
-                    g_dev["obs"].send_to_user("Stop Script Complete.")
+                    self.send_to_user("Stop Script Complete.")
                     g_dev["seq"].stop_script_called = False
                     g_dev["seq"].stop_script_called_time = time.time()
 
-                if g_dev["obs"].exposure_halted_indicator == True:
-                    if g_dev["obs"].exposure_halted_indicator_timer - time.time() > 12:
-                        g_dev["obs"].exposure_halted_indicator = False
-                        g_dev["obs"].exposure_halted_indicator_timer = time.time()
+                if self.exposure_halted_indicator == True:
+                    if self.exposure_halted_indicator_timer - time.time() > 12:
+                        self.exposure_halted_indicator = False
+                        self.exposure_halted_indicator_timer = time.time()
 
-                if g_dev["obs"].stop_all_activity and (
-                    (time.time() - g_dev["obs"].stop_all_activity_timer) > 35
+                if self.stop_all_activity and (
+                    (time.time() - self.stop_all_activity_timer) > 35
                 ):
-                    g_dev["obs"].stop_all_activity = False
+                    self.stop_all_activity = False
 
                 # If theskyx is rebooting wait
                 while g_dev["seq"].rebooting_theskyx:
@@ -1510,7 +1510,7 @@ class Observatory:
                         ].currently_slewing:
                             # Check no other commands or exposures are happening
                             if (
-                                g_dev["obs"].cmd_queue.empty()
+                                self.cmd_queue.empty()
                                 and not g_dev["cam"].running_an_exposure_set
                                 and not g_dev["cam"].currently_in_smartstack_loop
                                 and not g_dev["seq"].focussing
@@ -1522,8 +1522,8 @@ class Observatory:
                                 ):
                                     # Don't do it if the roof isn't open etc.
                                     if (
-                                        g_dev["obs"].open_and_enabled_to_observe == True
-                                    ) or g_dev["obs"].scope_in_manual_mode:
+                                        self.open_and_enabled_to_observe == True
+                                    ) or self.scope_in_manual_mode:
                                         ra = g_dev["mnt"].return_right_ascension()
                                         dec = g_dev["mnt"].return_declination()
                                         temppointing = SkyCoord(
@@ -1537,7 +1537,7 @@ class Observatory:
                                         )
                                         alt = temppointingaltaz.alt.degree
                                         if alt > 25:
-                                            wait_for_slew(
+                                            self.wait_for_slew(
                                                 wait_after_slew=False)
                                             meridianra = g_dev[
                                                 "mnt"
@@ -1549,7 +1549,7 @@ class Observatory:
                                                 ra=meridianra, dec=meridiandec
                                             )
                                             plog("Meridian Probe")
-                                            wait_for_slew(
+                                            self.wait_for_slew(
                                                 wait_after_slew=False)
                                             self.time_of_last_pulse = time.time()
                     except:
@@ -1560,18 +1560,18 @@ class Observatory:
                 if (
                     (datetime.datetime.now() - self.observing_status_timer)
                 ) > datetime.timedelta(minutes=self.observing_check_period):
-                    g_dev["obs"].ocn_status = g_dev["obs"].get_weather_status_from_aws()
+                    self.ocn_status = self.get_weather_status_from_aws()
                     # These two lines are meant to update the parameters for refraction correction in the mount class
                     try:
-                        g_dev["obs"].pressure = g_dev["obs"].ocn_status["pressure_mbar"]
+                        self.pressure = self.ocn_status["pressure_mbar"]
                     except:
-                        g_dev["obs"].pressure = 1013.0
+                        self.pressure = 1013.0
                     try:
-                        g_dev["obs"].temperature = g_dev["obs"].ocn_status[
+                        self.temperature = self.ocn_status[
                             "temperature_C"
                         ]
                     except:
-                        g_dev["obs"].temperature = g_dev[
+                        self.temperature = g_dev[
                             "foc"
                         ].current_focus_temperature
                     self.observing_status_timer = datetime.datetime.now()
@@ -1579,7 +1579,7 @@ class Observatory:
                 if (
                     (datetime.datetime.now() - self.enclosure_status_timer)
                 ) > datetime.timedelta(minutes=self.enclosure_check_period):
-                    g_dev["obs"].enc_status = g_dev[
+                    self.enc_status = g_dev[
                         "obs"
                     ].get_enclosure_status_from_aws()
                     self.enclosure_status_timer = datetime.datetime.now()
@@ -1682,7 +1682,7 @@ class Observatory:
                                 < self.config["closest_distance_to_the_sun"]
                                 and not g_dev["mnt"].rapid_park_indicator
                             ):
-                                g_dev["obs"].send_to_user(
+                                self.send_to_user(
                                     "Found telescope pointing too close to the sun: "
                                     + str(sun_dist.degree)
                                     + " degrees."
@@ -1692,7 +1692,7 @@ class Observatory:
                                     + str(sun_dist.degree)
                                     + " degrees."
                                 )
-                                g_dev["obs"].send_to_user(
+                                self.send_to_user(
                                     "Parking scope and cancelling all activity"
                                 )
                                 plog("Parking scope and cancelling all activity")
@@ -1714,10 +1714,10 @@ class Observatory:
                         and not self.scope_in_manual_mode
                         and not self.assume_roof_open
                     ):
-                        if g_dev["obs"].enc_status is not None:
+                        if self.enc_status is not None:
                             if (
                                 "Software Fault"
-                                in g_dev["obs"].enc_status["shutter_status"]
+                                in self.enc_status["shutter_status"]
                             ):
                                 plog(
                                     "Software Fault Detected."
@@ -1737,9 +1737,9 @@ class Observatory:
                                     g_dev["mnt"].park_command()
 
                             if (
-                                "Closing" in g_dev["obs"].enc_status["shutter_status"]
+                                "Closing" in self.enc_status["shutter_status"]
                                 or "Opening"
-                                in g_dev["obs"].enc_status["shutter_status"]
+                                in self.enc_status["shutter_status"]
                             ):
                                 plog("Detected Roof Movement.")
                                 self.open_and_enabled_to_observe = False
@@ -1753,7 +1753,7 @@ class Observatory:
                                         g_dev["mnt"].home_command()
                                     g_dev["mnt"].park_command()
 
-                            if "Error" in g_dev["obs"].enc_status["shutter_status"]:
+                            if "Error" in self.enc_status["shutter_status"]:
                                 plog(
                                     "Detected an Error in the Roof Status. Packing up for safety."
                                 )
@@ -1810,7 +1810,7 @@ class Observatory:
                                 roof_should_be_shut = True
                                 self.open_and_enabled_to_observe = False
 
-                        if "Open" in g_dev["obs"].enc_status["shutter_status"]:
+                        if "Open" in self.enc_status["shutter_status"]:
                             if roof_should_be_shut == True:
                                 plog(
                                     "Safety check notices that the roof was open outside of the normal observing period"
@@ -1837,11 +1837,11 @@ class Observatory:
                                         g_dev["mnt"].home_command()
                                     g_dev["mnt"].park_command()
 
-                            if g_dev["obs"].enc_status is not None:
+                            if self.enc_status is not None:
                                 # If the roof IS shut, then the telescope should be shutdown and parked.
                                 if (
                                     "Closed"
-                                    in g_dev["obs"].enc_status["shutter_status"]
+                                    in self.enc_status["shutter_status"]
                                 ):
                                     if not g_dev["mnt"].rapid_park_indicator:
                                         plog(
@@ -1859,12 +1859,12 @@ class Observatory:
 
                                 # But after all that if everything is ok, then all is ok, it is safe to observe
                                 if (
-                                    "Open" in g_dev["obs"].enc_status["shutter_status"]
+                                    "Open" in self.enc_status["shutter_status"]
                                     and roof_should_be_shut == False
                                 ):
                                     if (
                                         not "NoObs"
-                                        in g_dev["obs"].enc_status["shutter_status"]
+                                        in self.enc_status["shutter_status"]
                                         and not self.net_connection_dead
                                     ):
                                         self.open_and_enabled_to_observe = True
@@ -1877,7 +1877,7 @@ class Observatory:
 
                             else:
                                 plog(
-                                    "g_dev['obs'].enc_status not reporting correctly")
+                                    "self.enc_status not reporting correctly")
 
                 if not self.mountless_operation:
                     # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
@@ -3101,11 +3101,11 @@ class Observatory:
                                     < (g_dev["cam"].pixscale * 1.1)
                                 ):
                                     self.pixelscale_shelf = shelve.open(
-                                        g_dev["obs"].obsid_path
+                                        self.obsid_path
                                         + "ptr_night_shelf/"
                                         + "pixelscale"
                                         + g_dev["cam"].alias
-                                        + str(g_dev["obs"].name)
+                                        + str(self.name)
                                     )
                                     try:
                                         pixelscale_list = self.pixelscale_shelf[
@@ -3202,8 +3202,8 @@ class Observatory:
                                 self.platesolve_errors_in_a_row = 0
 
                                 # Reset Solve timers
-                                g_dev["obs"].last_solve_time = datetime.datetime.now()
-                                g_dev["obs"].images_since_last_solve = 0
+                                self.last_solve_time = datetime.datetime.now()
+                                self.images_since_last_solve = 0
 
 
                                 self.drift_tracker_counter = (
@@ -3252,7 +3252,7 @@ class Observatory:
                                         plog(
                                             "This is more than a simple nudge, so not nudging the scope."
                                         )
-                                        # g_dev["obs"].send_to_user(
+                                        # self.send_to_user(
                                         #     "Platesolve detects pointing far out, RA: "
                                         #     + str(round(err_ha * 15 * 3600, 2))
                                         #     + " DEC: "
@@ -3319,7 +3319,7 @@ class Observatory:
                                                 )
                                             )
 
-                                        if not g_dev["obs"].mount_reference_model_off:
+                                        if not self.mount_reference_model_off:
                                             if (
                                                 target_dec > -85
                                                 and target_dec < 85
@@ -3406,7 +3406,7 @@ class Observatory:
                 self.platesolve_is_processing = False
                 self.platesolve_queue.task_done()
 
-                if not g_dev["obs"].mountless_operation:
+                if not self.mountless_operation:
                     g_dev["mnt"].last_slew_was_pointing_slew = False
 
                 time.sleep(1)
@@ -3485,11 +3485,11 @@ class Observatory:
                         filepathaws = slow_process[4]
                         filenameaws = slow_process[5]
                         if "ARCHIVE_" in filenameaws:
-                            g_dev["obs"].enqueue_for_PTRarchive(
+                            self.enqueue_for_PTRarchive(
                                 100000000000000, filepathaws, filenameaws
                             )
                         else:
-                            g_dev["obs"].enqueue_for_calibrationUI(
+                            self.enqueue_for_calibrationUI(
                                 50, filepathaws, filenameaws
                             )
 
@@ -3735,7 +3735,7 @@ class Observatory:
                                         #     + self.config["focus_trigger"]
                                         # ):
                                         #     g_dev["foc"].focus_needed = True
-                                        #     g_dev["obs"].send_to_user(
+                                        #     self.send_to_user(
                                         #         "FWHM has drifted to:  "
                                         #         + str(round(bn.nanmedian(g_dev["foc"].focus_tracker),2))
                                         #         + " from "
@@ -4039,7 +4039,7 @@ class Observatory:
         """
         A function periodically called to check if there is a telescope nudge to re-center to undertake.
         """
-        if not g_dev["obs"].auto_centering_off:
+        if not self.auto_centering_off:
             # Sometimes the pointing is so far off platesolve requests a new slew and recenter
 
             if self.pointing_recentering_requested_by_platesolve_thread:
@@ -4053,7 +4053,7 @@ class Observatory:
                     no_confirmation=no_confirmation, try_hard=True, try_forever=True
                 )
 
-                g_dev["obs"].drift_tracker_timer = time.time()
+                self.drift_tracker_timer = time.time()
                 self.drift_tracker_counter = 0
                 if g_dev["seq"].currently_mosaicing:
                     # Slew to new mosaic pane location.
@@ -4066,9 +4066,9 @@ class Observatory:
                         + g_dev["seq"].current_mosaic_displacement_dec
                     )
                     new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)   #This probably has to do with taking a mosaic near the poles.
-                    wait_for_slew(wait_after_slew=False)
+                    self.wait_for_slew(wait_after_slew=False)
                     g_dev["mnt"].slew_async_directly(ra=new_ra, dec=new_dec)
-                    wait_for_slew(wait_after_slew=False)
+                    self.wait_for_slew(wait_after_slew=False)
                     self.time_of_last_slew = time.time()
 
             # This block repeats itself in various locations to try and nudge the scope
@@ -4084,13 +4084,13 @@ class Observatory:
                     # Don't always need to be reporting every small recenter.
                     if not g_dev["cam"].currently_in_smartstack_loop and not (
                         (
-                            abs(g_dev["obs"].pointing_correction_request_ra_err)
-                            + abs(g_dev["obs"].pointing_correction_request_dec_err)
+                            abs(self.pointing_correction_request_ra_err)
+                            + abs(self.pointing_correction_request_dec_err)
                         )
                         < 0.25
                     ):
                         self.send_to_user("Re-centering Telescope.")
-                    wait_for_slew(wait_after_slew=False)
+                    self.wait_for_slew(wait_after_slew=False)
                     g_dev["mnt"].previous_pier_side = g_dev["mnt"].return_side_of_pier()
 
                     ranudge = self.pointing_correction_request_ra
@@ -4106,10 +4106,10 @@ class Observatory:
                         ranudge = ranudge - 24
                     self.time_of_last_slew = time.time()
                     try:
-                        wait_for_slew(wait_after_slew=False)
+                        self.wait_for_slew(wait_after_slew=False)
                         g_dev["mnt"].slew_async_directly(
                             ra=ranudge, dec=decnudge)
-                        wait_for_slew(wait_after_slew=False)
+                        self.wait_for_slew(wait_after_slew=False)
                     except:
                         plog(traceback.format_exc())
                     if (
@@ -4128,10 +4128,10 @@ class Observatory:
                             try_hard=True,
                             try_forever=True,
                         )
-                    g_dev["obs"].time_of_last_slew = time.time()
-                    wait_for_slew(wait_after_slew=False)
+                    self.time_of_last_slew = time.time()
+                    self.wait_for_slew(wait_after_slew=False)
 
-                    g_dev["obs"].drift_tracker_timer = time.time()
+                    self.drift_tracker_timer = time.time()
                     self.drift_tracker_counter = 0
 
                 self.pointing_correction_requested_by_platesolve_thread = False
@@ -4360,40 +4360,40 @@ class Observatory:
         ).json()
 
 
-def wait_for_slew(wait_after_slew=True):
-    """
-    A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
-    """
-    try:
-        actually_slewed = False
-        if not g_dev["mnt"].rapid_park_indicator:
-            movement_reporting_timer = time.time()
-            while g_dev["mnt"].return_slewing():
-                if actually_slewed == False:
-                    actually_slewed = True
-                if (
-                    time.time() - movement_reporting_timer
-                    > g_dev["obs"].status_interval
-                ):
-                    plog("m>")
-                    movement_reporting_timer = time.time()
-                g_dev["mnt"].get_mount_coordinates_after_next_update()
-                g_dev["obs"].update_status(mount_only=True, dont_wait=True)
+    def wait_for_slew(self, wait_after_slew=True):
+        """
+        A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
+        """
+        try:
+            actually_slewed = False
+            if not g_dev["mnt"].rapid_park_indicator:
+                movement_reporting_timer = time.time()
+                while g_dev["mnt"].return_slewing():
+                    if actually_slewed == False:
+                        actually_slewed = True
+                    if (
+                        time.time() - movement_reporting_timer
+                        > self.status_interval
+                    ):
+                        plog("m>")
+                        movement_reporting_timer = time.time()
+                    g_dev["mnt"].get_mount_coordinates_after_next_update()
+                    self.update_status(mount_only=True, dont_wait=True)
 
-            # Then wait for slew_time to settle
-            if actually_slewed and wait_after_slew:
-                time.sleep(g_dev["mnt"].wait_after_slew_time)
+                # Then wait for slew_time to settle
+                if actually_slewed and wait_after_slew:
+                    time.sleep(g_dev["mnt"].wait_after_slew_time)
 
-    except Exception as e:
-        plog("Motion check faulted.")
-        plog(traceback.format_exc())
-        if "pywintypes.com_error" in str(e):
-            plog("Mount disconnected. Recovering.....")
-            time.sleep(5)
-            g_dev["mnt"].mount_reboot()
-        else:
-            pass
-    return
+        except Exception as e:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            if "pywintypes.com_error" in str(e):
+                plog("Mount disconnected. Recovering.....")
+                time.sleep(5)
+                g_dev["mnt"].mount_reboot()
+            else:
+                pass
+        return
 
 
 if __name__ == "__main__":
