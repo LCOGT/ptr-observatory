@@ -336,48 +336,7 @@ This device works on cameras and getting images and header info back to the obs 
 dgs = "°"
 
 
-
-
-def wait_for_slew(wait_after_slew=True):
-    """
-    A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
-    NB NB Should this include testing rotator slewing  and focuser moving? WER
-    """
-    if not g_dev['obs'].mountless_operation:
-        try:
-            actually_slewed = False
-            if not g_dev['mnt'].rapid_park_indicator:
-                movement_reporting_timer = time.time()
-                while g_dev['mnt'].return_slewing():
-                    if actually_slewed == False:
-                        actually_slewed = True
-                    if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
-                        plog('m>')
-                        movement_reporting_timer = time.time()
-                    # if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                    g_dev['mnt'].get_mount_coordinates_after_next_update()
-                    # , dont_wait=True)
-                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
-
-                # Then wait for slew_time to settle
-                if actually_slewed and wait_after_slew:
-                    time.sleep(g_dev['mnt'].wait_after_slew_time)
-
-        except Exception as e:
-            plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            if 'pywintypes.com_error' in str(e):
-                plog("Mount disconnected. Recovering.....")
-                time.sleep(5)
-                g_dev['mnt'].reboot_mount()
-            else:
-                pass
-        return
-
-
 # This class is for QHY camera control
-
-
 class Qcam:
     LOG_LINE_NUM = 0
     # Python constants
@@ -2763,40 +2722,6 @@ class Camera:
             tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
             return tempsend
 
-    def wait_for_slew(self, wait_after_slew=True):
-        """
-        A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
-        """
-        if not g_dev['obs'].mountless_operation:
-            try:
-                actually_slewed = False
-                if not g_dev['mnt'].rapid_park_indicator:
-                    movement_reporting_timer = time.time()
-                    while g_dev['mnt'].return_slewing():
-                        if actually_slewed == False:
-                            actually_slewed = True
-                        if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
-                            plog('m>')
-                            movement_reporting_timer = time.time()
-                        g_dev['mnt'].get_mount_coordinates_after_next_update()
-                        g_dev['obs'].update_status(
-                            mount_only=True, dont_wait=True)
-
-                    # Then wait for slew_time to settle
-                    if actually_slewed and wait_after_slew:
-                        time.sleep(g_dev['mnt'].wait_after_slew_time)
-
-            except Exception as e:
-                plog("Motion check faulted.")
-                plog(traceback.format_exc())
-                if 'pywintypes.com_error' in str(e):
-                    plog("Mount disconnected. Recovering.....")
-                    time.sleep(5)
-                    g_dev['mnt'].reboot_mount()
-                else:
-                    pass
-            return
-
     def create_simple_autosave(
         self,
         exp_time=0,
@@ -3562,7 +3487,7 @@ class Camera:
                                 else:
                                     g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
-                            self.wait_for_slew()
+                            g_dev['mnt'].wait_for_slew()
 
                             # Check there hasn't been a cancel sent through
                             if g_dev["obs"].stop_all_activity:
@@ -3579,7 +3504,7 @@ class Camera:
                             if not g_dev['obs'].mountless_operation and not g_dev['mnt'].rapid_park_indicator \
                                 and not  g_dev['obs'].mount_reference_model_off \
                                 and not  g_dev['obs'].auto_centering_off:      #NB NB this last two may be and 'OR' ?? WER
-                                # self.wait_for_slew(wait_after_slew=False)
+                                # g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                                 if g_dev['mnt'].pier_flip_detected == True:
                                     plog(
                                         "Detected a pier flip just before exposure! Line 3105 in Camera.")
@@ -4795,7 +4720,7 @@ class Camera:
                                             dec_random_dither = (
                                                 (random.randint(0, 50)-25) * self.pixscale / 3600)
                                         try:
-                                            # self.wait_for_slew(wait_after_slew=False)
+                                            # g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                                             g_dev['mnt'].slew_async_directly(
                                                 ra=self.initial_smartstack_ra + ra_random_dither, dec=self.initial_smartstack_dec + dec_random_dither)
 
@@ -4918,7 +4843,7 @@ class Camera:
                             # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
                             elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                                 try:
-                                    # self.wait_for_slew(wait_after_slew=False)
+                                    # g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                                     g_dev['mnt'].slew_async_directly(
                                         ra=self.initial_smartstack_ra, dec=self.initial_smartstack_dec)
 

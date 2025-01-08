@@ -1537,8 +1537,7 @@ class Observatory:
                                         )
                                         alt = temppointingaltaz.alt.degree
                                         if alt > 25:
-                                            self.wait_for_slew(
-                                                wait_after_slew=False)
+                                            g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                                             meridianra = g_dev[
                                                 "mnt"
                                             ].return_right_ascension()
@@ -1549,8 +1548,7 @@ class Observatory:
                                                 ra=meridianra, dec=meridiandec
                                             )
                                             plog("Meridian Probe")
-                                            self.wait_for_slew(
-                                                wait_after_slew=False)
+                                            g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                                             self.time_of_last_pulse = time.time()
                     except:
                         plog("perhaps theskyx is restarting????")
@@ -4066,9 +4064,9 @@ class Observatory:
                         + g_dev["seq"].current_mosaic_displacement_dec
                     )
                     new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)   #This probably has to do with taking a mosaic near the poles.
-                    self.wait_for_slew(wait_after_slew=False)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                     g_dev["mnt"].slew_async_directly(ra=new_ra, dec=new_dec)
-                    self.wait_for_slew(wait_after_slew=False)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                     self.time_of_last_slew = time.time()
 
             # This block repeats itself in various locations to try and nudge the scope
@@ -4090,7 +4088,7 @@ class Observatory:
                         < 0.25
                     ):
                         self.send_to_user("Re-centering Telescope.")
-                    self.wait_for_slew(wait_after_slew=False)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                     g_dev["mnt"].previous_pier_side = g_dev["mnt"].return_side_of_pier()
 
                     ranudge = self.pointing_correction_request_ra
@@ -4106,10 +4104,10 @@ class Observatory:
                         ranudge = ranudge - 24
                     self.time_of_last_slew = time.time()
                     try:
-                        self.wait_for_slew(wait_after_slew=False)
+                        g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                         g_dev["mnt"].slew_async_directly(
                             ra=ranudge, dec=decnudge)
-                        self.wait_for_slew(wait_after_slew=False)
+                        g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                     except:
                         plog(traceback.format_exc())
                     if (
@@ -4129,7 +4127,7 @@ class Observatory:
                             try_forever=True,
                         )
                     self.time_of_last_slew = time.time()
-                    self.wait_for_slew(wait_after_slew=False)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False)
 
                     self.drift_tracker_timer = time.time()
                     self.drift_tracker_counter = 0
@@ -4358,42 +4356,6 @@ class Observatory:
             data=json.dumps({"site": self.name}),
             timeout=30,
         ).json()
-
-
-    def wait_for_slew(self, wait_after_slew=True):
-        """
-        A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
-        """
-        try:
-            actually_slewed = False
-            if not g_dev["mnt"].rapid_park_indicator:
-                movement_reporting_timer = time.time()
-                while g_dev["mnt"].return_slewing():
-                    if actually_slewed == False:
-                        actually_slewed = True
-                    if (
-                        time.time() - movement_reporting_timer
-                        > self.status_interval
-                    ):
-                        plog("m>")
-                        movement_reporting_timer = time.time()
-                    g_dev["mnt"].get_mount_coordinates_after_next_update()
-                    self.update_status(mount_only=True, dont_wait=True)
-
-                # Then wait for slew_time to settle
-                if actually_slewed and wait_after_slew:
-                    time.sleep(g_dev["mnt"].wait_after_slew_time)
-
-        except Exception as e:
-            plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            if "pywintypes.com_error" in str(e):
-                plog("Mount disconnected. Recovering.....")
-                time.sleep(5)
-                g_dev["mnt"].mount_reboot()
-            else:
-                pass
-        return
 
 
 if __name__ == "__main__":

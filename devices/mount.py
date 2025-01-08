@@ -1333,10 +1333,12 @@ class Mount:
                 if actually_slewed and wait_after_slew:
                     time.sleep(self.wait_after_slew_time)
 
-        except: #  Exception as e:
+        except:
             self.mount_busy=False
             plog("Motion check faulted.")
             plog(traceback.format_exc())
+            if self.theskyx:
+                g_dev['seq'].kill_and_reboot_theskyx(self.current_icrs_ra, self.current_icrs_dec)
         return
 
     def return_side_of_pier(self):
