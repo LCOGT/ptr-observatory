@@ -85,8 +85,8 @@ Here is the start of the subprocessing
 
 #plog ("PLATESOLVE THREAD: STARTING PLATESOLVING")
 
-#input_psolve_info=pickle.load(sys.stdin.buffer)
-input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
+input_psolve_info=pickle.load(sys.stdin.buffer)
+#input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
 
 hdufocusdata=input_psolve_info[0]
 hduheader=input_psolve_info[1]
@@ -153,8 +153,7 @@ if True:
    subprocessplog("PLATESOLVE PROCESSING")
 
 # Keep a copy of the normal image if this is a pointing image
-if pointing_exposure:
-    pointing_image=copy.deepcopy(hdufocusdata)
+pointing_image=copy.deepcopy(hdufocusdata)
 
 googtime=time.time()
 # If this is an osc image, then interpolate so it is just the green filter image of the same size.
@@ -522,7 +521,14 @@ if len(sources) >= 5:
         solve={}
         solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
         solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
-        solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
+        wcs = WCS(wcs_header)
+
+        # Get the CD matrix or CDELT values
+        cd = wcs.pixel_scale_matrix
+        pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
+        solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
+
+        #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
 
         if binnedtwo:
             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
@@ -568,7 +574,14 @@ if len(sources) >= 5:
             solve={}
             solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
             solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
-            solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
+            wcs = WCS(wcs_header)
+
+            # Get the CD matrix or CDELT values
+            cd = wcs.pixel_scale_matrix
+            pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
+            solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
+
+            #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
 
             if binnedtwo:
                 solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
@@ -1002,7 +1015,16 @@ if solve == 'error':
         solve={}
         solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
         solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
-        solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
+        #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
+        wcs = WCS(wcs_header)
+
+        # Get the CD matrix or CDELT values
+        cd = wcs.pixel_scale_matrix
+        pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
+        solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
+
+        #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
+
 
         if binnedtwo:
             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
@@ -1049,7 +1071,15 @@ if solve == 'error':
             solve={}
             solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
             solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
-            solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
+
+            wcs = WCS(wcs_header)
+
+            # Get the CD matrix or CDELT values
+            cd = wcs.pixel_scale_matrix
+            pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
+            solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
+
+            #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
 
             if binnedtwo:
                 solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
@@ -1076,7 +1106,7 @@ if solve == 'error':
 
 
 
-
+#breakpoint()
 
 
 
