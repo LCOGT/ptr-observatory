@@ -2970,7 +2970,7 @@ class Observatory:
                                  pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
 
 
-                            breakpoint()
+                            #breakpoint()
 
                             try:
                                 platesolve_subprocess = subprocess.Popen(
