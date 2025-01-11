@@ -34,6 +34,13 @@ from glob import glob
 import traceback
 from ptr_utility import plog
 import requests
+
+
+# We only use Observatory in type hints, so use a forward reference to prevent circular imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: 
+    from obs import Observatory
+
 from requests.adapters import HTTPAdapter, Retry
 reqs = requests.Session()
 retries = Retry(total=3,
@@ -123,11 +130,11 @@ def ra_dec_fix_hd(ra, dec):
 
 class Sequencer:
 
-    def __init__(self, driver: str, name: str, config: dict, devices: dict, astro_events):
+    def __init__(self, driver: str, name: str, config: dict, observatory: 'Observatory', astro_events):
         self.name = name
         self.astro_events = astro_events
         self.config = config
-        self.devices = devices # This dict includes all device instances that have been created
+        self.obs = observatory # the parent observatory object
 
         g_dev['seq'] = self
         self.connected = True
@@ -242,7 +249,6 @@ class Sequencer:
 
         self.check_incoming_darks_for_light_leaks=True
 
-        self.rebooting_theskyx=False
 
 
 
@@ -986,7 +992,7 @@ class Sequencer:
                                         else:
                                             self.check_incoming_darks_for_light_leaks=True
 
-                                        if self.nightime_bias_counter < (self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect'] / 4):
+                                        if self.nightime_bias_counter < (g_dev['cam'].settings['number_of_bias_to_collect'] / 4):
                                             plog ("It is dark and the moon isn't up! Lets do a bias!")
                                             g_dev['mnt'].park_command({}, {})
                                             plog("Exposing 1x1 bias frame.")
@@ -999,15 +1005,15 @@ class Sequencer:
                                             # these exposures shouldn't reset these timers
                                             g_dev['obs'].time_of_last_exposure = time.time() - 840
                                             g_dev['obs'].time_of_last_slew = time.time() - 840
-                                        if self.nightime_dark_counter < (self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']/ 4):
+                                        if self.nightime_dark_counter < (g_dev['cam'].settings['number_of_dark_to_collect']/ 4):
                                             plog ("It is dark and the moon isn't up! Lets do a dark!")
                                             g_dev['mnt'].park_command({}, {})
-                                            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
-                                            broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
-                                            narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
+                                            dark_exp_time = g_dev['cam'].settings['dark_exposure']
+                                            broadband_ss_biasdark_exp_time = g_dev['cam'].settings['smart_stack_exposure_time']
+                                            narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * g_dev['cam'].settings['smart_stack_exposure_NB_multiplier']
 
                                             # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.
-                                            min_exposure = min(float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure']), float(self.config['camera']['camera_1_1']['settings']['min_exposure']))
+                                            min_exposure = min(float(g_dev['cam'].settings['min_flat_exposure']), float(g_dev['cam'].settings['min_exposure']))
                                             stride=1
                                             min_to_do=1
 
@@ -1074,7 +1080,7 @@ class Sequencer:
         """
 
         try:
-            camera = self.config['camera']['camera_1_1']['name']
+            camera = self.obs.devices['main_cam'].name
             seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + '_completes_' + str(g_dev['obs'].name))
             seq_shelf['completed_blocks'] = []
             seq_shelf.close()
@@ -1084,7 +1090,7 @@ class Sequencer:
 
     def append_completes(self, block_id):
         #
-        camera = self.config['camera']['camera_1_1']['name']
+        camera = self.obs.devices['lmain_cam'].name
         seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) +'_completes_' + str(g_dev['obs'].name))
         lcl_list = seq_shelf['completed_blocks']
         if block_id in lcl_list:
@@ -1100,7 +1106,7 @@ class Sequencer:
 
     def is_in_completes(self, block_id):
 
-        camera = self.config['camera']['camera_1_1']['name']
+        camera = self.obs.devices['main_cam'].name
         seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + '_completes_' + str(g_dev['obs'].name))
 
         if block_id in seq_shelf['completed_blocks']:
@@ -1602,7 +1608,7 @@ class Sequencer:
                                 substackswitch=True
 
                             # Set up options for exposure and take exposure.
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'substack': substackswitch, 'block_end' : self.blockend}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(g_dev['cam'].name), 'image_type': imtype, 'smartstack' : smartstackswitch, 'substack': substackswitch, 'block_end' : self.blockend}   #  NB Should pick up filter and constants from config
                             opt = {'count': repeat_count, 'filter': filter_requested, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane, 'zoom': zoom_factor}
                             plog('Seq Blk sent to camera:  ', req, opt)
@@ -1803,20 +1809,20 @@ class Sequencer:
                 self.bias_dark_latch = False
                 break
 
-            bias_count = self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']
-            dark_count = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']
-            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
-            cycle_time = self.config['camera']['camera_1_1']['settings']['cycle_time']
+            bias_count = g_dev['cam'].settings['number_of_bias_to_collect']
+            dark_count = g_dev['cam'].settings['number_of_dark_to_collect']
+            dark_exp_time = g_dev['cam'].settings['dark_exposure']
+            cycle_time = g_dev['cam'].settings['cycle_time']
 
             # For 95% of our exposures we can collect biasdarks... so we don't have to
             # scale the darks with a master bias for our most common exposures
             # Non-scaled darks with the bias still contained IS better,
             # Just uncommon for observatories where there is all sorts of different exposure times.
             # But for PTR, we have some very frequent used exposure times, so this is a worthwhile endeavour.
-            broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
-            narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
+            broadband_ss_biasdark_exp_time = g_dev['cam'].settings['smart_stack_exposure_time']
+            narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * g_dev['cam'].settings['smart_stack_exposure_NB_multiplier']
             # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.
-            min_exposure = min(float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure']),float(self.config['camera']['camera_1_1']['settings']['min_exposure']))
+            min_exposure = min(float(g_dev['cam'].settings['min_flat_exposure']),float(g_dev['cam'].settings['min_exposure']))
 
 
             ####
@@ -2180,9 +2186,6 @@ class Sequencer:
         plog ("Nightly reset of complete projects")
         self.reset_completes()
         g_dev['obs'].events_new = None
-        #g_dev['obs'].reset_last_reference()
-        # if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
-        #    g_dev['mnt'].reset_mount_reference()
         g_dev['obs'].last_solve_time = datetime.datetime.utcnow() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
 
@@ -2259,91 +2262,6 @@ class Sequencer:
             plog ("Got here")
             self.kill_and_reboot_theskyx(-1,-1)
             plog ("But didn't get here")
-        return
-
-    def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
-        g_dev['mnt'].mount_update_paused=True
-
-        self.rebooting_theskyx=True
-
-        if g_dev['cam'].theskyx:
-            g_dev['cam'].updates_paused=True
-
-        os.system("taskkill /IM TheSkyX.exe /F")
-        os.system("taskkill /IM TheSky64.exe /F")
-        time.sleep(5)
-        retries=0
-
-        while retries <5:
-            try:
-                from devices.mount import Mount
-                Mount(self.config['mount']['mount1']['driver'],
-                               g_dev['obs'].name,
-                               self.config['mount']['mount1']['settings'],
-                               g_dev['obs'].config,
-                               g_dev['obs'].astro_events,
-                               tel=True)
-
-                # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
-                if g_dev['cam'].theskyx:
-                    from devices.camera import Camera
-                    Camera(self.config['camera']['camera_1_1']['driver'],
-                                    g_dev['cam'].name,
-                                    self.config)
-                    time.sleep(5)
-                    g_dev['cam'].camera_update_reboot=True
-                    time.sleep(5)
-
-                    g_dev['cam'].theskyx_set_cooler_on=True
-                    g_dev['cam'].theskyx_cooleron=True
-                    g_dev['cam'].theskyx_set_setpoint_trigger=True
-                    g_dev['cam'].theskyx_set_setpoint_value= g_dev['cam'].setpoint
-                    g_dev['cam'].theskyx_temperature=g_dev['cam'].setpoint, 999.9, 999.9
-
-                    g_dev['cam'].shutter_open=False
-                    g_dev['cam'].theskyxIsExposureComplete=True
-                    g_dev['cam'].theskyx=True
-                    g_dev['cam'].updates_paused=False
-
-                if self.config['filter_wheel']['filter_wheel1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
-                    from devices.filter_wheel import FilterWheel
-                    FilterWheel('CCDSoft2XAdaptor.ccdsoft5Camera',
-                                         g_dev['obs'].name,
-                                         self.config)
-
-                    time.sleep(5)
-
-                if self.config['focuser']['focuser1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
-                    from devices.focuser import Focuser
-                    Focuser('CCDSoft2XAdaptor.ccdsoft5Camera',
-                                         g_dev['obs'].name,  self.config)
-                    time.sleep(5)
-
-
-
-                time.sleep(5)
-                retries=6
-            except:
-                retries=retries+1
-                time.sleep(60)
-                if retries ==4:
-                    plog(traceback.format_exc())
-                    #
-
-
-
-        g_dev['mnt'].mount_update_reboot=True
-        g_dev['mnt'].wait_for_mount_update()
-        g_dev['mnt'].mount_update_paused=False
-
-        self.rebooting_theskyx=False
-
-        if returnra == -1 or returndec == -1:
-            g_dev['mnt'].park_command({}, {})
-        else:
-            g_dev['mnt'].park_command({}, {})
-            g_dev['mnt'].go_command(ra=returnra, dec=returndec)
-
         return
 
 
@@ -2875,7 +2793,7 @@ class Sequencer:
                 ]
 
             # There is no point creating biasdark exposures below the min_flat_exposure or min_exposure time aside from the scaled dark values.
-            min_flat_exposure = min(float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure']),float(self.config['camera']['camera_1_1']['settings']['min_exposure']))
+            min_flat_exposure = min(float(g_dev['cam'].settings['min_flat_exposure']),float(g_dev['cam'].settings['min_exposure']))
 
             if min_flat_exposure <= 0.00004:
                 bias_darklist.append([g_dev['obs'].local_dark_folder+ 'fortymicroseconddarks/', 'fortymicrosecondBIASDARK','fortymicrosecond' ])
@@ -2961,9 +2879,9 @@ class Sequencer:
             estimated_flat_gain=[]
             flat_gains={}
 
-            broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
-            narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
-            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
+            broadband_ss_biasdark_exp_time = g_dev['cam'].settings['smart_stack_exposure_time']
+            narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * g_dev['cam'].settings['smart_stack_exposure_NB_multiplier']
+            dark_exp_time = g_dev['cam'].settings['dark_exposure']
 
             if len(tempfilters) == 0:
                 plog ("there are no filter directories, so not processing flats")
@@ -3799,13 +3717,13 @@ class Sequencer:
         self.next_flat_observe = time.time()
         g_dev['obs'].send_to_user('Sky Flat sequence Starting.', p_level='INFO')
         evening = not morn
-        camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = self.config['camera']['camera_1_1']['settings']['number_of_flat_to_collect']
-        min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
-        max_exposure = float(self.config['camera']['camera_1_1']['settings']['max_flat_exposure'])
+        camera_name = str(g_dev['cam'].name)
+        flat_count = g_dev['cam'].settings['number_of_flat_to_collect']
+        min_exposure = float(g_dev['cam'].settings['min_flat_exposure'])
+        max_exposure = float(g_dev['cam'].settings['max_flat_exposure'])
         exp_time = min_exposure
-        broadband_ss_biasdark_exp_time = float(self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time'])
-        narrowband_ss_biasdark_exp_time = float(broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier'])
+        broadband_ss_biasdark_exp_time = float(g_dev['cam'].settings['smart_stack_exposure_time'])
+        narrowband_ss_biasdark_exp_time = float(broadband_ss_biasdark_exp_time * g_dev['cam'].settings['smart_stack_exposure_NB_multiplier'])
         sky_exposure_snap_to_grid = [ 0.00004, 0.0004, 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0, 3.5, 5.0, 7.5, 10, 15, 20, 30, broadband_ss_biasdark_exp_time]
 
         if not g_dev["fil"].null_filterwheel:
@@ -3947,11 +3865,11 @@ class Sequencer:
                 number_of_exposures_so_far=0
 
 
-                min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
-                max_exposure = float(self.config['camera']['camera_1_1']['settings']['max_flat_exposure'])
+                min_exposure = float(g_dev['cam'].settings['min_flat_exposure'])
+                max_exposure = float(g_dev['cam'].settings['max_flat_exposure'])
 
                 g_dev['obs'].send_to_user("\n\nBeginning flat run for filter: " + str(current_filter) )
-                if (current_filter in self.filter_throughput_shelf.keys()):# and (not self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_throughputs']):
+                if (current_filter in self.filter_throughput_shelf.keys()):
                     filter_throughput=self.filter_throughput_shelf[current_filter]
                     plog ("Using stored throughput : " + str(filter_throughput))
                     known_throughput= True
@@ -3961,7 +3879,7 @@ class Sequencer:
                         plog ("Using initial attempt at a throughput : "+ str(filter_throughput))
                         plog ("Widening min and max exposure times to find a good estimate also.")
                         plog ("Normal exposure limits will return once a good throughput is found.")
-                        min_exposure= float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
+                        min_exposure= float(g_dev['cam'].settings['min_exposure'])
                         max_exposure=max_exposure*3
                         flat_count=1
                         known_throughput=False
@@ -4656,8 +4574,11 @@ class Sequencer:
         self.focussing=True
         self.total_sequencer_control = True
 
+        # assume we are using the main focuser
+        focuser = self.obs.devices['main_focuser']
+
         if throw==None:
-            throw= self.config['focuser']['focuser1']['throw']
+            throw= focuser.config['throw']
 
         if (ephem.now() < g_dev['events']['End Eve Bias Dark'] ) or \
             (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
@@ -4765,7 +4686,7 @@ class Sequencer:
                 plog ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
                 plog(traceback.format_exc())
 
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(g_dev['cam'].name), 'image_type': 'focus'}
             opt = { 'count': 1, 'filter': 'focus'}
 
             if self.stop_script_called:
@@ -4882,7 +4803,7 @@ class Sequencer:
         if filter_choice.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
             focus_exposure_time=focus_exposure_time*3
 
-        req = {'time': focus_exposure_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+        req = {'time': focus_exposure_time,  'alias':  str(g_dev['cam'].name), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
         opt = { 'count': 1, 'filter': filter_choice}
 
         g_dev['foc'].guarded_move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
@@ -5076,7 +4997,7 @@ class Sequencer:
                         # But ONLY if the focus is commissioned. If the focus is not
                         # commissioned then it is highly likely just to be in the wrong
                         # focus region
-                        if (minimum_value > self.config["focuser"]["focuser1"]['maximum_good_focus_in_arcsecond']) and g_dev['foc'].focus_commissioned:
+                        if (minimum_value > focuser.config['maximum_good_focus_in_arcsecond']) and focuser.focus_commissioned:
                             plog ("Minimum value: " + str(minimum_value) + " is too high to bother focussing, just going with the estimated value from previous focus")
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
@@ -5408,7 +5329,7 @@ class Sequencer:
             g_dev["mnt"].last_ra_requested=grid_star[0]/15.
             g_dev["mnt"].last_dec_requested=grid_star[1]
 
-            req = { 'time': self.config['pointing_exposure_time'], 'smartstack': False, 'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}
+            req = { 'time': self.config['pointing_exposure_time'], 'smartstack': False, 'alias':  str(g_dev['cam'].name), 'image_type': 'pointing'}
             opt = { 'count': 1,  'filter': 'w'} #  pointing'} WNB NB WER20240927
             sid1 = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             result = g_dev['cam'].expose_command(req, opt)
@@ -5686,7 +5607,7 @@ class Sequencer:
             g_dev["mnt"].last_ra_requested=grid_star[0] / 15
             g_dev["mnt"].last_dec_requested=grid_star[1]
 
-            req = { 'time': self.config['pointing_exposure_time'], 'smartstack': False, 'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}
+            req = { 'time': self.config['pointing_exposure_time'], 'smartstack': False, 'alias':  str(g_dev['cam'].name), 'image_type': 'pointing'}
             opt = { 'count': 1,  'filter': 'pointing'}
             result = g_dev['cam'].expose_command(req, opt)
 
@@ -5838,7 +5759,7 @@ class Sequencer:
             opt = {'count': 1, 'filter': 'focus'}
 
         else:
-            req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+            req = {'time': self.config['pointing_exposure_time'],  'alias':  str(g_dev['cam'].name), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
             opt = {'count': 1, 'filter': 'pointing'}
 
         successful_platesolve=False
@@ -5941,10 +5862,10 @@ class Sequencer:
             if g_dev['cam'].pixscale == None:
                 plog ("Didn't find a solution with the first exposure, trying again.")
                 g_dev["obs"].send_to_user("Finding pixelscale for the second time. This could take a whilE!")
-                req = {'time': float(self.config['pointing_exposure_time']) * 5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+                req = {'time': float(self.config['pointing_exposure_time']) * 5,  'alias':  g_dev['cam'].name, 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'focus'}
             else:
-                req = {'time': float(self.config['pointing_exposure_time']) * 2,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+                req = {'time': float(self.config['pointing_exposure_time']) * 2,  'alias':  str(g_dev['cam'].name), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'pointing'}
 
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
@@ -5996,7 +5917,7 @@ class Sequencer:
 
                 plog("Didn't get a successful platesolve at an important time for pointing AGAIN, trying a Lum filter")
 
-                req = {'time': float(self.config['pointing_exposure_time']) * 2.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+                req = {'time': float(self.config['pointing_exposure_time']) * 2.5,  'alias':  str(g_dev['cam'].name), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'Lum'}
 
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
@@ -6109,7 +6030,7 @@ class Sequencer:
 
                 g_dev['mnt'].wait_for_slew(wait_after_slew=False)
 
-                req = {'time': float(self.config['pointing_exposure_time']) * 3,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+                req = {'time': float(self.config['pointing_exposure_time']) * 3,  'alias':  str(g_dev['cam'].name), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'pointing'}
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
 
@@ -6225,7 +6146,7 @@ class Sequencer:
             )
 
             # Taking a confirming shot.
-            req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            req = {'time': self.config['pointing_exposure_time'],  'alias':  str(g_dev['cam'].name), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'count': 1, 'filter': 'pointing'}
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
 

@@ -167,6 +167,9 @@ class Observatory:
         self.config = ptr_config
         self.wema_name = self.config["wema_name"]
 
+        # Used to tell whether the obs is currently rebooting theskyx
+        self.rebooting_theskyx = False
+
         # Creation of directory structures if they do not exist already
         self.obsid_path = str(
             ptr_config["archive_path"] + "/" + self.name + "/"
@@ -200,12 +203,11 @@ class Observatory:
             os.makedirs(self.obsid_path + "astropycache", mode=0o777)
 
         # Local Calibration Paths
-        camera_name = self.config["camera"]["camera_1_1"]["name"]
+        main_camera_device_name = self.config["device_roles"]["main_cam"]
+        camera_name_for_directories = self.config["camera"][main_camera_device_name]["name"]
 
         # Base path and camera name
         base_path = self.local_calibration_path
-        camera_name = camera_name
-
 
         def create_directories(base_path, camera_name, subdirectories):
             """
@@ -247,31 +249,29 @@ class Observatory:
         ]
 
         # Create the directories
-        create_directories(base_path, camera_name, subdirectories)
+        create_directories(base_path, camera_name_for_directories, subdirectories)
 
         # Set calib masters folder
-        self.calib_masters_folder = os.path.join(base_path, "archive", camera_name, "calibmasters") + "/"
+        self.calib_masters_folder = os.path.join(base_path, "archive", camera_name_for_directories, "calibmasters") + "/"
 
         self.local_dark_folder = (
             self.local_calibration_path
             + "archive/"
-            + camera_name
+            + camera_name_for_directories
             + "/localcalibrations/darks"
             + "/"
         )
-
-
         self.local_bias_folder = (
             self.local_calibration_path
             + "archive/"
-            + camera_name
+            + camera_name_for_directories
             + "/localcalibrations/biases"
             + "/"
         )
         self.local_flat_folder = (
             self.local_calibration_path
             + "archive/"
-            + camera_name
+            + camera_name_for_directories
             + "/localcalibrations/flats"
             + "/"
         )
@@ -390,12 +390,7 @@ class Observatory:
             "device_types"
         ]
 
-        try:
-            self.check_lightning = self.config["has_lightning_detector"]
-        except:
-            self.check_lightning = False
-        ##VERY TEMPORARY UNTIL MOUNT IS FIXED - MTF
-        ##self.mount_reboot_on_first_status = True
+        self.check_lightning = self.config.get("has_lightning_detector", False)
 
         # Timers to only update status at regular specified intervals.
         self.observing_status_timer = datetime.datetime.now() - datetime.timedelta(
@@ -473,19 +468,10 @@ class Observatory:
         ]
         self.mount_reference_model_off = self.config["mount_reference_model_off"]
 
-        try:
-            self.admin_owner_commands_only = self.config["owner_only_commands"]
-        except:
+        self.admin_owner_commands_only = self.config.get("owner_only_commands", False)
+        self.assume_roof_open = self.config.get("simulate_open_roof", False)  #Note NB NB this is conusing with the attribut above...about 9 lines.
+        self.auto_centering_off = self.config.get("auto_centering_off", False)
 
-            self.admin_owner_commands_only = False
-        try:
-            self.assume_roof_open = self.config["simulate_open_roof"]  #Note NB NB this is conusing with the attribut above...about 9 lines.
-        except:
-            self.assume_roof_open = False
-        try:
-            self.auto_centering_off = self.config["auto_centering_off"]
-        except:
-            self.auto_centering_off = False
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
         self.astro_events = Events(self.config)
@@ -532,12 +518,12 @@ class Observatory:
         self.rotator_has_been_checked_since_last_slew = False
 
         g_dev["obs"] = self
-        obsid_str = ptr_config["obs_id"]
-        g_dev["obsid"] = obsid_str
-        self.g_dev = g_dev
+        g_dev["obsid"] = ptr_config["obs_id"]
 
         self.currently_updating_status = False
+
         # Use the configuration to instantiate objects for all devices.
+        # Also configure device roles in here. 
         self.create_devices()
 
         self.last_update_complete = time.time() - 5
@@ -762,61 +748,108 @@ class Observatory:
 
 
     def create_devices(self):
-        """Dictionary to store created devices, subcategorized by device type."""
+        """Create and store device objects by type, including role assignments."""
+        print("\n--- Initializing Devices ---")
+        self.all_devices = {}  # Store devices by type then name. So all_devices['camera']['QHY600m'] = camera object
+        self.device_by_name = {} # Store devices by name only. So device_by_name['QHY600m'] = camera object
 
-        self.all_devices = {}
-        # Create device objects by type, going through the config by type.
+        # Make a dict for accessing devices by role
+        # This must match the config! But it's duplicated here so human programmers can easily see what the supported roles are.
+        self.devices = {
+            "mount": None,
+            "main_focuser": None,
+            "main_fw": None,
+            "main_rotator": None,
+            "main_cam": None,
+            "guide_cam": None,
+            "widefield_cam": None,
+            "allsky_cam": None
+        }
+        # Validate to make sure that the roles in the config match the roles defined here
+        if set(self.devices.keys()) != set(self.config["device_roles"].keys()):
+            plog("ERROR: Device roles in Observatory class do not match device roles in config.")
+            plog(f"Config roles: {set(self.config['device_roles'].keys())}")
+            plog(f"Roles in obs.py Observatory.create_devices: {set(self.devices.keys())}")
+            plog("Please update config.device_roles so that they match the roles in Observatory.devices.")
+            plog('Fatal error, exiting...')
+            sys.exit()
+
+        # Make a dict we can use to lookup the roles for a device
+        # Use like: device_roles['QHY600m'] = ['main_cam'] (or whatever roles are assigned to that device)
+        # Support multiple roles per device, though this isn't used currently (2025/11/01).
+        device_roles = dict()
+        for role, device_name in self.config.get("device_roles", {}).items():
+            if device_name not in device_roles:
+                device_roles[device_name] = []
+            device_roles[device_name].append(role)
+
+        # Now we can create the device objects. Group by type, with type order defined by config.device_types
         for dev_type in self.all_device_types:
+
+            # Get all the names of devices of this type
             self.all_devices[dev_type] = {}
-            # Get the names of all the devices from each dev_type.
             devices_of_type = self.config.get(dev_type, {})
             device_names = devices_of_type.keys()
 
-            # Instantiate each device object based on its type
-            for name in device_names:
-                try:
-                    driver = devices_of_type[name]["driver"]
-                except:
-                    pass
-                settings = devices_of_type[name].get("settings", {})
+            # For each of this device type, create the device object and save it in the appropriate lookup dicts
+            for device_name in device_names:
 
+                print(f"Initializing {dev_type} device: {device_name}")
+                driver = devices_of_type[device_name].get("driver")
+                settings = devices_of_type[device_name].get("settings", {})
+
+                # Instantiate the device object based on its type
                 if dev_type == "mount":
-                    # make sure PWI4 is booted up and connected before creating PW mount device
                     if "PWI4" in driver:
-                        subprocess.Popen(
-                            '"C:\Program Files (x86)\PlaneWave Instruments\PlaneWave Interface 4\PWI4.exe"', shell=True
-                        )
+                        subprocess.Popen('"C:\Program Files (x86)\PlaneWave Instruments\PlaneWave Interface 4\PWI4.exe"', shell=True)
                         time.sleep(10)
-                        # trigger a connect via the http server
-                        urllib.request.urlopen(
-                            "http://localhost:8220/mount/connect")
+                        urllib.request.urlopen("http://localhost:8220/mount/connect")
                         time.sleep(5)
-                    device = Mount(
-                        driver, name, settings, self.config, self.all_devices, self.astro_events, tel=True
-                    )
+                    device = Mount(driver, device_name, settings, self.config, self, self.astro_events, tel=True)
                 elif dev_type == "rotator":
-                    device = Rotator(driver, name, self.config, self.all_devices)
+                    device = Rotator(driver, device_name, self.config, self)
                 elif dev_type == "focuser":
-                    device = Focuser(driver, name, self.config, self.all_devices)
+                    device = Focuser(driver, device_name, self.config, self)
                 elif dev_type == "filter_wheel":
-                    device = FilterWheel(driver, name, self.config, self.all_devices)
+                    device = FilterWheel(driver, device_name, self.config, self)
                 elif dev_type == "camera":
-                    device = Camera(driver, name, self.config, self.all_devices)
+                    device = Camera(driver, device_name, self.config, self)
                 elif dev_type == "sequencer":
-                    device = Sequencer(
-                        driver, name, self.config, self.all_devices, self.astro_events)
-                self.all_devices[dev_type][name] = device
+                    device = Sequencer(driver, device_name, self.config, self, self.astro_events)
+                else:
+                    continue
 
-        plog("Finished creating devices.")
+                # Store the device for name-based lookup
+                self.all_devices[dev_type][device_name] = device
+                self.device_by_name[device_name] = device
+
+                # Store the device for role-based lookup
+                if device_name in device_roles:
+                    for role in device_roles[device_name]:
+                        self.devices[role] = device
+
+        # Assign roles
+        for role, device_name in self.config.get("device_roles", {}).items():
+            if device_name and device_name not in self.device_by_name.keys():
+                print("\n")
+                print(f"\tWARNING: the device role <{role}> should be assigned to device {device_name}, but that device was never initialized.")
+                print(f"This will result in errors if the observatory tries to access <{role}>. Please check the device roles in the config.")
+                print(f"This error is probably because the device name in config.device_roles doesn't match any device in the config.")
+                print(f"It might also be because the role is for a type of device that is not included in config.device_types.")
+                print("\n")
+
+        plog("Finished initializing devices")
 
     def update_config(self):
         """Sends the config to AWS."""
 
         uri = f"{self.config['obs_id']}/config/"
         self.config["events"] = g_dev["events"]
+
         # Insert camera size into config
-        self.config["camera"]["camera_1_1"]["camera_size_x"] = g_dev["cam"].imagesize_x
-        self.config["camera"]["camera_1_1"]["camera_size_y"] = g_dev["cam"].imagesize_y
+        for name, camera in self.all_devices["camera"].items():
+            self.config["camera"][name]["camera_size_x"] = camera.imagesize_x
+            self.config["camera"][name]["camera_size_y"] = camera.imagesize_y
 
         retryapi = True
         while retryapi:
@@ -919,6 +952,8 @@ class Observatory:
                             or ("owner" in cmd["user_roles"])
                         )
                     ) or (not self.admin_owner_commands_only):
+
+                        # Check for a stop or cancel command
                         if (
                             cmd["action"] in ["cancel_all_commands", "stop"]
                             or cmd["action"].lower() in ["stop", "cancel"]
@@ -936,17 +971,12 @@ class Observatory:
                             g_dev["seq"].stop_script_called_time = time.time()
                             # Cancel out of all running exposures.
                             self.cancel_all_activity()
+
+                        # Anything that is not a stop or cancel command
                         else:
-                            try:
-                                action = cmd["action"]
-                            except:
-                                action = None
-
-                            try:
-                                script = cmd["required_params"]["script"]
-                            except:
-                                script = None
-
+                            action = cmd.get('action')
+                            script = cmd["required_params"].get("script")
+                            
                             if cmd["deviceType"] == "obs":
                                 plog("OBS COMMAND: received a system wide command")
 
@@ -1189,7 +1219,7 @@ class Observatory:
                                 )
                             elif (
                                 cmd["deviceType"] == "rotator"
-                                and self.config["rotator"]["rotator1"]["driver"] == None
+                                and not self.devices['main_rotator']
                             ):
                                 plog("Refusing command as there is no rotator")
                                 self.send_to_user(
@@ -1427,7 +1457,7 @@ class Observatory:
                                 plog(
                                     "Killing then waiting 60 seconds then reconnecting"
                                 )
-                                g_dev["seq"].kill_and_reboot_theskyx(
+                                self.kill_and_reboot_theskyx(
                                     g_dev["mnt"].current_icrs_ra,
                                     g_dev["mnt"].current_icrs_dec,
                                 )
@@ -1454,7 +1484,7 @@ class Observatory:
                     self.stop_all_activity = False
 
                 # If theskyx is rebooting wait
-                while g_dev["seq"].rebooting_theskyx:
+                while self.rebooting_theskyx:
                     plog("waiting for theskyx to reboot")
                     time.sleep(5)
 
@@ -1914,7 +1944,7 @@ class Observatory:
                                 plog(
                                     "Killing then waiting 60 seconds then reconnecting"
                                 )
-                                g_dev["seq"].kill_and_reboot_theskyx(-1, -1)
+                                self.kill_and_reboot_theskyx(-1, -1)
                             else:
                                 pass
 
@@ -1925,9 +1955,9 @@ class Observatory:
                     ):
                         if (
                             time.time() - self.time_of_last_slew
-                            > self.config["mount"]["mount1"]["time_inactive_until_park"]
+                            > self.devices['mount'].config['time_inactive_until_park']
                             and time.time() - self.time_of_last_exposure
-                            > self.config["mount"]["mount1"]["time_inactive_until_park"]
+                            > self.devices['mount'].config['time_inactive_until_park']
                         ):
                             if not g_dev["mnt"].rapid_park_indicator:
                                 plog("Parking scope due to inactivity")
@@ -1949,7 +1979,7 @@ class Observatory:
                             float(current_camera_temperature)
                             - float(g_dev["cam"].setpoint)
                         )
-                        > g_dev['cam'].config['camera']['camera_1_1']['settings']["temp_setpoint_tolerance"]  #1.5   #NB NB THis should be a config item
+                        > self.devices['main_cam'].settings['temp_setpoint_tolerance']
                     ):
 
                         self.camera_sufficiently_cooled_for_calibrations = False
@@ -2393,7 +2423,7 @@ class Observatory:
                 plog(traceback.format_exc())
 
                 # If theskyx is rebooting wait
-                while g_dev["seq"].rebooting_theskyx:
+                while self.rebooting_theskyx:
                     plog("waiting for theskyx to reboot in the except function")
                     time.sleep(5)
 
@@ -3617,7 +3647,7 @@ class Observatory:
                                     tempfilename = os.path.join(folder_path, slow_process[1].replace(".fits", file_suffix))
 
                                     # Manage files based on type
-                                    max_files = config["camera"]["camera_1_1"]["settings"].get(f"number_of_{file_type}_to_store", 10)
+                                    max_files = self.devices['main_cam'].settings.get(f"number_of_{file_type}_to_store", 10)
                                     exclude_pattern = "tempbiasdark" if "dark" in file_type else "tempcali" if "flat" in file_type else None
                                     manage_files(folder_path, max_files, exclude_pattern)
 
@@ -4356,6 +4386,92 @@ class Observatory:
             data=json.dumps({"site": self.name}),
             timeout=30,
         ).json()
+
+    def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
+        self.devices['mount'].mount_update_paused=True
+
+        self.rebooting_theskyx=True
+
+        if g_dev['cam'].theskyx:
+            g_dev['cam'].updates_paused=True
+
+        os.system("taskkill /IM TheSkyX.exe /F")
+        os.system("taskkill /IM TheSky64.exe /F")
+        time.sleep(5)
+        retries=0
+
+        while retries <5:
+            try:
+                # Recreate the mount
+                rebooted_mount = Mount(self.devices['mount'].config['driver'],
+                        self.name,
+                        self.devices['mount'].settings,
+                        self.config,
+                        self,
+                        self.astro_events,
+                        tel=True)
+                self.all_devices['mount'][self.devices['mount'].name] = rebooted_mount
+                self.devices['mount'] = rebooted_mount # update the 'mount' role to point to the new mount
+
+                # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
+                for camera in self.all_devices['camera']:
+                    if camera.theskyx:
+                        new_camera = Camera(camera.driver, camera.name, self.config, self)
+                        # Update references from the previous camera object to the rebooted one
+                        self.all_devices['camera'][camera.name] = new_camera
+                        if camera.role:
+                            self.devices[camera.role] = new_camera
+
+                        time.sleep(5)
+                        new_camera.camera_update_reboot=True
+                        time.sleep(5)
+                        new_camera.theskyx_set_cooler_on=True
+                        new_camera.theskyx_cooleron=True
+                        new_camera.theskyx_set_setpoint_trigger=True
+                        new_camera.theskyx_set_setpoint_value= g_dev['cam'].setpoint
+                        new_camera.theskyx_temperature=g_dev['cam'].setpoint, 999.9, 999.9
+                        new_camera.shutter_open=False
+                        new_camera.theskyxIsExposureComplete=True
+                        new_camera.theskyx=True
+                        new_camera.updates_paused=False
+
+
+                        # If the cam is connected to theskyx, reboot the filter wheel and focuser.
+                        # Since there's currently no clear way to determine which filter wheel and focuser are connected to the camera,
+                        # we'll just reboot all filter wheels and focusers.
+                        for filter_wheel in self.all_devices['filter_wheel']:
+                            if filter_wheel.config['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
+                                new_fw = FilterWheel('CCDSoft2XAdaptor.ccdsoft5Camera', filter_wheel.name, self.config, self)
+                                if filter_wheel.role:
+                                    self.devices[filter_wheel.role] = new_fw
+                                time.sleep(5)
+                        for focuser in self.all_devices['focuser']:
+                            if focuser.config['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
+                                new_focuser = Focuser('CCDSoft2XAdaptor.ccdsoft5Camera', focuser.name, self.config, self)
+                                if focuser.role:
+                                    self.devices[focuser.role] = new_focuser
+                                time.sleep(5) 
+
+                time.sleep(5)
+                retries=6
+            except:
+                retries=retries+1
+                time.sleep(60)
+                if retries == 4:
+                    plog(traceback.format_exc())
+
+        self.devices['mount'].mount_update_reboot=True
+        self.devices['mount'].wait_for_mount_update()
+        self.devices['mount'].mount_update_paused=False
+
+        self.rebooting_theskyx=False
+
+        self.devices['mount'].park_command({}, {})
+        if not (returnra == -1 or returndec == -1):
+            self.devices['mount'].go_command(ra=returnra, dec=returndec)
+
+        return
+
 
 
 if __name__ == "__main__":

@@ -169,16 +169,33 @@ site_config = {
     
 
     'defaults': {
-        'screen': 'screen1',
-        'mount': 'mount1',
-        #'telescope': 'telescope1',     #How do we handle selector here, if at all?
-        'focuser': 'focuser1',
-        'rotator': 'rotator1',
+        'screen': 'SimScreen',
+        'mount': 'SimMount',
+        #'telescope': 'SimTelescope',     #How do we handle selector here, if at all?
+        'focuser': 'SimFocuser',
+        'rotator': 'SimRotator',
         'selector': None,
-        'filter_wheel': 'filter_wheel1',
-        'camera': 'camera_1_1',
-        'sequencer': 'sequencer1'
+        'filter_wheel': 'SimFW',
+        'camera': 'SimZWO1600',
+        'sequencer': 'Sequencer'
         },
+
+    # Initial roles are aassigned here. These may change during runtime.
+    # Value is the device display name
+    'device_roles': {
+        'mount': 'SimMount',
+        'main_focuser': 'SimFocuser',
+        'main_fw': 'SimFW', 
+        'main_rotator': 'SimRotator',
+        
+        # Cameras
+        'main_cam': 'SimZWO1600',
+        'guide_cam': None,
+        'widefield_cam': None,
+        'allsky_cam': None,
+    },
+
+    # Note: this is the order in which devices will be initialized
     'device_types': [
             'mount',
             #'telescope',
@@ -203,7 +220,7 @@ site_config = {
             'sequencer'
             ],   
     'mount': {
-        'mount1': {
+        'SimMount': {
             'parent': 'enclosure1',
             'tel_id': '0m40',
             'name': 'ecocdkpier',
@@ -269,7 +286,7 @@ site_config = {
     },
 
     'telescope': {                            #Note telescope == OTA  Optical Tube Assembly.
-        'telescope1': {
+        'SimTelescope': {
             'parent': 'mount1',
             'name': 'Main OTA',
             'telescop': 'eco1',
@@ -311,7 +328,7 @@ site_config = {
         },
     },
     'rotator': {
-        'rotator1': {
+        'SimRotator': {
             'parent': 'telescope1',
             'name': 'rotator',
             'desc':  False,
@@ -325,7 +342,7 @@ site_config = {
         },
     },
     'screen': {
-        'screen1': {
+        'SimScreen': {
             'parent': 'telescope1',
             'name': 'screen',
             'desc':  'No Screen',
@@ -337,7 +354,7 @@ site_config = {
         },
     },
     'focuser': {
-        'focuser1': {
+        'SimFocuser': {
             'parent': 'telescope1',
             'name': 'focuser',
             'desc':  'Planewave Focuser',
@@ -362,7 +379,7 @@ site_config = {
     },
 
     'selector': {
-        'selector1': {
+        'SimSelector': {
             'parent': 'telescope1',
             'name': 'None',
             'desc':  'Null Changer',
@@ -381,21 +398,18 @@ site_config = {
     },
 
     'filter_wheel': {
-        "filter_wheel1": {
+        "SimFW": {
             "parent": "telescope1",
             "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
             'service_date': '20180101',
-            
             "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
-            
-            "driver":   "dummy",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
-            #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+            "driver":   "dummy",  
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
                 
-                'default_filter': "pg",
+                'default_filter': "lum",
                 
                 'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
                 'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
@@ -403,32 +417,8 @@ site_config = {
                 'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
                 'mono_Narrowband_relative_weights' : [1.0,2,2.5],
                 
-                
-                
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 # 'filter_data': [  
-
-                       
-                #         ['lum',    [0,  0],     0, 250, [1.00 ,  72], 'PhLum'],    #1.
-                #         ['ip',    [1,  1],     400, 155, [1.00 , 119], 'PhRed'],    #2.
-                #         ['v',    [2,  2],     400, 100, [1.00 , 113], 'PhGreen'],    #3.
-                #         ['pb',    [3,  3],     400, 54, [0.80 ,  97], 'PhBlue'],    #4.
-                #         ['ha',    [4,  4],     400, 7, [0.80 ,  97], 'PhBlue'], 
-                #         ['s2',    [5,  5],     400, 4.728, [5.00 , 200], 'Halpha'],    #5.
-                #         ['o3',    [6,  6],     400, 8, [4.00 , 200], 'OIII']],  
-                
-                
-                # 'filter_data': [  
-
-                       
-                #         ['lum',    [0,  0],    'PhLum'],    #1.
-                #         ['dk',    [1,  1],      'PhRed'],    #2.
-                #         ['pb',    [2, 2 ],      'PhRed'],    #2.
-                #         ['pg',    [3, 3],      'PhGreen'],    #3.
-                #         ['pr',    [4,  4],     'PhBlue'],    #4.
-                #         ['ha',    [5,5],     'PhBlue'], 
-                #         ['o3',    [6,6],    'Halpha'],    #5.
-                #         ['s2',    [7,7],    'OIII']],  
                 
                 'filter_data': [  
 
@@ -448,22 +438,13 @@ site_config = {
                         ['BI',    [6,6],    'BI']],    #5.
                         #],  
                 
-                
                 'focus_filter' : 'BV',
-
-                # 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
-
-
-                
-                # #'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
-                # 'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum'],
-               
             },
         },
     },
 
     'lamp_box': {
-        'lamp_box1': {
+        'SimLampBox': {
             'parent': 'camera_1',  # Parent is camera for the spectrograph
             'name': 'None',  # "UVEX Calibration Unit", 'None'
             'desc': 'None', #'eshel',  # "uvex", 'None'
@@ -474,14 +455,14 @@ site_config = {
     },
 
     'camera': {
-        'camera_1_1': {
+        'SimZWO1600': {
             'parent': 'telescope1',
             'name': 'ec003zwo',      #  Important because this points to a server file structure by that name.
-            'desc':  'SBIG16803',
+            'desc':  'ZWO1600',
             
             'overscan_trim' : 'asi1600',
             'service_date': '20211111',
-            'driver': "dummy",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+            'driver': "dummy",
             
             
             'detector':  'KAF16803',
@@ -522,50 +503,50 @@ site_config = {
                 
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
-               # A DATA-BASED REASON TO DO SO.....
-               # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
-               # ***** ONLY ONE OF THESE SHOULD BE ON! *********
-               'transpose_fits' : False,
-               'flipx_fits' : False,
-               'flipy_fits' : False,
-               'rotate180_fits' : False, # This also should be flipxy!
-               'rotate90_fits' : False,
-               'rotate270_fits' : False,
-               # What number of pixels to crop around the edges of a REDUCED image
-               # This is primarily to get rid of overscan areas and also all images
-               # Do tend to be a bit dodgy around the edges, so perhaps a standard
-               # value of 30 is good. Increase this if your camera has particularly bad
-               # edges. This doesn't affect the raw image.
-               'reduced_image_edge_crop': 30,
-               # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
-               # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
-               # RECOMMENDED DEFAULT DESIRE OF PTR
-               'transpose_jpeg' : False,
-               'flipx_jpeg' : False,
-               'flipy_jpeg' : False,
-               'rotate180_jpeg' : False,
-               'rotate90_jpeg' : False,
-               'rotate270_jpeg' : False,
-               
-               # For large fields of view, crop the images down to solve faster.                 
-               # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
-               # Probably also similar for platesolving.
-               # for either pointing or platesolving even on more modest size fields of view. 
-               # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
-               # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless 
-               # you clearly need to. 
-               # 'focus_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
-               # 'focus_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
-                               
-               # 'focus_jpeg_size': 500, # How many pixels square to crop the focus image for the UI Jpeg
-               # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
-               # 'platesolve_image_crop': 0.0, # Platesolve crops have to be symmetrical 
-               # Really, the SEP image should not be cropped unless your field of view and number of sources
-               # Are taking chunks out of the processing time. 
-               # 'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
-               # 'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
-               
-               
+                # A DATA-BASED REASON TO DO SO.....
+                # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
+                # ***** ONLY ONE OF THESE SHOULD BE ON! *********
+                'transpose_fits' : False,
+                'flipx_fits' : False,
+                'flipy_fits' : False,
+                'rotate180_fits' : False, # This also should be flipxy!
+                'rotate90_fits' : False,
+                'rotate270_fits' : False,
+                # What number of pixels to crop around the edges of a REDUCED image
+                # This is primarily to get rid of overscan areas and also all images
+                # Do tend to be a bit dodgy around the edges, so perhaps a standard
+                # value of 30 is good. Increase this if your camera has particularly bad
+                # edges. This doesn't affect the raw image.
+                'reduced_image_edge_crop': 30,
+                # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
+                # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
+                # RECOMMENDED DEFAULT DESIRE OF PTR
+                'transpose_jpeg' : False,
+                'flipx_jpeg' : False,
+                'flipy_jpeg' : False,
+                'rotate180_jpeg' : False,
+                'rotate90_jpeg' : False,
+                'rotate270_jpeg' : False,
+                
+                # For large fields of view, crop the images down to solve faster.                 
+                # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
+                # Probably also similar for platesolving.
+                # for either pointing or platesolving even on more modest size fields of view. 
+                # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
+                # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless 
+                # you clearly need to. 
+                # 'focus_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                # 'focus_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+                                
+                # 'focus_jpeg_size': 500, # How many pixels square to crop the focus image for the UI Jpeg
+                # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
+                # 'platesolve_image_crop': 0.0, # Platesolve crops have to be symmetrical 
+                # Really, the SEP image should not be cropped unless your field of view and number of sources
+                # Are taking chunks out of the processing time. 
+                # 'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+                # 'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+                
+            
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
@@ -685,7 +666,7 @@ site_config = {
     },
 
     'sequencer': {
-        'sequencer1': {
+        'Sequencer': {
             'parent': 'site',
             'name': 'Sequencer',
             'desc':  'Automation Control',

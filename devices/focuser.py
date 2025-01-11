@@ -48,6 +48,11 @@ from global_yard import g_dev
 from ptr_utility import plog
 from dateutil import parser
 
+# We only use Observatory in type hints, so use a forward reference to prevent circular imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: 
+    from obs import Observatory
+
 # Unused except for WMD
 def probeRead(com_port):
     with serial.Serial(com_port, timeout=0.3) as com:
@@ -59,39 +64,40 @@ def probeRead(com_port):
 
 
 class Focuser:
-    def __init__(self, driver: str, name: str, config: dict, devices: dict):
-        self.obsid = config["obs_id"]
-        self.name = name
-        self.obsid_path = g_dev['obs'].obsid_path
-        self.camera_name = config["camera"]["camera_1_1"]["name"]
+    def __init__(self, driver: str, name: str, site_config: dict, observatory: 'Observatory'):
         g_dev["foc"] = self
-        self.config = config["focuser"]["focuser1"]
-        self.devices = devices # This dict includes all device instances that have been created
-        self.throw = int(config["focuser"]["focuser1"]["throw"])
+        self.obs = observatory
+        self.obsid = site_config["obs_id"]
+        self.name = name
+        self.obsid_path = self.obs.obsid_path
+
+        # For now, assume the main camera is the one we are focusing
+        self.camera_name = site_config['device_roles']['main_cam']
+
+        self.config = site_config["focuser"][name]
+        self.throw = int(site_config["focuser"][name]["throw"])
+        self.driver = driver
         
+        # Configure the role, if it exists
+        # Current design allows for only one role per device
+        # We can add more roles by changing self.role to a list and adjusting any references
+        self.role = None
+        for role, device in site_config['device_roles'].items():
+            if device == name:
+                self.role = role
+                break
         
-        # Set the dummy flag
-        if driver == 'dummy':
-            self.dummy=True
+        # Set the dummy flag which toggles simulator mode
+        self.dummy = (driver == 'dummy')
+
+        # Even in simulator mode, this variable needs to be set
+        self.theskyx = (driver == "CCDSoft2XAdaptor.ccdsoft5Camera")
+
+        if self.dummy:
+            self.focuser = 'dummy'
         else:
-            self.dummy=False
-        
-        
-        if not self.dummy:
             win32com.client.pythoncom.CoInitialize()
             self.focuser = win32com.client.Dispatch(driver)
-        else:
-            self.focuser = 'dummy'
-            
-        self.driver = driver
-        if driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
-            self.theskyx=True
-        else:
-            self.theskyx=False
-
-
-        if not self.dummy:
-
             try:
                 self.focuser.Connected = True
             except:
@@ -108,7 +114,7 @@ class Focuser:
                             plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
 
         self.micron_to_steps = float(
-            config["focuser"]["focuser1"]["unit_conversion"]
+            self.config["unit_conversion"]
         )  #  Note this can be a bogus value
         self.steps_to_micron = 1 / self.micron_to_steps
 

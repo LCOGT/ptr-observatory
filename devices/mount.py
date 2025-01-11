@@ -51,6 +51,11 @@ import ephem
 from ptr_utility import plog
 import time
 
+# We only use Observatory in type hints, so use a forward reference to prevent circular imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: 
+    from obs import Observatory
+
 DEBUG = False
 
 DEG_SYM = '°'
@@ -201,17 +206,19 @@ class Mount:
     that is rarely disturbed or removed.
     '''
 
-    def __init__(self, driver: str, name: str, settings: dict, config: dict, devices: dict, astro_events, tel=False):
+    def __init__(self, driver: str, name: str, settings: dict, config: dict, observatory: 'Observatory', astro_events, tel=False):
         self.name = name
         self.astro_events = astro_events
         g_dev['mnt'] = self
 
         self.obsid = config['obs_id']
         self.obsid_path = g_dev['obs'].obsid_path
-        self.config = config
-        self.devices = devices # This dict includes all device instances that have been created
-        self.device_name = name
+        self.observatory_config = config
+        self.config = config['mount'][name]
         self.settings = settings
+        self.obs = observatory # use this to access the parent obsevatory class
+
+        self.role = 'mount' # since we'll only ever have one mount, it automatically gets the role of 'mount'
 
         win32com.client.pythoncom.CoInitialize()
 
@@ -254,7 +261,7 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
         self.mount_message = "-"
-        self.has_paddle = config['mount']['mount1']['has_paddle']
+        self.has_paddle = config['mount'][name]['has_paddle']
 
         self.object = "Unspecified"
         self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
@@ -283,11 +290,11 @@ class Mount:
 
         try:
 
-            self.ICRS2000 = config["mount"]["mount1"]["settings"]['ICRS2000_input_coords']
-            self.refr_on = config["mount"]["mount1"]["settings"]["refraction_on"]
-            self.model_on = config["mount"]["mount1"]["settings"]["model_on"]
-            self.model_type = config["mount"]["mount1"]["settings"]["model_type"]
-            self.rates_on = config["mount"]["mount1"]["settings"]["rates_on"]
+            self.ICRS2000 = self.settings['ICRS2000_input_coords']
+            self.refr_on = self.settings["refraction_on"]
+            self.model_on = self.settings["model_on"]
+            self.model_type = self.settings["model_type"]
+            self.rates_on = self.settings["rates_on"]
         except:
             self.ICRS2000 = True    #This is the default for coordinates provided by the PTR GUI
             self.refr_on = False    #These also are probably the settings for The SkyX since it does all this internally.
@@ -297,7 +304,7 @@ class Mount:
 
         if self.model_type == 'Equatorial':
             try:
-                self.model = config["mount"]["mount1"]["settings"]["model_equat"]
+                self.model = self.settings["model_equat"]
             except:
                 plog ("No model in config, using 0 model")
                 self.model = {
@@ -318,7 +325,7 @@ class Mount:
                     }
         else:
             try:
-                self.model = config["mount"]["mount1"]["settings"]["model_altAz"]
+                self.model = self.settings["model_altAz"]
             except:
                 plog ("No model in config, using 0 model")
                 self.model = {
@@ -346,22 +353,22 @@ class Mount:
         self.prior_roll_rate = 0
         self.prior_pitch_rate = 0
         self.offset_received = False
-        self.west_clutch_ra_correction = config['mount']['mount1']['west_clutch_ra_correction']
-        self.west_clutch_dec_correction = config['mount']['mount1']['west_clutch_dec_correction']
-        self.east_flip_ra_correction = config['mount']['mount1']['east_flip_ra_correction']
-        self.east_flip_dec_correction  = config['mount']['mount1']['east_flip_dec_correction']
-        self.settle_time_after_unpark = config['mount']['mount1']['settle_time_after_unpark']
-        self.settle_time_after_park = config['mount']['mount1']['settle_time_after_park']
+        self.west_clutch_ra_correction = self.config['west_clutch_ra_correction']
+        self.west_clutch_dec_correction = self.config['west_clutch_dec_correction']
+        self.east_flip_ra_correction = self.config['east_flip_ra_correction']
+        self.east_flip_dec_correction  = self.config['east_flip_dec_correction']
+        self.settle_time_after_unpark = self.config['settle_time_after_unpark']
+        self.settle_time_after_park = self.config['settle_time_after_park']
 
         self.refraction = 0
         self.target_az = 0   #Degrees Azimuth
         self.ha_corr = 0
         self.dec_corr = 0
         self.seek_commanded = False
-        self.home_after_unpark = config['mount']['mount1']['home_after_unpark']
-        self.home_before_park = config['mount']['mount1']['home_before_park']
+        self.home_after_unpark = self.config['home_after_unpark']
+        self.home_before_park = self.config['home_before_park']
         self.parking_or_homing=False
-        self.wait_after_slew_time= config['mount']['mount1']['wait_after_slew_time']
+        self.wait_after_slew_time= self.config['wait_after_slew_time']
         if abs(self.east_flip_ra_correction) > 0 or abs(self.east_flip_dec_correction) > 0:
             self.flip_correction_needed = True
             plog("Flip correction may be needed.")
@@ -378,13 +385,13 @@ class Mount:
         self.ra_offset = 0.0
         self.dec_offset = 0.0
         self.move_time = 0
-        self.obs = ephem.Observer()
-        self.obs.long = g_dev['evnt'].wema_config['longitude']*DTOR
-        self.obs.lat = g_dev['evnt'].wema_config['latitude']*DTOR
+        self.ephem_obs = ephem.Observer()
+        self.ephem_obs.long = g_dev['evnt'].wema_config['longitude']*DTOR
+        self.ephem_obs.lat = g_dev['evnt'].wema_config['latitude']*DTOR
         self.tpt_timer = time.time()
         self.theskyx_tracking_rescues = 0
 
-        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + self.name + str(g_dev['obs'].name))
 
         try:
             self.longterm_storage_of_mount_references=mnt_shelf['longterm_storage_of_mount_references']
@@ -395,9 +402,9 @@ class Mount:
             self.longterm_storage_of_flip_references=[]
         mnt_shelf.close()
 
-        plog ("Mount deviations, for mount then for flipflip:")
-        plog (self.longterm_storage_of_mount_references, '\n\n')
-        plog (self.longterm_storage_of_flip_references)
+        plog ("Mount deviations, for mount then for flipflip:", 
+                self.longterm_storage_of_mount_references, 
+                self.longterm_storage_of_flip_references)
 
         self.last_mount_reference_time=time.time() - 86400
         self.last_flip_reference_time=time.time() - 86400
@@ -1338,7 +1345,7 @@ class Mount:
             plog("Motion check faulted.")
             plog(traceback.format_exc())
             if self.theskyx:
-                g_dev['seq'].kill_and_reboot_theskyx(self.current_icrs_ra, self.current_icrs_dec)
+                g_dev['obs'].kill_and_reboot_theskyx(self.current_icrs_ra, self.current_icrs_dec)
         return
 
     def return_side_of_pier(self):
@@ -1845,8 +1852,8 @@ class Mount:
 
                 plog ("Moving to requested Flat Spot, az: " + str(round(az,1)) + " alt: " + str(round(alt,1)))
 
-                if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
-                    if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                if self.observatory_config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+                    if (90-alt) < self.observatory_config['degrees_to_avoid_zenith_area_for_calibrations']:
                         g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
                         plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
                         return 'refused'
@@ -1881,7 +1888,7 @@ class Mount:
 
         sun_dist = sun_coords.separation(temppointing)
         if g_dev['obs'].sun_checks_on:
-            if sun_dist.degree <  self.config['closest_distance_to_the_sun'] and g_dev['obs'].open_and_enabled_to_observe:
+            if sun_dist.degree <  self.observatory_config['closest_distance_to_the_sun'] and g_dev['obs'].open_and_enabled_to_observe:
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
                     plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
@@ -1895,7 +1902,7 @@ class Mount:
             else:
                 moon_coords=get_body('moon', Time.now())  #20250103  Per deprication warning.
                 moon_dist = moon_coords.separation(temppointing)
-                if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
+                if moon_dist.degree <  self.observatory_config['closest_distance_to_the_moon']:
                     g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
                     plog("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
                     return 'refused'
@@ -1903,7 +1910,7 @@ class Mount:
         # Third thing, check that the requested coordinates are not
         # below a reasonable altitude
         if g_dev['obs'].altitude_checks_on:
-            if alt < self.config['lowest_requestable_altitude']:
+            if alt < self.observatory_config['lowest_requestable_altitude']:
                 g_dev['obs'].send_to_user("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
                 plog("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
                 return 'refused'
@@ -1927,12 +1934,12 @@ class Mount:
         #  NB NB in addition input from a TLE may make sense, particulary a list of say 24 Geosats.
 
         if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna', 'Lun', 'lun']:
-            self.obs.date = ephem.now()
+            self.ephem_obs.date = ephem.now()
             moon = ephem.Moon()
-            moon.compute(self.obs)
+            moon.compute(self.ephem_obs)
             ra1, dec1 = moon.ra*RTOH, moon.dec*RTOD
-            self.obs.date = ephem.Date(ephem.now() + 1/144)   #  10 minutes
-            moon.compute(self.obs)
+            self.ephem_obs.date = ephem.Date(ephem.now() + 1/144)   #  10 minutes
+            moon.compute(self.ephem_obs)
             ra2, dec2 = moon.ra*RTOH, moon.dec*RTOD
             dra_moon = (ra2 - ra1)*15*3600/600
             ddec_moon = (dec2 - dec1)*3600/600
@@ -1944,12 +1951,12 @@ class Mount:
 
         if self.object in ['Sun', 'sun', 'Sol', 'sol']:
             #breakpoint()
-            self.obs.date = ephem.now()
+            self.ephem_obs.date = ephem.now()
             sun = ephem.Sun()
-            sun.compute(self.obs)
+            sun.compute(self.ephem_obs)
             ra1, dec1 = sun.ra*RTOH, sun.dec*RTOD
-            self.obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
-            sun.compute(self.obs)
+            self.ephem_obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
+            sun.compute(self.ephem_obs)
             ra2, dec2 =sun.ra*RTOH, sun.dec*RTOD
             dra_sun = (ra2 - ra1)*15*3600/3600
             ddec_sun = (dec2 - dec1)*3600/3600
@@ -1961,12 +1968,12 @@ class Mount:
 
         if self.object in ['Venus', 'venus', 'Ven', 'ven']:
              #breakpoint()
-             self.obs.date = ephem.now()
+             self.ephem_obs.date = ephem.now()
              venus = ephem.Venus()
-             venus.compute(self.obs)
+             venus.compute(self.ephem_obs)
              ra1, dec1 = venus.ra*RTOH, venus.dec*RTOD
-             self.obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
-             venus.compute(self.obs)
+             self.ephem_obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
+             venus.compute(self.ephem_obs)
              ra2, dec2 =venus.ra*RTOH, venus.dec*RTOD
              dra_venus = (ra2 - ra1)*15*3600/3600
              ddec_venus = (dec2 - dec1)*3600/3600
@@ -1978,12 +1985,12 @@ class Mount:
 
         if  self.object in ['Saturn', 'Saturn', 'Sat', 'sat']:
               #breakpoint()
-              self.obs.date = ephem.now()
+              self.ephem_obs.date = ephem.now()
               saturn = ephem.Saturn()
-              saturn.compute(self.obs)
+              saturn.compute(self.ephem_obs)
               ra1, dec1 = saturn.ra*RTOH, saturn.dec*RTOD
-              self.obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
-              saturn.compute(self.obs)
+              self.ephem_obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
+              saturn.compute(self.ephem_obs)
               ra2, dec2 =saturn.ra*RTOH, saturn.dec*RTOD
               dra_saturn = (ra2 - ra1)*15*3600/3600
               ddec_saturn = (dec2 - dec1)*3600/3600
@@ -1995,12 +2002,12 @@ class Mount:
 
         if  self.object in ['Neptune', 'neptune', 'Nep', 'nep']:
               #breakpoint()
-              self.obs.date = ephem.now()
+              self.ephem_obs.date = ephem.now()
               neptune = ephem.Neptune()
-              neptune.compute(self.obs)
+              neptune.compute(self.ephem_obs)
               ra1, dec1 = neptune.ra*RTOH, neptune.dec*RTOD
-              self.obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
-              neptune.compute(self.obs)
+              self.ephem_obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
+              neptune.compute(self.ephem_obs)
               ra2, dec2 =neptune.ra*RTOH, neptune.dec*RTOD
               dra_neptune = (ra2 - ra1)*15*3600/3600
               ddec_neptune = (dec2 - dec1)*3600/3600
@@ -2151,7 +2158,7 @@ class Mount:
                                 plog("The SkyX had an error.")
                                 plog("Usually this is because of a broken connection.")
                                 plog("Killing then waiting 60 seconds then reconnecting")
-                                g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                                g_dev['obs'].kill_and_reboot_theskyx(-1,-1)
                                 self.unpark_command()
                                 self.wait_for_slew(wait_after_slew=False)
                                 if ra < 0:
@@ -2224,7 +2231,7 @@ class Mount:
                     plog("The SkyX had an error.")
                     plog("Usually this is because of a broken connection.")
                     plog("Killing then waiting 60 seconds then reconnecting")
-                    g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                    g_dev['obs'].kill_and_reboot_theskyx(-1,-1)
                     self.unpark_command()
                     self.wait_for_slew(wait_after_slew=False)
                     if ra < 0:
@@ -2384,7 +2391,7 @@ class Mount:
                                 plog("The SkyX had an error.")
                                 plog("Usually this is because of a broken connection.")
                                 plog("Killing then waiting 60 seconds then reconnecting")
-                                g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                                g_dev['obs'].kill_and_reboot_theskyx(-1,-1)
                                 self.unpark_command()
                                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                                 self.rapid_park_indicator=False
@@ -2403,7 +2410,7 @@ class Mount:
         # The HA is for the actual requested HA, NOT the solved ra
         HA= ha_fix_h(self.current_sidereal - pointing_ra + deviation_ha)
 
-        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + self.name + str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = deviation_ha
         mnt_shelf['dec_cal_offset'] = deviation_dec
         mnt_shelf['last_mount_reference_time']=time.time()
@@ -2447,7 +2454,7 @@ class Mount:
         # The HA is for the actual requested HA, NOT the solved ra
         HA= ha_fix_h(self.current_sidereal - pointing_ra + deviation_ha)
 
-        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + self.name + str(g_dev['obs'].name))
         mnt_shelf['flip_ra_cal_offset'] = deviation_ha    #NB NB NB maybe best to reverse signs here??
         mnt_shelf['flip_dec_cal_offset'] = deviation_dec
         mnt_shelf['last_flip_reference_time']=time.time()

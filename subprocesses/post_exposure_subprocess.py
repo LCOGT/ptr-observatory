@@ -275,7 +275,7 @@ except:
  azimuth_of_observation, altitude_of_observation, airmass_of_observation, pixscale, \
  smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, \
  dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, \
- ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, \
+ ha_corr, dec_corr, focus_position, selfconfig, camera_device_name, camera_known_gain, \
  camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path, \
  solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure, \
  substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header, \
@@ -287,12 +287,22 @@ except:
 
 a_timer=time.time()
 
-camalias=selfconfig["camera"][selfname]["name"]
+cam_config = selfconfig['camera'][camera_device_name]
+cam_settings = cam_config['settings']
+cam_alias = cam_config["name"]
+
+# We are assuming that we should use the main rotator and focuser, but we should pass those in
+# the payload rather than assuming. 
+rotator_name = selfconfig['device_roles']['main_rotator']
+rotator_alias = selfconfig['rotator'][rotator_name]['name']
+focuser_name = selfconfig['device_roles']['main_focuser']
+focuser_alias = selfconfig['focuser'][focuser_name]['name']
+
 obsname=selfconfig['obs_id']
 localcalibrationdirectory=selfconfig['local_calibration_path'] + selfconfig['obs_id'] + '/'
-tempfrontcalib=obsname + '_' + camalias +'_'
+tempfrontcalib=obsname + '_' + cam_alias +'_'
 
-localcalibmastersdirectory= localcalibrationdirectory+ "archive/" + camalias + "/calibmasters" \
+localcalibmastersdirectory= localcalibrationdirectory+ "archive/" + cam_alias + "/calibmasters" \
                           + "/"
 
 
@@ -340,22 +350,22 @@ if substack:
         try:
             if exp_of_substacks == 10:
                 #print ("Dedarking 0")
-                substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + camalias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
+                substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
             else:
-                substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + camalias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
+                substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
         except:
             #breakpoint()
             print ("Couldn't biasdark substack")
             pass
         try:
-            substackimage = copy.deepcopy(np.divide(substackimage, np.load(localcalibrationdirectory  + 'archive/' + camalias + '/calibmasters/' + 'masterFlat_' + this_exposure_filter + "_bin" + str(1) +'.npy')))
+            substackimage = copy.deepcopy(np.divide(substackimage, np.load(localcalibrationdirectory  + 'archive/' + cam_alias + '/calibmasters/' + 'masterFlat_' + this_exposure_filter + "_bin" + str(1) +'.npy')))
         except:
             print ("couldn't flat field substack")
             #breakpoint()
             pass
         # Bad pixel map sub stack array
         try:
-            substackimage[np.load(localcalibrationdirectory  + 'archive/' + camalias + '/calibmasters/' + tempfrontcalib + 'badpixelmask_bin1.npy')] = np.nan
+            substackimage[np.load(localcalibrationdirectory  + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'badpixelmask_bin1.npy')] = np.nan
         except:
             print ("Couldn't badpixel substack")
             pass
@@ -493,7 +503,7 @@ post_exposure_process_timer=time.time()
 ix, iy = img.shape
 
 # Update readout time list
-readout_shelf = shelve.open(obsid_path + 'ptr_night_shelf/' + 'readout' + camalias + str(obsname))
+readout_shelf = shelve.open(obsid_path + 'ptr_night_shelf/' + 'readout' + cam_alias + str(obsname))
 try:
     readout_list=readout_shelf['readout_list']
 except:
@@ -511,7 +521,7 @@ while too_long:
 readout_shelf['readout_list'] = readout_list
 readout_shelf.close()
 
-image_saturation_level = selfconfig["camera"][selfname]["settings"]["saturate"]
+image_saturation_level = cam_settings["saturate"]
 
 try:
     # THIS IS THE SECTION WHERE THE ORIGINAL FITS IMAGES ARE ROTATED
@@ -519,26 +529,26 @@ try:
     # IF THERE IS A MAJOR PROBLEM with the original orientation
     # If you want to change the display on the UI, use the jpeg
     # alterations later on.
-    if selfconfig["camera"][selfname]["settings"]["transpose_fits"]:
+    if cam_settings["transpose_fits"]:
         hdu = fits.PrimaryHDU(
             img.transpose().astype('float32'))
-    elif selfconfig["camera"][selfname]["settings"]["flipx_fits"]:
+    elif cam_settings["flipx_fits"]:
         hdu = fits.PrimaryHDU(
             np.fliplr(img.astype('float32'))
         )
-    elif selfconfig["camera"][selfname]["settings"]["flipy_fits"]:
+    elif cam_settings["flipy_fits"]:
         hdu = fits.PrimaryHDU(
             np.flipud(img.astype('float32'))
         )
-    elif selfconfig["camera"][selfname]["settings"]["rotate90_fits"]:
+    elif cam_settings["rotate90_fits"]:
         hdu = fits.PrimaryHDU(
             np.rot90(img.astype('float32'))
         )
-    elif selfconfig["camera"][selfname]["settings"]["rotate180_fits"]:
+    elif cam_settings["rotate180_fits"]:
         hdu = fits.PrimaryHDU(
             np.rot90(img.astype('float32'),2)
         )
-    elif selfconfig["camera"][selfname]["settings"]["rotate270_fits"]:
+    elif cam_settings["rotate270_fits"]:
         hdu = fits.PrimaryHDU(
             np.rot90(img.astype('float32'),3)
         )
@@ -548,11 +558,11 @@ try:
         )
     del img
 
-    selfnative_bin = selfconfig["camera"][selfname]["settings"]["native_bin"]
+    selfnative_bin = cam_settings["native_bin"]
 
-    broadband_ss_biasdark_exp_time = selfconfig['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
-    narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * selfconfig['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
-    dark_exp_time = selfconfig['camera']['camera_1_1']['settings']['dark_exposure']
+    broadband_ss_biasdark_exp_time = cam_config['settings']['smart_stack_exposure_time']
+    narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * cam_config['settings']['smart_stack_exposure_NB_multiplier']
+    dark_exp_time = cam_config['settings']['dark_exposure']
 
     #ALL images are calibrated at the site.... WHY WOULD YOU NOT?
     #The cost is largely I/O and to do that on multiple computers at multiple times
@@ -753,11 +763,11 @@ try:
     # assign the keyword values and comment of the keyword as a tuple to write both to header.
     hdu.header["BUNIT"] = ("adu", "Unit of array values")
     hdu.header["CCDXPIXE"] = (
-        selfconfig["camera"][selfname]["settings"]["x_pixel"],
+        cam_settings["x_pixel"],
         "[um] Size of unbinned pixel, in X",
     )
     hdu.header["CCDYPIXE"] = (
-        selfconfig["camera"][selfname]["settings"]["y_pixel"],
+        cam_settings["y_pixel"],
         "[um] Size of unbinned pixel, in Y",
     )
     hdu.header["XPIXSZ"] = (
@@ -773,7 +783,7 @@ try:
 
     hdu.header['CONFMODE'] = ('default',  'LCO Configuration Mode')
     hdu.header["DOCOSMIC"] = (
-        selfconfig["camera"][selfname]["settings"]["do_cosmics"],
+        cam_settings["do_cosmics"],
         "Cosmic ray removal",
     )
 
@@ -802,18 +812,18 @@ try:
         "1234567890",
         "Just a placeholder right now. WER",
     )
-    hdu.header["INSTRUME"] = (selfconfig["camera"][selfname]["name"], "Name of camera")
-    hdu.header["CAMNAME"] = (selfconfig["camera"][selfname]["desc"], "Instrument used")
+    hdu.header["INSTRUME"] = (cam_config["name"], "Name of camera")
+    hdu.header["CAMNAME"] = (cam_config["desc"], "Instrument used")
     hdu.header["DETECTOR"] = (
-        selfconfig["camera"][selfname]["detector"],
+        cam_config["detector"],
         "Name of camera detector",
     )
     hdu.header["CAMMANUF"] = (
-        selfconfig["camera"][selfname]["manufacturer"],
+        cam_config["manufacturer"],
         "Name of camera manufacturer",
     )
     hdu.header["DARKSLID"] = (darkslide_state, "Darkslide state")
-    hdu.header['SHUTTYPE'] = (selfconfig["camera"][selfname]["settings"]["shutter_type"],
+    hdu.header['SHUTTYPE'] = (cam_settings["shutter_type"],
                               'Type of shutter')
     hdu.header["GAIN"] = (
         round(camera_known_gain,3),
@@ -831,30 +841,30 @@ try:
     hdu.header["OSCMONO"] = (False, "If OSC,  a mono image or Bayer?")
 
     hdu.header["FULLWELL"] = (
-        selfconfig["camera"][selfname]["settings"][
+        cam_settings[
             "fullwell_capacity"
         ],
         "Full well capacity",
     )
 
-    is_cmos=selfconfig["camera"][selfname]["settings"]["is_cmos"]
-    driver=selfconfig["camera"][selfname]["driver"]
+    is_cmos=cam_settings["is_cmos"]
+    driver=cam_config["driver"]
     hdu.header["CMOSCAM"] = (is_cmos, "Is CMOS camera")
 
     if is_cmos and driver ==  "QHYCCD_Direct_Control":
-        hdu.header["CMOSGAIN"] = (selfconfig["camera"][selfname][
+        hdu.header["CMOSGAIN"] = (cam_config[
             "settings"
         ]['direct_qhy_gain'], "CMOS Camera System Gain")
 
 
-        hdu.header["CMOSOFFS"] = (selfconfig["camera"][selfname][
+        hdu.header["CMOSOFFS"] = (cam_config[
             "settings"
         ]['direct_qhy_offset'], "CMOS Camera System Offset")
 
-        hdu.header["CAMUSBT"] = (selfconfig["camera"][selfname][
+        hdu.header["CAMUSBT"] = (cam_config[
             "settings"
         ]['direct_qhy_usb_traffic'], "Camera USB traffic")
-        hdu.header["READMODE"] = (selfconfig["camera"][selfname][
+        hdu.header["READMODE"] = (cam_config[
             "settings"
         ]['direct_qhy_readout_mode'], "QHY Readout Mode")
 
@@ -1062,7 +1072,7 @@ try:
     )
     hdu.header["MAXLIN"] = (
         float(
-            selfconfig["camera"][selfname]["settings"][
+            cam_settings[
                 "max_linearity"
             ]
         ),
@@ -1242,7 +1252,7 @@ try:
     hdu.header["SELECTEL"] = ("tel1", "Nominted OTA for pointing")
     try:
         hdu.header["ROTATOR"] = (
-            selfconfig["rotator"]["rotator1"]["name"],
+            rotator_alias,
             "Rotator name",
         )
         hdu.header["ROTANGLE"] = (avg_rot[1], "[deg] Rotator angle")
@@ -1252,7 +1262,7 @@ try:
 
     try:
         hdu.header["FOCUS"] = (
-            selfconfig["focuser"]["focuser1"]["name"],
+            focuser_alias,
             "Focuser name",
         )
         hdu.header["FOCUSPOS"] = (avg_foc[1], "[um] Focuser position")
@@ -1274,11 +1284,11 @@ try:
             "[arcsec/pixel] Nominal pixel scale on sky",
         )
 
-    hdu.header["DRZPIXSC"] = (selfconfig["camera"][selfname]["settings"]['drizzle_value_for_later_stacking'], 'Target drizzle scale')
+    hdu.header["DRZPIXSC"] = (cam_settings['drizzle_value_for_later_stacking'], 'Target drizzle scale')
 
     hdu.header["REQNUM"] = ("00000001", "Request number")
     hdu.header["ISMASTER"] = (False, "Is master image")
-    current_camera_name = selfconfig["camera"][selfname]["name"]
+    current_camera_name = cam_config["name"]
 
     hdu.header["FRAMENUM"] = (int(next_seq), "Running frame number")
     hdu.header["SMARTSTK"] = smartstackid # ID code for an individual smart stack group
@@ -1524,7 +1534,7 @@ try:
         "skyflat",
         "pointing"
         ]) and not a_dark_exposure:
-        picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),camalias, ('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
+        picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),cam_alias, ('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
 
         picklefilename='testlocalred'+str(time.time()).replace('.','')
         pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
@@ -1765,7 +1775,7 @@ try:
                 altpath='no'
 
 
-            picklepayload=(reduced_hdusmallheader,copy.deepcopy(selfconfig),camalias, slow_process, altpath)
+            picklepayload=(reduced_hdusmallheader,copy.deepcopy(selfconfig),cam_alias, slow_process, altpath)
 
             picklefilename='testred'+str(time.time()).replace('.','')
             pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
