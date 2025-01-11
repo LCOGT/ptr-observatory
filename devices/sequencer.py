@@ -5838,9 +5838,9 @@ class Sequencer:
         # Turn off the pier flip detection if we enter a centering exposure to fix the pier flip
         g_dev['mnt'].pier_flip_detected=False
         if g_dev['cam'].pixscale == None or np.isnan(g_dev['cam'].pixscale):
-            plog ("Finding pixelscale for the first time. This could take a whilE!")
-            g_dev["obs"].send_to_user("Finding pixelscale for the first time. This could take a whilE!")
-            req = {'time': 180,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+            plog ("Finding pixelscale for the first time. This could take a whilE! 5-10 Minutes.")
+            g_dev["obs"].send_to_user("Finding pixelscale for the first time. This could take a while! 5-10 Minutes.")
+            req = {'time': self.config['pointing_exposure_time'] * 3,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
             opt = {'count': 1, 'filter': 'focus'}
 
         else:
@@ -5947,7 +5947,7 @@ class Sequencer:
             if g_dev['cam'].pixscale == None:
                 plog ("Didn't find a solution with the first exposure, trying again.")
                 g_dev["obs"].send_to_user("Finding pixelscale for the second time. This could take a whilE!")
-                req = {'time': 300,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+                req = {'time': float(self.config['pointing_exposure_time']) * 5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'focus'}
             else:
                 req = {'time': float(self.config['pointing_exposure_time']) * 2,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config

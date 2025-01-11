@@ -639,7 +639,7 @@ site_config = {
 
             'detector':  'Sony IMX461 BSI Mono',  # It would be good to build out a table of chip characteristics  6280 x 4210  Inspect: 62:4102, 4:6076  Sony 6244X4168 Active Optical black Hor 16, rear 0, Vert 22, rear 0
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
-            'file_mode_path':  'Q:/archive/sq01s0m/maxim/',  # NB NB all file_mode Maxim stuff should go!
+            'file_mode_path':  'Q:/archive/sq0100sm/maxim/',  # NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
             'settings': {
 

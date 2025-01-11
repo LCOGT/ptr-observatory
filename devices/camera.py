@@ -1419,20 +1419,26 @@ class Camera:
         # Figure out pixelscale from own observations
         # Or use the config value if there hasn't been enough
         # observations yet.
+
         try:
             self.pixelscale_shelf = shelve.open(
                 g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
             try:
                 pixelscale_list = self.pixelscale_shelf['pixelscale_list']
+                self.pixscale = bn.nanmedian(pixelscale_list)
+                plog('1x1 pixel scale: ' + str(self.pixscale))
             except:
 
-                #pixelscale_list=[0.269] #NB a hack\
                 pixelscale_list=None
+                self.pixscale = None
 
-            self.pixelscale_shelf.close()
 
-            self.pixscale = bn.nanmedian(pixelscale_list)
-            plog('1x1 pixel scale: ' + str(self.pixscale))
+            # self.pixelscale_shelf.close()
+            # if len(pixelscale_list) > 0:
+            #     self.pixscale = bn.nanmedian(pixelscale_list)
+            #     plog('1x1 pixel scale: ' + str(self.pixscale))
+            # else:
+            #     self.pixscale = None   #Yes a hack
         except:
             if self.dummy:
                 self.pixscale=0.75
@@ -4981,8 +4987,8 @@ class Camera:
                             if True:
                                height, width = outputimg.shape
                                patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
-                               print(">>>>  20% central image patch, std:  ", np.median(patch), round(np.std(patch), 2))
-                               print(width, height)
+                               print(">>>>  20% central image patch, std:  ", np.median(patch), round(np.std(patch), 2), str(width)+'x'+str(height) )
+
                                #breakpoint()
 
                         except Exception as e:
@@ -5045,7 +5051,7 @@ class Camera:
                 # So this is done in the main thread. Whereas normal exposures get done in the subprocess.
                 if (frame_type in ["bias", "dark"] or a_dark_exposure or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ",
-                         np.median(outputimg), np.std(outputimg))
+                         round(np.median(outputimg), 2), round(np.std(outputimg), 3))
 
                     # Check that the temperature is ok before accepting
                     current_camera_temperature, cur_humidity, cur_pressure, cur_pwm = (
@@ -5102,7 +5108,7 @@ class Camera:
 
                     countypixels=outputimg[ np.where(outputimg < zeroValue ) ]
                     plog ("Number of unnaturally negative pixels: " + str(len(countypixels)) )
-                    plog (next_seq)
+                    plog ("Next seq:  ", next_seq)
 
                     # If there are too many unnaturally negative pixels, then reject the calibration
                     if len(countypixels) > 256:  #Up from 100 for 100 megapix camera
@@ -5297,8 +5303,10 @@ class Camera:
                 if frame_type=='pointing' and focus_image == False:
 
                     hdu = fits.PrimaryHDU()
-                    if np.isnan(self.pixscale) or self.pixscale == None:
+
+                    if self.pixscale == None: # np.isnan(self.pixscale) or
                         plog("no pixelscale available")
+                        hdu.header['PIXSCALE'] = 'unknown'
                     else:
                         hdu.header['PIXSCALE'] = self.pixscale
 

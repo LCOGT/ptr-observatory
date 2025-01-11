@@ -675,10 +675,13 @@ try:
 
         # Quick flat flat frame
         #breakpoint()
+        #data_save = hdu.data
         try:
             hdu.data = np.divide(hdu.data, np.load(localcalibmastersdirectory + 'masterFlat_'+this_exposure_filter + "_bin" + str(1) +'.npy'))
         except Exception as e:
             print("flatting light frame failed", e)
+            #hdu.data = data_save
+
 
         try:
             hdu.data[np.load(localcalibmastersdirectory + tempfrontcalib + 'badpixelmask_bin1.npy')] = np.nan

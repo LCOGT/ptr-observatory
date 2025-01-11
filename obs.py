@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py
 Observatory is the central organising part of a given observatory system.
@@ -2891,12 +2892,12 @@ class Observatory:
                     exposure_time,
                 ) = self.platesolve_queue.get(block=False)
 
-
-                if np.isnan(pixscale) or pixscale == None:
-                    timeout_time = 120# + exposure_time + \
+                # Initial blind plate solve can take a long time, so an appropriate wait for the first one is appropriate
+                if  pixscale == None: #np.isnan(pixscale) or
+                    timeout_time = 800# + exposure_time + \
                         #g_dev["cam"].readout_time
                 else:
-                    timeout_time = 60# + exposure_time + \
+                    timeout_time = 90# + exposure_time + \
                         #g_dev["cam"].readout_time
 
                 platesolve_timeout_timer = time.time()
@@ -2969,7 +2970,7 @@ class Observatory:
                                  pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
 
 
-                            #breakpoint()
+                            breakpoint()
 
                             try:
                                 platesolve_subprocess = subprocess.Popen(
