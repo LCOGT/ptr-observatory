@@ -4815,7 +4815,7 @@ class Sequencer:
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
 
             # First check if we are doing a sync
-            if g_dev['obs'].sync_after_platesolving:
+            if g_dev['obs'].sync_after_platesolving and not (g_dev['cam'].pixscale == None):
                 g_dev['obs'].send_to_user("Running a platesolve to sync the mount", p_level='INFO')
 
                 self.centering_exposure(no_confirmation=True, try_hard=True)
@@ -4853,7 +4853,15 @@ class Sequencer:
             else:
                 g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
 
-            self.centering_exposure(no_confirmation=True, try_hard=True)
+            
+            # To get a good pixelscale, we need to be in focus,
+            # So if we haven't got a good pixelscale yet, then we likely 
+            # haven't got a good focus yet anyway. 
+            if g_dev['cam'].pixscale == None:                
+                plog ("skipping centering exposure as we don't even have a pixelscale yet")
+            else:
+                self.centering_exposure(no_confirmation=True, try_hard=True)
+                
             # Wait for platesolve
             reported=0
             temptimer=time.time()
@@ -5837,7 +5845,7 @@ class Sequencer:
 
         # Turn off the pier flip detection if we enter a centering exposure to fix the pier flip
         g_dev['mnt'].pier_flip_detected=False
-        if g_dev['cam'].pixscale == None or np.isnan(g_dev['cam'].pixscale):
+        if g_dev['cam'].pixscale == None: # or np.isnan(g_dev['cam'].pixscale):
             plog ("Finding pixelscale for the first time. This could take a whilE! 5-10 Minutes.")
             g_dev["obs"].send_to_user("Finding pixelscale for the first time. This could take a while! 5-10 Minutes.")
             req = {'time': self.config['pointing_exposure_time'] * 3,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config

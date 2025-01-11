@@ -192,7 +192,7 @@ except:
 
 
 # If this is set to true, then it will output a sample of the background image.
-if True:
+if False:
     hdufocus = fits.PrimaryHDU()
     hdufocus.data = bkg
     hdufocus.header = hduheader
@@ -230,6 +230,21 @@ if pixscale != None:
         hdufocusdata=np.divide(block_reduce(hdufocusdata,3,func=np.sum),2)
         pixscale=pixscale*3
         binnedthree=True
+else:
+    # If there is no pixelscale at least make sure the image is
+    # not unnecessarily big
+    
+    max_dim=3000
+    
+    # Get the current dimensions of the array
+    height, width = hdufocusdata.shape[:2]
+
+    # Calculate the crop limits
+    new_height = min(height, max_dim)
+    new_width = min(width, max_dim)
+
+    # Crop the array
+    hdufocusdata = hdufocusdata[:new_height, :new_width]
 
 
 # At least chop the edges off the image
