@@ -5047,8 +5047,12 @@ class Sequencer:
                     if spot < 30.0:
                         focus_spots.append((foc_pos,spot))
                         break
-                else:
+                elif g_dev['foc'].focus_commissioned:
                     plog ("retrying this position - could not get a FWHM ")
+
+                else:
+                    plog ("Probably out of focus, skipping this point")
+                    retry_attempts=4
 
             # If you have the starting of a v-curve then now you can decide what to do.
             # Start off by sorting in order of focus positions
@@ -5070,6 +5074,17 @@ class Sequencer:
                     threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),))).start()
                     # Fling the jpeg up
                     g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
+                else:
+                    plog ("Haven't found a starting point yet..... travelling left and right to find a good starting point ")
+                    if position_counter & 1:
+                        new_focus_position_to_attempt=min(spots_tried) - int(position_counter/2) * throw
+                        
+                    else:
+                        new_focus_position_to_attempt=max(spots_tried) + int(position_counter/2) * throw
+                    
+                    print ("trying fwhm point: " + str(new_focus_position_to_attempt))
+
+                    
 
             else:
                 if len(focus_spots) == 0 or len(focus_spots) == 1:
