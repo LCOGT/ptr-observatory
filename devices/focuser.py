@@ -67,21 +67,21 @@ class Focuser:
         g_dev["foc"] = self
         self.config = config["focuser"]["focuser1"]
         self.throw = int(config["focuser"]["focuser1"]["throw"])
-        
-        
+
+
         # Set the dummy flag
         if driver == 'dummy':
             self.dummy=True
         else:
             self.dummy=False
-        
-        
+
+
         if not self.dummy:
             win32com.client.pythoncom.CoInitialize()
             self.focuser = win32com.client.Dispatch(driver)
         else:
             self.focuser = 'dummy'
-            
+
         self.driver = driver
         if driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
             self.theskyx=True
@@ -114,7 +114,7 @@ class Focuser:
         # Just to need to wait a little bit for PWI3 to boot up, otherwise it sends temperatures that are absolute zero (-273)
         if driver == 'ASCOM.PWI3.Focuser':
             time.sleep(4)
-        
+
         if not self.dummy:
             if not self.theskyx:
                 self.current_focus_position=self.focuser.Position * self.steps_to_micron
@@ -169,7 +169,7 @@ class Focuser:
         self.focus_commissioned=False
 
         self.focuser_is_moving=False
-        
+
         if not self.dummy:
             if self.theskyx:
                 self.current_focus_temperature=self.focuser.focTemperature
@@ -226,7 +226,7 @@ class Focuser:
 
                 try:
                     if not self.dummy:
-                    
+
                         if self.theskyx:
                            requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
                            difference_in_position=self.focuser_update_wincom.focPosition() - requestedPosition
@@ -238,26 +238,26 @@ class Focuser:
                            else:
                                self.focuser_update_wincom.focMoveIn(absdifference_in_position)
                            print (self.focuser_update_wincom.focPosition())
-    
+
                            time.sleep(self.config['focuser_movement_settle_time'])
                            self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
-    
-    
+
+
                         else:
                            self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))
                            time.sleep(0.1)
                            movement_report=0
-    
+
                            while self.focuser_update_wincom.IsMoving:
                                if movement_report==0:
                                    plog("Focuser is moving.....")
                                    movement_report=1
                                self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
-    
+
                                time.sleep(0.3)
-    
+
                            time.sleep(self.config['focuser_movement_settle_time'])
-    
+
                            self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
                     else:
                         # Currently just a fummy focuser report
@@ -280,8 +280,8 @@ class Focuser:
 
             elif self.focuser_update_timer < time.time() - self.focuser_update_period:
 
-                
-                if not self.dummy: 
+
+                if not self.dummy:
                     try:
                         if self.theskyx:
                             self.current_focus_temperature=self.focuser_update_wincom.focTemperature
@@ -294,10 +294,10 @@ class Focuser:
                     except:
                         plog ("glitch in getting focus temperature")
                         plog (traceback.format_exc())
-    
+
                     if not self.theskyx:
                         self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
-    
+
                     else:
                         self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
                 else:
