@@ -1812,8 +1812,12 @@ class Camera:
         saturate = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
 
         # Don't bother with stars with peaks smaller than 100 counts per arcsecond
-        threshold = max(
-            3 * np.std(hdufocusdata[hdufocusdata < (5*tempstd)]), (200*self.pixscale))
+        if self.pixscale == None:
+            threshold = max(
+                3 * np.std(hdufocusdata[hdufocusdata < (5*tempstd)]), (100))
+        else:    
+            threshold = max(
+                3 * np.std(hdufocusdata[hdufocusdata < (5*tempstd)]), (200*self.pixscale))
         googtime = time.time()
         list_of_local_maxima = localMax(hdufocusdata, threshold=threshold)
 
@@ -1857,7 +1861,7 @@ class Camera:
             radius_of_radialprofile = int(24/self.pixscale)
         except:
             # if pixelscale is not defined make it big
-            radius_of_radialprofile = int(24/0.1)
+            radius_of_radialprofile = int(24/0.2)
 
         # Round up to nearest odd number to make a symmetrical array
         radius_of_radialprofile = int(radius_of_radialprofile // 2 * 2 + 1)
@@ -1897,9 +1901,16 @@ class Camera:
                     counter = counter+1
             # If the brightest pixel is in the center-ish
             # then put it in contention
-            if abs(brightest_pixel_rdist) < max(3, 3/self.pixscale):
-                focus_multiprocess.append(
-                    (cvalue, cx, cy, radprofile, self.pixscale))
+            if self.pixscale == None:
+                if abs(brightest_pixel_rdist) < max(3, 3/0.2):
+                    focus_multiprocess.append(
+                        (cvalue, cx, cy, radprofile, 0.2))
+
+                
+            else:
+                if abs(brightest_pixel_rdist) < max(3, 3/self.pixscale):
+                    focus_multiprocess.append(
+                        (cvalue, cx, cy, radprofile, self.pixscale))
 
         # Temporary just fur testing
         fwhm_results = []
@@ -1913,8 +1924,12 @@ class Camera:
                     break
 
         rfp = abs(bn.nanmedian(fwhm_results)) * 4.710
-        rfr = rfp * self.pixscale
-        rfs = np.nanstd(fwhm_results) * self.pixscale
+        if self.pixscale == None:
+            rfr= rfp
+            rfs = np.nanstd(fwhm_results)
+        else:
+            rfr = rfp * self.pixscale
+            rfs = np.nanstd(fwhm_results) * self.pixscale
         if rfr < 1.0 or rfr > 12:
             rfr = np.nan
             rfp = np.nan
@@ -1933,7 +1948,10 @@ class Camera:
         fx, fy = hdusmalldata.shape
 
         aspect_ratio= fx/fy
-        focus_jpeg_size=0.2/(self.pixscale/3600)
+        if self.pixscale == None:
+            focus_jpeg_size=500
+        else:
+            focus_jpeg_size=0.2/(self.pixscale/3600)
         if focus_jpeg_size < fx:
             crop_width = (fx - focus_jpeg_size) / 2
         else:
