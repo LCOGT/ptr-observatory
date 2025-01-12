@@ -1738,31 +1738,49 @@ class Camera:
 
         # Cut down focus image to central degree
         fx, fy = hdufocusdata.shape
+        
         # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
         # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
         # So we chop the image down to a degree by a degree
         # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
-        fx_degrees = (fx * self.pixscale) / 3600
-        fy_degrees = (fy * self.pixscale) / 3600
-        crop_x = 0
-        crop_y = 0
-        if fx_degrees > 1.0:
-            ratio_crop = 1/fx_degrees
-            crop_x = int((fx - (ratio_crop * fx))/2)
-        if fy_degrees > 1.0:
-            ratio_crop = 1/fy_degrees
-            crop_y = int((fy - (ratio_crop * fy))/2)
-        if crop_x > 0 or crop_y > 0:
-            if crop_x == 0:
-                crop_x = 2
-            if crop_y == 0:
-                crop_y = 2
-            # Make sure it is an even number for OSCs
-            if (crop_x % 2) != 0:
-                crop_x = crop_x+1
-            if (crop_y % 2) != 0:
-                crop_y = crop_y+1
-            hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
+        
+        if self.pixscale == None:
+            # If we don't know the pixelscale, we don't know the size, but 1000 x 1000 should be big enough!!
+            # Get the current dimensions
+            height, width = hdufocusdata.shape[:2]
+        
+            # Determine cropping bounds
+            new_height = min(height, 1000)
+            new_width = min(width, 1000)
+        
+            # Calculate start indices to center-crop
+            start_y = (height - new_height) // 2
+            start_x = (width - new_width) // 2
+        
+            # Crop the image
+            hdufocusdata = hdufocusdata[start_y:start_y + new_height, start_x:start_x + new_width]
+        else:    
+            fx_degrees = (fx * self.pixscale) / 3600
+            fy_degrees = (fy * self.pixscale) / 3600
+            crop_x = 0
+            crop_y = 0
+            if fx_degrees > 1.0:
+                ratio_crop = 1/fx_degrees
+                crop_x = int((fx - (ratio_crop * fx))/2)
+            if fy_degrees > 1.0:
+                ratio_crop = 1/fy_degrees
+                crop_y = int((fy - (ratio_crop * fy))/2)
+            if crop_x > 0 or crop_y > 0:
+                if crop_x == 0:
+                    crop_x = 2
+                if crop_y == 0:
+                    crop_y = 2
+                # Make sure it is an even number for OSCs
+                if (crop_x % 2) != 0:
+                    crop_x = crop_x+1
+                if (crop_y % 2) != 0:
+                    crop_y = crop_y+1
+                hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
 
         if self.is_osc:
 
