@@ -473,7 +473,8 @@ site_config = {
             # When the focusser has no previous best focus values
             # start from this reference position
 
-            'reference': 4900,  #20240904
+            'reference': 5275,  #20250103
+            'z_compression': 0, #Not used as of 20250111
 
 
             # Limits and steps for the focuser.
@@ -857,13 +858,13 @@ site_config = {
                 # through a few nights of calibration images, it should automatically calculate these gains.
                 'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise':  1.8, #e-/ADUConv gain @ 62
                 'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.
                 'dark_lim_adu': 1,   #adu/s of dark 20231229 moved down from 0.5
                 'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.
-                'fullwell_capacity': 80000,  # NB Guess
-                'saturate':   65535,
+                'fullwell_capacity': 20000,  #e-  Consistent with 0.3e-/adu
+                'saturate':   64000,
                 'max_linearity':  60000,   # Guess
                 # How long does it take to readout an image after exposure
                 'cycle_time':            2.0,

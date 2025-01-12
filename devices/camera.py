@@ -5095,7 +5095,7 @@ class Camera:
                     current_camera_temperature = float(
                         current_camera_temperature)
                     # NB NB this might best be a config item.
-                    if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > self.temp_tolerance:
+                    if abs(current_camera_temperature - float(g_dev['cam'].setpoint)) > self.temp_tolerance:
                         plog("temperature out of range for calibrations (" +
                              str(current_camera_temperature)+"), rejecting calibration frame")
                         g_dev['obs'].camera_sufficiently_cooled_for_calibrations = False
@@ -5170,19 +5170,19 @@ class Camera:
                                 int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
                             m = counts.argmax()
                             imageMode = unique[m]
-                            debiaseddarkmode = imageMode / 10 / exposure_time
+                            debiaseddarkmode = round(imageMode / 10 / exposure_time, 4)
+
                             plog("Debiased 1s Dark Mode is " +
                                  str(debiaseddarkmode))
 
-                            debiaseddarkmedian = bn.nanmedian(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(
-                                1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time
+                            debiaseddarkmedian = round(bn.nanmedian(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(
+                                1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time, 4)
                             plog("Debiased 1s Dark Median is " +
                                  str(debiaseddarkmedian))
 
-                            debiaseddarkmean = bn.nanmean(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(
-                                1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time
-                            plog("Debiased 1s Dark Mean is " +
-                                 str(debiaseddarkmean))
+                            debiaseddarkmean = round(bn.nanmean(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(
+                                1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time, 4)
+                            plog("Debiased 1s Dark Mean is " + str(debiaseddarkmean))
 
 
                             plog ("Exposure time: " + str(exposure_time))
