@@ -730,12 +730,24 @@ class Sequencer:
                 opt = {}
                 self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
+                
+                
+                
+                # If we don't have a pixelscale, it is highly necessary
+                # If it just successfully focused or at least got in the ballpark,
+                # then we should attempt to get a pixelscale at this point
+                # If we don't do it at this point, it will attempt to at the start of a project anyway
+                if g_dev['cam'].pixscale == None:
+                    plog ("As we have no recorded pixel scale yet, we are running a quite platesolve to measure it")
+                    g_dev['obs'].send_to_user("Using a platesolve to measure the pixelscale of the camera", p_level='INFO')
+                    self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)      
+                    
                 g_dev['obs'].sync_after_platesolving=False
 
                 g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
 
                 g_dev['obs'].flush_command_queue()
-
+                
                 self.total_sequencer_control=False
 
                 self.night_focus_ready=False
