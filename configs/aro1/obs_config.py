@@ -247,15 +247,31 @@ site_config = {
     'limit_mount_tweak': 15,
 
     'defaults': {
-        'screen': 'screen1',
-        'mount': 'mount1',
-        # 'telescope': 'telescope1',     #How do we handle selector here, if at all?
-        'focuser': 'focuser1',
-        # 'rotator': 'rotator1',
+        'screen': 'screen',
+        'mount': 'aropier1',
+        # 'telescope': 'Main OTA',     #How do we handle selector here, if at all?
+        'focuser': 'focuser',
+        # 'rotator': 'rotator',
         'selector': None,
-        'filter_wheel': 'filter_wheel1',
-        'camera': 'camera_1_1',
-        'sequencer': 'sequencer1'
+        'filter_wheel': 'LCO FW50_001d',
+        'camera': 'sq003ms',
+        'sequencer': 'sequencer'
+    },
+    # Initial roles are aassigned here. These may change during runtime.
+    # Value is the device display name
+    # This is where to configure a second device of the same type if you want to control it in the site code. 
+    # Devices are referenced in obs with self.devices['device_role']
+    'device_roles': {
+        'mount': 'aropier1',
+        #'main_rotator': 'rotator',
+        'main_focuser': 'focuser',
+        'main_fw': 'LCO FW50_001d', 
+        
+        # Cameras
+        'main_cam': 'sq003ms',
+        'guide_cam': None,
+        'widefield_cam': None,
+        'allsky_cam': None,
     },
     'device_types': [
         'mount',
@@ -282,7 +298,7 @@ site_config = {
 
 
     'mount': {
-        'mount1': {
+        'aropier1': {
             'parent': 'enclosure1',
             'name': 'aropier1',
             # Can be a name if local DNS recognizes it.
@@ -399,8 +415,8 @@ site_config = {
 
 
     'telescope': {                            # OTA = Optical Tube Assembly.
-        'telescope1': {
-            'parent': 'mount1',
+        'Main OTA': {
+            'parent': 'aropier1',
             'name': 'Main OTA',
             'telescop': 'aro1',
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
@@ -414,21 +430,21 @@ site_config = {
             # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C  1468.4 @ F4.9?
             'focal_length': 1468.4,
             'has_dew_heater':  False,
-            'screen_name': 'screen1',
-            'focuser_name':  'focuser1',
-            'rotator_name':  'rotator1',
+            'screen_name': 'screen',
+            'focuser_name':  'focuser',
+            'rotator_name':  'rotator',
             # This is a default for a single instrument system
             'has_instrument_selector': False,
             'selector_positions': 1,            # Note starts with 1
-            'instrument names':  ['camera1'],
+            'instrument names':  ['sq003ms'],
             'instrument aliases':  ['QHY600Mono'],
             'configuration': {
                 # This needs expanding into something easy for the owner to change.
                 'f-ratio':  'f4.9',
-                "position1": ["darkslide1", "filter_wheel1", "camera1"]
+                "position1": ["darkslide1", "LCO FW50_001d", "sq003ms"],
             },
-            'camera_name':  'camera_1_1',
-            'filter_wheel_name':  'filter_wheel1',
+            'camera_name':  'sq003ms',
+            'filter_wheel_name':  'LCO FW50_001d',
             'has_fans':  True,
             'has_cover':  False,
             # East is negative  These will vary per telescope.
@@ -454,8 +470,8 @@ site_config = {
     },
 
     'rotator': {
-        'rotator1': {
-            'parent': 'telescope1',
+        'rotator': {
+            'parent': 'Main OTA',
             'name': 'rotator',
             'desc':  'Opetc Gemini',
             'driver': 'ASCOM.OptecGemini.Rotator',
@@ -471,7 +487,7 @@ site_config = {
     },
 
     'screen': {
-        'screen1': {
+        'screen': {
             'parent': 'telescope1',
             'name': 'screen',
             'desc':  'Optec Alnitak 16"',
@@ -489,7 +505,7 @@ site_config = {
     },
 
     'focuser': {
-        'focuser1': {
+        'focuser': {
             'parent': 'telescope1',
             'name': 'focuser',
             'desc':  'Optec Gemini',
@@ -528,9 +544,9 @@ site_config = {
     },
 
     'selector': {
-        'selector1': {
-            'parent': 'telescope2',
-            'name': 'None',
+        'selector': {
+            'parent': 'Main OTA',
+            'name': 'selector',
             'desc':  'Null Changer',
             'driver': None,
             'com_port': None,
@@ -541,7 +557,7 @@ site_config = {
             # 'eShel_spect', 'planet_camera', 'UVEX_spect'],
             'instruments':  ['Aux_camera'],
 
-            'cameras':  ['camera_1_1'],  # 'camera_1_2', None, 'camera_1_4'],
+            'cameras':  ['sq003ms'],  # 'camera_1_2', None, 'camera_1_4'],
 
             'guiders':  [None],  # 'guider_1_2', None, 'guide_1_4'],
             'default': 0
@@ -550,8 +566,8 @@ site_config = {
     },
 
     'filter_wheel': {
-        "filter_wheel1": {
-            "parent": "telescope1",
+        "LCO F@50_001d": {
+            "parent": "Main OTA",
             "name": "LCO FW50_001d",
             'service_date': '20210716',
 
@@ -653,7 +669,7 @@ site_config = {
 
     'lamp_box': {
         'lamp_box1': {
-            'parent': 'camera_1',  # Parent is camera for the spectrograph
+            'parent': 'None',  # Parent is camera for the spectrograph
             'name': 'None',  # "UVEX Calibration Unit", 'None'
             'desc': 'None',  # 'eshel',  # "uvex", 'None'
             'spectrograph': 'None',  # 'echelle', 'uvex'; 'None'
@@ -663,7 +679,7 @@ site_config = {
     },
 
     'camera': {
-        'camera_1_1': {
+        'sq003ms': {
             'parent': 'telescope1',
             # Important because this points to a server file structure by that name.
             'name': 'sq003ms',
@@ -973,13 +989,11 @@ site_config = {
     },
 
     'sequencer': {
-        'sequencer1': {
+        'sequencer': {
             'parent': 'site',
-            'name': 'Sequencer',
+            'name': 'sequencer',
             'desc':  'Automation Control',
             'driver': None,
-
-
         },
     },
 
