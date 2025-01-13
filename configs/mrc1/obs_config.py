@@ -483,7 +483,7 @@ site_config = {
             'maximum': 12700,
             'step_size': 1,   #  This is misnamed!
             'backlash':  0,
-            'throw': 40,
+            'throw': 70,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  #  Steps per micron
         },

@@ -116,7 +116,8 @@ hdufocusdata=np.load(image_filename)
 
 hduheader=fits.open(image_filename.replace('.npy','.head'))[0].header
 
-if np.isnan(pixscale):
+# If there is no known pixelscale yet use a standard value just to get rough photometry
+if pixscale == None:
     pixscale = 0.5
 
 # The photometry has a timelimit that is half of the exposure time
