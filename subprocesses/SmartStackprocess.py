@@ -26,7 +26,7 @@ import copy
 input_sstk_info = pickle.load(sys.stdin.buffer)
 # input_sstk_info=pickle.load(open('testsmartstackpickle','rb'))
 
-print("HERE IS THE INCOMING. ")
+print("Starting SmartStackprocess.py")
 print(input_sstk_info)
 
 
@@ -439,8 +439,14 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                     crosscorrel_filename_waiter.append(
                         obsid_path + "smartstacks/" + output_filename)
 
-                    crosscorrelation_subprocess_array.append(subprocess.Popen(
-                        ['python', 'crosscorrelation_subprocess.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0))
+                    crosscorrelation_subprocess_array.append(
+                        subprocess.Popen(
+                            ['python', 'crosscorrelation_subprocess.py'], 
+                            stdin=subprocess.PIPE, 
+                            stdout=None, 
+                            bufsize=-1
+                        )
+                    )
                     print(counter)
                     pickle.dump(
                         pickler, crosscorrelation_subprocess_array[counter].stdin)

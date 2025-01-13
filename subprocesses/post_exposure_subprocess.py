@@ -28,6 +28,8 @@ import traceback
 #from astropy.stats import sigma_clip
 from joblib import Parallel, delayed
 
+print('Starting post_exposure_subprocess.py')
+
 def sigma_clip_mad(data, sigma=2.5, maxiters=10):
     """
     Perform sigma clipping using MAD as a robust standard deviation estimate.
@@ -69,7 +71,6 @@ def sigma_clip_mad(data, sigma=2.5, maxiters=10):
         clipped_data[mask] = np.nan
 
     return clipped_data
-
 
 def sigma_clip_mad_chunk(data_chunk, sigma=2.5, maxiters=10):
     """
@@ -133,7 +134,6 @@ def sigma_clip_mad_parallel(data, sigma=2.5, maxiters=10, n_jobs=-1, chunk_size=
 
     # Concatenate results
     return np.concatenate(results)
-
 
 def linear_interpolate(arr):
     nans = np.isnan(arr)
@@ -211,8 +211,6 @@ def debanding (bandeddata):
 
     return both_debanded_image
 
-
-
 # Note this is a thread!
 def write_raw_file_out(packet):
 
@@ -283,8 +281,6 @@ except:
  wema_config, smartstackthread_filename, septhread_filename, mainjpegthread_filename,\
  platesolvethread_filename) = payload
 
-#breakpoint()
-
 a_timer=time.time()
 
 cam_config = selfconfig['camera'][camera_device_name]
@@ -297,17 +293,28 @@ rotator_name = selfconfig['device_roles']['main_rotator']
 rotator_alias = selfconfig['rotator'][rotator_name]['name']
 focuser_name = selfconfig['device_roles']['main_focuser']
 focuser_alias = selfconfig['focuser'][focuser_name]['name']
+if len(selfconfig['rotator']) > 1:
+    print('Warning: more than one rotator in config file, so post_exposure_subprocess.py is arbitrarily choosing to use main_rotator.')
+    print('Since there is more than one rotator configured, the script should be modified to pass the correct rotator name as an argument.')
+if len(selfconfig['focuser']) > 1:
+    print('Warning: more than one focuser in config file, so post_exposure_subprocess.py is arbitrarily choosing to use main_focuser.')
+    print('Since there is more than one focuser configured, the script should be modified to pass the correct rotator name as an argument.')
+
+# hack to get telescope working: choose the first one in the dict. This will probably work as expected
+# unless there are ever more than one telescope in the config file, so we'll check for that and
+# Send a warning if this happens.
+telescope_name = list(selfconfig['telescope'].keys())[0]
+telescope_config = selfconfig['telescope'][telescope_name]
+if len(selfconfig['telescope']) > 1:
+    print('Warning: more than one telescope in config file, and post_exposure_subprocess.py is picking one at random.')
+    print('If there is more than one telescope configured, the correct one should be passed as an argument to this script.')
 
 obsname=selfconfig['obs_id']
 localcalibrationdirectory=selfconfig['local_calibration_path'] + selfconfig['obs_id'] + '/'
 tempfrontcalib=obsname + '_' + cam_alias +'_'
 
-localcalibmastersdirectory= localcalibrationdirectory+ "archive/" + cam_alias + "/calibmasters" \
-                          + "/"
+localcalibmastersdirectory= localcalibrationdirectory+ "archive/" + cam_alias + "/calibmasters" + "/"
 
-
-
-#breakpoint()
 
 # Get the calibrated image whether that is a substack or a normal image.
 if substack:
@@ -438,7 +445,15 @@ if substack:
 
             crosscorrel_filename_waiter.append(temporary_substack_directory + output_filename)
 
-            crosscorrelation_subprocess_array.append(subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
+            crosscorrelation_subprocess_array.append(
+                subprocess.Popen(
+                    ['python','subprocesses/crosscorrelation_subprocess.py'],
+                    stdin=subprocess.PIPE,
+                    stdout=None,
+                    stderr=None,
+                    bufsize=-1
+                )
+            )
             #crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
             print (counter-1)
 
@@ -1083,29 +1098,15 @@ try:
         hdu.header["PANE"] = pane
 
     hdu.header["FOCAL"] = (
-        round(
-            float(
-                selfconfig["telescope"]["telescope1"]["focal_length"]
-            ),
-            2,
-        ),
+        round( float(telescope_config["focal_length"]), 2),
         "[mm] Telescope focal length",
     )
     hdu.header["APR-DIA"] = (
-        round(
-            float(selfconfig["telescope"]["telescope1"]["aperture"]), 2
-        ),
+        round( float(telescope_config["aperture"]), 2),
         "[mm] Telescope aperture",
     )
     hdu.header["APR-AREA"] = (
-        round(
-            float(
-                selfconfig["telescope"]["telescope1"][
-                    "collecting_area"
-                ]
-            ),
-            1,
-        ),
+        round( float(telescope_config["collecting_area"]), 1),
         "[mm^2] Telescope collecting area",
     )
     hdu.header["LATITUDE"] = (
@@ -1539,7 +1540,14 @@ try:
         picklefilename='testlocalred'+str(time.time()).replace('.','')
         pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
 
-        subprocess.Popen(['python','fz_archive_file.py',picklefilename],cwd=localcalibrationdirectory + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+        subprocess.Popen(
+            ['python','fz_archive_file.py',picklefilename],
+            cwd=localcalibrationdirectory + 'smartstacks',
+            stdin=subprocess.PIPE,
+            stdout=None,
+            stderr=None,
+            bufsize=-1
+        )
 
 
     # NOW THAT THE FILE HAS BEEN FZED AND SENT OFF TO THE PIPE,
@@ -1780,7 +1788,14 @@ try:
             picklefilename='testred'+str(time.time()).replace('.','')
             pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
 
-            subprocess.Popen(['python','local_reduce_file_subprocess.py',picklefilename],cwd=localcalibrationdirectory + 'smartstacks',stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+            subprocess.Popen(
+                ['python','local_reduce_file_subprocess.py',picklefilename],
+                cwd=localcalibrationdirectory + 'smartstacks',
+                stdin=subprocess.PIPE,
+                stdout=None,
+                stderr=None,
+                bufsize=-1
+            )
 
 
 

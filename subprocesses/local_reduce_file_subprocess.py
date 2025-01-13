@@ -24,7 +24,7 @@ warnings.simplefilter('ignore', category=AstropyUserWarning)
 #input_sep_info=pickle.load(open('testfz17141141966139522','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
 
-print ("HERE IS THE INCOMING. ")
+print ("Starting local_reduce_file_subprocess.py")
 #print (input_sep_info)
 
 temphduheader=input_sep_info[0]

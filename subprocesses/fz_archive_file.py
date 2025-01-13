@@ -26,7 +26,7 @@ warnings.simplefilter('ignore', category=AstropyUserWarning)
 #input_sep_info=pickle.load(open('testfz1714133591386061','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
 
-print ("HERE IS THE INCOMING. ")
+print ("Starting fz_archive_file.py")
 #print (input_sep_info)
 
 

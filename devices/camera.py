@@ -208,47 +208,47 @@ def mid_stretch_jpeg(data):
 def dump_main_data_out_to_post_exposure_subprocess(payload):
 
     # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-# <<<<<<< HEAD
 
-#     if True:
-#         # NB set this path to create test pickle for makejpeg routine.
-#         pickle.dump(payload, open('subprocesses/testpostprocess.pickle', 'wb'))
+    # if True:
+    #     # NB set this path to create test pickle for makejpeg routine.
+    #     pickle.dump(payload, open('subprocesses/testpostprocess.pickle', 'wb'))
 
-#     # try:
-#     post_processing_subprocess = subprocess.Popen(
-#         ['python', 'subprocesses/post_exposure_subprocess.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
+    # try:
+    # post_processing_subprocess = subprocess.Popen(
+    #     ['python', 'subprocesses/post_exposure_subprocess.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
 
-#     # #breakpoint()
+    # breakpoint()
+    # try:
+    # post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    # except OSError:
+    #     pass
 
-#     # #breakpoint()
-#     # #try:
-#     # post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-#     # # except OSError:
-#     # #     pass
+    # try:
+    #     pickle.dump(payload, post_processing_subprocess.stdin)
+    # except:
+    #     plog("Problem in the post_processing_subprocess pickle dump")
+    #     plog(traceback.format_exc())
+
+    # output, error = post_processing_subprocess.communicate()
+    # print (output)
+    # breakpoint()
 
 
+    # pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
 
-
-#     try:
-#         pickle.dump(payload, post_processing_subprocess.stdin)
-#     except:
-#         plog("Problem in the post_processing_subprocess pickle dump")
-#         plog(traceback.format_exc())
-
-#     # output, error = post_processing_subprocess.communicate()
-#     # print (output)
-#     #breakpoint()
-
-# =======
-    if False:
-        pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
-
-    post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+    post_processing_subprocess=subprocess.Popen(
+        ['python','subprocesses/post_exposure_subprocess.py'],
+        stdin=subprocess.PIPE,
+        stdout=None,
+        stderr=None,
+        bufsize=-1
+    )
 
     try:
         pickle.dump(payload, post_processing_subprocess.stdin)
-    except:
-        plog ("Problem in the post_processing_subprocess pickle dump")
+        post_processing_subprocess.stdin.close()  # Ensure the input stream is closed
+    except Exception as e:
+        plog(f"Problem in the post_processing_subprocess pickle dump: {e}")
         plog(traceback.format_exc())
 
 
@@ -4324,7 +4324,11 @@ class Camera:
 
                 try:
                     smartstack_subprocess = subprocess.Popen(
-                        ['python', 'subprocesses/SmartStackprocess.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
+                        ['python', 'subprocesses/SmartStackprocess.py'], 
+                        stdin=subprocess.PIPE, 
+                        stdout=None, 
+                        bufsize=-1
+                    )
                 except OSError:
                     pass
 
@@ -4375,7 +4379,11 @@ class Camera:
 
             try:
                 sep_subprocess = subprocess.Popen(
-                    ['python', 'subprocesses/SEPprocess.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
+                    ['python', 'subprocesses/SEPprocess.py'], 
+                    stdin=subprocess.PIPE, 
+                    stdout=None, 
+                    bufsize=-1
+                )
             except OSError:
                 pass
 
@@ -4437,7 +4445,11 @@ class Camera:
                             rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor,self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name], open('testjpegpickle','wb'))
                 try:
                     jpeg_subprocess = subprocess.Popen(
-                        ['python', 'subprocesses/mainjpeg.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
+                        ['python', 'subprocesses/mainjpeg.py'], 
+                        stdin=subprocess.PIPE, 
+                        stdout=None, 
+                        bufsize=-1
+                    )
                 except OSError:
                     pass
                 try:
@@ -4930,6 +4942,7 @@ class Camera:
                     thread = threading.Thread(target=dump_main_data_out_to_post_exposure_subprocess, args=(payload,))
                     thread.daemon = True
                     thread.start()
+                    # dump_main_data_out_to_post_exposure_subprocess(payload)
 
 
 ################################################# HERE IS WHERE IN-LINE STUFF HAPPENS.

@@ -37,10 +37,9 @@ import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 #import matplotlib.pyplot as plt
-
-
 from scipy.stats import binned_statistic
 
+print("Starting sep_process.py")
 
 
 def gaussian(x, amplitude, mean, stddev):
@@ -116,7 +115,7 @@ hdufocusdata=np.load(image_filename)
 
 hduheader=fits.open(image_filename.replace('.npy','.head'))[0].header
 
-if np.isnan(pixscale):
+if pixscale == None:
     pixscale = 0.5
 
 # The photometry has a timelimit that is half of the exposure time

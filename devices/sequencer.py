@@ -917,21 +917,21 @@ class Sequencer:
 
                                             if tempmonth == 12 or tempmonth == 1 or (tempmonth ==11 and tempday >15) or (tempmonth ==2 and tempday <=15):
                                                 tommorow_night_setpoint=  float(
-                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_nov_to_feb'][0])
+                                                    g_dev['cam'].settings['temp_setpoint_nov_to_feb'][0])
 
                                             elif tempmonth == 3 or tempmonth == 4 or (tempmonth ==2 and tempday >15) or (tempmonth ==5 and tempday <=15):
                                                 tommorow_night_setpoint=  float(
-                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_feb_to_may'][0])
+                                                    g_dev['cam'].settings['temp_setpoint_feb_to_may'][0])
 
                                             elif tempmonth == 6 or tempmonth == 7 or (tempmonth ==5 and tempday >15) or (tempmonth ==8 and tempday <=15):
 
                                                 tommorow_night_setpoint=  float(
-                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_may_to_aug'][0])
+                                                    g_dev['cam'].settings['temp_setpoint_may_to_aug'][0])
 
                                             elif tempmonth == 9 or tempmonth == 10 or (tempmonth ==8 and tempday >15) or (tempmonth ==11 and tempday <=15):
 
                                                 tommorow_night_setpoint=  float(
-                                                    g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_aug_to_nov'][0])
+                                                    g_dev['cam'].settings['temp_setpoint_aug_to_nov'][0])
 
                                             # Here change the setpoint tomorrow nights setpoint
                                             g_dev['cam'].current_setpoint = tommorow_night_setpoint
@@ -1839,21 +1839,21 @@ class Sequencer:
 
                 if tempmonth == 12 or tempmonth == 1 or (tempmonth ==11 and tempday >15) or (tempmonth ==2 and tempday <=15):
                     tommorow_night_setpoint=  float(
-                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_nov_to_feb'][0])
+                        g_dev['cam'].settings['temp_setpoint_nov_to_feb'][0])
 
                 elif tempmonth == 3 or tempmonth == 4 or (tempmonth ==2 and tempday >15) or (tempmonth ==5 and tempday <=15):
                     tommorow_night_setpoint=  float(
-                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_feb_to_may'][0])
+                        g_dev['cam'].settings['temp_setpoint_feb_to_may'][0])
 
                 elif tempmonth == 6 or tempmonth == 7 or (tempmonth ==5 and tempday >15) or (tempmonth ==8 and tempday <=15):
 
                     tommorow_night_setpoint=  float(
-                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_may_to_aug'][0])
+                        g_dev['cam'].settings['temp_setpoint_may_to_aug'][0])
 
                 elif tempmonth == 9 or tempmonth == 10 or (tempmonth ==8 and tempday >15) or (tempmonth ==11 and tempday <=15):
 
                     tommorow_night_setpoint=  float(
-                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['temp_setpoint_aug_to_nov'][0])
+                        g_dev['cam'].settings['temp_setpoint_aug_to_nov'][0])
 
                 # Here change the setpoint tomorrow nights setpoint
                 g_dev['cam'].current_setpoint = tommorow_night_setpoint
@@ -2570,8 +2570,8 @@ class Sequencer:
             ),
             "Start date and time of observation"
         )
-        calibhduheader['INSTRUME'] = g_dev['cam'].config["camera"][g_dev['cam'].name]["name"], "Name of camera"
-        calibhduheader['SITEID'] = g_dev['cam'].config["wema_name"].replace("-", "").replace("_", "")
+        calibhduheader['INSTRUME'] = g_dev['cam'].config["name"], "Name of camera"
+        calibhduheader['SITEID'] = g_dev['obs'].config["wema_name"].replace("-", "").replace("_", "")
         calibhduheader['TELID'] = g_dev['obs'].obs_id
         calibhduheader['OBSTYPE'] = 'DARK'
         calibhduheader['BLKUID'] = 1234
@@ -3087,7 +3087,7 @@ class Sequencer:
                                             del hdu1data
 
                                             # Normalising flat file
-                                            if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                                            if not g_dev['cam'].settings["is_osc"]:
                                                 normalising_factor=bn.nanmedian(flatdebiaseddedarked)
                                                 flatdebiaseddedarked = flatdebiaseddedarked/normalising_factor
                                                 # Naning bad entries into master flat
@@ -3321,7 +3321,7 @@ class Sequencer:
                                 camera_gain_estimate_image[camera_gain_estimate_image == -inf] = np.nan
 
                                 # If an OSC, just use the brightest bayer bit.
-                                if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                                if g_dev['cam'].settings["is_osc"]:
 
                                     osc_fits=copy.deepcopy(camera_gain_estimate_image)
                                     debayered=[]
@@ -3922,9 +3922,9 @@ class Sequencer:
                 #breakpoint()
 
                 acquired_count = 0
-                flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                flat_saturation_level = g_dev['cam'].settings["saturate"]
 
-                if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                if g_dev['cam'].settings["is_osc"]:
                     target_flat = 0.65 * flat_saturation_level
                 else:
                     target_flat = 0.5 * flat_saturation_level
@@ -4282,7 +4282,7 @@ class Sequencer:
                                         old_throughput_value=copy.deepcopy(new_throughput_value)
                                         new_throughput_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
 
-                                if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                                if g_dev['cam'].settings["is_osc"]:
                                     # Check the first image is not unnaturally low (during non-commissioning with a known filter)
                                     # and wait again
                                     if bright < 0.3 * flat_saturation_level and number_of_exposures_so_far == 1 and self.current_filter_last_camera_gain < 200:
@@ -4822,9 +4822,9 @@ class Sequencer:
             im_path = im_path_r + g_dev["day"] + "/to_AWS/"
 
             text_name = (
-                g_dev['cam'].config["obs_id"]
+                g_dev['obs'].config["obs_id"]
                 + "-"
-                + g_dev['cam'].config["camera"][g_dev['cam'].name]["name"]
+                + g_dev['cam'].config["name"]
                 + "-"
                 + g_dev["day"]
                 + "-"

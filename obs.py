@@ -2959,9 +2959,7 @@ class Observatory:
                     else:
                         hdufocusdata = platesolve_token
 
-                    is_osc = g_dev["cam"].config["camera"][g_dev["cam"].name][
-                        "settings"
-                    ]["is_osc"]
+                    is_osc = g_dev["cam"].settings["is_osc"]
 
                     # Do not bother platesolving unless it is dark enough!!
                     if not (
@@ -2995,7 +2993,7 @@ class Observatory:
                             # yet another pickle debugger.
                             if True:
                                 pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                                 pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
+                                 pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].settings["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
 
 
                             #breakpoint()
@@ -3004,8 +3002,8 @@ class Observatory:
                                 platesolve_subprocess = subprocess.Popen(
                                     ["python", "subprocesses/Platesolveprocess.py"],
                                     stdin=subprocess.PIPE,
-                                    stdout=subprocess.PIPE,
-                                    bufsize=0,
+                                    stdout=None,
+                                    bufsize=-1,
                                 )
                             except OSError:
                                 plog(traceback.format_exc())
@@ -3027,9 +3025,7 @@ class Observatory:
                                         platesolve_crop,
                                         False,
                                         1,
-                                        g_dev["cam"].config["camera"][
-                                            g_dev["cam"].name
-                                        ]["settings"]["saturate"],
+                                        g_dev["cam"].settings["saturate"],
                                         g_dev["cam"].camera_known_readnoise,
                                         self.config["minimum_realistic_seeing"],
                                         is_osc,

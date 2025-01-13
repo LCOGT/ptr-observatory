@@ -60,7 +60,7 @@ site_config = {
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that 
     # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': False,
+    'scope_in_manual_mode': True,
     'mount_reference_model_off': False,
     'sun_checks_on': False,
     'moon_checks_on': False,
