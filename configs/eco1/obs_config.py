@@ -169,23 +169,41 @@ site_config = {
     
 
     'defaults': {
-        'screen': 'screen1',
-        'mount': 'mount1',
-        #'telescope': 'telescope1',     #How do we handle selector here, if at all?
-        'focuser': 'focuser1',
-        'rotator': 'rotator1',
+        'screen': 'screen',
+        'mount': 'ecocdkpier',
+        #'telescope': 'Main OTA',     #How do we handle selector here, if at all?
+        'focuser': 'focuser',
+        'rotator': 'rotator',
         'selector': None,
-        'filter_wheel': 'filter_wheel1',
-        'camera': 'camera_1_1',
-        'sequencer': 'sequencer1'
+        'filter_wheel': 'SBIG 8-position wheel',
+        'camera': 'ec003zwo',
+        'sequencer': 'sequencer'
         },
+
+    # Initial roles are assigned here. These may change during runtime.
+    # Value is the device display name
+    # This is where to configure a second device of the same type if you want to control it in the site code. 
+    # Devices are referenced in obs with self.devices['device_role']
+    'device_roles': {
+        'mount': 'ecocdkpier',
+        #'main_rotator': 'rotator',
+        'main_focuser': 'focuser',
+        'main_fw': 'SBIG 8-position wheel', 
+        
+        # Cameras
+        'main_cam': 'ec003zwo',
+        # Cameras below aren't currently used, but here as an example.
+        'guide_cam': None,
+        'widefield_cam': None,
+        'allsky_cam': None,
+    },
     'device_types': [
             'mount',
             #'telescope',
             #'screen',
             #'rotator',
             'focuser',
-            'selector',
+            # 'selector',
             'filter_wheel',
             'camera',
             'sequencer'
@@ -203,7 +221,7 @@ site_config = {
             'sequencer'
             ],   
     'mount': {
-        'mount1': {
+        'ecocdkpier': {
             'parent': 'enclosure1',
             'tel_id': '0m40',
             'name': 'ecocdkpier',
@@ -269,8 +287,8 @@ site_config = {
     },
 
     'telescope': {                            #Note telescope == OTA  Optical Tube Assembly.
-        'telescope1': {
-            'parent': 'mount1',
+        'Main OTA': {
+            'parent': 'ecocdkpier',
             'name': 'Main OTA',
             'telescop': 'eco1',
             'ptrtel': 'CDK17',
@@ -281,18 +299,18 @@ site_config = {
             'aperture': 432,
             'focal_length': 2939,
             'has_dew_heater':  True,
-            'screen_name': 'screen1',
-            'focuser_name':  'focuser1',
-            'rotator_name':  'rotator1',
+            'screen_name': 'screen',
+            'focuser_name':  'focuser',
+            'rotator_name':  'rotator',
             'has_instrument_selector': False,   #This is a default for a single instrument system
             'selector_positions': 1,            #Note starts with 1
             'instrument names':  ['camera1'],
             'instrument aliases':  ['SBIG16803'],
             'configuration': {
-                  "position1": ["darkslide1", "filter_wheel1", "camera1"]
+                  "position1": ["darkslide1", "SBIG 8-position wheel", "camera1"]
                   },
             'camera_name':  'camera1',
-            'filter_wheel_name':  'filter_wheel1',
+            'filter_wheel_name':  'SBIG 8-position wheel',
             'has_fans':  True,
             'has_cover':  False,
             'settings': {
@@ -312,8 +330,8 @@ site_config = {
     },
 
 #     'rotator': {
-#         'rotator1': {
-#             'parent': 'telescope1',
+#         'rotator': {
+#             'parent': 'Main OTA',
 #             'name': 'rotator',
 #             'desc':  'Opetc Gemini',
 #             'driver': 'ASCOM.OptecGemini.Rotator',
@@ -327,8 +345,8 @@ site_config = {
 #     },
 
     'rotator': {
-        'rotator1': {
-            'parent': 'telescope1',
+        'rotator': {
+            'parent': 'Main OTA',
             'name': 'rotator',
             'desc':  False,
             'driver': None,
@@ -342,8 +360,8 @@ site_config = {
     },
 
     'screen': {
-        'screen1': {
-            'parent': 'telescope1',
+        'screen': {
+            'parent': 'Main OTA',
             'name': 'screen',
             'desc':  'No Screen',
             'driver': None,
@@ -357,8 +375,8 @@ site_config = {
     },
 
     'focuser': {
-        'focuser1': {
-            'parent': 'telescope1',
+        'focuser': {
+            'parent': 'Main OTA',
             'name': 'focuser',
             'desc':  'Planewave Focuser',
             'driver': 'ASCOM.PWI3.Focuser',
@@ -382,8 +400,8 @@ site_config = {
     },
 
     'selector': {
-        'selector1': {
-            'parent': 'telescope1',
+        'selector': {
+            'parent': 'Main OTA',
             'name': 'None',
             'desc':  'Null Changer',
             'driver': None,
@@ -401,8 +419,8 @@ site_config = {
     },
 
     'filter_wheel': {
-        "filter_wheel1": {
-            "parent": "telescope1",
+        "SBIG 8-position wheel": {
+            "parent": "Main OTA",
             "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
             'service_date': '20180101',
             
@@ -484,7 +502,7 @@ site_config = {
 
     'lamp_box': {
         'lamp_box1': {
-            'parent': 'camera_1',  # Parent is camera for the spectrograph
+            'parent': 'None',  # Parent is camera for the spectrograph
             'name': 'None',  # "UVEX Calibration Unit", 'None'
             'desc': 'None', #'eshel',  # "uvex", 'None'
             'spectrograph': 'None', #'echelle', 'uvex'; 'None'
@@ -494,8 +512,8 @@ site_config = {
     },
 
     'camera': {
-        'camera_1_1': {
-            'parent': 'telescope1',
+        'ec003zwo': {
+            'parent': 'Main OTA',
             'name': 'ec003zwo',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16803',
             
@@ -705,9 +723,9 @@ site_config = {
     },
 
     'sequencer': {
-        'sequencer1': {
+        'sequencer': {
             'parent': 'site',
-            'name': 'Sequencer',
+            'name': 'sequencer',
             'desc':  'Automation Control',
             'driver': None,
 
