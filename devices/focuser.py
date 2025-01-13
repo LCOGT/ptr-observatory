@@ -641,7 +641,7 @@ class Focuser:
         position = int(float(req["position"])) * self.micron_to_steps
         self.guarded_move(position)
         self.last_known_focus = position
-        plog("Forces last known focus to be new position Line 551 in focuser WER 20400917")
+        #plog("Forces last known focus to be new position Line 551 in focuser WER 20400917")
 
     def stop_command(self, req: dict, opt: dict):
         """stop focuser movement"""
