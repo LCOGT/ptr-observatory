@@ -308,27 +308,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
             yt *= iy
             xr *= ix
             yb *= iy
-            try:
-                trial_image = final_image.crop(
-                    (int(xl), int(yt), int(ix-xr), int(iy-yb)))
-            except:
-                try:
-                    print("excepted 1")
-                    ix, iy = trial_image.size
-                    xl, yt, xr, yb = zoom
-                    xl *= ix
-                    yt *= iy
-                    xr *= ix
-                    yb *= iy
-                    trial_image = final_image.crop(
-                        (int(xl), int(yt), int(ix-xr), int(iy-yb)))
-                except:
-                    print("SMstack process second exception... pushing on though")
-                    print(zoom)
-                    print(ix)
-                    print(iy)
-                    print(traceback.format_exc())
-
+            trial_image = final_image.crop((int(xl), int(yt), int(ix-xr), int(iy-yb)))
             ix, iy = trial_image.size
             print("Zoomed Image size:", ix, iy)
             final_image = trial_image

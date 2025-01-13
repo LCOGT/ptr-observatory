@@ -331,46 +331,49 @@ class Observatory:
         # There are some software that really benefits from being restarted from
         # scratch on Windows, so on bootup of obs.py, the system closes them down
         # Reconnecting the devices reboots the softwares later on.
-        try:
-            os.system('taskkill /IM "Gemini Software.exe" /F')
-        except:
-            pass
-        try:
-            os.system('taskkill /IM "OptecGHCommander.exe" /F')
-        except:
-            pass
-        try:
-            os.system("taskkill /IM AltAzDSConfig.exe /F")
-        except:
-            pass
-        try:
-            os.system("taskkill /IM ASCOM.AltAzDS.exe /F")
-        except:
-            pass
-        try:
-            os.system('taskkill /IM "AstroPhysicsV2 Driver.exe" /F')
-        except:
-            pass
-        try:
-            os.system('taskkill /IM "AstroPhysicsCommandCenter.exe" /F')
-        except:
-            pass
-        try:
-            os.system("taskkill /IM TheSkyX.exe /F")
-        except:
-            pass
-        try:
-            os.system("taskkill /IM TheSky64.exe /F")
-        except:
-            pass
-        try:
-            os.system("taskkill /IM PWI4.exe /F")
-        except:
-            pass
-        try:
-            os.system("taskkill /IM PWI3.exe /F")
-        except:
-            pass
+
+        if name != "tbo2": # saves a few seconds for the simulator site
+            try:
+                os.system('taskkill /IM "Gemini Software.exe" /F')
+            except:
+                pass
+            try:
+                os.system('taskkill /IM "OptecGHCommander.exe" /F')
+            except:
+                pass
+            try:
+                os.system("taskkill /IM AltAzDSConfig.exe /F")
+            except:
+                pass
+            try:
+                os.system("taskkill /IM ASCOM.AltAzDS.exe /F")
+            except:
+                pass
+            try:
+                os.system('taskkill /IM "AstroPhysicsV2 Driver.exe" /F')
+            except:
+                pass
+            try:
+                os.system('taskkill /IM "AstroPhysicsCommandCenter.exe" /F')
+            except:
+                pass
+            try:
+                os.system("taskkill /IM TheSkyX.exe /F")
+            except:
+                pass
+            try:
+                os.system("taskkill /IM TheSky64.exe /F")
+            except:
+                pass
+            try:
+                os.system("taskkill /IM PWI4.exe /F")
+            except:
+                pass
+            try:
+                os.system("taskkill /IM PWI3.exe /F")
+            except:
+                pass
+
 
         listOfProcessIds = findProcessIdByName("maxim_dl")
         for pid in listOfProcessIds:
