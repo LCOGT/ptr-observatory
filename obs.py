@@ -388,11 +388,6 @@ class Observatory:
         self.status_upload_time = 0.5
         self.time_last_status = time.time() - 3000
 
-        self.all_device_types = ptr_config["device_types"]  # Is needed!
-        self.device_types = ptr_config[
-            "device_types"
-        ]
-
         self.check_lightning = self.config.get("has_lightning_detector", False)
 
         # Timers to only update status at regular specified intervals.
@@ -756,6 +751,7 @@ class Observatory:
     def create_devices(self):
         """Create and store device objects by type, including role assignments."""
         print("\n--- Initializing Devices ---")
+        self.all_device_types = self.config["device_types"]
         self.all_devices = {}  # Store devices by type then name. So all_devices['camera']['QHY600m'] = camera object
         self.device_by_name = {} # Store devices by name only. So device_by_name['QHY600m'] = camera object
 
@@ -1288,7 +1284,7 @@ class Observatory:
             if mount_only == True:
                 device_list = ["mount"]
             else:
-                device_list = self.device_types
+                device_list = self.all_device_types
             status = {}
             for dev_type in device_list:
                 #  The status that we will send is grouped into lists of
