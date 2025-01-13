@@ -232,9 +232,9 @@ if pixscale != None:
 else:
     # If there is no pixelscale at least make sure the image is
     # not unnecessarily big
-    
+
     max_dim=3000
-    
+
     # Get the current dimensions of the array
     height, width = hdufocusdata.shape[:2]
 
@@ -485,7 +485,7 @@ print ("Constructor " + str(time.time()-googtime))
 googtime=time.time()
 failed=True
 
-if len(sources) >= 5:
+if len(sources) >= 5 and pixscale != None:
 
 
 
@@ -542,6 +542,7 @@ if len(sources) >= 5:
         cd = wcs.pixel_scale_matrix
         pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
         solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
+        solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
 
         #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
 
@@ -595,6 +596,7 @@ if len(sources) >= 5:
             cd = wcs.pixel_scale_matrix
             pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
             solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
+            solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
 
             #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
 
@@ -1037,6 +1039,7 @@ if solve == 'error':
         cd = wcs.pixel_scale_matrix
         pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
         solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
+        solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
 
         #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
 
@@ -1093,6 +1096,8 @@ if solve == 'error':
             cd = wcs.pixel_scale_matrix
             pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
             solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
+
+            solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
 
             #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
 

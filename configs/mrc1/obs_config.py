@@ -372,10 +372,11 @@ site_config = {
             'recover_script':  None,
             'shutdown_script':  None,
             'collecting_area':  60352.0, #  79410.55*0.76
-            'obscuration':  24.0,
+            'obscuration':  24.0,  # %
             'aperture': 305.0,
             'f-ratio':  3.8,  # This and focal_length can be refined after a solve.
-            'focal_length':  1159.0,
+            'focal_length':  1159.0,   #An earlier measurement found 1121mm for this and 0.691775 fr the pixel scale.
+                                       #We need more data before changing these from the factory spec. 20250112 WER
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
             'rotator_name':  'rotator1',
@@ -473,7 +474,8 @@ site_config = {
             # When the focusser has no previous best focus values
             # start from this reference position
 
-            'reference': 4900,  #20240904
+            'reference': 4037,  #20250111 Run after MF found good focus
+            'z_compression': 0, #Not used as of 20250111
 
 
             # Limits and steps for the focuser.
@@ -481,7 +483,7 @@ site_config = {
             'maximum': 12700,
             'step_size': 1,   #  This is misnamed!
             'backlash':  0,
-            'throw': 40,
+            'throw': 70,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  #  Steps per micron
         },
@@ -855,17 +857,19 @@ site_config = {
                 'reject_new_flat_by_known_gain' : False,
                 # These values are just the STARTING values. Once the software has been
                 # through a few nights of calibration images, it should automatically calculate these gains.
-                'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.
+                'specsheet_conversion_gain': 0.3,  # e-/adu
+                'meas_camera_gain':   0.27225, #20250112 morning typical, consistent with specsheet.
+                'camera_gain_stdev':   0.01, #Rough
+                'specsheet_readnoise': 1.68, #Clearly at odds with "Used Readnoise report.
+                'read_noise':  0.789,   #e-/ADUConv gain @ 62  THis value needs review
+                'read_noise_stdev':   None, # Nothing reported
                 'dark_lim_adu': 1,   #adu/s of dark 20231229 moved down from 0.5
                 'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.
-                'fullwell_capacity': 80000,  # NB Guess
-                'saturate':   65535,
+                'fullwell_capacity': 20000,  #e-  Consistent with 0.3e-/adu
+                'saturate':   64000,
                 'max_linearity':  60000,   # Guess
-                # How long does it take to readout an image after exposure
+                # How long does it take to readout an image after exposure?  Should this be inter-fastest substack time?
                 'cycle_time':            2.0,
                 # What is the base smartstack exposure time?
                 # It will vary from scope to scope and computer to computer.
@@ -876,14 +880,13 @@ site_config = {
 
                 'substack': True, # Substack with this camera
 
-
                 # As simple as it states, how many calibration frames to collect and how many to store.
-                'number_of_bias_to_collect': 31,
+                'number_of_bias_to_collect': 35,
                 'number_of_dark_to_collect': 9,
                 'number_of_flat_to_collect': 7,
-                'number_of_bias_to_store': 31,
-                'number_of_dark_to_store': 17,
-                'number_of_flat_to_store': 17,
+                'number_of_bias_to_store': 21,
+                'number_of_dark_to_store': 15,
+                'number_of_flat_to_store': 15,
                 # Default dark exposure time.
                 'dark_exposure': 180,
 

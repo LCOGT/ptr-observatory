@@ -678,6 +678,9 @@ class Observatory:
         if len(filter_throughput_shelf) == 0:
             plog("Looks like there is no filter throughput shelf.")
         else:
+            #First lts sort this shelf for lowest to highest throughput.
+            #breakpoint()
+            #filter_throughput_shelf = dict(sorted(filter_throughput_shelf.items(), key=lambda item: item[1], reverse=False)
             plog("Stored filter throughputs")
             for filtertempgain in list(filter_throughput_shelf.keys()):
                 plog(
@@ -2588,7 +2591,8 @@ class Observatory:
                             headerdict = {}
                             for entry in tempheader.keys():
                                 headerdict[entry] = tempheader[entry]
-
+                            plog("obs line 2563, header;  ", headerdict)   #NB try to debug missing value
+                            # 'frame_basename,size,DATE-OBS,DAY-OBS,INSTRUME,SITEID,TELID')  20250112 WER
                             upload_file_and_ingest_to_archive(
                                 fileobj, file_metadata=headerdict
                             )
@@ -3108,16 +3112,16 @@ class Observatory:
                                 solved_arcsecperpixel = abs(solve["arcsec_per_pixel"])
                                 plog(
                                     "1x1 pixelscale solved: "
-                                    + str(round(solved_arcsecperpixel, 3))
+                                    + str(solved_arcsecperpixel)
                                 )
 
                                 # If this is the first pixelscale gotten, then it is the pixelscale!
                                 if g_dev["cam"].pixscale == None:
                                     g_dev["cam"].pixscale = abs(
                                         solved_arcsecperpixel)
-                                if np.isnan(g_dev["cam"].pixscale):
-                                    g_dev["cam"].pixscale = abs(
-                                        solved_arcsecperpixel)
+                                # if np.isnan(g_dev["cam"].pixscale):
+                                #     g_dev["cam"].pixscale = abs(
+                                #         solved_arcsecperpixel)
 
                                 if (
                                     (g_dev["cam"].pixscale * 0.9)

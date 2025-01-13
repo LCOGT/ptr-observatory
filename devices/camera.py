@@ -1491,7 +1491,7 @@ class Camera:
                     self.darkslide_open = True
                     self.darkslide_state = 'Open'
 
-        self.camera_known_gain = 70000.0
+        self.camera_known_gain = 70000.0      #NB NB 20250112  These numbers make no sense. WE should pull them from obsy-config entries made from MFR specsheets. WER
         self.camera_known_gain_stdev = 70000.0
         self.camera_known_readnoise = 70000.0
         self.camera_known_readnoise_stdev = 70000.0
@@ -1548,7 +1548,7 @@ class Camera:
 
             singlentry = self.filter_camera_gain_shelf['readnoise']
             self.camera_known_readnoise = (
-                singlentry[0] * self.camera_known_gain) / 1.414
+                singlentry[0] * self.camera_known_gain) / 1.414   #This is debatable. Without the 1.414 it is near the specsheet value for QHY WER 20250112
             self.camera_known_readnoise_stdev = (
                 singlentry[1] * self.camera_known_gain) / 1.414
         except:
@@ -1694,31 +1694,49 @@ class Camera:
 
         # Cut down focus image to central degree
         fx, fy = hdufocusdata.shape
+
         # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
         # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
         # So we chop the image down to a degree by a degree
         # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
-        fx_degrees = (fx * self.pixscale) / 3600
-        fy_degrees = (fy * self.pixscale) / 3600
-        crop_x = 0
-        crop_y = 0
-        if fx_degrees > 1.0:
-            ratio_crop = 1/fx_degrees
-            crop_x = int((fx - (ratio_crop * fx))/2)
-        if fy_degrees > 1.0:
-            ratio_crop = 1/fy_degrees
-            crop_y = int((fy - (ratio_crop * fy))/2)
-        if crop_x > 0 or crop_y > 0:
-            if crop_x == 0:
-                crop_x = 2
-            if crop_y == 0:
-                crop_y = 2
-            # Make sure it is an even number for OSCs
-            if (crop_x % 2) != 0:
-                crop_x = crop_x+1
-            if (crop_y % 2) != 0:
-                crop_y = crop_y+1
-            hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
+
+        if self.pixscale == None:
+            # If we don't know the pixelscale, we don't know the size, but 1000 x 1000 should be big enough!!
+            # Get the current dimensions
+            height, width = hdufocusdata.shape[:2]
+
+            # Determine cropping bounds
+            new_height = min(height, 1000)
+            new_width = min(width, 1000)
+
+            # Calculate start indices to center-crop
+            start_y = (height - new_height) // 2
+            start_x = (width - new_width) // 2
+
+            # Crop the image
+            hdufocusdata = hdufocusdata[start_y:start_y + new_height, start_x:start_x + new_width]
+        else:
+            fx_degrees = (fx * self.pixscale) / 3600
+            fy_degrees = (fy * self.pixscale) / 3600
+            crop_x = 0
+            crop_y = 0
+            if fx_degrees > 1.0:
+                ratio_crop = 1/fx_degrees
+                crop_x = int((fx - (ratio_crop * fx))/2)
+            if fy_degrees > 1.0:
+                ratio_crop = 1/fy_degrees
+                crop_y = int((fy - (ratio_crop * fy))/2)
+            if crop_x > 0 or crop_y > 0:
+                if crop_x == 0:
+                    crop_x = 2
+                if crop_y == 0:
+                    crop_y = 2
+                # Make sure it is an even number for OSCs
+                if (crop_x % 2) != 0:
+                    crop_x = crop_x+1
+                if (crop_y % 2) != 0:
+                    crop_y = crop_y+1
+                hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
 
         if self.is_osc:
 
@@ -1750,8 +1768,12 @@ class Camera:
         saturate = self.settings["saturate"]
 
         # Don't bother with stars with peaks smaller than 100 counts per arcsecond
-        threshold = max(
-            3 * np.std(hdufocusdata[hdufocusdata < (5*tempstd)]), (200*self.pixscale))
+        if self.pixscale == None:
+            threshold = max(
+                3 * np.std(hdufocusdata[hdufocusdata < (5*tempstd)]), (100))
+        else:
+            threshold = max(
+                3 * np.std(hdufocusdata[hdufocusdata < (5*tempstd)]), (200*self.pixscale))
         googtime = time.time()
         list_of_local_maxima = localMax(hdufocusdata, threshold=threshold)
 
@@ -1795,7 +1817,7 @@ class Camera:
             radius_of_radialprofile = int(24/self.pixscale)
         except:
             # if pixelscale is not defined make it big
-            radius_of_radialprofile = int(24/0.1)
+            radius_of_radialprofile = int(24/0.2)
 
         # Round up to nearest odd number to make a symmetrical array
         radius_of_radialprofile = int(radius_of_radialprofile // 2 * 2 + 1)
@@ -1835,9 +1857,16 @@ class Camera:
                     counter = counter+1
             # If the brightest pixel is in the center-ish
             # then put it in contention
-            if abs(brightest_pixel_rdist) < max(3, 3/self.pixscale):
-                focus_multiprocess.append(
-                    (cvalue, cx, cy, radprofile, self.pixscale))
+            if self.pixscale == None:
+                if abs(brightest_pixel_rdist) < max(3, 3/0.2):
+                    focus_multiprocess.append(
+                        (cvalue, cx, cy, radprofile, 0.2))
+
+
+            else:
+                if abs(brightest_pixel_rdist) < max(3, 3/self.pixscale):
+                    focus_multiprocess.append(
+                        (cvalue, cx, cy, radprofile, self.pixscale))
 
         # Temporary just fur testing
         fwhm_results = []
@@ -1851,8 +1880,12 @@ class Camera:
                     break
 
         rfp = abs(bn.nanmedian(fwhm_results)) * 4.710
-        rfr = rfp * self.pixscale
-        rfs = np.nanstd(fwhm_results) * self.pixscale
+        if self.pixscale == None:
+            rfr= rfp
+            rfs = np.nanstd(fwhm_results)
+        else:
+            rfr = rfp * self.pixscale
+            rfs = np.nanstd(fwhm_results) * self.pixscale
         if rfr < 1.0 or rfr > 12:
             rfr = np.nan
             rfp = np.nan
@@ -1871,7 +1904,10 @@ class Camera:
         fx, fy = hdusmalldata.shape
 
         aspect_ratio= fx/fy
-        focus_jpeg_size=0.2/(self.pixscale/3600)
+        if self.pixscale == None:
+            focus_jpeg_size=500
+        else:
+            focus_jpeg_size=0.2/(self.pixscale/3600)
         if focus_jpeg_size < fx:
             crop_width = (fx - focus_jpeg_size) / 2
         else:
@@ -4965,7 +5001,7 @@ class Camera:
                     current_camera_temperature = float(
                         current_camera_temperature)
                     # NB NB this might best be a config item.
-                    if abs(float(current_camera_temperature) - float(self.setpoint)) > self.temp_tolerance:
+                    if abs(current_camera_temperature - float(self.setpoint)) > self.temp_tolerance:
                         plog("temperature out of range for calibrations (" +
                              str(current_camera_temperature)+"), rejecting calibration frame")
                         g_dev['obs'].camera_sufficiently_cooled_for_calibrations = False
@@ -5022,19 +5058,19 @@ class Camera:
                                 int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
                             m = counts.argmax()
                             imageMode = unique[m]
-                            debiaseddarkmode = imageMode / 10 / exposure_time
+                            debiaseddarkmode = round(imageMode / 10 / exposure_time, 4)
+
                             plog("Debiased 1s Dark Mode is " +
                                  str(debiaseddarkmode))
 
-                            debiaseddarkmedian = bn.nanmedian(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(
-                                1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time
+                            debiaseddarkmedian = round(bn.nanmedian(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(
+                                1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time, 4)
                             plog("Debiased 1s Dark Median is " +
                                  str(debiaseddarkmedian))
 
-                            debiaseddarkmean = bn.nanmean(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(
-                                1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time
-                            plog("Debiased 1s Dark Mean is " +
-                                 str(debiaseddarkmean))
+                            debiaseddarkmean = round(bn.nanmean(outputimg[tempcrop:-tempcrop, tempcrop:-tempcrop] - self.biasFiles[str(
+                                1)][tempcrop:-tempcrop, tempcrop:-tempcrop]) / exposure_time, 4)
+                            plog("Debiased 1s Dark Mean is " + str(debiaseddarkmean))
 
 
                             plog ("Exposure time: " + str(exposure_time))
@@ -5089,6 +5125,10 @@ class Camera:
                     hdu.header['EXPTIME'] = exposure_time
                     hdu.header['OBSTYPE'] = 'flat'
                     hdu.header['FILTER'] = this_exposure_filter
+                    hdu.header["DAY-OBS"] = (
+                        g_dev["day"],
+                        "Date at start of observing night"
+                    )    #NB Added this in just now, reported missing by injester.  20250112 WER  Not sure this is the right place to add this in.
 
                     # If the files are local calibrations, save them out to the local calibration directory
                     if not manually_requested_calibration:
@@ -5320,27 +5360,44 @@ class Camera:
                             # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
                             # So we chop the image down to a degree by a degree
                             # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
-                            fx_degrees = (fx * self.pixscale) / 3600
-                            fy_degrees = (fy * self.pixscale) / 3600
-                            crop_x = 0
-                            crop_y = 0
-                            if fx_degrees > 1.0:
-                                ratio_crop = 1/fx_degrees
-                                crop_x = int((fx - (ratio_crop * fx))/2)
-                            if fy_degrees > 1.0:
-                                ratio_crop = 1/fy_degrees
-                                crop_y = int((fy - (ratio_crop * fy))/2)
-                            if crop_x > 0 or crop_y > 0:
-                                if crop_x == 0:
-                                    crop_x = 2
-                                if crop_y == 0:
-                                    crop_y = 2
-                                # Make sure it is an even number for OSCs
-                                if (crop_x % 2) != 0:
-                                    crop_x = crop_x+1
-                                if (crop_y % 2) != 0:
-                                    crop_y = crop_y+1
-                                outputimg = outputimg[crop_x:-crop_x, crop_y:-crop_y]
+                            if self.pixscale == None:
+                                # If we don't know the pixelscale, we don't know the size, but 1000 x 1000 should be big enough!!
+                                # Get the current dimensions
+                                height, width = outputimg.shape[:2]
+
+                                # Determine cropping bounds
+                                new_height = min(height, 1000)
+                                new_width = min(width, 1000)
+
+                                # Calculate start indices to center-crop
+                                start_y = (height - new_height) // 2
+                                start_x = (width - new_width) // 2
+
+                                # Crop the image
+                                outputimg = outputimg[start_y:start_y + new_height, start_x:start_x + new_width]
+                            else:
+
+                                fx_degrees = (fx * self.pixscale) / 3600
+                                fy_degrees = (fy * self.pixscale) / 3600
+                                crop_x = 0
+                                crop_y = 0
+                                if fx_degrees > 1.0:
+                                    ratio_crop = 1/fx_degrees
+                                    crop_x = int((fx - (ratio_crop * fx))/2)
+                                if fy_degrees > 1.0:
+                                    ratio_crop = 1/fy_degrees
+                                    crop_y = int((fy - (ratio_crop * fy))/2)
+                                if crop_x > 0 or crop_y > 0:
+                                    if crop_x == 0:
+                                        crop_x = 2
+                                    if crop_y == 0:
+                                        crop_y = 2
+                                    # Make sure it is an even number for OSCs
+                                    if (crop_x % 2) != 0:
+                                        crop_x = crop_x+1
+                                    if (crop_y % 2) != 0:
+                                        crop_y = crop_y+1
+                                    outputimg = outputimg[crop_x:-crop_x, crop_y:-crop_y]
 
                             try:
                                 sepbkg = sep.Background(outputimg, bw=32, bh=32, fw=3, fh=3)
@@ -5352,7 +5409,10 @@ class Camera:
 
                             ix, iy = outputimg.shape
 
-                            minarea= (-9.2421 * self.pixscale) + 16.553
+                            if self.pixscale == None:
+                                minarea=5
+                            else:
+                                minarea= (-9.2421 * self.pixscale) + 16.553
                             if minarea < 5:  # There has to be a min minarea though!
                                 minarea = 5
                             sep.set_extract_pixstack(int(ix*iy - 1))
@@ -5438,8 +5498,9 @@ class Camera:
 
                                 # Need to reject any stars that have FWHM that are less than a extremely
                                 # perfect night as artifacts
+                                if not (self.pixscale == None):
 
-                                sources = sources[sources['FWHM'] > (0.8 / (self.pixscale))]
+                                    sources = sources[sources['FWHM'] > (0.8 / (self.pixscale))]
                                 #sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
                                 sources = sources[sources['FWHM'] != 0]
 
@@ -5469,8 +5530,13 @@ class Camera:
 
                         fwhm_dict = {}
                         fwhm_dict['rfp'] = np.median(sources['FWHM']) * 2 * 1.5
-                        fwhm_dict['rfr'] = np.median(sources['FWHM']) * self.pixscale * 2 * 1.5
-                        fwhm_dict['rfs'] = np.std(sources['FWHM']) * self.pixscale * 2 * 1.5
+                        if self.pixscale == None:
+                            fwhm_dict['rfr'] = np.median(sources['FWHM']) * 2 * 1.5
+                            fwhm_dict['rfs'] = np.std(sources['FWHM']) * 2 * 1.5
+
+                        else:
+                            fwhm_dict['rfr'] = np.median(sources['FWHM']) * self.pixscale * 2 * 1.5
+                            fwhm_dict['rfs'] = np.std(sources['FWHM']) * self.pixscale * 2 * 1.5
                         fwhm_dict['sky'] = 200 #str(imageMedian)
                         fwhm_dict['sources'] = str(len(sources))
 
@@ -5772,7 +5838,12 @@ class Camera:
                             )
                         del outputimg
 
-                        hdu.header['PIXSCALE'] = self.pixscale
+                        try:
+
+                            hdu.header['PIXSCALE'] = self.pixscale
+                        except:
+                            hdu.header['PIXSCALE'] = 'unknown'
+
                         hdu.header['EXPTIME'] = exposure_time
 
                         hdu.header['OBSTYPE'] = 'flat'

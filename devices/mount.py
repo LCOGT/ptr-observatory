@@ -1663,7 +1663,7 @@ class Mount:
             # ALL MANUALLY COMMANDED SHOTS HAVE TO BE CENTERED.
             # if 'do_centering_routine' in opt and result != 'refused':
             #     if opt['do_centering_routine']:
-            if result != 'refused':
+            if result != 'refused' and not (g_dev['cam'].pixscale == None):
                 g_dev['seq'].centering_exposure()
 
         elif action == "stop":

@@ -1274,7 +1274,7 @@ try:
 
 
     #breakpoint()
-    if pixscale == None or np.isnan(pixscale):
+    if pixscale == None: # or np.isnan(pixscale):
         hdu.header["PIXSCALE"] = (
             'Unknown',
             "[arcsec/pixel] Nominal pixel scale on sky",

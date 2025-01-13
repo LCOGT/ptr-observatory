@@ -704,12 +704,24 @@ class Sequencer:
                 opt = {}
                 self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
+                
+                
+                
+                # If we don't have a pixelscale, it is highly necessary
+                # If it just successfully focused or at least got in the ballpark,
+                # then we should attempt to get a pixelscale at this point
+                # If we don't do it at this point, it will attempt to at the start of a project anyway
+                if g_dev['cam'].pixscale == None:
+                    plog ("As we have no recorded pixel scale yet, we are running a quite platesolve to measure it")
+                    g_dev['obs'].send_to_user("Using a platesolve to measure the pixelscale of the camera", p_level='INFO')
+                    self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)      
+                    
                 g_dev['obs'].sync_after_platesolving=False
 
                 g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
 
                 g_dev['obs'].flush_command_queue()
-
+                
                 self.total_sequencer_control=False
 
                 self.night_focus_ready=False
@@ -2570,6 +2582,8 @@ class Sequencer:
             ),
             "Start date and time of observation"
         )
+        calibhduheader["DAY-OBS"] = (g_dev["day"],
+                                "Date at start of observing night")   #20250112 WER conservative addition of thie keyword so injestion less likely to fail.
         calibhduheader['INSTRUME'] = g_dev['cam'].config["name"], "Name of camera"
         calibhduheader['SITEID'] = g_dev['obs'].config["wema_name"].replace("-", "").replace("_", "")
         calibhduheader['TELID'] = g_dev['obs'].obs_id
@@ -4634,10 +4648,13 @@ class Sequencer:
         start_ra = g_dev['mnt'].return_right_ascension()   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].return_declination()
 
+
+        #breakpoint()
+
         if not begin_at is None:
             focus_start = begin_at  #In this case we start at a place close to a 3 point minimum.
-        elif not extensive_focus == None:
-            focus_start=extensive_focus
+        # elif not extensive_focus == None:
+        #     focus_start=extensive_focus
         else:
             focus_start=g_dev['foc'].current_focus_position
         foc_pos0 = focus_start
@@ -4742,15 +4759,15 @@ class Sequencer:
             else:
                 g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
 
-            
+
             # To get a good pixelscale, we need to be in focus,
-            # So if we haven't got a good pixelscale yet, then we likely 
-            # haven't got a good focus yet anyway. 
-            if g_dev['cam'].pixscale == None:                
+            # So if we haven't got a good pixelscale yet, then we likely
+            # haven't got a good focus yet anyway.
+            if g_dev['cam'].pixscale == None:
                 plog ("skipping centering exposure as we don't even have a pixelscale yet")
             else:
                 self.centering_exposure(no_confirmation=True, try_hard=True)
-                
+
             # Wait for platesolve
             reported=0
             temptimer=time.time()
@@ -4936,8 +4953,12 @@ class Sequencer:
                     if spot < 30.0:
                         focus_spots.append((foc_pos,spot))
                         break
-                else:
+                elif g_dev['foc'].focus_commissioned:
                     plog ("retrying this position - could not get a FWHM ")
+
+                else:
+                    plog ("Probably out of focus, skipping this point")
+                    retry_attempts=4
 
             # If you have the starting of a v-curve then now you can decide what to do.
             # Start off by sorting in order of focus positions
@@ -4961,6 +4982,17 @@ class Sequencer:
                     thread.start()
                     # Fling the jpeg up
                     g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time)
+                else:
+                    plog ("Haven't found a starting point yet..... travelling left and right to find a good starting point ")
+                    if position_counter & 1:
+                        new_focus_position_to_attempt=min(spots_tried) - int(position_counter/2) * throw
+
+                    else:
+                        new_focus_position_to_attempt=max(spots_tried) + int(position_counter/2) * throw
+
+                    print ("trying fwhm point: " + str(new_focus_position_to_attempt))
+
+
 
             else:
                 if len(focus_spots) == 0 or len(focus_spots) == 1:
