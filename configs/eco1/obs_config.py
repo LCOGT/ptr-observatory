@@ -173,7 +173,7 @@ site_config = {
         'mount': 'ecocdkpier',
         #'telescope': 'Main OTA',     #How do we handle selector here, if at all?
         'focuser': 'focuser',
-        'rotator': 'rotator',
+        'rotator': None,
         'selector': None,
         'filter_wheel': 'SBIG 8-position wheel',
         'camera': 'ec003zwo',
@@ -184,9 +184,11 @@ site_config = {
     # Value is the device display name
     # This is where to configure a second device of the same type if you want to control it in the site code. 
     # Devices are referenced in obs with self.devices['device_role']
+    # Also important to note: these must match the roles in obs.py create_devices(). 
+    # Roles are standardized across all sites even if not all roles are used at each site.
     'device_roles': {
         'mount': 'ecocdkpier',
-        #'main_rotator': 'rotator',
+        'main_rotator': None,
         'main_focuser': 'focuser',
         'main_fw': 'SBIG 8-position wheel', 
         
@@ -304,12 +306,12 @@ site_config = {
             'rotator_name':  'rotator',
             'has_instrument_selector': False,   #This is a default for a single instrument system
             'selector_positions': 1,            #Note starts with 1
-            'instrument names':  ['camera1'],
+            'instrument names':  ['ec003zwo'],
             'instrument aliases':  ['SBIG16803'],
             'configuration': {
-                  "position1": ["darkslide1", "SBIG 8-position wheel", "camera1"]
+                  "position1": ["darkslide1", "SBIG 8-position wheel", "ec003zwo"],
                   },
-            'camera_name':  'camera1',
+            'camera_name':  'ec003zwo',
             'filter_wheel_name':  'SBIG 8-position wheel',
             'has_fans':  True,
             'has_cover':  False,
