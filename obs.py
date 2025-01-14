@@ -1213,7 +1213,7 @@ class Observatory:
                             # Check here for irrelevant commands
                             elif (
                                 cmd["deviceType"] == "screen"
-                                and self.config["screen"]["screen1"]["driver"] == None
+                                and len(self.all_devices.get("screen", {}) == 0) # check that no screens were initialized
                             ):
                                 plog("Refusing command as there is no screen")
                                 self.send_to_user(
