@@ -182,11 +182,15 @@ site_config = {
 
     # Initial roles are aassigned here. These may change during runtime.
     # Value is the device display name
+    # This is where to configure a second device of the same type if you want to control it in the site code. 
+    # Devices are referenced in obs with self.devices['device_role']
+    # Also important to note: these must match the roles in obs.py create_devices(). 
+    # Roles are standardized across all sites even if not all roles are used at each site.
     'device_roles': {
         'mount': 'SimMount',
         'main_focuser': 'SimFocuser',
         'main_fw': 'SimFW', 
-        'main_rotator': 'SimRotator',
+        'main_rotator': None,
         
         # Cameras
         'main_cam': 'SimZWO1600',
@@ -286,7 +290,7 @@ site_config = {
     },
 
     'telescope': {                            #Note telescope == OTA  Optical Tube Assembly.
-        'SimTelescope': {
+        'Main OTA': {
             'parent': 'mount1',
             'name': 'Main OTA',
             'telescop': 'eco1',
@@ -299,8 +303,8 @@ site_config = {
             'focal_length': 2939,
             'has_dew_heater':  True,
             'screen_name': 'screen1',
-            'focuser_name':  'focuser1',
-            'rotator_name':  'rotator1',
+            'focuser_name':  'SimFocuser',
+            'rotator_name':  'SimRotator',
             'has_instrument_selector': False,   #This is a default for a single instrument system
             'selector_positions': 1,            #Note starts with 1
             'instrument names':  ['camera1'],
@@ -329,7 +333,7 @@ site_config = {
     },
     'rotator': {
         'SimRotator': {
-            'parent': 'telescope1',
+            'parent': 'Main OTA',
             'name': 'rotator',
             'desc':  False,
             'driver': None,
@@ -343,7 +347,7 @@ site_config = {
     },
     'screen': {
         'SimScreen': {
-            'parent': 'telescope1',
+            'parent': 'Main OTA',
             'name': 'screen',
             'desc':  'No Screen',
             'driver': None,
@@ -355,7 +359,7 @@ site_config = {
     },
     'focuser': {
         'SimFocuser': {
-            'parent': 'telescope1',
+            'parent': 'Main OTA',
             'name': 'focuser',
             'desc':  'Planewave Focuser',
             'driver': 'dummy',
@@ -380,7 +384,7 @@ site_config = {
 
     'selector': {
         'SimSelector': {
-            'parent': 'telescope1',
+            'parent': 'Main OTA',
             'name': 'None',
             'desc':  'Null Changer',
             'driver': None,
@@ -399,7 +403,7 @@ site_config = {
 
     'filter_wheel': {
         "SimFW": {
-            "parent": "telescope1",
+            "parent": "Main OTA",
             "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
             'service_date': '20180101',
             "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
@@ -456,7 +460,7 @@ site_config = {
 
     'camera': {
         'SimZWO1600': {
-            'parent': 'telescope1',
+            'parent': 'Main OTA',
             'name': 'ec003zwo',      #  Important because this points to a server file structure by that name.
             'desc':  'ZWO1600',
             
