@@ -1877,6 +1877,8 @@ class Sequencer:
                 # Not within the tolerance limit from the setpoint
                 darks_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/darks/'
                 bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
+                
+                
 
                 # First check darks in root directory
                 print ("ROOT DIRECTORY DARKS")
@@ -1901,8 +1903,7 @@ class Sequencer:
                             except:
                                 pass
 
-                # NEED TO CHECK BIASES LATER!
-                # First check darks in root directory
+                # First check biasess in root directory
                 print ("ROOT DIRECTORY BIASES")
                 for darkfile in glob(bias_path + '*.npy'):
                     tempdarktemp=float(darkfile.split('_')[-3])
@@ -2024,7 +2025,14 @@ class Sequencer:
             plog(" Bias/Dark acquisition is finished normally.")
             if not g_dev['obs'].mountless_operation:
                 g_dev['mnt'].park_command({}, {})
-
+                
+            
+            # If the camera pixelscale is None then we are in commissioning mode and
+            # need to restack the calibrations straight away
+            # so this triggers off the stacking process to happen in a thread.
+            if g_dev['cam'].pixscale == None:
+                self.master_restack_queue.put( 'force', block=False)              
+                
             self.bias_dark_latch = False
             break
         self.bias_dark_latch = False
@@ -4465,6 +4473,14 @@ class Sequencer:
         self.morn_sky_flat_latch = False
 
         g_dev['obs'].flush_command_queue()
+        
+        
+        # If the camera pixelscale is None then we are in commissioning mode and
+        # need to restack the calibrations straight away
+        # so this triggers off the stacking process to happen in a thread.
+        if g_dev['cam'].pixscale == None:
+            self.master_restack_queue.put( 'force', block=False)
+        
         self.total_sequencer_control = False
 
 
