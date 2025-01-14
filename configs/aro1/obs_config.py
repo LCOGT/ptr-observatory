@@ -261,9 +261,11 @@ site_config = {
     # Value is the device display name
     # This is where to configure a second device of the same type if you want to control it in the site code. 
     # Devices are referenced in obs with self.devices['device_role']
+    # Also important to note: these must match the roles in obs.py create_devices(). 
+    # Roles are standardized across all sites even if not all roles are used at each site.
     'device_roles': {
         'mount': 'aropier1',
-        #'main_rotator': 'rotator',
+        'main_rotator': None,
         'main_focuser': 'focuser',
         'main_fw': 'LCO FW50_001d', 
         
