@@ -208,16 +208,36 @@ site_config = {
     
 
     'defaults': {
-        'mount': 'mount1',
-        #'telescope': 'telescope1',
-        'focuser': 'focuser1',
-        'rotator': 'rotator1',
-        'selector':  'selector1',
-        'screen': 'screen1',
-        'filter_wheel': 'filter_wheel1',
-        'camera': 'camera_1_1',
-        'sequencer': 'sequencer1'
+        'mount': 'westpier',
+        #'telescope': 'Main OTA',
+        'focuser': 'focuser',
+        'rotator': 'rotator',
+        'selector':  'selector',
+        'screen': 'screen',
+        'filter_wheel': 'Dual filter wheel',
+        'camera': 'SQ007',
+        'sequencer': 'sequencer'
         },
+
+    # Initial roles are assigned here. These may change during runtime.
+    # Value is the device display name
+    # This is where to configure a second device of the same type if you want to control it in the site code. 
+    # Devices are referenced in obs with self.devices['device_role']
+    # Also important to note: these must match the roles in obs.py create_devices(). 
+    # Roles are standardized across all sites even if not all roles are used at each site.
+    'device_roles': {
+        'mount': 'westpier',
+        'main_rotator': 'rotator',
+        'main_focuser': 'focuser',
+        'main_fw': 'Dual filter wheel', 
+        
+        # Cameras
+        'main_cam': 'SQ007',
+        # Cameras below aren't currently used, but here as an example.
+        'guide_cam': None,
+        'widefield_cam': None,
+        'allsky_cam': None,
+    },
     'device_types': [
         'mount',
         #'telescope',
@@ -244,7 +264,7 @@ site_config = {
 
 
     'mount': {
-        'mount1': {      #NB NB There can only be one mounting given the new model.
+        'westpier': {      #NB NB There can only be one mounting given the new model.
             'parent': 'enclosure1',
             'tel_id': '0m35',
             'name': 'westpier',
@@ -358,7 +378,7 @@ site_config = {
 
 
     'telescope': {                 #Better called OTA or "Optics
-        'telescope1': {
+        'Main OTA': {
             'parent': 'mount2',
             'name': 'Main OTA',
             'desc':  'Planewave CDK 600 F6.8',   #i seem to use desc, an alias more or less for the same thing.
@@ -377,17 +397,17 @@ site_config = {
             #'screen_name': 'screen2',   #The enclosure has two screens in the WMD case, one for each mount.
             # NB NB All the below need some checking
             'tel_has_unihedron': False,
-            'screen_name': 'screen1',
-            'focuser_name':  'focuser1',
-            'rotator_name':  'rotator1',
+            'screen_name': 'screen',
+            'focuser_name':  'focuser',
+            'rotator_name':  'rotator',
             'has_instrument_selector': False,   #This is a default for a single instrument system
             'selector_positions': 1,            #Note starts with 1
             'instrument names':  ['camera_1_1'],
             'instrument aliases':  ['QHY600Mono'],
             'configuration': {
-                 "position1": ["darkslide1", "filter_wheel1", "filter_wheel2", "camera1"]
+                 "position1": ["darkslide1", "filter_wheel1", "filter_wheel2", "SQ007"]
                  },
-            'camera_name':  'camera_1_1',
+            'camera_name':  'SQ007',
             'filter_wheel_name':  'filter_wheel1',
 
             'has_fans':  True,
@@ -412,8 +432,8 @@ site_config = {
     },
 
     'rotator': {
-        'rotator1': {
-            'parent': 'telescope1',
+        'rotator': {
+            'parent': 'Main OTA',
             'name': 'rotator',
             'desc':  'Opetc Gemini',
             'driver': 'ASCOM.AltAzDS.Rotator',
@@ -430,8 +450,8 @@ site_config = {
     },
 
     'screen': {
-        'screen1': {
-            'parent': 'telescope1',
+        'screen': {
+            'parent': 'Main OTA',
             'name': 'screen',
             'desc':  'Optec Alnitak 30"',
             'driver': 'COM6',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
@@ -446,8 +466,8 @@ site_config = {
     },
 
     'focuser': {
-        'focuser1': {
-            'parent': 'telescope1',
+        'focuser': {
+            'parent': 'Main OTA',
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
@@ -475,9 +495,9 @@ site_config = {
     },
 
     'selector': {
-        'selector1': {
-            'parent': 'telescope1',
-            'name': 'Selector',
+        'selector': {
+            'parent': 'Main OTA',
+            'name': 'selector',
             'desc':  'Optec Perseus',
             'driver': 'ASCOM.PerseusServer.Switch',
             'com_port': 'COM31',
@@ -487,7 +507,7 @@ site_config = {
             'ports': 4,
             'default': 0,
             'instruments':  ['Main_camera', 'eShell_spect', 'Planet_camera', 'UVEX_spect'],
-            'cameras':      ['camera_1_1',  'camera_1_2',    None,           'camera_1_4'],
+            'cameras':      ['SQ007',  'camera_1_2',    None,           'camera_1_4'],
             'guiders':      [None,          'ag_1_2',        None,           'ag_1_4'],
             },
     },
@@ -496,7 +516,7 @@ site_config = {
 
     'lamp_box': {
         'lamp_box1': {
-            'parent': 'camera_1',  # Parent is camera for the spectrograph
+            'parent': 'None',  # Parent is camera for the spectrograph
             'name': 'None',  # "UVEX Calibration Unit", 'None'
             'desc': 'None', #'eshel',  # "uvex", 'None'
             'spectrograph': 'None', #'echelle', 'uvex'; 'None'
@@ -510,8 +530,9 @@ site_config = {
     #Add CWL, BW and DQE to filter and detector specs.   HA3, HA6 for nm or BW.
     #FW's may need selector-like treatment
     'filter_wheel': {
-        "filter_wheel1": {
-            "parent": "tel1",
+        "Dual filter wheel": {
+            "parent": "Main OTA",
+            "name": "Dual filter wheel",
             "alias": "Dual filter wheel",
             'service_date': '20180101',
             'driver': 'Maxim.CCDcamera', 
@@ -634,8 +655,8 @@ site_config = {
 
 
     'camera': {
-        'camera_1_1': {
-            'parent': 'telescope1',
+        'SQ007': {
+            'parent': 'Main OTA',
 
             'name': 'SQ007',# 'OF01', #'KF04',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600 Pro Mono',  #'FLI On-semi 50100',
@@ -1383,9 +1404,9 @@ site_config = {
 
 
     'sequencer': {
-        'sequencer1': {
+        'sequencer': {
             'parent': 'site',
-            'name': 'Sequencer',
+            'name': 'sequencer',
             'desc':  'Automation Control',
             'driver': None,
             'startup_script':  None,
