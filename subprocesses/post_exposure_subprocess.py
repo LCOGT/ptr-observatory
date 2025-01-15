@@ -259,11 +259,15 @@ def write_raw_file_out(packet):
         pass
     del hdu
 
+# set this to True to set this subprocess to normal everyday mode
+## set it to False if you are running straight from the pickle.
+normal_operation=True
 
 try:
     payload=pickle.load(sys.stdin.buffer)
-    #payload=pickle.load(open('testpostprocess.pickle','rb'))
+
 except:
+    payload=pickle.load(open('testpostprocess.pickle','rb'))
     print ("ignoring exception")
 #expresult={}
 #A long tuple unpack of the payload
@@ -288,7 +292,7 @@ cam_settings = cam_config['settings']
 cam_alias = cam_config["name"]
 
 # We are assuming that we should use the main rotator and focuser, but we should pass those in
-# the payload rather than assuming. 
+# the payload rather than assuming.
 rotator_name = selfconfig['device_roles']['main_rotator']
 if selfconfig['device_roles']['main_rotator'] == None:
     rotator_alias = None
@@ -448,15 +452,37 @@ if substack:
 
             crosscorrel_filename_waiter.append(temporary_substack_directory + output_filename)
 
-            crosscorrelation_subprocess_array.append(
-                subprocess.Popen(
-                    ['python','subprocesses/crosscorrelation_subprocess.py'],
-                    stdin=subprocess.PIPE,
-                    stdout=None,
-                    stderr=None,
-                    bufsize=-1
-                )
-            )
+
+            # try:
+            #     crosscorrelation_subprocess_array.append(
+            #         subprocess.Popen(
+            #             ['python','subprocesses/crosscorrelation_subprocess.py'],
+            #             stdin=subprocess.PIPE,
+            #             stdout=subprocess.PIPE,
+            #             stderr=None,
+            #             bufsize=-1
+            #         )
+            #     )
+
+            # except:
+            #     print ("failed on subprocess directoty, trying current directory")
+            #     crosscorrelation_subprocess_array.append(
+            #         subprocess.Popen(
+            #             ['python','crosscorrelation_subprocess.py'],
+            #             stdin=subprocess.PIPE,
+            #             stdout=subprocess.PIPE,
+            #             stderr=None,
+            #             bufsize=-1
+            #         )
+            #     )
+
+            # Original
+
+            if normal_operation:
+                crosscorrelation_subprocess_array.append(subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
+            else:
+                crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
+
             #crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
             print (counter-1)
 

@@ -46,7 +46,7 @@ log.setLevel('ERROR')
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: 
+if TYPE_CHECKING:
     from obs import Observatory
 
 
@@ -207,34 +207,11 @@ def mid_stretch_jpeg(data):
 # Note this is a thread!
 def dump_main_data_out_to_post_exposure_subprocess(payload):
 
-    # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
+    # Here is a manual debug area which makes a pickle for debug purposes
+    # Here is the test pickle that gets created for debugging (if commented)
+    #pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
+    #breakpoint()
 
-    # if True:
-    #     # NB set this path to create test pickle for makejpeg routine.
-    #     pickle.dump(payload, open('subprocesses/testpostprocess.pickle', 'wb'))
-
-    # try:
-    # post_processing_subprocess = subprocess.Popen(
-    #     ['python', 'subprocesses/post_exposure_subprocess.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
-
-    # breakpoint()
-    # try:
-    # post_processing_subprocess=subprocess.Popen(['python','subprocesses/post_exposure_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-    # except OSError:
-    #     pass
-
-    # try:
-    #     pickle.dump(payload, post_processing_subprocess.stdin)
-    # except:
-    #     plog("Problem in the post_processing_subprocess pickle dump")
-    #     plog(traceback.format_exc())
-
-    # output, error = post_processing_subprocess.communicate()
-    # print (output)
-    # breakpoint()
-
-
-    # pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
 
     post_processing_subprocess=subprocess.Popen(
         ['python','subprocesses/post_exposure_subprocess.py'],
@@ -451,7 +428,7 @@ def pnp_out(cam_id):
 
 def init_camera_param(cam_id):
     # This function assumes we're dealing with the main camera. It will have to be updated
-    # if this is not always the case. 
+    # if this is not always the case.
     main_camera_name = g_dev['obs'].config['device_roles']['main_cam']
     main_camera_config_settings = g_dev['obs'].config['camera'][main_camera_name]['settings']
     if not qhycam.camera_params.keys().__contains__(cam_id):
@@ -3156,7 +3133,7 @@ class Camera:
                 self.current_filter = g_dev['fil'].filter_selected
             else:
                 plog('Warning: null filterwheel detected, skipping filter setup')
-                self.current_filter = None 
+                self.current_filter = None
         except Exception as e:
             plog("Camera filter setup:  ", e)
             plog(traceback.format_exc())
@@ -4143,10 +4120,10 @@ class Camera:
         raw_name00 = (
             self.site_config["obs_id"]
             + "-"
-            + self.alias 
-            + '_' 
-            + str(frame_type) 
-            + '_' 
+            + self.alias
+            + '_'
+            + str(frame_type)
+            + '_'
             + str(this_exposure_filter)
             + "-"
             + g_dev["day"]
@@ -4360,9 +4337,9 @@ class Camera:
 
                 try:
                     smartstack_subprocess = subprocess.Popen(
-                        ['python', 'subprocesses/SmartStackprocess.py'], 
-                        stdin=subprocess.PIPE, 
-                        stdout=None, 
+                        ['python', 'subprocesses/SmartStackprocess.py'],
+                        stdin=subprocess.PIPE,
+                        stdout=None,
                         bufsize=-1
                     )
                 except OSError:
@@ -4415,9 +4392,9 @@ class Camera:
 
             try:
                 sep_subprocess = subprocess.Popen(
-                    ['python', 'subprocesses/SEPprocess.py'], 
-                    stdin=subprocess.PIPE, 
-                    stdout=None, 
+                    ['python', 'subprocesses/SEPprocess.py'],
+                    stdin=subprocess.PIPE,
+                    stdout=None,
                     bufsize=-1
                 )
             except OSError:
@@ -4481,9 +4458,9 @@ class Camera:
                             rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor,self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name], open('testjpegpickle','wb'))
                 try:
                     jpeg_subprocess = subprocess.Popen(
-                        ['python', 'subprocesses/mainjpeg.py'], 
-                        stdin=subprocess.PIPE, 
-                        stdout=None, 
+                        ['python', 'subprocesses/mainjpeg.py'],
+                        stdin=subprocess.PIPE,
+                        stdout=None,
                         bufsize=-1
                     )
                 except OSError:
