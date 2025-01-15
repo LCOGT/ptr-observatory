@@ -749,7 +749,14 @@ class Observatory:
 
 
     def create_devices(self):
-        """Create and store device objects by type, including role assignments."""
+        """Create and store device objects by type, including role assignments.
+
+        This function creates several ways to access devices:
+        1. By type and name: self.all_devices['camera']['QHY600m'] = camera object
+        2. By name only: self.device_by_name['QHY600m'] = camera object
+        3. By role: self.devices['main_cam'] = camera object
+        """
+
         print("\n--- Initializing Devices ---")
         self.all_device_types = self.config["device_types"]
         self.all_devices = {}  # Store devices by type then name. So all_devices['camera']['QHY600m'] = camera object

@@ -1102,7 +1102,7 @@ class Sequencer:
 
     def append_completes(self, block_id):
         #
-        camera = self.obs.devices['lmain_cam'].name
+        camera = self.obs.devices['main_cam'].name
         seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) +'_completes_' + str(g_dev['obs'].name))
         lcl_list = seq_shelf['completed_blocks']
         if block_id in lcl_list:
