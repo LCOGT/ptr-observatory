@@ -3058,6 +3058,11 @@ class Observatory:
                                 plog("Could not remove platesolve pickle. ")
 
                             if solve == "error":
+                                # send up the image anyway
+                                self.enqueue_for_fastUI(
+                                    "", jpeg_filename, exposure_time
+                                )
+
                                 plog("Planewave solve came back as error")
                                 self.last_platesolved_ra = np.nan
                                 self.last_platesolved_dec = np.nan

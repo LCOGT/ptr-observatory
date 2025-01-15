@@ -1303,7 +1303,16 @@ def mid_stretch_jpeg(data):
 
 if solve == 'error':
     pointing_image = mid_stretch_jpeg(pointing_image)
-    final_image = Image.fromarray(pointing_image)
+    final_image = Image.fromarray(pointing_image).convert("L") 
+    
+    # Convert grayscale to RGB
+    red_image = Image.new("RGB", final_image.size)
+    for x in range(final_image.width):
+        for y in range(final_image.height):
+            grayscale_value = final_image.getpixel((x, y))
+            red_image.putpixel((x, y), (grayscale_value, 0, 0))  # Map grayscale to red
+
+    final_image=red_image
 
     ix, iy = final_image.size
     if iy == ix:
