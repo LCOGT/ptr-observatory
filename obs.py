@@ -755,6 +755,7 @@ class Observatory:
         1. By type and name: self.all_devices['camera']['QHY600m'] = camera object
         2. By name only: self.device_by_name['QHY600m'] = camera object
         3. By role: self.devices['main_cam'] = camera object
+
         """
 
         print("\n--- Initializing Devices ---")
