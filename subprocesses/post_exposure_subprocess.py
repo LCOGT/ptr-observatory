@@ -290,7 +290,10 @@ cam_alias = cam_config["name"]
 # We are assuming that we should use the main rotator and focuser, but we should pass those in
 # the payload rather than assuming. 
 rotator_name = selfconfig['device_roles']['main_rotator']
-rotator_alias = selfconfig['rotator'][rotator_name]['name']
+if selfconfig['device_roles']['main_rotator'] == None:
+    rotator_alias = None
+else:
+    rotator_alias = selfconfig['rotator'][rotator_name]['name']
 focuser_name = selfconfig['device_roles']['main_focuser']
 focuser_alias = selfconfig['focuser'][focuser_name]['name']
 if len(selfconfig['rotator']) > 1:
