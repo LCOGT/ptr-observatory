@@ -331,46 +331,25 @@ class Observatory:
         # There are some software that really benefits from being restarted from
         # scratch on Windows, so on bootup of obs.py, the system closes them down
         # Reconnecting the devices reboots the softwares later on.
-        try:
-            os.system('taskkill /IM "Gemini Software.exe" /F')
-        except:
-            pass
-        try:
-            os.system('taskkill /IM "OptecGHCommander.exe" /F')
-        except:
-            pass
-        try:
-            os.system("taskkill /IM AltAzDSConfig.exe /F")
-        except:
-            pass
-        try:
-            os.system("taskkill /IM ASCOM.AltAzDS.exe /F")
-        except:
-            pass
-        try:
-            os.system('taskkill /IM "AstroPhysicsV2 Driver.exe" /F')
-        except:
-            pass
-        try:
-            os.system('taskkill /IM "AstroPhysicsCommandCenter.exe" /F')
-        except:
-            pass
-        try:
-            os.system("taskkill /IM TheSkyX.exe /F")
-        except:
-            pass
-        try:
-            os.system("taskkill /IM TheSky64.exe /F")
-        except:
-            pass
-        try:
-            os.system("taskkill /IM PWI4.exe /F")
-        except:
-            pass
-        try:
-            os.system("taskkill /IM PWI3.exe /F")
-        except:
-            pass
+        processes = [
+            "Gemini Software.exe",
+            "OptecGHCommander.exe",
+            "AltAzDSConfig.exe",
+            "ASCOM.AltAzDS.exe",
+            "AstroPhysicsV2 Driver.exe",
+            "AstroPhysicsCommandCenter.exe",
+            "TheSkyX.exe",
+            "TheSky64.exe",
+            "PWI4.exe",
+            "PWI3.exe",
+            "FitsLiberator.exe"
+        ]
+
+        for process in processes:
+            try:
+                os.system(f'taskkill /IM "{process}" /F')
+            except Exception:
+                pass
 
         listOfProcessIds = findProcessIdByName("maxim_dl")
         for pid in listOfProcessIds:
@@ -2563,7 +2542,8 @@ class Observatory:
                             headerdict = {}
                             for entry in tempheader.keys():
                                 headerdict[entry] = tempheader[entry]
-                            plog("obs line 2563, header;  ", headerdict)   #NB try to debug missing value
+                            #20250112  Deleting below.   WER
+                            #plog("obs line 2563, header;  ", headerdict)   #NB try to debug missing value
                             # 'frame_basename,size,DATE-OBS,DAY-OBS,INSTRUME,SITEID,TELID')  20250112 WER
                             upload_file_and_ingest_to_archive(
                                 fileobj, file_metadata=headerdict
@@ -3494,9 +3474,10 @@ class Observatory:
                         filepathaws = slow_process[4]
                         filenameaws = slow_process[5]
                         if "ARCHIVE_" in filenameaws:
-                            g_dev["obs"].enqueue_for_PTRarchive(
-                                100000000000000, filepathaws, filenameaws
-                            )
+                        #     g_dev["obs"].enqueue_for_PTRarchive(
+                        #         100000000000000, filepathaws, filenameaws
+                        #     )
+                            pass # skipping ingesting archive calibrations. Won't need the later one either eventually
                         else:
                             g_dev["obs"].enqueue_for_calibrationUI(
                                 50, filepathaws, filenameaws

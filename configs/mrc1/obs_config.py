@@ -211,8 +211,8 @@ site_config = {
     'focus_trigger': 0.75,  # What FWHM increase is needed to trigger an autofocus
 
     # PLATESOLVE options
-    'solve_nth_image': 1,  # Only solve every nth image
-    'solve_timer': 0.05,  # Only solve every X minutes
+    'solve_nth_image': 27,  # Only solve every nth image   #20250112  Changed these two to make some sense. WER  Not rebooting tonight for this.
+    'solve_timer': 60,  # Only solve every X minutes
     'threshold_mount_update': 45,  # only update mount when X arcseconds away
 
 
@@ -636,8 +636,8 @@ site_config = {
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
             'service_date': '20240801',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo.
-
-
+            'switch_driver':  'ASCOM.PegasusAstroUPBv2.Switch', #this is a temp hack, we should install the Powerbox as a first-class device.
+            #the camera is on " Output 4", whatever that ends up meaning.  Hopefull = Switch4.
 
             'detector':  'Sony IMX461 BSI Mono',  # It would be good to build out a table of chip characteristics  6280 x 4210  Inspect: 62:4102, 4:6076  Sony 6244X4168 Active Optical black Hor 16, rear 0, Vert 22, rear 0
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
@@ -842,10 +842,10 @@ site_config = {
 
 
                 # This is the absolute minimum and maximum exposure for the camera
-                'min_exposure': 0.00005,
+                'min_exposure': 0.00001,
                 'max_exposure': 180.,
                 # For certain shutters, short exposures aren't good for /VIGNETTE/ flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 0.0001,
+                'min_flat_exposure': 0.00001,
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
