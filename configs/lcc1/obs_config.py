@@ -171,16 +171,35 @@ site_config = {
 
 
     'defaults': {
-        'screen': 'screen1',
-        'mount': 'mount1',
-        #'telescope': 'telescope1',     #How do we handle selector here, if at all?
-        'focuser': 'focuser1',
-        'rotator': 'rotator1',
+        'screen': 'screen',
+        'mount': 'lcy10inch',
+        #'telescope': 'Main OTA',     #How do we handle selector here, if at all?
+        'focuser': 'focuser',
+        'rotator': 'rotator',
         'selector': None,
-        'filter_wheel': 'filter_wheel1',
+        'filter_wheel': 'RGGB',
         'camera': 'camera_1_1',
         'sequencer': 'sequencer1'
         },
+
+    # Initial roles are aassigned here. These may change during runtime.
+    # Value is the device display name
+    # This is where to configure a second device of the same type if you want to control it in the site code. 
+    # Devices are referenced in obs with self.devices['device_role']
+    # Also important to note: these must match the roles in obs.py create_devices(). 
+    # Roles are standardized across all sites even if not all roles are used at each site.
+    'device_roles': {
+        'mount': 'lcy10inch',
+        'main_rotator': None,
+        'main_focuser': 'focuser',
+        'main_fw': None, 
+        
+        # Cameras
+        'main_cam': 'camera_1_1',
+        'guide_cam': None,
+        'widefield_cam': None,
+        'allsky_cam': None,
+    },
     'device_types': [
             'mount',
             #'telescope',
@@ -207,7 +226,7 @@ site_config = {
     
 
     'mount': {
-        'mount1': {
+        'lcy10inch': {
             'parent': 'enclosure1',
             'tel_id': '10inch',
             'name': 'lcy10inch',
@@ -276,8 +295,8 @@ site_config = {
     },
 
     'telescope': {                            #Note telescope == OTA  Optical Tube Assembly.
-        'telescope1': {
-            'parent': 'mount1',
+        'Main OTA': {
+            'parent': 'lcy10inch',
             'name': 'Main OTA',
             'telescop': 'eco2',
             'ptrtel': 'RASA11',
@@ -288,18 +307,18 @@ site_config = {
             'aperture': 432,
             'focal_length': 2939,
             'has_dew_heater':  True,
-            'screen_name': 'screen1',
-            'focuser_name':  'focuser1',
-            'rotator_name':  'rotator1',
+            'screen_name': 'screen',
+            'focuser_name':  'focuser',
+            'rotator_name':  'rotator',
             'has_instrument_selector': False,   #This is a default for a single instrument system
             'selector_positions': 1,            #Note starts with 1
-            'instrument names':  ['camera1'],
+            'instrument names':  ['camera_1_1'],
             'instrument aliases':  ['ASI071MCPro'],
             'configuration': {
-                 "position1": ["darkslide1", "filter_wheel1", "camera1"]
+                 "position1": ["darkslide1", "RGGB", "camera_1_1"]
                  },
-            'camera_name':  'camera1',
-            #'filter_wheel_name':  'filter_wheel1',
+            'camera_name':  'camera_1_1',
+            #'filter_wheel_name':  'RGGB',
             'filter_wheel_name':  None,
             'has_fans':  False,
             'has_cover':  False,
@@ -322,8 +341,8 @@ site_config = {
 
 
     'rotator': {
-        'rotator1': {
-            'parent': 'telescope1',
+        'rotator': {
+            'parent': 'Main OTA',
             'name': 'rotator',
             'desc':  False,
             'driver': None,
@@ -337,8 +356,8 @@ site_config = {
     },
 
     'screen': {
-        'screen1': {
-            'parent': 'telescope1',
+        'screen': {
+            'parent': 'Main OTA',
             'name': 'screen',
             'desc':  'No Screen',
             'driver': None,
@@ -352,8 +371,8 @@ site_config = {
     },
 
     'focuser': {
-        'focuser1': {
-            'parent': 'telescope1',
+        'focuser': {
+            'parent': 'Main OTA',
             'name': 'focuser',
             'desc':  'ZWO EAF Focuser',
             #'driver': 'ASCOM.SeletekFocuser.Focuser',
@@ -379,8 +398,8 @@ site_config = {
     },
 
     'selector': {
-        'selector1': {
-            'parent': 'telescope1',
+        'selector': {
+            'parent': 'Main OTA',
             'name': 'None',
             'desc':  'Null Changer',
             'driver': None,
@@ -399,8 +418,8 @@ site_config = {
 
    
     'filter_wheel': {        
-        "filter_wheel1": {
-            "parent": "telescope1",
+        "RGGB": {
+            "parent": "Main OTA",
             "name": "RGGB" ,  # When there is no filter wheel, the filter will be named this.
             'service_date': '20180101',
             
@@ -431,7 +450,7 @@ site_config = {
 
     'camera': {
         'camera_1_1': {
-            'parent': 'telescope1',
+            'parent': 'Main OTA',
             'name': 'lcy1qhy600c',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600C Pro',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #

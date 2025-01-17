@@ -169,16 +169,35 @@ site_config = {
     
 
     'defaults': {
-        'screen': 'screen1',
-        'mount': 'mount1',
-        #'telescope': 'telescope1',     #How do we handle selector here, if at all?
-        'focuser': 'focuser1',
-        'rotator': 'rotator1',
+        'screen': 'screen',
+        'mount': 'ecomeade',
+        #'telescope': 'Main OTA',     #How do we handle selector here, if at all?
+        'focuser': 'focuser',
+        'rotator': 'rotator',
         'selector': None,
-        'filter_wheel': 'filter_wheel1',
-        'camera': 'camera_1_1',
-        'sequencer': 'sequencer1'
+        'filter_wheel': 'RGGB',
+        'camera': 'eco3zwo',
+        'sequencer': 'sequencer'
         },
+
+    # Initial roles are aassigned here. These may change during runtime.
+    # Value is the device display name
+    # This is where to configure a second device of the same type if you want to control it in the site code. 
+    # Devices are referenced in obs with self.devices['device_role']
+    # Also important to note: these must match the roles in obs.py create_devices(). 
+    # Roles are standardized across all sites even if not all roles are used at each site.
+    'device_roles': {
+        'mount': 'ecomeade',
+        'main_focuser': 'focuser',
+        'main_fw': None, 
+        'main_rotator': 'rotator',
+        
+        # Cameras
+        'main_cam': 'eco3zwo',
+        'guide_cam': None,
+        'widefield_cam': None,
+        'allsky_cam': None,
+    },
     'device_types': [
             'mount',
             #'telescope',
@@ -203,7 +222,7 @@ site_config = {
             'sequencer'
             ],   
     'mount': {
-        'mount1': {
+        'ecomeade': {
             'parent': 'enclosure1',
             'tel_id': '0m40',
             'name': 'ecomeade',
@@ -269,8 +288,8 @@ site_config = {
     },
 
     'telescope': {                            #Note telescope == OTA  Optical Tube Assembly.
-        'telescope1': {
-            'parent': 'mount1',
+        'Main OTA': {
+            'parent': 'ecomeade',
             'name': 'Main OTA',
             'telescop': 'eco3',
             'ptrtel': 'CDK17',
@@ -281,18 +300,18 @@ site_config = {
             'aperture': 432,
             'focal_length': 2939,
             'has_dew_heater':  True,
-            'screen_name': 'screen1',
-            'focuser_name':  'focuser1',
-            'rotator_name':  'rotator1',
+            'screen_name': 'screen',
+            'focuser_name':  'focuser',
+            'rotator_name':  'rotator',
             'has_instrument_selector': False,   #This is a default for a single instrument system
             'selector_positions': 1,            #Note starts with 1
-            'instrument names':  ['camera1'],
+            'instrument names':  ['eco3zwo'],
             'instrument aliases':  ['SBIG16803'],
             'configuration': {
-                  "position1": ["darkslide1", "filter_wheel1", "camera1"]
+                  "position1": ["darkslide1", "RGGB", "eco3zwo"]
                   },
-            'camera_name':  'camera1',
-            'filter_wheel_name':  'filter_wheel1',
+            'camera_name':  'eco3zwo',
+            'filter_wheel_name':  'RGGB',
             'has_fans':  True,
             'has_cover':  False,
             'settings': {
@@ -312,8 +331,8 @@ site_config = {
     },
 
 #     'rotator': {
-#         'rotator1': {
-#             'parent': 'telescope1',
+#         'rotator': {
+#             'parent': 'Main OTA',
 #             'name': 'rotator',
 #             'desc':  'Opetc Gemini',
 #             'driver': 'ASCOM.OptecGemini.Rotator',
@@ -327,8 +346,8 @@ site_config = {
 #     },
 
     'rotator': {
-        'rotator1': {
-            'parent': 'telescope1',
+        'rotator': {
+            'parent': 'Main OTA',
             'name': 'rotator',
             'desc':  False,
             'driver': None,
@@ -342,8 +361,8 @@ site_config = {
     },
 
     'screen': {
-        'screen1': {
-            'parent': 'telescope1',
+        'screen': {
+            'parent': 'Main OTA',
             'name': 'screen',
             'desc':  'No Screen',
             'driver': None,
@@ -357,8 +376,8 @@ site_config = {
     },
 
     'focuser': {
-        'focuser1': {
-            'parent': 'telescope1',
+        'focuser': {
+            'parent': 'Main OTA',
             'name': 'focuser',
             'desc':  'Planewave Focuser',
             'driver': 'ASCOM.PWI3.Focuser',
@@ -382,8 +401,8 @@ site_config = {
     },
 
     'selector': {
-        'selector1': {
-            'parent': 'telescope1',
+        'selector': {
+            'parent': 'Main OTA',
             'name': 'None',
             'desc':  'Null Changer',
             'driver': None,
@@ -393,7 +412,7 @@ site_config = {
             'shutdown_script':  None,
             'ports': 1,
             'instruments':  ['Main_camera'], #, 'eShel_spect', 'planet_camera', 'UVEX_spect'],
-            'cameras':  ['camera_1_1'], # , 'camera_1_2', None, 'camera_1_4'],
+            'cameras':  ['eco3zwo'], # , 'camera_1_2', None, 'camera_1_4'],
             'guiders':  [None], # , 'guider_1_2', None, 'guide_1_4'],
             'default': 0
             },
@@ -401,8 +420,8 @@ site_config = {
     },
 
     'filter_wheel': {
-        "filter_wheel1": {
-            "parent": "telescope1",
+        "RGGB": {
+            "parent": "Main OTA",
             "name": "RGGB" ,  # When there is no filter wheel, the filter will be named this.
             'service_date': '20180101',
 
@@ -431,8 +450,8 @@ site_config = {
     },
 
     'camera': {
-        'camera_1_1': {
-            'parent': 'telescope1',
+        'eco3zwo': {
+            'parent': 'Main OTA',
             'name': 'eco3zwo',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16803',
             
@@ -640,7 +659,7 @@ site_config = {
     },
 
     'sequencer': {
-        'sequencer1': {
+        'sequencer': {
             'parent': 'site',
             'name': 'Sequencer',
             'desc':  'Automation Control',

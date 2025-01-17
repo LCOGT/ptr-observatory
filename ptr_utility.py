@@ -96,5 +96,4 @@ def plog(*args, loud = True):
         print("plog failed to convert to string:  ", args)
 
     #Add logging here.
-
     return

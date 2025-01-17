@@ -2,6 +2,7 @@ env/
 venv/
 .env
 .credentials
+local_dev_stuff/
 
 __pycache__
 *.pyc
@@ -25,3 +26,4 @@ subprocesses/testSEPpickle
 subprocesses/testSEPpickle
 subprocesses/testpostprocess.pickle
 subprocesses/crosscorrelprocess.pickle
+subprocesses/Platesolveprocess - Copy (3).py

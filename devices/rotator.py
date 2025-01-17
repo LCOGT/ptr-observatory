@@ -7,6 +7,11 @@ import win32com.client
 import psutil
 from global_yard import g_dev
 
+# We only use Observatory in type hints, so use a forward reference to prevent circular imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: 
+    from obs import Observatory
+
 
 def findProcessIdByName(processName):
     '''
@@ -26,10 +31,20 @@ def findProcessIdByName(processName):
     return listOfProcessObjects
 
 class Rotator:
-    def __init__(self, driver: str, name: str, config: dict):
+    def __init__(self, driver: str, name: str, site_config: dict, observatory: 'Observatory'):
         self.name = name
+        self.config = site_config['rotator'][name]
+        self.obs = observatory
         g_dev["rot"] = self
 
+        # Configure the role, if it exists
+        # Current design allows for only one role per device
+        # We can add more roles by changing self.role to a list and adjusting any references
+        self.role = None
+        for role, device in site_config['device_roles'].items():
+            if device == name:
+                self.role = role
+                break
 
         win32com.client.pythoncom.CoInitialize()
         self.driver=driver

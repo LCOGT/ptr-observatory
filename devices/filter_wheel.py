@@ -21,14 +21,30 @@ import traceback
 from global_yard import g_dev
 from ptr_utility import plog
 
+# We only use Observatory in type hints, so use a forward reference to prevent circular imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: 
+    from obs import Observatory
+
 class FilterWheel:
     """A filter wheel instrument."""
 
-    def __init__(self, driver, name: str, config: dict):
+    def __init__(self, driver, name: str, site_config: dict, observatory: 'Observatory'):
         self.name = name
         g_dev["fil"] = self
-        self.config = config["filter_wheel"]
+        self.config = site_config["filter_wheel"][name]
+        self.settings = self.config['settings']
+        self.obs = observatory
         self.previous_filter_name='none'
+
+        # Configure the role, if it exists
+        # Current design allows for only one role per device
+        # We can add more roles by changing self.role to a list and adjusting any references
+        self.role = None
+        for role, device in site_config['device_roles'].items():
+            if device == name:
+                self.role = role
+                break
 
         # Set the dummy flag
         if driver == 'dummy':
@@ -45,13 +61,11 @@ class FilterWheel:
 
         if driver is not None:
             self.null_filterwheel = False
-            self.dual_filter = self.config["filter_wheel1"]["dual_wheel"]
-            self.ip = str(self.config["filter_wheel1"]["ip_string"])
-            self.filter_data = self.config["filter_wheel1"]["settings"]["filter_data"]
-            # self.filter_screen_sort = self.config["filter_wheel1"]["settings"][
-            #     "filter_screen_sort"
-            # ]
-            self.wait_time_after_filter_change=self.config["filter_wheel1"]["filter_settle_time"]
+            self.dual_filter = self.config["dual_wheel"]
+            self.ip = str(self.config["ip_string"])
+            self.filter_data = self.settings["filter_data"]
+            # self.filter_screen_sort = self.settings["filter_screen_sort"]
+            self.wait_time_after_filter_change=self.config["filter_settle_time"]
 
             self.filter_message = "-"
             plog("Please NOTE: Filter wheel may block for many seconds while first connecting \
@@ -64,6 +78,7 @@ class FilterWheel:
             self.filterwheel_updates=0
             #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
             self.filterwheel_update_thread=threading.Thread(target=self.filterwheel_update_thread)
+            self.filterwheel_update_thread.daemon = True
             self.filterwheel_update_thread.start()
 
 
@@ -546,7 +561,7 @@ class FilterWheel:
 
     def home_command(self, opt: dict):
         """Sets the filter to the home position."""
-        self.set_name_command({"filter": self.config["filter_wheel1"]["settings"]['default_filter']}, {})
+        self.set_name_command({"filter": self.settings['default_filter']}, {})
 
 
     def get_starting_throughput_value(self, requested_filter: str):
@@ -619,8 +634,8 @@ class FilterWheel:
         # Seriously dumb way to do this..... but quick!
         # Construct available filter list
         filter_names=[]
-        for ctr in range(len(self.config["filter_wheel1"]["settings"]['filter_data'])):
-            filter_names.append(self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0])
+        for ctr in range(len(self.settings['filter_data'])):
+            filter_names.append(self.settings['filter_data'][ctr][0])
 
         available_filters = list(map(lambda x: x.lower(), filter_names))
 

@@ -26,7 +26,7 @@ import copy
 input_sstk_info = pickle.load(sys.stdin.buffer)
 # input_sstk_info=pickle.load(open('testsmartstackpickle','rb'))
 
-print("HERE IS THE INCOMING. ")
+print("Starting SmartStackprocess.py")
 print(input_sstk_info)
 
 
@@ -308,27 +308,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
             yt *= iy
             xr *= ix
             yb *= iy
-            try:
-                trial_image = final_image.crop(
-                    (int(xl), int(yt), int(ix-xr), int(iy-yb)))
-            except:
-                try:
-                    print("excepted 1")
-                    ix, iy = trial_image.size
-                    xl, yt, xr, yb = zoom
-                    xl *= ix
-                    yt *= iy
-                    xr *= ix
-                    yb *= iy
-                    trial_image = final_image.crop(
-                        (int(xl), int(yt), int(ix-xr), int(iy-yb)))
-                except:
-                    print("SMstack process second exception... pushing on though")
-                    print(zoom)
-                    print(ix)
-                    print(iy)
-                    print(traceback.format_exc())
-
+            trial_image = final_image.crop((int(xl), int(yt), int(ix-xr), int(iy-yb)))
             ix, iy = trial_image.size
             print("Zoomed Image size:", ix, iy)
             final_image = trial_image
@@ -439,8 +419,14 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                     crosscorrel_filename_waiter.append(
                         obsid_path + "smartstacks/" + output_filename)
 
-                    crosscorrelation_subprocess_array.append(subprocess.Popen(
-                        ['python', 'crosscorrelation_subprocess.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0))
+                    crosscorrelation_subprocess_array.append(
+                        subprocess.Popen(
+                            ['python', 'crosscorrelation_subprocess.py'], 
+                            stdin=subprocess.PIPE, 
+                            stdout=None, 
+                            bufsize=-1
+                        )
+                    )
                     print(counter)
                     pickle.dump(
                         pickler, crosscorrelation_subprocess_array[counter].stdin)

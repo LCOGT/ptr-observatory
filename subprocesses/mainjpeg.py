@@ -13,7 +13,6 @@ import os
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
-
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
 # Pick up the pickled array
@@ -25,7 +24,7 @@ else:
     #NB Use this input file for debugging this code.
     #input_jpeg_info=pickle.load(open('C:\\Users\\user\\Documents\\GitHub\\ptr-observatory\\testjpegpickle','rb'))
     input_jpeg_info=pickle.load(open('../testjpegpickle','rb'))
-    print("HERE IS THE INCOMING: ")
+    print("Starting mainjpeg.py")
     print(input_jpeg_info)
 
 

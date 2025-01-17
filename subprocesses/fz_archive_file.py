@@ -26,7 +26,7 @@ warnings.simplefilter('ignore', category=AstropyUserWarning)
 #input_sep_info=pickle.load(open('testfz1714133591386061','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
 
-print ("HERE IS THE INCOMING. ")
+print ("Starting fz_archive_file.py")
 #print (input_sep_info)
 
 
@@ -36,6 +36,11 @@ camname=input_sep_info[2]
 slow_process=input_sep_info[3]
 
 googtime=time.time()
+
+# This script assumes we're using the main camera
+# TODO: The correct camera should be passed in as an argument to support multiple cameras
+camera_name = selfconfig['device_roles']['main_cam']
+camera_config = selfconfig["camera"][camera_name]
 
 
 # Create the fz file ready for PTR Archive
@@ -53,7 +58,7 @@ if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
         os.umask(0)
         os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS']))
 
-if not selfconfig["camera"]['camera_1_1']["settings"]["is_osc"]:
+if not camera_config["settings"]["is_osc"]:
 
 
     # This routine saves the file ready for uploading to AWS
@@ -80,7 +85,7 @@ if not selfconfig["camera"]['camera_1_1']["settings"]["is_osc"]:
 else:  # Is an OSC
 
     # If it is an OSC, split out the components and save them individually.
-    if selfconfig["camera"]['camera_1_1']["settings"]["osc_bayer"] == 'RGGB':
+    if camera_config["settings"]["osc_bayer"] == 'RGGB':
 
         newhdured = slow_process[2][::2, ::2]
         GTRonly = slow_process[2][::2, 1::2]

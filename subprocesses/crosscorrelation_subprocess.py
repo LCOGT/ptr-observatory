@@ -17,6 +17,8 @@ import bottleneck as bn
 #from astropy.stats import sigma_clip
 from joblib import Parallel, delayed
 
+print("Starting crosscorrelation_subprocess.py")
+
 payload=pickle.load(sys.stdin.buffer)
 #payload=pickle.load(open('crosscorrelprocess.pickle','rb'))
 
