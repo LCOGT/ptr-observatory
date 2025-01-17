@@ -1,12 +1,12 @@
 # ptr-observatory
 
-When complete, this code will operate observatories in the Photon Ranch network. 
+When complete, this code will operate observatories in the Photon Ranch network.
 
 ## Installation and Setup
 
 This code requires Python 3.8 or above. Clone the repository to your local Windows machine:
 
-```
+```bash
 git clone https://github.com/LCOGT/ptr-observatory.git
 cd ptr-observatory
 ```
@@ -23,6 +23,7 @@ These drivers should already be configured using the ASCOM device chooser.
 ### Device Names
 
 Devices are defined in the config in a dict of the parent type. For example, the cameras are in a dict called `camera`:
+
 ```python
 config = {
   "camera": {
@@ -45,7 +46,7 @@ There are two ways devices are uniquely identified:
    "ec00zwo", "widefield cam", and "random camera". This is the name shown in the UI, and is used when routing commands
    to the requested device.
 2. `role`: The role of a device indicates its place in the observatory setup, and is used to address the device in the
-   code. Not all devices will have a role, but most will. If a device doesn't have a role, it can only be accessed by 
+   code. Not all devices will have a role, but most will. If a device doesn't have a role, it can only be accessed by
    user commands.
 
 Device roles are not defined in the device config, but in a separate part of the site config under the key `device_roles`.
@@ -96,8 +97,9 @@ all devices of certain type.
 Devices can be directly accessed by their name via `self.device_by_name`. This is useed primarily when routing commands
 to the correct device. If the payload of the command includes `device_name`, then the command is sent to
 `self.device_by_name[device_name]`.
- 
+
 #### Similar usage within the devices themselves
+
 These properties (devices, all_devices, devices_by_name) are all available from the device instances themselves after
 initialization is complete. All devices are initialized with the parent context as `obs`. So instead of accessing the
 main focuser from obs.py with `self.devices["main_focuser"]`, accessing from any device class would use
