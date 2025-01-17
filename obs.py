@@ -345,7 +345,7 @@ class Observatory:
             "FitsLiberator.exe"
         ]
 
-        if name != "tbo2": # saves a few seconds for the simulator site. 
+        if name != "tbo2": # saves a few seconds for the simulator site.
             for process in processes:
                 try:
                     os.system(f'taskkill /IM "{process}" /F')
@@ -499,7 +499,7 @@ class Observatory:
         self.currently_updating_status = False
 
         # Use the configuration to instantiate objects for all devices.
-        # Also configure device roles in here. 
+        # Also configure device roles in here.
         self.create_devices()
 
         self.last_update_complete = time.time() - 5
@@ -964,7 +964,7 @@ class Observatory:
                         else:
                             action = cmd.get('action')
                             script = cmd["required_params"].get("script")
-                            
+
                             if cmd["deviceType"] == "obs":
                                 plog("OBS COMMAND: received a system wide command")
 
@@ -2915,7 +2915,7 @@ class Observatory:
                     timeout_time = 800# + exposure_time + \
                         #g_dev["cam"].readout_time
                 else:
-                    timeout_time = 90# + exposure_time + \
+                    timeout_time = 180# + exposure_time + \
                         #g_dev["cam"].readout_time
 
                 platesolve_timeout_timer = time.time()
@@ -2989,15 +2989,34 @@ class Observatory:
                             #breakpoint()
 
                             try:
+                                # platesolve_subprocess = subprocess.Popen(
+                                #     ["python", "subprocesses/Platesolveprocess.py"],
+                                #     stdin=None,
+                                #     stdout=None,
+                                #     bufsize=0,
+                                # )
+
                                 platesolve_subprocess = subprocess.Popen(
                                     ["python", "subprocesses/Platesolveprocess.py"],
                                     stdin=subprocess.PIPE,
-                                    stdout=None,
-                                    bufsize=-1,
+                                    stdout=subprocess.PIPE,
+                                    bufsize=0,
                                 )
                             except OSError:
                                 plog(traceback.format_exc())
                                 pass
+
+
+                            # try:
+                            #     platesolve_subprocess = subprocess.Popen(
+                            #         ["python", "subprocesses/Platesolveprocess.py"],
+                            #         stdin=subprocess.PIPE,
+                            #         stdout=None,
+                            #         bufsize=0,
+                            #     )
+                            # except OSError:
+                            #     plog(traceback.format_exc())
+                            #     pass
 
 
                             try:
@@ -4442,7 +4461,7 @@ class Observatory:
                                 new_focuser = Focuser('CCDSoft2XAdaptor.ccdsoft5Camera', focuser.name, self.config, self)
                                 if focuser.role:
                                     self.devices[focuser.role] = new_focuser
-                                time.sleep(5) 
+                                time.sleep(5)
 
                 time.sleep(5)
                 retries=6

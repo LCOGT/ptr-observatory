@@ -381,30 +381,30 @@ else:
     hdufocusdata = hdufocusdata[:new_height, :new_width]
 
 
-
-# Store the unaltered image for a last ditch attempt
-hail_mary_image= copy.deepcopy(hdufocusdata).astype(np.float32)
-
-
-try:
-    bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-    bkg.subfrom(hdufocusdata)
-except:
-    hdufocusdata=np.array(hdufocusdata, dtype=float)
-    bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-    bkg.subfrom(hdufocusdata)
-
-
 hdufocusdata=hdufocusdata.astype(np.float32)
 
-# If this is set to true, then it will output a sample of the background image.
-if True:
-    hdufocus = fits.PrimaryHDU()
-    hdufocus.data = bkg
-    hdufocus.header = hduheader
-    hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-    hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-    hdufocus.writeto(cal_path + 'background.fits', overwrite=True, output_verify='silentfix')
+# Store the unaltered image for a last ditch attempt
+hail_mary_image= copy.deepcopy(hdufocusdata)
+
+
+# try:
+#     bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+#     bkg.subfrom(hdufocusdata)
+# except:
+#     hdufocusdata=np.array(hdufocusdata, dtype=float)
+#     bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+#     bkg.subfrom(hdufocusdata)
+
+
+
+# # If this is set to true, then it will output a sample of the background image.
+# if True:
+#     hdufocus = fits.PrimaryHDU()
+#     hdufocus.data = bkg
+#     hdufocus.header = hduheader
+#     hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+#     hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+#     hdufocus.writeto(cal_path + 'background.fits', overwrite=True, output_verify='silentfix')
 
 
 # If this is set to true, then it will output a sample of the background image.
@@ -474,217 +474,99 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
 
 
 
+wslfilename=cal_path + 'wsltemp' + str(time.time()).replace('.','') +'.fits'
+# recombobulate to access through the wsl filesystem
+realwslfilename=wslfilename.split(':')
+realwslfilename[0]=realwslfilename[0].lower()
+realwslfilename='/mnt/'+ realwslfilename[0] + realwslfilename[1]
 
+# Pick pixel scale range
+if pixscale == None:
+    low_pixscale= 0.05
+    high_pixscale=10.0
+else:
+    low_pixscale = 0.9 * pixscale
+    high_pixscale = 1.1 * pixscale
 
 print ("Just before fake Image: " +str(time.time()-googtime))
-googtime=time.time()
 
-fx, fy = hdufocusdata.shape
-tempstd=bn.nanstd(hdufocusdata)
-threshold=2.5* bn.nanstd(hdufocusdata[hdufocusdata < (5*tempstd)])
-threshold=max(threshold,100)
-list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
+# Save an image to the disk to use with source-extractor
+hdufocus = fits.PrimaryHDU()
+hdufocus.data = hdufocusdata.astype(np.float32)
+hdufocus.header = hduheader
+hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
 
-# Assess each point
-pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
-counter=0
+# run again
 
-for point in list_of_local_maxima:
-    pointvalues[counter][0]=point[0]
-    pointvalues[counter][1]=point[1]
-    pointvalues[counter][2]=np.nan
-    in_range=False
-    if (point[0] > fx*0.1) and (point[1] > fy*0.1) and (point[0] < fx*0.9) and (point[1] < fy*0.9):
-        in_range=True
+astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit ' +str(cpu_limit) + ' --overwrite --no-verify --no-plots'
 
-    if in_range:
-        value_at_point=hdufocusdata[point[0],point[1]]
-        try:
-            value_at_neighbours=(hdufocusdata[point[0]-1,point[1]]+hdufocusdata[point[0]+1,point[1]]+hdufocusdata[point[0],point[1]-1]+hdufocusdata[point[0],point[1]+1])/4
-        except:
-            print(traceback.format_exc())
+print (astoptions)
 
-        # Check it isn't just a dot
-        if value_at_neighbours < (0.4*value_at_point):
-            pointvalues[counter][2]=np.nan
+os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
 
-        # # If not saturated and far away from the edge
-        elif value_at_point < 0.9*image_saturation_level:
-            pointvalues[counter][2]=value_at_point
-        else:
-            pointvalues[counter][2]=np.nan
+# If successful, then a file of the same name but ending in solved exists.
+if os.path.exists(wslfilename.replace('.fits','.wcs')):
+    print ("IT EXISTS! WCS SUCCESSFUL!")
+    wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
+    # wcsheader[0].header['CRVAL1']/15
+    # wcsheader[0].header['CRVAL2']
+    # wcsheader[0].header['CD1_2'] * 3600
+    solve={}
+    solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
+    solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
 
-    counter=counter+1
+    wcs = WCS(wcs_header)
 
-# Trim list to remove things that have too many other things close to them.
+    # Get the CD matrix or CDELT values
+    cd = wcs.pixel_scale_matrix
+    pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
+    solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
 
-# remove nan rows
-pointvalues=pointvalues[~np.isnan(pointvalues).any(axis=1)]
-# reverse sort by brightness
-pointvalues=pointvalues[pointvalues[:,2].argsort()[::-1]]
+    solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
 
+    #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
 
-# radial profile
-fwhmlist=[]
-sources=[]
-try:
-    if np.isnan(pixscale):
-        pixscale = None
-except:
-    pixscale = None
+    if binnedtwo:
+        solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+    elif binnedthree:
+        solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+    print (solve)
 
-if pixscale == None:
-    radius_of_radialprofile=50
 else:
-    radius_of_radialprofile=int(24/pixscale)
-# Round up to nearest odd number to make a symmetrical array
-radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
-centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
 
-sources=[]
-
-for i in range(len(pointvalues)):
-
-    if len(sources) > 200:
-        break
-
-    cx= (pointvalues[i][0])
-    cy= (pointvalues[i][1])
-    cvalue=hdufocusdata[int(cx)][int(cy)]
-    try:
-        temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
-    except:
-        print(traceback.format_exc())
-
-    #construct radial profile
-    cut_x,cut_y=temp_array.shape
-    cut_x_center=(cut_x/2)-1
-    cut_y_center=(cut_y/2)-1
-    radprofile=np.zeros([cut_x*cut_y,2],dtype=float)
-    counter=0
-    brightest_pixel_rdist=0
-    brightest_pixel_value=0
-    bailout=False
-    for q in range(cut_x):
-        if bailout==True:
-            break
-        for t in range(cut_y):
-            r_dist=pow(pow((q-cut_x_center),2) + pow((t-cut_y_center),2),0.5)
-            if q-cut_x_center < 0:# or t-cut_y_center < 0:
-                r_dist=r_dist*-1
-            radprofile[counter][0]=r_dist
-            radprofile[counter][1]=temp_array[q][t]
-            if temp_array[q][t] > brightest_pixel_value:
-                brightest_pixel_rdist=r_dist
-                brightest_pixel_value=temp_array[q][t]
-            counter=counter+1
-
-    # If the brightest pixel is in the center-ish
-    # then attempt a fit
-    if pixscale == None:
-        largest_deviation_from_center=12
-    else:
-        largest_deviation_from_center=3/pixscale
-
-    if abs(brightest_pixel_rdist) <  max(3, largest_deviation_from_center):
-
+    print ("FAILED NORMAL, TRYING HAIL MARY ATTEMPT")
+    # Remove the previous attempt which was just a table fits
+    temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
+    for f in temp_files_to_remove:
         try:
-            # Reduce data down to make faster solvinging
-            upperbin=math.floor(max(radprofile[:,0]))
-            lowerbin=math.ceil(min(radprofile[:,0]))
-            # Only need a quarter of an arcsecond bin.
-            arcsecond_length_radial_profile = int((upperbin-lowerbin)/0.25)
-            number_of_bins=int(arcsecond_length_radial_profile/0.25)
-            s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
-
-            max_value=bn.nanmax(s)
-            min_value=bn.nanmin(s)
-            threshold_value=(0.05*(max_value-min_value)) + min_value
-
-            actualprofile=[]
-            for q in range(len(s)):
-                if not np.isnan(s[q]):
-                    if s[q] > threshold_value:
-                        actualprofile.append([(edges[q]+edges[q+1])/2,s[q]])
-
-            actualprofile=np.asarray(actualprofile)
-            edgevalue_left=actualprofile[0][1]
-            edgevalue_right=actualprofile[-1][1]
-
-            if edgevalue_left < 0.6*cvalue and  edgevalue_right < 0.6*cvalue:
-
-                if pixscale == None:
-                    stdevstart= 4
-                else:
-                    stdevstart=2/pixscale
-
-                popt, _ = optimize.curve_fit(gaussian, actualprofile[:,0], actualprofile[:,1], p0=[cvalue,0,((stdevstart) /2.355)], bounds=([cvalue/2,-10, 0],[cvalue*1.2,10,10]))#, xtol=0.005, ftol=0.005)
-
-                # Amplitude has to be a substantial fraction of the peak value
-                # and the center of the gaussian needs to be near the center
-                if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, largest_deviation_from_center) :
-                    if False:
-                        plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                        plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'r')
-                        plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                        plt.show()
-
-                    sources.append([cx,cy,cvalue])
+            os.remove(f)
         except:
             pass
 
-# Keep top 200
-sources=np.asarray(sources)
-# if len(sources) > 200:
-#     sources=sources[:200,:]
-
-print ("Constructor " + str(time.time()-googtime))
-googtime=time.time()
-failed=True
-
-if len(sources) >= 5 and pixscale != None:
 
 
+    # Here is where the last ditch attempt occurs
+    # Save an image to the disk to use with source-extractor
+    hdufocus = fits.PrimaryHDU()
+    hdufocus.data = hail_mary_image.astype(np.float32)
+    hdufocus.header = hduheader
+    hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+    hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+    hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
 
 
-    print ("Attempting WSL astrometry.net fit")
+    # run again
 
-    wslfilename=cal_path + 'wsltemp' + str(time.time()).replace('.','') +'.fits'
-
-
-
-    # save out the source list to a textfile for wsl fit
-    sources={'x': sources[:,0],'y': sources[:,1],'flux': sources[:,2]}
-
-    sources=Table(sources)
-
-    sources.write(wslfilename)
-
-    # recombobulate to access through the wsl filesystem
-    realwslfilename=wslfilename.split(':')
-    realwslfilename[0]=realwslfilename[0].lower()
-    realwslfilename='/mnt/'+ realwslfilename[0] + realwslfilename[1]
-
-
-    # Pick pixel scale range
-    if pixscale == None:
-        low_pixscale= 0.05
-        high_pixscale=10.0
-    else:
-        low_pixscale = 0.9 * pixscale
-        high_pixscale = 1.1 * pixscale
-
-
-    astoptions = '--crpix-center --tweak-order 2 --x-column y --y-column x --width ' + str(hdufocusdata.shape[0]) +' --height ' + str(hdufocusdata.shape[1]) + ' --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit ' +str(cpu_limit) + ' --overwrite --no-verify --no-plots'
+    astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots'
 
     print (astoptions)
 
     os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
 
-
     # If successful, then a file of the same name but ending in solved exists.
     if os.path.exists(wslfilename.replace('.fits','.wcs')):
-        #breakpoint()
         print ("IT EXISTS! WCS SUCCESSFUL!")
         wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
         # wcsheader[0].header['CRVAL1']/15
@@ -693,12 +575,14 @@ if len(sources) >= 5 and pixscale != None:
         solve={}
         solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
         solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
+
         wcs = WCS(wcs_header)
 
         # Get the CD matrix or CDELT values
         cd = wcs.pixel_scale_matrix
         pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
         solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
+
         solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
 
         #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
@@ -708,631 +592,17 @@ if len(sources) >= 5 and pixscale != None:
         elif binnedthree:
             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
         print (solve)
-
     else:
-
-        # If the quick routine doesn't work, use native source extractor
-
-        # Remove the previous attempt which was just a table fits
-        temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
-        for f in temp_files_to_remove:
-            try:
-                os.remove(f)
-            except:
-                pass
-
-        # Save an image to the disk to use with source-extractor
-        hdufocus = fits.PrimaryHDU()
-        hdufocus.data = hdufocusdata.astype(np.float32)
-        hdufocus.header = hduheader
-        hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-        hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-        hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
-
-        # run again
-
-        astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit ' +str(cpu_limit) + ' --overwrite --no-verify --no-plots'
-
-        print (astoptions)
-
-        os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
-
-        # If successful, then a file of the same name but ending in solved exists.
-        if os.path.exists(wslfilename.replace('.fits','.wcs')):
-            print ("IT EXISTS! WCS SUCCESSFUL!")
-            wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
-            # wcsheader[0].header['CRVAL1']/15
-            # wcsheader[0].header['CRVAL2']
-            # wcsheader[0].header['CD1_2'] * 3600
-            solve={}
-            solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
-            solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
-            wcs = WCS(wcs_header)
-
-            # Get the CD matrix or CDELT values
-            cd = wcs.pixel_scale_matrix
-            pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
-            solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
-            solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
-
-            #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
-
-            if binnedtwo:
-                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
-            elif binnedthree:
-                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-            print (solve)
-
-        else:
-            solve = 'error'
+        solve = 'error'
 
 
-    temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
-    for f in temp_files_to_remove:
-        try:
-            os.remove(f)
-        except:
-            pass
 
-
-    #breakpoint()
-
-        # if not pixscale == None:# or np.isnan(pixscale):
-        #     # Get size of original image
-        #     xpixelsize = hdufocusdata.shape[0]
-        #     ypixelsize = hdufocusdata.shape[1]
-        #     shape = (xpixelsize, ypixelsize)
-
-        #     # Make blank synthetic image with a sky background
-        #     synthetic_image = np.zeros([xpixelsize, ypixelsize])
-        #     synthetic_image = synthetic_image + 200
-
-        #     #Bullseye Star Shape
-        #     modelstar = [
-        #                 [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01],
-        #                 [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
-        #                 [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
-        #                 [ 0.2 , 0.4 , 0.8 , 1.2,  0.8, 0.4, 0.2],
-        #                 [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
-        #                 [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
-        #                 [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01]
-
-        #                 ]
-
-        #     modelstar=np.array(modelstar)
-
-        #     # Add bullseye stars to blank image
-        #     for addingstar in sources:
-        #         x = round(addingstar[1] -1)
-        #         y = round(addingstar[0] -1)
-        #         peak = int(addingstar[2])
-        #         # Add star to numpy array as a slice
-        #         try:
-        #             synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
-        #         except Exception as e:
-        #             print (e)
-
-        #     # Make an int16 image for planewave solver
-        #     hdufocusdata = np.array(synthetic_image, dtype=np.int32)
-        #     hdufocusdata[hdufocusdata < 0] = 200
-        #     hdufocus = fits.PrimaryHDU()
-        #     hdufocus.data = hdufocusdata
-        #     hdufocus.header = hduheader
-        #     hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-        #     hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-        #     hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
-
-        #     try:
-        #         hdufocus.close()
-        #     except:
-        #         pass
-        #     del hdufocusdata
-        #     del hdufocus
-
-        #     # First try with normal pixscale
-        #     failed = False
-        #     args = [
-        #         PS3CLI_EXE,
-        #         cal_path + 'platesolvetemp.fits',
-        #         str(pixscale),
-        #         output_file_path,
-        #         catalog_path
-        #     ]
-
-        #     process = Popen(
-        #             args,
-        #             stdout=None,
-        #             stderr=PIPE
-        #             )
-        #     (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
-        #     exit_code = process.wait() # Wait for process to complete and obtain the exit code
-
-        #     time.sleep(1)
-        #     process.kill()
-
-        #     try:
-        #         solve = parse_platesolve_output(output_file_path)
-        #         print (solve['arcsec_per_pixel'])
-        #         if binnedtwo:
-        #             solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
-        #         elif binnedthree:
-        #             solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
-        #     except:
-        #         failed=True
-
-
-        #     if failed:
-        #         failed=False
-
-        #         # Try again with a lower pixelscale... yes it makes no sense
-        #         # But I didn't write PS3.exe ..... but it works (MTF)
-        #         args = [
-        #             PS3CLI_EXE,
-        #             cal_path + 'platesolvetemp.fits',
-        #             str(float(pixscale)/2.0),
-        #             output_file_path,
-        #             catalog_path
-        #         ]
-
-        #         process = Popen(
-        #                 args,
-        #                 stdout=None,
-        #                 stderr=PIPE
-        #                 )
-        #         (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
-        #         exit_code = process.wait() # Wait for process to complete and obtain the exit code
-        #         time.sleep(1)
-        #         process.kill()
-
-        #         print (stdout)
-        #         print (stderr)
-
-        #         try:
-        #             solve = parse_platesolve_output(output_file_path)
-        #             print (solve['arcsec_per_pixel'])
-        #             if binnedtwo:
-        #                 solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/2
-        #             elif binnedthree:
-        #                 solve['arcsec_per_pixel']=float(solve['arcsec_per_pixel'])/3
-        #         except:
-        #             failed=True
-
-        # # if unknown pixelscale do a search
-        # print ("failed?")
-        # print (failed)
-        # if failed or pixscale == None:
-
-        #     #from astropy.table import Table
-        #     from astroquery.astrometry_net import AstrometryNet
-        #     AstrometryNet().api_key = 'pdxlsqwookogoivt'
-        #     AstrometryNet().key = 'pdxlsqwookogoivt'
-        #     ast = AstrometryNet()
-        #     ast.api_key = 'pdxlsqwookogoivt'
-        #     ast.key = 'pdxlsqwookogoivt'
-
-        #     if pixscale == None:
-        #         scale_lower=0.04
-        #         scale_upper=8.0
-        #     elif binnedtwo:
-        #         scale_lower=0.9* pixscale*2
-        #         scale_upper=1.1* pixscale*2
-        #     elif binnedthree:
-        #         scale_lower=0.9* pixscale*3
-        #         scale_upper=1.1* pixscale*3
-        #     else:
-        #         scale_lower=0.9* pixscale
-        #         scale_upper=1.1* pixscale
-
-        #     image_width = fx
-        #     image_height = fy
-
-        #     # If searching for the first pixelscale,
-        #     # Then wait for a LONG time to get it.
-        #     # with a wider range
-        #     try:
-        #         if pixscale == None:# or np.isnan(pixscale):
-        #             wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
-        #                                                     image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=30.0,
-        #                                                     solve_timeout=1200)
-        #         else:
-        #             wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
-        #                                                     image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=12.0,
-        #                                                     solve_timeout=60)
-        #     except:
-        #         print ("a.net timed out or failed")
-        #         wcs_header={}
-
-        #     print (wcs_header)
-        #     print (len(wcs_header))
-
-        #     if wcs_header=={}:
-        #         solve = 'error'
-        #     else:
-        #         solve={}
-        #         solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
-        #         solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
-        #         solve["arcsec_per_pixel"] = wcs_header['CD1_2'] *3600
-
-        #         if binnedtwo:
-        #             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
-        #         elif binnedthree:
-        #             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-
-else:
-    solve = 'error'
-
-#solve = 'error'
-#########################
-
-####### THE BLOB PLATESOLVER
-# If the gaussian approach doesn't work, take a slower blobby object approach
-# This can handle donuts and trailed stars etc.
-#
-# This is the slower sep routine from the EVA pipeline.
-
-if solve == 'error':
-
-
-    # Make a third attempt with a different method (which usually doesn't work as well as
-    # native source-extractor, but it is worth a shot!
-    print ("TRYING THE BLOB APPROACH")
+temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
+for f in temp_files_to_remove:
     try:
-        # Export a binary table for astrometry.net
-        # sepimg = objdeflat.astype("float").copy(order="C")
-        # del objdeflat
-        # sepbkg = sep.Background(sepimg, bw=32, bh=32, fw=3, fh=3)
-
-        # sepbkg.subfrom(sepimg)
-        # #sepsky = (bn.nanmedian(sepbkg), "Sky background estimated by SEP")
-
-        # #sepimg = sepimg - sepbkg
-        # sepbkgerr=sepbkg.globalrms
-
-        ix, iy = hdufocusdata.shape
-        #print (sepimg.shape)
-        #border_x = int(ix * 0.1)
-        #border_y = int(iy * 0.1)
-
-        #pixscale = float(header['PIXSCALE'])
-        #image_saturation_level = float(header['SATURATE'])
-
-        if pixscale == None:
-            minarea = 5
-        else:
-            minarea= (-9.2421 * pixscale) + 16.553
-        if minarea < 5:  # There has to be a min minarea though!
-            minarea = 5
-        sep.set_extract_pixstack(int(ix*iy - 1))
-        sep.set_sub_object_limit(int(300000))
-        sepbkgerr=bkg.globalrms
-        try:
-            sources = sep.extract(hdufocusdata, 4.0, err=sepbkgerr, minarea=minarea)
-        except:
-            hdufocusdata=hdufocusdata.astype("float").copy(order="C")
-            sources = sep.extract(hdufocusdata, 4.0, err=sepbkgerr, minarea=minarea)
-        #sources.sort(order="cflux")
-
-
-        sources = Table(sources)
-        sources = sources[sources['flag'] < 8]
-
-        sources = sources[sources["peak"] < 0.8 * image_saturation_level ]
-        sources = sources[sources["cpeak"] < 0.8 * image_saturation_level ]
-        #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
-        #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
-        sources = sources[sources["flux"] > 750]
-        #sources = sources[sources["x"] < ix - border_x]
-        #sources = sources[sources["x"] > border_x]
-        #sources = sources[sources["y"] < iy - border_y]
-        #sources = sources[sources["y"] > border_y]
-
-        # BANZAI prune nans from table
-        nan_in_row = np.zeros(len(sources), dtype=bool)
-        for col in sources.colnames:
-            nan_in_row |= np.isnan(sources[col])
-        sources = sources[~nan_in_row]
-
-        # sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
-        # sources = sources[sources['ellipticity'] < 0.6]
-
-
-        # # Calculate the kron radius (Thanks BANZAI)
-        # kronrad, krflag = sep.kron_radius(sepimg , sources['x'], sources['y'],
-        #                                   sources['a'], sources['b'],
-        #                                   sources['theta'], 6.0)
-        # sources['flag'] |= krflag
-        # sources['kronrad'] = kronrad
-
-        # Calculate uncertainty of image (thanks BANZAI)
-
-        #uncertainty = float(readnoise) * np.ones(sepimg.shape,
-        #                                         dtype=sepimg.dtype) / float(readnoise)
-
-
-        # # DONUT IMAGE DETECTOR.
-        # xdonut=numpy.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale
-        # ydonut=numpy.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale
-
-        # Calcuate the equivilent of flux_auto (Thanks BANZAI)
-        # This is the preferred best photometry SEP can do.
-        try:
-            # flux, fluxerr, flag = sep.sum_ellipse(sepimg, sources['x'], sources['y'],
-            #                                   sources['a'], sources['b'],
-            #                                   numpy.pi / 2.0, 2.5 * kronrad,
-            #                                   subpix=1)#, err=uncertainty)
-
-
-            #sources['flux'] = flux
-            #sources['fluxerr'] = fluxerr
-            #sources['flag'] |= flag
-            sources['FWHM'], _ = sep.flux_radius(hdufocusdata, sources['x'], sources['y'], sources['a'], 0.5,
-                                                 subpix=5)
-            # If image has been binned for focus we need to multiply some of these things by the binning
-            # To represent the original image
-            # sources['FWHM'] = (sources['FWHM'] * 2)
-
-            # Need to reject any stars that have FWHM that are less than a extremely
-            # perfect night as artifacts
-            if pixscale == None:
-                sources = sources[sources['FWHM'] > 0.2]
-            else:
-                sources = sources[sources['FWHM'] > (0.8 / (pixscale))]
-            #sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
-            sources = sources[sources['FWHM'] != 0]
-
-            # Sources that are bigger than 20 arcseconds, remove
-            #sources = sources[sources['FWHM'] < (20 / (pixscale))]
-
-            # BANZAI prune nans from table
-            nan_in_row = np.zeros(len(sources), dtype=bool)
-            for col in sources.colnames:
-                nan_in_row |= np.isnan(sources[col])
-            sources = sources[~nan_in_row]
-
-        except:
-            print ("couldn't do blob photometry: ")
-            print(traceback.format_exc())
-
-        # source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
-        #                  'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
-
-        #sources.remove_columns(source_delete)
-
-        print("No. of detections:  ", len(sources))
-        sources.sort('flux')
-        sources.reverse()
-        # Create astrometry table
-        # if len(sources) > 10:
-
-        #     # flipping parity and fixing 0 vs 1 starting pixel
-        #     sources['xnew'] = sources['y']
-        #     sources['ynew'] = sources['x']
-
-        #     sources['x'] = copy.deepcopy(sources['xnew'])
-        #     sources['y'] = copy.deepcopy(sources['ynew'])
-        #     sources.sort('flux')
-        #     sources.reverse()
-
-        #     if len(sources) > 5000:
-        #         sources=sources[1:5001]
-
-            #numpy_sources=np.array([sources['x'],sources['x'],sources['flux']])
-
-
-            #np_sources=np.column_stack((np.array(sources['x']), np.array(sources['y']), np.array(sources['flux'])))
-
-            # sources={'x': source_catalogues[catalogue_number][:,0],'y': source_catalogues[catalogue_number][:,1],'flux': source_catalogues[catalogue_number][:,2]}
-
-            #sources=Table(sources)
-
-            #sources.write('ASTROMTABLE'+ file.split('/')[-1].split('SATURATE')[-1].replace('.npy','.fits'))
-
-        if len(sources) > 200:
-            sources=sources[1:199]
-
+        os.remove(f)
     except:
-        print("Failed to make a binary source table for astrometry.net")
-
-        print(traceback.format_exc())
-
-    wslfilename=cal_path + 'wsltemp' + str(time.time()).replace('.','') +'.fits'
-
-
-    # Pick pixel scale range
-    if pixscale == None:
-        low_pixscale= 0.05
-        high_pixscale=10.0
-    else:
-        low_pixscale = 0.9 * pixscale
-        high_pixscale = 1.1 * pixscale
-
-    # recombobulate to access through the wsl filesystem
-    realwslfilename=wslfilename.split(':')
-    realwslfilename[0]=realwslfilename[0].lower()
-    realwslfilename='/mnt/'+ realwslfilename[0] + realwslfilename[1]
-
-    if len(sources) > 0:
-
-        print ("Attempting BLOB WSL astrometry.net fit")
-
-
-
-
-        # save out the source list to a textfile for wsl fit
-        #sources={'x': sources[:,0],'y': sources[:,1],'flux': sources[:,2]}
-        sources={'x': sources['x'],'y': sources['y'],'flux': sources['flux']}
-
-        sources=Table(sources)
-
-        sources.write(wslfilename)
-
-
-
-
-
-
-
-        astoptions = '--crpix-center --tweak-order 2 --x-column y --y-column x --width ' + str(hdufocusdata.shape[0]) +' --height ' + str(hdufocusdata.shape[1]) + ' --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit 30 --overwrite --no-verify --no-plots'
-
-        print (astoptions)
-
-        os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
-
-
-    # If successful, then a file of the same name but ending in solved exists.
-    if os.path.exists(wslfilename.replace('.fits','.wcs')):
-        print ("IT EXISTS! WCS SUCCESSFUL!")
-        wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
-        # wcsheader[0].header['CRVAL1']/15
-        # wcsheader[0].header['CRVAL2']
-        # wcsheader[0].header['CD1_2'] * 3600
-        solve={}
-        solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
-        solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
-        #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
-        wcs = WCS(wcs_header)
-
-        # Get the CD matrix or CDELT values
-        cd = wcs.pixel_scale_matrix
-        pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
-        solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
-        solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
-
-        #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
-
-
-        if binnedtwo:
-            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
-        elif binnedthree:
-            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-        print (solve)
-
-
-
-    else:
-        # If the quick routine doesn't work, use native source extractor
-
-        # Remove the previous attempt which was just a table fits
-        temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
-        for f in temp_files_to_remove:
-            try:
-                os.remove(f)
-            except:
-                pass
-
-        # Save an image to the disk to use with source-extractor
-        hdufocus = fits.PrimaryHDU()
-        hdufocus.data = hdufocusdata.astype(np.float32)
-        hdufocus.header = hduheader
-        hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-        hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-        hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
-
-        # run again
-
-        astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit ' +str(cpu_limit) + ' --overwrite --no-verify --no-plots'
-
-        print (astoptions)
-
-        os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
-
-        # If successful, then a file of the same name but ending in solved exists.
-        if os.path.exists(wslfilename.replace('.fits','.wcs')):
-            print ("IT EXISTS! WCS SUCCESSFUL!")
-            wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
-            # wcsheader[0].header['CRVAL1']/15
-            # wcsheader[0].header['CRVAL2']
-            # wcsheader[0].header['CD1_2'] * 3600
-            solve={}
-            solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
-            solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
-
-            wcs = WCS(wcs_header)
-
-            # Get the CD matrix or CDELT values
-            cd = wcs.pixel_scale_matrix
-            pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
-            solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
-
-            solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
-
-            #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
-
-            if binnedtwo:
-                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
-            elif binnedthree:
-                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-            print (solve)
-
-        else:
-
-            print ("FAILED NORMAL, TRYING HAIL MARY ATTEMPT")
-            # Remove the previous attempt which was just a table fits
-            temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
-            for f in temp_files_to_remove:
-                try:
-                    os.remove(f)
-                except:
-                    pass
-
-
-
-            # Here is where the last ditch attempt occurs
-            # Save an image to the disk to use with source-extractor
-            hdufocus = fits.PrimaryHDU()
-            hdufocus.data = hail_mary_image.astype(np.float32)
-            hdufocus.header = hduheader
-            hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-            hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-            hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
-
-
-            # run again
-
-            astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots'
-
-            print (astoptions)
-
-            os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
-
-            # If successful, then a file of the same name but ending in solved exists.
-            if os.path.exists(wslfilename.replace('.fits','.wcs')):
-                print ("IT EXISTS! WCS SUCCESSFUL!")
-                wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
-                # wcsheader[0].header['CRVAL1']/15
-                # wcsheader[0].header['CRVAL2']
-                # wcsheader[0].header['CD1_2'] * 3600
-                solve={}
-                solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
-                solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
-
-                wcs = WCS(wcs_header)
-
-                # Get the CD matrix or CDELT values
-                cd = wcs.pixel_scale_matrix
-                pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
-                solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
-
-                solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
-
-                #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
-
-                if binnedtwo:
-                    solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
-                elif binnedthree:
-                    solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-                print (solve)
-            else:
-                solve = 'error'
-
-
-
-    temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
-    for f in temp_files_to_remove:
-        try:
-            os.remove(f)
-        except:
-            pass
+        pass
 
 
 
@@ -1352,6 +622,11 @@ print (cal_path+ 'platesolve.pickle')
 
 
 #sys.exit()
+
+try:
+    os.remove(cal_path + 'platesolve.temppickle')
+except:
+    pass
 
 pickle.dump(solve, open(cal_path + 'platesolve.temppickle', 'wb'))
 
@@ -1451,9 +726,12 @@ if solve == 'error':
 
     final_image = final_image.convert('RGB')
 
-    final_image.save(jpeg_filename.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
-    os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
-
+    try:
+        final_image.save(jpeg_filename.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
+        os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
+    except:
+        print ("problem in saving, likely trying to overwrite an existing file.")
+        print(traceback.format_exc())
 
 
 if solve != 'error' and pointing_exposure and not pixscale == None:
@@ -1582,8 +860,13 @@ if solve != 'error' and pointing_exposure and not pixscale == None:
 
     im=im.convert('RGB')
 
-    im.save(jpeg_filename.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
-    os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
+    try:
+        im.save(jpeg_filename.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
+        os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
+    except:
+        print ("tried to save a jpeg when there is already a jpge")
+        print(traceback.format_exc())
+
     try:
         os.remove(jpeg_filename.replace('.jpg','matplotlib.jpg'))
     except:
