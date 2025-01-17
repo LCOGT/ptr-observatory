@@ -322,9 +322,13 @@ tempfrontcalib=obsname + '_' + cam_alias +'_'
 
 localcalibmastersdirectory= localcalibrationdirectory+ "archive/" + cam_alias + "/calibmasters" + "/"
 
+print (substack)
+
+#breakpoint()
 
 # Get the calibrated image whether that is a substack or a normal image.
 if substack:
+
     exp_of_substacks=int(exposure_time / len(substacker_filenames))
     # Get list of substack files needed and wait for them.
     waiting_for_substacker_filenames=copy.deepcopy(substacker_filenames)
@@ -743,7 +747,7 @@ try:
         except Exception as e:
             print("Bad Pixel Masking light frame failed: ", e)
 
-
+        hdu.data = hdu.data.astype('float32')
 
 
     # DITTO HERE, this is a routine that rejects very low pixel counts
@@ -751,51 +755,56 @@ try:
     # Without doing it here, we end up doing it twice... we need to do it here anyway for local smartstacks
     # So we should just do it at site and save the PIPE some time.
     # Really need to thresh the image
-    googtime=time.time()
+    #
+    # But for substacks, that would already have been done in the substack routine
+    # This is just for single images.
+    if not substack:
+        googtime=time.time()
 
 
-    unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(int), return_counts=True)
+        unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(int), return_counts=True)
 
 
-    # int_array_flattened=hdu.data.astype(int).ravel()
-    # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-    # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-    m=counts.argmax()
-    imageMode=unique[m]
-    print ("Calculating Mode: " +str(time.time()-googtime))
+        # int_array_flattened=hdu.data.astype(int).ravel()
+        # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+        # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+        m=counts.argmax()
+        imageMode=unique[m]
+        print ("Calculated Mode: " + str(imageMode))
+        print ("Calculating Mode: " +str(time.time()-googtime))
 
 
-    # Zerothreshing image
-    googtime=time.time()
-    histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-    histogramdata[histogramdata[:,0] > -10000]
-    #Do some fiddle faddling to figure out the value that goes to zero less
-    zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-    breaker=1
-    counter=0
-    while (breaker != 0):
-        counter=counter+1
-        if not (imageMode-counter) in zeroValueArray[:,0]:
-            if not (imageMode-counter-1) in zeroValueArray[:,0]:
-                if not (imageMode-counter-2) in zeroValueArray[:,0]:
-                    if not (imageMode-counter-3) in zeroValueArray[:,0]:
-                        if not (imageMode-counter-4) in zeroValueArray[:,0]:
-                            if not (imageMode-counter-5) in zeroValueArray[:,0]:
-                                if not (imageMode-counter-6) in zeroValueArray[:,0]:
-                                    if not (imageMode-counter-7) in zeroValueArray[:,0]:
-                                        if not (imageMode-counter-8) in zeroValueArray[:,0]:
-                                            if not (imageMode-counter-9) in zeroValueArray[:,0]:
-                                                if not (imageMode-counter-10) in zeroValueArray[:,0]:
-                                                    if not (imageMode-counter-11) in zeroValueArray[:,0]:
-                                                        if not (imageMode-counter-12) in zeroValueArray[:,0]:
-                                                            zeroValue=(imageMode-counter)
-                                                            breaker =0
+        # Zerothreshing image
+        googtime=time.time()
+        histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+        histogramdata[histogramdata[:,0] > -10000]
+        #Do some fiddle faddling to figure out the value that goes to zero less
+        zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+        breaker=1
+        counter=0
+        while (breaker != 0):
+            counter=counter+1
+            if not (imageMode-counter) in zeroValueArray[:,0]:
+                if not (imageMode-counter-1) in zeroValueArray[:,0]:
+                    if not (imageMode-counter-2) in zeroValueArray[:,0]:
+                        if not (imageMode-counter-3) in zeroValueArray[:,0]:
+                            if not (imageMode-counter-4) in zeroValueArray[:,0]:
+                                if not (imageMode-counter-5) in zeroValueArray[:,0]:
+                                    if not (imageMode-counter-6) in zeroValueArray[:,0]:
+                                        if not (imageMode-counter-7) in zeroValueArray[:,0]:
+                                            if not (imageMode-counter-8) in zeroValueArray[:,0]:
+                                                if not (imageMode-counter-9) in zeroValueArray[:,0]:
+                                                    if not (imageMode-counter-10) in zeroValueArray[:,0]:
+                                                        if not (imageMode-counter-11) in zeroValueArray[:,0]:
+                                                            if not (imageMode-counter-12) in zeroValueArray[:,0]:
+                                                                zeroValue=(imageMode-counter)
+                                                                breaker =0
 
-    hdu.data[hdu.data < zeroValue] = np.nan
+        hdu.data[hdu.data < zeroValue] = np.nan
 
-    print ("Zero Threshing Image: " +str(time.time()-googtime))
+        print ("Zero Threshing Image: " +str(time.time()-googtime))
 
-    hdu.data = debanding(hdu.data)
+        hdu.data = debanding(hdu.data)
 
     googtime=time.time()
 ##########################################
@@ -1582,6 +1591,15 @@ try:
     # NOW THAT THE FILE HAS BEEN FZED AND SENT OFF TO THE PIPE,
     # WE CAN NOW DENAN THE IMAGE FOR THE JPEGS AND SUCH
 
+    # If this is set to true, then it will output a sample of the image.
+    if True:
+        hdufocus = fits.PrimaryHDU()
+        hdufocus.data = hdu.data
+        hdufocus.header = hdu.header
+        hdufocus.header["NAXIS1"] = hdu.data.shape[0]
+        hdufocus.header["NAXIS2"] = hdu.data.shape[1]
+        hdufocus.writeto(cal_path + 'prenan.fits', overwrite=True, output_verify='silentfix')
+
     # Fast next-door-neighbour in-fill algorithm
     x_size=hdu.data.shape[0]
     y_size=hdu.data.shape[1]
@@ -1647,7 +1665,14 @@ try:
 
     print ("Denan Image: " +str(time.time()-googtime))
 
-
+    # If this is set to true, then it will output a sample of the image.
+    if True:
+        hdufocus = fits.PrimaryHDU()
+        hdufocus.data = hdu.data
+        hdufocus.header = hdu.header
+        hdufocus.header["NAXIS1"] = hdu.data.shape[0]
+        hdufocus.header["NAXIS2"] = hdu.data.shape[1]
+        hdufocus.writeto(cal_path + 'postnan.fits', overwrite=True, output_verify='silentfix')
 
     # This saves the REDUCED file to DISK
     # If this is for a smartstack, this happens immediately in the camera thread after we have a "reduced" file
@@ -1719,12 +1744,20 @@ try:
         )
 
 
-
+        # If this is set to true, then it will output a sample of the image.
+        if True:
+            hdufocus = fits.PrimaryHDU()
+            hdufocus.data = hdusmalldata
+            hdufocus.header = hdu.header
+            hdufocus.header["NAXIS1"] = hdu.data.shape[0]
+            hdufocus.header["NAXIS2"] = hdu.data.shape[1]
+            hdufocus.writeto(cal_path + 'posthdusmall.fits', overwrite=True, output_verify='silentfix')
 
         # Actually save out ONE reduced file for different threads to use.
         image_filename=localcalibrationdirectory + "smartstacks/reducedimage" + str(time.time()).replace('.','') + '.npy'
 
         # Save numpy array out.
+        hdusmalldata=hdusmalldata.astype('float32')
         np.save(image_filename, hdusmalldata)
 
         # Just save astropy header

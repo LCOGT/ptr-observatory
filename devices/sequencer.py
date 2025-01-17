@@ -211,6 +211,8 @@ class Sequencer:
         self.pointing_catalogue = np.genfromtxt('support_info/pointingCatalogueTpoint.csv', delimiter=',')
 # =============================================================================
 
+        # A flag to keep track of this. Some functions need to not run while this is happening
+        self.currently_regenerating_masters = False
 
         # The stop script flag sends a signal to all running threads to break out
         # and return to nothing doing.
@@ -704,9 +706,9 @@ class Sequencer:
                 opt = {}
                 self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
-                
-                
-                
+
+
+
                 # If we don't have a pixelscale, it is highly necessary
                 # If it just successfully focused or at least got in the ballpark,
                 # then we should attempt to get a pixelscale at this point
@@ -714,14 +716,14 @@ class Sequencer:
                 if g_dev['cam'].pixscale == None:
                     plog ("As we have no recorded pixel scale yet, we are running a quite platesolve to measure it")
                     g_dev['obs'].send_to_user("Using a platesolve to measure the pixelscale of the camera", p_level='INFO')
-                    self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)      
-                    
+                    self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)
+
                 g_dev['obs'].sync_after_platesolving=False
 
                 g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
 
                 g_dev['obs'].flush_command_queue()
-                
+
                 self.total_sequencer_control=False
 
                 self.night_focus_ready=False
@@ -1877,24 +1879,12 @@ class Sequencer:
                 # Not within the tolerance limit from the setpoint
                 darks_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/darks/'
                 bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
-                
-                
 
-                # First check darks in root directory
-                print ("ROOT DIRECTORY DARKS")
-                for darkfile in glob(darks_path + '*.npy'):
-                    tempdarktemp=float(darkfile.split('_')[-3])
-                    #print (tempdarktemp)
-                    if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
-                        try:
-                            os.remove(darkfile)
-                        except:
-                            pass
-
-                # Then check each of the darks folder
-                for darkfolder in glob(darks_path + "*/"):
-                    print (darkfolder)
-                    for darkfile in glob(darkfolder + '*.npy'):
+                # Need to not change things in the folder if regenerating masters
+                if not self.currently_regenerating_masters:
+                    # First check darks in root directory
+                    print ("ROOT DIRECTORY DARKS")
+                    for darkfile in glob(darks_path + '*.npy'):
                         tempdarktemp=float(darkfile.split('_')[-3])
                         #print (tempdarktemp)
                         if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
@@ -1903,16 +1893,28 @@ class Sequencer:
                             except:
                                 pass
 
-                # First check biasess in root directory
-                print ("ROOT DIRECTORY BIASES")
-                for darkfile in glob(bias_path + '*.npy'):
-                    tempdarktemp=float(darkfile.split('_')[-3])
-                    #print (tempdarktemp)
-                    if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
-                        try:
-                            os.remove(darkfile)
-                        except:
-                            pass
+                    # Then check each of the darks folder
+                    for darkfolder in glob(darks_path + "*/"):
+                        print (darkfolder)
+                        for darkfile in glob(darkfolder + '*.npy'):
+                            tempdarktemp=float(darkfile.split('_')[-3])
+                            #print (tempdarktemp)
+                            if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                try:
+                                    os.remove(darkfile)
+                                except:
+                                    pass
+
+                    # First check biasess in root directory
+                    print ("ROOT DIRECTORY BIASES")
+                    for darkfile in glob(bias_path + '*.npy'):
+                        tempdarktemp=float(darkfile.split('_')[-3])
+                        #print (tempdarktemp)
+                        if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                            try:
+                                os.remove(darkfile)
+                            except:
+                                pass
 
                 if abs(tommorow_night_setpoint-current_night_setpoint) > 4:
                     plog("waiting an extra three minutes for camera to cool to different temperature")
@@ -1979,6 +1981,9 @@ class Sequencer:
 
                 # Define exposure parameters
                 exposures = [
+                    (0.00004, "fourhundredmicrosecond_exposure_dark", 5),
+
+                    (broadband_ss_biasdark_exp_time, "broadband_ss_biasdark", 2),
                     (2, "twosec_exposure_dark", 5),
                     (3.5, "threepointfivesec_exposure_dark", 5),
                     (5, "fivesec_exposure_dark", 5),
@@ -1989,7 +1994,6 @@ class Sequencer:
                     (30, "thirtysec_exposure_dark", 2),
                     (0.0045, "pointzerozerofourfive_exposure_dark", 5),
                     (0.0004, "fortymicrosecond_exposure_dark", 5),
-                    (0.00004, "fourhundredmicrosecond_exposure_dark", 5),
                     (0.015, "onepointfivepercent_exposure_dark", 5),
                     (0.05, "fivepercent_exposure_dark", 5),
                     (0.1, "tenpercent_exposure_dark", 5),
@@ -2002,9 +2006,9 @@ class Sequencer:
 
                 # Iterate over exposure settings
                 for exposure_time, image_type, count_multiplier in exposures:
-                    if exposure_time >= min_exposure:
-                        if not self.collect_dark_frame(exposure_time, image_type, count_multiplier, stride, min_to_do, dark_exp_time, cycle_time, ending):
-                            break
+                    #if exposure_time >= min_exposure:
+                    if not self.collect_dark_frame(exposure_time, image_type, count_multiplier, stride, min_to_do, dark_exp_time, cycle_time, ending):
+                        break
 
                 # Collect additional frames
                 if not self.collect_bias_frame(stride, stride, min_to_do, dark_exp_time, cycle_time, ending):
@@ -2025,14 +2029,14 @@ class Sequencer:
             plog(" Bias/Dark acquisition is finished normally.")
             if not g_dev['obs'].mountless_operation:
                 g_dev['mnt'].park_command({}, {})
-                
-            
+
+
             # If the camera pixelscale is None then we are in commissioning mode and
             # need to restack the calibrations straight away
             # so this triggers off the stacking process to happen in a thread.
             if g_dev['cam'].pixscale == None:
-                self.master_restack_queue.put( 'force', block=False)              
-                
+                self.master_restack_queue.put( 'force', block=False)
+
             self.bias_dark_latch = False
             break
         self.bias_dark_latch = False
@@ -2566,6 +2570,9 @@ class Sequencer:
             os.system("taskkill /IM Aladin.exe /F")
         except:
             pass
+
+        self.currently_regenerating_masters = True
+
         g_dev["obs"].send_to_user("Currently regenerating local masters.")
 
         if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -2728,7 +2735,7 @@ class Sequencer:
                 del finalImage
                 del holder
 
-                calibhduheader['OBSTYPE'] = 'BIAS'
+                # calibhduheader['OBSTYPE'] = 'BIAS'
 
                 try:
                     # Save and upload master bias
@@ -3440,6 +3447,8 @@ class Sequencer:
                 except:
                     pass
 
+
+
                 plog ("Regenerated Flat Masters and Re-loaded them into memory.")
 
             # Create the bad pixel map fits and npy
@@ -3570,6 +3579,7 @@ class Sequencer:
         plog ("Used Camera Gain: " + str(g_dev['cam'].camera_known_gain))
         plog ("Used Readnoise  : "+ str(g_dev['cam'].camera_known_readnoise))
 
+        self.currently_regenerating_masters = False
         g_dev["obs"].send_to_user("All calibration frames completed.")
 
         return
@@ -4473,14 +4483,14 @@ class Sequencer:
         self.morn_sky_flat_latch = False
 
         g_dev['obs'].flush_command_queue()
-        
-        
+
+
         # If the camera pixelscale is None then we are in commissioning mode and
         # need to restack the calibrations straight away
         # so this triggers off the stacking process to happen in a thread.
         if g_dev['cam'].pixscale == None:
             self.master_restack_queue.put( 'force', block=False)
-        
+
         self.total_sequencer_control = False
 
 

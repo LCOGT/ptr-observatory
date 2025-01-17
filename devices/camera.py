@@ -318,6 +318,8 @@ dgs = "°"
 
 
 # This class is for QHY camera control
+
+#breakpoint()
 class Qcam:
     LOG_LINE_NUM = 0
     # Python constants
@@ -831,126 +833,33 @@ class Camera:
         g_dev['obs'].obs_id
         tempfrontcalib = g_dev['obs'].obs_id + '_' + self.alias + '_'
 
-        try:
-            tempbiasframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters"
-                                      + "/" + tempfrontcalib + "BIAS_master_bin1.fits")
-            tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
-            self.biasFiles.update({'1': tempbiasframe})
-            del tempbiasframe
-        except:
-            plog("Bias frame for Binning 1 not available")
+        file_descriptors = [
+            {"filename": "BIAS_master_bin1.fits", "dict_key": "1", "log_message": "Bias frame for Binning 1 not available", "dict": self.biasFiles},
+            {"filename": "DARK_master_bin1.fits", "dict_key": "1", "log_message": "Long Dark frame for Binning 1 not available", "dict": self.darkFiles},
+            {"filename": "halfsecondDARK_master_bin1.fits", "dict_key": "halfsec_exposure_dark", "log_message": "0.5s Dark frame for Binning 1 not available", "dict": self.darkFiles},
+            {"filename": "2secondDARK_master_bin1.fits", "dict_key": "twosec_exposure_dark", "log_message": "2.0s Dark frame for Binning 1 not available", "dict": self.darkFiles},
+            {"filename": "10secondDARK_master_bin1.fits", "dict_key": "tensec_exposure_dark", "log_message": "10.0s Dark frame for Binning 1 not available", "dict": self.darkFiles},
+            {"filename": "tensecBIASDARK_master_bin1.fits", "dict_key": "tensec_exposure_biasdark", "log_message": "10.0s Bias Dark frame for Binning 1 not available", "dict": self.darkFiles},
+            {"filename": "30secondDARK_master_bin1.fits", "dict_key": "thirtysec_exposure_dark", "log_message": "30.0s Dark frame for Binning 1 not available", "dict": self.darkFiles},
+            {"filename": "thirtysecBIASDARK_master_bin1.fits", "dict_key": "thirtysec_exposure_biasdark", "log_message": "30.0s Bias Dark frame for Binning 1 not available", "dict": self.darkFiles},
+            {"filename": "broadbandssDARK_master_bin1.fits", "dict_key": "broadband_ss_dark", "log_message": "Broadband Smartstack Length Dark frame for Binning 1 not available", "dict": self.darkFiles},
+            {"filename": "broadbandssBIASDARK_master_bin1.fits", "dict_key": "broadband_ss_biasdark", "log_message": "Broadband Smartstack Length Bias Dark frame for Binning 1 not available", "dict": self.darkFiles},
+            {"filename": "narrowbandssDARK_master_bin1.fits", "dict_key": "narrowband_ss_dark", "log_message": "Narrowband Smartstack Length Dark frame for Binning 1 not available", "dict": self.darkFiles},
+            {"filename": "narrowbandssBIASDARK_master_bin1.fits", "dict_key": "narrowband_ss_biasdark", "log_message": "Narrowband Smartstack Length Bias Dark frame for Binning 1 not available", "dict": self.darkFiles},
+        ]
 
-        try:
-            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters"
-                                      + "/" + tempfrontcalib + "DARK_master_bin1.fits")
+        for descriptor in file_descriptors:
+            try:
+                file_path = f"{self.local_calibration_path}archive/{self.alias}/calibmasters/{tempfrontcalib}{descriptor['filename']}"
+                tempframe = fits.open(file_path)
+                tempframe = np.array(tempframe[0].data, dtype=np.float32)
+                descriptor['dict'].update({descriptor['dict_key']: tempframe})
+                del tempframe
+            except:
+                plog(descriptor['log_message'])
 
-            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-            self.darkFiles.update({'1': tempdarkframe})
-            del tempdarkframe
-        except:
-            plog("Long Dark frame for Binning 1 not available")
 
-        try:
-            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters"
-                                      + "/" + tempfrontcalib + "halfsecondDARK_master_bin1.fits")
-
-            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-            self.darkFiles.update({'halfsec_exposure_dark': tempdarkframe})
-            del tempdarkframe
-        except:
-            plog("0.5s Dark frame for Binning 1 not available")
-
-        try:
-            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters"
-                                      + "/" + tempfrontcalib + "2secondDARK_master_bin1.fits")
-
-            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-            self.darkFiles.update({'twosec_exposure_dark': tempdarkframe})
-            del tempdarkframe
-        except:
-            plog("2.0s Dark frame for Binning 1 not available")
-
-        try:
-            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters"
-                                      + "/" + tempfrontcalib + "10secondDARK_master_bin1.fits")
-
-            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-            self.darkFiles.update({'tensec_exposure_dark': tempdarkframe})
-            del tempdarkframe
-        except:
-            plog("10.0s Dark frame for Binning 1 not available")
-
-        try:
-            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters"
-                                      + "/" + tempfrontcalib + "tensecBIASDARK_master_bin1.fits")
-
-            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-            self.darkFiles.update({'tensec_exposure_biasdark': tempdarkframe})
-            del tempdarkframe
-        except:
-
-            plog("10.0s Bias Dark frame for Binning 1 not available")
-
-        try:
-            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters"
-                                      + "/" + tempfrontcalib + "thirtysecBIASDARK_master_bin1.fits")
-
-            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-            self.darkFiles.update({'thirtysec_exposure_dark': tempdarkframe})
-            del tempdarkframe
-        except:
-            plog("30.0s Dark frame for Binning 1 not available")
-
-        try:
-            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters"
-                                      + "/" + tempfrontcalib + "thirtysecBIASDARK_master_bin1.fits")
-
-            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-            self.darkFiles.update(
-                {'thirtysec_exposure_biasdark': tempdarkframe})
-            del tempdarkframe
-        except:
-            plog("30.0s Bias Dark frame for Binning 1 not available")
-
-        try:
-            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters"
-                                      + "/" + tempfrontcalib + "broadbandssDARK_master_bin1.fits")
-
-            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-            self.darkFiles.update({'broadband_ss_dark': tempdarkframe})
-            del tempdarkframe
-        except:
-            plog("Broadband Smartstack Length Dark frame for Binning 1 not available")
-
-        try:
-            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters"
-                                      + "/" + tempfrontcalib + "broadbandssBIASDARK_master_bin1.fits")
-
-            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-            self.darkFiles.update({'broadband_ss_biasdark': tempdarkframe})
-            del tempdarkframe
-        except:
-            plog("Broadband Smartstack Length Bias Dark frame for Binning 1 not available")
-
-        try:
-            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters"
-                                      + "/" + tempfrontcalib + "narrowbandssDARK_master_bin1.fits")
-
-            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-            self.darkFiles.update({'narrowband_ss_dark': tempdarkframe})
-            del tempdarkframe
-        except:
-            plog("Narrowband Smartstack Length Dark frame for Binning 1 not available")
-
-        try:
-            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters"
-                                      + "/" + tempfrontcalib + "narrowbandssBIASDARK_master_bin1.fits")
-
-            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-            self.darkFiles.update({'narrowband_ss_biasdark': tempdarkframe})
-            del tempdarkframe
-        except:
-            plog("Narrowband Smartstack Length Bias Dark frame for Binning 1 not available")
+        #breakpoint()
 
         try:
 
@@ -1078,6 +987,31 @@ class Camera:
 
         elif driver == "QHYCCD_Direct_Control":
             global qhycam
+            plog("SKIPPING cycle the QHY camera power via Ultimate Powerbox V2 - Does not work yet :(((")
+            self.power_box_driver = self.config["camera"]['camera_1_1']["switch_driver"]
+# =============================================================================
+#             breakpoint()
+#
+#             try:
+#                 pb = win32com.client.Dispatch(self.power_box_driver)
+#                 pb.connected = True
+#                 n_switches = pb.MaxSwitch
+#                 for ii in range(n_switches):
+#                     pb.setSwitch(ii, 0)
+#                 print("Cam power is off")
+#                 time.sleep(5)
+#                 for i in range(n_switches):
+#                     pb.setSwitch(ii,  1)
+#                 print("Cam power is turning on ")
+#                 time.sleep(10)
+#                 plog("Cam power is, after 30 sec:  ", pb.getSwitchValue(6))
+#
+#
+#             except:
+#                 plog("Failed to connect to Powerbox V2, sorry!")
+#
+#             breakpoint()
+# =============================================================================
             plog("Connecting directly to QHY")
             qhycam = Qcam(os.path.join("support_info/qhysdk/x64/qhyccd.dll"))
 
@@ -4186,7 +4120,7 @@ class Camera:
                     fraction_through_range = 0
                     if exposure_time < 0.5:
                         intermediate_tempdark = (
-                            self.darkFiles['halfsec_exposure_dark']*exposure_time)
+                            self.darkFiles['halfsec_exposure_dark'])
                     elif exposure_time < 2.0:
                         fraction_through_range = (exposure_time-0.5)/(2.0-0.5)
                         intermediate_tempdark = (fraction_through_range * self.darkFiles['twosec_exposure_dark']) + (
@@ -4197,31 +4131,22 @@ class Camera:
                         intermediate_tempdark = (fraction_through_range * self.darkFiles['tensec_exposure_dark']) + (
                             (1-fraction_through_range) * self.darkFiles['twosec_exposure_dark'])
 
-                    elif exposure_time < broadband_ss_biasdark_exp_time:
+                    elif exposure_time < 30:
                         fraction_through_range = (
-                            exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
-                        intermediate_tempdark = (fraction_through_range * self.darkFiles['broadband_ss_dark']) + (
+                            exposure_time-10)/(30.0-10.0)
+                        intermediate_tempdark = (fraction_through_range * self.darkFiles["thirtysec_exposure_dark"]) + (
                             (1-fraction_through_range) * self.darkFiles['tensec_exposure_dark'])
-
-                    elif exposure_time < narrowband_ss_biasdark_exp_time:
-                        fraction_through_range = (exposure_time-broadband_ss_biasdark_exp_time)/(
-                            narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
-                        intermediate_tempdark = (fraction_through_range * self.darkFiles['narrowband_ss_dark']) + (
-                            (1-fraction_through_range) * self.darkFiles['broadband_ss_dark'])
-
-                    elif dark_exp_time > narrowband_ss_biasdark_exp_time:
-                        fraction_through_range = (exposure_time-narrowband_ss_biasdark_exp_time)/(
-                            dark_exp_time - narrowband_ss_biasdark_exp_time)
-                        intermediate_tempdark = (fraction_through_range * self.darkFiles[str(1)]) + (
-                            (1-fraction_through_range) * self.darkFiles['narrowband_ss_dark'])
                     else:
                         intermediate_tempdark = (
-                            self.darkFiles['narrowband_ss_dark'])
+                            self.darkFiles["thirtysec_exposure_dark"])
                 except:
                     try:
+                        plog ("failed on making intermediate tempdark properly")
                         intermediate_tempdark = (self.darkFiles['1'])
                     except:
+                        plog ("failed entirely on intermediate tempdark")
                         pass
+
             try:
                 intermediate_tempflat = np.load(
                     self.flatFiles[this_exposure_filter + "_bin" + str(1)])
@@ -5173,6 +5098,7 @@ class Camera:
                 # in-line flash reduction
                 if (frame_type == 'pointing' or focus_image == True) and not substack:
                     # Make sure any dither or return nudge has finished before platesolution
+                    #breakpoint()
                     try:
                         # If not a smartstack use a scaled masterdark
                         if smartstackid == 'no':

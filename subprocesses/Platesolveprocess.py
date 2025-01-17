@@ -53,6 +53,126 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 
 from scipy import optimize
 
+def mid_stretch_jpeg(data):
+    """
+    This product is based on software from the PixInsight project, developed by
+    Pleiades Astrophoto and its contributors (http://pixinsight.com/).
+
+    And also Tim Beccue with a minor flourishing/speedup by Michael Fitzgerald.
+    """
+    target_bkg=0.25
+    shadows_clip=-1.25
+
+    """ Stretch the image.
+
+    Args:
+        data (np.array): the original image data array.
+
+    Returns:
+        np.array: the stretched image data
+    """
+
+    try:
+        data = data / np.max(data)
+    except:
+        data = data    #NB this avoids div by 0 is image is a very flat bias
+
+
+    """Return the average deviation from the median.
+
+    Args:
+        data (np.array): array of floats, presumably the image data
+    """
+    median = np.median(data.ravel())
+    n = data.size
+    avg_dev = np.sum( np.absolute(data-median) / n )
+    c0 = np.clip(median + (shadows_clip * avg_dev), 0, 1)
+    x= median - c0
+
+    """Midtones Transfer Function
+
+    MTF(m, x) = {
+        0                for x == 0,
+        1/2              for x == m,
+        1                for x == 1,
+
+        (m - 1)x
+        --------------   otherwise.
+        (2m - 1)x - m
+    }
+
+    See the section "Midtones Balance" from
+    https://pixinsight.com/doc/tools/HistogramTransformation/HistogramTransformation.html
+
+    Args:
+        m (float): midtones balance parameter
+                   a value below 0.5 darkens the midtones
+                   a value above 0.5 lightens the midtones
+        x (np.array): the data that we want to copy and transform.
+    """
+    shape = x.shape
+    x = x.ravel()
+    zeros = x==0
+    halfs = x==target_bkg
+    ones = x==1
+    others = np.logical_xor((x==x), (zeros + halfs + ones))
+    x[zeros] = 0
+    x[halfs] = 0.5
+    x[ones] = 1
+    x[others] = (target_bkg - 1) * x[others] / ((((2 * target_bkg) - 1) * x[others]) - target_bkg)
+    m= x.reshape(shape)
+
+    stretch_params = {
+        "c0": c0,
+        #"c1": 1,
+        "m": m
+    }
+
+    m = stretch_params["m"]
+    c0 = stretch_params["c0"]
+    above = data >= c0
+
+    # Clip everything below the shadows clipping point
+    data[data < c0] = 0
+    # For the rest of the pixels: apply the midtones transfer function
+    x=(data[above] - c0)/(1 - c0)
+
+    """Midtones Transfer Function
+
+    MTF(m, x) = {
+        0                for x == 0,
+        1/2              for x == m,
+        1                for x == 1,
+
+        (m - 1)x
+        --------------   otherwise.
+        (2m - 1)x - m
+    }
+
+    See the section "Midtones Balance" from
+    https://pixinsight.com/doc/tools/HistogramTransformation/HistogramTransformation.html
+
+    Args:
+        m (float): midtones balance parameter
+                   a value below 0.5 darkens the midtones
+                   a value above 0.5 lightens the midtones
+        x (np.array): the data that we want to copy and transform.
+    """
+    shape = x.shape
+    x = x.ravel()
+    zeros = x==0
+    halfs = x==m
+    ones = x==1
+    others = np.logical_xor((x==x), (zeros + halfs + ones))
+    x[zeros] = 0
+    x[halfs] = 0.5
+    x[ones] = 1
+    x[others] = (m - 1) * x[others] / ((((2 * m) - 1) * x[others]) - m)
+    data[above]= x.reshape(shape)
+
+    return data
+
+
 def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-((x - mean) / 4 / stddev)**2)
 
@@ -141,18 +261,19 @@ print ("Pixelscale")
 print (pixscale)
 
 
-subprocessplogtime=time.time()
+# subprocessplogtime=time.time()
 
-def subprocessplog(string_incoming):
+# def subprocessplog(string_incoming):
 
-    with open(cal_path + 'subprocessplog_' + str(subprocessplogtime).replace('.','') +'_PlatesolvePlog.txt', 'a') as file:
-        file.write(string_incoming)
+#     with open(cal_path + 'subprocessplog_' + str(subprocessplogtime).replace('.','') +'_PlatesolvePlog.txt', 'a') as file:
+#         file.write(string_incoming)
 
 
-if True:
-   subprocessplog("PLATESOLVE PROCESSING")
+# if True:
+#    subprocessplog("PLATESOLVE PROCESSING")
 
 # Keep a copy of the normal image if this is a pointing image
+# This is needed to make the plot right at the end if successful
 pointing_image=copy.deepcopy(hdufocusdata)
 
 googtime=time.time()
@@ -181,92 +302,30 @@ if is_osc:
     #Maybe just try this? #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
     #hdufocusdata=hdufocusdata.astype("float32")
 
-try:
-    bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-    bkg.subfrom(hdufocusdata)
-except:
-    hdufocusdata=np.array(hdufocusdata, dtype=float)
-    bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-    bkg.subfrom(hdufocusdata)
 
 
-# If this is set to true, then it will output a sample of the background image.
-if False:
-    hdufocus = fits.PrimaryHDU()
-    hdufocus.data = bkg
-    hdufocus.header = hduheader
-    hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-    hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-    hdufocus.writeto(cal_path + 'background.fits', overwrite=True, output_verify='silentfix')
 
+# # At least chop the edges off the image
+# if platesolve_crop==0:
+#     platesolve_crop=0.15
 
-#parentPath = Path(getcwd())
-#PS3CLI_EXE = str(parentPath).replace('\subprocesses','') +'/subprocesses/ps3cli/ps3cli.exe'
+# # Crop the image for platesolving
+# fx, fy = hdufocusdata.shape
 
-# output_file_path = os.path.join(cal_path + "ps3cli_results.txt")
-# try:
-#     os.remove(output_file_path)
-# except:
-#     pass
-# try:
-#     os.remove(cal_path + 'platesolvetemp.fits')
-# except:
-#     pass
-#catalog_path = os.path.expanduser("~\\Documents\\Kepler")
+# crop_width = (fx * platesolve_crop) / 2
+# crop_height = (fy * platesolve_crop) / 2
 
-#pixscale = 0.6
+# # Make sure it is an even number for OSCs
+# if (crop_width % 2) != 0:
+#     crop_width = crop_width+1
+# if (crop_height % 2) != 0:
+#     crop_height = crop_height+1
 
-if pixscale != None:
-    binnedtwo=False
-    binnedthree=False
-    # Just bin the image unless the pixelscale is high
-    if pixscale < 0.5 and pixscale > 0.3:
+# crop_width = int(crop_width)
+# crop_height = int(crop_height)
 
-        hdufocusdata=np.divide(block_reduce(hdufocusdata,2,func=np.sum),2)
-        pixscale=pixscale*2
-        binnedtwo=True
-    elif pixscale <= 0.3:
-        hdufocusdata=np.divide(block_reduce(hdufocusdata,3,func=np.sum),2)
-        pixscale=pixscale*3
-        binnedthree=True
-else:
-    # If there is no pixelscale at least make sure the image is
-    # not unnecessarily big
-
-    max_dim=3000
-
-    # Get the current dimensions of the array
-    height, width = hdufocusdata.shape[:2]
-
-    # Calculate the crop limits
-    new_height = min(height, max_dim)
-    new_width = min(width, max_dim)
-
-    # Crop the array
-    hdufocusdata = hdufocusdata[:new_height, :new_width]
-
-
-# At least chop the edges off the image
-if platesolve_crop==0:
-    platesolve_crop=0.15
-
-# Crop the image for platesolving
-fx, fy = hdufocusdata.shape
-
-crop_width = (fx * platesolve_crop) / 2
-crop_height = (fy * platesolve_crop) / 2
-
-# Make sure it is an even number for OSCs
-if (crop_width % 2) != 0:
-    crop_width = crop_width+1
-if (crop_height % 2) != 0:
-    crop_height = crop_height+1
-
-crop_width = int(crop_width)
-crop_height = int(crop_height)
-
-if crop_width > 0 or crop_height > 0:
-    hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
+# if crop_width > 0 or crop_height > 0:
+#     hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
 
 
 # This section crops down the image to a reasonable thing to solve
@@ -291,6 +350,95 @@ if pixscale != None:
 
     #breakpoint()
     hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
+
+if pixscale != None:
+    binnedtwo=False
+    binnedthree=False
+    # Just bin the image unless the pixelscale is high
+    if pixscale < 0.5 and pixscale > 0.3:
+
+        hdufocusdata=np.divide(block_reduce(hdufocusdata,2,func=np.sum),2)
+        pixscale=pixscale*2
+        binnedtwo=True
+    elif pixscale <= 0.3:
+        hdufocusdata=np.divide(block_reduce(hdufocusdata,3,func=np.sum),3)
+        pixscale=pixscale*3
+        binnedthree=True
+else:
+    # If there is no pixelscale at least make sure the image is
+    # not unnecessarily big
+
+    max_dim=3000
+
+    # Get the current dimensions of the array
+    height, width = hdufocusdata.shape[:2]
+
+    # Calculate the crop limits
+    new_height = min(height, max_dim)
+    new_width = min(width, max_dim)
+
+    # Crop the array
+    hdufocusdata = hdufocusdata[:new_height, :new_width]
+
+
+
+# Store the unaltered image for a last ditch attempt
+hail_mary_image= copy.deepcopy(hdufocusdata).astype(np.float32)
+
+
+try:
+    bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+    bkg.subfrom(hdufocusdata)
+except:
+    hdufocusdata=np.array(hdufocusdata, dtype=float)
+    bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+    bkg.subfrom(hdufocusdata)
+
+
+hdufocusdata=hdufocusdata.astype(np.float32)
+
+# If this is set to true, then it will output a sample of the background image.
+if True:
+    hdufocus = fits.PrimaryHDU()
+    hdufocus.data = bkg
+    hdufocus.header = hduheader
+    hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+    hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+    hdufocus.writeto(cal_path + 'background.fits', overwrite=True, output_verify='silentfix')
+
+
+# If this is set to true, then it will output a sample of the background image.
+if True:
+    hdufocus = fits.PrimaryHDU()
+    hdufocus.data = hdufocusdata
+    hdufocus.header = hduheader
+    hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+    hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+    hdufocus.writeto(cal_path + 'pssignal.fits', overwrite=True, output_verify='silentfix')
+
+#parentPath = Path(getcwd())
+#PS3CLI_EXE = str(parentPath).replace('\subprocesses','') +'/subprocesses/ps3cli/ps3cli.exe'
+
+# output_file_path = os.path.join(cal_path + "ps3cli_results.txt")
+# try:
+#     os.remove(output_file_path)
+# except:
+#     pass
+# try:
+#     os.remove(cal_path + 'platesolvetemp.fits')
+# except:
+#     pass
+#catalog_path = os.path.expanduser("~\\Documents\\Kepler")
+
+#pixscale = 0.6
+
+
+# print ("Pixelscale")
+# print (pixscale)
+
+# breakpoint()
+
+
 
 
 def localMax(a, include_diagonal=True, threshold=-np.inf) :
@@ -317,6 +465,15 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
     )
 
     return np.argwhere(adjacentmax & diagonalmax)
+
+
+# hdufocusdata=hdufocusdata.astype(np.float32)
+
+# # Do a midtone stretch to pop the image out
+# hdufocusdata=mid_stretch_jpeg(hdufocusdata)
+
+
+
 
 
 print ("Just before fake Image: " +str(time.time()-googtime))
@@ -566,7 +723,7 @@ if len(sources) >= 5 and pixscale != None:
 
         # Save an image to the disk to use with source-extractor
         hdufocus = fits.PrimaryHDU()
-        hdufocus.data = hdufocusdata
+        hdufocus.data = hdufocusdata.astype(np.float32)
         hdufocus.header = hduheader
         hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
         hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
@@ -1065,7 +1222,7 @@ if solve == 'error':
 
         # Save an image to the disk to use with source-extractor
         hdufocus = fits.PrimaryHDU()
-        hdufocus.data = hdufocusdata
+        hdufocus.data = hdufocusdata.astype(np.float32)
         hdufocus.header = hduheader
         hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
         hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
@@ -1108,7 +1265,65 @@ if solve == 'error':
             print (solve)
 
         else:
-            solve = 'error'
+
+            print ("FAILED NORMAL, TRYING HAIL MARY ATTEMPT")
+            # Remove the previous attempt which was just a table fits
+            temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
+            for f in temp_files_to_remove:
+                try:
+                    os.remove(f)
+                except:
+                    pass
+
+
+
+            # Here is where the last ditch attempt occurs
+            # Save an image to the disk to use with source-extractor
+            hdufocus = fits.PrimaryHDU()
+            hdufocus.data = hail_mary_image.astype(np.float32)
+            hdufocus.header = hduheader
+            hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+            hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+            hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
+
+
+            # run again
+
+            astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots'
+
+            print (astoptions)
+
+            os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
+
+            # If successful, then a file of the same name but ending in solved exists.
+            if os.path.exists(wslfilename.replace('.fits','.wcs')):
+                print ("IT EXISTS! WCS SUCCESSFUL!")
+                wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
+                # wcsheader[0].header['CRVAL1']/15
+                # wcsheader[0].header['CRVAL2']
+                # wcsheader[0].header['CD1_2'] * 3600
+                solve={}
+                solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
+                solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
+
+                wcs = WCS(wcs_header)
+
+                # Get the CD matrix or CDELT values
+                cd = wcs.pixel_scale_matrix
+                pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
+                solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
+
+                solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
+
+                #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
+
+                if binnedtwo:
+                    solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+                elif binnedthree:
+                    solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+                print (solve)
+            else:
+                solve = 'error'
 
 
 
@@ -1180,131 +1395,32 @@ def add_margin(pil_img, top, right, bottom, left, color):
     result.paste(pil_img, (left, top))
     return result
 
-def mid_stretch_jpeg(data):
-    """
-    This product is based on software from the PixInsight project, developed by
-    Pleiades Astrophoto and its contributors (http://pixinsight.com/).
 
-    And also Tim Beccue with a minor flourishing/speedup by Michael Fitzgerald.
-    """
-    target_bkg=0.25
-    shadows_clip=-1.25
+def resize_array(arr, max_size):
+    # Calculate the downscaling factor for each axis
+    scale = min(max_size / arr.shape[0], max_size / arr.shape[1])
+    new_shape = (int(arr.shape[0] * scale), int(arr.shape[1] * scale))
 
-    """ Stretch the image.
+    # Calculate the step size for downsampling
+    row_step = arr.shape[0] // new_shape[0]
+    col_step = arr.shape[1] // new_shape[1]
 
-    Args:
-        data (np.array): the original image data array.
+    # Downsample by taking the mean over blocks
+    resized_array = arr[:row_step * new_shape[0], :col_step * new_shape[1]].reshape(
+        new_shape[0], row_step, new_shape[1], col_step
+    ).mean(axis=(1, 3))
 
-    Returns:
-        np.array: the stretched image data
-    """
-
-    try:
-        data = data / np.max(data)
-    except:
-        data = data    #NB this avoids div by 0 is image is a very flat bias
-
-
-    """Return the average deviation from the median.
-
-    Args:
-        data (np.array): array of floats, presumably the image data
-    """
-    median = np.median(data.ravel())
-    n = data.size
-    avg_dev = np.sum( np.absolute(data-median) / n )
-    c0 = np.clip(median + (shadows_clip * avg_dev), 0, 1)
-    x= median - c0
-
-    """Midtones Transfer Function
-
-    MTF(m, x) = {
-        0                for x == 0,
-        1/2              for x == m,
-        1                for x == 1,
-
-        (m - 1)x
-        --------------   otherwise.
-        (2m - 1)x - m
-    }
-
-    See the section "Midtones Balance" from
-    https://pixinsight.com/doc/tools/HistogramTransformation/HistogramTransformation.html
-
-    Args:
-        m (float): midtones balance parameter
-                   a value below 0.5 darkens the midtones
-                   a value above 0.5 lightens the midtones
-        x (np.array): the data that we want to copy and transform.
-    """
-    shape = x.shape
-    x = x.ravel()
-    zeros = x==0
-    halfs = x==target_bkg
-    ones = x==1
-    others = np.logical_xor((x==x), (zeros + halfs + ones))
-    x[zeros] = 0
-    x[halfs] = 0.5
-    x[ones] = 1
-    x[others] = (target_bkg - 1) * x[others] / ((((2 * target_bkg) - 1) * x[others]) - target_bkg)
-    m= x.reshape(shape)
-
-    stretch_params = {
-        "c0": c0,
-        #"c1": 1,
-        "m": m
-    }
-
-    m = stretch_params["m"]
-    c0 = stretch_params["c0"]
-    above = data >= c0
-
-    # Clip everything below the shadows clipping point
-    data[data < c0] = 0
-    # For the rest of the pixels: apply the midtones transfer function
-    x=(data[above] - c0)/(1 - c0)
-
-    """Midtones Transfer Function
-
-    MTF(m, x) = {
-        0                for x == 0,
-        1/2              for x == m,
-        1                for x == 1,
-
-        (m - 1)x
-        --------------   otherwise.
-        (2m - 1)x - m
-    }
-
-    See the section "Midtones Balance" from
-    https://pixinsight.com/doc/tools/HistogramTransformation/HistogramTransformation.html
-
-    Args:
-        m (float): midtones balance parameter
-                   a value below 0.5 darkens the midtones
-                   a value above 0.5 lightens the midtones
-        x (np.array): the data that we want to copy and transform.
-    """
-    shape = x.shape
-    x = x.ravel()
-    zeros = x==0
-    halfs = x==m
-    ones = x==1
-    others = np.logical_xor((x==x), (zeros + halfs + ones))
-    x[zeros] = 0
-    x[halfs] = 0.5
-    x[ones] = 1
-    x[others] = (m - 1) * x[others] / ((((2 * m) - 1) * x[others]) - m)
-    data[above]= x.reshape(shape)
-
-    return data
-
+    return resized_array
 
 
 if solve == 'error':
+
+    max_size=1000
+    pointing_image  = resize_array(hail_mary_image , max_size)
+
     pointing_image = mid_stretch_jpeg(pointing_image)
-    final_image = Image.fromarray(pointing_image).convert("L") 
-    
+    final_image = Image.fromarray(pointing_image).convert("L")
+
     # Convert grayscale to RGB
     red_image = Image.new("RGB", final_image.size)
     for x in range(final_image.width):
@@ -1314,24 +1430,24 @@ if solve == 'error':
 
     final_image=red_image
 
-    ix, iy = final_image.size
-    if iy == ix:
-        final_image = final_image.resize(
-            (900, 900)
-        )
-    else:
-        if False:
-            final_image = final_image.resize(
+    # ix, iy = final_image.size
+    # if iy == ix:
+    #     final_image = final_image.resize(
+    #         (900, 900)
+    #     )
+    # else:
+    #     if False:
+    #         final_image = final_image.resize(
 
-                (int(900 * iy / ix), 900)
+    #             (int(900 * iy / ix), 900)
 
-            )
-        else:
-            final_image = final_image.resize(
+    #         )
+    #     else:
+    #         final_image = final_image.resize(
 
-                (900, int(900 * iy / ix))
+    #             (900, int(900 * iy / ix))
 
-            )
+    #         )
 
     final_image = final_image.convert('RGB')
 
