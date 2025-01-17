@@ -2906,6 +2906,7 @@ class Observatory:
                     useastronometrynet,
                     pointing_exposure,
                     jpeg_filename,
+                    path_to_jpeg, # not including filename
                     image_or_reference,
                     exposure_time,
                 ) = self.platesolve_queue.get(block=False)
@@ -2989,20 +2990,37 @@ class Observatory:
 
                             # yet another pickle debugger.
                             if True:
-                                pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                                 pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].settings["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
+                                pickle.dump(
+                                    [
+                                        hdufocusdata,
+                                        hduheader,
+                                        self.local_calibration_path,
+                                        cal_name,
+                                        frame_type,
+                                        time_platesolve_requested,
+                                        pixscale,
+                                        pointing_ra,
+                                        pointing_dec,
+                                        platesolve_crop,
+                                        False,
+                                        1,
+                                        g_dev['cam'].settings["saturate"],
+                                        g_dev['cam'].camera_known_readnoise,
+                                        self.config['minimum_realistic_seeing'],
+                                        is_osc,
+                                        useastronometrynet,
+                                        pointing_exposure,
+                                        f'{path_to_jpeg}{jpeg_filename}',
+                                        target_ra,
+                                        target_dec
+                                    ],
+                                    open('subprocesses/testplatesolvepickle','wb')
+                                )
 
 
                             #breakpoint()
 
                             try:
-                                # platesolve_subprocess = subprocess.Popen(
-                                #     ["python", "subprocesses/Platesolveprocess.py"],
-                                #     stdin=None,
-                                #     stdout=None,
-                                #     bufsize=0,
-                                # )
-
                                 platesolve_subprocess = subprocess.Popen(
                                     ["python", "subprocesses/Platesolveprocess.py"],
                                     stdin=subprocess.PIPE,
@@ -3012,19 +3030,6 @@ class Observatory:
                             except OSError:
                                 plog(traceback.format_exc())
                                 pass
-
-
-                            # try:
-                            #     platesolve_subprocess = subprocess.Popen(
-                            #         ["python", "subprocesses/Platesolveprocess.py"],
-                            #         stdin=subprocess.PIPE,
-                            #         stdout=None,
-                            #         bufsize=0,
-                            #     )
-                            # except OSError:
-                            #     plog(traceback.format_exc())
-                            #     pass
-
 
                             try:
                                 pickle.dump(
@@ -3047,7 +3052,7 @@ class Observatory:
                                         is_osc,
                                         useastronometrynet,
                                         pointing_exposure,
-                                        jpeg_filename,
+                                        f'{path_to_jpeg}{jpeg_filename}',
                                         target_ra,
                                         target_dec,
                                     ],
@@ -3096,7 +3101,7 @@ class Observatory:
                             if solve == "error":
                                 # send up the image anyway
                                 self.enqueue_for_fastUI(
-                                    "", jpeg_filename, exposure_time
+                                    path_to_jpeg, jpeg_filename, exposure_time
                                 )
 
                                 plog("Planewave solve came back as error")
@@ -3111,7 +3116,7 @@ class Observatory:
 
                             else:
                                 self.enqueue_for_fastUI(
-                                    "", jpeg_filename, exposure_time
+                                    path_to_jpeg, jpeg_filename, exposure_time
                                 )
 
                                 try:
@@ -3136,9 +3141,6 @@ class Observatory:
                                 if g_dev["cam"].pixscale == None:
                                     g_dev["cam"].pixscale = abs(
                                         solved_arcsecperpixel)
-                                # if np.isnan(g_dev["cam"].pixscale):
-                                #     g_dev["cam"].pixscale = abs(
-                                #         solved_arcsecperpixel)
 
                                 if (
                                     (g_dev["cam"].pixscale * 0.9)
