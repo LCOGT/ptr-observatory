@@ -202,7 +202,7 @@ minimum_realistic_seeing=input_psolve_info[14]
 is_osc=input_psolve_info[15]
 useastrometrynet=input_psolve_info[16]
 pointing_exposure=input_psolve_info[17]
-jpeg_filename=input_psolve_info[18]
+jpeg_filename_with_full_path=input_psolve_info[18]
 target_ra=input_psolve_info[19]
 target_dec=input_psolve_info[20]
 
@@ -558,8 +558,8 @@ if solve == 'error':
     final_image = final_image.convert('RGB')
 
     try:
-        final_image.save(jpeg_filename.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
-        os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
+        final_image.save(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
+        os.rename(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'),jpeg_filename_with_full_path)
     except:
         print ("problem in saving, likely trying to overwrite an existing file.")
         print(traceback.format_exc())
@@ -675,13 +675,13 @@ if solve != 'error' and pointing_exposure and not pixscale == None:
     # plt.close()
     # pil_image=Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_rgb())
 
-    # pil_image.save(jpeg_filename.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
-    # os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
+    # pil_image.save(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
+    # os.rename(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'),jpeg_filename_with_full_path)
 
-    plt.savefig(jpeg_filename.replace('.jpg','matplotlib.png'), dpi=100, bbox_inches='tight', pad_inches=0)
+    plt.savefig(jpeg_filename_with_full_path.replace('.jpg','matplotlib.png'), dpi=100, bbox_inches='tight', pad_inches=0)
 
 
-    im = Image.open(jpeg_filename.replace('.jpg','matplotlib.png'))
+    im = Image.open(jpeg_filename_with_full_path.replace('.jpg','matplotlib.png'))
 
     # Get amount of padding to add
     fraction_of_padding=(im.size[0]/im.size[1])/aspect
@@ -692,19 +692,19 @@ if solve != 'error' and pointing_exposure and not pixscale == None:
     im=im.convert('RGB')
 
     try:
-        im.save(jpeg_filename.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
-        os.rename(jpeg_filename.replace('.jpg','temp.jpg'),jpeg_filename)
+        im.save(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
+        os.rename(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'),jpeg_filename_with_full_path)
     except:
         print ("tried to save a jpeg when there is already a jpge")
         print(traceback.format_exc())
 
     try:
-        os.remove(jpeg_filename.replace('.jpg','matplotlib.jpg'))
+        os.remove(jpeg_filename_with_full_path.replace('.jpg','matplotlib.jpg'))
     except:
         pass
 
     try:
-        os.remove(jpeg_filename.replace('.jpg','matplotlib.png'))
+        os.remove(jpeg_filename_with_full_path.replace('.jpg','matplotlib.png'))
     except:
         pass
 

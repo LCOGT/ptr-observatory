@@ -2906,6 +2906,7 @@ class Observatory:
                     useastronometrynet,
                     pointing_exposure,
                     jpeg_filename,
+                    path_to_jpeg, # not including filename
                     image_or_reference,
                     exposure_time,
                 ) = self.platesolve_queue.get(block=False)
@@ -2989,20 +2990,37 @@ class Observatory:
 
                             # yet another pickle debugger.
                             if True:
-                                pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                                 pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].settings["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet,pointing_exposure, jpeg_filename, target_ra, target_dec], open('subprocesses/testplatesolvepickle','wb'))
+                                pickle.dump(
+                                    [
+                                        hdufocusdata,
+                                        hduheader,
+                                        self.local_calibration_path,
+                                        cal_name,
+                                        frame_type,
+                                        time_platesolve_requested,
+                                        pixscale,
+                                        pointing_ra,
+                                        pointing_dec,
+                                        platesolve_crop,
+                                        False,
+                                        1,
+                                        g_dev['cam'].settings["saturate"],
+                                        g_dev['cam'].camera_known_readnoise,
+                                        self.config['minimum_realistic_seeing'],
+                                        is_osc,
+                                        useastronometrynet,
+                                        pointing_exposure,
+                                        f'{path_to_jpeg}{jpeg_filename}',
+                                        target_ra,
+                                        target_dec
+                                    ],
+                                    open('subprocesses/testplatesolvepickle','wb')
+                                )
 
 
                             #breakpoint()
 
                             try:
-                                # platesolve_subprocess = subprocess.Popen(
-                                #     ["python", "subprocesses/Platesolveprocess.py"],
-                                #     stdin=None,
-                                #     stdout=None,
-                                #     bufsize=0,
-                                # )
-
                                 platesolve_subprocess = subprocess.Popen(
                                     ["python", "subprocesses/Platesolveprocess.py"],
                                     stdin=subprocess.PIPE,
@@ -3012,19 +3030,6 @@ class Observatory:
                             except OSError:
                                 plog(traceback.format_exc())
                                 pass
-
-
-                            # try:
-                            #     platesolve_subprocess = subprocess.Popen(
-                            #         ["python", "subprocesses/Platesolveprocess.py"],
-                            #         stdin=subprocess.PIPE,
-                            #         stdout=None,
-                            #         bufsize=0,
-                            #     )
-                            # except OSError:
-                            #     plog(traceback.format_exc())
-                            #     pass
-
 
                             try:
                                 pickle.dump(
@@ -3047,7 +3052,7 @@ class Observatory:
                                         is_osc,
                                         useastronometrynet,
                                         pointing_exposure,
-                                        jpeg_filename,
+                                        f'{path_to_jpeg}{jpeg_filename}',
                                         target_ra,
                                         target_dec,
                                     ],
@@ -3094,9 +3099,10 @@ class Observatory:
                                 plog("Could not remove platesolve pickle. ")
 
                             if solve == "error":
-                                # send up the image anyway
+                                # send up the platesolve image
+                                info_image_channel = 1 # send as an info image to this channel
                                 self.enqueue_for_fastUI(
-                                    "", jpeg_filename, exposure_time
+                                    path_to_jpeg, jpeg_filename, exposure_time, info_image_channel
                                 )
 
                                 plog("Planewave solve came back as error")
@@ -3110,8 +3116,10 @@ class Observatory:
                                 self.platesolve_is_processing = False
 
                             else:
+                                # send up the platesolve image
+                                info_image_channel = 1 # send as an info image to this channel
                                 self.enqueue_for_fastUI(
-                                    "", jpeg_filename, exposure_time
+                                    path_to_jpeg, jpeg_filename, exposure_time, info_image_channel
                                 )
 
                                 try:
@@ -3136,9 +3144,6 @@ class Observatory:
                                 if g_dev["cam"].pixscale == None:
                                     g_dev["cam"].pixscale = abs(
                                         solved_arcsecperpixel)
-                                # if np.isnan(g_dev["cam"].pixscale):
-                                #     g_dev["cam"].pixscale = abs(
-                                #         solved_arcsecperpixel)
 
                                 if (
                                     (g_dev["cam"].pixscale * 0.9)
@@ -3679,7 +3684,7 @@ class Observatory:
 
                                 # Save the file as an uncompressed numpy binary
                                 temparray = np.array(
-                                    slow_process[2], dtype=np.unit16)
+                                    slow_process[2], dtype=np.uint16)
                                 tempmedian = bn.nanmedian(temparray)
                                 if tempmedian > 30 and tempmedian < 58000:
                                     np.save(
@@ -3834,73 +3839,88 @@ class Observatory:
             if not self.fast_queue.empty():
                 pri_image = self.fast_queue.get(block=False)
 
+                # Parse the inputs in the tuple sent to fast_queue
+                try:
+                    (
+                        path_to_file_directory, # doesn't include file itself
+                        filename,
+                        time_submitted,
+                        exposure_time,
+                        info_image_channel
+                    ) = pri_image
+
+                    filepath = f"{path_to_file_directory}{filename}" # Full path to the file on disk
+                except Exception as e:
+                    plog("Error in fast_to_ui: problem parsing the arguments")
+                    plog(e)
+                    plog("This is what was recieved: ", pri_image)
+                    plog("fast_to_ui did not upload an image.")
+                    continue
+
+
                 # Here we parse the file, set up and send to AWS
                 try:
-                    filename = pri_image[1]
-                    # Full path to file on disk
-                    filepath = pri_image[0] + filename
-
                     if filepath == "":
-                        plog(
-                            "found an empty thing in the fast_queue."     #? Why? MTF finding out."
-                        )
-                    else:
-                        try:
-                            timesubmitted = pri_image[2]
-                        except:
-                            plog((traceback.format_exc()))
+                        plog("The fast_queue contained an entry with no path to the image. ") #? Why? MTF finding out.
+                        continue
 
-                        # If the file is there now
-                        if os.path.exists(filepath) and not "EX20" in filename:
-                            # To the extent it has a size
-                            if os.stat(filepath).st_size > 0:
-                                aws_resp = authenticated_request(
-                                    "POST", "/upload/", {"object_name": filename}
-                                )
-                                with open(filepath, "rb") as fileobj:
-                                    files = {"file": (filepath, fileobj)}
-                                    try:
-                                        reqs.post(
-                                            aws_resp["url"],
-                                            data=aws_resp["fields"],
-                                            files=files,
-                                            timeout=10,
+                    # If the file is there now
+                    if os.path.exists(filepath) and not "EX20" in filename:
+                        # To the extent it has a size
+                        if os.stat(filepath).st_size > 0:
+
+                            request_body = {
+                                "object_name": filename,
+                                "s3_directory": "data" # default to sending as a regular image
+                            }
+                            if info_image_channel is not None:
+                                request_body["s3_directory"] = "info-images"
+                                request_body["info_channel"] = info_image_channel
+
+                            aws_resp = authenticated_request("POST", "/upload/", request_body) # this gets the presigned s3 upload url
+                            with open(filepath, "rb") as fileobj:
+                                files = {"file": (filepath, fileobj)}
+                                try:
+                                    reqs.post(
+                                        aws_resp["url"],
+                                        data=aws_resp["fields"],
+                                        files=files,
+                                        timeout=10,
+                                    )
+                                except Exception as e:
+                                    if (
+                                        "timeout" in str(e).lower()
+                                        or "SSLWantWriteError"
+                                        or "RemoteDisconnected" in str(e)
+                                    ):
+                                        plog(
+                                            "Seems to have been a timeout on the file posted: "
+                                            + str(e)
+                                            + "Putting it back in the queue."
                                         )
-                                    except Exception as e:
-                                        if (
-                                            "timeout" in str(e).lower()
-                                            or "SSLWantWriteError"
-                                            or "RemoteDisconnected" in str(e)
-                                        ):
-                                            plog(
-                                                "Seems to have been a timeout on the file posted: "
-                                                + str(e)
-                                                + "Putting it back in the queue."
-                                            )
-                                            plog(filename)
-                                            self.fast_queue.put(
-                                                pri_image, block=False)
-                                        else:
-                                            plog(
-                                                "Fatal connection glitch for a file posted: "
-                                                + str(e)
-                                            )
-                                            plog(files)
-                                            plog((traceback.format_exc()))
-                            else:
-                                plog(
-                                    str(filepath)
-                                    + " is there but has a zero file size so is probably still being written to, putting back in queue."
-                                )
-                                self.fast_queue.put(pri_image, block=False)
-                        # If it has been less than 3 minutes put it back in
-                        elif time.time() - timesubmitted < 1200 + float(pri_image[3]):
-                            self.fast_queue.put(pri_image, block=False)
+                                        plog(filename)
+                                        self.fast_queue.put(pri_image, block=False)
+                                    else:
+                                        plog(
+                                            "Fatal connection glitch for a file posted: "
+                                            + str(e)
+                                        )
+                                        plog(files)
+                                        plog((traceback.format_exc()))
                         else:
                             plog(
                                 str(filepath)
-                                + " seemed to never turn up... not putting back in the queue"
+                                + " is there but has a zero file size so is probably still being written to, putting back in queue."
                             )
+                            self.fast_queue.put(pri_image, block=False)
+                    # If it has been less than 3 minutes put it back in
+                    elif time.time() - time_submitted < 1200 + float(exposure_time):
+                        self.fast_queue.put(pri_image, block=False)
+                    else:
+                        plog(
+                            str(filepath)
+                            + " seemed to never turn up... not putting back in the queue"
+                        )
                 except:
                     plog("something strange in the UI uploader")
                     plog((traceback.format_exc()))
@@ -4350,11 +4370,41 @@ class Observatory:
         image = (im_path, name, time.time())
         self.ptrarchive_queue.put((priority, image), block=False)
 
-    def enqueue_for_fastUI(self, im_path, name, exposure_time):
-        image = (im_path, name)
-        self.fast_queue.put(
-            (image[0], image[1], time.time(), exposure_time), block=False
+    def enqueue_for_fastUI(self, im_path, filename, exposure_time, info_image_channel=None):
+        """ Add an entry to the queue (self.fast_queue) that feeds the quick image upload thread.
+        Entries are added before the file is created. The queue is monitored by the
+        fast_to_ui method which is run as a separate thread. It checks for existence of
+        the files in the queue, and once they exist, it uploads them and removes
+        the corresponding entry from the queue.
+
+        im_path:            string path to the directory where the file to upload is located
+        filename:               filename of the file to upload
+        exposure_time:      exposure duration in seconds (used to know if the exposure has completed yet)
+        info_image-channel: int in [1,2,3] indicating to send to this info image channel
+                            if None, send the image normally (not as an info image)
+        """
+        # Validate the info image channel: must be an int of 1, 2, or 3
+        # If validation fails, try uploading as a regular image
+        if info_image_channel is not None:
+            try:
+                info_image_channel = int(info_image_channel)
+                if not info_image_channel in {1, 2, 3}:
+                    raise Exception()
+            except:
+                plog(f"Error while attempting to upload {filename} as an info image")
+                plog(f"enqueue_for_fatsUI recieved a misformed value for the info image channel")
+                plog(f"Info image channel must be 1, 2, or 3. Recieved <{info_image_channel}> instead.")
+                plog("Falling back to sending as a normal image.")
+                info_image_channel = None
+
+        payload = (
+            im_path,
+            filename,
+            time.time(),
+            exposure_time,
+            info_image_channel
         )
+        self.fast_queue.put(payload, block=False)
 
     def enqueue_for_mediumUI(self, priority, im_path, name):
         image = (im_path, name)

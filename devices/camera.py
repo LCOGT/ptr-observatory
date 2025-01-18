@@ -4278,8 +4278,8 @@ class Camera:
                     plog("Problem in the smartstack pickle dump")
                     plog(traceback.format_exc())
 
-
-                g_dev['obs'].fast_queue.put((self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name ,time.time(), exposure_time), block=False)
+                path_to_image_directory = f"{self.camera_path}{g_dev['day']}/to_AWS/"
+                g_dev['obs'].enqueue_for_fastUI(path_to_image_directory, jpeg_name, exposure_time)
 
             else:
                 smartstackthread_filename='no'
@@ -4401,8 +4401,9 @@ class Camera:
                 del jpeg_subprocess
 
                 g_dev['obs'].enqueue_for_fastUI(
-                    self.camera_path + g_dev['day'] +
-                    "/to_AWS/", jpeg_name, exposure_time
+                    self.camera_path + g_dev['day'] + "/to_AWS/",
+                    jpeg_name,
+                    exposure_time
                 )
             else:
                 mainjpegthread_filename='no'
@@ -4483,7 +4484,26 @@ class Camera:
                             firstframesmartstack = False
                         platesolvethread_filename=self.local_calibration_path + "smartstacks/platesolve" + str(time.time()).replace('.','') + '.pickle'
 
-                        g_dev['obs'].to_platesolve((platesolvethread_filename, 'hdusmallheader', cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, '','reference', exposure_time))
+                        g_dev['obs'].to_platesolve(
+                            (
+                                platesolvethread_filename,
+                                'hdusmallheader',
+                                cal_path,
+                                cal_name,
+                                frame_type,
+                                time.time(),
+                                self.pixscale,
+                                ra_at_time_of_exposure,
+                                dec_at_time_of_exposure,
+                                firstframesmartstack,
+                                useastrometrynet,
+                                False,
+                                '', # filename of jpg
+                                '', # path to jpg directory
+                                'reference',
+                                exposure_time
+                            )
+                        )
 
                     else:
                         platesolvethread_filename='no'
@@ -5150,8 +5170,26 @@ class Camera:
                     del hdu
 
                     g_dev['obs'].platesolve_is_processing =True
-                    #send recast array as uint16 to platesolve
-                    g_dev['obs'].to_platesolve((np.maximum(outputimg, 0).astype(np.uint16), hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r+ g_dev["day"]+ "/to_AWS/"+ jpeg_name, 'image', exposure_time))
+                    g_dev['obs'].to_platesolve(
+                        (
+                            np.maximum(outputimg, 0).astype(np.uint16),
+                            hdusmallheader,
+                            cal_path,
+                            cal_name,
+                            frame_type,
+                            time.time(),
+                            self.pixscale,
+                            ra_at_time_of_exposure,
+                            dec_at_time_of_exposure,
+                            False,
+                            useastrometrynet,
+                            True,
+                            jpeg_name, # filename
+                            f'{im_path_r}{g_dev["day"]}/to_AWS/', #path to jpg directory
+                            'image',
+                            exposure_time
+                        )
+                   )
 
                 # If this is a focus image,
                 # FWHM.
