@@ -3684,7 +3684,7 @@ class Observatory:
 
                                 # Save the file as an uncompressed numpy binary
                                 temparray = np.array(
-                                    slow_process[2], dtype=np.unit16)
+                                    slow_process[2], dtype=np.uint16)
                                 tempmedian = bn.nanmedian(temparray)
                                 if tempmedian > 30 and tempmedian < 58000:
                                     np.save(
