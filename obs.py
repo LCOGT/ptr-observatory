@@ -136,8 +136,12 @@ def send_status(obsy, column, status_to_send):
     """Sends an update to the status endpoint."""
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     payload = {"statusType": str(column), "status": status_to_send}
+    if column == 'weather':
+        print("Did not send spurious weathr report.")
+        return
     try:
         data = json.dumps(payload)
+        print(data)
     except Exception as e:
         plog("Failed to create status payload. Usually not fatal:  ", e)
 

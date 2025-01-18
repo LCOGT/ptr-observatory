@@ -1951,9 +1951,15 @@ class Sequencer:
                     # First check darks in root directory
                     print ("ROOT DIRECTORY DARKS")
                     for darkfile in glob(darks_path + '*.npy'):
-                        tempdarktemp=float(darkfile.split('_')[-3])
-                        #print (tempdarktemp)
-                        if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                        if not 'temp' in darkfile:
+                            tempdarktemp=float(darkfile.split('_')[-3])
+                            #print (tempdarktemp)
+                            if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                try:
+                                    os.remove(darkfile)
+                                except:
+                                    pass
+                        else:
                             try:
                                 os.remove(darkfile)
                             except:
@@ -1963,9 +1969,15 @@ class Sequencer:
                     for darkfolder in glob(darks_path + "*/"):
                         print (darkfolder)
                         for darkfile in glob(darkfolder + '*.npy'):
-                            tempdarktemp=float(darkfile.split('_')[-3])
-                            #print (tempdarktemp)
-                            if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                            if not 'temp' in darkfile:
+                                tempdarktemp=float(darkfile.split('_')[-3])
+                                #print (tempdarktemp)
+                                if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                    try:
+                                        os.remove(darkfile)
+                                    except:
+                                        pass
+                            else:
                                 try:
                                     os.remove(darkfile)
                                 except:
@@ -1974,9 +1986,15 @@ class Sequencer:
                     # First check biasess in root directory
                     print ("ROOT DIRECTORY BIASES")
                     for darkfile in glob(bias_path + '*.npy'):
-                        tempdarktemp=float(darkfile.split('_')[-3])
-                        #print (tempdarktemp)
-                        if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                        if not 'temp' in darkfile:
+                            tempdarktemp=float(darkfile.split('_')[-3])
+                            #print (tempdarktemp)
+                            if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                try:
+                                    os.remove(darkfile)
+                                except:
+                                    pass
+                        else:
                             try:
                                 os.remove(darkfile)
                             except:

@@ -153,7 +153,7 @@ site_config = {
     # LINKS FOR OBS FOLDERS
     'client_hostname': "ARO-0m30",     # Generic place for this host to stash.
     'archive_path': 'F:/ptr/',
-    'alt_path': 'Q:/ptr/',
+    'alt_path': 'D:/alt/',
     # 'temporary_local_alt_archive_to_hold_files_while_copying' : 'F:/tempfolderforaltpath',
 
     'save_to_alt_path': 'yes',
@@ -259,16 +259,16 @@ site_config = {
     },
     # Initial roles are aassigned here. These may change during runtime.
     # Value is the device display name
-    # This is where to configure a second device of the same type if you want to control it in the site code. 
+    # This is where to configure a second device of the same type if you want to control it in the site code.
     # Devices are referenced in obs with self.devices['device_role']
-    # Also important to note: these must match the roles in obs.py create_devices(). 
+    # Also important to note: these must match the roles in obs.py create_devices().
     # Roles are standardized across all sites even if not all roles are used at each site.
     'device_roles': {
         'mount': 'aropier1',
         'main_rotator': None,
         'main_focuser': 'focuser',
-        'main_fw': 'LCO FW50_001d', 
-        
+        'main_fw': 'LCO FW50_001d',
+
         # Cameras
         'main_cam': 'sq003ms',
         'guide_cam': None,
@@ -568,7 +568,7 @@ site_config = {
     },
 
     'filter_wheel': {
-        "LCO F@50_001d": {
+        "LCO FW50_001d": {
             "parent": "Main OTA",
             "name": "LCO FW50_001d",
             'service_date': '20210716',

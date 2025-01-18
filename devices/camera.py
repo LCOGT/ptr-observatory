@@ -988,7 +988,7 @@ class Camera:
         elif driver == "QHYCCD_Direct_Control":
             global qhycam
             plog("SKIPPING cycle the QHY camera power via Ultimate Powerbox V2 - Does not work yet :(((")
-            self.power_box_driver = self.config["switch_driver"]
+            #self.power_box_driver = self.config["switch_driver"]
 # =============================================================================
 #             breakpoint()
 #
