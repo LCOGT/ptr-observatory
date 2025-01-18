@@ -89,6 +89,8 @@ def ra_fix_h(ra):
         ra += 24
     return ra
 
+
+
 def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
 
     # Populate the request parameters. Include data only if it was sent.
@@ -250,6 +252,64 @@ class Sequencer:
 
 
         self.check_incoming_darks_for_light_leaks=True
+
+        # Clear archive drive on initialisation
+        self.clear_archive_drive_of_old_files()
+
+
+    def run_archive_clearing_thread(self):
+
+        # Culling the archive. This removes old files
+        # which allows us to maintain some reasonable harddisk space usage
+        if self.config['archive_age'] > 0 :
+            plog ("Clearing archive of old files")
+            #plog (g_dev['obs'].obsid_path + 'archive/')
+            dir_path=g_dev['obs'].obsid_path + 'archive/'
+            cameras=glob(dir_path + "*/")
+            plog (cameras)
+            for camera in cameras:  # Go through each camera directory
+                #plog ("*****************************************")
+                #plog ("Camera: " + str(camera))
+                timenow_cull=time.time()
+                directories=glob(camera + "*/")
+                deleteDirectories=[]
+                deleteTimes=[]
+                for q in range(len(directories)):
+                    if 'localcalibrations' in directories[q] or 'orphans' in directories[q] or 'calibmasters' in directories[q] or 'lng' in directories[q] or 'seq' in directories[q]:
+                        pass
+                    elif ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
+                        deleteDirectories.append(directories[q])
+                        deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
+                    # Check that there isn't empty directories lying around -
+                    # this happens with theskyx
+                    # Check if the directory is empty
+                    if not os.listdir(directories[q]):
+                        # Remove the empty directory
+                        try:
+                            os.rmdir(directories[q])
+                            plog(f"The directory {directories[q]} was empty and has been removed.")
+                        except:
+                            pass
+
+                    # else:
+                    #     p(f"The directory {directories[q]} is not empty.")
+                #plog ("These are the directories earmarked for  ")
+                #plog ("Eternal destruction. And how old they are")
+                #plog ("in weeks\n")
+                #g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
+                for entry in range(len(deleteDirectories)):
+                    #plog (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
+                    try:
+                        shutil.rmtree(deleteDirectories[entry])
+                    except:
+                        plog ("Could not remove: " + str(deleteDirectories[entry]) + ". Usually a file is open in that directory.")
+            plog ("Finished clearing archive of old files")
+
+    def clear_archive_drive_of_old_files(self):
+
+        thread = threading.Thread(target=self.run_archive_clearing_thread, args=())
+        thread.daemon = True
+        thread.start()
 
 
 
@@ -650,6 +710,12 @@ class Sequencer:
                 self.nightly_reset_complete = False
                 self.clock_focus_latch = True
                 self.total_sequencer_control=True
+
+                # Make sure folder is empty and clear for the evening
+                self.clear_archive_drive_of_old_files()
+
+
+
                 g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
                 g_dev['mnt'].go_command(alt=70,az= 70)
                 g_dev['mnt'].set_tracking_on()
@@ -2135,50 +2201,9 @@ class Sequencer:
             # do need to get to the PTRarchive
             self.collect_and_queue_neglected_fits()
 
+        # Nightly clear out
+        self.clear_archive_drive_of_old_files()
 
-        # Culling the archive. This removes old files
-        # which allows us to maintain some reasonable harddisk space usage
-        if self.config['archive_age'] > 0 :
-            plog (g_dev['obs'].obsid_path + 'archive/')
-            dir_path=g_dev['obs'].obsid_path + 'archive/'
-            cameras=glob(dir_path + "*/")
-            plog (cameras)
-            for camera in cameras:  # Go through each camera directory
-                plog ("*****************************************")
-                plog ("Camera: " + str(camera))
-                timenow_cull=time.time()
-                directories=glob(camera + "*/")
-                deleteDirectories=[]
-                deleteTimes=[]
-                for q in range(len(directories)):
-                    if 'localcalibrations' in directories[q] or 'orphans' in directories[q] or 'calibmasters' in directories[q] or 'lng' in directories[q] or 'seq' in directories[q]:
-                        pass
-                    elif ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
-                        deleteDirectories.append(directories[q])
-                        deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
-                    # Check that there isn't empty directories lying around -
-                    # this happens with theskyx
-                    # Check if the directory is empty
-                    if not os.listdir(directories[q]):
-                        # Remove the empty directory
-                        try:
-                            os.rmdir(directories[q])
-                            plog(f"The directory {directories[q]} was empty and has been removed.")
-                        except:
-                            pass
-
-                    # else:
-                    #     p(f"The directory {directories[q]} is not empty.")
-                plog ("These are the directories earmarked for  ")
-                plog ("Eternal destruction. And how old they are")
-                plog ("in weeks\n")
-                g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
-                for entry in range(len(deleteDirectories)):
-                    plog (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
-                    try:
-                        shutil.rmtree(deleteDirectories[entry])
-                    except:
-                        plog ("Could not remove: " + str(deleteDirectories[entry]) + ". Usually a file is open in that directory.")
 
         # Clear out smartstacks directory
         plog ("removing and reconstituting smartstacks directory")
