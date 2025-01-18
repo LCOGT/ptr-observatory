@@ -4828,7 +4828,7 @@ class Camera:
                             if True:
                                height, width = outputimg.shape
                                patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
-                               print(">>>>  20% central image patch, std:  ", np.median(patch), round(np.std(patch), 2), str(width)+'x'+str(height) )
+                               print(">>>>  20% central image patch, std:  ", bn.nanmedian(patch), round(bn.nanstd(patch), 2), str(width)+'x'+str(height) )
 
                                #breakpoint()
 
@@ -5150,7 +5150,7 @@ class Camera:
                     del hdu
 
                     g_dev['obs'].platesolve_is_processing =True
-                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r+ g_dev["day"]+ "/to_AWS/"+ jpeg_name, 'image', exposure_time))
+                    g_dev['obs'].to_platesolve((outputimg.astype(np.uint16), hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r+ g_dev["day"]+ "/to_AWS/"+ jpeg_name, 'image', exposure_time))
 
                 # If this is a focus image,
                 # FWHM.
@@ -5832,7 +5832,8 @@ class Camera:
 
                 if remaining < -15:
                     if remaining > -16:
-                        plog ("Camera overtime: " + str(remaining))
+                        #plog ("Camera overtime: " + str(remaining))
+                        pass
 
                     g_dev['obs'].request_scan_requests()
 

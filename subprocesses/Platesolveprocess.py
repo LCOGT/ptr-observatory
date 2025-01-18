@@ -13,17 +13,15 @@ from this subprocess...
 
 """
 import sys
-# sys.path.append('../')
-# from ptr_utility import plog
 
 
 import pickle
 import copy
 from astropy.nddata import block_reduce
 import numpy as np
-import sep
+#import sep
 import glob
-from astropy.nddata.utils import extract_array
+#from astropy.nddata.utils import extract_array
 from astropy.io import fits
 #from subprocess import Popen, PIPE
 import os
@@ -31,19 +29,19 @@ import os
 #from os import getcwd
 import time
 from astropy.utils.exceptions import AstropyUserWarning
-from astropy.table import Table
+#from astropy.table import Table
 import warnings
 import traceback
-import bottleneck as bn
+#import bottleneck as bn
 from math import cos, radians
 # from colour_demosaicing import (
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
 #     # demosaicing_CFA_Bayer_Malvar2004,
 #     demosaicing_CFA_Bayer_Menon2007)
 import matplotlib.pyplot as plt
-import math
+#import math
 from PIL import Image#, ImageOps
-from scipy.stats import binned_statistic
+#from scipy.stats import binned_statistic
 from astropy.wcs import WCS
 from astropy import units as u
 from astropy.visualization.wcsaxes import Quadrangle
@@ -51,7 +49,7 @@ warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
 
-from scipy import optimize
+#from scipy import optimize
 
 def mid_stretch_jpeg(data):
     """
@@ -176,34 +174,12 @@ def mid_stretch_jpeg(data):
 def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-((x - mean) / 4 / stddev)**2)
 
-# def parse_platesolve_output(output_file):
-#     f = open(output_file)
-
-#     results = {}
-
-#     for line in f.readlines():
-#         line = line.strip()
-#         if line == "":
-#             continue
-
-#         fields = line.split("=")
-#         if len(fields) != 2:
-#             continue
-
-#         keyword, value = fields
-
-#         results[keyword] = float(value)
-
-#     return results
 
 """
 Here is the start of the subprocessing
 
 """
 
-
-
-#plog ("PLATESOLVE THREAD: STARTING PLATESOLVING")
 
 input_psolve_info=pickle.load(sys.stdin.buffer)
 #input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
@@ -261,22 +237,12 @@ print ("Pixelscale")
 print (pixscale)
 
 
-# subprocessplogtime=time.time()
-
-# def subprocessplog(string_incoming):
-
-#     with open(cal_path + 'subprocessplog_' + str(subprocessplogtime).replace('.','') +'_PlatesolvePlog.txt', 'a') as file:
-#         file.write(string_incoming)
-
-
-# if True:
-#    subprocessplog("PLATESOLVE PROCESSING")
-
 # Keep a copy of the normal image if this is a pointing image
 # This is needed to make the plot right at the end if successful
-pointing_image=copy.deepcopy(hdufocusdata)
+pointing_image=copy.deepcopy(hdufocusdata).astype(np.uint16)
 
 googtime=time.time()
+
 # If this is an osc image, then interpolate so it is just the green filter image of the same size.
 if is_osc:
     # Rapidly interpolate so that it is all one channel
@@ -300,39 +266,13 @@ if is_osc:
     del bilinearfill
 
     #Maybe just try this? #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-    #hdufocusdata=hdufocusdata.astype("float32")
-
-
-
-
-# # At least chop the edges off the image
-# if platesolve_crop==0:
-#     platesolve_crop=0.15
-
-# # Crop the image for platesolving
-# fx, fy = hdufocusdata.shape
-
-# crop_width = (fx * platesolve_crop) / 2
-# crop_height = (fy * platesolve_crop) / 2
-
-# # Make sure it is an even number for OSCs
-# if (crop_width % 2) != 0:
-#     crop_width = crop_width+1
-# if (crop_height % 2) != 0:
-#     crop_height = crop_height+1
-
-# crop_width = int(crop_width)
-# crop_height = int(crop_height)
-
-# if crop_width > 0 or crop_height > 0:
-#     hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
 
 
 # This section crops down the image to a reasonable thing to solve
 # The platesolver only provides the RA and Dec of the center of the frame
 # So anything above about half a degree is largely useless
 # and hampers speedy and successful solving.
-# Also larger fields of view see twists and warps towards tehe edge of the images
+# Also larger fields of view see twists and warps towards the edge of the images
 if pixscale != None:
     x_size_degrees=hdufocusdata.shape[0] * (pixscale / 3600)
     x_size_pixel_needed= (hdufocusdata.shape[0] / (x_size_degrees)) / 2 # Size in pixels of a half degree sized image
@@ -347,8 +287,6 @@ if pixscale != None:
         crop_height=int((hdufocusdata.shape[1] - y_size_pixel_needed)/2)
     else:
         crop_height=2
-
-    #breakpoint()
     hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
 
 if pixscale != None:
@@ -381,96 +319,20 @@ else:
     hdufocusdata = hdufocusdata[:new_height, :new_width]
 
 
-hdufocusdata=hdufocusdata.astype(np.float32)
+hdufocusdata=hdufocusdata.astype(np.uint16)#.astype(np.float32)
 
-# Store the unaltered image for a last ditch attempt
-hail_mary_image= copy.deepcopy(hdufocusdata)
-
-
-# try:
-#     bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-#     bkg.subfrom(hdufocusdata)
-# except:
-#     hdufocusdata=np.array(hdufocusdata, dtype=float)
-#     bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-#     bkg.subfrom(hdufocusdata)
-
-
-
-# # If this is set to true, then it will output a sample of the background image.
-# if True:
-#     hdufocus = fits.PrimaryHDU()
-#     hdufocus.data = bkg
-#     hdufocus.header = hduheader
-#     hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-#     hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-#     hdufocus.writeto(cal_path + 'background.fits', overwrite=True, output_verify='silentfix')
+# # Store the unaltered image for a last ditch attempt
+# hail_mary_image= copy.deepcopy(hdufocusdata)
 
 
 # If this is set to true, then it will output a sample of the background image.
-if True:
+if False:
     hdufocus = fits.PrimaryHDU()
     hdufocus.data = hdufocusdata
     hdufocus.header = hduheader
     hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
     hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
     hdufocus.writeto(cal_path + 'pssignal.fits', overwrite=True, output_verify='silentfix')
-
-#parentPath = Path(getcwd())
-#PS3CLI_EXE = str(parentPath).replace('\subprocesses','') +'/subprocesses/ps3cli/ps3cli.exe'
-
-# output_file_path = os.path.join(cal_path + "ps3cli_results.txt")
-# try:
-#     os.remove(output_file_path)
-# except:
-#     pass
-# try:
-#     os.remove(cal_path + 'platesolvetemp.fits')
-# except:
-#     pass
-#catalog_path = os.path.expanduser("~\\Documents\\Kepler")
-
-#pixscale = 0.6
-
-
-# print ("Pixelscale")
-# print (pixscale)
-
-# breakpoint()
-
-
-
-
-def localMax(a, include_diagonal=True, threshold=-np.inf) :
-    # Pad array so we can handle edges
-    ap = np.pad(a, ((1,1),(1,1)), constant_values=-np.inf )
-
-    # Determines if each location is bigger than adjacent neighbors
-    adjacentmax =(
-    (ap[1:-1,1:-1] > threshold) &
-    (ap[0:-2,1:-1] <= ap[1:-1,1:-1]) &
-    (ap[2:,  1:-1] <= ap[1:-1,1:-1]) &
-    (ap[1:-1,0:-2] <= ap[1:-1,1:-1]) &
-    (ap[1:-1,2:  ] <= ap[1:-1,1:-1])
-    )
-    if not include_diagonal :
-        return np.argwhere(adjacentmax)
-
-    # Determines if each location is bigger than diagonal neighbors
-    diagonalmax =(
-    (ap[0:-2,0:-2] <= ap[1:-1,1:-1]) &
-    (ap[2:  ,2:  ] <= ap[1:-1,1:-1]) &
-    (ap[0:-2,2:  ] <= ap[1:-1,1:-1]) &
-    (ap[2:  ,0:-2] <= ap[1:-1,1:-1])
-    )
-
-    return np.argwhere(adjacentmax & diagonalmax)
-
-
-# hdufocusdata=hdufocusdata.astype(np.float32)
-
-# # Do a midtone stretch to pop the image out
-# hdufocusdata=mid_stretch_jpeg(hdufocusdata)
 
 
 
@@ -485,14 +347,15 @@ if pixscale == None:
     low_pixscale= 0.05
     high_pixscale=10.0
 else:
-    low_pixscale = 0.9 * pixscale
-    high_pixscale = 1.1 * pixscale
+    low_pixscale = 0.97 * pixscale
+    high_pixscale = 1.03 * pixscale
 
-print ("Just before fake Image: " +str(time.time()-googtime))
+print ("Just before solving: " +str(time.time()-googtime))
 
 # Save an image to the disk to use with source-extractor
+# We don't need accurate photometry, so integer is fine.
 hdufocus = fits.PrimaryHDU()
-hdufocus.data = hdufocusdata.astype(np.float32)
+hdufocus.data = hdufocusdata#.astype(np.uint16)#.astype(np.float32)
 hdufocus.header = hduheader
 hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
 hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
@@ -500,7 +363,7 @@ hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
 
 # run again
 
-astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit ' +str(cpu_limit) + ' --overwrite --no-verify --no-plots'
+astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 2 --cpulimit ' +str(cpu_limit) + ' --overwrite --no-verify --no-plots'
 
 print (astoptions)
 
@@ -510,9 +373,6 @@ os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
 if os.path.exists(wslfilename.replace('.fits','.wcs')):
     print ("IT EXISTS! WCS SUCCESSFUL!")
     wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
-    # wcsheader[0].header['CRVAL1']/15
-    # wcsheader[0].header['CRVAL2']
-    # wcsheader[0].header['CD1_2'] * 3600
     solve={}
     solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
     solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
@@ -525,8 +385,6 @@ if os.path.exists(wslfilename.replace('.fits','.wcs')):
     solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
 
     solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
-
-    #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
 
     if binnedtwo:
         solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
@@ -545,19 +403,7 @@ else:
         except:
             pass
 
-
-
-    # Here is where the last ditch attempt occurs
-    # Save an image to the disk to use with source-extractor
-    hdufocus = fits.PrimaryHDU()
-    hdufocus.data = hail_mary_image.astype(np.float32)
-    hdufocus.header = hduheader
-    hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-    hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-    hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
-
-
-    # run again
+    # run for the first time
 
     astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots'
 
@@ -569,9 +415,6 @@ else:
     if os.path.exists(wslfilename.replace('.fits','.wcs')):
         print ("IT EXISTS! WCS SUCCESSFUL!")
         wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
-        # wcsheader[0].header['CRVAL1']/15
-        # wcsheader[0].header['CRVAL2']
-        # wcsheader[0].header['CD1_2'] * 3600
         solve={}
         solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
         solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
@@ -584,8 +427,6 @@ else:
         solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
 
         solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
-
-        #solve["arcsec_per_pixel"] = abs(wcs_header['CD1_2'] *3600)
 
         if binnedtwo:
             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
@@ -603,16 +444,6 @@ for f in temp_files_to_remove:
         os.remove(f)
     except:
         pass
-
-
-
-
-
-
-
-
-#breakpoint()
-
 
 
 
@@ -648,16 +479,6 @@ except:
 time.sleep(1)
 
 
-# try:
-#     os.remove(cal_path + 'platesolvetemp.fits')
-# except:
-#     pass
-# try:
-#     os.remove(output_file_path)
-# except:
-#     pass
-
-
 print (solve)
 print ("solver: " +str(time.time()-googtime))
 
@@ -691,7 +512,7 @@ def resize_array(arr, max_size):
 if solve == 'error':
 
     max_size=1000
-    pointing_image  = resize_array(hail_mary_image , max_size)
+    pointing_image  = resize_array(pointing_image , max_size)
 
     pointing_image = mid_stretch_jpeg(pointing_image)
     final_image = Image.fromarray(pointing_image).convert("L")

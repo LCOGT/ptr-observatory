@@ -902,10 +902,10 @@ site_config = {
                 # As simple as it states, how many calibration frames to collect and how many to store.
                 'number_of_bias_to_collect': 35,
                 'number_of_dark_to_collect': 9,
-                'number_of_flat_to_collect': 7,
-                'number_of_bias_to_store': 21,
-                'number_of_dark_to_store': 15,
-                'number_of_flat_to_store': 15,
+                'number_of_flat_to_collect': 9,
+                'number_of_bias_to_store': 33,
+                'number_of_dark_to_store': 21,
+                'number_of_flat_to_store': 21,
                 # Default dark exposure time.
                 'dark_exposure': 180,
 

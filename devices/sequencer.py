@@ -38,7 +38,7 @@ import requests
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: 
+if TYPE_CHECKING:
     from obs import Observatory
 
 from requests.adapters import HTTPAdapter, Retry
@@ -3827,7 +3827,8 @@ class Sequencer:
 
         exp_time = 0
         scale = 1.0
-        collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.  #Ratio to ARO Ceravolo 300mm
+        collecting_area = self.config['telescope']['Main OTA']['collecting_area']/31808.  #Ratio to ARO Ceravolo 300mm
+
 
         # First pointing towards flatspot
         if g_dev['mnt'].rapid_park_indicator:

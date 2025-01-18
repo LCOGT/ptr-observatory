@@ -2941,13 +2941,13 @@ class Observatory:
                             open(platesolve_token, "rb")
                         )
 
-                        hdufocusdata = np.load(imagefilename)
+                        hdufocusdata = np.load(imagefilename).astype(np.uint16)
                         hduheader = fits.open(imagefilename.replace(".npy", ".head"))[
                             0
                         ].header
 
                     else:
-                        hdufocusdata = platesolve_token
+                        hdufocusdata = platesolve_token.astype(np.uint16)
 
                     is_osc = g_dev["cam"].settings["is_osc"]
 
@@ -3781,7 +3781,8 @@ class Observatory:
                                         #         + str(g_dev["foc"].last_focus_fwhm)
                                         #         + ".",
                                         #         p_level="INFO")
-                                        print("TEMPORARILY DISABLED 1234")
+                                        pass
+                                        #print("TEMPORARILY DISABLED 1234")
 
                         else:
                             self.file_wait_and_act_queue.put(
