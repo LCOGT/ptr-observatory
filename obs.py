@@ -369,6 +369,7 @@ class Observatory:
         self.status_count = 0
         self.status_upload_time = 0.5
         self.time_last_status = time.time() - 3000
+        self.pulse_timer=time.time()
 
         self.check_lightning = self.config.get("has_lightning_detector", False)
 
@@ -2733,6 +2734,7 @@ class Observatory:
                 time.sleep(5)
 
     # Note this is a thread!
+    # It also produces the '.' heartbeat to let you know it is running.
     def update_status_thread(self):
         while True:
             not_slewing = False
@@ -2740,6 +2742,10 @@ class Observatory:
                 not_slewing = True
             elif not g_dev["mnt"].return_slewing():
                 not_slewing = True
+                
+            if time.time()-self.pulse_timer >30:
+                self.pulse_timer=time.time()
+                plog('.')
 
             if (
                 not_slewing

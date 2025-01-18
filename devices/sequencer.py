@@ -494,9 +494,7 @@ class Sequencer:
 
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
-        if time.time()-self.pulse_timer >30:
-            self.pulse_timer=time.time()
-            plog('.')
+        
 
         if (
             (datetime.datetime.now() - g_dev['obs'].observing_status_timer)
@@ -1902,7 +1900,7 @@ class Sequencer:
             broadband_ss_biasdark_exp_time = g_dev['cam'].settings['smart_stack_exposure_time']
             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * g_dev['cam'].settings['smart_stack_exposure_NB_multiplier']
             # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.
-            min_exposure = min(float(g_dev['cam'].settings['min_flat_exposure']),float(g_dev['cam'].settings['min_exposure']))
+            # min_exposure = min(float(g_dev['cam'].settings['min_flat_exposure']),float(g_dev['cam'].settings['min_exposure']))
 
 
             ####
