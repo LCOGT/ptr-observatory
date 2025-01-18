@@ -354,9 +354,11 @@ realwslfilename='/mnt/'+ realwslfilename[0] + realwslfilename[1]
 if pixscale == None:
     low_pixscale= 0.05
     high_pixscale=10.0
+    initial_radius=10
 else:
     low_pixscale = 0.97 * pixscale
     high_pixscale = 1.03 * pixscale
+    initial_radius=2
 
 print ("Just before solving: " +str(time.time()-googtime))
 
@@ -371,7 +373,7 @@ hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
 
 # run again
 
-astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 2 --cpulimit ' +str(cpu_limit) + ' --overwrite --no-verify --no-plots'
+astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius ' + str(initial_radius) + ' --cpulimit ' +str(cpu_limit) + ' --overwrite --no-verify --no-plots'
 
 print (astoptions)
 
