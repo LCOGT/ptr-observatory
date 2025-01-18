@@ -4401,8 +4401,9 @@ class Camera:
                 del jpeg_subprocess
 
                 g_dev['obs'].enqueue_for_fastUI(
-                    self.camera_path + g_dev['day'] +
-                    "/to_AWS/", jpeg_name, exposure_time
+                    self.camera_path + g_dev['day'] + "/to_AWS/",
+                    jpeg_name,
+                    exposure_time
                 )
             else:
                 mainjpegthread_filename='no'
