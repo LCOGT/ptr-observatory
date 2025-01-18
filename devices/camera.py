@@ -104,7 +104,7 @@ def mid_stretch_jpeg(data):
     """
 
     try:
-        data = data / bn.nanax(data)
+        data = data / bn.nanmax(data)
     except:
         data = data  # NB this avoids div by 0 is image is a very flat bias
 
