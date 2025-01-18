@@ -266,7 +266,7 @@ class Sequencer:
             #plog (g_dev['obs'].obsid_path + 'archive/')
             dir_path=g_dev['obs'].obsid_path + 'archive/'
             cameras=glob(dir_path + "*/")
-            plog (cameras)
+            #plog (cameras)
             for camera in cameras:  # Go through each camera directory
                 #plog ("*****************************************")
                 #plog ("Camera: " + str(camera))
