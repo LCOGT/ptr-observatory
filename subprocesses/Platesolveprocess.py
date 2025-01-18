@@ -237,9 +237,17 @@ print ("Pixelscale")
 print (pixscale)
 
 
+# Check we are working in unit16
+if not hdufocusdata.dtype == np.uint16:
+    raised_array=hdufocusdata - np.nanmin(hdufocusdata)
+    hdufocusdata = np.maximum(raised_array,0).astype(np.uint16)
+    del raised_array
+
+
+
 # Keep a copy of the normal image if this is a pointing image
 # This is needed to make the plot right at the end if successful
-pointing_image=copy.deepcopy(hdufocusdata).astype(np.uint16)
+pointing_image=copy.deepcopy(hdufocusdata)
 
 googtime=time.time()
 
@@ -319,7 +327,7 @@ else:
     hdufocusdata = hdufocusdata[:new_height, :new_width]
 
 
-hdufocusdata=hdufocusdata.astype(np.uint16)#.astype(np.float32)
+#hdufocusdata=hdufocusdata.astype(np.uint16)#.astype(np.float32)
 
 # # Store the unaltered image for a last ditch attempt
 # hail_mary_image= copy.deepcopy(hdufocusdata)

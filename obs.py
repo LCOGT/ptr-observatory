@@ -2940,14 +2940,21 @@ class Observatory:
                         (imagefilename, imageMode) = pickle.load(
                             open(platesolve_token, "rb")
                         )
-
-                        hdufocusdata = np.load(imagefilename).astype(np.uint16)
+                        # Need to raise the background to fit into uint16
+                        raised_array=np.load(imagefilename)
+                        raised_array=raised_array - np.nanmin(raised_array)
+                        hdufocusdata = np.maximum(raised_array,0).astype(np.uint16)
+                        del raised_array
                         hduheader = fits.open(imagefilename.replace(".npy", ".head"))[
                             0
                         ].header
 
                     else:
-                        hdufocusdata = platesolve_token.astype(np.uint16)
+                        # Need to raise the background to fit into uint16
+                        raised_array=platesolve_token - np.nanmin(platesolve_token)
+                        hdufocusdata = np.maximum(raised_array,0).astype(np.uint16)
+                        del raised_array
+                        del platesolve_token
 
                     is_osc = g_dev["cam"].settings["is_osc"]
 

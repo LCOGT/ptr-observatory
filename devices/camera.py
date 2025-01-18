@@ -104,7 +104,7 @@ def mid_stretch_jpeg(data):
     """
 
     try:
-        data = data / np.max(data)
+        data = data / bn.nanax(data)
     except:
         data = data  # NB this avoids div by 0 is image is a very flat bias
 
@@ -113,7 +113,7 @@ def mid_stretch_jpeg(data):
     Args:
         data (np.array): array of floats, presumably the image data
     """
-    median = np.median(data.ravel())
+    median = bn.nanmedian(data.ravel())
     n = data.size
     avg_dev = np.sum(np.absolute(data-median) / n)
     c0 = np.clip(median + (shadows_clip * avg_dev), 0, 1)
@@ -1842,7 +1842,7 @@ class Camera:
             hdusmalldata = hdusmalldata[crop_width:-
                                         crop_width, crop_height:-crop_height]
 
-        hdusmalldata = hdusmalldata - np.min(hdusmalldata)
+        hdusmalldata = hdusmalldata - bn.nanmin(hdusmalldata)
 
         stretched_data_float = mid_stretch_jpeg(hdusmalldata+1000)
         stretched_256 = 255 * stretched_data_float
@@ -4895,7 +4895,7 @@ class Camera:
                 # So this is done in the main thread. Whereas normal exposures get done in the subprocess.
                 if (frame_type in ["bias", "dark"] or a_dark_exposure or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ",
-                         round(np.median(outputimg), 2), round(np.std(outputimg), 3))
+                         round(bn.nanmedian(outputimg), 2), round(bn.nanstd(outputimg), 3))
 
                     # Check that the temperature is ok before accepting
                     current_camera_temperature, cur_humidity, cur_pressure, cur_pwm = (
@@ -5150,7 +5150,8 @@ class Camera:
                     del hdu
 
                     g_dev['obs'].platesolve_is_processing =True
-                    g_dev['obs'].to_platesolve((outputimg.astype(np.uint16), hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r+ g_dev["day"]+ "/to_AWS/"+ jpeg_name, 'image', exposure_time))
+                    #send recast array as uint16 to platesolve
+                    g_dev['obs'].to_platesolve((np.maximum(outputimg, 0).astype(np.uint16), hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet, True, im_path_r+ g_dev["day"]+ "/to_AWS/"+ jpeg_name, 'image', exposure_time))
 
                 # If this is a focus image,
                 # FWHM.
