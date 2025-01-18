@@ -4278,8 +4278,8 @@ class Camera:
                     plog("Problem in the smartstack pickle dump")
                     plog(traceback.format_exc())
 
-
-                g_dev['obs'].fast_queue.put((self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name ,time.time(), exposure_time), block=False)
+                path_to_image_directory = f"{self.camera_path}{g_dev['day']}/to_AWS/"
+                g_dev['obs'].enqueue_for_fastUI(path_to_image_directory, jpeg_name, exposure_time)
 
             else:
                 smartstackthread_filename='no'
