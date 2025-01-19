@@ -2808,24 +2808,101 @@ class Sequencer:
                 except:
                     plog ("waiting for theskyx to reboot")
 
+            num_of_biases=len(inputList)
+
             # Now that we have the master bias, we can estimate the readnoise actually
             # by comparing the standard deviations between the bias and the masterbias
             if g_dev['cam'].camera_known_gain <1000:
-                readnoise_array=[]
-                post_readnoise_array=[]
-                i=0
-                for file in inputList:
+                # readnoise_array=[]
+                # post_readnoise_array=[]
+                # i=0
+                # for file in inputList:
 
-                    hdu1data=np.load(file)-masterBias
-                    hdu1data = hdu1data[500:-500,500:-500]
-                    stddiffimage=bn.nanstd(pow(pow(hdu1data,2),0.5))
+                #     hdu1data=np.load(file)-masterBias
+                #     hdu1data = hdu1data[500:-500,500:-500]
+                #     stddiffimage=bn.nanstd(pow(pow(hdu1data,2),0.5))
 
-                    est_read_noise= (stddiffimage * g_dev['cam'].camera_known_gain) / 1.414
-                    readnoise_array.append(est_read_noise)
-                    post_readnoise_array.append(stddiffimage)
-                    i=i+1
+                #     est_read_noise= (stddiffimage * g_dev['cam'].camera_known_gain) / 1.414
+                #     readnoise_array.append(est_read_noise)
+                #     post_readnoise_array.append(stddiffimage)
+                #     i=i+1
 
-                readnoise_array=np.array(readnoise_array)
+                # readnoise_array=np.array(readnoise_array)
+                
+                # #breakpoint()
+            
+            
+            
+                def estimate_read_noise_chunked(bias_frames, frame_shape, gain=1.0, chunk_size=10, masterBias=None):
+                    """
+                    Estimate the read noise of a CMOS sensor from a set of bias frames processed in chunks.
+                
+                    Parameters:
+                        bias_frame_generator (generator): A generator that yields 2D NumPy arrays representing bias frames.
+                        frame_shape (tuple): The shape of each bias frame (height, width).
+                        num_frames (int): The total number of bias frames.
+                        gain (float): The gain in electrons per ADU (default is 1.0).
+                
+                    Returns:
+                        float: The estimated read noise in electrons.
+                        float: The estimated read noise in ADU.
+                        np.ndarray: The variance frame (pixel-wise variance).
+                    """
+                    num_frames = len(bias_frames)
+                    
+                    pixel_variance = np.zeros(frame_shape, dtype=np.float64)
+                
+                    for frame in bias_frames:
+                        residual = frame - masterBias
+                        pixel_variance += (residual ** 2) / (num_frames - 1)
+                
+                    # Step 3: Compute the mean variance across all pixels
+                    mean_variance = bn.nanmean(pixel_variance)
+                    #stdev_variance = bn.nanstd(pixel_variance)
+                
+                    # Step 4: Compute the read noise in ADU
+                    read_noise_adu = np.sqrt(mean_variance)
+                    read_noise_adu_stdev= np.std(np.sqrt(pixel_variance))
+                
+                    # Step 5: Convert read noise to electrons using the gain
+                    read_noise_electrons = read_noise_adu * gain
+                    read_noise_electrons_stdev = read_noise_adu_stdev * gain
+                
+                    return read_noise_electrons, read_noise_adu, read_noise_electrons_stdev, read_noise_adu_stdev,  pixel_variance
+                
+                
+                frame_shape=masterBias.shape
+                
+                # Load the memmap files into a list
+                bias_frames= [np.load(file, mmap_mode='r') for file in inputList]
+                
+                # Estimate the read noise
+                read_noise_electrons, read_noise_adu, read_noise_electrons_stdev, read_noise_adu_stdev, variance_frame = estimate_read_noise_chunked(bias_frames, frame_shape, g_dev['cam'].camera_known_gain, chunk_size=10, masterBias=masterBias)
+            
+                del bias_frames
+            
+                print(f"Estimated Read Noise: {read_noise_electrons:.2f} e- (electrons), stdev: "+ str(read_noise_electrons_stdev))
+                print(f"Estimated Read Noise: {read_noise_adu:.2f} ADU, stdev: " + str(read_noise_adu_stdev))
+                
+                # Write out the variance array
+                try:
+                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + 'readnoise_variance_adu.npy', copy.deepcopy(variance_frame.astype('float32'))))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+    
+                    # Save and upload master bias
+                    g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'readnoise_variance_adu.fits', copy.deepcopy(variance_frame.astype('float32')), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'readnoise_variance_adu.fits' ))
+    
+                    # Store a version of the bias for the archive too
+                    g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'readnoise_variance_adu.fits', copy.deepcopy(variance_frame.astype('float32')), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'readnoise_variance_adu.fits' ))
+    
+                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'readnoise_variance_adu.npy', copy.deepcopy(variance_frame.astype('float32'))))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+    
+                except Exception as e:
+                    plog ("Could not save variance frame: ",e)
+            
+            
+            
+            
 
             # Bad pixel accumulator for the bias frame
             img_temp_median=bn.nanmedian(masterBias)
@@ -3473,20 +3550,7 @@ class Sequencer:
                             plog (str(filtercode) + " flat calibration frame created: " +str(time.time()-calibration_timer))
                             calibration_timer=time.time()
 
-                # Bung in the readnoise estimates and then
-                # Close up the filter camera gain shelf.
-                try:
-                    self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
-                    self.filter_camera_gain_shelf['readnoise']=[bn.nanmedian(post_readnoise_array) , bn.nanstd(post_readnoise_array), len(post_readnoise_array)]
-                    self.filter_camera_gain_shelf.close()
-                except:
-                    plog ("cannot write the readnoise array to the shelf. Probs because this is the first time estimating gains")
-
-                textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.txt'
-                try:
-                    os.remove(textfilename)
-                except:
-                    pass
+                
 
 
 
@@ -3568,6 +3632,23 @@ class Sequencer:
         g_dev['cam'].camera_known_gain_stdev=70000.0
         g_dev['cam'].camera_known_readnoise=70000.0
         g_dev['cam'].camera_known_readnoise_stdev=70000.0
+        
+        
+        # Bung in the readnoise estimates and then
+        # Close up the filter camera gain shelf.
+        try:
+            self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
+            #self.filter_camera_gain_shelf['readnoise']=[bn.nanmedian(post_readnoise_array) , bn.nanstd(post_readnoise_array), len(post_readnoise_array)]
+            self.filter_camera_gain_shelf['readnoise']=[read_noise_electrons , read_noise_electrons_stdev, num_of_biases]
+            self.filter_camera_gain_shelf.close()
+        except:
+            plog ("cannot write the readnoise array to the shelf. Probs because this is the first time estimating gains")
+
+        textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.txt'
+        try:
+            os.remove(textfilename)
+        except:
+            pass
 
         try:
             gain_collector=[]
@@ -3609,9 +3690,14 @@ class Sequencer:
                 g_dev['cam'].camera_known_gain_stdev=bn.nanstd(gain_collector)
 
 
-            singlentry=g_dev['cam'].filter_camera_gain_shelf['readnoise']
-            g_dev['cam'].camera_known_readnoise= (singlentry[0] * g_dev['cam'].camera_known_gain) / 1.414
-            g_dev['cam'].camera_known_readnoise_stdev = (singlentry[1] * g_dev['cam'].camera_known_gain) / 1.414
+            #read_noise_electrons, read_noise_adu, read_noise_electrons_stdev, read_noise_adu_stdev
+
+            g_dev['cam'].camera_known_readnoise= read_noise_electrons
+            g_dev['cam'].camera_known_readnoise_stdev = read_noise_electrons_stdev
+
+            # singlentry=g_dev['cam'].filter_camera_gain_shelf['readnoise']
+            # g_dev['cam'].camera_known_readnoise= (singlentry[0] * g_dev['cam'].camera_known_gain) / 1.414
+            # g_dev['cam'].camera_known_readnoise_stdev = (singlentry[1] * g_dev['cam'].camera_known_gain) / 1.414
         except:
             plog('failed to estimate gain and readnoise from flats and such')
 
