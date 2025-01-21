@@ -1333,12 +1333,13 @@ class Sequencer:
     # - add rotation from each exposure
     def execute_project_from_lco(self, block_specification):
 
-        if (ephem.now() < g_dev['events']['Civil Dusk'] ) or \
-            (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
-            plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
-            plog ("WARNING: the lco scheduler assigned this observation. It should already avoid bad observing times so make sure we're not incorrectly blocking anything.")
-            g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")
-            return block_specification     #Added wer 20231103
+        # TB
+        # if ( ephem.now() < g_dev['events']['Civil Dusk'] ) or \
+        #     (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
+        #     plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
+        #     plog ("WARNING: the lco scheduler assigned this observation. It should already avoid bad observing times so make sure we're not incorrectly blocking anything.")
+        #     g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")
+        #     return block_specification     #Added wer 20231103
 
         self.block_guard = True
         self.total_sequencer_control=True
@@ -1503,9 +1504,6 @@ class Sequencer:
             # It may be the case that reference pointing isn't quite good enough for mosaics? We shall find out.
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
-            # Don't do a second repointing in the first pane of a mosaic
-            # considering we just did that.
-            mosaic_pointing_already_done=True
 
             # This is where the actual exposures are taken
             for block_exposure_counter, exposure in enumerate(block['project']['exposures']):
@@ -1548,15 +1546,14 @@ class Sequencer:
 
                 # MUCH safer to calculate these from first principles
                 # Than rely on an owner getting this right!
-                dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
-                ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
+                # TB
+                # dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
+                # ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
 
                 # These are not mosaic exposures
                 zoom_factor = exposure['zoom'].lower()
 
-                if mosaic_pointing_already_done:
-                    mosaic_pointing_already_done = False
-                elif g_dev['obs'].platesolve_errors_in_a_row > 4:
+                if g_dev['obs'].platesolve_errors_in_a_row > 4:
                     # Get the pointing / central position of the
                     g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
 
@@ -1586,7 +1583,7 @@ class Sequencer:
                     # Set up options for exposure and take exposure.
                     required_params = {
                         'time': float(exposure['exposure']),
-                        'alias': str(self.config['camera']['camera_1_1']['name']),
+                        'alias': str(g_dev['cam'].name),
                         'image_type': exposure['imtype'],
                         'smartstack': 'yes' if exposure['smartstack'] else 'no',
                         'substack': exposure.get('substack', True),
