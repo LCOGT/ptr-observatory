@@ -6378,46 +6378,24 @@ class Sequencer:
         check that any running calendar blocks are still there with the same time window.
         """
 
-        url_blk = "https://calendar.photonranch.org/calendar/siteevents"
-        # UTC VERSION
-        start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
-        close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
+        def ephem_date_to_utc_iso_string(ephem_date):
+            return ephem_date.datetime().isoformat().split(".")[0] + "Z"
 
-        # Reformat ephem.Date into format required by the UI
-        startapyear = start_aperture[0].split('/')[0]
-        startapmonth = start_aperture[0].split('/')[1]
-        startapday = start_aperture[0].split('/')[2]
-        closeapyear = close_aperture[0].split('/')[0]
-        closeapmonth = close_aperture[0].split('/')[1]
-        closeapday = close_aperture[0].split('/')[2]
+        calendar_update_url = "https://calendar.photonranch.org/calendar/siteevents"
 
-        if len(str(startapmonth)) == 1:
-            startapmonth = '0' + startapmonth
-        if len(str(startapday)) == 1:
-            startapday = '0' + str(startapday)
-        if len(str(closeapmonth)) == 1:
-            closeapmonth = '0' + closeapmonth
-        if len(str(closeapday)) == 1:
-            closeapday = '0' + str(closeapday)
-
-        start_aperture_date = startapyear + '-' + startapmonth + '-' + startapday
-        close_aperture_date = closeapyear + '-' + closeapmonth + '-' + closeapday
-
-        start_aperture[0] = start_aperture_date
-        close_aperture[0] = close_aperture_date
-
-        body = json.dumps(
-            {
-                "site": self.config["obs_id"],
-                "start": start_aperture[0].replace('/', '-') + 'T' + start_aperture[1] + 'Z',
-                "end": close_aperture[0].replace('/', '-') + 'T' + close_aperture[1] + 'Z',
-                "full_project_details:": False,
-            }
-        )
+        start_time = ephem_date_to_utc_iso_string(g_dev['events']['Eve Sky Flats'])
+        end_time = ephem_date_to_utc_iso_string(g_dev['events']['End Morn Sky Flats'])
+        body = json.dumps({
+            "site": self.config["obs_id"],
+            "start": start_time,
+            "end": end_time,
+            "full_project_details:": False,
+        })
         try:
-            self.blocks = reqs.post(url_blk, body, timeout=20).json()
-        except:
-            plog ("A glitch found in the blocks reqs post, probably date format")
+            self.blocks = reqs.post(calendar_update_url, body, timeout=20).json()
+        except Exception as e:
+            plog(e)
+            plog("Failed to update the calendar. This is not normal. Request url was {calendar_update_url} and body was {body}.")
 
 
 def stack_nanmedian_row_memmapped(inputinfo):
