@@ -2421,13 +2421,13 @@ class Camera:
         # print(zwocamera.get_control_value(asi.ASI_TEMPERATURE))
         
         #return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)/10)
-        return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)[0])/10, 0,0, zwocamera.get_control_value(asi.ASI_COOLER_POWER_PERC)
+        return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)[0])/10, 0,0, zwocamera.get_control_value(asi.ASI_COOLER_POWER_PERC)[0]
 
     def _zwo_cooler_power(self):
         return float(zwocamera.get_control_value(asi.ASI_COOLER_POWER_PERC)[0])
 
-    def _zwo_heatsink_temp(self):
-        return self.camera.HeatSinkTemperature
+    # def _zwo_heatsink_temp(self):
+    #     return self.camera.HeatSinkTemperature
 
     def _zwo_cooler_on(self):
         zwocamera.set_control_value(asi.ASI_COOLER_ON, True)
@@ -2452,7 +2452,7 @@ class Camera:
         #     imtypeb = 1
         # self.camera.Expose(exposure_time, imtypeb)
         
-        zwocamera.set_control_value(asi.ASI_EXPOSURE, exposure_time * 1000 * 1000)  # Convert to microseconds
+        zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
         zwocamera.start_exposure()
 
     def _zwo_stop_expose(self):
@@ -3285,6 +3285,9 @@ class Camera:
             ssNBmult = self.settings['smart_stack_exposure_NB_multiplier']
             dark_exp_time = self.settings['dark_exposure']
 
+            Nsmartstack = 1
+            SmartStackID = 'no'
+            smartstackinfo = 'no' # Just initialising this variable
             if g_dev["fil"].null_filterwheel == False:
                 if this_exposure_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
                     # For narrowband and low throughput filters, increase base exposure time.
@@ -3464,7 +3467,7 @@ class Camera:
                         return 'roofshut'
 
                     try:
-                        if self.maxim or self.ascom or self.theskyx or self.qhydirect or self.dummy:
+                        if self.maxim or self.ascom or self.theskyx  or self.zwo or self.qhydirect or self.dummy:
 
                             ldr_handle_time = None
                             ldr_handle_high_time = None  # This is not maxim-specific
