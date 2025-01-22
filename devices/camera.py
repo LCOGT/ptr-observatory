@@ -42,6 +42,7 @@ import copy
 import json
 import random
 from astropy import log
+import zwoasi as asi
 log.setLevel('ERROR')
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
@@ -771,7 +772,7 @@ class Camera:
             win32com.client.pythoncom.CoInitialize()
             plog(driver, name)
 
-            if not driver == "QHYCCD_Direct_Control":
+            if not driver == "QHYCCD_Direct_Control" and not driver == 'zwo_native_driver':
                 self.camera = win32com.client.Dispatch(driver)
             else:
                 self.camera = None
@@ -918,6 +919,7 @@ class Camera:
             self._imageavailable = self._ascom_imageavailable
             self._getImageArray = self._ascom_getImageArray
             self.description = "ASCOM"
+            self.zwo=False
             self.maxim = False
             self.ascom = True
             self.theskyx = False
@@ -939,7 +941,7 @@ class Camera:
             self.imagesize_x = self.camera.CameraXSize
             self.imagesize_y = self.camera.CameraYSize
 
-        elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
+        elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera" or driver =="TheSky64.ccdsoftCamera":
             plog("Connecting to TheSkyX")
             self._connected = self._theskyx_connected
             self._connect = self._theskyx_connect
@@ -957,20 +959,24 @@ class Camera:
             self.camera.AutoSaveOn = 1
             self.camera.Subframe = 0
             self.description = "TheSkyX"
+            self.zwo=False
             self.maxim = False
             self.ascom = False
             self.theskyx = True
             self.qhydirect = False
             plog("TheSkyX is connected:  ")
+            # self.app = win32com.client.Dispatch(
+            #     "CCDSoft2XAdaptor.ccdsoft5Camera")
+
             self.app = win32com.client.Dispatch(
-                "CCDSoft2XAdaptor.ccdsoft5Camera")
+                driver)
 
             # Initialise Camera Size here
             # Take a quick cheeky frame to get imagesize
             tempcamera = win32com.client.Dispatch(self.driver)
             tempcamera.Connect()
             self._stop_expose()
-            tempcamera.Frame = 2
+            tempcamera.Frame = 1
             tempcamera.ExposureTime = 0
             tempcamera.ImageReduction = 0
             tempcamera.TakeImage()
@@ -1116,6 +1122,7 @@ class Camera:
             self._getImageArray = self._qhyccd_getImageArray
 
             self.description = "QHYDirectControl"
+            self.zwo=False
             self.maxim = False
             self.ascom = False
             self.theskyx = False
@@ -1124,6 +1131,68 @@ class Camera:
             # Initialise Camera Size here
             self.imagesize_x = int(i_h)   #20250101  Was i_h   WER
             self.imagesize_y = int(i_w)
+
+        elif driver == 'zwo_native_driver':
+            
+            sdk_path = "support_info/ASISDK/lib/x64/ASICamera2.dll"
+            asi.init(sdk_path)
+            # Check connected cameras
+            num_cameras = asi.get_num_cameras()
+            if num_cameras == 0:
+                print("No ZWO cameras detected.")
+            print(f"Number of cameras detected: {num_cameras}")
+
+            # Get camera details
+            camera_index = 0 # 0 is first camera
+            global zwocamera 
+            zwocamera = asi.Camera(camera_index)
+            camera_info = zwocamera.get_camera_property()
+            print(f"Using camera: {camera_info['Name']}")
+            
+            # Configure camera settings
+            gain = 300 # low read noise, high gain for short exposures.
+            zwocamera.set_control_value(asi.ASI_GAIN, gain)
+            zwocamera.set_control_value(asi.ASI_BANDWIDTHOVERLOAD, 40)  # Optional: Adjust for your system
+            zwocamera.set_image_type(asi.ASI_IMG_RAW16)  # Use RAW8 image type
+            
+            
+            
+            # NB NB NB Considerputting this up higher.
+            # plog("Maxim camera is initializing.")
+            self._connected = self._zwo_connected
+            self._connect = self._zwo_connect
+            self._set_setpoint = self._zwo_set_setpoint
+            self._setpoint = self._zwo_setpoint
+            self._temperature = self._zwo_temperature
+            self._cooler_on = self._zwo_cooler_on
+            self._set_cooler_on = self._zwo_set_cooler_on
+            self._expose = self._zwo_expose
+            self._stop_expose = self._zwo_stop_expose
+            self._imageavailable = self._zwo_imageavailable
+            self._getImageArray = self._zwo_getImageArray
+
+            self.description = "ZWO"
+            self.zwo=True
+            self.maxim = False
+            self.ascom = False
+            self.theskyx = False
+            self.qhydirect = False
+            # plog("Maxim is connected:  ", self._connect(True))
+            # self.app = win32com.client.Dispatch("Maxim.Application")
+            # plog(self.camera)
+            # self.camera.SetFullFrame()
+            # self.camera.SetFullFrame
+
+            # Quick shot to get camera size
+            # Get image dimensions from ROI
+            roi_format = zwocamera.get_roi_format()
+            #breakpoint()
+
+            self.imagesize_x = roi_format[0]
+            self.imagesize_y = roi_format[1]
+
+            # plog("Control is via Maxim camera interface, not ASCOM.")
+            # plog("Please note telescope is NOT connected to Maxim.")        
 
         elif driver == 'maxim':
             # NB NB NB Considerputting this up higher.
@@ -1141,6 +1210,7 @@ class Camera:
             self._getImageArray = self._maxim_getImageArray
 
             self.description = "MAXIM"
+            self.zwo=False
             self.maxim = True
             self.ascom = False
             self.theskyx = False
@@ -1173,6 +1243,7 @@ class Camera:
             self._getImageArray = self._dummy_getImageArray
 
             self.description = "DUMMY"
+            self.zwo=False
             self.maxim = False
             self.ascom = False
             self.theskyx = False
@@ -2337,7 +2408,73 @@ class Camera:
         #return np.random.randint(0, 65536, size=(2400, 2400), dtype=np.uint16)
 
 
+    def _zwo_connected(self):
+        return True
 
+    def _zwo_connect(self, p_connect):
+        #self.camera.LinkEnabled = p_connect
+        return True
+
+    def _zwo_temperature(self):
+        # print(zwocamera.get_control_value(asi.ASI_TEMPERATURE))
+        # zwocamera.get_control_value(asi.ASI_COOLER_ON)
+        # print(zwocamera.get_control_value(asi.ASI_TEMPERATURE))
+        
+        #return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)/10)
+        return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)[0])/10, 0,0, zwocamera.get_control_value(asi.ASI_COOLER_POWER_PERC)
+
+    def _zwo_cooler_power(self):
+        return float(zwocamera.get_control_value(asi.ASI_COOLER_POWER_PERC)[0])
+
+    def _zwo_heatsink_temp(self):
+        return self.camera.HeatSinkTemperature
+
+    def _zwo_cooler_on(self):
+        zwocamera.set_control_value(asi.ASI_COOLER_ON, True)
+        return zwocamera.get_control_value(asi.ASI_COOLER_ON)
+
+    def _zwo_set_cooler_on(self):
+        #self.camera.CoolerOn = True
+        return  True
+    
+    def _zwo_set_setpoint(self, p_temp):
+        zwocamera.set_control_value(asi.ASI_TARGET_TEMP, int(p_temp))
+        
+        return p_temp
+
+    def _zwo_setpoint(self):
+        return self.camera.TemperatureSetpoint
+
+    def _zwo_expose(self, exposure_time, bias_dark_or_light_type_frame):
+        # if bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark':
+        #     imtypeb = 0
+        # else:
+        #     imtypeb = 1
+        # self.camera.Expose(exposure_time, imtypeb)
+        
+        zwocamera.set_control_value(asi.ASI_EXPOSURE, exposure_time * 1000 * 1000)  # Convert to microseconds
+        zwocamera.start_exposure()
+
+    def _zwo_stop_expose(self):
+        # self.camera.AbortExposure()
+        # self.expresult = {}
+        # self.expresult["stopped"] = True
+        print ("Stop expose not implemented")
+
+    def _zwo_imageavailable(self):
+        if zwocamera.get_exposure_status() == 1:
+            return False
+        else:
+            return True
+
+    def _zwo_getImageArray(self):
+        
+        frame = zwocamera.get_data_after_exposure()
+        
+        return np.frombuffer(frame, dtype=np.uint16).reshape(self.imagesize_x,self.imagesize_y)
+    
+    
+    
 
 
 
@@ -3066,19 +3203,20 @@ class Camera:
 
                 self.current_filter = g_dev['fil'].filter_selected
             else:
-                plog('Warning: null filterwheel detected, skipping filter setup')
+                requested_filter_name = 'none'
+                #plog('Warning: null filterwheel detected, skipping filter setup')
                 self.current_filter = None
         except Exception as e:
             plog("Camera filter setup:  ", e)
             plog(traceback.format_exc())
 
 
-        plog ("REQUESTED FILTER NAME: " + str(requested_filter_name))
-        plog ("CURRENT FILTER: " + str(self.current_filter))
+        # plog ("REQUESTED FILTER NAME: " + str(requested_filter_name))
+        # plog ("CURRENT FILTER: " + str(self.current_filter))
 
 
         this_exposure_filter = copy.deepcopy( self.current_filter)
-        plog ("THIS EXPOSURE FILTER: " + str(this_exposure_filter))
+        # plog ("THIS EXPOSURE FILTER: " + str(this_exposure_filter))
 
 
         if g_dev["fil"].null_filterwheel == False:
@@ -3151,6 +3289,8 @@ class Camera:
                 if this_exposure_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
                     # For narrowband and low throughput filters, increase base exposure time.
                     ssExp = ssExp * ssNBmult
+            else:
+                this_exposure_filter = 'none'
                 #
             if not imtype.lower() in ["light", "expose"]:
                 Nsmartstack = 1
@@ -3167,7 +3307,6 @@ class Camera:
                     smartstackinfo = 'narrowband'
                 else:
                     smartstackinfo = 'broadband'
-            else:
                 Nsmartstack = 1
                 SmartStackID = 'no'
                 smartstackinfo = 'no'

@@ -51,7 +51,7 @@ site_config = {
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 60,
     'lowest_requestable_altitude': 20,  # Degrees. For normal pointing requests don't allow requests to go this low.
-    'lowest_acceptable_altitude' : -10.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+    'lowest_acceptable_altitude' : -15.0, # Below this altitude, it will automatically try to home and park the scope to recover.
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
@@ -152,7 +152,7 @@ site_config = {
     'auto_eve_sky_flat': True,
     
      'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
-    'auto_midnight_moonless_bias_dark': True,
+    'auto_midnight_moonless_bias_dark': False,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     
@@ -380,8 +380,11 @@ site_config = {
             'parent': 'Main OTA',
             'name': 'focuser',
             'desc':  'Planewave Focuser',
-            'driver': 'ASCOM.PWI3.Focuser',
+            #'driver': 'ASCOM.myDCFocuserASCOM.Focuser',
+            'driver': 'dummy',
 			'com_port':  'COM9',
+            
+            'relative_focuser': True,
 
             'focuser_movement_settle_time': 10,
             'start_at_config_reference': False,
@@ -457,8 +460,10 @@ site_config = {
             
             'overscan_trim' : 'asi1600',
             'service_date': '20211111',
-            'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
-            
+            #'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+            #'driver': "dummy",
+            #'driver': "TheSky64.ccdsoftCamera",
+            'driver' :'zwo_native_driver',
             
             'detector':  'KAF16803',
             'manufacturer':  'On-Semi',
