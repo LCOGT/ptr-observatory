@@ -525,7 +525,7 @@ site_config = {
                'flipx_jpeg' : False,
                'flipy_jpeg' : False,
                'rotate180_jpeg' : False,
-               'rotate90_jpeg' : False,
+               'rotate90_jpeg' : True,
                'rotate270_jpeg' : False,
                
                # For large fields of view, crop the images down to solve faster.                 
