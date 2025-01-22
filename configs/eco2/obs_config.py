@@ -371,6 +371,7 @@ site_config = {
             #'driver': 'ASCOM.SeletekFocuser.Focuser',
             'driver': 'SeletekFocuser.Focuser',
 			'com_port':  'COM9',
+            'relative_focuser': False,
             'focuser_movement_settle_time': 10,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,

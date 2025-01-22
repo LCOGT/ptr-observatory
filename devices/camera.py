@@ -3290,7 +3290,7 @@ class Camera:
                     # For narrowband and low throughput filters, increase base exposure time.
                     ssExp = ssExp * ssNBmult
             else:
-                this_exposure_filter = 'none'
+                this_exposure_filter = g_dev['fil'].name
                 #
             if not imtype.lower() in ["light", "expose"]:
                 Nsmartstack = 1
@@ -4291,6 +4291,7 @@ class Camera:
                     self.flatFiles[this_exposure_filter + "_bin" + str(1)])
             except:
                 plog("couldn't find flat for this filter")
+                #breakpoint()
                 intermediate_tempflat = None
         ## For traditional exposures, spin up all the subprocesses ready to collect and process the files once they arrive
         if (not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing'):
@@ -5287,6 +5288,7 @@ class Camera:
                         outputimg = np.divide(outputimg, intermediate_tempflat)
                     except Exception as e:
                         plog("flatting light frame failed", e)
+                        #breakpoint()
 
                     try:
                         outputimg[self.bpmFiles[str(1)]] = np.nan
