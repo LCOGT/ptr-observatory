@@ -787,7 +787,7 @@ class Observatory:
             # For each of this device type, create the device object and save it in the appropriate lookup dicts
             for device_name in device_names:
 
-                print(f"Initializing {dev_type} device: {device_name}")
+                plog(f"Initializing {dev_type} device: {device_name}")
                 driver = devices_of_type[device_name].get("driver")
                 settings = devices_of_type[device_name].get("settings", {})
 
@@ -808,7 +808,7 @@ class Observatory:
                 elif dev_type == "camera":
                     device = Camera(driver, device_name, self.config, self)
                 elif dev_type == "sequencer":
-                    device = Sequencer(driver, device_name, self.config, self, self.astro_events)
+                    device = Sequencer(self)
                 else:
                     continue
 
@@ -831,7 +831,7 @@ class Observatory:
                 print(f"It might also be because the role is for a type of device that is not included in config.device_types.")
                 print("\n")
 
-        plog("Finished initializing devices")
+        print("--- Finished Initializing Devices ---\n")
 
     def update_config(self):
         """Sends the config to AWS."""
@@ -2742,7 +2742,7 @@ class Observatory:
                 not_slewing = True
             elif not g_dev["mnt"].return_slewing():
                 not_slewing = True
-                
+
             if time.time()-self.pulse_timer >30:
                 self.pulse_timer=time.time()
                 plog('.')
