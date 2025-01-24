@@ -206,18 +206,16 @@ class Mount:
     that is rarely disturbed or removed.
     '''
 
-    def __init__(self, driver: str, name: str, settings: dict, config: dict, observatory: 'Observatory', astro_events, tel=False):
+    def __init__(self, driver: str, name: str, config: dict, observatory: 'Observatory', tel=False):
         self.name = name
-        self.astro_events = astro_events
         g_dev['mnt'] = self
 
         self.obsid = config['obs_id']
         self.obsid_path = g_dev['obs'].obsid_path
-        self.observatory_config = config
         self.config = config['mount'][name]
         self.site_config = config
-        self.wema_config = observatory.astro_events.wema_config
-        self.settings = settings
+        self.wema_config = observatory.wema_config
+        self.settings = self.config['settings']
         self.obs = observatory # use this to access the parent obsevatory class
 
         self.role = 'mount' # since we'll only ever have one mount, it automatically gets the role of 'mount'
@@ -1854,8 +1852,8 @@ class Mount:
 
                 plog ("Moving to requested Flat Spot, az: " + str(round(az,1)) + " alt: " + str(round(alt,1)))
 
-                if self.observatory_config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
-                    if (90-alt) < self.observatory_config['degrees_to_avoid_zenith_area_for_calibrations']:
+                if self.site_config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+                    if (90-alt) < self.site_config['degrees_to_avoid_zenith_area_for_calibrations']:
                         g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
                         plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
                         return 'refused'
@@ -1890,7 +1888,7 @@ class Mount:
 
         sun_dist = sun_coords.separation(temppointing)
         if g_dev['obs'].sun_checks_on:
-            if sun_dist.degree <  self.observatory_config['closest_distance_to_the_sun'] and g_dev['obs'].open_and_enabled_to_observe:
+            if sun_dist.degree <  self.site_config['closest_distance_to_the_sun'] and g_dev['obs'].open_and_enabled_to_observe:
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
                     plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
@@ -1904,7 +1902,7 @@ class Mount:
             else:
                 moon_coords=get_body('moon', Time.now())  #20250103  Per deprication warning.
                 moon_dist = moon_coords.separation(temppointing)
-                if moon_dist.degree <  self.observatory_config['closest_distance_to_the_moon']:
+                if moon_dist.degree <  self.site_config['closest_distance_to_the_moon']:
                     g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
                     plog("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
                     return 'refused'
@@ -1912,7 +1910,7 @@ class Mount:
         # Third thing, check that the requested coordinates are not
         # below a reasonable altitude
         if g_dev['obs'].altitude_checks_on:
-            if alt < self.observatory_config['lowest_requestable_altitude']:
+            if alt < self.site_config['lowest_requestable_altitude']:
                 g_dev['obs'].send_to_user("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
                 plog("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
                 return 'refused'

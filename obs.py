@@ -792,7 +792,7 @@ class Observatory:
                         time.sleep(10)
                         urllib.request.urlopen("http://localhost:8220/mount/connect")
                         time.sleep(5)
-                    device = Mount(driver, device_name, settings, self.config, self, self.astro_events, tel=True)
+                    device = Mount(driver, device_name, self.config, self, tel=True)
                 elif dev_type == "rotator":
                     device = Rotator(driver, device_name, self.config, self)
                 elif dev_type == "focuser":
@@ -4491,10 +4491,8 @@ class Observatory:
                 # Recreate the mount
                 rebooted_mount = Mount(self.devices['mount'].config['driver'],
                         self.name,
-                        self.devices['mount'].settings,
                         self.config,
                         self,
-                        self.astro_events,
                         tel=True)
                 self.all_devices['mount'][self.devices['mount'].name] = rebooted_mount
                 self.devices['mount'] = rebooted_mount # update the 'mount' role to point to the new mount
