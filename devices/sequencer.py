@@ -135,7 +135,6 @@ class Sequencer:
     def __init__(self, observatory: 'Observatory'):
         self.obs = observatory # the parent observatory object
         self.config = self.obs.config
-        self.astro_events = self.obs.astro_events
 
         g_dev['seq'] = self
         self.connected = True
@@ -491,9 +490,7 @@ class Sequencer:
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
 
-        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-
-
+        ephem_now = ephem.now()
 
         if (
             (datetime.datetime.now() - g_dev['obs'].observing_status_timer)
@@ -2231,17 +2228,14 @@ class Sequencer:
             os.makedirs(g_dev['obs'].obsid_path + "smartstacks")
 
         # Reopening config and resetting all the things.
-        self.astro_events.compute_day_directory()
-        self.astro_events.calculate_events(endofnightoverride='yes')
-        self.astro_events.display_events()
-        g_dev['obs'].astro_events = self.astro_events
-
+        self.obs.astro_events.calculate_events(endofnightoverride='yes')
+        self.obs.astro_events.display_events()
 
         '''
         Send the config to aws.
         '''
         uri = f"{self.config['obs_id']}/config/"
-        self.config['events'] = g_dev['events']
+        self.config['events'] = self.obs.astro_events.event_dict
         response = authenticated_request("PUT", uri, self.config)
         if response:
             plog("Config uploaded successfully.")
@@ -2297,12 +2291,6 @@ class Sequencer:
         )
         g_dev["foc"].last_focus_fwhm = None
         g_dev["foc"].focus_tracker = [np.nan] * 10
-
-        # Reopening config and resetting all the things.
-        self.astro_events.compute_day_directory()
-        self.astro_events.calculate_events()
-        self.astro_events.display_events()
-        g_dev['obs'].astro_events = self.astro_events
 
         self.nightly_reset_complete = True
 
@@ -3800,7 +3788,7 @@ class Sequencer:
         self.morn_sky_flat_latch = True
         self.total_sequencer_control=True
 
-        to_zone = tz.gettz(g_dev['evnt'].wema_config['TZ_database_name'])
+        to_zone = tz.gettz(self.obs.astro_events.wema_config['TZ_database_name'])
         hourtime=datetime.datetime.now().astimezone(to_zone).hour
 
         if hourtime > 0 and hourtime < 12:
@@ -4120,7 +4108,7 @@ class Sequencer:
 
                     if self.next_flat_observe < time.time():
                         try:
-                            sky_lux, _ = g_dev['evnt'].illuminationNow()    # NB NB Eventually we should MEASURE this.
+                            sky_lux, _ = self.obs.astro_events.illuminationNow()    # NB NB Eventually we should MEASURE this.
                         except:
                             sky_lux = None
 
@@ -5586,7 +5574,7 @@ class Sequencer:
         with open(tpointnamefile, "a+") as f:
             f.write(":NODA\n")
             f.write(":EQUAT\n")
-            latitude = float(g_dev['evnt'].wema_config['latitude'])
+            latitude = float(self.obs.astro_events.wema_config['latitude'])
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
 
@@ -5858,7 +5846,7 @@ class Sequencer:
         with open(tpointnamefile, "a+") as f:
             f.write(":NODA\n")
             f.write(":EQUAT\n")
-            latitude = float(g_dev['evnt'].wema_config['latitude'])
+            latitude = float(self.obs.astro_events.wema_config['latitude'])
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
             if (not np.isnan(entry[2])) and (not np.isnan(entry[3]) ):

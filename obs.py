@@ -170,6 +170,7 @@ class Observatory:
 
         self.config = ptr_config
         self.wema_name = self.config["wema_name"]
+        self.wema_config = self.get_wema_config() # fetch the wema config from AWS
 
         # Used to tell whether the obs is currently rebooting theskyx
         self.rebooting_theskyx = False
@@ -374,13 +375,9 @@ class Observatory:
         self.check_lightning = self.config.get("has_lightning_detector", False)
 
         # Timers to only update status at regular specified intervals.
-        self.observing_status_timer = datetime.datetime.now() - datetime.timedelta(
-            days=1
-        )
+        self.observing_status_timer = datetime.datetime.now() - datetime.timedelta(days=1)
         self.observing_check_period = self.config["observing_check_period"]
-        self.enclosure_status_timer = datetime.datetime.now() - datetime.timedelta(
-            days=1
-        )
+        self.enclosure_status_timer = datetime.datetime.now() - datetime.timedelta(days=1)
         self.enclosure_check_period = self.config["enclosure_check_period"]
         self.obs_settings_upload_timer = time.time() - 20
         self.obs_settings_upload_period = 60
@@ -440,23 +437,20 @@ class Observatory:
 
         # Set default obs safety settings at bootup
         self.scope_in_manual_mode = self.config["scope_in_manual_mode"]
-        # self.scope_in_manual_mode = True
         self.moon_checks_on = self.config["moon_checks_on"]
         self.sun_checks_on = self.config["sun_checks_on"]
         self.altitude_checks_on = self.config["altitude_checks_on"]
-        self.daytime_exposure_time_safety_on = self.config[
-            "daytime_exposure_time_safety_on"
-        ]
+        self.daytime_exposure_time_safety_on = self.config["daytime_exposure_time_safety_on"]
         self.mount_reference_model_off = self.config["mount_reference_model_off"]
 
         self.admin_owner_commands_only = self.config.get("owner_only_commands", False)
-        self.assume_roof_open = self.config.get("simulate_open_roof", False)  #Note NB NB this is conusing with the attribut above...about 9 lines.
+        self.assume_roof_open = self.config.get("simulate_open_roof", False)
         self.auto_centering_off = self.config.get("auto_centering_off", False)
+
 
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
-        self.astro_events = Events(self.config)
-        self.astro_events.compute_day_directory()
+        self.astro_events = Events(self.config, self.wema_config)
         self.astro_events.calculate_events()
         self.astro_events.display_events()
 
@@ -833,6 +827,20 @@ class Observatory:
                 print("\n")
 
         print("--- Finished Initializing Devices ---\n")
+
+    def get_wema_config(self):
+        """ Fetch the WEMA config from AWS """
+        wema_config = None
+        url = f"https://api.photonranch.org/api/{self.wema_name}/config/"
+        try:
+            response = requests.get(url, timeout=20)
+            wema_config = response.json()['configuration']
+            wema_last_recorded_day_dir = wema_config['events'].get('day_directory', '<missing>')
+            plog(f"Retrieved wema config, lastest version is from day_directory {wema_last_recorded_day_dir}")
+        except Exception as e:
+            plog("WARNING: failed to get wema config!", e)
+        return wema_config
+
 
     def update_config(self):
         """Sends the config to AWS."""
@@ -4218,8 +4226,7 @@ class Observatory:
         """
         Requests the current enclosure status from the related WEMA.
         """
-        wema = self.wema_name
-        uri_status = f"https://status.photonranch.org/status/{wema}/enclosure/"
+        uri_status = f"https://status.photonranch.org/status/{self.wema_name}/enclosure/"
         try:
             aws_enclosure_status = reqs.get(uri_status, timeout=20)
             aws_enclosure_status = aws_enclosure_status.json()
@@ -4309,8 +4316,7 @@ class Observatory:
         Requests the current enclosure status from the related WEMA.
         """
 
-        wema = self.wema_name
-        uri_status = f"https://status.photonranch.org/status/{wema}/weather/"
+        uri_status = f"https://status.photonranch.org/status/{self.wema_name}/weather/"
 
         try:
             aws_weather_status = reqs.get(uri_status, timeout=20)

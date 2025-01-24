@@ -53,7 +53,7 @@ import time
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: 
+if TYPE_CHECKING:
     from obs import Observatory
 
 DEBUG = False
@@ -215,6 +215,8 @@ class Mount:
         self.obsid_path = g_dev['obs'].obsid_path
         self.observatory_config = config
         self.config = config['mount'][name]
+        self.site_config = config
+        self.wema_config = observatory.astro_events.wema_config
         self.settings = settings
         self.obs = observatory # use this to access the parent obsevatory class
 
@@ -249,14 +251,14 @@ class Mount:
         else:
             self.theskyx = False
 
-        self.site_coordinates = EarthLocation(lat=float(g_dev['evnt'].wema_config['latitude'])*u.deg, \
-                                lon=float(g_dev['evnt'].wema_config['longitude'])*u.deg,
-                                height=float(g_dev['evnt'].wema_config['elevation'])*u.m)
-        self.latitude_r = g_dev['evnt'].wema_config['latitude']*DTOR
+        self.site_coordinates = EarthLocation(lat=float(self.wema_config['latitude'])*u.deg, \
+                                lon=float(self.wema_config['longitude'])*u.deg,
+                                height=float(self.wema_config['elevation'])*u.m)
+        self.latitude_r = self.wema_config['latitude']*DTOR
         self.sin_lat = math.sin(self.latitude_r)
         self.cos_lat = math.cos(self.latitude_r)
-        self.pressure =g_dev['evnt'].wema_config['reference_pressure']
-        self.temperature = g_dev['evnt'].wema_config['reference_ambient']
+        self.pressure =self.wema_config['reference_pressure']
+        self.temperature = self.wema_config['reference_ambient']
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
@@ -386,8 +388,8 @@ class Mount:
         self.dec_offset = 0.0
         self.move_time = 0
         self.ephem_obs = ephem.Observer()
-        self.ephem_obs.long = g_dev['evnt'].wema_config['longitude']*DTOR
-        self.ephem_obs.lat = g_dev['evnt'].wema_config['latitude']*DTOR
+        self.ephem_obs.long = self.wema_config['longitude']*DTOR
+        self.ephem_obs.lat = self.wema_config['latitude']*DTOR
         self.tpt_timer = time.time()
         self.theskyx_tracking_rescues = 0
 
@@ -402,8 +404,8 @@ class Mount:
             self.longterm_storage_of_flip_references=[]
         mnt_shelf.close()
 
-        plog ("Mount deviations, for mount then for flipflip:", 
-                self.longterm_storage_of_mount_references, 
+        plog ("Mount deviations, for mount then for flipflip:",
+                self.longterm_storage_of_mount_references,
                 self.longterm_storage_of_flip_references)
 
         self.last_mount_reference_time=time.time() - 86400
