@@ -987,31 +987,44 @@ class Camera:
 
         elif driver == "QHYCCD_Direct_Control":
             global qhycam
-            plog("SKIPPING cycle the QHY camera power via Ultimate Powerbox V2 - Does not work yet :(((")
-            #self.power_box_driver = self.config["switch_driver"]
-# =============================================================================
-#             breakpoint()
-#
-#             try:
-#                 pb = win32com.client.Dispatch(self.power_box_driver)
-#                 pb.connected = True
-#                 n_switches = pb.MaxSwitch
-#                 for ii in range(n_switches):
-#                     pb.setSwitch(ii, 0)
-#                 print("Cam power is off")
-#                 time.sleep(5)
-#                 for i in range(n_switches):
-#                     pb.setSwitch(ii,  1)
-#                 print("Cam power is turning on ")
-#                 time.sleep(10)
-#                 plog("Cam power is, after 30 sec:  ", pb.getSwitchValue(6))
-#
-#
-#             except:
-#                 plog("Failed to connect to Powerbox V2, sorry!")
-#
-#             breakpoint()
-# =============================================================================
+            plog("TRYING TO cycle the QHY camera power via Ultimate Powerbox V2")
+            self.power_box_driver = self.config["switch_driver"]
+
+
+
+            try:
+                pb = win32com.client.Dispatch(self.power_box_driver)
+                pb.connected = True
+                n_switches = pb.MaxSwitch
+                #To inspect, try:
+                # for ii in range(n_switches):
+                #     time.sleep(0.1)
+                #     print(ii, pb.getSwitchValue(ii))
+
+                #First we need to turn everything on
+                for ii in range(n_switches):
+                    time.sleep(0.1)
+                    pb.setSwitchValue(ii, 1)
+                #Now camera off
+                pb.SetSwitchValue(6, 0)
+                print("Cam power is off for 5 sec.")
+                time.sleep(5)
+
+                print("Cam power is turning on ")
+                pb.SetSwitchValue(6, 1)
+                time.sleep(10)
+                plog("Cam power is, after 10 sec:  ", pb.getSwitchValue(6))
+
+                #A double check
+                # for ii in range(n_switches):
+                #     print(ii, pb.GetSwitchValue(ii))
+
+
+            except:
+                plog("Failed to connect to Powerbox V2, sorry!")
+
+
+
             plog("Connecting directly to QHY")
             qhycam = Qcam(os.path.join("support_info/qhysdk/x64/qhyccd.dll"))
 

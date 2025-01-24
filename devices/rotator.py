@@ -9,7 +9,7 @@ from global_yard import g_dev
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: 
+if TYPE_CHECKING:
     from obs import Observatory
 
 
@@ -47,6 +47,7 @@ class Rotator:
                 break
 
         win32com.client.pythoncom.CoInitialize()
+
         self.driver=driver
         self.rotator = win32com.client.Dispatch(driver)
         time.sleep(3)
@@ -55,7 +56,7 @@ class Rotator:
         self.rotator_message = "-"
         print("Rotator connected,  at:  ", round(self.rotator.TargetPosition, 4))
 
-        # The telescope driver also needs to be connected
+        #The telescope driver also needs to be connected
         self.rotator_telescope = win32com.client.Dispatch(driver.replace('Rotator','Telescope'))
         try:
             self.rotator_telescope.Connected = True

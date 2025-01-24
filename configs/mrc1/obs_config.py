@@ -230,18 +230,18 @@ site_config = {
     },
     # Initial roles are assigned here. These may change during runtime.
     # Value is the device display name
-    # This is where to configure a second device of the same type if you want to control it in the site code. 
+    # This is where to configure a second device of the same type if you want to control it in the site code.
     # Devices are referenced in obs with self.devices['device_role']
-    # Also important to note: these must match the roles in obs.py create_devices(). 
+    # Also important to note: these must match the roles in obs.py create_devices().
     # Roles are standardized across all sites even if not all roles are used at each site.
     'device_roles': {
         'mount': 'eastpier',
         'main_rotator': 'rotator',
         'main_focuser': 'focuser',
-        'main_fw': 'Dual filter wheel', 
-        
+        'main_fw': 'Dual filter wheel',
+
         # Cameras
-        'main_cam': 'sq100sm',
+        'main_cam': 'camera_1_1',
         # Cameras below aren't currently used, but here as an example.
         'guide_cam': None,
         'widefield_cam': None,
@@ -432,9 +432,9 @@ site_config = {
             'parent': 'Main OTA',
             'name': 'rotator',
             'desc':  'Opetc Gemini',
-            'driver': 'ASCOM.AltAzDS.Rotator',   #ASCOM.OptecGemini1.Rotator, ASCOM.OptecGemini.Rotator
-            'telescope_driver': 'ASCOM.AltAzDS.Telescope',
-            'com_port':  None,
+            'driver': 'ASCOM.AltAzDS.Rotator',  #ASCOM.AltAzDS.Rotator','   #ASCOM.OptecGemini1.Rotator, ASCOM.OptecGemini.Rotator
+            'telescope_driver': 'ASCOM.AltAzDS.Telescope',  #No longer needed??
+            'com_port':  'COM14',
             'minimum': -180.0,
             'maximum': 360.0,
             'step_size':  0.0001,
@@ -645,7 +645,7 @@ site_config = {
 
 
     'camera': {
-        'sq100sm': {
+        'camera_1_1': {
             'parent': 'telescope1',
             'name': 'sq100sm',  # Important because this points to a server file structure by that name.
             'desc':  'QHY 461 BSI Mono',
