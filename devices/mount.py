@@ -208,15 +208,15 @@ class Mount:
 
     def __init__(self, driver: str, name: str, config: dict, observatory: 'Observatory', tel=False):
         self.name = name
+        self.obs = observatory # use this to access the parent obsevatory class
         g_dev['mnt'] = self
 
         self.obsid = config['obs_id']
-        self.obsid_path = g_dev['obs'].obsid_path
+        self.obsid_path = self.obs.obsid_path
         self.config = config['mount'][name]
         self.site_config = config
-        self.wema_config = observatory.wema_config
+        self.wema_config = self.obs.wema_config
         self.settings = self.config['settings']
-        self.obs = observatory # use this to access the parent obsevatory class
 
         self.role = 'mount' # since we'll only ever have one mount, it automatically gets the role of 'mount'
 
