@@ -2931,7 +2931,7 @@ class Camera:
             skip_calibration_check = True
 
         if not skip_daytime_check and g_dev['obs'].daytime_exposure_time_safety_on:
-            sun_az, sun_alt = g_dev['evnt'].sun_az_alt_now()
+            sun_az, sun_alt = self.obs.astro_events.sun_az_alt_now()
             if sun_alt > -5:
                 if exposure_time > float(self.settings['max_daytime_exposure']):
                     g_dev['obs'].send_to_user("Exposure time reduced to maximum daytime exposure time: " + str(
@@ -4905,7 +4905,71 @@ class Camera:
                         ha_corr=g_dev["mnt"].ha_corr
                         dec_corr=g_dev["mnt"].dec_corr
 
-                    payload=copy.deepcopy((outputimg, pier_side, self.settings['is_osc'], frame_type, self.settings['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, 'longstack_deprecated', ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, ha_corr, dec_corr, focus_position, self.site_config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet, substack,expected_endpoint_of_substack_exposure,substack_start_time,0.0, self.readout_time, sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header, self.substacker_filenames, g_dev["day"], exposure_filter_offset, g_dev["fil"].null_filterwheel, g_dev['evnt'].wema_config,smartstackthread_filename, septhread_filename, mainjpegthread_filename, platesolvethread_filename))
+                    payload=copy.deepcopy(
+                        (
+                            outputimg,
+                            pier_side,
+                            self.settings['is_osc'],
+                            frame_type,
+                            self.settings['reject_new_flat_by_known_gain'],
+                            avg_mnt,
+                            avg_foc,
+                            avg_rot,
+                            self.setpoint,
+                            self.tempccdtemp,
+                            self.ccd_humidity,
+                            self.ccd_pressure,
+                            self.darkslide_state,
+                            exposure_time,
+                            this_exposure_filter,
+                            exposure_filter_offset,
+                            self.pane,
+                            opt,
+                            observer_user_name,
+                            self.hint,
+                            azimuth_of_observation,
+                            altitude_of_observation,
+                            airmass_of_observation,
+                            self.pixscale,
+                            smartstackid,
+                            sskcounter,Nsmartstack,
+                            'longstack_deprecated',
+                            ra_at_time_of_exposure,
+                            dec_at_time_of_exposure,
+                            manually_requested_calibration,
+                            object_name,
+                            object_specf,
+                            ha_corr,
+                            dec_corr,
+                            focus_position,
+                            self.site_config,
+                            self.name,
+                            self.camera_known_gain,
+                            self.camera_known_readnoise,
+                            start_time_of_observation,
+                            observer_user_id,
+                            self.camera_path,
+                            solve_it,
+                            next_seq,
+                            zoom_factor,
+                            useastrometrynet,
+                            substack,
+                            expected_endpoint_of_substack_exposure,
+                            substack_start_time,
+                            0.0,
+                            self.readout_time,
+                            sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header,
+                            self.substacker_filenames,
+                            self.obs.astro_events.day_directory,
+                            exposure_filter_offset,
+                            g_dev["fil"].null_filterwheel,
+                            self.obs.astro_events.wema_config, # there should be a cleaner way to get this
+                            smartstackthread_filename,
+                            septhread_filename,
+                            mainjpegthread_filename,
+                            platesolvethread_filename
+                            )
+                        )
 
 
                     # It actually takes a few seconds to spin up the main subprocess, so we farm this out to a thread

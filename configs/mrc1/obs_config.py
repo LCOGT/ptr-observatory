@@ -225,7 +225,7 @@ site_config = {
         'selector':  None,
         'screen': 'screen',
         'filter_wheel': 'Dual filter wheel',
-        'camera': 'sq100sm',
+        'camera': 'camera_1_1',
         'sequencer': 'sequencer'
     },
     # Initial roles are assigned here. These may change during runtime.
@@ -401,12 +401,12 @@ site_config = {
             'rotator_name':  'rotator',
             'has_instrument_selector': False,  # This is a default for a single instrument system
             'selector_positions': 1,  # Note starts with 1
-            'instrument names':  ['sq100sm'],
+            'instrument names':  ['camera_1_1'],
             'instrument aliases':  ['QHY461Mono'],
             'configuration': {
-                "position1": ["darkslide1", "filter_wheel1", "filter_wheel2", "sq100sm"]
+                "position1": ["darkslide1", "filter_wheel1", "filter_wheel2", "camera_1_1"]
             },
-            'camera_name':  'sq100sm',
+            'camera_name':  'camera_1_1',
             'filter_wheel_name':  'Dual filter wheel',
             'has_fans':  True,
             'has_cover': False,
@@ -549,7 +549,7 @@ site_config = {
             'shutdown_script':  None,
             'ports': 1,
             'instruments':  ['Main_camera'],  # , 'eShel_spect', 'planet_camera', 'UVEX_spect'],
-            'cameras':  ['sq100sm'],  # , 'camera_1_2', None, 'camera_1_4'],
+            'cameras':  ['camera_1_1'],  # , 'camera_1_2', None, 'camera_1_4'],
             'guiders':  [None],  # , 'guider_1_2', None, 'guide_1_4'],
             'default': 0
         },
