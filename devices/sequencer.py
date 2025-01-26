@@ -1615,7 +1615,7 @@ class Sequencer:
                                 except:
                                     plog(traceback.format_exc())
                                     if g_dev['mnt'].theskyx:
-                                        self.kill_and_reboot_theskyx(new_ra, new_dec)
+                                        self.obs.kill_and_reboot_theskyx(new_ra, new_dec)
                                     else:
                                         plog(traceback.format_exc())
                                 g_dev['mnt'].wait_for_slew(wait_after_slew=False)
@@ -1625,7 +1625,7 @@ class Sequencer:
                                     plog("The SkyX had an error.")
                                     plog("Usually this is because of a broken connection.")
                                     plog("Killing then waiting 60 seconds then reconnecting")
-                                    self.kill_and_reboot_theskyx(new_ra,new_dec)
+                                    self.obs.kill_and_reboot_theskyx(new_ra,new_dec)
 
                             g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                             # try:
@@ -2312,7 +2312,7 @@ class Sequencer:
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
             plog ("Got here")
-            self.kill_and_reboot_theskyx(-1,-1)
+            self.obs.kill_and_reboot_theskyx(-1,-1)
             plog ("But didn't get here")
         return
 
@@ -5490,7 +5490,7 @@ class Sequencer:
                 plog ("Difficulty in directly slewing to object")
                 plog(traceback.format_exc())
                 if g_dev['mnt'].theskyx:
-                    self.kill_and_reboot_theskyx(grid_star[0]/15, grid_star[1])
+                    self.obs.kill_and_reboot_theskyx(grid_star[0]/15, grid_star[1])
                 else:
                     plog(traceback.format_exc())
 
@@ -5768,7 +5768,7 @@ class Sequencer:
                 plog ("Difficulty in directly slewing to object")
                 plog(traceback.format_exc())
                 if g_dev['mnt'].theskyx:
-                    self.kill_and_reboot_theskyx(grid_star[0] / 15, grid_star[1])
+                    self.obs.kill_and_reboot_theskyx(grid_star[0] / 15, grid_star[1])
                 else:
                     plog(traceback.format_exc())
 
@@ -6197,7 +6197,7 @@ class Sequencer:
                 except:
                     plog(traceback.format_exc())
                     if g_dev['mnt'].theskyx:
-                        self.kill_and_reboot_theskyx(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)
+                        self.obs.kill_and_reboot_theskyx(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)
                     else:
                         plog(traceback.format_exc())
 
