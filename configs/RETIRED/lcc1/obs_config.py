@@ -378,6 +378,8 @@ site_config = {
             #'driver': 'ASCOM.SeletekFocuser.Focuser',
             #'driver': 'SeletekFocuser.Focuser',
 			'driver': 'ASCOM.EAF.Focuser',
+            
+            'relative_focuser': False,
 			
             'com_port':  'COM9',
             'focuser_movement_settle_time': 3,
@@ -451,8 +453,10 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'Main OTA',
-            'name': 'lcy1qhy600c',      #Important because this points to a server file structure by that name.
-            'desc':  'QHY 600C Pro',
+            'name': 'lcy1qhy268c',      #Important because this points to a server file structure by that name.
+            'desc':  'QHY 268C Pro',
+            
+            'overscan_trim' : 'QHY268',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             
@@ -585,8 +589,23 @@ site_config = {
                 'crop_preview_ytop': 2,
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
-                'temp_setpoint': 0,    #Verify we can go colder, this system has a chiller
+                'temp_setpoint': 5,    #Verify we can go colder, this system has a chiller
+                
+                'temp_setpoint_tolerance': 2.5,
+                
                 'has_chiller': True,
+                
+                # This is the yearly range of temperatures.
+                # Based on New Mexico and Melbourne's variation... sorta similar.
+                # There is a cold bit and a hot bit and an inbetween bit.
+                # from the 15th of the month to the 15 of the month 
+                # 
+                # ( setpoint, day_warm_difference, day_warm troe our false)
+                'set_temp_setpoint_by_season' : True,
+                'temp_setpoint_nov_to_feb' : ( 5, 8, True),
+                'temp_setpoint_feb_to_may' : ( 5, 8, True),
+                'temp_setpoint_may_to_aug' : ( 5, 8, True),
+                'temp_setpoint_aug_to_nov' : ( 5, 8, True),
                 
                 'day_warm': True,
                 'day_warm_degrees' : 6, # Number of degrees to warm during the daytime.

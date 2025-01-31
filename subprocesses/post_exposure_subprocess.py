@@ -1592,7 +1592,7 @@ try:
     # WE CAN NOW DENAN THE IMAGE FOR THE JPEGS AND SUCH
 
     # If this is set to true, then it will output a sample of the image.
-    if True:
+    if False:
         hdufocus = fits.PrimaryHDU()
         hdufocus.data = hdu.data
         hdufocus.header = hdu.header
@@ -1666,7 +1666,7 @@ try:
     print ("Denan Image: " +str(time.time()-googtime))
 
     # If this is set to true, then it will output a sample of the image.
-    if True:
+    if False:
         hdufocus = fits.PrimaryHDU()
         hdufocus.data = hdu.data
         hdufocus.header = hdu.header
@@ -1745,7 +1745,7 @@ try:
 
 
         # If this is set to true, then it will output a sample of the image.
-        if True:
+        if False:
             hdufocus = fits.PrimaryHDU()
             hdufocus.data = hdusmalldata
             hdufocus.header = hdu.header

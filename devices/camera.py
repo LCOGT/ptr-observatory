@@ -993,31 +993,40 @@ class Camera:
 
         elif driver == "QHYCCD_Direct_Control":
             global qhycam
-            plog("SKIPPING cycle the QHY camera power via Ultimate Powerbox V2 - Does not work yet :(((")
-            #self.power_box_driver = self.config["switch_driver"]
-# =============================================================================
-#             breakpoint()
-#
-#             try:
-#                 pb = win32com.client.Dispatch(self.power_box_driver)
-#                 pb.connected = True
-#                 n_switches = pb.MaxSwitch
-#                 for ii in range(n_switches):
-#                     pb.setSwitch(ii, 0)
-#                 print("Cam power is off")
-#                 time.sleep(5)
-#                 for i in range(n_switches):
-#                     pb.setSwitch(ii,  1)
-#                 print("Cam power is turning on ")
-#                 time.sleep(10)
-#                 plog("Cam power is, after 30 sec:  ", pb.getSwitchValue(6))
-#
-#
-#             except:
-#                 plog("Failed to connect to Powerbox V2, sorry!")
-#
-#             breakpoint()
-# =============================================================================
+
+            try:
+                self.power_box_driver = self.config["switch_driver"]
+                pb = win32com.client.Dispatch(self.power_box_driver)
+                pb.connected = True
+                n_switches = pb.MaxSwitch
+                #To inspect, try:
+                # for ii in range(n_switches):
+                #     time.sleep(0.1)
+                #     print(ii, pb.getSwitchValue(ii))
+
+                #First we need to turn everything on
+                for ii in range(n_switches):
+                    time.sleep(0.1)
+                    pb.setSwitchValue(ii, 1)
+                #Now camera off
+                pb.SetSwitchValue(6, 0)
+                print("Cam power is off for 5 sec.")
+                time.sleep(5)
+
+                print("Cam power is turning on ")
+                pb.SetSwitchValue(6, 1)
+                time.sleep(10)
+                plog("Cam power is, after 10 sec:  ", pb.getSwitchValue(6))
+
+                #A double check
+                # for ii in range(n_switches):
+                #     print(ii, pb.GetSwitchValue(ii))
+
+
+            except:
+                plog("Failed to connect to Powerbox V2, sorry!")
+
+
             plog("Connecting directly to QHY")
             qhycam = Qcam(os.path.join("support_info/qhysdk/x64/qhyccd.dll"))
 
@@ -1592,6 +1601,7 @@ class Camera:
         # Camera overscan values
         self.overscan_values={}
         self.overscan_values['QHY600']=[0,38,32,0]
+        self.overscan_values['QHY268']=[24,0,0,4]
         self.overscan_values['QHY461']=[2,2,50,50]
         self.overscan_values['SBIG16803']=[0,0,0,0]
 
@@ -1604,14 +1614,14 @@ class Camera:
         self.overscan_up=self.overscan_values[site_config["camera"][self.name]['overscan_trim']][2]
         self.overscan_down=self.overscan_values[site_config["camera"][self.name]['overscan_trim']][3]
 
-        self.overscan_left = self.overscan_values[site_config["camera"]
-                                                  [self.name]['overscan_trim']][0]
-        self.overscan_right = self.overscan_values[site_config["camera"]
-                                                   [self.name]['overscan_trim']][1]
-        self.overscan_up = self.overscan_values[site_config["camera"]
-                                                [self.name]['overscan_trim']][2]
-        self.overscan_down = self.overscan_values[site_config["camera"]
-                                                  [self.name]['overscan_trim']][3]
+        # self.overscan_left = self.overscan_values[site_config["camera"]
+        #                                           [self.name]['overscan_trim']][0]
+        # self.overscan_right = self.overscan_values[site_config["camera"]
+        #                                            [self.name]['overscan_trim']][1]
+        # self.overscan_up = self.overscan_values[site_config["camera"]
+        #                                         [self.name]['overscan_trim']][2]
+        # self.overscan_down = self.overscan_values[site_config["camera"]
+        #                                           [self.name]['overscan_trim']][3]
 
         # The skyx needs its own separate camera update thread to do with some theskyx
         # curiosities and also the win32com sorta connection it makes.
@@ -4988,10 +4998,20 @@ class Camera:
                             outputimg = self._getImageArray()  # .astype(np.float32)
                             imageCollected = 1
 
-                            if True:
+                            if False:
                                height, width = outputimg.shape
                                patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
-                               print(">>>>  20% central image patch, std:  ", bn.nanmedian(patch), round(bn.nanstd(patch), 2), str(width)+'x'+str(height) )
+                               plog(">>>>  20% central image patch, std:  ", bn.nanmedian(patch), round(bn.nanstd(patch), 2), str(width)+'x'+str(height) )
+                                 
+                            if False:
+                                # If this is set to true, then it will output a sample of the image.
+                                hdufocus = fits.PrimaryHDU()
+                                hdufocus.data = outputimg
+                                # hdufocus.header = hdu.header
+                                # hdufocus.header["NAXIS1"] = hdu.data.shape[0]
+                                # hdufocus.header["NAXIS2"] = hdu.data.shape[1]
+                                hdufocus.writeto(cal_path + 'rawdump.fits', overwrite=True, output_verify='silentfix')
+
 
                                #breakpoint()
 
