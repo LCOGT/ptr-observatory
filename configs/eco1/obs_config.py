@@ -522,8 +522,9 @@ site_config = {
             
             'overscan_trim' : 'asi1600',
             'service_date': '20211111',
-            'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+            #'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
             
+            'driver' :'zwo_native_driver',
             
             'detector':  'KAF16803',
             'manufacturer':  'On-Semi',

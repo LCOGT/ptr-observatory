@@ -1321,7 +1321,7 @@ class Sequencer:
                 try:
                     # This is the "proper" way of doing things.
                     do_sub_stack=block['project']['project_constraints']['sub_stack']
-                    plog ("Picked up project substack properly")
+                    #plog ("Picked up project substack properly")
                 except:
                     # This is the old way for old projects
                     do_sub_stack=block['project']['exposures'][0]['substack']
