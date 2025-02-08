@@ -152,7 +152,7 @@ site_config = {
     'auto_eve_sky_flat': True,
     
      'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
-    'auto_midnight_moonless_bias_dark': False,
+    'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     
@@ -553,7 +553,7 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': 4,  
+                'temp_setpoint': 5,  
                 
                 
                 
@@ -566,7 +566,7 @@ site_config = {
                 'set_temp_setpoint_by_season' : True,
                 'temp_setpoint_nov_to_feb' : ( 5, 8, True),
                 'temp_setpoint_feb_to_may' : ( 5, 8, True),
-                'temp_setpoint_may_to_aug' : ( 1, 8, True),
+                'temp_setpoint_may_to_aug' : ( 5, 8, True),
                 'temp_setpoint_aug_to_nov' : ( 5, 8, True),
                 
                 'temp_setpoint_tolerance': 2.5,

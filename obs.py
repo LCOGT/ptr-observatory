@@ -4483,7 +4483,7 @@ class Observatory:
             try:
                 # Recreate the mount
                 rebooted_mount = Mount(self.devices['mount'].config['driver'],
-                        self.name,
+                        g_dev['mnt'].name,
                         self.devices['mount'].settings,
                         self.config,
                         self,
@@ -4538,6 +4538,8 @@ class Observatory:
                 time.sleep(60)
                 if retries == 4:
                     plog(traceback.format_exc())
+                    plog ("Failed rebooting, needs to be debugged")
+                    breakpoint()
 
         self.devices['mount'].mount_update_reboot=True
         self.devices['mount'].wait_for_mount_update()
