@@ -134,6 +134,7 @@ def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
 
 def send_status(obsy, column, status_to_send):
     """Sends an update to the status endpoint."""
+
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     payload = {"statusType": str(column), "status": status_to_send}
     # if column == 'weather':
@@ -2047,6 +2048,7 @@ class Observatory:
                                 + str(cur_pwm)
                                 + ")."
                             )
+
                             plog(
                                 "Difference from setpoint: "
                                 + str(
@@ -2060,6 +2062,7 @@ class Observatory:
                                 + str(current_camera_temperature)
                                 + ") for calibrations."
                             )
+                            breakpoint()
                             plog(
                                 "Difference from setpoint: "
                                 + str(
@@ -2825,6 +2828,8 @@ class Observatory:
             if not self.send_status_queue.empty():
                 pre_upload = time.time()
                 received_status = self.send_status_queue.get(block=False)
+
+                #print(received_status[0], received_status[1], received_status[2])
                 send_status(
                     received_status[0], received_status[1], received_status[2])
                 self.send_status_queue.task_done()
