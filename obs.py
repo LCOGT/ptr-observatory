@@ -728,6 +728,10 @@ class Observatory:
         self.update_status_thread.daemon = True
         self.update_status_thread.start()
 
+        # # Initialisation complete!
+        # while True:
+        #     g_dev['seq'].bias_dark_script(morn=True)
+
 
     def create_devices(self):
         """Create and store device objects by type, including role assignments.
