@@ -1904,13 +1904,15 @@ class Sequencer:
             # min_exposure = min(float(g_dev['cam'].settings['min_flat_exposure']),float(g_dev['cam'].settings['min_exposure']))
 
 
+            current_night_setpoint=copy.deepcopy(g_dev['cam'].setpoint)
+
             ####
             # When we are getting darks, we are collecting darks for the NEXT night's temperature
             # not tonights. So if tomrorow night the season changes and the camera temperature changes
             # We need to have the bias/darks already.
             if g_dev['cam'].temp_setpoint_by_season:
 
-                current_night_setpoint=copy.deepcopy(g_dev['cam'].setpoint)
+                
 
                 tomorrow_night=datetime.datetime.now() +datetime.timedelta(days=1)
                 tempmonth = tomorrow_night.month
@@ -2124,11 +2126,15 @@ class Sequencer:
             break
         self.bias_dark_latch = False
 
-        if g_dev['cam'].temp_setpoint_by_season:
-            # Here change the setpoint back to tonight's setpoint
-            g_dev['cam'].current_setpoint = current_night_setpoint
-            g_dev['cam'].setpoint = current_night_setpoint
-            g_dev['cam']._set_setpoint(current_night_setpoint)
+        try:
+            if g_dev['cam'].temp_setpoint_by_season:
+                # Here change the setpoint back to tonight's setpoint
+                g_dev['cam'].current_setpoint = current_night_setpoint
+                g_dev['cam'].setpoint = current_night_setpoint
+                g_dev['cam']._set_setpoint(current_night_setpoint)
+
+        except:
+            plog ("skipping temp reset")
 
         g_dev['obs'].flush_command_queue()
         self.total_sequencer_control=False

@@ -730,7 +730,7 @@ class Observatory:
 
         # Initialisation complete!
         while True:
-            g_dev['seq'].bias_dark_script()
+            g_dev['seq'].bias_dark_script(morn=True)
 
 
     def create_devices(self):
