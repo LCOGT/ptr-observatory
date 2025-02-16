@@ -1159,9 +1159,10 @@ class Camera:
             print(f"Using camera: {camera_info['Name']}")
             
             # Configure camera settings
-            gain = 300 # low read noise, high gain for short exposures.
+            gain = 150 # low read noise, high gain for short exposures.
             zwocamera.set_control_value(asi.ASI_GAIN, gain)
             zwocamera.set_control_value(asi.ASI_BANDWIDTHOVERLOAD, 40)  # Optional: Adjust for your system
+            zwocamera.set_control_value(asi.ASI_BRIGHTNESS, 100)  # Optional: Adjust for your system
             zwocamera.set_image_type(asi.ASI_IMG_RAW16)  # Use RAW8 image type
             
             
