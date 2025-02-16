@@ -2062,7 +2062,7 @@ class Observatory:
                                 + str(current_camera_temperature)
                                 + ") for calibrations."
                             )
-                            breakpoint()
+
                             plog(
                                 "Difference from setpoint: "
                                 + str(

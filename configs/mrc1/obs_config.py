@@ -170,7 +170,7 @@ site_config = {
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
 
-    'bias_dark interval':  105.,   #minutes
+    'bias_dark interval':  115.,   #minutes
     'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     #'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
@@ -500,8 +500,8 @@ site_config = {
             # Limits and steps for the focuser.
             'minimum': 0,    #  Units are microns
             'maximum': 12700,
-            'step_size': 1,   #  This is misnamed!
-            'backlash':  0,
+            'step_size': 1.0,   #  This is misnamed!
+            'backlash':  0.0,
             'throw': 70,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  #  Steps per micron
