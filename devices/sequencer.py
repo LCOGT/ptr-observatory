@@ -1904,7 +1904,7 @@ class Sequencer:
             # min_exposure = min(float(g_dev['cam'].settings['min_flat_exposure']),float(g_dev['cam'].settings['min_exposure']))
 
 
-            current_night_setpoint=copy.deepcopy(g_dev['cam'].setpoint)
+            
 
             ####
             # When we are getting darks, we are collecting darks for the NEXT night's temperature
@@ -1912,7 +1912,7 @@ class Sequencer:
             # We need to have the bias/darks already.
             if g_dev['cam'].temp_setpoint_by_season:
 
-                
+                current_night_setpoint=copy.deepcopy(g_dev['cam'].setpoint)
 
                 tomorrow_night=datetime.datetime.now() +datetime.timedelta(days=1)
                 tempmonth = tomorrow_night.month
@@ -1956,6 +1956,7 @@ class Sequencer:
                             tempdarktemp=float(darkfile.split('_')[-3])
                             #print (tempdarktemp)
                             if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+
                                 try:
                                     os.remove(darkfile)
                                 except:
@@ -1974,6 +1975,7 @@ class Sequencer:
                                 tempdarktemp=float(darkfile.split('_')[-3])
                                 #print (tempdarktemp)
                                 if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+
                                     try:
                                         os.remove(darkfile)
                                     except:
@@ -1991,6 +1993,7 @@ class Sequencer:
                             tempdarktemp=float(darkfile.split('_')[-3])
                             #print (tempdarktemp)
                             if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                
                                 try:
                                     os.remove(darkfile)
                                 except:

@@ -728,10 +728,6 @@ class Observatory:
         self.update_status_thread.daemon = True
         self.update_status_thread.start()
 
-        # Initialisation complete!
-        while True:
-            g_dev['seq'].bias_dark_script(morn=True)
-
 
     def create_devices(self):
         """Create and store device objects by type, including role assignments.
@@ -3682,7 +3678,14 @@ class Observatory:
                                     tempfilename = os.path.join(folder_path, slow_process[1].replace(".fits", file_suffix))
 
                                     # Manage files based on type
-                                    max_files = self.devices['main_cam'].settings.get(f"number_of_{file_type}_to_store", 10)
+                                    if 'dark' in file_type:
+                                        temp_file_type='dark'
+                                    elif 'flat' in file_type:
+                                        temp_file_type='flat'
+                                    elif 'bias' in file_type:
+                                        temp_file_type='bias'
+                                        
+                                    max_files = self.devices['main_cam'].settings.get(f"number_of_{temp_file_type}_to_store", 64)
                                     exclude_pattern = "tempbiasdark" if "dark" in file_type else "tempcali" if "flat" in file_type else None
                                     manage_files(folder_path, max_files, exclude_pattern)
 
