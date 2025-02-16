@@ -729,6 +729,8 @@ class Observatory:
         self.update_status_thread.start()
 
         # Initialisation complete!
+        while True:
+            g_dev['seq'].bias_dark_script()
 
 
     def create_devices(self):
