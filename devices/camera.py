@@ -987,12 +987,13 @@ class Camera:
 
         elif driver == "QHYCCD_Direct_Control":
             global qhycam
-            plog("TRYING TO cycle the QHY camera power via Ultimate Powerbox V2")
-            self.power_box_driver = self.config["switch_driver"]
+            plog("TRYING TO cycle the QHY camera power via Ultimate Powerbox V2, if it exists")
+
 
 
 
             try:
+                self.power_box_driver = self.config["switch_driver"]
                 pb = win32com.client.Dispatch(self.power_box_driver)
                 pb.connected = True
                 n_switches = pb.MaxSwitch
