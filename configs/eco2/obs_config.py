@@ -602,7 +602,7 @@ site_config = {
                 # There is a cold bit and a hot bit and an inbetween bit.
                 # from the 15th of the month to the 15 of the month 
                 # 
-                # ( setpoint, day_warm_difference, day_warm troe our false)
+                # ( setpoint, dFay_warm_difference, day_warm troe our false)
                 'set_temp_setpoint_by_season' : False,
                 'temp_setpoint_nov_to_feb' : ( 5, 8, True),
                 'temp_setpoint_feb_to_may' : ( 5, 8, True),
