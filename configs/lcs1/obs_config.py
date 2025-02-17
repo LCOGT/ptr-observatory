@@ -686,7 +686,7 @@ site_config = {
                 'readout_mode': 'Normal',
                 'readout_speed':  0.4,
                 'readout_seconds': 2.4,
-                'smart_stack_exposure_time': 15,
+                'smart_stack_exposure_time': 30,
                 
                 'substack': True, # Substack with this camera
                 
