@@ -2456,15 +2456,15 @@ class Camera:
     def _zwo_setpoint(self):
         return self.camera.TemperatureSetpoint
 
-    def _zwo_expose(self, exposure_time, bias_dark_or_light_type_frame):
-        # if bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark':
-        #     imtypeb = 0
-        # else:
-        #     imtypeb = 1
-        # self.camera.Expose(exposure_time, imtypeb)
+    # def _zwo_expose(self, exposure_time, bias_dark_or_light_type_frame):
+    #     # if bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark':
+    #     #     imtypeb = 0
+    #     # else:
+    #     #     imtypeb = 1
+    #     # self.camera.Expose(exposure_time, imtypeb)
         
-        zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
-        zwocamera.start_exposure()
+    #     zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
+    #     zwocamera.start_exposure()
 
     def _zwo_stop_expose(self):
         # self.camera.AbortExposure()
@@ -2478,11 +2478,141 @@ class Camera:
         else:
             return True
 
+    def _zwo_expose(self, exposure_time, bias_dark_or_light_type_frame):
+
+        self.substacker_available = False
+
+        if bias_dark_or_light_type_frame == 'bias':
+            exposure_time = 40 / 1000/1000  # shortest requestable exposure time
+
+        if not self.substacker:
+            # qhycam.so.SetQHYCCDParam(
+            #     qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
+            # qhycam.so.ExpQHYCCDSingleFrame(
+            #     qhycam.camera_params[qhycam_id]['handle'])
+            
+            zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
+            zwocamera.start_exposure()
+            
+        else:
+
+            # Boost Narrowband and low throughput broadband
+            if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n"]:
+                exp_of_substacks = 30
+                N_of_substacks = int((exposure_time / exp_of_substacks))
+            else:
+                exp_of_substacks = 10
+                N_of_substacks = int(exposure_time / exp_of_substacks)
+
+            self.substacker_filenames = []
+            base_tempfile = str(time.time()).replace(".", "")
+            for i in range(N_of_substacks):
+                self.substacker_filenames.append(
+                    self.local_calibration_path + "smartstacks/" + base_tempfile + str(i) + ".npy")
+
+            thread = threading.Thread(target=self.zwo_substacker_thread, args=(
+                exp_of_substacks, N_of_substacks, exp_of_substacks, copy.deepcopy(self.substacker_filenames),))
+            thread.daemon = True
+            thread.start()
+    
+
+    def zwo_substacker_thread(self, exposure_time, N_of_substacks, exp_of_substacks, substacker_filenames):
+    
+        self.substacker_available = False
+        readout_estimate_holder=[]
+        self.sub_stacker_midpoints=[]
+    
+    
+        for subexposure in range(N_of_substacks):
+            # Check there hasn't been a cancel sent through
+            if g_dev["obs"].stop_all_activity:
+                plog("stop_all_activity cancelling out of camera exposure")
+                self.shutter_open = False
+                return
+            if g_dev["obs"].exposure_halted_indicator:
+                self.shutter_open = False
+                return
+    
+            plog("Collecting subexposure " + str(subexposure+1))
+    
+            # qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(
+            #     exp_of_substacks*1000*1000))
+            
+            zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
+            
+            
+            if subexposure == 0:
+                self.substack_start_time = time.time()
+            self.expected_endpoint_of_substack_exposure = time.time() + exp_of_substacks
+            self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
+            # qhycam.so.ExpQHYCCDSingleFrame(
+            #     qhycam.camera_params[qhycam_id]['handle'])
+            zwocamera.start_exposure()
+            exposure_timer = time.time()
+    
+            # save out previous array to disk during exposure
+            if subexposure > 0:
+                # tempsend = np.reshape(
+                #     image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+    
+                #tempsend=tempsend[ 0:6384, 32:9600]
+                tempsend = image[self.overscan_left: self.imagesize_x-self.overscan_right,
+                                    self.overscan_up: self.imagesize_y - self.overscan_down]
+    
+                np.save(substacker_filenames[subexposure-1], tempsend)
+    
+            while (time.time() - exposure_timer) < exp_of_substacks:
+                time.sleep(0.001)
+    
+            # If this is the last exposure of the set of subexposures, then report shutter closed
+            if subexposure == (N_of_substacks-1):
+                self.shutter_open = False
+    
+            # # READOUT FROM THE QHY
+            # image_width_byref = c_uint32()
+            # image_height_byref = c_uint32()
+            # bits_per_pixel_byref = c_uint32()
+            # 
+            # success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
+            #                                          byref(image_width_byref),
+            #                                          byref(image_height_byref),
+            #                                          byref(
+            #                                              bits_per_pixel_byref),
+            #                                          byref(
+            #                                              qhycam.camera_params[qhycam_id]['channels']),
+            #                                          byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
+    
+            # image = np.ctypeslib.as_array(
+            #     qhycam.camera_params[qhycam_id]['prev_img_data'])
+            
+            time_before_last_substack_readout = time.time()
+            
+            image = self._zwo_getImageArray()
+            
+            time_after_last_substack_readout = time.time()
+    
+            readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
+    
+            # If it is the last file in the substack, throw it out to the slow process queue to save
+            # So that the camera can get started up again quicker.
+            if subexposure == (N_of_substacks -1 ):
+                #tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+                tempsend=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+                np.save(substacker_filenames[subexposure],tempsend)
+    
+        self.readout_estimate= np.median(np.array(readout_estimate_holder))
+        self.substacker_available=True
+        self.shutter_open=False
+
     def _zwo_getImageArray(self):
         
-        frame = zwocamera.get_data_after_exposure()
+        if self.substacker:
+            return 'substack_array'
+        else:
         
-        return np.frombuffer(frame, dtype=np.uint16).reshape(self.imagesize_x,self.imagesize_y)
+            frame = zwocamera.get_data_after_exposure()
+            
+            return np.frombuffer(frame, dtype=np.uint16).reshape(self.imagesize_x,self.imagesize_y)
     
     
     
