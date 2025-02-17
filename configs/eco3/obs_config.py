@@ -152,7 +152,7 @@ site_config = {
     'auto_eve_sky_flat': True,
     
      'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
-    'auto_midnight_moonless_bias_dark': True,
+    'auto_midnight_moonless_bias_dark': False,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     
@@ -563,7 +563,7 @@ site_config = {
                 # from the 15th of the month to the 15 of the month 
                 # 
                 # ( setpoint, day_warm_difference, day_warm troe our false)
-                'set_temp_setpoint_by_season' : True,
+                'set_temp_setpoint_by_season' : False,
                 'temp_setpoint_nov_to_feb' : ( 5, 8, True),
                 'temp_setpoint_feb_to_may' : ( 5, 8, True),
                 'temp_setpoint_may_to_aug' : ( 5, 8, True),
@@ -612,8 +612,8 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.08,
                 'readout_seconds': 1.0,
-                'smart_stack_exposure_time' : 15,
-                'substack': False, # Substack with this camera
+                'smart_stack_exposure_time' : 30,
+                'substack': True, # Substack with this camera
                 
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
