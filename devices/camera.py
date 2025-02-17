@@ -5251,9 +5251,9 @@ class Camera:
                     plog ("Next seq:  ", next_seq)
 
                     # If there are too many unnaturally negative pixels, then reject the calibration
-                    if len(countypixels) > 256:  #Up from 100 for 100 megapix camera
+                    if len(countypixels) > 1024:  #Up from 100 for 100 megapix camera
                         plog(
-                            "Rejecting calibration because it has a high amount of low value pixels.", countypixels, " !!!!!!!!!!!!!!!!!")
+                            "Rejecting calibration because it has a high amount of low value pixels." + str(len(countypixels)) + " !!!!!!!!!!!!!!!!!")
                         expresult = {}
                         expresult["error"] = True
                         #breakpoint()
