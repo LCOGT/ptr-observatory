@@ -3,6 +3,7 @@
 sequencer.py  sequencer.py  sequencer.py  sequencer.py  sequencer.py
 
 '''
+from devices.execute_project import execute_project_from_lco1
 from devices.sequencer_helpers import pointing_is_ok
 from devices.sequencer_helpers import validate_project_format
 from devices.sequencer_helpers import compute_target_coordinates
@@ -596,7 +597,8 @@ class Sequencer:
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
 
-        ephem_now = ephem.now()
+        # ephem_now = ephem.now()
+        ephem_now = ephem.date('2025/01/30 1:00:00.00')
 
         if (
             (datetime.datetime.now() - g_dev['obs'].observing_status_timer)
@@ -1332,6 +1334,20 @@ class Sequencer:
     # - add ra/dec offsets from each exposure
     # - add rotation from each exposure
     def execute_project_from_lco(self, block_specification):
+        """
+
+        # Unknowns:
+        # When to center?
+        # When to autofocus?
+
+        # Assumptions:
+        # "type" is "EXPOSE" or "REPEAT_EXPOSE"
+        # "guiding_config" is ignored in favor of smartstacks/substacks
+        # "acquisition_config" is ignored
+        # "rotator_mode" and "rotator_angle" are ignored (unsupported)
+        # "
+
+        """
 
         # TB
         # if ( ephem.now() < g_dev['events']['Civil Dusk'] ) or \
@@ -1340,6 +1356,19 @@ class Sequencer:
         #     plog ("WARNING: the lco scheduler assigned this observation. It should already avoid bad observing times so make sure we're not incorrectly blocking anything.")
         #     g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")
         #     return block_specification     #Added wer 20231103
+
+        # Protect from manual commands interferring
+        self.block_guard = True
+        self.total_sequencer_control= True
+
+        # Run the project
+        observation = json.loads(block_specification['project']['full_lco_observation'])
+        execute_project_from_lco1(observation, self.obs)
+
+        # Allow manual commands now that the project has completed
+        self.block_guard = False
+        self.total_sequencer_control= False
+        return
 
         self.block_guard = True
         self.total_sequencer_control=True
@@ -1362,7 +1391,7 @@ class Sequencer:
         # deleted or modified substantially.
         calendar_event_id = block_specification['event_id']
 
-        for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
+        for target in block['project']['project_targets']:
             try:
                 dest_ra = float(target['ra'])
                 dest_dec = float(target['dec'])

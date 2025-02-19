@@ -3270,7 +3270,7 @@ class Camera:
         self.script = required_params.get("script", "None")
 
         try:
-            self.zoom_factor = optional_params.get('zoom', False)
+            self.zoom_factor = optional_params.get('zoom', "Full")
         except:
             plog("Problem with supplied Zoom factor, Camera line 2613")
             self.zoom_factor = "Full"
@@ -5154,7 +5154,7 @@ class Camera:
                     if g_dev['seq'].block_guard and not g_dev['seq'].focussing and not frame_type == 'pointing' and not g_dev['seq'].currently_mosaicing:
                         # If this is the end of a smartstack set or it is a single shot then check the filter and change
                         if (Nsmartstack == 1 or (Nsmartstack == sskcounter+1)):
-                            if not g_dev['seq'].block_next_filter_requested == 'None':
+                            if hasattr(g_dev['seq'], 'block_next_filter_requested') and g_dev['seq'].block_next_filter_requested != 'None':
                                 # Check if filter needs changing, if so, change.
                                 self.current_filter = g_dev['fil'].current_filter_name
                                 if not self.current_filter.lower() == g_dev['seq'].block_next_filter_requested.lower():
