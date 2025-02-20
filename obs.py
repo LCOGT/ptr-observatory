@@ -33,6 +33,7 @@ import shutil
 import glob
 import subprocess
 import pickle
+import argparse
 
 from astropy.io import fits
 from astropy.utils.data import check_download_cache
@@ -4602,5 +4603,20 @@ class Observatory:
 
 
 if __name__ == "__main__":
-    o = Observatory(ptr_config.obs_id, ptr_config.site_config)
+    parser = argparse.ArgumentParser(description="Run a Photon Ranch observatory")
+    parser.add_argument('-eng', '--engineering', action="store_true", help="Engineering mode: disable all safety checks from the config")
+    args = parser.parse_args()
+
+    obs_id = ptr_config.obs_id
+    site_config = ptr_config.site_config
+
+    if args.engineering:
+        site_config['scope_in_manual_mode'] = True
+        site_config['mount_reference_model_off'] = False
+        site_config['sun_checks_on'] = False
+        site_config['moon_checks_on'] = False
+        site_config['altitude_checks_on'] = False
+        site_config['daytime_exposure_time_safety_on'] = False
+
+    o = Observatory(obs_id, site_config)
     o.run()  # This is meant to be a never ending loop.
