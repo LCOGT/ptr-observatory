@@ -2612,7 +2612,7 @@ class Camera:
         
             frame = zwocamera.get_data_after_exposure()
             
-            return np.frombuffer(frame, dtype=np.uint16).reshape(self.imagesize_x,self.imagesize_y)
+            return np.frombuffer(frame, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
     
     
     
@@ -2980,6 +2980,7 @@ class Camera:
             proto[10] = proto[10][:12] + str(enabled) + proto[10][13:]
             proto[1] = proto[1][:12] + str(binning) + proto[1][13:]
         seq_file = open(self.camera_path + "seq/ptr_mrc.seq", "w")
+
         for item in range(len(proto)):
             seq_file.write(proto[item])
         seq_file.close()
@@ -3451,16 +3452,13 @@ class Camera:
                     smartstackinfo = 'narrowband'
                 else:
                     smartstackinfo = 'broadband'
-                Nsmartstack = 1
-                SmartStackID = 'no'
-                smartstackinfo = 'no'
 
                 # Here is where we quantise the exposure time for short exposures
                 if incoming_exposure_time < 2:
                     exposure_snap_to_grid = [ 0.00004, 0.0004, 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0]
                     exposure_time=min(exposure_snap_to_grid, key=lambda x:abs(x-incoming_exposure_time))
                 else:
-                    exposure_time = incoming_exposure_time
+                    exposure_time = ssExp
 
             # Create a unique yet arbitrary code for the token
             real_time_token = g_dev['name'] + '_' + self.alias + '_' + g_dev["day"] + '_' + this_exposure_filter.lower() + '_' + smartstackinfo + '_' + str(ssBaseExp) + "_" + str(
@@ -3479,6 +3477,8 @@ class Camera:
                 self.initial_smartstack_ra = None
                 self.initial_smartstack_dec = None
                 self.currently_in_smartstack_loop = False
+            
+            #breakpoint()
 
             # Repeat camera acquisition loop to collect all smartstacks necessary
             # The variable Nsmartstacks defaults to 1 - e.g. normal functioning
