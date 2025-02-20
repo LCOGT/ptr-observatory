@@ -82,7 +82,7 @@ site_config = {
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
-    'save_archive_versions_of_final_calibrations' : False, 
+    'save_archive_versions_of_final_calibrations' : False,
 
     # Setup of folders on local and network drives.
     'client_hostname':  'ECO-0m40',
@@ -442,7 +442,7 @@ site_config = {
             "dual_wheel": False,
             'settings': {
 
-                'default_filter': "pg",
+                'default_filter': "lum",
 
                 'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
                 'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
