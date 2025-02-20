@@ -4617,6 +4617,8 @@ if __name__ == "__main__":
         site_config['moon_checks_on'] = False
         site_config['altitude_checks_on'] = False
         site_config['daytime_exposure_time_safety_on'] = False
+        site_config['simulate_open_roof'] = True
+        site_config['auto_centering_off'] = True
 
     o = Observatory(obs_id, site_config)
     o.run()  # This is meant to be a never ending loop.
