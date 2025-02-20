@@ -4,319 +4,319 @@ import json
 from typing import Dict, Any, Callable
 import logging
 from devices.sequencer_helpers import compute_target_coordinates
-observation = json.loads('''{
-  "site": "mrc",
-  "enclosure": "enc1",
-  "telescope": "0m35",
-  "observation_type": "NORMAL",
-  "state": "PENDING",
+# observation = json.loads('''{
+#   "site": "mrc",
+#   "enclosure": "enc1",
+#   "telescope": "0m35",
+#   "observation_type": "NORMAL",
+#   "state": "PENDING",
 
-  "id": 583116837,
-  "request_group_id": 1885213,
+#   "id": 583116837,
+#   "request_group_id": 1885213,
 
-  "created": "2024-11-01T14:04:10.425775Z",
-  "modified": "2024-11-01T14:04:10.425770Z",
-  "start": "2024-11-02T07:22:14Z",
-  "end": "2024-11-02T07:26:56Z",
+#   "created": "2024-11-01T14:04:10.425775Z",
+#   "modified": "2024-11-01T14:04:10.425770Z",
+#   "start": "2024-11-02T07:22:14Z",
+#   "end": "2024-11-02T07:26:56Z",
 
-  "name": "Full Detailed Observation",
-  "submitter": "tbeccue",
-  "proposal": "LCOSchedulerTest",
-  "ipp_value": 1.05,
-  "priority": 10,
+#   "name": "Full Detailed Observation",
+#   "submitter": "tbeccue",
+#   "proposal": "LCOSchedulerTest",
+#   "ipp_value": 1.05,
+#   "priority": 10,
 
-  "request": {
-    "id": 3445199,
-    "modified": "2024-10-29T14:57:32.128148Z",
-    "state": "PENDING",
+#   "request": {
+#     "id": 3445199,
+#     "modified": "2024-10-29T14:57:32.128148Z",
+#     "state": "PENDING",
 
-    "duration": 282,
-    "acceptability_threshold": 90.0,
-    "optimization_type": "TIME",
+#     "duration": 282,
+#     "acceptability_threshold": 90.0,
+#     "optimization_type": "TIME",
 
-    "observation_note": "",
-    "extra_params": {},
+#     "observation_note": "",
+#     "extra_params": {},
 
-    "configuration_repeats": 2,
-    "configurations": [
-      {
-        "id": 10840779,
-        "configuration_status": 750648588,
-        "instrument_name": "q461",
-        "instrument_type": "0M35-QHY461",
-        "priority": 1,
-        "repeat_duration": null,
-        "state": "PENDING",
-        "summary": {},
-        "type": "EXPOSE",
+#     "configuration_repeats": 2,
+#     "configurations": [
+#       {
+#         "id": 10840779,
+#         "configuration_status": 750648588,
+#         "instrument_name": "q461",
+#         "instrument_type": "0M35-QHY461",
+#         "priority": 1,
+#         "repeat_duration": null,
+#         "state": "PENDING",
+#         "summary": {},
+#         "type": "EXPOSE",
 
-        "target": {
-          "dec": -7.6528696608383,
-          "epoch": 2000.0,
-          "extra_params": {},
-          "hour_angle": null,
-          "name": "40 Eridani",
-          "parallax": 199.608,
-          "proper_motion_dec": -3421.809,
-          "proper_motion_ra": -2240.085,
-          "ra": 63.8179984124771,
-          "type": "ICRS"
-        },
-        "instrument_configs": [
-          {
-            "exposure_count": 1,
-            "exposure_time": 15.0,
-            "extra_params": {
-              "offset_dec": 1,
-              "offset_ra": 2,
-              "rotator_angle": 5
-            },
-            "mode": "Full",
-            "optical_elements": {
-              "filter": "mrc-L"
-            },
-            "rois": [],
-            "rotator_mode": "RPA"
-          },
-          {
-            "exposure_count": 2,
-            "exposure_time": 10.0,
-            "extra_params": {
-              "offset_dec": 0,
-              "offset_ra": 0,
-              "rotator_angle": 0
-            },
-            "mode": "Full",
-            "optical_elements": {
-              "filter": "mrc-R"
-            },
-            "rois": [],
-            "rotator_mode": "RPA"
-          }
-        ],
-        "acquisition_config": {
-          "extra_params": {},
-          "mode": "OFF"
-        },
-        "constraints": {
-          "extra_params": {},
-          "max_airmass": 1.6,
-          "max_lunar_phase": 1.0,
-          "min_lunar_distance": 30.0
-        },
-        "extra_params": {
-          "dither_pattern": "custom"
-        },
-        "guide_camera_name": "mrc-qhy461",
-        "guiding_config": {
-          "exposure_time": null,
-          "extra_params": {},
-          "mode": "ON",
-          "optical_elements": {},
-          "optional": true
-        }
-      },
-      {
-        "acquisition_config": {
-          "extra_params": {},
-          "mode": "OFF"
-        },
-        "configuration_status": 750648589,
-        "constraints": {
-          "extra_params": {},
-          "max_airmass": 1.6,
-          "max_lunar_phase": 1.0,
-          "min_lunar_distance": 30.0
-        },
-        "extra_params": {
-          "dither_pattern": "custom"
-        },
-        "guide_camera_name": "mrc-qhy461",
-        "guiding_config": {
-          "exposure_time": null,
-          "extra_params": {},
-          "mode": "ON",
-          "optical_elements": {},
-          "optional": true
-        },
-        "id": 10840780,
-        "instrument_configs": [
-          {
-            "exposure_count": 1,
-            "exposure_time": 15.0,
-            "extra_params": {
-              "offset_dec": 1,
-              "offset_ra": 2,
-              "rotator_angle": 5
-            },
-            "mode": "Full",
-            "optical_elements": {
-              "filter": "mrc-L"
-            },
-            "rois": [],
-            "rotator_mode": "RPA"
-          }
-        ],
-        "instrument_name": "q461",
-        "instrument_type": "0M35-QHY461",
-        "priority": 2,
-        "repeat_duration": null,
-        "state": "PENDING",
-        "summary": {},
-        "target": {
-          "dec": 41.26875,
-          "epoch": 2000.0,
-          "extra_params": {},
-          "hour_angle": null,
-          "name": "m31",
-          "parallax": 0.0,
-          "proper_motion_dec": 0.0,
-          "proper_motion_ra": 0.0,
-          "ra": 10.684708,
-          "type": "ICRS"
-        },
-        "type": "EXPOSE"
-      },
-      {
-        "acquisition_config": {
-          "extra_params": {},
-          "mode": "OFF"
-        },
-        "configuration_status": 750648590,
-        "constraints": {
-          "extra_params": {},
-          "max_airmass": 1.6,
-          "max_lunar_phase": 1.0,
-          "min_lunar_distance": 30.0
-        },
-        "extra_params": {
-          "dither_pattern": "custom"
-        },
-        "guide_camera_name": "mrc-qhy461",
-        "guiding_config": {
-          "exposure_time": null,
-          "extra_params": {},
-          "mode": "ON",
-          "optical_elements": {},
-          "optional": true
-        },
-        "id": 10840779,
-        "instrument_configs": [
-          {
-            "exposure_count": 1,
-            "exposure_time": 15.0,
-            "extra_params": {
-              "offset_dec": 1,
-              "offset_ra": 2,
-              "rotator_angle": 5
-            },
-            "mode": "Full",
-            "optical_elements": {
-              "filter": "mrc-L"
-            },
-            "rois": [],
-            "rotator_mode": "RPA"
-          },
-          {
-            "exposure_count": 2,
-            "exposure_time": 10.0,
-            "extra_params": {
-              "offset_dec": 0,
-              "offset_ra": 0,
-              "rotator_angle": 0
-            },
-            "mode": "Full",
-            "optical_elements": {
-              "filter": "mrc-R"
-            },
-            "rois": [],
-            "rotator_mode": "RPA"
-          }
-        ],
-        "instrument_name": "q461",
-        "instrument_type": "0M35-QHY461",
-        "priority": 3,
-        "repeat_duration": null,
-        "state": "PENDING",
-        "summary": {},
-        "target": {
-          "dec": -7.6528696608383,
-          "epoch": 2000.0,
-          "extra_params": {},
-          "hour_angle": null,
-          "name": "40 Eridani",
-          "parallax": 199.608,
-          "proper_motion_dec": -3421.809,
-          "proper_motion_ra": -2240.085,
-          "ra": 63.8179984124771,
-          "type": "ICRS"
-        },
-        "type": "EXPOSE"
-      },
-      {
-        "acquisition_config": {
-          "extra_params": {},
-          "mode": "OFF"
-        },
-        "configuration_status": 750648591,
-        "constraints": {
-          "extra_params": {},
-          "max_airmass": 1.6,
-          "max_lunar_phase": 1.0,
-          "min_lunar_distance": 30.0
-        },
-        "extra_params": {
-          "dither_pattern": "custom"
-        },
-        "guide_camera_name": "mrc-qhy461",
-        "guiding_config": {
-          "exposure_time": null,
-          "extra_params": {},
-          "mode": "ON",
-          "optical_elements": {},
-          "optional": true
-        },
-        "id": 10840780,
-        "instrument_configs": [
-          {
-            "exposure_count": 1,
-            "exposure_time": 15.0,
-            "extra_params": {
-              "offset_dec": 1,
-              "offset_ra": 2,
-              "rotator_angle": 5
-            },
-            "mode": "Full",
-            "optical_elements": {
-              "filter": "mrc-L"
-            },
-            "rois": [],
-            "rotator_mode": "RPA"
-          }
-        ],
-        "instrument_name": "q461",
-        "instrument_type": "0M35-QHY461",
-        "priority": 4,
-        "repeat_duration": null,
-        "state": "PENDING",
-        "summary": {},
-        "target": {
-          "dec": 41.26875,
-          "epoch": 2000.0,
-          "extra_params": {},
-          "hour_angle": null,
-          "name": "m31",
-          "parallax": 0.0,
-          "proper_motion_dec": 0.0,
-          "proper_motion_ra": 0.0,
-          "ra": 10.684708,
-          "type": "ICRS"
-        },
-        "type": "EXPOSE"
-      }
-    ]
-  }
-}''')
+#         "target": {
+#           "dec": -7.6528696608383,
+#           "epoch": 2000.0,
+#           "extra_params": {},
+#           "hour_angle": null,
+#           "name": "40 Eridani",
+#           "parallax": 199.608,
+#           "proper_motion_dec": -3421.809,
+#           "proper_motion_ra": -2240.085,
+#           "ra": 63.8179984124771,
+#           "type": "ICRS"
+#         },
+#         "instrument_configs": [
+#           {
+#             "exposure_count": 1,
+#             "exposure_time": 15.0,
+#             "extra_params": {
+#               "offset_dec": 1,
+#               "offset_ra": 2,
+#               "rotator_angle": 5
+#             },
+#             "mode": "Full",
+#             "optical_elements": {
+#               "filter": "mrc-L"
+#             },
+#             "rois": [],
+#             "rotator_mode": "RPA"
+#           },
+#           {
+#             "exposure_count": 2,
+#             "exposure_time": 10.0,
+#             "extra_params": {
+#               "offset_dec": 0,
+#               "offset_ra": 0,
+#               "rotator_angle": 0
+#             },
+#             "mode": "Full",
+#             "optical_elements": {
+#               "filter": "mrc-R"
+#             },
+#             "rois": [],
+#             "rotator_mode": "RPA"
+#           }
+#         ],
+#         "acquisition_config": {
+#           "extra_params": {},
+#           "mode": "OFF"
+#         },
+#         "constraints": {
+#           "extra_params": {},
+#           "max_airmass": 1.6,
+#           "max_lunar_phase": 1.0,
+#           "min_lunar_distance": 30.0
+#         },
+#         "extra_params": {
+#           "dither_pattern": "custom"
+#         },
+#         "guide_camera_name": "mrc-qhy461",
+#         "guiding_config": {
+#           "exposure_time": null,
+#           "extra_params": {},
+#           "mode": "ON",
+#           "optical_elements": {},
+#           "optional": true
+#         }
+#       },
+#       {
+#         "acquisition_config": {
+#           "extra_params": {},
+#           "mode": "OFF"
+#         },
+#         "configuration_status": 750648589,
+#         "constraints": {
+#           "extra_params": {},
+#           "max_airmass": 1.6,
+#           "max_lunar_phase": 1.0,
+#           "min_lunar_distance": 30.0
+#         },
+#         "extra_params": {
+#           "dither_pattern": "custom"
+#         },
+#         "guide_camera_name": "mrc-qhy461",
+#         "guiding_config": {
+#           "exposure_time": null,
+#           "extra_params": {},
+#           "mode": "ON",
+#           "optical_elements": {},
+#           "optional": true
+#         },
+#         "id": 10840780,
+#         "instrument_configs": [
+#           {
+#             "exposure_count": 1,
+#             "exposure_time": 15.0,
+#             "extra_params": {
+#               "offset_dec": 1,
+#               "offset_ra": 2,
+#               "rotator_angle": 5
+#             },
+#             "mode": "Full",
+#             "optical_elements": {
+#               "filter": "mrc-L"
+#             },
+#             "rois": [],
+#             "rotator_mode": "RPA"
+#           }
+#         ],
+#         "instrument_name": "q461",
+#         "instrument_type": "0M35-QHY461",
+#         "priority": 2,
+#         "repeat_duration": null,
+#         "state": "PENDING",
+#         "summary": {},
+#         "target": {
+#           "dec": 41.26875,
+#           "epoch": 2000.0,
+#           "extra_params": {},
+#           "hour_angle": null,
+#           "name": "m31",
+#           "parallax": 0.0,
+#           "proper_motion_dec": 0.0,
+#           "proper_motion_ra": 0.0,
+#           "ra": 10.684708,
+#           "type": "ICRS"
+#         },
+#         "type": "EXPOSE"
+#       },
+#       {
+#         "acquisition_config": {
+#           "extra_params": {},
+#           "mode": "OFF"
+#         },
+#         "configuration_status": 750648590,
+#         "constraints": {
+#           "extra_params": {},
+#           "max_airmass": 1.6,
+#           "max_lunar_phase": 1.0,
+#           "min_lunar_distance": 30.0
+#         },
+#         "extra_params": {
+#           "dither_pattern": "custom"
+#         },
+#         "guide_camera_name": "mrc-qhy461",
+#         "guiding_config": {
+#           "exposure_time": null,
+#           "extra_params": {},
+#           "mode": "ON",
+#           "optical_elements": {},
+#           "optional": true
+#         },
+#         "id": 10840779,
+#         "instrument_configs": [
+#           {
+#             "exposure_count": 1,
+#             "exposure_time": 15.0,
+#             "extra_params": {
+#               "offset_dec": 1,
+#               "offset_ra": 2,
+#               "rotator_angle": 5
+#             },
+#             "mode": "Full",
+#             "optical_elements": {
+#               "filter": "mrc-L"
+#             },
+#             "rois": [],
+#             "rotator_mode": "RPA"
+#           },
+#           {
+#             "exposure_count": 2,
+#             "exposure_time": 10.0,
+#             "extra_params": {
+#               "offset_dec": 0,
+#               "offset_ra": 0,
+#               "rotator_angle": 0
+#             },
+#             "mode": "Full",
+#             "optical_elements": {
+#               "filter": "mrc-R"
+#             },
+#             "rois": [],
+#             "rotator_mode": "RPA"
+#           }
+#         ],
+#         "instrument_name": "q461",
+#         "instrument_type": "0M35-QHY461",
+#         "priority": 3,
+#         "repeat_duration": null,
+#         "state": "PENDING",
+#         "summary": {},
+#         "target": {
+#           "dec": -7.6528696608383,
+#           "epoch": 2000.0,
+#           "extra_params": {},
+#           "hour_angle": null,
+#           "name": "40 Eridani",
+#           "parallax": 199.608,
+#           "proper_motion_dec": -3421.809,
+#           "proper_motion_ra": -2240.085,
+#           "ra": 63.8179984124771,
+#           "type": "ICRS"
+#         },
+#         "type": "EXPOSE"
+#       },
+#       {
+#         "acquisition_config": {
+#           "extra_params": {},
+#           "mode": "OFF"
+#         },
+#         "configuration_status": 750648591,
+#         "constraints": {
+#           "extra_params": {},
+#           "max_airmass": 1.6,
+#           "max_lunar_phase": 1.0,
+#           "min_lunar_distance": 30.0
+#         },
+#         "extra_params": {
+#           "dither_pattern": "custom"
+#         },
+#         "guide_camera_name": "mrc-qhy461",
+#         "guiding_config": {
+#           "exposure_time": null,
+#           "extra_params": {},
+#           "mode": "ON",
+#           "optical_elements": {},
+#           "optional": true
+#         },
+#         "id": 10840780,
+#         "instrument_configs": [
+#           {
+#             "exposure_count": 1,
+#             "exposure_time": 15.0,
+#             "extra_params": {
+#               "offset_dec": 1,
+#               "offset_ra": 2,
+#               "rotator_angle": 5
+#             },
+#             "mode": "Full",
+#             "optical_elements": {
+#               "filter": "mrc-L"
+#             },
+#             "rois": [],
+#             "rotator_mode": "RPA"
+#           }
+#         ],
+#         "instrument_name": "q461",
+#         "instrument_type": "0M35-QHY461",
+#         "priority": 4,
+#         "repeat_duration": null,
+#         "state": "PENDING",
+#         "summary": {},
+#         "target": {
+#           "dec": 41.26875,
+#           "epoch": 2000.0,
+#           "extra_params": {},
+#           "hour_angle": null,
+#           "name": "m31",
+#           "parallax": 0.0,
+#           "proper_motion_dec": 0.0,
+#           "proper_motion_ra": 0.0,
+#           "ra": 10.684708,
+#           "type": "ICRS"
+#         },
+#         "type": "EXPOSE"
+#       }
+#     ]
+#   }
+# }''')
 
 
 def get_camera_from_observation_config(observation, observatory):
@@ -362,7 +362,6 @@ def execute_project_from_lco1(observation, observatory):
         print(target)
         # update the pointing to account for proper motion and parallax
         proper_motion_parallax_adjusted_coords = compute_target_coordinates(target)
-        print(proper_motion_parallax_adjusted_coords)
         # add ra/dec offsets
         corrected_ra = proper_motion_parallax_adjusted_coords['ra'] + offset_ra
         corrected_dec = proper_motion_parallax_adjusted_coords['dec'] + offset_dec
@@ -414,12 +413,12 @@ def execute_project_from_lco1(observation, observatory):
 
         if config_type == "EXPOSE":
             for index, ic in enumerate(config['instrument_configs']):
-                print(f'starting instrument config #{index}')
+                print(f'starting instrument config #{index + 1} of {len(config["instrument_configs"])}')
                 do_instrument_config(ic, config, devices, exposure_sequence_done)
         elif config_type == "REPEAT_EXPOSE":
             while not exposure_sequence_done():
                 for index, ic in enumerate(config['instrument_configs']):
-                    print(f'starting instrument config #{index}')
+                    print(f'starting instrument config #{index + 1} of {len(config["instrument_configs"])}')
                     do_instrument_config(ic, config, devices, exposure_sequence_done)
         else:
             print(f"Unknown config type {config_type}. Skipping this config.")
@@ -449,18 +448,23 @@ def execute_project_from_lco1(observation, observatory):
 
 
     def do_observation(observation):
+        print('Starting the following observation from LCO:')
+        print(json.dumps(observation, indent=2))
         request = observation['request']
         # devices = get_devices(observation)
         devices = None
 
         configuration_repeats = request['configuration_repeats']
-        for _ in range(configuration_repeats):
+        for cr in range(configuration_repeats):
+            print(f'Doing configuration repeat #{cr + 1} of {configuration_repeats}')
             for index, config in enumerate(request['configurations']):
-                print(f'starting config #{index}')
+                print(f'starting config #{index + 1} of {len(request["configurations"])}')
                 if is_valid_config(config):
                     do_configuration(config, devices)
                 else:
                     print('Config failed validation. Skipping.')
+
+        print(f'OBSERVATION COMPLETE\n\n')
 
     do_observation(observation)
 
