@@ -3,7 +3,14 @@ from global_yard import g_dev
 from astropy.coordinates import SkyCoord, AltAz, get_body, Distance
 from astropy.time import Time
 from astropy import units as u
+from datetime import datetime
 
+
+def is_valid_utc_iso(s):
+    try:
+        return datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ") is not None
+    except ValueError:
+        return False
 
 def compute_target_coordinates(target: dict) -> dict:
     """ Apply proper motion and parallax to the target coordinates to get the observed position.
@@ -21,26 +28,29 @@ def compute_target_coordinates(target: dict) -> dict:
         dec: float, declination in degrees
     """
 
+    print('in compute_traget_coordinates, input target: ', target)
     # Define target parameters
     ra = target.get('ra') * u.deg
     dec = target.get('dec') * u.deg
     pm_ra = target.get('proper_motion_ra', 0) * u.mas/u.yr
     pm_dec = target.get('proper_motion_dec', 0) * u.mas/u.yr
-    parallax = target.get('parallax') * u.mas
-    epoch = Time(target.get('epoch'), format='jyear')
+    parallax = target.get('parallax', 0) * u.mas
+    epoch = Time(target.get('epoch', 2000), format='jyear')
     observation_time = Time.now()
-    distance = Distance(parallax=parallax)
+    distance = Distance(parallax=parallax) if parallax > 0 else None
 
     # Define the target's initial position
     target = SkyCoord(ra=ra,
                      dec=dec,
-                     distance=Distance(parallax=parallax),
+                     distance=distance,
                      pm_ra_cosdec=pm_ra,
                      pm_dec=pm_dec,
                      obstime=epoch)
+    print("SkyCoord target: ", target)
 
     # Apply proper motion to calculate position at the observation time
     target_observed = target.apply_space_motion(new_obstime=observation_time)
+    print("target_observed: ", target_observed)
    
     # Return with ra in hours (0 to 24) and dec in degrees (-90 to 90)
     return {'ra': target_observed.ra.hour, 'dec': target_observed.dec.degree}
