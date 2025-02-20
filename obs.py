@@ -3695,7 +3695,7 @@ class Observatory:
                                     tempfilename = os.path.join(folder_path, slow_process[1].replace(".fits", file_suffix))
 
                                     # Manage files based on type
-                                    max_files = self.devices['main_cam'].settings.get(f"number_of_{file_type}_to_store", 10)
+                                    max_files = self.devices['main_cam'].settings.get(f"number_of_{file_type}_to_store", 64)
                                     exclude_pattern = "tempbiasdark" if "dark" in file_type else "tempcali" if "flat" in file_type else None
                                     manage_files(folder_path, max_files, exclude_pattern)
 

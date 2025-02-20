@@ -647,14 +647,14 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq100sm',  # Important because this points to a server file structure by that name.
+            'name': 'sq101sm',  #sq100sm Important because this points to a server file structure by that name.
             'desc':  'QHY 461 BSI Mono',
 
             'overscan_trim' : 'QHY461',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
-            'service_date': '20240801',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo.
+            'service_date': '20250218',  #'20240801',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo.
             'switch_driver':  'ASCOM.PegasusAstroUPBv2.Switch', #this is a temp hack, we should install the Powerbox as a first-class device.
             #the camera is on " Output 4", whatever that ends up meaning.  Hopefull = Switch4.
 
@@ -703,13 +703,13 @@ site_config = {
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
                 #
-                # QHY410C is gain 0, offset 9, mode 1
-                'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712
+                #
+                'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712  WE want high gain mode.
 
-                'direct_qhy_gain': 62,
-                'direct_qhy_offset': 10,
+                'direct_qhy_gain': 60,       #as of 20250220 WER
+                'direct_qhy_offset': 30,
                 'set_qhy_usb_speed': True,
-                'direct_qhy_usb_traffic' : 60,     #NB NB Why two keys/
+                'direct_qhy_usb_traffic' : 60,
                 #'direct_qhy_usb_speed' : 60,      #NB used in saving the image header.
 
 
@@ -727,13 +727,13 @@ site_config = {
                 'interpolate_for_focus': True,
                 # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 'bin_for_focus': False,
-                'focus_bin_value' : 1,
+                'focus_bin_value' : 1, #Chg 20250218
                 'interpolate_for_sep': False,
                 'bin_for_sep': False,  # This setting will bin the image for SEP photometry rather than interpolating.
-                'sep_bin_value' : 1,
+                'sep_bin_value' : 1, #Chg 20250218
                 # This setting will bin the image for platesolving rather than interpolating.
                 'bin_for_platesolve': False,
-                'platesolve_bin_value' : 1,
+                'platesolve_bin_value' : 1, #Chg 20250218
 
                 # Colour image tweaks.
                 'osc_brightness_enhance': 1.0,
@@ -818,7 +818,7 @@ site_config = {
                 # from the 15th of the month to the 15 of the month
                 #
                 # ( setpoint, day_warm_difference, day_warm troe our false)
-                'set_temp_setpoint_by_season' : True,
+                'set_temp_setpoint_by_season' : False,
                 'temp_setpoint_nov_to_feb' : ( 2, 6, True),
                 'temp_setpoint_feb_to_may' : ( 2, 8, True),
                 'temp_setpoint_may_to_aug' : ( 2, 8, True),
