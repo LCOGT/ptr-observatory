@@ -156,7 +156,7 @@ site_config = {
     'alt_path': 'D:/alt/',
     # 'temporary_local_alt_archive_to_hold_files_while_copying' : 'F:/tempfolderforaltpath',
 
-    'save_to_alt_path': 'yes',
+    'save_to_alt_path': 'no',
     # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'local_calibration_path': 'F:/ptr/',
     # Number of days to keep files in the local archive before deletion. Negative means never delete
@@ -774,12 +774,12 @@ site_config = {
                 # #'direct_qhy_usb_speed' : 45,    #20240106 Afternoon WER Was 60
 
 
-                # HERE IS THE POTENTIAL MODE 1 SETTINGS
+                # HERE IS THE POTENTIAL MODE 1 SETTING:   Verified 20250220 WER
                 'direct_qhy_readout_mode': 1,  #High Gain mode
-                'direct_qhy_gain': 58,   #Above the QHY low noise Knee for High Gain mode.
-                'direct_qhy_offset': 10,    #means a basic bias level of around 70 ADU's
+                'direct_qhy_gain': 60,   #Above the QHY low noise Knee for High Gain mode.
+                'direct_qhy_offset': 30,    #means a basic bias level of around 70 ADU's
                 # 'direct_qhy_usb_speed' : 50,
-                'direct_qhy_usb_traffic': 50,
+                'direct_qhy_usb_traffic': 60,
                 # The pattern before came and went. Now consitent at 50.  Changing to 45.
                 # Which one of these is actually used?
                 'set_qhy_usb_speed': True,

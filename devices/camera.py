@@ -271,6 +271,7 @@ def write_raw_file_out(packet):
         ),
         "Date FITS file was written",
     )
+
     hdu.writeto(raw_name, overwrite=True, output_verify='silentfix')
     try:
         hdu.close()
