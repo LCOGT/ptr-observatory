@@ -4,6 +4,7 @@ sequencer.py  sequencer.py  sequencer.py  sequencer.py  sequencer.py
 
 '''
 from devices.execute_project import execute_project_from_lco1
+from devices.sequencer_helpers import is_valid_utc_iso
 from devices.sequencer_helpers import pointing_is_ok
 from devices.sequencer_helpers import validate_project_format
 from devices.sequencer_helpers import compute_target_coordinates
@@ -772,9 +773,10 @@ class Sequencer:
                     self.project_call_timer = time.time()
 
                     # Mission critical calendar block update
-                    self.update_calendar_blocks()
+                    self.update_calendar_blocks(start_time=datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
 
                     # only need to bother with the rest if there is more than 0 blocks.
+                    print('self.blocks length: ', len(self.blocks))
                     if not len(self.blocks) > 0:
                         self.block_guard=False
                         self.blockend= None
@@ -783,9 +785,10 @@ class Sequencer:
                         identified_block=None
 
                         for block in self.blocks:  #  This merges project spec into the blocks.
-
+                            print('current block: ', block)
+                            print(f'block start: {block["start"]}, now_date_timeZ: {now_date_timeZ}, block end: {block["end"]}')
                             if (block['start'] <= now_date_timeZ < block['end']) and not self.is_in_completes(block['event_id']):
-
+                                print('trying to get project from projects api')
                                 try:
                                     url_proj = "https://projects.photonranch.org/projects/get-project"
                                     request_body = json.dumps({
@@ -798,6 +801,7 @@ class Sequencer:
                                         self.block_guard = True
                                         block['project']=project_response.json()
                                         identified_block=copy.deepcopy(block)
+                                        print('retrieved project: ', identified_block)
                                     else:
                                         plog("Project response status code not 200")
                                         plog (str(project_response))
@@ -820,6 +824,7 @@ class Sequencer:
                                     plog ("Skipping a block that contains an empty project")
 
                                 elif identified_block['project'] != None:
+                                    print('project pointing is ok: ', pointing_is_ok(identified_block, self.config))
                                     if pointing_is_ok(identified_block, self.config):
                                         #TB
                                         # Temporary branch to handle the two different types of projects
@@ -6881,11 +6886,14 @@ class Sequencer:
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
             return result
 
-    def update_calendar_blocks(self):
-
+    def update_calendar_blocks(self, start_time=None, end_time=None):
         """
         A function called that updates the calendar blocks - both to get new calendar blocks and to
         check that any running calendar blocks are still there with the same time window.
+
+        Args:
+        - start_time (str): get events ending after this time. string formatted as YYYY-mm-ddTHH:MM:SSZ
+        - end_time (str): get events ending before this time. string formatted as YYYY-mm-ddTHH:MM:SSZ
         """
 
         def ephem_date_to_utc_iso_string(ephem_date):
@@ -6893,8 +6901,17 @@ class Sequencer:
 
         calendar_update_url = "https://calendar.photonranch.org/calendar/siteevents"
 
-        start_time = ephem_date_to_utc_iso_string(g_dev['events']['Eve Sky Flats'])
-        end_time = ephem_date_to_utc_iso_string(g_dev['events']['End Morn Sky Flats'])
+        if start_time is None or not is_valid_utc_iso(start_time):
+            start_time = ephem_date_to_utc_iso_string(g_dev['events']['Eve Sky Flats'])
+        if end_time is None or not is_valid_utc_iso(end_time):
+            end_time = ephem_date_to_utc_iso_string(g_dev['events']['End Morn Sky Flats'])
+
+        # Make sure the times are formatted correctly
+        if not is_valid_utc_iso(start_time):
+            raise ValueError(f"start_time must be formatted YYYY-m-ddTHH:MM:SSZ. Actual input was {start_time}")
+        if not is_valid_utc_iso(end_time):
+            raise ValueError(f"end_time must be formatted YYYY-m-ddTHH:MM:SSZ. Actual input was {end_time}")
+
         body = json.dumps({
             "site": self.config["obs_id"],
             "start": start_time,

@@ -358,8 +358,11 @@ def execute_project_from_lco1(observation, observatory):
             print(f'Unsupported target type: {target["type"]}')
             return
 
+        print('In go_to_target function during LCO observation run')
+        print(target)
         # update the pointing to account for proper motion and parallax
         proper_motion_parallax_adjusted_coords = compute_target_coordinates(target)
+        print(proper_motion_parallax_adjusted_coords)
         # add ra/dec offsets
         corrected_ra = proper_motion_parallax_adjusted_coords['ra'] + offset_ra
         corrected_dec = proper_motion_parallax_adjusted_coords['dec'] + offset_dec
