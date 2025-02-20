@@ -28,7 +28,6 @@ def compute_target_coordinates(target: dict) -> dict:
         dec: float, declination in degrees
     """
 
-    print('in compute_traget_coordinates, input target: ', target)
     # Define target parameters
     ra = target.get('ra') * u.deg
     dec = target.get('dec') * u.deg
@@ -46,11 +45,9 @@ def compute_target_coordinates(target: dict) -> dict:
                      pm_ra_cosdec=pm_ra,
                      pm_dec=pm_dec,
                      obstime=epoch)
-    print("SkyCoord target: ", target)
 
     # Apply proper motion to calculate position at the observation time
     target_observed = target.apply_space_motion(new_obstime=observation_time)
-    print("target_observed: ", target_observed)
    
     # Return with ra in hours (0 to 24) and dec in degrees (-90 to 90)
     return {'ra': target_observed.ra.hour, 'dec': target_observed.dec.degree}
