@@ -84,7 +84,7 @@ site_config = {
 
     # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
-    'save_archive_versions_of_final_calibrations' : False, 
+    'save_archive_versions_of_final_calibrations' : False,
 
     # The site can fully platesolve each image before it is sent off to s3 or a PIPE
     # If there are spare enough cycles at the site, this saves time for the PIPE
@@ -450,7 +450,7 @@ site_config = {
             "dual_wheel": False,
             'settings': {
 
-                'default_filter': "pg",
+                'default_filter': "lum",
 
                 'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
                 'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
