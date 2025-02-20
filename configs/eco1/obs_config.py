@@ -435,7 +435,7 @@ site_config = {
             "dual_wheel": False,
             'settings': {
                 
-                'default_filter': "pg",
+                'default_filter': "lum",
                 
                 'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
                 'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
