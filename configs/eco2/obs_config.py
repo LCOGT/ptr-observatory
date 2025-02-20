@@ -71,7 +71,7 @@ site_config = {
     # The pointing may never be quite good enough to center the object without
     # a centering exposure. On initial commissioning, it should be set to always autocenter
     # until you are convinced the natural pointing with empirical corrections is "good enough"
-    'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
 
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': True,
