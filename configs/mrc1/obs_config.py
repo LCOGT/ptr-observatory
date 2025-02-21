@@ -704,7 +704,7 @@ site_config = {
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
                 #
                 #
-                'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712  WE want high gain mode.
+                'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712  We want high gain mode.
 
                 'direct_qhy_gain': 60,       #as of 20250220 WER
                 'direct_qhy_offset': 30,
