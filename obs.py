@@ -4503,7 +4503,7 @@ class Observatory:
 
                 # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
                 for camera in self.all_devices['camera']:
-                    if camera.theskyx:
+                    if g_dev['cam'].theskyx:
                         new_camera = Camera(camera.driver, camera.name, self.config, self)
                         # Update references from the previous camera object to the rebooted one
                         self.all_devices['camera'][camera.name] = new_camera
