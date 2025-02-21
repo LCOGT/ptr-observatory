@@ -3714,7 +3714,7 @@ class Camera:
                                 else:
                                     g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
-                            g_dev['mnt'].wait_for_slew()
+                            
 
                             # Check there hasn't been a cancel sent through
                             if g_dev["obs"].stop_all_activity:
@@ -3850,6 +3850,8 @@ class Camera:
                                         plog("Detecting focuser still changing.")
                                         tempfocposition = copy.deepcopy(
                                             nowfocposition)
+
+                            g_dev['mnt'].wait_for_slew()
 
                             # Initialise this variable here
                             self.substacker_filenames = []
@@ -5251,7 +5253,7 @@ class Camera:
                     plog ("Next seq:  ", next_seq)
 
                     # If there are too many unnaturally negative pixels, then reject the calibration
-                    if len(countypixels) > 1024:  #Up from 100 for 100 megapix camera
+                    if len(countypixels) > 50000:  #Up from 100 for 100 megapix camera
                         plog(
                             "Rejecting calibration because it has a high amount of low value pixels." + str(len(countypixels)) + " !!!!!!!!!!!!!!!!!")
                         expresult = {}

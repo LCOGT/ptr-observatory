@@ -571,7 +571,7 @@ class Sequencer:
                     # Super-duper double check that darkslide is open
                     if g_dev['cam'].has_darkslide:
                         g_dev['cam'].openDarkslide()
-                    g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
                     # Check it hasn't actually been homed this evening from the rotatorhome shelf
                     homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
@@ -597,7 +597,7 @@ class Sequencer:
                             homerotator_time_shelf.close()
 
                             g_dev['mnt'].go_command(alt=70,az= 70)
-                            g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                            g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                             while g_dev['rot'].rotator.IsMoving:
                                 plog("home rotator wait")
                                 time.sleep(1)
@@ -1613,7 +1613,7 @@ class Sequencer:
                             new_dec= self.mosaic_center_dec + self.current_mosaic_displacement_dec
                             new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
                             try:
-                                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                                g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                                 g_dev['obs'].time_of_last_slew=time.time()
                                 try:
                                     g_dev['mnt'].slew_async_directly(ra=new_ra, dec=new_dec)
@@ -1623,7 +1623,7 @@ class Sequencer:
                                         g_dev['obs'].kill_and_reboot_theskyx(new_ra, new_dec)
                                     else:
                                         plog(traceback.format_exc())
-                                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                                #g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                             except Exception as e:
                                 plog (traceback.format_exc())
                                 if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
@@ -3765,7 +3765,7 @@ class Sequencer:
 
                             self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=dont_wait_after_slew)
                             if not dont_wait_after_slew:
-                                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                                g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                             while g_dev['rot'].rotator.IsMoving:
                                 plog("home rotator wait")
                                 time.sleep(1)
@@ -3776,7 +3776,7 @@ class Sequencer:
                             #plog ("no rotator to home or wait for.")
                             pass
 
-                    time.sleep(30)
+                    #time.sleep(30)
 
                     g_dev['obs'].request_scan_requests()
 
@@ -4000,7 +4000,7 @@ class Sequencer:
 
                 self.check_zenith_and_move_to_flat_spot(ending=self.flats_ending)
                 self.time_of_next_slew = time.time() + 600
-                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 while g_dev['rot'].rotator.IsMoving:
                     plog("home rotator wait")
                     time.sleep(1)
@@ -5053,7 +5053,7 @@ class Sequencer:
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['obs'].send_to_user("Attempt at V-curve Focus Failed, using calculated values", p_level='INFO')
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                    g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
                 self.focussing=False
                 self.total_sequencer_control = False
@@ -5347,7 +5347,7 @@ class Sequencer:
                                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                                        g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                                        g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
                                     self.af_guard = False
                                     self.focussing=False
@@ -6046,7 +6046,7 @@ class Sequencer:
             # Wait until pointing correction fixed before moving on
             while g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
                 plog ("waiting for pointing_correction_to_finish")
-                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 time.sleep(1)
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
@@ -6213,7 +6213,7 @@ class Sequencer:
                 # Try shifting to where it is meant to be pointing
                 # This can sometimes rescue a lost mount.
                 # But most of the time doesn't do anything.
-                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 g_dev['obs'].time_of_last_slew=time.time()
                 try:
                     g_dev['mnt'].slew_async_directly(ra=g_dev["mnt"].last_ra_requested, dec=g_dev["mnt"].last_dec_requested)

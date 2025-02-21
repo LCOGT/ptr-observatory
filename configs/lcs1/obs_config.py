@@ -233,11 +233,14 @@ site_config = {
             'hostIP':  '10.0.0.140',     #Can be a name if local DNS recognizes it.
             'hostname':  'ecocdkpier',
             'desc':  'IOptron',
-            #'driver': 'ASCOM.iOptron2017.Telescope',
-            'driver': 'dummy',
+            'driver': 'ASCOM.iOptron2017.Telescope',
+            #'driver': 'dummy',
             'alignment': 'Equatorial',
             'default_zenith_avoid': 0.0,   #degrees floating, 0.0 means do not apply this constraint.
             'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
+            
+            'needs_to_wait_for_dome' : True,
+            
             
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'has_ascom_altaz': False,
@@ -378,8 +381,8 @@ site_config = {
             'desc':  'ZWO EAF Focuser',
             #'driver': 'ASCOM.SeletekFocuser.Focuser',
             #'driver': 'SeletekFocuser.Focuser',
-			#'driver': 'ASCOM.EAF.Focuser',
-            'driver': 'dummy',
+			'driver': 'ASCOM.EAF.Focuser',
+            #'driver': 'dummy',
             'relative_focuser': False,
 			
             'com_port':  'COM9',

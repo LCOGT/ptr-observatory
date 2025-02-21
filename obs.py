@@ -1562,7 +1562,7 @@ class Observatory:
                                         )
                                         alt = temppointingaltaz.alt.degree
                                         if alt > 25:
-                                            g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                                            g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                                             meridianra = g_dev[
                                                 "mnt"
                                             ].return_right_ascension()
@@ -1573,7 +1573,7 @@ class Observatory:
                                                 ra=meridianra, dec=meridiandec
                                             )
                                             plog("Meridian Probe")
-                                            g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                                            g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                                             self.time_of_last_pulse = time.time()
                     except:
                         plog("perhaps theskyx is restarting????")
@@ -2342,7 +2342,7 @@ class Observatory:
                         )
                     ):
                         plog(
-                            "Focusser reporting too high a temperature in the observatory"
+                            "Focusser reporting too high a temperature in the observatory: " + str(self.temperature_in_observatory_from_focuser)
                         )
                         plog(
                             "The roof is also shut, so keeping camera at the day_warm temperature"
@@ -4152,9 +4152,9 @@ class Observatory:
                         + g_dev["seq"].current_mosaic_displacement_dec
                     )
                     new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)   #This probably has to do with taking a mosaic near the poles.
-                    g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                     g_dev["mnt"].slew_async_directly(ra=new_ra, dec=new_dec)
-                    g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                     self.time_of_last_slew = time.time()
 
             # This block repeats itself in various locations to try and nudge the scope
@@ -4176,7 +4176,7 @@ class Observatory:
                         < 0.25
                     ):
                         self.send_to_user("Re-centering Telescope.")
-                    g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                     g_dev["mnt"].previous_pier_side = g_dev["mnt"].return_side_of_pier()
 
                     ranudge = self.pointing_correction_request_ra
@@ -4192,10 +4192,10 @@ class Observatory:
                         ranudge = ranudge - 24
                     self.time_of_last_slew = time.time()
                     try:
-                        g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                        g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                         g_dev["mnt"].slew_async_directly(
                             ra=ranudge, dec=decnudge)
-                        g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                        g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                     except:
                         plog(traceback.format_exc())
                     if (
@@ -4215,7 +4215,7 @@ class Observatory:
                             try_forever=True,
                         )
                     self.time_of_last_slew = time.time()
-                    g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
                     self.drift_tracker_timer = time.time()
                     self.drift_tracker_counter = 0
