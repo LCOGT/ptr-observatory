@@ -524,6 +524,8 @@ site_config = {
             'ref_temp':   7.5,       #  Average for the fit ~ 27.5 degrees wide +20 to -75
             'temp_coeff': -24.974,   #  R^2 = 0.769
 
+            'relative_focuser': False,
+
             # F9 setup
             # 'reference': unknown,
             # 'temp_coeff': unknown,  #  Meas   -12 c to 4C so nominal -4C
