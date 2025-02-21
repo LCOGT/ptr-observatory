@@ -274,6 +274,26 @@ site_config = {
         'telops',       #   >>>>
     ],
 
+    # The LCO scheduler references a description of this site in configdb
+    # The logic in configdb is organized slightly differently than the PTR
+    # config files (like this one), but they should ultimately represent the
+    # same underlying hardware.
+    # When a PTR obsevatory is running an observation created by the scheduler,
+    # we'll use this to figure out what devices to use to run that observation.
+    # The key is the instrument name from configdb, and the value is a dict of
+    # device names from this config file for each type of device.
+    #
+    # This should only be modified if the configuration in configdb changes.
+    'configdb_instrument_mapping': {
+        'qhy461': {
+            'mount': 'eastpier',
+            'camera': 'camera_1_1',
+            'filter_wheel': 'Dual filter wheel',
+            'rotator': 'rotator',
+            'focuser': 'focuser'
+        }
+    },
+
     'mount': {
         'eastpier': {       # NB There can only be one mount with our new model.  >>>>
 

@@ -210,6 +210,27 @@ site_config = {
         'widefield_cam': None,
         'allsky_cam': None,
     },
+
+    # The LCO scheduler references a description of this site in configdb
+    # The logic in configdb is organized slightly differently than the PTR
+    # config files (like this one), but they should ultimately represent the
+    # same underlying hardware.
+    # When a PTR obsevatory is running an observation created by the scheduler,
+    # we'll use this to figure out what devices to use to run that observation.
+    # The key is the instrument name from configdb, and the value is a dict of
+    # device names from this config file for each type of device.
+    #
+    # This should only be modified if the configuration in configdb changes.
+    'configdb_instrument_mapping': {
+        'zwo1600m': {
+            'mount': 'ecocdkpier',
+            'camera': 'ec003zwo',
+            'filter_wheel': 'SBIG 8-position wheel',
+            'rotator': None,
+            'focuser': 'focuser'
+        }
+    },
+
     'device_types': [
             'mount',
             #'telescope',
@@ -442,9 +463,7 @@ site_config = {
             "filter_settle_time": 7, #how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
 
-            "driver": 'ASCOM.EFW2.FilterWheel',
-
-            #"driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+            "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
             "dual_wheel": False,

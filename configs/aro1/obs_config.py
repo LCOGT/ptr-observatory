@@ -277,6 +277,34 @@ site_config = {
         'widefield_cam': None,
         'allsky_cam': None,
     },
+
+    # The LCO scheduler references a description of this site in configdb
+    # The logic in configdb is organized slightly differently than the PTR
+    # config files (like this one), but they should ultimately represent the
+    # same underlying hardware.
+    # When a PTR obsevatory is running an observation created by the scheduler,
+    # we'll use this to figure out what devices to use to run that observation.
+    # The key is the instrument name from configdb, and the value is a dict of
+    # device names from this config file for each type of device.
+    #
+    # This should only be modified if the configuration in configdb changes.
+    'configdb_instrument_mapping': {
+        'qhy600-2.1': {
+            'mount': 'aropier1',
+            'camera': 'sq003ms',
+            'filter_wheel': 'LCO FW50_001d',
+            'rotator': None,
+            'focuser': 'focuser'
+        },
+        'qhy600-2.2': {
+            'mount': 'aropier1',
+            'camera': 'sq003ms',
+            'filter_wheel': 'LCO FW50_001d',
+            'rotator': None,
+            'focuser': 'focuser'
+        }
+    },
+
     'device_types': [
         'mount',
         # 'telescope',

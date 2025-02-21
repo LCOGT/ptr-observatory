@@ -4,323 +4,80 @@ import json
 from typing import Dict, Any, Callable
 import logging
 from devices.sequencer_helpers import compute_target_coordinates
-# observation = json.loads('''{
-#   "site": "mrc",
-#   "enclosure": "enc1",
-#   "telescope": "0m35",
-#   "observation_type": "NORMAL",
-#   "state": "PENDING",
 
-#   "id": 583116837,
-#   "request_group_id": 1885213,
+def configdb_instrument_mapping_passes_validation(site_config) -> bool:
+    if 'configdb_instrument_mapping' not in site_config:
+        print('WARNING: tried to validate the configdb mapping in the site config but it was missing.')
+        return False
 
-#   "created": "2024-11-01T14:04:10.425775Z",
-#   "modified": "2024-11-01T14:04:10.425770Z",
-#   "start": "2024-11-02T07:22:14Z",
-#   "end": "2024-11-02T07:26:56Z",
+    required_devices = [
+        'mount',
+        'camera',
+        'filter_wheel',
+        'focuser'
+    ]
+    problems = []
 
-#   "name": "Full Detailed Observation",
-#   "submitter": "tbeccue",
-#   "proposal": "LCOSchedulerTest",
-#   "ipp_value": 1.05,
-#   "priority": 10,
+    configdb_mappings = site_config['configdb_instrument_mapping']
 
-#   "request": {
-#     "id": 3445199,
-#     "modified": "2024-10-29T14:57:32.128148Z",
-#     "state": "PENDING",
+    # iterate through each configdb instrument -> PTR devices mapping. Usually just one per site.
+    for instrument, device_maps in configdb_mappings.items():
+        # Check that all required devices are specified
+        for device_type in required_devices:
+            if device_type in device_maps:
+                # Check that the specific instrument exists
+                device_name = device_maps[device_type]
+                if device_name not in site_config[device_type]:
+                    problems.append(f'Device name {device_name} is not defined in the list of {device_type}')
+            else:
+                problems.append(f'Instrument {instrument} is missing a mapping for device type: {device_type}')
 
-#     "duration": 282,
-#     "acceptability_threshold": 90.0,
-#     "optimization_type": "TIME",
-
-#     "observation_note": "",
-#     "extra_params": {},
-
-#     "configuration_repeats": 2,
-#     "configurations": [
-#       {
-#         "id": 10840779,
-#         "configuration_status": 750648588,
-#         "instrument_name": "q461",
-#         "instrument_type": "0M35-QHY461",
-#         "priority": 1,
-#         "repeat_duration": null,
-#         "state": "PENDING",
-#         "summary": {},
-#         "type": "EXPOSE",
-
-#         "target": {
-#           "dec": -7.6528696608383,
-#           "epoch": 2000.0,
-#           "extra_params": {},
-#           "hour_angle": null,
-#           "name": "40 Eridani",
-#           "parallax": 199.608,
-#           "proper_motion_dec": -3421.809,
-#           "proper_motion_ra": -2240.085,
-#           "ra": 63.8179984124771,
-#           "type": "ICRS"
-#         },
-#         "instrument_configs": [
-#           {
-#             "exposure_count": 1,
-#             "exposure_time": 15.0,
-#             "extra_params": {
-#               "offset_dec": 1,
-#               "offset_ra": 2,
-#               "rotator_angle": 5
-#             },
-#             "mode": "Full",
-#             "optical_elements": {
-#               "filter": "mrc-L"
-#             },
-#             "rois": [],
-#             "rotator_mode": "RPA"
-#           },
-#           {
-#             "exposure_count": 2,
-#             "exposure_time": 10.0,
-#             "extra_params": {
-#               "offset_dec": 0,
-#               "offset_ra": 0,
-#               "rotator_angle": 0
-#             },
-#             "mode": "Full",
-#             "optical_elements": {
-#               "filter": "mrc-R"
-#             },
-#             "rois": [],
-#             "rotator_mode": "RPA"
-#           }
-#         ],
-#         "acquisition_config": {
-#           "extra_params": {},
-#           "mode": "OFF"
-#         },
-#         "constraints": {
-#           "extra_params": {},
-#           "max_airmass": 1.6,
-#           "max_lunar_phase": 1.0,
-#           "min_lunar_distance": 30.0
-#         },
-#         "extra_params": {
-#           "dither_pattern": "custom"
-#         },
-#         "guide_camera_name": "mrc-qhy461",
-#         "guiding_config": {
-#           "exposure_time": null,
-#           "extra_params": {},
-#           "mode": "ON",
-#           "optical_elements": {},
-#           "optional": true
-#         }
-#       },
-#       {
-#         "acquisition_config": {
-#           "extra_params": {},
-#           "mode": "OFF"
-#         },
-#         "configuration_status": 750648589,
-#         "constraints": {
-#           "extra_params": {},
-#           "max_airmass": 1.6,
-#           "max_lunar_phase": 1.0,
-#           "min_lunar_distance": 30.0
-#         },
-#         "extra_params": {
-#           "dither_pattern": "custom"
-#         },
-#         "guide_camera_name": "mrc-qhy461",
-#         "guiding_config": {
-#           "exposure_time": null,
-#           "extra_params": {},
-#           "mode": "ON",
-#           "optical_elements": {},
-#           "optional": true
-#         },
-#         "id": 10840780,
-#         "instrument_configs": [
-#           {
-#             "exposure_count": 1,
-#             "exposure_time": 15.0,
-#             "extra_params": {
-#               "offset_dec": 1,
-#               "offset_ra": 2,
-#               "rotator_angle": 5
-#             },
-#             "mode": "Full",
-#             "optical_elements": {
-#               "filter": "mrc-L"
-#             },
-#             "rois": [],
-#             "rotator_mode": "RPA"
-#           }
-#         ],
-#         "instrument_name": "q461",
-#         "instrument_type": "0M35-QHY461",
-#         "priority": 2,
-#         "repeat_duration": null,
-#         "state": "PENDING",
-#         "summary": {},
-#         "target": {
-#           "dec": 41.26875,
-#           "epoch": 2000.0,
-#           "extra_params": {},
-#           "hour_angle": null,
-#           "name": "m31",
-#           "parallax": 0.0,
-#           "proper_motion_dec": 0.0,
-#           "proper_motion_ra": 0.0,
-#           "ra": 10.684708,
-#           "type": "ICRS"
-#         },
-#         "type": "EXPOSE"
-#       },
-#       {
-#         "acquisition_config": {
-#           "extra_params": {},
-#           "mode": "OFF"
-#         },
-#         "configuration_status": 750648590,
-#         "constraints": {
-#           "extra_params": {},
-#           "max_airmass": 1.6,
-#           "max_lunar_phase": 1.0,
-#           "min_lunar_distance": 30.0
-#         },
-#         "extra_params": {
-#           "dither_pattern": "custom"
-#         },
-#         "guide_camera_name": "mrc-qhy461",
-#         "guiding_config": {
-#           "exposure_time": null,
-#           "extra_params": {},
-#           "mode": "ON",
-#           "optical_elements": {},
-#           "optional": true
-#         },
-#         "id": 10840779,
-#         "instrument_configs": [
-#           {
-#             "exposure_count": 1,
-#             "exposure_time": 15.0,
-#             "extra_params": {
-#               "offset_dec": 1,
-#               "offset_ra": 2,
-#               "rotator_angle": 5
-#             },
-#             "mode": "Full",
-#             "optical_elements": {
-#               "filter": "mrc-L"
-#             },
-#             "rois": [],
-#             "rotator_mode": "RPA"
-#           },
-#           {
-#             "exposure_count": 2,
-#             "exposure_time": 10.0,
-#             "extra_params": {
-#               "offset_dec": 0,
-#               "offset_ra": 0,
-#               "rotator_angle": 0
-#             },
-#             "mode": "Full",
-#             "optical_elements": {
-#               "filter": "mrc-R"
-#             },
-#             "rois": [],
-#             "rotator_mode": "RPA"
-#           }
-#         ],
-#         "instrument_name": "q461",
-#         "instrument_type": "0M35-QHY461",
-#         "priority": 3,
-#         "repeat_duration": null,
-#         "state": "PENDING",
-#         "summary": {},
-#         "target": {
-#           "dec": -7.6528696608383,
-#           "epoch": 2000.0,
-#           "extra_params": {},
-#           "hour_angle": null,
-#           "name": "40 Eridani",
-#           "parallax": 199.608,
-#           "proper_motion_dec": -3421.809,
-#           "proper_motion_ra": -2240.085,
-#           "ra": 63.8179984124771,
-#           "type": "ICRS"
-#         },
-#         "type": "EXPOSE"
-#       },
-#       {
-#         "acquisition_config": {
-#           "extra_params": {},
-#           "mode": "OFF"
-#         },
-#         "configuration_status": 750648591,
-#         "constraints": {
-#           "extra_params": {},
-#           "max_airmass": 1.6,
-#           "max_lunar_phase": 1.0,
-#           "min_lunar_distance": 30.0
-#         },
-#         "extra_params": {
-#           "dither_pattern": "custom"
-#         },
-#         "guide_camera_name": "mrc-qhy461",
-#         "guiding_config": {
-#           "exposure_time": null,
-#           "extra_params": {},
-#           "mode": "ON",
-#           "optical_elements": {},
-#           "optional": true
-#         },
-#         "id": 10840780,
-#         "instrument_configs": [
-#           {
-#             "exposure_count": 1,
-#             "exposure_time": 15.0,
-#             "extra_params": {
-#               "offset_dec": 1,
-#               "offset_ra": 2,
-#               "rotator_angle": 5
-#             },
-#             "mode": "Full",
-#             "optical_elements": {
-#               "filter": "mrc-L"
-#             },
-#             "rois": [],
-#             "rotator_mode": "RPA"
-#           }
-#         ],
-#         "instrument_name": "q461",
-#         "instrument_type": "0M35-QHY461",
-#         "priority": 4,
-#         "repeat_duration": null,
-#         "state": "PENDING",
-#         "summary": {},
-#         "target": {
-#           "dec": 41.26875,
-#           "epoch": 2000.0,
-#           "extra_params": {},
-#           "hour_angle": null,
-#           "name": "m31",
-#           "parallax": 0.0,
-#           "proper_motion_dec": 0.0,
-#           "proper_motion_ra": 0.0,
-#           "ra": 10.684708,
-#           "type": "ICRS"
-#         },
-#         "type": "EXPOSE"
-#       }
-#     ]
-#   }
-# }''')
+    if len(problems) > 0:
+        print('WARNING: errors found while validating the configdb_instrument_mapping:')
+        for p in problems:
+            print(p)
+        return False
+    else:
+        return True
 
 
-def get_camera_from_observation_config(observation, observatory):
-  pass
+def get_devices_for_configuration(configuration: dict, observatory) -> dict:
+    """ Return a dict with the device of each type to use in an observation request's configuration """
+    o = observatory # less typing
+    site_config = o.config
+    instrument_type = configuration['instrument_type']
+    instrument_name = configuration['instrument_name']
+
+    configdb_mapping = observatory.config.get('configdb_instrument_mapping')
+
+    # Use default devices as our fallback
+    devices = {
+        'camera': o.devices['main_cam'],
+        'mount': o.devices['mount'],
+        'filter_wheel': o.devices['main_fw'],
+        'focuser': o.devices['main_focuser']
+    }
+
+    # Use default devices if the mapping fails validation
+    if not configdb_instrument_mapping_passes_validation(site_config):
+        print('Reverting to use default devices, which might make this observation a waste of time.')
+        print('This should be an easy fix: update the site config with a configdb_instrument_mapping with correct device names')
+        return devices
+    # Use default devices if the mapping is missing the configdb instrument specified in this observation
+    elif instrument_name not in site_config['configdb_instrument_mapping']:
+        print('WARNING: configdb_instrument_mapping is missing instrument {instrument_name}, which we need for the current observation')
+        print('Reverting to use default devices, which might make this observation a waste of time.')
+        print('This should be an easy fix: add the configdb_instrument_mapping to the site config with correct devices specified')
+        return devices
+    # If no errors, then use the mapping to get our devices
+    else:
+        configdb_mapping = site_config['configdb_instrument_mapping'][instrument_name]
+        devices['camera'] = o.device_by_name[configdb_mapping['camera']]
+        devices['mount'] = o.device_by_name[configdb_mapping['mount']]
+        devices['filterwheel'] = o.device_by_name[configdb_mapping['filter_wheel']]
+        devices['focuser'] = o.device_by_name[configdb_mapping['focuser']]
+    return devices
+
 
 def execute_project_from_lco1(observation, observatory):
     """ Strategy:
@@ -353,7 +110,7 @@ def execute_project_from_lco1(observation, observatory):
 
     submitter_id = observation['submitter']
 
-    def go_to_target(target, offset_ra=0, offset_dec=0):
+    def go_to_target(mount_device, target, offset_ra=0, offset_dec=0):
         if target['type'] != "ICRS":
             print(f'Unsupported target type: {target["type"]}')
             return
@@ -367,13 +124,13 @@ def execute_project_from_lco1(observation, observatory):
         corrected_dec = proper_motion_parallax_adjusted_coords['dec'] + offset_dec
 
         print(f'Slewing to ra {corrected_ra}, dec {corrected_dec}')
-        mount.go_command(ra=corrected_ra, dec=corrected_dec, objectname=target.get('name'))
+        mount_device.go_command(ra=corrected_ra, dec=corrected_dec, objectname=target.get('name'))
 
-    def do_defocus(amount):
+    def do_defocus(focuser_device, amount):
         print(f'simulating defocus of {amount}')
         return
 
-    def take_exposure(time, filter_name, smartstack=True, substack=True):
+    def take_exposure(camera_device, filter_wheel_device, time, filter_name, smartstack=True, substack=True):
         required_params = {
             'time': time,
             'image_type': 'light',
@@ -385,7 +142,7 @@ def execute_project_from_lco1(observation, observatory):
             'count': 1
         }
         print(f'Exposing image with filter {filter_name} for {time}s')
-        camera.expose_command(
+        camera_device.expose_command(
             required_params,
             optional_params,
             user_id=submitter_id,
@@ -400,41 +157,45 @@ def execute_project_from_lco1(observation, observatory):
         print('simulating config validation (return True)')
         return True
 
-    def do_configuration(config, devices):
-        go_to_target(config['target'])
+    def do_configuration(configuration, devices):
+        go_to_target(devices['mount'], configuration['target'])
 
-        config_type = config['type']
+        config_type = configuration['type']
 
-        repeat_duration = config.get('repeat_duration') or 0 # fallback to keep number type
+        repeat_duration = configuration.get('repeat_duration') or 0 # fallback to keep number type
         end_time = time.time() + repeat_duration
         def exposure_sequence_done():
             ''' Return True if configuration type is an exposure sequence and the duration has been exceeded'''
             return config_type == 'REPEAT_EXPOSE' and time.time() > end_time
 
         if config_type == "EXPOSE":
-            for index, ic in enumerate(config['instrument_configs']):
-                print(f'starting instrument config #{index + 1} of {len(config["instrument_configs"])}')
-                do_instrument_config(ic, config, devices, exposure_sequence_done)
+            for index, ic in enumerate(configuration['instrument_configs']):
+                print(f'starting instrument config #{index + 1} of {len(configuration["instrument_configs"])}')
+                do_instrument_config(ic, configuration, devices, exposure_sequence_done)
         elif config_type == "REPEAT_EXPOSE":
             while not exposure_sequence_done():
-                for index, ic in enumerate(config['instrument_configs']):
-                    print(f'starting instrument config #{index + 1} of {len(config["instrument_configs"])}')
-                    do_instrument_config(ic, config, devices, exposure_sequence_done)
+                for index, ic in enumerate(configuration['instrument_configs']):
+                    print(f'starting instrument config #{index + 1} of {len(configuration["instrument_configs"])}')
+                    do_instrument_config(ic, configuration, devices, exposure_sequence_done)
         else:
             print(f"Unknown config type {config_type}. Skipping this config.")
 
 
     def do_instrument_config(ic, config, devices, exposure_sequence_done: Callable[[], bool]) -> None:
+        mount = devices['mount']
+        focuser = devices['focuser']
+        camera = devices['camera']
+        filter_wheel = devices['filter_wheel']
 
         # Ignore defocus for now, since focus routine is tied to camera expose command and I need to untangle them first.
         defocus = ic['extra_params'].get('defocus', False)
         if defocus:
             print(f'Defocus was requested with value {defocus}, but this has not been implemented yet.')
-            # do_defocus(defocus)
+            # do_defocus(focuser, defocus)
 
         offset_ra = ic['extra_params'].get('offset_ra', 0)
         offset_dec = ic['extra_params'].get('offset_dec', 0)
-        go_to_target(config['target'], offset_ra, offset_dec)
+        go_to_target(mount, config['target'], offset_ra, offset_dec)
 
         exposure_time = ic['exposure_time']
         exposure_count = ic['exposure_count']
@@ -444,27 +205,26 @@ def execute_project_from_lco1(observation, observatory):
         for _ in range(exposure_count):
             if exposure_sequence_done():
                 break
-            take_exposure(exposure_time, filter_name, smartstack=smartstack, substack=substack)
+            take_exposure(camera, filter_wheel, exposure_time, filter_name, smartstack=smartstack, substack=substack)
 
 
-    def do_observation(observation):
+    def do_observation(observation, observatory):
         print('Starting the following observation from LCO:')
         print(json.dumps(observation, indent=2))
         request = observation['request']
-        # devices = get_devices(observation)
-        devices = None
 
         configuration_repeats = request['configuration_repeats']
         for cr in range(configuration_repeats):
             print(f'Doing configuration repeat #{cr + 1} of {configuration_repeats}')
-            for index, config in enumerate(request['configurations']):
+            for index, configuration in enumerate(request['configurations']):
                 print(f'starting config #{index + 1} of {len(request["configurations"])}')
-                if is_valid_config(config):
-                    do_configuration(config, devices)
+                if is_valid_config(configuration):
+                    devices = get_devices_for_configuration(configuration, observatory)
+                    do_configuration(configuration, devices)
                 else:
                     print('Config failed validation. Skipping.')
 
         print(f'OBSERVATION COMPLETE\n\n')
 
-    do_observation(observation)
+    do_observation(observation, observatory)
 
