@@ -51,7 +51,7 @@ site_config = {
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 60,
     'lowest_requestable_altitude': 20,  # Degrees. For normal pointing requests don't allow requests to go this low.
-    'lowest_acceptable_altitude' : -10.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+    'lowest_acceptable_altitude' : -15.0, # Below this altitude, it will automatically try to home and park the scope to recover.
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
@@ -152,7 +152,7 @@ site_config = {
     'auto_eve_sky_flat': True,
     
      'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
-    'auto_midnight_moonless_bias_dark': True,
+    'auto_midnight_moonless_bias_dark': False,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     
@@ -380,8 +380,11 @@ site_config = {
             'parent': 'Main OTA',
             'name': 'focuser',
             'desc':  'Planewave Focuser',
-            'driver': 'ASCOM.PWI3.Focuser',
+            #'driver': 'ASCOM.myDCFocuserASCOM.Focuser',
+            'driver': 'dummy',
 			'com_port':  'COM9',
+            
+            'relative_focuser': True,
 
             'focuser_movement_settle_time': 10,
             'start_at_config_reference': False,
@@ -457,8 +460,10 @@ site_config = {
             
             'overscan_trim' : 'asi1600',
             'service_date': '20211111',
-            'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
-            
+            #'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+            #'driver': "dummy",
+            #'driver': "TheSky64.ccdsoftCamera",
+            'driver' :'zwo_native_driver',
             
             'detector':  'KAF16803',
             'manufacturer':  'On-Semi',
@@ -520,7 +525,7 @@ site_config = {
                'flipx_jpeg' : False,
                'flipy_jpeg' : False,
                'rotate180_jpeg' : False,
-               'rotate90_jpeg' : False,
+               'rotate90_jpeg' : True,
                'rotate270_jpeg' : False,
                
                # For large fields of view, crop the images down to solve faster.                 
@@ -548,7 +553,7 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': 4,  
+                'temp_setpoint': 5,  
                 
                 
                 
@@ -558,10 +563,10 @@ site_config = {
                 # from the 15th of the month to the 15 of the month 
                 # 
                 # ( setpoint, day_warm_difference, day_warm troe our false)
-                'set_temp_setpoint_by_season' : True,
+                'set_temp_setpoint_by_season' : False,
                 'temp_setpoint_nov_to_feb' : ( 5, 8, True),
                 'temp_setpoint_feb_to_may' : ( 5, 8, True),
-                'temp_setpoint_may_to_aug' : ( 1, 8, True),
+                'temp_setpoint_may_to_aug' : ( 5, 8, True),
                 'temp_setpoint_aug_to_nov' : ( 5, 8, True),
                 
                 'temp_setpoint_tolerance': 2.5,
@@ -580,8 +585,8 @@ site_config = {
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
-                'min_exposure': 0.000001,
-                'min_flat_exposure' : 0.000001, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'min_exposure': 0.0000001,
+                'min_flat_exposure' : 0.0000001, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'reject_new_flat_by_known_gain' : True,
                 'max_exposure': 3600,
@@ -607,8 +612,8 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.08,
                 'readout_seconds': 1.0,
-                'smart_stack_exposure_time' : 15,
-                'substack': False, # Substack with this camera
+                'smart_stack_exposure_time' : 30,
+                'substack': True, # Substack with this camera
                 
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.

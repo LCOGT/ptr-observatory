@@ -383,6 +383,7 @@ site_config = {
             'desc':  'Planewave Focuser',
             'driver': 'ASCOM.PWI3.Focuser',
 			'com_port':  'COM9',
+            'relative_focuser': False,
 
             'focuser_movement_settle_time': 10,
             'start_at_config_reference': False,
@@ -429,7 +430,9 @@ site_config = {
             "filter_settle_time": 7, #how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
             
-            "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+            "driver": 'ASCOM.EFW2.FilterWheel',
+            
+            #"driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
             "dual_wheel": False,
@@ -521,8 +524,9 @@ site_config = {
             
             'overscan_trim' : 'asi1600',
             'service_date': '20211111',
-            'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+            #'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
             
+            'driver' :'zwo_native_driver',
             
             'detector':  'KAF16803',
             'manufacturer':  'On-Semi',
@@ -646,8 +650,8 @@ site_config = {
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
-                'min_exposure': 0.000001,
-                'min_flat_exposure' : 0.000001, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'min_exposure': 0.0000001,
+                'min_flat_exposure' : 0.0000001, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'reject_new_flat_by_known_gain' : True,
                 'max_exposure': 3600,
@@ -673,8 +677,8 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.08,
                 'readout_seconds': 1.0,
-                'smart_stack_exposure_time' : 15,
-                'substack': False, # Substack with this camera
+                'smart_stack_exposure_time' : 30,
+                'substack': True, # Substack with this camera
                 
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
@@ -706,7 +710,7 @@ site_config = {
                 'number_of_dark_to_store' : 64,
                 'number_of_flat_to_store' : 64,
                 
-                'dark_exposure': 180,
+                'dark_exposure': 120,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",

@@ -42,6 +42,7 @@ import copy
 import json
 import random
 from astropy import log
+import zwoasi as asi
 log.setLevel('ERROR')
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
@@ -772,7 +773,7 @@ class Camera:
             win32com.client.pythoncom.CoInitialize()
             plog(driver, name)
 
-            if not driver == "QHYCCD_Direct_Control":
+            if not driver == "QHYCCD_Direct_Control" and not driver == 'zwo_native_driver':
                 self.camera = win32com.client.Dispatch(driver)
             else:
                 self.camera = None
@@ -919,6 +920,7 @@ class Camera:
             self._imageavailable = self._ascom_imageavailable
             self._getImageArray = self._ascom_getImageArray
             self.description = "ASCOM"
+            self.zwo=False
             self.maxim = False
             self.ascom = True
             self.theskyx = False
@@ -940,7 +942,7 @@ class Camera:
             self.imagesize_x = self.camera.CameraXSize
             self.imagesize_y = self.camera.CameraYSize
 
-        elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
+        elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera" or driver =="TheSky64.ccdsoftCamera":
             plog("Connecting to TheSkyX")
             self._connected = self._theskyx_connected
             self._connect = self._theskyx_connect
@@ -958,20 +960,24 @@ class Camera:
             self.camera.AutoSaveOn = 1
             self.camera.Subframe = 0
             self.description = "TheSkyX"
+            self.zwo=False
             self.maxim = False
             self.ascom = False
             self.theskyx = True
             self.qhydirect = False
             plog("TheSkyX is connected:  ")
+            # self.app = win32com.client.Dispatch(
+            #     "CCDSoft2XAdaptor.ccdsoft5Camera")
+
             self.app = win32com.client.Dispatch(
-                "CCDSoft2XAdaptor.ccdsoft5Camera")
+                driver)
 
             # Initialise Camera Size here
             # Take a quick cheeky frame to get imagesize
             tempcamera = win32com.client.Dispatch(self.driver)
             tempcamera.Connect()
             self._stop_expose()
-            tempcamera.Frame = 2
+            tempcamera.Frame = 1
             tempcamera.ExposureTime = 0
             tempcamera.ImageReduction = 0
             tempcamera.TakeImage()
@@ -988,7 +994,9 @@ class Camera:
 
         elif driver == "QHYCCD_Direct_Control":
             global qhycam
+
             plog("TRYING TO cycle the QHY camera power via Ultimate Powerbox V2, if it exists.")
+
 
 
 
@@ -1024,7 +1032,6 @@ class Camera:
 
             except:
                 plog("Failed to connect to Powerbox V2, sorry!")
-
 
 
             plog("Connecting directly to QHY")
@@ -1131,6 +1138,7 @@ class Camera:
             self._getImageArray = self._qhyccd_getImageArray
 
             self.description = "QHYDirectControl"
+            self.zwo=False
             self.maxim = False
             self.ascom = False
             self.theskyx = False
@@ -1139,6 +1147,69 @@ class Camera:
             # Initialise Camera Size here
             self.imagesize_x = int(i_h)   #20250101  Was i_h   WER
             self.imagesize_y = int(i_w)
+
+        elif driver == 'zwo_native_driver':
+            
+            sdk_path = "support_info/ASISDK/lib/x64/ASICamera2.dll"
+            asi.init(sdk_path)
+            # Check connected cameras
+            num_cameras = asi.get_num_cameras()
+            if num_cameras == 0:
+                print("No ZWO cameras detected.")
+            print(f"Number of cameras detected: {num_cameras}")
+
+            # Get camera details
+            camera_index = 0 # 0 is first camera
+            global zwocamera 
+            zwocamera = asi.Camera(camera_index)
+            camera_info = zwocamera.get_camera_property()
+            print(f"Using camera: {camera_info['Name']}")
+            
+            # Configure camera settings
+            gain = 150 # low read noise, high gain for short exposures.
+            zwocamera.set_control_value(asi.ASI_GAIN, gain)
+            zwocamera.set_control_value(asi.ASI_BANDWIDTHOVERLOAD, 40)  # Optional: Adjust for your system
+            zwocamera.set_control_value(asi.ASI_BRIGHTNESS, 100)  # Optional: Adjust for your system
+            zwocamera.set_image_type(asi.ASI_IMG_RAW16)  # Use RAW8 image type
+            
+            
+            
+            # NB NB NB Considerputting this up higher.
+            # plog("Maxim camera is initializing.")
+            self._connected = self._zwo_connected
+            self._connect = self._zwo_connect
+            self._set_setpoint = self._zwo_set_setpoint
+            self._setpoint = self._zwo_setpoint
+            self._temperature = self._zwo_temperature
+            self._cooler_on = self._zwo_cooler_on
+            self._set_cooler_on = self._zwo_set_cooler_on
+            self._expose = self._zwo_expose
+            self._stop_expose = self._zwo_stop_expose
+            self._imageavailable = self._zwo_imageavailable
+            self._getImageArray = self._zwo_getImageArray
+
+            self.description = "ZWO"
+            self.zwo=True
+            self.maxim = False
+            self.ascom = False
+            self.theskyx = False
+            self.qhydirect = False
+            # plog("Maxim is connected:  ", self._connect(True))
+            # self.app = win32com.client.Dispatch("Maxim.Application")
+            # plog(self.camera)
+            # self.camera.SetFullFrame()
+            # self.camera.SetFullFrame
+
+            # Quick shot to get camera size
+            # Get image dimensions from ROI
+            roi_format = zwocamera.get_roi_format()
+            #breakpoint()
+
+            self.imagesize_x = roi_format[0]
+            self.imagesize_y = roi_format[1]
+
+            # plog("Control is via Maxim camera interface, not ASCOM.")
+            # plog("Please note telescope is NOT connected to Maxim.")        
 
         elif driver == 'maxim':
             # NB NB NB Considerputting this up higher.
@@ -1156,6 +1227,7 @@ class Camera:
             self._getImageArray = self._maxim_getImageArray
 
             self.description = "MAXIM"
+            self.zwo=False
             self.maxim = True
             self.ascom = False
             self.theskyx = False
@@ -1188,6 +1260,7 @@ class Camera:
             self._getImageArray = self._dummy_getImageArray
 
             self.description = "DUMMY"
+            self.zwo=False
             self.maxim = False
             self.ascom = False
             self.theskyx = False
@@ -1536,6 +1609,7 @@ class Camera:
         # Camera overscan values
         self.overscan_values={}
         self.overscan_values['QHY600']=[0,38,32,0]
+        self.overscan_values['QHY268']=[24,0,0,4]
         self.overscan_values['QHY461']=[2,2,50,50]
         self.overscan_values['SBIG16803']=[0,0,0,0]
 
@@ -1548,14 +1622,14 @@ class Camera:
         self.overscan_up=self.overscan_values[site_config["camera"][self.name]['overscan_trim']][2]
         self.overscan_down=self.overscan_values[site_config["camera"][self.name]['overscan_trim']][3]
 
-        self.overscan_left = self.overscan_values[site_config["camera"]
-                                                  [self.name]['overscan_trim']][0]
-        self.overscan_right = self.overscan_values[site_config["camera"]
-                                                   [self.name]['overscan_trim']][1]
-        self.overscan_up = self.overscan_values[site_config["camera"]
-                                                [self.name]['overscan_trim']][2]
-        self.overscan_down = self.overscan_values[site_config["camera"]
-                                                  [self.name]['overscan_trim']][3]
+        # self.overscan_left = self.overscan_values[site_config["camera"]
+        #                                           [self.name]['overscan_trim']][0]
+        # self.overscan_right = self.overscan_values[site_config["camera"]
+        #                                            [self.name]['overscan_trim']][1]
+        # self.overscan_up = self.overscan_values[site_config["camera"]
+        #                                         [self.name]['overscan_trim']][2]
+        # self.overscan_down = self.overscan_values[site_config["camera"]
+        #                                           [self.name]['overscan_trim']][3]
 
         # The skyx needs its own separate camera update thread to do with some theskyx
         # curiosities and also the win32com sorta connection it makes.
@@ -2352,7 +2426,203 @@ class Camera:
         #return np.random.randint(0, 65536, size=(2400, 2400), dtype=np.uint16)
 
 
+    def _zwo_connected(self):
+        return True
 
+    def _zwo_connect(self, p_connect):
+        #self.camera.LinkEnabled = p_connect
+        return True
+
+    def _zwo_temperature(self):
+        # print(zwocamera.get_control_value(asi.ASI_TEMPERATURE))
+        # zwocamera.get_control_value(asi.ASI_COOLER_ON)
+        # print(zwocamera.get_control_value(asi.ASI_TEMPERATURE))
+        
+        #return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)/10)
+        return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)[0])/10, 0,0, zwocamera.get_control_value(asi.ASI_COOLER_POWER_PERC)[0]
+
+    def _zwo_cooler_power(self):
+        return float(zwocamera.get_control_value(asi.ASI_COOLER_POWER_PERC)[0])
+
+    # def _zwo_heatsink_temp(self):
+    #     return self.camera.HeatSinkTemperature
+
+    def _zwo_cooler_on(self):
+        zwocamera.set_control_value(asi.ASI_COOLER_ON, True)
+        return zwocamera.get_control_value(asi.ASI_COOLER_ON)
+
+    def _zwo_set_cooler_on(self):
+        #self.camera.CoolerOn = True
+        return  True
+    
+    def _zwo_set_setpoint(self, p_temp):
+        zwocamera.set_control_value(asi.ASI_TARGET_TEMP, int(p_temp))
+        
+        return p_temp
+
+    def _zwo_setpoint(self):
+        return self.camera.TemperatureSetpoint
+
+    # def _zwo_expose(self, exposure_time, bias_dark_or_light_type_frame):
+    #     # if bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark':
+    #     #     imtypeb = 0
+    #     # else:
+    #     #     imtypeb = 1
+    #     # self.camera.Expose(exposure_time, imtypeb)
+        
+    #     zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
+    #     zwocamera.start_exposure()
+
+    def _zwo_stop_expose(self):
+        # self.camera.AbortExposure()
+        # self.expresult = {}
+        # self.expresult["stopped"] = True
+        print ("Stop expose not implemented")
+
+    def _zwo_imageavailable(self):
+        if zwocamera.get_exposure_status() == 1:
+            return False
+        else:
+            return True
+
+    def _zwo_expose(self, exposure_time, bias_dark_or_light_type_frame):
+
+        self.substacker_available = False
+
+        if bias_dark_or_light_type_frame == 'bias':
+            exposure_time = 40 / 1000/1000  # shortest requestable exposure time
+
+        if not self.substacker:
+            # qhycam.so.SetQHYCCDParam(
+            #     qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
+            # qhycam.so.ExpQHYCCDSingleFrame(
+            #     qhycam.camera_params[qhycam_id]['handle'])
+            
+            zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
+            zwocamera.start_exposure()
+            
+        else:
+
+            # Boost Narrowband and low throughput broadband
+            if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n"]:
+                exp_of_substacks = 30
+                N_of_substacks = int((exposure_time / exp_of_substacks))
+            else:
+                exp_of_substacks = 10
+                N_of_substacks = int(exposure_time / exp_of_substacks)
+
+            self.substacker_filenames = []
+            base_tempfile = str(time.time()).replace(".", "")
+            for i in range(N_of_substacks):
+                self.substacker_filenames.append(
+                    self.local_calibration_path + "smartstacks/" + base_tempfile + str(i) + ".npy")
+
+            thread = threading.Thread(target=self.zwo_substacker_thread, args=(
+                exp_of_substacks, N_of_substacks, exp_of_substacks, copy.deepcopy(self.substacker_filenames),))
+            thread.daemon = True
+            thread.start()
+    
+
+    def zwo_substacker_thread(self, exposure_time, N_of_substacks, exp_of_substacks, substacker_filenames):
+    
+        self.substacker_available = False
+        readout_estimate_holder=[]
+        self.sub_stacker_midpoints=[]
+    
+    
+        for subexposure in range(N_of_substacks):
+            # Check there hasn't been a cancel sent through
+            if g_dev["obs"].stop_all_activity:
+                plog("stop_all_activity cancelling out of camera exposure")
+                self.shutter_open = False
+                return
+            if g_dev["obs"].exposure_halted_indicator:
+                self.shutter_open = False
+                return
+    
+            plog("Collecting subexposure " + str(subexposure+1))
+    
+            # qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(
+            #     exp_of_substacks*1000*1000))
+            
+            zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
+            
+            
+            if subexposure == 0:
+                self.substack_start_time = time.time()
+            self.expected_endpoint_of_substack_exposure = time.time() + exp_of_substacks
+            self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
+            # qhycam.so.ExpQHYCCDSingleFrame(
+            #     qhycam.camera_params[qhycam_id]['handle'])
+            zwocamera.start_exposure()
+            exposure_timer = time.time()
+    
+            # save out previous array to disk during exposure
+            if subexposure > 0:
+                # tempsend = np.reshape(
+                #     image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+    
+                #tempsend=tempsend[ 0:6384, 32:9600]
+                tempsend = image[self.overscan_left: self.imagesize_x-self.overscan_right,
+                                    self.overscan_up: self.imagesize_y - self.overscan_down]
+    
+                np.save(substacker_filenames[subexposure-1], tempsend)
+    
+            while (time.time() - exposure_timer) < exp_of_substacks:
+                time.sleep(0.001)
+    
+            # If this is the last exposure of the set of subexposures, then report shutter closed
+            if subexposure == (N_of_substacks-1):
+                self.shutter_open = False
+    
+            # # READOUT FROM THE QHY
+            # image_width_byref = c_uint32()
+            # image_height_byref = c_uint32()
+            # bits_per_pixel_byref = c_uint32()
+            # 
+            # success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
+            #                                          byref(image_width_byref),
+            #                                          byref(image_height_byref),
+            #                                          byref(
+            #                                              bits_per_pixel_byref),
+            #                                          byref(
+            #                                              qhycam.camera_params[qhycam_id]['channels']),
+            #                                          byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
+    
+            # image = np.ctypeslib.as_array(
+            #     qhycam.camera_params[qhycam_id]['prev_img_data'])
+            
+            time_before_last_substack_readout = time.time()
+            
+            image = self._zwo_getImageArray()
+            
+            time_after_last_substack_readout = time.time()
+    
+            readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
+    
+            # If it is the last file in the substack, throw it out to the slow process queue to save
+            # So that the camera can get started up again quicker.
+            if subexposure == (N_of_substacks -1 ):
+                #tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+                tempsend=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+                np.save(substacker_filenames[subexposure],tempsend)
+    
+        self.readout_estimate= np.median(np.array(readout_estimate_holder))
+        self.substacker_available=True
+        self.shutter_open=False
+
+    def _zwo_getImageArray(self):
+        
+        if self.substacker:
+            return 'substack_array'
+        else:
+        
+            frame = zwocamera.get_data_after_exposure()
+            
+            return np.frombuffer(frame, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
+    
+    
+    
 
 
 
@@ -2717,6 +2987,7 @@ class Camera:
             proto[10] = proto[10][:12] + str(enabled) + proto[10][13:]
             proto[1] = proto[1][:12] + str(binning) + proto[1][13:]
         seq_file = open(self.camera_path + "seq/ptr_mrc.seq", "w")
+
         for item in range(len(proto)):
             seq_file.write(proto[item])
         seq_file.close()
@@ -3081,19 +3352,20 @@ class Camera:
 
                 self.current_filter = g_dev['fil'].filter_selected
             else:
-                plog('Warning: null filterwheel detected, skipping filter setup')
+                requested_filter_name = 'none'
+                #plog('Warning: null filterwheel detected, skipping filter setup')
                 self.current_filter = None
         except Exception as e:
             plog("Camera filter setup:  ", e)
             plog(traceback.format_exc())
 
 
-        plog ("REQUESTED FILTER NAME: " + str(requested_filter_name))
-        plog ("CURRENT FILTER: " + str(self.current_filter))
+        # plog ("REQUESTED FILTER NAME: " + str(requested_filter_name))
+        # plog ("CURRENT FILTER: " + str(self.current_filter))
 
 
         this_exposure_filter = copy.deepcopy( self.current_filter)
-        plog ("THIS EXPOSURE FILTER: " + str(this_exposure_filter))
+        # plog ("THIS EXPOSURE FILTER: " + str(this_exposure_filter))
 
 
         if g_dev["fil"].null_filterwheel == False:
@@ -3162,10 +3434,15 @@ class Camera:
             ssNBmult = self.settings['smart_stack_exposure_NB_multiplier']
             dark_exp_time = self.settings['dark_exposure']
 
+            Nsmartstack = 1
+            SmartStackID = 'no'
+            smartstackinfo = 'no' # Just initialising this variable
             if g_dev["fil"].null_filterwheel == False:
                 if this_exposure_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
                     # For narrowband and low throughput filters, increase base exposure time.
                     ssExp = ssExp * ssNBmult
+            else:
+                this_exposure_filter = g_dev['fil'].name
                 #
             if not imtype.lower() in ["light", "expose"]:
                 Nsmartstack = 1
@@ -3182,17 +3459,13 @@ class Camera:
                     smartstackinfo = 'narrowband'
                 else:
                     smartstackinfo = 'broadband'
-            else:
-                Nsmartstack = 1
-                SmartStackID = 'no'
-                smartstackinfo = 'no'
 
                 # Here is where we quantise the exposure time for short exposures
                 if incoming_exposure_time < 2:
                     exposure_snap_to_grid = [ 0.00004, 0.0004, 0.0045, 0.015, 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5, 2.0]
                     exposure_time=min(exposure_snap_to_grid, key=lambda x:abs(x-incoming_exposure_time))
                 else:
-                    exposure_time = incoming_exposure_time
+                    exposure_time = ssExp
 
             # Create a unique yet arbitrary code for the token
             real_time_token = g_dev['name'] + '_' + self.alias + '_' + g_dev["day"] + '_' + this_exposure_filter.lower() + '_' + smartstackinfo + '_' + str(ssBaseExp) + "_" + str(
@@ -3211,6 +3484,8 @@ class Camera:
                 self.initial_smartstack_ra = None
                 self.initial_smartstack_dec = None
                 self.currently_in_smartstack_loop = False
+            
+            #breakpoint()
 
             # Repeat camera acquisition loop to collect all smartstacks necessary
             # The variable Nsmartstacks defaults to 1 - e.g. normal functioning
@@ -3340,7 +3615,7 @@ class Camera:
                         return 'roofshut'
 
                     try:
-                        if self.maxim or self.ascom or self.theskyx or self.qhydirect or self.dummy:
+                        if self.maxim or self.ascom or self.theskyx  or self.zwo or self.qhydirect or self.dummy:
 
                             ldr_handle_time = None
                             ldr_handle_high_time = None  # This is not maxim-specific
@@ -3446,7 +3721,7 @@ class Camera:
                                 else:
                                     g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
-                            g_dev['mnt'].wait_for_slew()
+                            
 
                             # Check there hasn't been a cancel sent through
                             if g_dev["obs"].stop_all_activity:
@@ -3582,6 +3857,8 @@ class Camera:
                                         plog("Detecting focuser still changing.")
                                         tempfocposition = copy.deepcopy(
                                             nowfocposition)
+
+                            g_dev['mnt'].wait_for_slew()
 
                             # Initialise this variable here
                             self.substacker_filenames = []
@@ -4167,6 +4444,7 @@ class Camera:
                     self.flatFiles[this_exposure_filter + "_bin" + str(1)])
             except:
                 plog("couldn't find flat for this filter")
+                #breakpoint()
                 intermediate_tempflat = None
         ## For traditional exposures, spin up all the subprocesses ready to collect and process the files once they arrive
         if (not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing'):
@@ -4860,10 +5138,20 @@ class Camera:
                             outputimg = self._getImageArray()  # .astype(np.float32)
                             imageCollected = 1
 
-                            if True:
+                            if False:
                                height, width = outputimg.shape
                                patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
-                               print(">>>>  20% central image patch, std:  ", bn.nanmedian(patch), round(bn.nanstd(patch), 2), str(width)+'x'+str(height) )
+                               plog(">>>>  20% central image patch, std:  ", bn.nanmedian(patch), round(bn.nanstd(patch), 2), str(width)+'x'+str(height) )
+                                 
+                            if False:
+                                # If this is set to true, then it will output a sample of the image.
+                                hdufocus = fits.PrimaryHDU()
+                                hdufocus.data = outputimg
+                                # hdufocus.header = hdu.header
+                                # hdufocus.header["NAXIS1"] = hdu.data.shape[0]
+                                # hdufocus.header["NAXIS2"] = hdu.data.shape[1]
+                                hdufocus.writeto(cal_path + 'rawdump.fits', overwrite=True, output_verify='silentfix')
+
 
                                #breakpoint()
 
@@ -5036,9 +5324,9 @@ class Camera:
                     plog ("Next seq:  ", next_seq)
 
                     # If there are too many unnaturally negative pixels, then reject the calibration
-                    if len(countypixels) > 256:  #Up from 100 for 100 megapix camera
+                    if len(countypixels) > 50000:  #Up from 100 for 100 megapix camera
                         plog(
-                            "Rejecting calibration because it has a high amount of low value pixels.", countypixels, " !!!!!!!!!!!!!!!!!")
+                            "Rejecting calibration because it has a high amount of low value pixels." + str(len(countypixels)) + " !!!!!!!!!!!!!!!!!")
                         expresult = {}
                         expresult["error"] = True
                         #breakpoint()
@@ -5227,6 +5515,7 @@ class Camera:
                         outputimg = np.divide(outputimg, intermediate_tempflat)
                     except Exception as e:
                         plog("flatting light frame failed", e)
+                        #breakpoint()
 
                     try:
                         outputimg[self.bpmFiles[str(1)]] = np.nan

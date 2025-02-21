@@ -50,6 +50,7 @@ import math
 import ephem
 from ptr_utility import plog
 import time
+import requests
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
@@ -625,6 +626,8 @@ class Mount:
 
         self.wait_for_mount_update()
         self.get_status()
+        
+        #breakpoint()
 
 
 #First add in various needed functions for coordinate conversions
@@ -1322,7 +1325,7 @@ class Mount:
                 plog ("some type of glitch in the mount thread: " + str(e))
                 plog(traceback.format_exc())
 
-    def wait_for_slew(self, wait_after_slew=True):
+    def wait_for_slew(self, wait_after_slew=True, wait_for_dome=True):
         try:
             actually_slewed=False
             if not self.rapid_park_indicator:
@@ -1346,6 +1349,41 @@ class Mount:
             plog(traceback.format_exc())
             if self.theskyx:
                 g_dev['obs'].kill_and_reboot_theskyx(self.current_icrs_ra, self.current_icrs_dec)
+                
+        # Then once it is slewed, if there is a dome, it has to wait for the dome.
+        if self.config['needs_to_wait_for_dome'] and wait_for_dome:
+            plog ("making sure dome is positioned correct.")
+            rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
+            aa = AltAz(location=self.site_coordinates, obstime=Time.now())
+            rd = rd.transform_to(aa)
+            obs_azimuth = float(rd.az/u.deg)
+            
+            
+            wema_name=g_dev['obs'].config['wema_name']
+            uri_status = f"https://status.photonranch.org/status/{wema_name}/enclosure"
+
+            
+            try:
+                wema_enclosure_status=requests.get(uri_status, timeout=20)
+                dome_azimuth=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_azimuth']['val']
+            except:
+                plog ("Some error in getting the wema_enclosure")
+            
+            
+            #dome_azimuth= GET FROM wema
+            
+            while abs(obs_azimuth - dome_azimuth) > 2:
+                plog ("d>")
+                time.sleep(2)
+                try:
+                    wema_enclosure_status=requests.get(uri_status, timeout=20)
+                    dome_azimuth=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_azimuth']['val']
+                except:
+                    plog ("Some error in getting the wema_enclosure")
+                    
+                
+                
+        
         return
 
     def return_side_of_pier(self):
@@ -1455,7 +1493,7 @@ class Mount:
 
     # This is called directly from the obs code to probe for flips, recenter, etc. Hence "directly"
     def slew_async_directly(self, ra, dec):
-        self.wait_for_slew(wait_after_slew=False)
+        self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
         #### Slew to CoordinatesAsync block
         self.slewtoRA = ra
         self.slewtoDEC = dec
@@ -1721,7 +1759,7 @@ class Mount:
                         #plog ("New RA - Old RA = "+ str(float(req['ra'])-center_image_ra))
                         #plog ("New dec - Old dec = "+ str(float(req['dec'])-center_image_dec))
 
-                        self.wait_for_slew(wait_after_slew=False)
+                        self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
                         #### Slew to CoordinatesAsync block
                         self.slewtoRA = gora
@@ -2128,7 +2166,7 @@ class Mount:
         successful_move=0
         while successful_move==0:
             try:
-                self.wait_for_slew(wait_after_slew=False)
+                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 g_dev['obs'].time_of_last_slew=time.time()
                 self.last_slew_was_pointing_slew = True
 
@@ -2160,7 +2198,7 @@ class Mount:
                                 plog("Killing then waiting 60 seconds then reconnecting")
                                 g_dev['obs'].kill_and_reboot_theskyx(-1,-1)
                                 self.unpark_command()
-                                self.wait_for_slew(wait_after_slew=False)
+                                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                                 if ra < 0:
                                     ra=ra+24
                                 if ra > 24:
@@ -2197,7 +2235,7 @@ class Mount:
                 #     dec=self.last_dec_requested + delta_dec
 
                 ra = ra_fix_h(ra)
-                self.wait_for_slew(wait_after_slew=False)
+                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 self.last_slew_was_pointing_slew = True
                 #### Slew to CoordinatesAsync block
                 self.slewtoRA = ra
@@ -2217,7 +2255,7 @@ class Mount:
         if not self.current_tracking_state:
             try:
                 if not dont_wait_after_slew:
-                    self.wait_for_slew(wait_after_slew=False)
+                    self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                     self.set_tracking_on()
             except Exception:
                 # Yes, this is an awfully non-elegant way to force a mount to start
@@ -2233,7 +2271,7 @@ class Mount:
                     plog("Killing then waiting 60 seconds then reconnecting")
                     g_dev['obs'].kill_and_reboot_theskyx(-1,-1)
                     self.unpark_command()
-                    self.wait_for_slew(wait_after_slew=False)
+                    self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                     if ra < 0:
                         ra=ra+24
                     if ra > 24:
@@ -2258,7 +2296,7 @@ class Mount:
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
         if not dont_wait_after_slew:
-            self.wait_for_slew(wait_after_slew=False)
+            self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
 
         #g_dev['obs'].drift_tracker_ra=0
@@ -2289,7 +2327,7 @@ class Mount:
             self.find_home_requested=True
             self.wait_for_mount_update()
             g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-            self.wait_for_slew(wait_after_slew=False)
+            self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
             self.get_mount_coordinates()
         else:
             plog("Mount is not capable of finding home. Slewing to home_alt and home_az")
@@ -2299,8 +2337,8 @@ class Mount:
             g_dev['obs'].time_of_last_slew=time.time()
             self.go_command(alt=home_alt,az= home_az, skip_open_test=True)
 
-            self.wait_for_slew(wait_after_slew=False)
-        self.wait_for_slew(wait_after_slew=False)
+            self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
+        self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
         self.parking_or_homing=False
 
     def flat_panel_command(self, req, opt):
@@ -2321,7 +2359,7 @@ class Mount:
                 if g_dev['obs'] is not None:  #THis gets called before obs is created
                     g_dev['obs'].send_to_user("Parking Mount. This can take a moment.")
                 g_dev['obs'].time_of_last_slew=time.time()
-                self.wait_for_slew(wait_after_slew=False)
+                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 self.park_requested=True
                 sleep_period= self.mount_update_period / 4
                 current_updates=copy.deepcopy(self.mount_updates)
@@ -2330,7 +2368,7 @@ class Mount:
 
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 self.rapid_park_indicator=True
-                self.wait_for_slew(wait_after_slew=False)
+                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 if self.settle_time_after_park > 0:
                     time.sleep(self.settle_time_after_park)
                     plog("Waiting " + str(self.settle_time_after_park) + " seconds for mount to settle.")
@@ -2365,7 +2403,7 @@ class Mount:
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
 
                 self.rapid_park_indicator=False
-                self.wait_for_slew(wait_after_slew=False)
+                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
                 if self.settle_time_after_unpark > 0:
                     time.sleep(self.settle_time_after_unpark)
@@ -2373,18 +2411,18 @@ class Mount:
 
                 if self.home_after_unpark:
                     try:
-                        self.wait_for_slew(wait_after_slew=False)
+                        self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                         self.request_find_home=True
                         self.wait_for_mount_update()
                         g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-                        self.wait_for_slew(wait_after_slew=False)
+                        self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                     except:
                         try:
                             home_alt = self.settings["home_altitude"]
                             home_az = self.settings["home_azimuth"]
-                            self.wait_for_slew(wait_after_slew=False)
+                            self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                             self.go_command(alt=home_alt,az= home_az, skip_open_test=True)
-                            self.wait_for_slew(wait_after_slew=False)
+                            self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                         except:
                             if self.theskyx:
 
@@ -2395,13 +2433,13 @@ class Mount:
                                 self.unpark_command()
                                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                                 self.rapid_park_indicator=False
-                                self.wait_for_slew(wait_after_slew=False)
+                                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                                 home_alt = self.settings["home_altitude"]
                                 home_az = self.settings["home_azimuth"]
                                 self.go_command(alt=home_alt,az= home_az, skip_open_test=True)
                             else:
                                 plog (traceback.format_exc())
-                    self.wait_for_slew(wait_after_slew=False)
+                    self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
             self.parking_or_homing=False
 
 

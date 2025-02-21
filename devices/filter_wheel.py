@@ -90,6 +90,17 @@ class FilterWheel:
                 self.dual = False
                 self.custom = False
                 self.dummy=True
+            elif driver == "ASCOM.EFW2.FilterWheel":
+                #breakpoint()
+                win32com.client.pythoncom.CoInitialize()
+                self.filter = win32com.client.Dispatch(driver)
+                self.ascom = True
+                self.maxim = False
+                self.theskyx = False                
+                self.dual = False
+                self.custom = False
+                self.dummy=False
+                self.filter.Connected = True
             elif driver == "LCO.dual":
                 # home the wheel and get responses, which indicates it is connected.
                 # set current_0 and _1 to [0, 0] position to default of w/L filter.
@@ -372,6 +383,16 @@ class FilterWheel:
                         elif self.dummy:
 
                             plog ("Yup. Dummy changed the filter")
+                            
+                        elif self.ascom:
+                            print (self.filter.Position)
+                            self.filter.Position = self.filter_data[self.filt_pointer][1][0]
+                            print (self.filter.Position)
+                            while self.filter.Position == -1:
+                                #print ("Watiing for filter wheel")
+                                time.sleep(0.1)
+                            print (self.filter.Position)
+                            #breakpoint()
 
                         else:
                             try:

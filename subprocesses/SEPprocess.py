@@ -39,7 +39,7 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 #import matplotlib.pyplot as plt
 from scipy.stats import binned_statistic
 
-print("Starting sep_process.py")
+#print("Starting sep_process.py")
 
 
 def gaussian(x, amplitude, mean, stddev):

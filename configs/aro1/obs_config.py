@@ -918,10 +918,10 @@ site_config = {
 
 
                 # This is the absolute minimum and maximum exposure for the camera
-                'min_exposure': 0.0001,
+                'min_exposure': 0.0000001,
                 'max_exposure': 180.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 0.0005,
+                'min_flat_exposure': 0.0000001,
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure

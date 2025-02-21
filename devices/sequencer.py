@@ -282,12 +282,13 @@ class Sequencer:
                     # this happens with theskyx
                     # Check if the directory is empty
                     if not os.listdir(directories[q]):
-                        # Remove the empty directory
-                        try:
-                            os.rmdir(directories[q])
-                            plog(f"The directory {directories[q]} was empty and has been removed.")
-                        except:
-                            pass
+                        if 'calibmasters' not in directories[q]:
+                            # Remove the empty directory
+                            try:
+                                os.rmdir(directories[q])
+                                plog(f"The directory {directories[q]} was empty and has been removed.")
+                            except:
+                                pass
 
                     # else:
                     #     p(f"The directory {directories[q]} is not empty.")
@@ -566,7 +567,7 @@ class Sequencer:
                     # Super-duper double check that darkslide is open
                     if g_dev['cam'].has_darkslide:
                         g_dev['cam'].openDarkslide()
-                    g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
                     # Check it hasn't actually been homed this evening from the rotatorhome shelf
                     homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
@@ -592,7 +593,7 @@ class Sequencer:
                             homerotator_time_shelf.close()
 
                             g_dev['mnt'].go_command(alt=70,az= 70)
-                            g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                            g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                             while g_dev['rot'].rotator.IsMoving:
                                 plog("home rotator wait")
                                 time.sleep(1)
@@ -1316,7 +1317,7 @@ class Sequencer:
                 try:
                     # This is the "proper" way of doing things.
                     do_sub_stack=block['project']['project_constraints']['sub_stack']
-                    plog ("Picked up project substack properly")
+                    #plog ("Picked up project substack properly")
                 except:
                     # This is the old way for old projects
                     do_sub_stack=block['project']['exposures'][0]['substack']
@@ -1608,24 +1609,28 @@ class Sequencer:
                             new_dec= self.mosaic_center_dec + self.current_mosaic_displacement_dec
                             new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
                             try:
-                                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                                g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                                 g_dev['obs'].time_of_last_slew=time.time()
                                 try:
                                     g_dev['mnt'].slew_async_directly(ra=new_ra, dec=new_dec)
                                 except:
                                     plog(traceback.format_exc())
                                     if g_dev['mnt'].theskyx:
-                                        self.obs.kill_and_reboot_theskyx(new_ra, new_dec)
+
+                                        g_dev['obs'].kill_and_reboot_theskyx(new_ra, new_dec)
+
                                     else:
                                         plog(traceback.format_exc())
-                                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                                #g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                             except Exception as e:
                                 plog (traceback.format_exc())
                                 if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
                                     plog("The SkyX had an error.")
                                     plog("Usually this is because of a broken connection.")
                                     plog("Killing then waiting 60 seconds then reconnecting")
-                                    self.obs.kill_and_reboot_theskyx(new_ra,new_dec)
+
+                                    g_dev['obs'].kill_and_reboot_theskyx(new_ra,new_dec)
+
 
                             g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                             # try:
@@ -1899,6 +1904,8 @@ class Sequencer:
             # min_exposure = min(float(g_dev['cam'].settings['min_flat_exposure']),float(g_dev['cam'].settings['min_exposure']))
 
 
+            
+
             ####
             # When we are getting darks, we are collecting darks for the NEXT night's temperature
             # not tonights. So if tomrorow night the season changes and the camera temperature changes
@@ -1949,6 +1956,7 @@ class Sequencer:
                             tempdarktemp=float(darkfile.split('_')[-3])
                             #print (tempdarktemp)
                             if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+
                                 try:
                                     os.remove(darkfile)
                                 except:
@@ -1967,6 +1975,7 @@ class Sequencer:
                                 tempdarktemp=float(darkfile.split('_')[-3])
                                 #print (tempdarktemp)
                                 if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+
                                     try:
                                         os.remove(darkfile)
                                     except:
@@ -1984,6 +1993,7 @@ class Sequencer:
                             tempdarktemp=float(darkfile.split('_')[-3])
                             #print (tempdarktemp)
                             if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                
                                 try:
                                     os.remove(darkfile)
                                 except:
@@ -2119,11 +2129,15 @@ class Sequencer:
             break
         self.bias_dark_latch = False
 
-        if g_dev['cam'].temp_setpoint_by_season:
-            # Here change the setpoint back to tonight's setpoint
-            g_dev['cam'].current_setpoint = current_night_setpoint
-            g_dev['cam'].setpoint = current_night_setpoint
-            g_dev['cam']._set_setpoint(current_night_setpoint)
+        try:
+            if g_dev['cam'].temp_setpoint_by_season:
+                # Here change the setpoint back to tonight's setpoint
+                g_dev['cam'].current_setpoint = current_night_setpoint
+                g_dev['cam'].setpoint = current_night_setpoint
+                g_dev['cam']._set_setpoint(current_night_setpoint)
+
+        except:
+            plog ("skipping temp reset")
 
         g_dev['obs'].flush_command_queue()
         self.total_sequencer_control=False
@@ -2312,7 +2326,9 @@ class Sequencer:
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
             plog ("Got here")
-            self.obs.kill_and_reboot_theskyx(-1,-1)
+
+            g_dev['obs'].kill_and_reboot_theskyx(-1,-1)
+
             plog ("But didn't get here")
         return
 
@@ -3742,7 +3758,7 @@ class Sequencer:
 
                             self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=dont_wait_after_slew)
                             if not dont_wait_after_slew:
-                                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                                g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                             while g_dev['rot'].rotator.IsMoving:
                                 plog("home rotator wait")
                                 time.sleep(1)
@@ -3753,7 +3769,7 @@ class Sequencer:
                             #plog ("no rotator to home or wait for.")
                             pass
 
-                    time.sleep(30)
+                    #time.sleep(30)
 
                     g_dev['obs'].request_scan_requests()
 
@@ -3977,7 +3993,7 @@ class Sequencer:
 
                 self.check_zenith_and_move_to_flat_spot(ending=self.flats_ending)
                 self.time_of_next_slew = time.time() + 600
-                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 while g_dev['rot'].rotator.IsMoving:
                     plog("home rotator wait")
                     time.sleep(1)
@@ -4909,32 +4925,32 @@ class Sequencer:
             else:
                 self.centering_exposure(no_confirmation=True, try_hard=True)
 
-            # Wait for platesolve
-            reported=0
-            temptimer=time.time()
-            while True:
-                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                    break
-                else:
-                    if reported ==0:
-                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
-                        reported=1
-                    if (time.time() - temptimer) > 20:
-                        #g_dev["obs"].request_full_update()
-                        temptimer=time.time()
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                        self.focussing=False
-                        self.total_sequencer_control = False
-                        return np.nan, np.nan
-                    if not g_dev['obs'].open_and_enabled_to_observe:
-                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                        self.focussing=False
-                        self.total_sequencer_control = False
-                        return np.nan, np.nan
-                    pass
-
-                g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+                # Wait for platesolve
+                reported=0
+                temptimer=time.time()
+                while True:
+                    if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                        break
+                    else:
+                        if reported ==0:
+                            plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                            reported=1
+                        if (time.time() - temptimer) > 20:
+                            #g_dev["obs"].request_full_update()
+                            temptimer=time.time()
+                        if self.stop_script_called:
+                            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                            self.focussing=False
+                            self.total_sequencer_control = False
+                            return np.nan, np.nan
+                        if not g_dev['obs'].open_and_enabled_to_observe:
+                            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                            self.focussing=False
+                            self.total_sequencer_control = False
+                            return np.nan, np.nan
+                        pass
+    
+                    g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
 
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -5030,7 +5046,7 @@ class Sequencer:
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['obs'].send_to_user("Attempt at V-curve Focus Failed, using calculated values", p_level='INFO')
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                    g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
                 self.focussing=False
                 self.total_sequencer_control = False
@@ -5324,7 +5340,7 @@ class Sequencer:
                                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                                        g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                                        g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
                                     self.af_guard = False
                                     self.focussing=False
@@ -5490,7 +5506,9 @@ class Sequencer:
                 plog ("Difficulty in directly slewing to object")
                 plog(traceback.format_exc())
                 if g_dev['mnt'].theskyx:
-                    self.obs.kill_and_reboot_theskyx(grid_star[0]/15, grid_star[1])
+
+                    g_dev['obs'].kill_and_reboot_theskyx(grid_star[0]/15, grid_star[1])
+
                 else:
                     plog(traceback.format_exc())
 
@@ -5768,7 +5786,9 @@ class Sequencer:
                 plog ("Difficulty in directly slewing to object")
                 plog(traceback.format_exc())
                 if g_dev['mnt'].theskyx:
-                    self.obs.kill_and_reboot_theskyx(grid_star[0] / 15, grid_star[1])
+
+                    g_dev['obs'].kill_and_reboot_theskyx(grid_star[0] / 15, grid_star[1])
+
                 else:
                     plog(traceback.format_exc())
 
@@ -6023,7 +6043,7 @@ class Sequencer:
             # Wait until pointing correction fixed before moving on
             while g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
                 plog ("waiting for pointing_correction_to_finish")
-                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 time.sleep(1)
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
@@ -6190,14 +6210,16 @@ class Sequencer:
                 # Try shifting to where it is meant to be pointing
                 # This can sometimes rescue a lost mount.
                 # But most of the time doesn't do anything.
-                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 g_dev['obs'].time_of_last_slew=time.time()
                 try:
                     g_dev['mnt'].slew_async_directly(ra=g_dev["mnt"].last_ra_requested, dec=g_dev["mnt"].last_dec_requested)
                 except:
                     plog(traceback.format_exc())
                     if g_dev['mnt'].theskyx:
-                        self.obs.kill_and_reboot_theskyx(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)
+
+                        g_dev['obs'].kill_and_reboot_theskyx(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)
+
                     else:
                         plog(traceback.format_exc())
 

@@ -253,6 +253,8 @@ googtime=time.time()
 
 # If this is an osc image, then interpolate so it is just the green filter image of the same size.
 if is_osc:
+    hdufocusdata=hdufocusdata.astype(np.float32)
+    
     # Rapidly interpolate so that it is all one channel
     # Wipe out red channel
     hdufocusdata[::2, ::2]=np.nan

@@ -724,7 +724,9 @@ class Observatory:
         self.update_status_thread.daemon = True
         self.update_status_thread.start()
 
-        # Initialisation complete!
+        # # Initialisation complete!
+        # while True:
+        #     g_dev['seq'].bias_dark_script(morn=True)
 
 
     def create_devices(self):
@@ -1571,7 +1573,9 @@ class Observatory:
                                         )
                                         alt = temppointingaltaz.alt.degree
                                         if alt > 25:
-                                            self.devices["mount"].wait_for_slew(wait_after_slew=False)
+
+                                            g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
+
                                             meridianra = g_dev[
                                                 "mnt"
                                             ].return_right_ascension()
@@ -1582,7 +1586,9 @@ class Observatory:
                                                 ra=meridianra, dec=meridiandec
                                             )
                                             plog("Meridian Probe")
-                                            self.devices["mount"].wait_for_slew(wait_after_slew=False)
+
+                                            g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
+
                                             self.time_of_last_pulse = time.time()
                     except:
                         plog("perhaps theskyx is restarting????")
@@ -2353,7 +2359,7 @@ class Observatory:
                         )
                     ):
                         plog(
-                            "Focusser reporting too high a temperature in the observatory"
+                            "Focusser reporting too high a temperature in the observatory: " + str(self.temperature_in_observatory_from_focuser)
                         )
                         plog(
                             "The roof is also shut, so keeping camera at the day_warm temperature"
@@ -3695,7 +3701,16 @@ class Observatory:
                                     tempfilename = os.path.join(folder_path, slow_process[1].replace(".fits", file_suffix))
 
                                     # Manage files based on type
-                                    max_files = self.devices['main_cam'].settings.get(f"number_of_{file_type}_to_store", 64)
+
+                                    if 'dark' in file_type:
+                                        temp_file_type='dark'
+                                    elif 'flat' in file_type:
+                                        temp_file_type='flat'
+                                    elif 'bias' in file_type:
+                                        temp_file_type='bias'
+                                        
+                                    max_files = self.devices['main_cam'].settings.get(f"number_of_{temp_file_type}_to_store", 64)
+
                                     exclude_pattern = "tempbiasdark" if "dark" in file_type else "tempcali" if "flat" in file_type else None
                                     manage_files(folder_path, max_files, exclude_pattern)
 
@@ -4158,9 +4173,11 @@ class Observatory:
                         + self.devices["sequencer"].current_mosaic_displacement_dec
                     )
                     new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)   #This probably has to do with taking a mosaic near the poles.
-                    self.devices["mount"].wait_for_slew(wait_after_slew=False)
-                    self.devices["mount"].slew_async_directly(ra=new_ra, dec=new_dec)
-                    self.devices["mount"].wait_for_slew(wait_after_slew=False)
+
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
+                    g_dev["mnt"].slew_async_directly(ra=new_ra, dec=new_dec)
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
+
                     self.time_of_last_slew = time.time()
 
             # This block repeats itself in various locations to try and nudge the scope
@@ -4182,8 +4199,10 @@ class Observatory:
                         < 0.25
                     ):
                         self.send_to_user("Re-centering Telescope.")
-                    self.devices["mount"].wait_for_slew(wait_after_slew=False)
-                    self.devices["mount"].previous_pier_side = self.devices["mount"].return_side_of_pier()
+
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
+                    g_dev["mnt"].previous_pier_side = g_dev["mnt"].return_side_of_pier()
+
 
                     ranudge = self.pointing_correction_request_ra
                     decnudge = self.pointing_correction_request_dec
@@ -4198,10 +4217,12 @@ class Observatory:
                         ranudge = ranudge - 24
                     self.time_of_last_slew = time.time()
                     try:
-                        self.devices["mount"].wait_for_slew(wait_after_slew=False)
-                        self.devices["mount"].slew_async_directly(
+
+                        g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
+                        g_dev["mnt"].slew_async_directly(
                             ra=ranudge, dec=decnudge)
-                        self.devices["mount"].wait_for_slew(wait_after_slew=False)
+                        g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
+
                     except:
                         plog(traceback.format_exc())
                     if (
@@ -4221,7 +4242,9 @@ class Observatory:
                             try_forever=True,
                         )
                     self.time_of_last_slew = time.time()
-                    self.devices["mount"].wait_for_slew(wait_after_slew=False)
+
+                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
+
 
                     self.drift_tracker_timer = time.time()
                     self.drift_tracker_counter = 0
@@ -4496,7 +4519,10 @@ class Observatory:
             try:
                 # Recreate the mount
                 rebooted_mount = Mount(self.devices['mount'].config['driver'],
-                        self.name,
+
+                        g_dev['mnt'].name,
+                        self.devices['mount'].settings,
+
                         self.config,
                         self,
                         tel=True)
@@ -4505,7 +4531,7 @@ class Observatory:
 
                 # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
                 for camera in self.all_devices['camera']:
-                    if camera.theskyx:
+                    if g_dev['cam'].theskyx:
                         new_camera = Camera(camera.driver, camera.name, self.config, self)
                         # Update references from the previous camera object to the rebooted one
                         self.all_devices['camera'][camera.name] = new_camera
@@ -4549,6 +4575,8 @@ class Observatory:
                 time.sleep(60)
                 if retries == 4:
                     plog(traceback.format_exc())
+                    plog ("Failed rebooting, needs to be debugged")
+                    breakpoint()
 
         self.devices['mount'].mount_update_reboot=True
         self.devices['mount'].wait_for_mount_update()
