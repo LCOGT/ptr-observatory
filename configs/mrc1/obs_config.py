@@ -496,7 +496,7 @@ site_config = {
             'reference': 4037,  #20250111 Run after MF found good focus
             'z_compression': 0, #Not used as of 20250111
 
-
+            'relative_focuser': False,
             # Limits and steps for the focuser.
             'minimum': 0,    #  Units are microns
             'maximum': 12700,
