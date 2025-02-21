@@ -170,7 +170,7 @@ site_config = {
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
 
-    'bias_dark interval':  105.,   #minutes
+    'bias_dark interval':  115.,   #minutes
     'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     #'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
@@ -225,23 +225,23 @@ site_config = {
         'selector':  None,
         'screen': 'screen',
         'filter_wheel': 'Dual filter wheel',
-        'camera': 'sq100sm',
+        'camera': 'camera_1_1',
         'sequencer': 'sequencer'
     },
     # Initial roles are assigned here. These may change during runtime.
     # Value is the device display name
-    # This is where to configure a second device of the same type if you want to control it in the site code. 
+    # This is where to configure a second device of the same type if you want to control it in the site code.
     # Devices are referenced in obs with self.devices['device_role']
-    # Also important to note: these must match the roles in obs.py create_devices(). 
+    # Also important to note: these must match the roles in obs.py create_devices().
     # Roles are standardized across all sites even if not all roles are used at each site.
     'device_roles': {
         'mount': 'eastpier',
         'main_rotator': 'rotator',
         'main_focuser': 'focuser',
-        'main_fw': 'Dual filter wheel', 
-        
+        'main_fw': 'Dual filter wheel',
+
         # Cameras
-        'main_cam': 'sq100sm',
+        'main_cam': 'camera_1_1',
         # Cameras below aren't currently used, but here as an example.
         'guide_cam': None,
         'widefield_cam': None,
@@ -401,12 +401,12 @@ site_config = {
             'rotator_name':  'rotator',
             'has_instrument_selector': False,  # This is a default for a single instrument system
             'selector_positions': 1,  # Note starts with 1
-            'instrument names':  ['sq100sm'],
+            'instrument names':  ['camera_1_1'],
             'instrument aliases':  ['QHY461Mono'],
             'configuration': {
-                "position1": ["darkslide1", "filter_wheel1", "filter_wheel2", "sq100sm"]
+                "position1": ["darkslide1", "filter_wheel1", "filter_wheel2", "camera_1_1"]
             },
-            'camera_name':  'sq100sm',
+            'camera_name':  'camera_1_1',
             'filter_wheel_name':  'Dual filter wheel',
             'has_fans':  True,
             'has_cover': False,
@@ -432,9 +432,9 @@ site_config = {
             'parent': 'Main OTA',
             'name': 'rotator',
             'desc':  'Opetc Gemini',
-            'driver': 'ASCOM.AltAzDS.Rotator',   #ASCOM.OptecGemini1.Rotator, ASCOM.OptecGemini.Rotator
-            'telescope_driver': 'ASCOM.AltAzDS.Telescope',
-            'com_port':  None,
+            'driver': 'ASCOM.AltAzDS.Rotator',  #ASCOM.AltAzDS.Rotator','   #ASCOM.OptecGemini1.Rotator, ASCOM.OptecGemini.Rotator
+            'telescope_driver': 'ASCOM.AltAzDS.Telescope',  #No longer needed??
+            'com_port':  'COM14',
             'minimum': -180.0,
             'maximum': 360.0,
             'step_size':  0.0001,
@@ -500,8 +500,8 @@ site_config = {
             # Limits and steps for the focuser.
             'minimum': 0,    #  Units are microns
             'maximum': 12700,
-            'step_size': 1,   #  This is misnamed!
-            'backlash':  0,
+            'step_size': 1.0,   #  This is misnamed!
+            'backlash':  0.0,
             'throw': 70,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  #  Steps per micron
@@ -549,7 +549,7 @@ site_config = {
             'shutdown_script':  None,
             'ports': 1,
             'instruments':  ['Main_camera'],  # , 'eShel_spect', 'planet_camera', 'UVEX_spect'],
-            'cameras':  ['sq100sm'],  # , 'camera_1_2', None, 'camera_1_4'],
+            'cameras':  ['camera_1_1'],  # , 'camera_1_2', None, 'camera_1_4'],
             'guiders':  [None],  # , 'guider_1_2', None, 'guide_1_4'],
             'default': 0
         },
@@ -645,16 +645,16 @@ site_config = {
 
 
     'camera': {
-        'sq100sm': {
+        'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq100sm',  # Important because this points to a server file structure by that name.
+            'name': 'sq101sm',  #sq100sm Important because this points to a server file structure by that name.
             'desc':  'QHY 461 BSI Mono',
 
             'overscan_trim' : 'QHY461',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
-            'service_date': '20240801',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo.
+            'service_date': '20250218',  #'20240801',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo.
             'switch_driver':  'ASCOM.PegasusAstroUPBv2.Switch', #this is a temp hack, we should install the Powerbox as a first-class device.
             #the camera is on " Output 4", whatever that ends up meaning.  Hopefull = Switch4.
 
@@ -703,13 +703,13 @@ site_config = {
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
                 #
-                # QHY410C is gain 0, offset 9, mode 1
-                'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712
+                #
+                'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712  We want high gain mode.
 
-                'direct_qhy_gain': 62,
-                'direct_qhy_offset': 10,
+                'direct_qhy_gain': 60,       #as of 20250220 WER
+                'direct_qhy_offset': 30,
                 'set_qhy_usb_speed': True,
-                'direct_qhy_usb_traffic' : 60,     #NB NB Why two keys/
+                'direct_qhy_usb_traffic' : 60,
                 #'direct_qhy_usb_speed' : 60,      #NB used in saving the image header.
 
 
@@ -727,13 +727,13 @@ site_config = {
                 'interpolate_for_focus': True,
                 # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 'bin_for_focus': False,
-                'focus_bin_value' : 1,
+                'focus_bin_value' : 1, #Chg 20250218
                 'interpolate_for_sep': False,
                 'bin_for_sep': False,  # This setting will bin the image for SEP photometry rather than interpolating.
-                'sep_bin_value' : 1,
+                'sep_bin_value' : 1, #Chg 20250218
                 # This setting will bin the image for platesolving rather than interpolating.
                 'bin_for_platesolve': False,
-                'platesolve_bin_value' : 1,
+                'platesolve_bin_value' : 1, #Chg 20250218
 
                 # Colour image tweaks.
                 'osc_brightness_enhance': 1.0,
@@ -818,7 +818,7 @@ site_config = {
                 # from the 15th of the month to the 15 of the month
                 #
                 # ( setpoint, day_warm_difference, day_warm troe our false)
-                'set_temp_setpoint_by_season' : True,
+                'set_temp_setpoint_by_season' : False,
                 'temp_setpoint_nov_to_feb' : ( 2, 6, True),
                 'temp_setpoint_feb_to_may' : ( 2, 8, True),
                 'temp_setpoint_may_to_aug' : ( 2, 8, True),

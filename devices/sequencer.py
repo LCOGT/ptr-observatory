@@ -132,11 +132,9 @@ def ra_dec_fix_hd(ra, dec):
 
 class Sequencer:
 
-    def __init__(self, driver: str, name: str, config: dict, observatory: 'Observatory', astro_events):
-        self.name = name
-        self.astro_events = astro_events
-        self.config = config
+    def __init__(self, observatory: 'Observatory'):
         self.obs = observatory # the parent observatory object
+        self.config = self.obs.config
 
         g_dev['seq'] = self
         self.connected = True
@@ -493,9 +491,7 @@ class Sequencer:
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
 
-        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-
-        
+        ephem_now = ephem.now()
 
         if (
             (datetime.datetime.now() - g_dev['obs'].observing_status_timer)
@@ -1620,7 +1616,9 @@ class Sequencer:
                                 except:
                                     plog(traceback.format_exc())
                                     if g_dev['mnt'].theskyx:
+
                                         g_dev['obs'].kill_and_reboot_theskyx(new_ra, new_dec)
+
                                     else:
                                         plog(traceback.format_exc())
                                 #g_dev['mnt'].wait_for_slew(wait_after_slew=False)
@@ -1630,7 +1628,9 @@ class Sequencer:
                                     plog("The SkyX had an error.")
                                     plog("Usually this is because of a broken connection.")
                                     plog("Killing then waiting 60 seconds then reconnecting")
+
                                     g_dev['obs'].kill_and_reboot_theskyx(new_ra,new_dec)
+
 
                             g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                             # try:
@@ -2242,17 +2242,14 @@ class Sequencer:
             os.makedirs(g_dev['obs'].obsid_path + "smartstacks")
 
         # Reopening config and resetting all the things.
-        self.astro_events.compute_day_directory()
-        self.astro_events.calculate_events(endofnightoverride='yes')
-        self.astro_events.display_events()
-        g_dev['obs'].astro_events = self.astro_events
-
+        self.obs.astro_events.calculate_events(endofnightoverride='yes')
+        self.obs.astro_events.display_events()
 
         '''
         Send the config to aws.
         '''
         uri = f"{self.config['obs_id']}/config/"
-        self.config['events'] = g_dev['events']
+        self.config['events'] = self.obs.astro_events.event_dict
         response = authenticated_request("PUT", uri, self.config)
         if response:
             plog("Config uploaded successfully.")
@@ -2309,12 +2306,6 @@ class Sequencer:
         g_dev["foc"].last_focus_fwhm = None
         g_dev["foc"].focus_tracker = [np.nan] * 10
 
-        # Reopening config and resetting all the things.
-        self.astro_events.compute_day_directory()
-        self.astro_events.calculate_events()
-        self.astro_events.display_events()
-        g_dev['obs'].astro_events = self.astro_events
-
         self.nightly_reset_complete = True
 
         g_dev['mnt'].theskyx_tracking_rescues = 0
@@ -2335,7 +2326,9 @@ class Sequencer:
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
             plog ("Got here")
+
             g_dev['obs'].kill_and_reboot_theskyx(-1,-1)
+
             plog ("But didn't get here")
         return
 
@@ -2838,81 +2831,81 @@ class Sequencer:
                 #     i=i+1
 
                 # readnoise_array=np.array(readnoise_array)
-                
+
                 # #breakpoint()
-            
-            
-            
+
+
+
                 def estimate_read_noise_chunked(bias_frames, frame_shape, gain=1.0, chunk_size=10, masterBias=None):
                     """
                     Estimate the read noise of a CMOS sensor from a set of bias frames processed in chunks.
-                
+
                     Parameters:
                         bias_frame_generator (generator): A generator that yields 2D NumPy arrays representing bias frames.
                         frame_shape (tuple): The shape of each bias frame (height, width).
                         num_frames (int): The total number of bias frames.
                         gain (float): The gain in electrons per ADU (default is 1.0).
-                
+
                     Returns:
                         float: The estimated read noise in electrons.
                         float: The estimated read noise in ADU.
                         np.ndarray: The variance frame (pixel-wise variance).
                     """
                     num_frames = len(bias_frames)
-                    
+
                     pixel_variance = np.zeros(frame_shape, dtype=np.float64)
-                
+
                     for frame in bias_frames:
                         residual = frame - masterBias
                         pixel_variance += (residual ** 2) / (num_frames - 1)
-                
+
                     # Step 3: Compute the mean variance across all pixels
                     mean_variance = bn.nanmean(pixel_variance)
                     #stdev_variance = bn.nanstd(pixel_variance)
-                
+
                     # Step 4: Compute the read noise in ADU
                     read_noise_adu = np.sqrt(mean_variance)
                     read_noise_adu_stdev= np.std(np.sqrt(pixel_variance))
-                
+
                     # Step 5: Convert read noise to electrons using the gain
                     read_noise_electrons = read_noise_adu * gain
                     read_noise_electrons_stdev = read_noise_adu_stdev * gain
-                
+
                     return read_noise_electrons, read_noise_adu, read_noise_electrons_stdev, read_noise_adu_stdev,  pixel_variance
-                
-                
+
+
                 frame_shape=masterBias.shape
-                
+
                 # Load the memmap files into a list
                 bias_frames= [np.load(file, mmap_mode='r') for file in inputList]
-                
+
                 # Estimate the read noise
                 read_noise_electrons, read_noise_adu, read_noise_electrons_stdev, read_noise_adu_stdev, variance_frame = estimate_read_noise_chunked(bias_frames, frame_shape, g_dev['cam'].camera_known_gain, chunk_size=10, masterBias=masterBias)
-            
+
                 del bias_frames
-            
+
                 print(f"Estimated Read Noise: {read_noise_electrons:.2f} e- (electrons), stdev: "+ str(read_noise_electrons_stdev))
                 print(f"Estimated Read Noise: {read_noise_adu:.2f} ADU, stdev: " + str(read_noise_adu_stdev))
-                
+
                 # Write out the variance array
                 try:
                     g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + 'readnoise_variance_adu.npy', copy.deepcopy(variance_frame.astype('float32'))))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-    
+
                     # Save and upload master bias
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'readnoise_variance_adu.fits', copy.deepcopy(variance_frame.astype('float32')), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'readnoise_variance_adu.fits' ))
-    
+
                     # Store a version of the bias for the archive too
                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'readnoise_variance_adu.fits', copy.deepcopy(variance_frame.astype('float32')), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'readnoise_variance_adu.fits' ))
-    
+
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'readnoise_variance_adu.npy', copy.deepcopy(variance_frame.astype('float32'))))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-    
+
                 except Exception as e:
                     plog ("Could not save variance frame: ",e)
-            
-            
-            
-            
+
+
+
+
 
             # Bad pixel accumulator for the bias frame
             img_temp_median=bn.nanmedian(masterBias)
@@ -3560,7 +3553,7 @@ class Sequencer:
                             plog (str(filtercode) + " flat calibration frame created: " +str(time.time()-calibration_timer))
                             calibration_timer=time.time()
 
-                
+
 
 
 
@@ -3642,8 +3635,8 @@ class Sequencer:
         g_dev['cam'].camera_known_gain_stdev=70000.0
         g_dev['cam'].camera_known_readnoise=70000.0
         g_dev['cam'].camera_known_readnoise_stdev=70000.0
-        
-        
+
+
         # Bung in the readnoise estimates and then
         # Close up the filter camera gain shelf.
         try:
@@ -3811,7 +3804,7 @@ class Sequencer:
         self.morn_sky_flat_latch = True
         self.total_sequencer_control=True
 
-        to_zone = tz.gettz(g_dev['evnt'].wema_config['TZ_database_name'])
+        to_zone = tz.gettz(self.obs.astro_events.wema_config['TZ_database_name'])
         hourtime=datetime.datetime.now().astimezone(to_zone).hour
 
         if hourtime > 0 and hourtime < 12:
@@ -4131,7 +4124,7 @@ class Sequencer:
 
                     if self.next_flat_observe < time.time():
                         try:
-                            sky_lux, _ = g_dev['evnt'].illuminationNow()    # NB NB Eventually we should MEASURE this.
+                            sky_lux, _ = self.obs.astro_events.illuminationNow()    # NB NB Eventually we should MEASURE this.
                         except:
                             sky_lux = None
 
@@ -5513,7 +5506,9 @@ class Sequencer:
                 plog ("Difficulty in directly slewing to object")
                 plog(traceback.format_exc())
                 if g_dev['mnt'].theskyx:
+
                     g_dev['obs'].kill_and_reboot_theskyx(grid_star[0]/15, grid_star[1])
+
                 else:
                     plog(traceback.format_exc())
 
@@ -5597,7 +5592,7 @@ class Sequencer:
         with open(tpointnamefile, "a+") as f:
             f.write(":NODA\n")
             f.write(":EQUAT\n")
-            latitude = float(g_dev['evnt'].wema_config['latitude'])
+            latitude = float(self.obs.astro_events.wema_config['latitude'])
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
 
@@ -5791,7 +5786,9 @@ class Sequencer:
                 plog ("Difficulty in directly slewing to object")
                 plog(traceback.format_exc())
                 if g_dev['mnt'].theskyx:
+
                     g_dev['obs'].kill_and_reboot_theskyx(grid_star[0] / 15, grid_star[1])
+
                 else:
                     plog(traceback.format_exc())
 
@@ -5869,7 +5866,7 @@ class Sequencer:
         with open(tpointnamefile, "a+") as f:
             f.write(":NODA\n")
             f.write(":EQUAT\n")
-            latitude = float(g_dev['evnt'].wema_config['latitude'])
+            latitude = float(self.obs.astro_events.wema_config['latitude'])
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
             if (not np.isnan(entry[2])) and (not np.isnan(entry[3]) ):
@@ -6220,7 +6217,9 @@ class Sequencer:
                 except:
                     plog(traceback.format_exc())
                     if g_dev['mnt'].theskyx:
+
                         g_dev['obs'].kill_and_reboot_theskyx(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)
+
                     else:
                         plog(traceback.format_exc())
 
@@ -6388,46 +6387,24 @@ class Sequencer:
         check that any running calendar blocks are still there with the same time window.
         """
 
-        url_blk = "https://calendar.photonranch.org/calendar/siteevents"
-        # UTC VERSION
-        start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
-        close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
+        def ephem_date_to_utc_iso_string(ephem_date):
+            return ephem_date.datetime().isoformat().split(".")[0] + "Z"
 
-        # Reformat ephem.Date into format required by the UI
-        startapyear = start_aperture[0].split('/')[0]
-        startapmonth = start_aperture[0].split('/')[1]
-        startapday = start_aperture[0].split('/')[2]
-        closeapyear = close_aperture[0].split('/')[0]
-        closeapmonth = close_aperture[0].split('/')[1]
-        closeapday = close_aperture[0].split('/')[2]
+        calendar_update_url = "https://calendar.photonranch.org/calendar/siteevents"
 
-        if len(str(startapmonth)) == 1:
-            startapmonth = '0' + startapmonth
-        if len(str(startapday)) == 1:
-            startapday = '0' + str(startapday)
-        if len(str(closeapmonth)) == 1:
-            closeapmonth = '0' + closeapmonth
-        if len(str(closeapday)) == 1:
-            closeapday = '0' + str(closeapday)
-
-        start_aperture_date = startapyear + '-' + startapmonth + '-' + startapday
-        close_aperture_date = closeapyear + '-' + closeapmonth + '-' + closeapday
-
-        start_aperture[0] = start_aperture_date
-        close_aperture[0] = close_aperture_date
-
-        body = json.dumps(
-            {
-                "site": self.config["obs_id"],
-                "start": start_aperture[0].replace('/', '-') + 'T' + start_aperture[1] + 'Z',
-                "end": close_aperture[0].replace('/', '-') + 'T' + close_aperture[1] + 'Z',
-                "full_project_details:": False,
-            }
-        )
+        start_time = ephem_date_to_utc_iso_string(g_dev['events']['Eve Sky Flats'])
+        end_time = ephem_date_to_utc_iso_string(g_dev['events']['End Morn Sky Flats'])
+        body = json.dumps({
+            "site": self.config["obs_id"],
+            "start": start_time,
+            "end": end_time,
+            "full_project_details:": False,
+        })
         try:
-            self.blocks = reqs.post(url_blk, body, timeout=20).json()
-        except:
-            plog ("A glitch found in the blocks reqs post, probably date format")
+            self.blocks = reqs.post(calendar_update_url, body, timeout=20).json()
+        except Exception as e:
+            plog(e)
+            plog("Failed to update the calendar. This is not normal. Request url was {calendar_update_url} and body was {body}.")
 
 
 def stack_nanmedian_row_memmapped(inputinfo):
