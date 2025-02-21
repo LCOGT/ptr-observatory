@@ -279,7 +279,7 @@ site_config = {
 
             'default_zenith_avoid': 5.0,   #degrees floating
             'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
-
+            'needs_to_wait_for_dome' : False,
 
             # Standard offsets to pointings
             'west_clutch_ra_correction': 0.0,

@@ -177,16 +177,16 @@ site_config = {
 
     # Initial roles are assigned here. These may change during runtime.
     # Value is the device display name
-    # This is where to configure a second device of the same type if you want to control it in the site code. 
+    # This is where to configure a second device of the same type if you want to control it in the site code.
     # Devices are referenced in obs with self.devices['device_role']
-    # Also important to note: these must match the roles in obs.py create_devices(). 
+    # Also important to note: these must match the roles in obs.py create_devices().
     # Roles are standardized across all sites even if not all roles are used at each site.
     'device_roles': {
         'mount': 'ecocdkpier',
         'main_rotator': None,
         'main_focuser': 'focuser',
-        'main_fw': None, 
-        
+        'main_fw': None,
+
         # Cameras
         'main_cam': 'ec002cs',
         # Cameras below aren't currently used, but here as an example.
@@ -241,6 +241,8 @@ site_config = {
             'home_after_unpark' : True,
 
             'home_before_park' : True,
+
+            'needs_to_wait_for_dome' : False,
 
 
             'settle_time_after_unpark' : 0,
@@ -445,7 +447,7 @@ site_config = {
             'parent': 'Main OTA',
             'name': 'ec002cs',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600C Pro',
-            
+
             'overscan_trim' : 'QHY600',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
@@ -513,11 +515,11 @@ site_config = {
 
 
                 'is_osc' : True,
-                
-                # There are some infuriating popups on theskyx that manually 
+
+                # There are some infuriating popups on theskyx that manually
                 # need to be dealt with when doing darks and lights.
                 # This setting uses a workaround for that. This is just for CMOS
-                # CCDs are fine. 
+                # CCDs are fine.
                 'cmos_on_theskyx': False,
 
                 'squash_on_x_axis' : True,
@@ -593,15 +595,15 @@ site_config = {
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
                 'temp_setpoint': 5,    #Verify we can go colder, this system has a chiller
-                
+
                 'temp_setpoint_tolerance': 2.5,
                 'has_chiller': True,
-                
+
                 # This is the yearly range of temperatures.
                 # Based on New Mexico and Melbourne's variation... sorta similar.
                 # There is a cold bit and a hot bit and an inbetween bit.
-                # from the 15th of the month to the 15 of the month 
-                # 
+                # from the 15th of the month to the 15 of the month
+                #
                 # ( setpoint, dFay_warm_difference, day_warm troe our false)
                 'set_temp_setpoint_by_season' : False,
                 'temp_setpoint_nov_to_feb' : ( 5, 8, True),
@@ -688,7 +690,7 @@ site_config = {
                 'readout_speed':  0.4,
                 'readout_seconds': 2.4,
                 'smart_stack_exposure_time': 30,
-                
+
                 'substack': True, # Substack with this camera
 
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting

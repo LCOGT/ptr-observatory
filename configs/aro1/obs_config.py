@@ -314,6 +314,7 @@ site_config = {
             'default_zenith_avoid': 0.0,
             # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
             'wait_after_slew_time': 0.0,
+            'needs_to_wait_for_dome' : False,
 
             # paddle refers to something supported by the Python code, not the AP paddle.
             'has_paddle': False,
