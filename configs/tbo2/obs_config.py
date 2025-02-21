@@ -199,6 +199,26 @@ site_config = {
         'allsky_cam': None,
     },
 
+    # The LCO scheduler references a description of this site in configdb
+    # The logic in configdb is organized slightly differently than the PTR
+    # config files (like this one), but they should ultimately represent the
+    # same underlying hardware.
+    # When a PTR obsevatory is running an observation created by the scheduler,
+    # we'll use this to figure out what devices to use to run that observation.
+    # The key is the instrument name from configdb, and the value is a dict of
+    # device names from this config file for each type of device.
+    #
+    # This should only be modified if the configuration in configdb changes.
+    'configdb_instrument_mapping': {
+        'tbo2_instrument': {
+            'mount': 'SimMount',
+            'camera': 'SimZWO1600',
+            'filter_wheel': 'SimFW',
+            'rotator': None,
+            'focuser': 'SimFocuser'
+        }
+    },
+
     # Note: this is the order in which devices will be initialized
     'device_types': [
             'mount',
