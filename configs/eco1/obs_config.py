@@ -430,7 +430,9 @@ site_config = {
             "filter_settle_time": 7, #how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
             
-            "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+            "driver": 'ASCOM.EFW2.FilterWheel',
+            
+            #"driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
             "dual_wheel": False,
@@ -708,7 +710,7 @@ site_config = {
                 'number_of_dark_to_store' : 64,
                 'number_of_flat_to_store' : 64,
                 
-                'dark_exposure': 180,
+                'dark_exposure': 120,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",

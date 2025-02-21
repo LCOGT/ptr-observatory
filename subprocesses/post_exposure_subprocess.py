@@ -611,7 +611,8 @@ try:
     broadband_ss_biasdark_exp_time = cam_config['settings']['smart_stack_exposure_time']
     narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * cam_config['settings']['smart_stack_exposure_NB_multiplier']
     dark_exp_time = cam_config['settings']['dark_exposure']
-
+    do_bias_also=False
+    
     #ALL images are calibrated at the site.... WHY WOULD YOU NOT?
     #The cost is largely I/O and to do that on multiple computers at multiple times
     #Is a large bottleneck and cost in time and, in s3, $
@@ -623,7 +624,7 @@ try:
             try:
                 if smartstackid == 'no':
 
-                    do_bias_also=False
+                    
 
 
                     # Variable to sort out an intermediate dark when between two scalable darks.
