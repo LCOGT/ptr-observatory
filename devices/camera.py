@@ -1149,7 +1149,7 @@ class Camera:
             self.imagesize_y = int(i_w)
 
         elif driver == 'zwo_native_driver':
-            
+
             sdk_path = "support_info/ASISDK/lib/x64/ASICamera2.dll"
             asi.init(sdk_path)
             # Check connected cameras
@@ -1160,20 +1160,20 @@ class Camera:
 
             # Get camera details
             camera_index = 0 # 0 is first camera
-            global zwocamera 
+            global zwocamera
             zwocamera = asi.Camera(camera_index)
             camera_info = zwocamera.get_camera_property()
             print(f"Using camera: {camera_info['Name']}")
-            
+
             # Configure camera settings
             gain = 150 # low read noise, high gain for short exposures.
             zwocamera.set_control_value(asi.ASI_GAIN, gain)
             zwocamera.set_control_value(asi.ASI_BANDWIDTHOVERLOAD, 40)  # Optional: Adjust for your system
             zwocamera.set_control_value(asi.ASI_BRIGHTNESS, 100)  # Optional: Adjust for your system
             zwocamera.set_image_type(asi.ASI_IMG_RAW16)  # Use RAW8 image type
-            
-            
-            
+
+
+
             # NB NB NB Considerputting this up higher.
             # plog("Maxim camera is initializing.")
             self._connected = self._zwo_connected
@@ -1209,7 +1209,7 @@ class Camera:
             self.imagesize_y = roi_format[1]
 
             # plog("Control is via Maxim camera interface, not ASCOM.")
-            # plog("Please note telescope is NOT connected to Maxim.")        
+            # plog("Please note telescope is NOT connected to Maxim.")
 
         elif driver == 'maxim':
             # NB NB NB Considerputting this up higher.
@@ -2437,7 +2437,7 @@ class Camera:
         # print(zwocamera.get_control_value(asi.ASI_TEMPERATURE))
         # zwocamera.get_control_value(asi.ASI_COOLER_ON)
         # print(zwocamera.get_control_value(asi.ASI_TEMPERATURE))
-        
+
         #return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)/10)
         return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)[0])/10, 0,0, zwocamera.get_control_value(asi.ASI_COOLER_POWER_PERC)[0]
 
@@ -2454,10 +2454,10 @@ class Camera:
     def _zwo_set_cooler_on(self):
         #self.camera.CoolerOn = True
         return  True
-    
+
     def _zwo_set_setpoint(self, p_temp):
         zwocamera.set_control_value(asi.ASI_TARGET_TEMP, int(p_temp))
-        
+
         return p_temp
 
     def _zwo_setpoint(self):
@@ -2469,7 +2469,7 @@ class Camera:
     #     # else:
     #     #     imtypeb = 1
     #     # self.camera.Expose(exposure_time, imtypeb)
-        
+
     #     zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
     #     zwocamera.start_exposure()
 
@@ -2497,10 +2497,10 @@ class Camera:
             #     qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
             # qhycam.so.ExpQHYCCDSingleFrame(
             #     qhycam.camera_params[qhycam_id]['handle'])
-            
+
             zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
             zwocamera.start_exposure()
-            
+
         else:
 
             # Boost Narrowband and low throughput broadband
@@ -2521,15 +2521,15 @@ class Camera:
                 exp_of_substacks, N_of_substacks, exp_of_substacks, copy.deepcopy(self.substacker_filenames),))
             thread.daemon = True
             thread.start()
-    
+
 
     def zwo_substacker_thread(self, exposure_time, N_of_substacks, exp_of_substacks, substacker_filenames):
-    
+
         self.substacker_available = False
         readout_estimate_holder=[]
         self.sub_stacker_midpoints=[]
-    
-    
+
+
         for subexposure in range(N_of_substacks):
             # Check there hasn't been a cancel sent through
             if g_dev["obs"].stop_all_activity:
@@ -2539,15 +2539,15 @@ class Camera:
             if g_dev["obs"].exposure_halted_indicator:
                 self.shutter_open = False
                 return
-    
+
             plog("Collecting subexposure " + str(subexposure+1))
-    
+
             # qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(
             #     exp_of_substacks*1000*1000))
-            
+
             zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
-            
-            
+
+
             if subexposure == 0:
                 self.substack_start_time = time.time()
             self.expected_endpoint_of_substack_exposure = time.time() + exp_of_substacks
@@ -2556,30 +2556,30 @@ class Camera:
             #     qhycam.camera_params[qhycam_id]['handle'])
             zwocamera.start_exposure()
             exposure_timer = time.time()
-    
+
             # save out previous array to disk during exposure
             if subexposure > 0:
                 # tempsend = np.reshape(
                 #     image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-    
+
                 #tempsend=tempsend[ 0:6384, 32:9600]
                 tempsend = image[self.overscan_left: self.imagesize_x-self.overscan_right,
                                     self.overscan_up: self.imagesize_y - self.overscan_down]
-    
+
                 np.save(substacker_filenames[subexposure-1], tempsend)
-    
+
             while (time.time() - exposure_timer) < exp_of_substacks:
                 time.sleep(0.001)
-    
+
             # If this is the last exposure of the set of subexposures, then report shutter closed
             if subexposure == (N_of_substacks-1):
                 self.shutter_open = False
-    
+
             # # READOUT FROM THE QHY
             # image_width_byref = c_uint32()
             # image_height_byref = c_uint32()
             # bits_per_pixel_byref = c_uint32()
-            # 
+            #
             # success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
             #                                          byref(image_width_byref),
             #                                          byref(image_height_byref),
@@ -2588,41 +2588,41 @@ class Camera:
             #                                          byref(
             #                                              qhycam.camera_params[qhycam_id]['channels']),
             #                                          byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-    
+
             # image = np.ctypeslib.as_array(
             #     qhycam.camera_params[qhycam_id]['prev_img_data'])
-            
+
             time_before_last_substack_readout = time.time()
-            
+
             image = self._zwo_getImageArray()
-            
+
             time_after_last_substack_readout = time.time()
-    
+
             readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
-    
+
             # If it is the last file in the substack, throw it out to the slow process queue to save
             # So that the camera can get started up again quicker.
             if subexposure == (N_of_substacks -1 ):
                 #tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
                 tempsend=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
                 np.save(substacker_filenames[subexposure],tempsend)
-    
+
         self.readout_estimate= np.median(np.array(readout_estimate_holder))
         self.substacker_available=True
         self.shutter_open=False
 
     def _zwo_getImageArray(self):
-        
+
         if self.substacker:
             return 'substack_array'
         else:
-        
+
             frame = zwocamera.get_data_after_exposure()
-            
+
             return np.frombuffer(frame, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
-    
-    
-    
+
+
+
 
 
 
@@ -3291,6 +3291,8 @@ class Camera:
 
         if required_params.get('substack', False) or required_params.get('subStack', False):
             self.substacker = True
+        else:
+            self.substacker = False
 
         self.pane = optional_params.get("pane", None)
 
@@ -3484,7 +3486,7 @@ class Camera:
                 self.initial_smartstack_ra = None
                 self.initial_smartstack_dec = None
                 self.currently_in_smartstack_loop = False
-            
+
             #breakpoint()
 
             # Repeat camera acquisition loop to collect all smartstacks necessary
@@ -3721,7 +3723,7 @@ class Camera:
                                 else:
                                     g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
-                            
+
 
                             # Check there hasn't been a cancel sent through
                             if g_dev["obs"].stop_all_activity:
@@ -5142,7 +5144,7 @@ class Camera:
                                height, width = outputimg.shape
                                patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
                                plog(">>>>  20% central image patch, std:  ", bn.nanmedian(patch), round(bn.nanstd(patch), 2), str(width)+'x'+str(height) )
-                                 
+
                             if False:
                                 # If this is set to true, then it will output a sample of the image.
                                 hdufocus = fits.PrimaryHDU()

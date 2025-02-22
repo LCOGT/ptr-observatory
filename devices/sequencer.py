@@ -1019,20 +1019,39 @@ class Sequencer:
                                             bias_path=g_dev['obs'].obsid_path + 'archive/' + g_dev['cam'].alias +'/localcalibrations/biases/'
 
                                             # First check darks in root directory
-                                            print ("ROOT DIRECTORY DARKS")
-                                            for darkfile in glob(darks_path + '*.npy'):
-                                                tempdarktemp=float(darkfile.split('_')[-3])
-                                                #print (tempdarktemp)
-                                                if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
-                                                    try:
-                                                        os.remove(darkfile)
-                                                    except:
-                                                        pass
+                                            try:
+                                                print ("ROOT DIRECTORY DARKS")
+                                                for darkfile in glob(darks_path + '*.npy'):
+                                                    tempdarktemp=float(darkfile.split('_')[-3])
+                                                    #print (tempdarktemp)
+                                                    if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                                        try:
+                                                            os.remove(darkfile)
+                                                        except:
+                                                            pass
+                                            except:
+                                                plog(traceback.format_exc())
 
-                                            # Then check each of the darks folder
-                                            for darkfolder in glob(darks_path + "*/"):
-                                                print (darkfolder)
-                                                for darkfile in glob(darkfolder + '*.npy'):
+                                            try:
+                                                # Then check each of the darks folder
+                                                for darkfolder in glob(darks_path + "*/"):
+                                                    print (darkfolder)
+                                                    for darkfile in glob(darkfolder + '*.npy'):
+                                                        tempdarktemp=float(darkfile.split('_')[-3])
+                                                        #print (tempdarktemp)
+                                                        if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
+                                                            try:
+                                                                os.remove(darkfile)
+                                                            except:
+                                                                pass
+                                            except:
+                                                plog(traceback.format_exc())
+
+                                            try:
+                                                # NEED TO CHECK BIASES LATER!
+                                                # First check darks in root directory
+                                                print ("ROOT DIRECTORY BIASES")
+                                                for darkfile in glob(bias_path + '*.npy'):
                                                     tempdarktemp=float(darkfile.split('_')[-3])
                                                     #print (tempdarktemp)
                                                     if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
@@ -1041,17 +1060,9 @@ class Sequencer:
                                                         except:
                                                             pass
 
-                                            # NEED TO CHECK BIASES LATER!
-                                            # First check darks in root directory
-                                            print ("ROOT DIRECTORY BIASES")
-                                            for darkfile in glob(bias_path + '*.npy'):
-                                                tempdarktemp=float(darkfile.split('_')[-3])
-                                                #print (tempdarktemp)
-                                                if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
-                                                    try:
-                                                        os.remove(darkfile)
-                                                    except:
-                                                        pass
+                                            except:
+                                                plog(traceback.format_exc())
+
 
 
                                             if abs(tommorow_night_setpoint-current_night_setpoint) > 4:
@@ -1904,7 +1915,7 @@ class Sequencer:
             # min_exposure = min(float(g_dev['cam'].settings['min_flat_exposure']),float(g_dev['cam'].settings['min_exposure']))
 
 
-            
+
 
             ####
             # When we are getting darks, we are collecting darks for the NEXT night's temperature
@@ -1993,7 +2004,7 @@ class Sequencer:
                             tempdarktemp=float(darkfile.split('_')[-3])
                             #print (tempdarktemp)
                             if not (tempdarktemp-g_dev['cam'].temp_tolerance < tommorow_night_setpoint < tempdarktemp+g_dev['cam'].temp_tolerance):
-                                
+
                                 try:
                                     os.remove(darkfile)
                                 except:
@@ -4949,7 +4960,7 @@ class Sequencer:
                             self.total_sequencer_control = False
                             return np.nan, np.nan
                         pass
-    
+
                     g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
 
         if self.stop_script_called:

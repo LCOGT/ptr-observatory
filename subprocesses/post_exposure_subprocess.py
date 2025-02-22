@@ -322,7 +322,7 @@ tempfrontcalib=obsname + '_' + cam_alias +'_'
 
 localcalibmastersdirectory= localcalibrationdirectory+ "archive/" + cam_alias + "/calibmasters" + "/"
 
-print (substack)
+#print (substack)
 
 #breakpoint()
 
@@ -364,7 +364,7 @@ if substack:
 
     for substackfilename in substacker_filenames:
 
-        substackimage=np.load(substackfilename)
+        substackimage=np.load(substackfilename).astype('float32')
         try:
             if exp_of_substacks == 10:
                 #print ("Dedarking 0")
@@ -439,7 +439,11 @@ if substack:
             substackimage[substackimage < zeroValue] = np.nan
 
             # Deband the image
+            #print (bn.nanmax(substackimage))
             substackimage = debanding(substackimage)
+            #print (bn.nanmax(substackimage))
+
+            #breakpoint()
 
             sub_stacker_array[:,:,0] = copy.deepcopy(substackimage)
 
@@ -527,8 +531,13 @@ if substack:
     #     counter=counter+1
 
     # Once collected and done, nanmedian the array into the single image
+
+    #print (bn.nanmax(sub_stacker_array[0]))
+    #print (bn.nanmax(sub_stacker_array[1]))
+    #print (bn.nanmax(sub_stacker_array[2]))
     img=bn.nanmedian(sub_stacker_array, axis=2) * len(substacker_filenames)
 
+    #print (bn.nanmax(img))
 
     # Once we've got the substack stacked, delete the original images
     for waitfile in crosscorrel_filename_waiter:
