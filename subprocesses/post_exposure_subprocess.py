@@ -888,18 +888,31 @@ try:
     hdu.header["DARKSLID"] = (darkslide_state, "Darkslide state")
     hdu.header['SHUTTYPE'] = (cam_settings["shutter_type"],
                               'Type of shutter')
-    hdu.header["GAIN"] = (
-        round(camera_known_gain,3),
-        "[e-/ADU] Pixel gain",
-    )
+    try:
+        hdu.header["GAIN"] = (
+            round(camera_known_gain,3),
+            "[e-/ADU] Pixel gain",
+        )
+    except:
+        hdu.header["GAIN"] = (
+            round(camera_known_gain,3),
+            "[e-/ADU] Pixel gain",
+        )
+    
     hdu.header["ORIGGAIN"] = (
         round(camera_known_gain,3),
         "[e-/ADU] Original Pixel gain",
     )
-    hdu.header["RDNOISE"] = (
-        round(camera_known_readnoise,3),
-        "[e-/pixel] Read noise",
-    )
+    try:
+        hdu.header["RDNOISE"] = (
+            round(camera_known_readnoise,3),
+            "[e-/pixel] Read noise",
+        )
+    except:
+        hdu.header["RDNOISE"] = (
+            'Unknown',
+            "[e-/pixel] Read noise",
+        )
     hdu.header["OSCCAM"] = (is_osc, "Is OSC camera")
     hdu.header["OSCMONO"] = (False, "If OSC,  a mono image or Bayer?")
 
