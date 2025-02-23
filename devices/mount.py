@@ -1351,7 +1351,7 @@ class Mount:
                     # just get caught while slewing.
                     # This routine catches and remedies that.
                     
-                    if time.time() - wait_for_slew_timer() > 120:
+                    if time.time() - wait_for_slew_timer > 120:
                         plog ("Waited too long to slew! What is going on?")
                         wait_for_slew_timer=time.time()
                         # Only happens with PWI4 for some reason
