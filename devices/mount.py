@@ -51,6 +51,9 @@ import ephem
 from ptr_utility import plog
 import time
 import requests
+import subprocess
+import urllib
+import os
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
@@ -1326,6 +1329,10 @@ class Mount:
                 plog(traceback.format_exc())
 
     def wait_for_slew(self, wait_after_slew=True, wait_for_dome=True):
+        
+        
+        wait_for_slew_timer=time.time()
+        
         try:
             actually_slewed=False
             if not self.rapid_park_indicator:
@@ -1338,6 +1345,31 @@ class Mount:
                         movement_reporting_timer = time.time()
                     self.get_mount_coordinates_after_next_update()
                     g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                    
+                    
+                    # The planewave can (rarely, but non-zero)
+                    # just get caught while slewing.
+                    # This routine catches and remedies that.
+                    
+                    if time.time() - wait_for_slew_timer() > 120:
+                        plog ("Waited too long to slew! What is going on?")
+                        wait_for_slew_timer=time.time()
+                        # Only happens with PWI4 for some reason
+                        if self.driver=='ASCOM.PWI4.Telescope':
+                            plog ("Too long on a PWI4. Rebooting PWI4 and getting it to get where it is meant to.")
+                            
+                            os.system('taskkill /IM PWI4.exe /F')
+                            time.sleep(10)
+                            subprocess.Popen('"C:\Program Files (x86)\PlaneWave Instruments\PlaneWave Interface 4\PWI4.exe"', shell=True)
+                            time.sleep(10)
+                            urllib.request.urlopen("http://localhost:8220/mount/connect")
+                            time.sleep(5)
+                            
+                            # Kick the telescope back to where it is meant to be pointing.
+                            self.slewtoAsyncRequested=True
+                    
+                        
+                        
 
                 # Then wait for slew_time to settle
                 if actually_slewed and wait_after_slew:
