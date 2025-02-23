@@ -1365,8 +1365,13 @@ class Mount:
                             urllib.request.urlopen("http://localhost:8220/mount/connect")
                             time.sleep(5)
                             
-                            # Kick the telescope back to where it is meant to be pointing.
+                            self.mount_update_reboot=True
                             self.slewtoAsyncRequested=True
+                            
+                            self.wait_for_mount_update=True
+                            
+                            # Kick the telescope back to where it is meant to be pointing.
+                            
                     
                         
                         
