@@ -440,7 +440,7 @@ if substack:
 
             # Deband the image
             #print (bn.nanmax(substackimage))
-            substackimage = debanding(substackimage)
+            #substackimage = debanding(substackimage)
             #print (bn.nanmax(substackimage))
 
             #breakpoint()
@@ -814,7 +814,7 @@ try:
 
         print ("Zero Threshing Image: " +str(time.time()-googtime))
 
-        hdu.data = debanding(hdu.data)
+        #hdu.data = debanding(hdu.data)
 
     googtime=time.time()
 ##########################################
