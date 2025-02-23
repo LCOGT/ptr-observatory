@@ -2563,9 +2563,11 @@ class Camera:
                 #     image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
                 #tempsend=tempsend[ 0:6384, 32:9600]
-                tempsend = image[self.overscan_left: self.imagesize_x-self.overscan_right,
-                                    self.overscan_up: self.imagesize_y - self.overscan_down]
-
+                try:
+                    tempsend = image[self.overscan_left: self.imagesize_x-self.overscan_right,self.overscan_up: self.imagesize_y - self.overscan_down]
+                except:
+                    plog(traceback.format_exc())
+                    breakpoint()
                 np.save(substacker_filenames[subexposure-1], tempsend)
 
             while (time.time() - exposure_timer) < exp_of_substacks:
@@ -2592,9 +2594,21 @@ class Camera:
             # image = np.ctypeslib.as_array(
             #     qhycam.camera_params[qhycam_id]['prev_img_data'])
 
-            time_before_last_substack_readout = time.time()
+            
 
-            image = self._zwo_getImageArray()
+            #breakpoint()
+            
+            while zwocamera.get_exposure_status() == 1:
+                #print ('waitingforzeo')
+                time.sleep(0.05)
+
+            time_before_last_substack_readout = time.time()
+            image = zwocamera.get_data_after_exposure()
+
+            image=np.frombuffer(image, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
+
+
+
 
             time_after_last_substack_readout = time.time()
 
