@@ -250,7 +250,7 @@ while (breaker != 0):
 
 substackimage[substackimage < zeroValue] = np.nan
 
-substackimage = debanding(substackimage)
+#substackimage = debanding(substackimage)
 
 edge_crop=100
 xoff, yoff = cross_correlation_shifts(block_reduce(reference_image[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean), block_reduce(substackimage[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean),zeromean=False)
