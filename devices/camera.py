@@ -2563,12 +2563,14 @@ class Camera:
                 #     image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
                 #tempsend=tempsend[ 0:6384, 32:9600]
-                try:
-                    tempsend = image[self.overscan_left: self.imagesize_x-self.overscan_right,self.overscan_up: self.imagesize_y - self.overscan_down]
-                except:
-                    plog(traceback.format_exc())
-                    breakpoint()
-                np.save(substacker_filenames[subexposure-1], tempsend)
+                if not (self.overscan_down == 0 and self.overscan_up == 0 and self.overscan_left == 0 and self.overscan_right==0):
+                    try:
+                        image = image[self.overscan_left: self.imagesize_x-self.overscan_right,self.overscan_up: self.imagesize_y - self.overscan_down]
+                    except:
+                        plog(traceback.format_exc())
+                #    breakpoint()
+                #breakpoint()
+                np.save(substacker_filenames[subexposure-1], image)
 
             while (time.time() - exposure_timer) < exp_of_substacks:
                 time.sleep(0.001)
@@ -2606,7 +2608,7 @@ class Camera:
             image = zwocamera.get_data_after_exposure()
 
             image=np.frombuffer(image, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
-
+            #breakpoint()
 
 
 
@@ -2618,8 +2620,9 @@ class Camera:
             # So that the camera can get started up again quicker.
             if subexposure == (N_of_substacks -1 ):
                 #tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-                tempsend=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
-                np.save(substacker_filenames[subexposure],tempsend)
+                if not (self.overscan_down == 0 and self.overscan_up == 0 and self.overscan_left == 0 and self.overscan_right==0):
+                    image=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+                np.save(substacker_filenames[subexposure],image)
 
         self.readout_estimate= np.median(np.array(readout_estimate_holder))
         self.substacker_available=True

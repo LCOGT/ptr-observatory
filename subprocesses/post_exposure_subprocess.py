@@ -365,14 +365,19 @@ if substack:
     for substackfilename in substacker_filenames:
 
         substackimage=np.load(substackfilename).astype('float32')
+        #print (substackimage.shape)
+        #notsubstackimage=np.load(substackfilename)
+        #print (notsubstackimage.shape)
         try:
             if exp_of_substacks == 10:
                 #print ("Dedarking 0")
+                #loadbias=np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy')
+                #print (loadbias.shape)
                 substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
             else:
                 substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
         except:
-            #breakpoint()
+            print(traceback.format_exc())
             print ("Couldn't biasdark substack")
             pass
         try:
