@@ -1460,7 +1460,7 @@ try:
     im_path_r = selfcamera_path
 
     hdu.header["FILEPATH"] = str(im_path_r) + "to_AWS/"
-    hdu.header["ORIGNAME"] = str(raw_name00 + ".fz")
+    hdu.header["ORIGNAME"] = str(raw_name00 + ".fz").replace('.fz.fz','.fz')
 
     # tempRAdeg = ra_at_time_of_exposure * 15
     # tempDECdeg = dec_at_time_of_exposure
@@ -1601,7 +1601,7 @@ try:
         "skyflat",
         "pointing"
         ]) and not a_dark_exposure:
-        picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),cam_alias, ('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
+        picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),cam_alias, ('fz_and_send', (raw_path + raw_name00 + ".fz").replace('.fz.fz','.fz'), copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
 
         picklefilename='testlocalred'+str(time.time()).replace('.','')
         pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))

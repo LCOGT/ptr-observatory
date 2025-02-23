@@ -419,17 +419,21 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                     crosscorrel_filename_waiter.append(
                         obsid_path + "smartstacks/" + output_filename)
 
+                    #print (crosscorrelation_subprocess_array)
+
                     crosscorrelation_subprocess_array.append(
                         subprocess.Popen(
-                            ['python', 'crosscorrelation_subprocess.py'], 
+                            ['python', 'subprocesses/crosscorrelation_subprocess.py'], 
                             stdin=subprocess.PIPE, 
                             stdout=None, 
                             bufsize=-1
                         )
                     )
-                    print(counter)
-                    pickle.dump(
-                        pickler, crosscorrelation_subprocess_array[counter].stdin)
+                    #print(counter)
+                    #print (crosscorrelation_subprocess_array[counter])
+                    pickle.dump(pickler, crosscorrelation_subprocess_array[counter].stdin)
+                    crosscorrelation_subprocess_array[counter].stdin.flush()
+                    counter=counter+1
 
             # Wait for the three crosscorrels to happen
             for waitfile in crosscorrel_filename_waiter:
