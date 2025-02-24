@@ -1530,7 +1530,7 @@ class Observatory:
                     if (
                         not self.devices["main_cam"].running_an_exposure_set
                         and not self.devices["sequencer"].block_guard
-                        and not self.devices["sequencer"].total_sequencer_control
+                        and not g_dev['seq'].total_sequencer_control
                     ):
                         self.check_platesolve_and_nudge()
                     # Meridian 'pulse'. A lot of mounts will not do a meridian flip unless a
@@ -2453,7 +2453,7 @@ class Observatory:
         # Check that there isn't individual commands to be run
         if (
             (not self.devices["main_cam"].running_an_exposure_set)
-            and not self.devices["sequencer"].total_sequencer_control
+            and not g_dev['seq'].total_sequencer_control
             and (not self.stop_processing_command_requests)
             and not_slewing
             and not self.pointing_recentering_requested_by_platesolve_thread
@@ -2464,7 +2464,7 @@ class Observatory:
                     not self.stop_processing_command_requests
                     and not self.devices["main_cam"].running_an_exposure_set
                     and not self.devices["sequencer"].block_guard
-                    and not self.devices["sequencer"].total_sequencer_control
+                    and not g_dev['seq'].total_sequencer_control
                     and not_slewing
                     and not self.pointing_recentering_requested_by_platesolve_thread
                     and not self.pointing_correction_requested_by_platesolve_thread
