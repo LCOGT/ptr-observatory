@@ -700,7 +700,7 @@ class Sequencer:
 
 
             if ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
-                    and self.night_focus_ready==True and not g_dev['obs'].scope_in_manual_mode and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
+                    and self.night_focus_ready==True and not g_dev['obs'].scope_in_manual_mode and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch and not self.total_sequencer_control:
 
                 self.nightly_reset_complete = False
                 self.clock_focus_latch = True
@@ -4645,6 +4645,8 @@ class Sequencer:
 
     def filter_focus_offset_estimator_script(self):
 
+        self.total_sequencer_control=True
+        
         self.measuring_focus_offsets=True
         plog ("Determining offsets between filters")
         plog ("First doing a normal run on the 'focus' filter first")
@@ -4662,12 +4664,13 @@ class Sequencer:
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
             self.focussing=False
+            self.total_sequencer_control=False
 
             return
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
             self.focussing=False
-
+            self.total_sequencer_control=False
             return
 
         if np.isnan(foc_pos):
@@ -4678,6 +4681,7 @@ class Sequencer:
             plog ("focus fwhm: " + str(foc_fwhm))
             if np.isnan(foc_pos):
                 plog ("Second initial focus on offset run failed, we really need a very good initial estimate, so bailing out.")
+                self.total_sequencer_control=False
                 return
 
         focus_filter_focus_point=foc_pos
@@ -4709,10 +4713,12 @@ class Sequencer:
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                 self.focussing=False
+                self.total_sequencer_control=False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                 self.focussing=False
+                self.total_sequencer_control=False
                 return
 
             if np.isnan(foc_pos):
@@ -4742,10 +4748,12 @@ class Sequencer:
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                 self.focussing=False
+                self.total_sequencer_control=False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                 self.focussing=False
+                self.total_sequencer_control=False
                 return
 
         plog ("Final determined offsets this run")
@@ -4758,6 +4766,7 @@ class Sequencer:
 
         self.auto_focus_script(req2, opt,skip_pointing=True)
         self.measuring_focus_offsets=False
+        self.total_sequencer_control=False
 
 
     def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, dont_return_scope=False, dont_log_focus=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
@@ -5043,17 +5052,18 @@ class Sequencer:
                 return np.nan, np.nan
 
             # What focus position should i be using?
-            if position_counter==1:
+            if position_counter==1 and len(focus_spots) > 0:
                 focus_position_this_loop=central_starting_focus
-            elif position_counter==2:
+            elif position_counter==2 and len(focus_spots) > 0:
                 focus_position_this_loop=central_starting_focus - throw
-            elif position_counter==3:
+            elif position_counter==3 and len(focus_spots) > 0:
                 focus_position_this_loop=central_starting_focus - 2* throw
-            elif position_counter==4:
+            elif position_counter==4 and len(focus_spots) > 0:
                 focus_position_this_loop=central_starting_focus + 2*throw
-            elif position_counter==5:
+            elif position_counter==5 and len(focus_spots) > 0:
                 focus_position_this_loop=central_starting_focus + throw
-            elif position_counter>5:
+            #elif position_counter>5:
+            else:
                 focus_position_this_loop=new_focus_position_to_attempt
 
 
@@ -5161,11 +5171,13 @@ class Sequencer:
                     g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
                 else:
                     plog ("Haven't found a starting point yet..... travelling left and right to find a good starting point ")
-                    if position_counter & 1:
+                    #if position_counter & 1:
+                    if len(spots_tried) & 1:
                         new_focus_position_to_attempt=min(spots_tried) - int(position_counter/2) * throw
 
                     else:
                         new_focus_position_to_attempt=max(spots_tried) + int(position_counter/2) * throw
+
 
                     print ("trying fwhm point: " + str(new_focus_position_to_attempt))
 
