@@ -825,7 +825,7 @@ try:
 ##########################################
 
 
-
+    #################### HERE IS WHERE PLATESOLVE IS SENT OFF
 
 
     # assign the keyword values and comment of the keyword as a tuple to write both to header.
