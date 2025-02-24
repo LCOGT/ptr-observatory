@@ -17,7 +17,7 @@ import bottleneck as bn
 #from astropy.stats import sigma_clip
 from joblib import Parallel, delayed
 
-print("Starting crosscorrelation_subprocess.py")
+#print("Starting crosscorrelation_subprocess.py")
 
 payload=pickle.load(sys.stdin.buffer)
 #payload=pickle.load(open('crosscorrelprocess.pickle','rb'))
@@ -250,7 +250,7 @@ while (breaker != 0):
 
 substackimage[substackimage < zeroValue] = np.nan
 
-substackimage = debanding(substackimage)
+#substackimage = debanding(substackimage)
 
 edge_crop=100
 xoff, yoff = cross_correlation_shifts(block_reduce(reference_image[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean), block_reduce(substackimage[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean),zeromean=False)
@@ -286,6 +286,21 @@ try:
         substackimage=np.roll(substackimage, imageshiftabs*imageshiftsign, axis=1)
 except:
     print(traceback.format_exc())
+
+try:
+    os.remove(temporary_substack_directory + output_filename +'temp')
+except:
+    pass
+
+try:
+    os.remove(temporary_substack_directory + output_filename +'temp.npy')
+except:
+    pass
+
+try:
+    os.remove(temporary_substack_directory + output_filename)
+except:
+    pass
 
 np.save( temporary_substack_directory + output_filename +'temp', substackimage )
 os.rename(temporary_substack_directory + output_filename +'temp.npy' ,temporary_substack_directory + output_filename)

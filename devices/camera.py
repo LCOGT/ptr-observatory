@@ -2914,13 +2914,19 @@ class Camera:
                 qhycam.camera_params[qhycam_id]['handle'])
         else:
 
+            
             # Boost Narrowband and low throughput broadband
-            if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n"]:
-                exp_of_substacks = 30
-                N_of_substacks = int((exposure_time / exp_of_substacks))
+            if not self.current_filter == None:
+                if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n"]:
+                    exp_of_substacks = 30
+                    N_of_substacks = int((exposure_time / exp_of_substacks))
+                else:
+                    exp_of_substacks = 10
+                    N_of_substacks = int(exposure_time / exp_of_substacks)
             else:
                 exp_of_substacks = 10
                 N_of_substacks = int(exposure_time / exp_of_substacks)
+
 
             self.substacker_filenames = []
             base_tempfile = str(time.time()).replace(".", "")
