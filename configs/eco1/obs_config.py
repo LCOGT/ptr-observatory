@@ -97,7 +97,7 @@ site_config = {
     'save_raw_to_disk': True,
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': True,
-    'keep_focus_images_on_disk': False,  # To save space, the focus file can not be saved.
+    'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
     # Number of files to send up to the ptrarchive simultaneously.
