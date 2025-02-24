@@ -4995,7 +4995,7 @@ class Sequencer:
 
         # Boost Narrowband and low throughput broadband
         if filter_choice.lower() in ["u", "ju", "bu", "up","z", "zs", "zp","ha", "h", "o3", "o","s2", "s","cr", "c","n2", "n"]:
-            focus_exposure_time=focus_exposure_time*3
+            focus_exposure_time=focus_exposure_time*4
 
         req = {'time': focus_exposure_time,  'alias':  str(g_dev['cam'].name), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
         opt = { 'count': 1, 'filter': filter_choice}
