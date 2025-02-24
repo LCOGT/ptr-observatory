@@ -4717,7 +4717,16 @@ class Sequencer:
 
             if np.isnan(foc_pos):
                 plog ("initial focus on offset run failed, giving it another shot after extensive focus attempt.")
-                foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, dont_return_scope=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=chosen_filter)
+                
+                try:
+                    foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, dont_return_scope=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=chosen_filter)
+                except:
+                    plog(traceback.format_exc())
+                    plog ("dodgy auto focus return")
+                    foc_pos=np.nan
+                    foc_fwhm=np.nan
+                
+                
                 plog ("focus position: " + str(foc_pos))
                 plog ("focus fwhm: " + str(foc_fwhm))
                 if np.isnan(foc_pos):
