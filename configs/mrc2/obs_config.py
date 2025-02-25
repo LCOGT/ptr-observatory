@@ -956,6 +956,10 @@ site_config = {
                 
                 # In the EVA Pipeline, whether to run cosmic ray detection on individual images
                 'do_cosmics': False,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
 
 
                

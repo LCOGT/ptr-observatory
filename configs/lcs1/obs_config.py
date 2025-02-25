@@ -674,6 +674,10 @@ site_config = {
                 'dark_exposure': 180,
                 
                 'do_cosmics' : False,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : False,                
+                # And debanding
+                'do_debanding' : False,
                 
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,

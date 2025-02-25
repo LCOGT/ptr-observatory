@@ -826,6 +826,69 @@ try:
 
 
     #################### HERE IS WHERE PLATESOLVE IS SENT OFF
+    
+    if not pixscale == None: # or np.isnan(pixscale):
+        
+    
+    
+        # hdufocusdata=input_psolve_info[0]
+        # pixscale=input_psolve_info[2]
+        # is_osc=input_psolve_info[3]
+        # filepath=input_psolve_info[4]
+        # filebase=input_psolve_info[5]
+        # RAest=input_psolve_info[6]
+        # DECest=input_psolve_info[7]
+    
+        print ("HERE IS THE FULL PLATESOLVE PICKLE")
+        print (hdu.data.shape())        
+        print (pixscale)
+        print (is_osc)
+        wcsfilepath=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq))
+        print (wcsfilepath)
+        wcsfilebase=selfconfig["obs_id"]
+        + "-"
+        + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)
+        + "-"
+        + dayobs
+        + "-"
+        + next_seq
+        + "-"
+        + 'EX'
+        + "00.fits"
+        print (wcsfilebase)
+        print (corrected_ra_for_header * 15 )
+        print (corrected_dec_for_header)
+        
+        try:
+            platesolve_subprocess = subprocess.Popen(
+                ["python", "subprocesses/PlatesolverSingleImageFullReduction.py"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                bufsize=0,
+            )
+        except OSError:
+            print(traceback.format_exc())
+            pass
+
+        try:
+            pickle.dump(
+                [
+                    hdu.data.shape(),
+                    pixscale,
+                    is_osc,
+                    wcsfilepath,
+                    wcsfilebase,
+                    corrected_ra_for_header * 15,
+                    corrected_dec_for_header
+                ],
+                platesolve_subprocess.stdin,
+            )
+        except:
+            print("Problem in the platesolve pickle dump")
+            print(traceback.format_exc())
+        
+        
+        
 
 
     # assign the keyword values and comment of the keyword as a tuple to write both to header.
@@ -852,8 +915,18 @@ try:
     hdu.header['CONFMODE'] = ('default',  'LCO Configuration Mode')
     hdu.header["DOCOSMIC"] = (
         cam_settings["do_cosmics"],
-        "Cosmic ray removal",
+        "Cosmic ray removal in EVA",
     )
+    
+    hdu.header["DOSNP"] = (
+        cam_settings['do_saltandpepper'],
+        "Salt and Pepper removal in EVA",
+    )
+    hdu.header["DODBND"] = (
+        cam_settings['do_debanding'],
+        "Debanding removal in EVA",
+    )
+    
 
     hdu.header["CCDSTEMP"] = (
         round(setpoint, 2),     #WER fixed.

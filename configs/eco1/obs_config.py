@@ -704,6 +704,11 @@ site_config = {
 
 
                 'do_cosmics' : False,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
+                
                 'number_of_bias_to_collect' : 64,
                 'number_of_dark_to_collect' : 64,
                 'number_of_flat_to_collect' : 10,
