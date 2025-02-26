@@ -66,13 +66,14 @@ filepath=input_psolve_info[3]
 filebase=input_psolve_info[4]
 RAest=input_psolve_info[5]
 DECest=input_psolve_info[6]
+nextseq=input_psolve_info[7]
 cpu_limit=90
 
-# Check we are working in unit16
-if not hdufocusdata.dtype == np.uint16:
-    raised_array=hdufocusdata - np.nanmin(hdufocusdata)
-    hdufocusdata = np.maximum(raised_array,0).astype(np.uint16)
-    del raised_array
+## Check we are working in unit16
+#if not hdufocusdata.dtype == np.uint16:
+#    raised_array=hdufocusdata - np.nanmin(hdufocusdata)
+##    hdufocusdata = np.maximum(raised_array,0).astype(np.uint16)
+#    del raised_array
 
 
 googtime=time.time()
@@ -154,7 +155,7 @@ tempdir_in_wsl=tempdir_in_wsl.replace('\\','/')
 
 
 
-astoptions = '-c photometryparams/default.sexfull -PARAMETERS_NAME ' + str(cwd_in_wsl)+'/photometryparams/default.paramastrom -CATALOG_NAME '+ str(tempdir_in_wsl + '/test.cat') + ' -SATUR_LEVEL 65535 -GAIN 1 -BACKPHOTO_TYPE LOCAL -DETECT_THRESH 1.0 -ANALYSIS_THRESH 1.0 -SEEING_FWHM 2.0 -FILTER_NAME ' + str(cwd_in_wsl)+'/photometryparams/sourceex_convs/gauss_2.0_5x5.conv'
+astoptions = '-c '+str(cwd_in_wsl)+'/subprocesses/photometryparams/default.sexfull -PARAMETERS_NAME ' + str(cwd_in_wsl)+'/subprocesses/photometryparams/default.paramastrom -CATALOG_NAME '+ str(tempdir_in_wsl + '/test.cat') + ' -SATUR_LEVEL 65535 -GAIN 1 -BACKPHOTO_TYPE LOCAL -DETECT_THRESH 1.5 -ANALYSIS_THRESH 1.5 -SEEING_FWHM 2.0 -FILTER_NAME ' + str(cwd_in_wsl)+'/subprocesses/photometryparams/sourceex_convs/gauss_2.0_5x5.conv'
 
 os.system('wsl --exec source-extractor ' + str(realwslfilename) + ' ' + astoptions  )
     
@@ -247,12 +248,20 @@ if sizewidest > 1.0:
 else:
     tweakorder=[2,3]
     
-    
+
+os.system('wsl --exec mkdir /home/obs/wcstempfiles')
+#os.system('ls ' + str(tempdir_in_wsl))
+os.system('wsl --exec cp ' + str(tempdir_in_wsl + '/test.fits /home/obs/wcstempfiles/test' + str(nextseq) + '.fits'))
+
+print ('cp ' + str(tempdir_in_wsl + '/test.fits /home/obs/wcstempfiles/test' + str(nextseq) + '.fits'))
+
 #astoptions = 
+print ("wsl --exec solve-field /home/obs/wcstempfiles/test" + str(nextseq) + '.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots " )
 
 # Try once with tweak-order 2   
 #os.system("/usr/local/astrometry/bin/solve-field -D " + str(tempdir) + " --use-source-extractor --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 90 --depth 1-100 --overwrite --no-verify --no-plots " + str(wslfilename))
-os.system("wsl --exec solve-field " + str(tempdir_in_wsl + '/' 'test.fits') +" -D " + str(tempdir_in_wsl) + " --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots " )
+os.system("wsl --exec solve-field /home/obs/wcstempfiles/test" + str(nextseq) + '.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots " )
+
 
 #breakpoint()
 
@@ -263,7 +272,7 @@ if os.path.exists(tempdir + '/test.wcs'):
 # os.remove(file)
 else:
     # Try once with tweak-order 3    
-    os.system("wsl --exec solve-field " + str(tempdir_in_wsl + '/' 'test.fits') +" -D " + str(tempdir_in_wsl) + " --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[1]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots " )
+    os.system("wsl --exec solve-field /home/obs/wcstempfiles/test" + str(nextseq) + '.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[1]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots " )
     
     if os.path.exists(tempdir + '/test.wcs'):
         print("A successful solve for " + wslfilename)
@@ -272,7 +281,7 @@ else:
     # os.remove(file)
     else:
         # Try once with tweak-order 4    
-        os.system("wsl --exec solve-field " + str(tempdir_in_wsl + '/' 'test.fits') +" -D " + str(tempdir_in_wsl) + " --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (4) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots " )
+        os.system("wsl --exec solve-field /home/obs/wcstempfiles/test" + str(nextseq) + '.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (4) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots " )
         
         if os.path.exists(tempdir + '/test.wcs'):
             print("A successful solve for " + wslfilename)

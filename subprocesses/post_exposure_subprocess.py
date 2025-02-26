@@ -840,28 +840,20 @@ try:
         # DECest=input_psolve_info[7]
     
         print ("HERE IS THE FULL PLATESOLVE PICKLE")
-        print (hdu.data.shape())        
+        print (hdu.data)        
         print (pixscale)
         print (is_osc)
         wcsfilepath=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq))
         print (wcsfilepath)
-        wcsfilebase=selfconfig["obs_id"]
-        + "-"
-        + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)
-        + "-"
-        + dayobs
-        + "-"
-        + next_seq
-        + "-"
-        + 'EX'
-        + "00.fits"
+        wcsfilebase=selfconfig["obs_id"]+ "-" + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter) + "-" + dayobs+ "-"+ next_seq+ "-" + 'EX'+ "00.fits"
         print (wcsfilebase)
         print (corrected_ra_for_header * 15 )
         print (corrected_dec_for_header)
+        print (next_seq)
         
         try:
             platesolve_subprocess = subprocess.Popen(
-                ["python", "subprocesses/PlatesolverSingleImageFullReduction.py"],
+                ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 bufsize=0,
@@ -873,13 +865,15 @@ try:
         try:
             pickle.dump(
                 [
-                    hdu.data.shape(),
+                    np.asarray(hdu.data,dtype=np.float32),
                     pixscale,
                     is_osc,
                     wcsfilepath,
                     wcsfilebase,
                     corrected_ra_for_header * 15,
-                    corrected_dec_for_header
+                    corrected_dec_for_header,
+                    next_seq
+                    
                 ],
                 platesolve_subprocess.stdin,
             )
