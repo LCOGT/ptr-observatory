@@ -2563,10 +2563,14 @@ class Camera:
                 #     image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
                 #tempsend=tempsend[ 0:6384, 32:9600]
-                tempsend = image[self.overscan_left: self.imagesize_x-self.overscan_right,
-                                    self.overscan_up: self.imagesize_y - self.overscan_down]
-
-                np.save(substacker_filenames[subexposure-1], tempsend)
+                if not (self.overscan_down == 0 and self.overscan_up == 0 and self.overscan_left == 0 and self.overscan_right==0):
+                    try:
+                        image = image[self.overscan_left: self.imagesize_x-self.overscan_right,self.overscan_up: self.imagesize_y - self.overscan_down]
+                    except:
+                        plog(traceback.format_exc())
+                #    breakpoint()
+                #breakpoint()
+                np.save(substacker_filenames[subexposure-1], image)
 
             while (time.time() - exposure_timer) < exp_of_substacks:
                 time.sleep(0.001)
@@ -2592,9 +2596,21 @@ class Camera:
             # image = np.ctypeslib.as_array(
             #     qhycam.camera_params[qhycam_id]['prev_img_data'])
 
-            time_before_last_substack_readout = time.time()
+            
 
-            image = self._zwo_getImageArray()
+            #breakpoint()
+            
+            while zwocamera.get_exposure_status() == 1:
+                #print ('waitingforzeo')
+                time.sleep(0.05)
+
+            time_before_last_substack_readout = time.time()
+            image = zwocamera.get_data_after_exposure()
+
+            image=np.frombuffer(image, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
+            #breakpoint()
+
+
 
             time_after_last_substack_readout = time.time()
 
@@ -2604,8 +2620,9 @@ class Camera:
             # So that the camera can get started up again quicker.
             if subexposure == (N_of_substacks -1 ):
                 #tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-                tempsend=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
-                np.save(substacker_filenames[subexposure],tempsend)
+                if not (self.overscan_down == 0 and self.overscan_up == 0 and self.overscan_left == 0 and self.overscan_right==0):
+                    image=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+                np.save(substacker_filenames[subexposure],image)
 
         self.readout_estimate= np.median(np.array(readout_estimate_holder))
         self.substacker_available=True
@@ -2897,13 +2914,19 @@ class Camera:
                 qhycam.camera_params[qhycam_id]['handle'])
         else:
 
+            
             # Boost Narrowband and low throughput broadband
-            if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n"]:
-                exp_of_substacks = 30
-                N_of_substacks = int((exposure_time / exp_of_substacks))
+            if not self.current_filter == None:
+                if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n"]:
+                    exp_of_substacks = 30
+                    N_of_substacks = int((exposure_time / exp_of_substacks))
+                else:
+                    exp_of_substacks = 10
+                    N_of_substacks = int(exposure_time / exp_of_substacks)
             else:
                 exp_of_substacks = 10
                 N_of_substacks = int(exposure_time / exp_of_substacks)
+
 
             self.substacker_filenames = []
             base_tempfile = str(time.time()).replace(".", "")
@@ -6084,7 +6107,7 @@ class Camera:
                                 plog('Good flat value:  ' + str(central_median) +
                                      ' Not testing gain until flats in commissioned mode.')
 
-                            elif cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 3 * g_dev['seq'].current_filter_last_camera_gain_stdev):
+                            elif cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 5 * g_dev['seq'].current_filter_last_camera_gain_stdev):
                                 g_dev["obs"].send_to_user(
                                     'Good flat value:  ' + str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain, 2)))
                                 plog('Good flat value:  ' + str(central_median) +

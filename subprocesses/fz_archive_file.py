@@ -26,7 +26,7 @@ warnings.simplefilter('ignore', category=AstropyUserWarning)
 #input_sep_info=pickle.load(open('testfz1714133591386061','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
 
-print ("Starting fz_archive_file.py")
+#print ("Starting fz_archive_file.py")
 #print (input_sep_info)
 
 
@@ -108,11 +108,11 @@ else:  # Is an OSC
         temphduheader['CDELT1'] = float(temphduheader['CDELT1'])*2
         temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
         tempfilter = temphduheader['FILTER']
-        tempfilename = slow_process[1] + '.fz'
+        tempfilename = slow_process[1]
 
         # Save and send R1
         temphduheader['FILTER'] = tempfilter + '_R1'
-        temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('-EX', 'R1-EX') + '.fz'
+        temphduheader['ORIGNAME'] = (temphduheader['ORIGNAME'].replace('-EX', 'R1-EX') + '.fz').replace('.fz.fz','.fz')
 
         hdufz = fits.CompImageHDU(
             np.array(newhdured, dtype=np.float32), temphduheader
@@ -143,9 +143,7 @@ else:  # Is an OSC
         )
 
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
-            hdufz.writeto(
-                pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
-            )
+            hdufz.writeto(pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True)
             os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:

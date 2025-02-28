@@ -97,7 +97,7 @@ site_config = {
     'save_raw_to_disk': True,
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': True,
-    'keep_focus_images_on_disk': False,  # To save space, the focus file can not be saved.
+    'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
     # Number of files to send up to the ptrarchive simultaneously.
@@ -140,8 +140,8 @@ site_config = {
 
 
     # Exposure times for standard system exposures
-    'focus_exposure_time': 15,  # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
+    'focus_exposure_time': 8,  # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 10,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
     'observing_check_period': 1,    # How many minutes between weather checks
@@ -386,10 +386,10 @@ site_config = {
 			'com_port':  'COM9',
             'relative_focuser': False,
 
-            'focuser_movement_settle_time': 10,
+            'focuser_movement_settle_time': 3,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
-            'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
+            'maximum_good_focus_in_arcsecond': 3.0, # highest value to consider as being in "good focus". Used to select last good focus value
             'reference': 23100,    #  20210313  Nominal at 10C Primary temperature
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 50000,   #12672 actually

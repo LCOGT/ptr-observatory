@@ -365,14 +365,19 @@ if substack:
     for substackfilename in substacker_filenames:
 
         substackimage=np.load(substackfilename).astype('float32')
+        #print (substackimage.shape)
+        #notsubstackimage=np.load(substackfilename)
+        #print (notsubstackimage.shape)
         try:
             if exp_of_substacks == 10:
                 #print ("Dedarking 0")
+                #loadbias=np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy')
+                #print (loadbias.shape)
                 substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
             else:
                 substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
         except:
-            #breakpoint()
+            print(traceback.format_exc())
             print ("Couldn't biasdark substack")
             pass
         try:
@@ -820,7 +825,7 @@ try:
 ##########################################
 
 
-
+    #################### HERE IS WHERE PLATESOLVE IS SENT OFF
 
 
     # assign the keyword values and comment of the keyword as a tuple to write both to header.
@@ -888,18 +893,31 @@ try:
     hdu.header["DARKSLID"] = (darkslide_state, "Darkslide state")
     hdu.header['SHUTTYPE'] = (cam_settings["shutter_type"],
                               'Type of shutter')
-    hdu.header["GAIN"] = (
-        round(camera_known_gain,3),
-        "[e-/ADU] Pixel gain",
-    )
+    try:
+        hdu.header["GAIN"] = (
+            round(camera_known_gain,3),
+            "[e-/ADU] Pixel gain",
+        )
+    except:
+        hdu.header["GAIN"] = (
+            round(camera_known_gain,3),
+            "[e-/ADU] Pixel gain",
+        )
+    
     hdu.header["ORIGGAIN"] = (
         round(camera_known_gain,3),
         "[e-/ADU] Original Pixel gain",
     )
-    hdu.header["RDNOISE"] = (
-        round(camera_known_readnoise,3),
-        "[e-/pixel] Read noise",
-    )
+    try:
+        hdu.header["RDNOISE"] = (
+            round(camera_known_readnoise,3),
+            "[e-/pixel] Read noise",
+        )
+    except:
+        hdu.header["RDNOISE"] = (
+            'Unknown',
+            "[e-/pixel] Read noise",
+        )
     hdu.header["OSCCAM"] = (is_osc, "Is OSC camera")
     hdu.header["OSCMONO"] = (False, "If OSC,  a mono image or Bayer?")
 
@@ -1442,7 +1460,7 @@ try:
     im_path_r = selfcamera_path
 
     hdu.header["FILEPATH"] = str(im_path_r) + "to_AWS/"
-    hdu.header["ORIGNAME"] = str(raw_name00 + ".fz")
+    hdu.header["ORIGNAME"] = str(raw_name00 + ".fz").replace('.fz.fz','.fz')
 
     # tempRAdeg = ra_at_time_of_exposure * 15
     # tempDECdeg = dec_at_time_of_exposure
@@ -1583,7 +1601,7 @@ try:
         "skyflat",
         "pointing"
         ]) and not a_dark_exposure:
-        picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),cam_alias, ('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
+        picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),cam_alias, ('fz_and_send', (raw_path + raw_name00 + ".fz").replace('.fz.fz','.fz'), copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
 
         picklefilename='testlocalred'+str(time.time()).replace('.','')
         pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))

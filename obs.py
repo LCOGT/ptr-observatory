@@ -1532,7 +1532,7 @@ class Observatory:
                     if (
                         not self.devices["main_cam"].running_an_exposure_set
                         and not self.devices["sequencer"].block_guard
-                        and not self.devices["sequencer"].total_sequencer_control
+                        and not g_dev['seq'].total_sequencer_control
                     ):
                         self.check_platesolve_and_nudge()
                     # Meridian 'pulse'. A lot of mounts will not do a meridian flip unless a
@@ -2455,7 +2455,7 @@ class Observatory:
         # Check that there isn't individual commands to be run
         if (
             (not self.devices["main_cam"].running_an_exposure_set)
-            and not self.devices["sequencer"].total_sequencer_control
+            and not g_dev['seq'].total_sequencer_control
             and (not self.stop_processing_command_requests)
             and not_slewing
             and not self.pointing_recentering_requested_by_platesolve_thread
@@ -2466,7 +2466,7 @@ class Observatory:
                     not self.stop_processing_command_requests
                     and not self.devices["main_cam"].running_an_exposure_set
                     and not self.devices["sequencer"].block_guard
-                    and not self.devices["sequencer"].total_sequencer_control
+                    and not g_dev['seq'].total_sequencer_control
                     and not_slewing
                     and not self.pointing_recentering_requested_by_platesolve_thread
                     and not self.pointing_correction_requested_by_platesolve_thread
@@ -4505,31 +4505,42 @@ class Observatory:
         ).json()
 
     def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
-        self.devices['mount'].mount_update_paused=True
+        #self.devices['mount'].mount_update_paused=True
 
-        self.rebooting_theskyx=True
+        try:
 
-        if self.devices["main_cam"].theskyx:
-            self.devices["main_cam"].updates_paused=True
+            self.rebooting_theskyx=True
 
-        os.system("taskkill /IM TheSkyX.exe /F")
-        os.system("taskkill /IM TheSky64.exe /F")
-        time.sleep(5)
-        retries=0
+            if self.devices["main_cam"].theskyx:
+                self.devices["main_cam"].updates_paused=True
+
+            os.system("taskkill /IM TheSkyX.exe /F")
+            os.system("taskkill /IM TheSky64.exe /F")
+            time.sleep(5)
+            retries=0
+
+            self.devices['mount'].mount_update_reboot=True
+            self.devices['mount'].wait_for_mount_update()
+            #self.devices['mount'].mount_update_paused=False
+        except:
+            plog(traceback.format_exc())
+            plog ("Failed rebooting, needs to be debugged")
+            breakpoint()
 
         while retries <5:
             try:
-                # Recreate the mount
-                rebooted_mount = Mount(self.devices['mount'].config['driver'],
-
-                        g_dev['mnt'].name,
-                        self.devices['mount'].settings,
-
-                        self.config,
-                        self,
-                        tel=True)
-                self.all_devices['mount'][self.devices['mount'].name] = rebooted_mount
-                self.devices['mount'] = rebooted_mount # update the 'mount' role to point to the new mount
+                ## Recreate the mount
+                #rebooted_mount = Mount(self.devices['mount'].config['driver'],
+#
+#                        g_dev['mnt'].name,
+#                        self.devices['mount'].settings,##
+#
+#                        self.config,
+#                        self,
+#                        self.astro_events,
+#                        tel=True)
+#                self.all_devices['mount'][self.devices['mount'].name] = rebooted_mount
+#                self.devices['mount'] = rebooted_mount # update the 'mount' role to point to the new mount
 
                 # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
                 for camera in self.all_devices['camera']:
@@ -4580,9 +4591,7 @@ class Observatory:
                     plog ("Failed rebooting, needs to be debugged")
                     breakpoint()
 
-        self.devices['mount'].mount_update_reboot=True
-        self.devices['mount'].wait_for_mount_update()
-        self.devices['mount'].mount_update_paused=False
+        
 
         self.rebooting_theskyx=False
 
