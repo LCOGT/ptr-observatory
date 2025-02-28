@@ -6107,7 +6107,7 @@ class Camera:
                                 plog('Good flat value:  ' + str(central_median) +
                                      ' Not testing gain until flats in commissioned mode.')
 
-                            elif cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 3 * g_dev['seq'].current_filter_last_camera_gain_stdev):
+                            elif cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 5 * g_dev['seq'].current_filter_last_camera_gain_stdev):
                                 g_dev["obs"].send_to_user(
                                     'Good flat value:  ' + str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain, 2)))
                                 plog('Good flat value:  ' + str(central_median) +
