@@ -644,6 +644,7 @@ class Observatory:
                 pass
 
         # Report filter throughputs as part of bootup
+
         filter_throughput_shelf = shelve.open(
             self.obsid_path
             + "ptr_night_shelf/"
@@ -656,7 +657,7 @@ class Observatory:
             plog("Looks like there is no filter throughput shelf.")
         else:
             #First lts sort this shelf for lowest to highest throughput.
-            #breakpoint()
+            #breakpoint()  filter_thoughput_shelf['S2']  or ]=10, then close
             #filter_throughput_shelf = dict(sorted(filter_throughput_shelf.items(), key=lambda item: item[1], reverse=False)
             plog("Stored filter throughputs")
             for filtertempgain in list(filter_throughput_shelf.keys()):
@@ -665,6 +666,7 @@ class Observatory:
                     + " "
                     + str(filter_throughput_shelf[filtertempgain])
                 )
+
         filter_throughput_shelf.close()
 
         # Boot up filter offsets
@@ -3708,7 +3710,7 @@ class Observatory:
                                         temp_file_type='flat'
                                     elif 'bias' in file_type:
                                         temp_file_type='bias'
-                                        
+
                                     max_files = self.devices['main_cam'].settings.get(f"number_of_{temp_file_type}_to_store", 64)
 
                                     exclude_pattern = "tempbiasdark" if "dark" in file_type else "tempcali" if "flat" in file_type else None
