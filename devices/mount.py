@@ -1408,8 +1408,15 @@ class Mount:
             
             
             #dome_azimuth= GET FROM wema
-            
-            while abs(obs_azimuth - dome_azimuth) > 3:
+            dome_timeout_timer=time.time()
+            while abs(obs_azimuth - dome_azimuth) > 3 and time.time() - dome_timeout_timer < 300:
+                
+                plog ("making sure dome is positioned correct.")
+                rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
+                aa = AltAz(location=self.site_coordinates, obstime=Time.now())
+                rd = rd.transform_to(aa)
+                obs_azimuth = float(rd.az/u.deg)
+                
                 plog ("d> " + str(obs_azimuth) + " " + str(dome_azimuth))
                 time.sleep(2)
                 try:
