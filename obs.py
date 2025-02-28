@@ -2949,7 +2949,7 @@ class Observatory:
                     timeout_time = 800# + exposure_time + \
                         #self.devices["main_cam"].readout_time
                 else:
-                    timeout_time = 180# + exposure_time + \
+                    timeout_time = 45# + exposure_time + \
                         #self.devices["main_cam"].readout_time
 
                 platesolve_timeout_timer = time.time()
@@ -3295,10 +3295,17 @@ class Observatory:
 
 
                                 if self.sync_after_platesolving:
-                                    plog("Syncing mount after this solve")
+                                    if (
+                                        abs(err_ha * 15 * 3600)
+                                        > self.worst_potential_pointing_in_arcseconds
+                                    ) or (
+                                        abs(err_dec * 3600)
+                                        > self.worst_potential_pointing_in_arcseconds
+                                    ):
+                                        plog("Syncing mount after this solve")
 
-                                    self.devices["mount"].sync_to_pointing(
-                                        solved_ra, solved_dec)
+                                        self.devices["mount"].sync_to_pointing(
+                                            solved_ra, solved_dec)
                                     self.pointing_correction_requested_by_platesolve_thread = (
                                         False
                                     )

@@ -3839,14 +3839,14 @@ class Camera:
                                 try:
                                     last_fwhm = g_dev['obs'].fwhmresult["FWHM"]
                                     #  NB NB WER this can be evil if telescope is not well set up. Should not adjust in Eng mode.
-                                    if last_fwhm > 4.0:
+                                    if last_fwhm > 7.0:
                                         exposure_time = exposure_time * 4
-                                    elif last_fwhm > 3:
+                                    elif last_fwhm > 4.5:
                                         exposure_time = exposure_time * 3
                                     elif last_fwhm > 2.5:
-                                        exposure_time = exposure_time * 2
+                                        exposure_time = exposure_time * 1.75
                                     elif last_fwhm > 2.0:
-                                        exposure_time = exposure_time * 1.5
+                                        exposure_time = exposure_time * 1.25
                                 except:
                                     plog(
                                         "can't adjust exposure time for pointing if no previous focus known")
