@@ -61,7 +61,7 @@ site_config = {
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
     
-    'temperature_at_which_obs_too_hot_for_camera_cooling' : 23, 
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 35, 
     
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that 
@@ -142,8 +142,8 @@ site_config = {
     
     
     # Exposure times for standard system exposures
-    'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 10,  # Exposure time in seconds for exposure image
+    'focus_exposure_time': 20,  # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
     'observing_check_period': 1,    # How many minutes between weather checks
@@ -390,12 +390,11 @@ site_config = {
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
-            'reference': 3620,    #  20210313  Nominal at 10C Primary temperature            
-            'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
+            'reference': 3520, #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 10000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 200,
+            'throw' : 75,
             'unit': 'counts',
             'unit_conversion': 1.0,
             'has_dial_indicator': False
@@ -665,7 +664,7 @@ site_config = {
 
                 'number_of_bias_to_collect' : 32,
                 'number_of_dark_to_collect' : 32,
-                'number_of_flat_to_collect' : 32,
+                'number_of_flat_to_collect' : 8,
                 'number_of_bias_to_store' : 32,
                 'number_of_dark_to_store' : 32,
                 'number_of_flat_to_store' : 32 ,

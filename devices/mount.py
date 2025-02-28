@@ -1409,8 +1409,8 @@ class Mount:
             
             #dome_azimuth= GET FROM wema
             
-            while abs(obs_azimuth - dome_azimuth) > 2:
-                plog ("d>")
+            while abs(obs_azimuth - dome_azimuth) > 3:
+                plog ("d> " + str(obs_azimuth) + " " + str(dome_azimuth))
                 time.sleep(2)
                 try:
                     wema_enclosure_status=requests.get(uri_status, timeout=20)
@@ -1418,7 +1418,7 @@ class Mount:
                 except:
                     plog ("Some error in getting the wema_enclosure")
                     
-                
+            plog ("Dome Arrived")
                 
         
         return
