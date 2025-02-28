@@ -5473,6 +5473,7 @@ class Camera:
                             raw_path, exist_ok=True, mode=0o777
                         )
 
+
                         thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header,
                                          frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, altpath, 'deprecated')),))
                         thread.daemon = True

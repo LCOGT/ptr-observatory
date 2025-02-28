@@ -1388,7 +1388,7 @@ class Mount:
                 g_dev['obs'].kill_and_reboot_theskyx(self.current_icrs_ra, self.current_icrs_dec)
                 
         # Then once it is slewed, if there is a dome, it has to wait for the dome.
-        if self.config['needs_to_wait_for_dome'] and wait_for_dome:
+        if self.config['needs_to_wait_for_dome'] and wait_for_dome and not self.rapid_park_indicator:
             plog ("making sure dome is positioned correct.")
             rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
             aa = AltAz(location=self.site_coordinates, obstime=Time.now())
@@ -1409,9 +1409,9 @@ class Mount:
             
             #dome_azimuth= GET FROM wema
             dome_timeout_timer=time.time()
-            while abs(obs_azimuth - dome_azimuth) > 3 and time.time() - dome_timeout_timer < 300:
+            while abs(obs_azimuth - dome_azimuth) > 3 and time.time() - dome_timeout_timer < 300 and not self.rapid_park_indicator:
                 
-                plog ("making sure dome is positioned correct.")
+                #plog ("making sure dome is positioned correct.")
                 rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
                 aa = AltAz(location=self.site_coordinates, obstime=Time.now())
                 rd = rd.transform_to(aa)
