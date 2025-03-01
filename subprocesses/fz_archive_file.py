@@ -97,9 +97,6 @@ else:  # Is an OSC
     # If it is an OSC, split out the components and save them individually.
     if camera_config["settings"]["osc_bayer"] == 'RGGB':
 
-        print ("FZ region")
-        print (bn.nanmin(actual_data))
-
         newhdured = actual_data[::2, ::2]
         GTRonly = actual_data[::2, 1::2]
         GBLonly = actual_data[1::2, ::2]
@@ -130,8 +127,6 @@ else:  # Is an OSC
         hdufz = fits.CompImageHDU(
             np.array(newhdured, dtype=np.float32), temphduheader
         )
-
-        print (bn.nanmin(hdufz.data))
 
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
             hdufz.writeto(
