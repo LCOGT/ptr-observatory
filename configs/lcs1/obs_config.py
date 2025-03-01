@@ -392,7 +392,7 @@ site_config = {
             'focuser_movement_settle_time': 3,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
-            'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
+            'maximum_good_focus_in_arcsecond': 3.5, # highest value to consider as being in "good focus". Used to select last good focus value
             'reference': 3520, #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 10000,   #12672 actually
             'step_size': 1,
@@ -501,12 +501,15 @@ site_config = {
                 # We can't swip and swap because the biases and darks and flats will change, so we are sticking with 3 until
                 # something bad happens with 3 for some reason
                 #
-                # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
+                # In that sense, QHY600 NEEDS to be set at GAIN 26, Mode 1, offset 30 and the only thing to adjust is the offset.....
+                # The QHY268 is gain 56, mode 1, offse
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
-                'direct_qhy_readout_mode' : 0,        
-                'direct_qhy_gain' : 26,
-                'direct_qhy_offset' : 60,  
+                #
+
+                'direct_qhy_readout_mode' : 1,        
+                'direct_qhy_gain' : 56,
+                'direct_qhy_offset' : 30,  
                 
                 'direct_qhy_usb_traffic' : 60,
                 
@@ -633,7 +636,7 @@ site_config = {
                 # If you have a higher resolution pixelscale it will use that instead.
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.                
-                'drizzle_value_for_later_stacking': 1.25,
+                'drizzle_value_for_later_stacking': 0.625,
                 'dither_enabled':  True,      #Set this way for tracking testing
                 
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
@@ -667,7 +670,7 @@ site_config = {
 
                 'number_of_bias_to_collect' : 32,
                 'number_of_dark_to_collect' : 32,
-                'number_of_flat_to_collect' : 8,
+                'number_of_flat_to_collect' : 32,
                 'number_of_bias_to_store' : 32,
                 'number_of_dark_to_store' : 32,
                 'number_of_flat_to_store' : 32 ,
