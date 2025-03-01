@@ -365,7 +365,7 @@ class Mount:
         self.settle_time_after_park = self.config['settle_time_after_park']
 
         self.refraction = 0
-        self.target_az = 0   #Degrees Azimuth
+        self.target_az = -500   #Degrees Azimuth
         self.ha_corr = 0
         self.dec_corr = 0
         self.seek_commanded = False
@@ -1190,7 +1190,7 @@ class Mount:
                                     observation_time=Time.now()                                    
                                     sky_coord=SkyCoord(ra=self.slewtoRA*15*u.deg, dec=self.slewtoDEC*u.deg)
                                     # Convert to AltAz frame
-                                    altaz_frame = AltAz(obstime=observation_time, location=self.observer_location)
+                                    altaz_frame = AltAz(obstime=observation_time, location=self.site_coordinates)
                                     altaz_coords = sky_coord.transform_to(altaz_frame)
                                     
                                     # # Extract altitude and azimuth
