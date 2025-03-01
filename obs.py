@@ -1585,7 +1585,7 @@ class Observatory:
                                                 "mnt"
                                             ].return_declination()
                                             self.devices["mount"].slew_async_directly(
-                                                ra=meridianra, dec=meridiandec
+                                                ra=meridianra, dec=meridiandec, wait_for_dome_after_direct_slew=False
                                             )
                                             plog("Meridian Probe")
 

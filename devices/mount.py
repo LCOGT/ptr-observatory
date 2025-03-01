@@ -1328,7 +1328,7 @@ class Mount:
                 plog ("some type of glitch in the mount thread: " + str(e))
                 plog(traceback.format_exc())
 
-    def wait_for_slew(self, wait_after_slew=True, wait_for_dome=True):
+    def wait_for_slew(self, wait_after_slew=True, wait_for_dome=True, wait_for_dome_after_direct_slew=True):
         
         
         wait_for_slew_timer=time.time()
@@ -1388,7 +1388,8 @@ class Mount:
                 g_dev['obs'].kill_and_reboot_theskyx(self.current_icrs_ra, self.current_icrs_dec)
                 
         # Then once it is slewed, if there is a dome, it has to wait for the dome.
-        if self.config['needs_to_wait_for_dome'] and wait_for_dome and not self.rapid_park_indicator:
+        # But if the dome isn't opened, then no reason to wait for the dome.        
+        if self.config['needs_to_wait_for_dome'] and wait_for_dome and not self.rapid_park_indicator and wait_for_dome_after_direct_slew:
             plog ("making sure dome is positioned correct.")
             rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
             aa = AltAz(location=self.site_coordinates, obstime=Time.now())
@@ -1399,6 +1400,7 @@ class Mount:
             wema_name=g_dev['obs'].config['wema_name']
             uri_status = f"https://status.photonranch.org/status/{wema_name}/enclosure"
 
+
             
             try:
                 wema_enclosure_status=requests.get(uri_status, timeout=20)
@@ -1407,25 +1409,30 @@ class Mount:
                 plog ("Some error in getting the wema_enclosure")
             
             
-            #dome_azimuth= GET FROM wema
-            dome_timeout_timer=time.time()
-            while abs(obs_azimuth - dome_azimuth) > 3 and time.time() - dome_timeout_timer < 300 and not self.rapid_park_indicator:
-                
-                #plog ("making sure dome is positioned correct.")
-                rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
-                aa = AltAz(location=self.site_coordinates, obstime=Time.now())
-                rd = rd.transform_to(aa)
-                obs_azimuth = float(rd.az/u.deg)
-                
-                plog ("d> " + str(obs_azimuth) + " " + str(dome_azimuth))
-                time.sleep(2)
-                try:
-                    wema_enclosure_status=requests.get(uri_status, timeout=20)
-                    dome_azimuth=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_azimuth']['val']
-                except:
-                    plog ("Some error in getting the wema_enclosure")
+            # Only bother waiting if dome is open or opening
+            if wema_enclosure_status.json()['status']['enclosure']['enclosure1']['shutter_status']['val'] in ['Open', 'open','Opening','opening']:
+            
+                #dome_azimuth= GET FROM wema
+                dome_timeout_timer=time.time()
+                while abs(obs_azimuth - dome_azimuth) > 5 and time.time() - dome_timeout_timer < 300 and not self.rapid_park_indicator:
                     
-            plog ("Dome Arrived")
+                    #plog ("making sure dome is positioned correct.")
+                    rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
+                    aa = AltAz(location=self.site_coordinates, obstime=Time.now())
+                    rd = rd.transform_to(aa)
+                    obs_azimuth = float(rd.az/u.deg)
+                    
+                    plog ("d> " + str(obs_azimuth) + " " + str(dome_azimuth))
+                    time.sleep(2)
+                    try:
+                        wema_enclosure_status=requests.get(uri_status, timeout=20)
+                        dome_azimuth=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_azimuth']['val']
+                    except:
+                        plog ("Some error in getting the wema_enclosure")
+                        
+                plog ("Dome Arrived")
+            else:
+                plog ("Why wait for the dome if it isn't even open?")
                 
         
         return
@@ -1536,14 +1543,14 @@ class Mount:
         return self.current_rate_ra, self.current_rate_dec
 
     # This is called directly from the obs code to probe for flips, recenter, etc. Hence "directly"
-    def slew_async_directly(self, ra, dec):
+    def slew_async_directly(self, ra, dec, wait_for_dome_after_direct_slew=True):
         self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
         #### Slew to CoordinatesAsync block
         self.slewtoRA = ra
         self.slewtoDEC = dec
         self.slewtoAsyncRequested=True
         self.wait_for_mount_update()
-        self.wait_for_slew(wait_after_slew=False)
+        self.wait_for_slew(wait_after_slew=False, wait_for_dome_after_direct_slew=wait_for_dome_after_direct_slew)
         ###################################
         g_dev['obs'].rotator_has_been_checked_since_last_slew=False
 
