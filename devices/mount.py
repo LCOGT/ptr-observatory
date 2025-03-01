@@ -1145,16 +1145,19 @@ class Mount:
 
                                 if self.unpark_requested:
                                     self.unpark_requested=False
+                                    self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
                                     self.mount_update_wincom.Unpark()
                                     self.rapid_park_indicator=False
 
                                 if self.park_requested:
                                     self.park_requested=False
+                                    self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
                                     self.mount_update_wincom.Park()
                                     self.rapid_park_indicator=True
 
                                 if self.find_home_requested:
                                     self.find_home_requested=False
+                                    self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
                                     if self.mount_update_wincom.AtHome:
                                         plog("Mount is at home.")
                                     else:
@@ -1182,7 +1185,19 @@ class Mount:
                                             time.sleep(0.2)
                                     except:
                                         plog ("mount thread camera wait failed.")
-
+                                    
+                                    # Figure out the implied azimuth for that ra and dec at this location                      
+                                    observation_time=Time.now()                                    
+                                    sky_coord=SkyCoord(ra=self.slewtoRA*15*u.deg, dec=self.slewtoDEC*u.deg)
+                                    # Convert to AltAz frame
+                                    altaz_frame = AltAz(obstime=observation_time, location=self.observer_location)
+                                    altaz_coords = sky_coord.transform_to(altaz_frame)
+                                    
+                                    # # Extract altitude and azimuth
+                                    # obs_altitude = altaz_coords.alt.deg
+                                    # obs_azimuth = altaz_coords.az.deg
+                                    
+                                    self.target_az=altaz_coords.az.deg
                                     self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                                     self.currently_slewing=True
 
@@ -1244,6 +1259,7 @@ class Mount:
                                 if self.request_find_home:
                                     self.request_find_home=False
                                     try:
+                                        self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
                                         self.mount_update_wincom.FindHome()
                                     except:
                                         plog("Perhaps Mount cannot find home?")
@@ -1256,6 +1272,7 @@ class Mount:
                                             altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
                                             ra = altazskycoord.icrs.ra.deg /15
                                             dec = altazskycoord.icrs.dec.deg
+                                            self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
                                             self.mount_update_wincom.SlewToCoordinatesAsync(ra , dec)
                                             self.currently_slewing=True
 
@@ -1636,6 +1653,9 @@ class Mount:
                 'azimuth': round(az, 3),
                 'target_az': round(self.target_az, 3),
                 'altitude': round(alt, 3),
+                'is_parked': self.rapid_park_indicator,
+                'is_tracking': self.current_tracking_state,
+                'is_slewing': self.currently_slewing,
                 'zenith_distance': round(zen, 3),
                 'airmass': round(airmass,4),
                 'coordinate_system': str(self.rdsys),
@@ -1698,18 +1718,18 @@ class Mount:
         air_avg = abs(round((pre[9] + post[9])/2, 4))
         if air_avg > 20.0:
             air_avg = 20.0
-        if pre[10] and post[10]:
-            park_avg = True
-        else:
-            park_avg = False
-        if pre[11] or post[11]:
-            track_avg = True
-        else:
-            track_avg = False
-        if pre[12] or post[12]:
-            slew_avg = True
-        else:
-            slew_avg = False
+        # if pre[10] and post[10]:
+        #     park_avg = True
+        # else:
+        #     park_avg = False
+        # if pre[11] or post[11]:
+        #     track_avg = True
+        # else:
+        #     track_avg = False
+        # if pre[12] or post[12]:
+        #     slew_avg = True
+        # else:
+        #     slew_avg = False
 
         status = {
             'timestamp': t_avg,
@@ -1719,14 +1739,15 @@ class Mount:
             'tracking_right_ascension_rate': rar_avg,
             'tracking_declination_rate': decr_avg,
             'azimuth':  az_avg,
+            'target_az': round(self.target_az, 3),
             'altitude': alt_avg,
             'zenith_distance': zen_avg,
             'airmass': air_avg,
             'coordinate_system': str(self.rdsys),
             'instrument': str(self.inst),
-            'is_parked': park_avg,
-            'is_tracking': track_avg,
-            'is_slewing': slew_avg,
+            'is_parked': self.rapid_park_indicator,
+            'is_tracking': self.current_tracking_state,
+            'is_slewing': self.currently_slewing,
             'move_time': self.move_time
 
         }
