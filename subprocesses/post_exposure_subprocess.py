@@ -1954,9 +1954,9 @@ try:
             os.makedirs(
                 raw_path, exist_ok=True
             )
-                        
+
             thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, np.array(absolutely_raw_frame, dtype=np.float32), hdu.header, frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','thisisdeprecated', dayobs, im_path_r, selfalt_path)),))
-            thread.daemon = False
+            thread.daemon = False # These need to be daemons because this parent thread will end imminently
             thread.start()
 
 
@@ -1979,7 +1979,7 @@ try:
                 )
                 thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', selfalt_path + dayobs + "/raw/" + raw_name00, absolutely_raw_frame, hdu.header, \
                                                    frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path)),))
-                thread.daemon = False
+                thread.daemon = False # These need to be daemons because this parent thread will end imminently
                 thread.start()
 
 

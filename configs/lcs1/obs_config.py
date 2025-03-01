@@ -61,7 +61,7 @@ site_config = {
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
     
-    'temperature_at_which_obs_too_hot_for_camera_cooling' : 35, 
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 36, 
     
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that 
@@ -103,6 +103,9 @@ site_config = {
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': False,
     'keep_focus_images_on_disk': False,  # To save space, the focus file can not be saved.   
+    # These are options to minimise diskspace for calibrations
+    'produce_fits_file_for_final_calibrations': True,
+    'save_archive_versions_of_final_calibrations' : False, 
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
     # Number of files to send up to the ptrarchive simultaneously.
@@ -128,7 +131,7 @@ site_config = {
     # How many minutes with respect to eve sunset start flats
     
     'bias_dark interval':  105.,   #minutes
-    'eve_sky_flat_sunset_offset': +5,  # 40 before Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -20,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 , 
     'clock_and_auto_focus_offset': 8,
@@ -594,7 +597,7 @@ site_config = {
                 'crop_preview_xright': 2,
                 'temp_setpoint': 5,    #Verify we can go colder, this system has a chiller
                 
-                'temp_setpoint_tolerance': 2.5,
+                'temp_setpoint_tolerance': 3.5,
                 
                 'has_chiller': True,
                 
@@ -604,13 +607,13 @@ site_config = {
                 # from the 15th of the month to the 15 of the month 
                 # 
                 # ( setpoint, day_warm_difference, day_warm troe our false)
-                'set_temp_setpoint_by_season' : True,
+                'set_temp_setpoint_by_season' : False,
                 'temp_setpoint_nov_to_feb' : ( 5, 8, True),
                 'temp_setpoint_feb_to_may' : ( 5, 8, True),
                 'temp_setpoint_may_to_aug' : ( 5, 8, True),
                 'temp_setpoint_aug_to_nov' : ( 5, 8, True),
                 
-                'day_warm': False,
+                'day_warm': True,
                 'day_warm_degrees' : 6, # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : True,
                 'cooler_on': True,

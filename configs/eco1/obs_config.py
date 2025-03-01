@@ -80,6 +80,9 @@ site_config = {
     'save_raws_to_pipe_folder_for_nightly_processing': False,
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
+    # These are options to minimise diskspace for calibrations
+    'produce_fits_file_for_final_calibrations': True,
+    'save_archive_versions_of_final_calibrations' : False, 
 
     # Setup of folders on local and network drives.
     'client_hostname':  'ECO-0m40',

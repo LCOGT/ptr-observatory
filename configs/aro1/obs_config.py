@@ -149,6 +149,10 @@ site_config = {
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     # WER changed Z to X 20231113 @1:16 UTC
     'pipe_archive_folder_path': 'X:/localptrarchive/',
+# These are options to minimise diskspace for calibrations
+    'produce_fits_file_for_final_calibrations': True,
+    'save_archive_versions_of_final_calibrations' : False, 
+
     # 'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # LINKS FOR OBS FOLDERS
     'client_hostname': "ARO-0m30",     # Generic place for this host to stash.
