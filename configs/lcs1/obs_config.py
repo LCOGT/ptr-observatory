@@ -610,7 +610,7 @@ site_config = {
                 'temp_setpoint_may_to_aug' : ( 5, 8, True),
                 'temp_setpoint_aug_to_nov' : ( 5, 8, True),
                 
-                'day_warm': True,
+                'day_warm': False,
                 'day_warm_degrees' : 6, # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : True,
                 'cooler_on': True,

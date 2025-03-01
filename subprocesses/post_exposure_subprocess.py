@@ -409,7 +409,7 @@ if substack:
             # int_array_flattened=substackimage.astype(int).ravel()
             # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
             # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-            unique,counts=np.unique(substackimage.ravel()[~np.isnan(substackimage.ravel())].astype(int), return_counts=True)
+            unique,counts=np.unique(substackimage.ravel()[~np.isnan(substackimage.ravel())].astype(np.int32), return_counts=True)
             m=counts.argmax()
             imageMode=unique[m]
             print ("Calculating Mode: " +str(time.time()-googtime))
@@ -783,7 +783,7 @@ try:
         googtime=time.time()
 
 
-        unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(int), return_counts=True)
+        unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(np.int32), return_counts=True)
 
 
         # int_array_flattened=hdu.data.astype(int).ravel()
@@ -826,9 +826,6 @@ try:
                                                                                 breaker =0
 
         hdu.data[hdu.data < zeroValue] = np.nan
-
-        print (zeroValue)
-        print (bn.nanmin(np.asarray(hdu.data)))
 
         print ("Zero Threshing Image: " +str(time.time()-googtime))
 
@@ -1957,8 +1954,9 @@ try:
             os.makedirs(
                 raw_path, exist_ok=True
             )
-            thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, absolutely_raw_frame, hdu.header, frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','thisisdeprecated', dayobs, im_path_r, selfalt_path)),))
-            thread.daemon = True
+                        
+            thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, np.array(absolutely_raw_frame, dtype=np.float32), hdu.header, frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','thisisdeprecated', dayobs, im_path_r, selfalt_path)),))
+            thread.daemon = False
             thread.start()
 
 
@@ -1981,7 +1979,7 @@ try:
                 )
                 thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', selfalt_path + dayobs + "/raw/" + raw_name00, absolutely_raw_frame, hdu.header, \
                                                    frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path)),))
-                thread.daemon = True
+                thread.daemon = False
                 thread.start()
 
 

@@ -1609,7 +1609,7 @@ class Camera:
         # Camera overscan values
         self.overscan_values={}
         self.overscan_values['QHY600']=[0,38,32,0]
-        self.overscan_values['QHY268']=[24,0,0,4]
+        self.overscan_values['QHY268']=[0,34,24,4] #dunno , top, left, dunno (according to fits liberator)
         self.overscan_values['QHY461']=[2,2,50,50]
         self.overscan_values['SBIG16803']=[0,0,0,0]
 
