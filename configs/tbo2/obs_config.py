@@ -267,6 +267,7 @@ site_config = {
             'home_before_park' : True,
             'settle_time_after_unpark' : 0,
             'settle_time_after_park' : 0,
+            'needs_to_wait_for_dome' : False,
 
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
@@ -384,6 +385,7 @@ site_config = {
             'desc':  'Planewave Focuser',
             'driver': 'dummy',
 			'com_port':  'COM9',
+            'relative_focuser': False,
 
             'focuser_movement_settle_time': 10,
             'start_at_config_reference': False,
