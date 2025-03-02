@@ -634,7 +634,7 @@ site_config = {
                 # If you have a higher resolution pixelscale it will use that instead.
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.
-                'drizzle_value_for_later_stacking': 1.25,
+                'drizzle_value_for_later_stacking': 1.48,
                 'dither_enabled':  True,      #Set this way for tracking testing
 
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope

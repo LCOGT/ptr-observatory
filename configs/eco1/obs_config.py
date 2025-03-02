@@ -702,7 +702,7 @@ site_config = {
                 # If you have a higher resolution pixelscale it will use that instead.
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.
-                'drizzle_value_for_later_stacking': 0.5,
+                'drizzle_value_for_later_stacking': 0.74,
                 'dither_enabled':  True,      #Set this way for tracking testing
 
 
