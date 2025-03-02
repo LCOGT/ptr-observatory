@@ -206,7 +206,7 @@ def mid_stretch_jpeg(data):
 
 
 # Note this is a thread!
-def dump_main_data_out_to_post_exposure_subprocess(payload):
+def dump_main_data_out_to_post_exposure_subprocess(payload, post_processing_subprocess):
 
     # Here is a manual debug area which makes a pickle for debug purposes
     # Here is the test pickle that gets created for debugging (if commented)
@@ -214,13 +214,13 @@ def dump_main_data_out_to_post_exposure_subprocess(payload):
     #breakpoint()
 
 
-    post_processing_subprocess=subprocess.Popen(
-        ['python','subprocesses/post_exposure_subprocess.py'],
-        stdin=subprocess.PIPE,
-        stdout=None,
-        stderr=None,
-        bufsize=-1
-    )
+    # post_processing_subprocess=subprocess.Popen(
+    #     ['python','subprocesses/post_exposure_subprocess.py'],
+    #     stdin=subprocess.PIPE,
+    #     stdout=None,
+    #     stderr=None,
+    #     bufsize=-1
+    # )
 
     try:
         pickle.dump(payload, post_processing_subprocess.stdin)
@@ -4065,8 +4065,12 @@ class Camera:
                     os.umask(0)
                     os.makedirs(
                         self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
-                with open(pipetokenfolder + "/" + token_name, 'w') as f:
-                    json.dump(real_time_files, f, indent=2)
+                
+                try:
+                    with open(pipetokenfolder + "/" + token_name, 'w') as f:
+                        json.dump(real_time_files, f, indent=2)
+                except:
+                        plog(traceback.format_exc())
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
@@ -4475,6 +4479,16 @@ class Camera:
         if (not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing'):
 
             ######### Trigger off threads to wait for their respective files
+            
+            ## Spin up tha main post_processing_thread
+            post_processing_subprocess=subprocess.Popen(
+                ['python','subprocesses/post_exposure_subprocess.py'],
+                stdin=subprocess.PIPE,
+                stdout=None,
+                stderr=None,
+                bufsize=-1
+            )
+            
             # SMARTSTACK THREAD
             if (not frame_type.lower() in [
                 "bias",
@@ -5289,7 +5303,7 @@ class Camera:
 
                     # It actually takes a few seconds to spin up the main subprocess, so we farm this out to a thread
                     # So the code can continue more quickly to the next exposure.
-                    thread = threading.Thread(target=dump_main_data_out_to_post_exposure_subprocess, args=(payload,))
+                    thread = threading.Thread(target=dump_main_data_out_to_post_exposure_subprocess, args=(payload,post_processing_subprocess,))
                     thread.daemon = True
                     thread.start()
                     # dump_main_data_out_to_post_exposure_subprocess(payload)

@@ -850,6 +850,16 @@ try:
         print (corrected_ra_for_header * 15 )
         print (corrected_dec_for_header)
         print (next_seq)
+
+        # CHECK TEMP DIR ACTUALLY EXISTS
+        if not os.path.exists(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs):
+            os.makedirs(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs, mode=0o777)
+        
+        if not os.path.exists(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs'):
+            os.makedirs(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs', mode=0o777)
+        
+        if not os.path.exists(wcsfilepath):
+            os.makedirs(wcsfilepath, mode=0o777)
         
         try:
             platesolve_subprocess = subprocess.Popen(

@@ -563,6 +563,7 @@ class Sequencer:
 
         if do_normal_side_of_pier_later:
             g_dev['mnt'].go_command(alt=70,az= 90)
+            g_dev['obs'].sync_after_platesolving=True
             self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)
             
 

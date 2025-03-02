@@ -1,15 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This is the main platesolve sub-process for solving frames.
-
-Platesolving is relatively costly in time, so we don't solve each frame.
-It is also not necessary - the platesolve we do is FAST (for windows)
-but only spits out RA, Dec, Pixelscale and rotation. Which is actually all
-we need to monitor pointing and keep scopes dead on target.
-
-There is a windswept and interesting way that platesolve frames lead to
-slight nudges during observing, but they are all triggered from values
-from this subprocess...
+This is the main platesolve sub-process for solving frames for reduction purposes.
 
 """
 import sys
@@ -55,6 +46,53 @@ from astropy.stats import sigma_clip
 import subprocess
 from astropy.table import Table
 
+def save_xylist(astropy_table, output_filename="xylist.txt"):
+    """
+    Convert an Astropy Table with X_IMAGE, Y_IMAGE, and FLUX_AUTO columns
+    into a whitespace-separated XY list file for Astrometry.net.
+    
+    Parameters:
+    - astropy_table: Astropy Table containing 'X_IMAGE', 'Y_IMAGE', and 'FLUX_AUTO'.
+    - output_filename: Name of the output file (default: xylist.txt).
+    """
+    # Extract relevant columns
+    x = astropy_table['X_IMAGE']
+    y = astropy_table['Y_IMAGE']
+    flux = astropy_table['FLUX_AUTO']
+
+    # Write to file
+    with open(output_filename, "w") as f:
+        for xi, yi, fi in zip(x, y, flux):
+            f.write(f"{xi:.6f} {yi:.6f} {fi:.6f}\n")
+
+    print(f"XY list saved as {output_filename}")
+
+def save_sources_as_fits(astropy_table, output_filename="sources.fits"):
+    """
+    Convert an Astropy Table with X_IMAGE, Y_IMAGE, and FLUX_AUTO columns
+    into a FITS binary table with proper data types for Astrometry.net.
+
+    Parameters:
+    - astropy_table: Astropy Table containing 'X_IMAGE', 'Y_IMAGE', 'FLUX_AUTO'.
+    - output_filename: Name of the output FITS file (default: sources.fits).
+    """
+    # Ensure data types are compatible with FITS
+    x = np.array(astropy_table['X_IMAGE'], dtype=np.float32)  # Convert to float32
+    y = np.array(astropy_table['Y_IMAGE'], dtype=np.float32)  # Convert to float32
+    flux = np.array(astropy_table['FLUX_AUTO'], dtype=np.float32)  # Convert to float32
+
+    # Create FITS columns
+    col_x = fits.Column(name='X_IMAGE', format='E', array=x)  # 'E' = float32
+    col_y = fits.Column(name='Y_IMAGE', format='E', array=y)  # 'E' = float32
+    col_flux = fits.Column(name='FLUX_AUTO', format='E', array=flux)  # 'E' = float32
+
+    # Create a FITS binary table
+    hdu = fits.BinTableHDU.from_columns([col_x, col_y, col_flux])
+
+    # Save to file
+    hdu.writeto(output_filename, overwrite=True)
+    
+    print(f"Sources saved as {output_filename}")
 
 input_psolve_info=pickle.load(sys.stdin.buffer)
 #input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
@@ -85,8 +123,10 @@ if is_osc:
 
 
 # Check that the wcs directory is constructed
-
+#print ("HERE WE ARE")
 tempwcsdir=filepath.split('wcs')[0] + 'wcs'
+#print (filepath)
+#print (tempwcsdir)
 
 if not os.path.exists(tempwcsdir):
     os.makedirs(tempwcsdir, mode=0o777)
@@ -158,7 +198,14 @@ tempdir_in_wsl=tempdir_in_wsl.replace('\\','/')
 astoptions = '-c '+str(cwd_in_wsl)+'/subprocesses/photometryparams/default.sexfull -PARAMETERS_NAME ' + str(cwd_in_wsl)+'/subprocesses/photometryparams/default.paramastrom -CATALOG_NAME '+ str(tempdir_in_wsl + '/test.cat') + ' -SATUR_LEVEL 65535 -GAIN 1 -BACKPHOTO_TYPE LOCAL -DETECT_THRESH 1.5 -ANALYSIS_THRESH 1.5 -SEEING_FWHM 2.0 -FILTER_NAME ' + str(cwd_in_wsl)+'/subprocesses/photometryparams/sourceex_convs/gauss_2.0_5x5.conv'
 
 os.system('wsl --exec source-extractor ' + str(realwslfilename) + ' ' + astoptions  )
-    
+
+# Remove temporary fits file
+try:
+    os.remove(wslfilename)
+except:
+    pass
+
+
 # Read the ASCII catalog
 #ascii_catalog = ascii.read(tempdir+ "/test.cat", comment="#")
 acatalog = Table.read(tempdir+"/test.cat", format='ascii')
@@ -170,7 +217,13 @@ acatalog=acatalog[acatalog['FLUX_AUTO']/acatalog['FLUXERR_AUTO'] > 10]
 #breakpoint()
 # Write out to fits
 #ascii_catalog.write(tempdir+ "/test.fits", format="fits", overwrite=True)
-acatalog.write(tempdir+ "/test.fits", format="fits", overwrite=True)
+
+
+save_sources_as_fits(acatalog,tempdir+ "/test.fits")
+
+#acatalog.write(tempdir+ "/test.fits", format="fits", overwrite=True)
+
+
 
 fwhm_values = acatalog['FWHM_IMAGE']  # Extract FWHM values
 
@@ -253,16 +306,26 @@ os.system('wsl --exec mkdir /home/obs/wcstempfiles')
 #os.system('ls ' + str(tempdir_in_wsl))
 os.system('wsl --exec cp ' + str(tempdir_in_wsl + '/test.fits /home/obs/wcstempfiles/test' + str(nextseq) + '.fits'))
 
-print ('cp ' + str(tempdir_in_wsl + '/test.fits /home/obs/wcstempfiles/test' + str(nextseq) + '.fits'))
+#save_xylist(acatalog, tempdir + '/test' + str(nextseq) + '.txt')
+
+#print ('cp ' + str(tempdir_in_wsl + '/test.fits /home/obs/wcstempfiles/test' + str(nextseq) + '.fits'))
 
 #astoptions = 
-print ("wsl --exec solve-field /home/obs/wcstempfiles/test" + str(nextseq) + '.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots " )
+#print ("wsl --exec solve-field /home/obs/wcstempfiles/test" + str(nextseq) + '.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots " )
 
 # Try once with tweak-order 2   
 #os.system("/usr/local/astrometry/bin/solve-field -D " + str(tempdir) + " --use-source-extractor --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 90 --depth 1-100 --overwrite --no-verify --no-plots " + str(wslfilename))
-os.system("wsl --exec solve-field /home/obs/wcstempfiles/test" + str(nextseq) + '.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots " )
+#os.system("wsl --exec solve-field  /home/obs/wcstempfiles/test" + str(nextseq) + '.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots --skip-solve" )
+#os.system("/usr/bin/astrometry-engine /home/obs/wcstempfiles/test" + str(nextseq) + '.axy')
 
 
+#os.system("wsl --exec build-xylist -i " + tempdir_in_wsl + '/test' + str(nextseq) + '.txt -o ' + tempdir_in_wsl + '/test' + str(nextseq) + '.axy')
+
+os.system("wsl --exec solve-field  " + tempdir_in_wsl + '/test.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots --skip-solve" )
+
+
+
+sys.exit()
 #breakpoint()
 
 if os.path.exists(tempdir + '/test.wcs'):
@@ -273,7 +336,8 @@ if os.path.exists(tempdir + '/test.wcs'):
 else:
     # Try once with tweak-order 3    
     os.system("wsl --exec solve-field /home/obs/wcstempfiles/test" + str(nextseq) + '.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[1]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots " )
-    
+    os.system("/usr/bin/astrometry-engine /home/obs/wcstempfiles/test" + str(nextseq) + '.axy')
+
     if os.path.exists(tempdir + '/test.wcs'):
         print("A successful solve for " + wslfilename)
         # os.remove(wslfilename)
@@ -282,7 +346,8 @@ else:
     else:
         # Try once with tweak-order 4    
         os.system("wsl --exec solve-field /home/obs/wcstempfiles/test" + str(nextseq) + '.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (4) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots " )
-        
+        os.system("/usr/bin/astrometry-engine /home/obs/wcstempfiles/test" + str(nextseq) + '.axy')
+
         if os.path.exists(tempdir + '/test.wcs'):
             print("A successful solve for " + wslfilename)
             # os.remove(wslfilename)
