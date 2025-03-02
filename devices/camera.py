@@ -3568,7 +3568,7 @@ class Camera:
                         self.running_an_exposure_set = False
                         self.currently_in_smartstack_loop=False
                         self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
-                        return
+                        return 'stopcommand'
 
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
                     # Only do this check if a block end was provided.
@@ -3728,7 +3728,7 @@ class Camera:
                                                 self.write_out_realtimefiles_token_to_disk(
                                                     real_time_token, real_time_files)
                                                 self.running_an_exposure_set = False
-                                                return
+                                                return 'stopcommand'
 
                             if (bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type or a_dark_exposure) and not manually_requested_calibration:
 

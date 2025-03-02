@@ -3,7 +3,7 @@
 sequencer.py  sequencer.py  sequencer.py  sequencer.py  sequencer.py
 
 '''
-from devices.execute_project import execute_project_from_lco1
+from devices.execute_project import SchedulerObservation
 from devices.sequencer_helpers import is_valid_utc_iso
 from devices.sequencer_helpers import pointing_is_ok
 from devices.sequencer_helpers import validate_project_format
@@ -1368,7 +1368,8 @@ class Sequencer:
 
         # Run the project
         observation = json.loads(block_specification['project']['full_lco_observation'])
-        execute_project_from_lco1(observation, self.obs)
+        # execute_project_from_lco1(observation, self.obs)
+        SchedulerObservation(observation, self.obs).run()
 
         # Allow manual commands now that the project has completed
         self.block_guard = False

@@ -13,6 +13,7 @@ __pycache__
 sandbox/
 .vscode/
 .pylint
+CLAUDE.md
 
 .DS_Store
 support_info/Installers/WCSIndexFiles/Kepler.zip
