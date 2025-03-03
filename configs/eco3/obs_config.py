@@ -530,7 +530,7 @@ site_config = {
                'flipx_jpeg' : False,
                'flipy_jpeg' : False,
                'rotate180_jpeg' : False,
-               'rotate90_jpeg' : True,
+               'rotate90_jpeg' : False,
                'rotate270_jpeg' : False,
 
                # For large fields of view, crop the images down to solve faster.
@@ -643,14 +643,14 @@ site_config = {
 
 
                 'do_cosmics' : False,
-                'number_of_bias_to_collect' : 64,
-                'number_of_dark_to_collect' : 64,
-                'number_of_flat_to_collect' : 10,
-                'number_of_bias_to_store' : 64,
-                'number_of_dark_to_store' : 64,
-                'number_of_flat_to_store' : 64,
+                'number_of_bias_to_collect' : 128,
+                'number_of_dark_to_collect' : 128,
+                'number_of_flat_to_collect' : 128,
+                'number_of_bias_to_store' : 128,
+                'number_of_dark_to_store' : 128,
+                'number_of_flat_to_store' : 128,
 
-                'dark_exposure': 180,
+                'dark_exposure': 100,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",
