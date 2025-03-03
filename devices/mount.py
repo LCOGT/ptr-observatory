@@ -365,7 +365,8 @@ class Mount:
         self.settle_time_after_park = self.config['settle_time_after_park']
 
         self.refraction = 0
-        self.target_az = -500   #Degrees Azimuth
+        self.target_az = -500   #Degrees Azimuth    THESE ARE SO THE DOME CAN READ THIS FROM STATUS AND MOVE DOME AHEAD OF THE SCOPE
+        self.target_alt = -500  # Degrees Altitude  THE ALTITUDE IS IMPORTANT TO MAKE CORRECTIONS TO THE DOME AZIMUTH FOR DIFFERENT SIDES OF THE PIER.
         self.ha_corr = 0
         self.dec_corr = 0
         self.seek_commanded = False
@@ -1146,18 +1147,21 @@ class Mount:
                                 if self.unpark_requested:
                                     self.unpark_requested=False
                                     self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
+                                    self.target_alt=-500
                                     self.mount_update_wincom.Unpark()
                                     self.rapid_park_indicator=False
 
                                 if self.park_requested:
                                     self.park_requested=False
                                     self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
+                                    self.target_alt=-500
                                     self.mount_update_wincom.Park()
                                     self.rapid_park_indicator=True
 
                                 if self.find_home_requested:
                                     self.find_home_requested=False
                                     self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
+                                    self.target_alt=-500
                                     if self.mount_update_wincom.AtHome:
                                         plog("Mount is at home.")
                                     else:
@@ -1198,6 +1202,7 @@ class Mount:
                                     # obs_azimuth = altaz_coords.az.deg
                                     
                                     self.target_az=altaz_coords.az.deg
+                                    self.target_alt=altaz_coords.alt.deg
                                     self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                                     self.currently_slewing=True
 
@@ -1260,6 +1265,7 @@ class Mount:
                                     self.request_find_home=False
                                     try:
                                         self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
+                                        self.target_alt=-500
                                         self.mount_update_wincom.FindHome()
                                     except:
                                         plog("Perhaps Mount cannot find home?")
@@ -1273,6 +1279,7 @@ class Mount:
                                             ra = altazskycoord.icrs.ra.deg /15
                                             dec = altazskycoord.icrs.dec.deg
                                             self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
+                                            self.target_alt=-500
                                             self.mount_update_wincom.SlewToCoordinatesAsync(ra , dec)
                                             self.currently_slewing=True
 
@@ -1431,7 +1438,8 @@ class Mount:
             
                 #dome_azimuth= GET FROM wema
                 dome_timeout_timer=time.time()
-                while abs(obs_azimuth - dome_azimuth) > 5 and time.time() - dome_timeout_timer < 300 and not self.rapid_park_indicator:
+                dome_open_or_opening=True
+                while abs(obs_azimuth - dome_azimuth) > 5 and time.time() - dome_timeout_timer < 300 and not self.rapid_park_indicator and dome_open_or_opening:
                     
                     #plog ("making sure dome is positioned correct.")
                     rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
@@ -1444,6 +1452,7 @@ class Mount:
                     try:
                         wema_enclosure_status=requests.get(uri_status, timeout=20)
                         dome_azimuth=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_azimuth']['val']
+                        dome_open_or_opening=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['shutter_status']['val'] in ['Open', 'open','Opening','opening']
                     except:
                         plog ("Some error in getting the wema_enclosure")
                         
@@ -1652,6 +1661,7 @@ class Mount:
                 'pier_side_str': self.pier_side_str,
                 'azimuth': round(az, 3),
                 'target_az': round(self.target_az, 3),
+                'target_alt' : round(self.target_alt,3),
                 'altitude': round(alt, 3),
                 'is_parked': self.rapid_park_indicator,
                 'is_tracking': self.current_tracking_state,
@@ -1740,6 +1750,7 @@ class Mount:
             'tracking_declination_rate': decr_avg,
             'azimuth':  az_avg,
             'target_az': round(self.target_az, 3),
+            'target_alt' : round(self.target_alt,3),
             'altitude': alt_avg,
             'zenith_distance': zen_avg,
             'airmass': air_avg,

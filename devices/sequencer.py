@@ -3590,17 +3590,17 @@ class Sequencer:
             if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                                                
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
 
-            filepathaws=g_dev['obs'].calib_masters_folder
-            filenameaws=tempfrontcalib + 'badpixelmask_bin1.fits'
-            g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
+            # filepathaws=g_dev['obs'].calib_masters_folder
+            # filenameaws=tempfrontcalib + 'badpixelmask_bin1.fits'
+            # g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
 
             # Store a version of the flat for the archive too
             if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:                    
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1, overwrite=True)
 
-            filepathaws=g_dev['obs'].calib_masters_folder
-            filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
-            g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+            #filepathaws=g_dev['obs'].calib_masters_folder
+            #filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
+            #g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
             if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                 g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', copy.deepcopy( bad_pixel_mapper_array)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
             try:

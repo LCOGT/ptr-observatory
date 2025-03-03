@@ -727,7 +727,8 @@ class Observatory:
         self.update_status_thread.start()
 
         # # Initialisation complete!
-        # while True:
+        # bias_timer=time.time()
+        # while time.time()-bias_timer < 28800:
         #     g_dev['seq'].bias_dark_script(morn=True)
 
 

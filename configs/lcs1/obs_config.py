@@ -99,7 +99,7 @@ site_config = {
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
     # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
-    'save_raw_to_disk': True,
+    'save_raw_to_disk': False,
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': False,
     'keep_focus_images_on_disk': False,  # To save space, the focus file can not be saved.   
@@ -502,7 +502,7 @@ site_config = {
                 # something bad happens with 3 for some reason
                 #
                 # In that sense, QHY600 NEEDS to be set at GAIN 26, Mode 1, offset 30 and the only thing to adjust is the offset.....
-                # The QHY268 is gain 56, mode 1, offse
+                # The QHY268 is gain 56, mode 1, offset 30
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
                 #
