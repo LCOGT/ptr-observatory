@@ -150,7 +150,7 @@ class SiteProxy:
             print("Cannot update configuration status; missing env variables needed to connect to the site proxy.")
             return None
 
-        endpoint = f'{self.base_url}/api/configurationstatus/{config_status_id}'
+        endpoint = f'{self.base_url}/observation-portal/api/configurationstatus/{config_status_id}'
         request_body = {
             "state": state,
         }
