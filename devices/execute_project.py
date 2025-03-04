@@ -158,7 +158,7 @@ class SiteProxy:
             request_body["summary"] = summary
 
         try:
-            return self.session.patch(endpoint, request_body)
+            return self.session.patch(endpoint, data=json.dumps(request_body))
         except requests.exceptions.RequestException as e:
             print(f"Error updating configuration status: {e}")
             return None
