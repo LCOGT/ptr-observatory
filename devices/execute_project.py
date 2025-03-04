@@ -14,6 +14,15 @@ def timestamp_to_LCO_datestring(t):
 
 
 def configdb_instrument_mapping_passes_validation(site_config) -> bool:
+    """
+    Validates that the configdb_instrument_mapping in the site config is properly configured.
+
+    Args:
+        site_config: The site configuration dictionary
+
+    Returns:
+        bool: True if the mapping is valid, False otherwise
+    """
     if 'configdb_instrument_mapping' not in site_config:
         print('WARNING: tried to validate the configdb mapping in the site config but it was missing.')
         return False
@@ -50,7 +59,16 @@ def configdb_instrument_mapping_passes_validation(site_config) -> bool:
 
 
 def get_devices_for_configuration(configuration: dict, observatory) -> dict:
-    """ Return a dict with the device of each type to use in an observation request's configuration """
+    """
+    Return a dict with the device of each type to use in an observation request's configuration
+
+    Args:
+        configuration: The configuration dictionary from the observation request
+        observatory: The observatory object
+
+    Returns:
+        dict: A dictionary mapping device types to device objects
+    """
     o = observatory # less typing
     site_config = o.config
     instrument_type = configuration['instrument_type']
@@ -73,7 +91,7 @@ def get_devices_for_configuration(configuration: dict, observatory) -> dict:
         return devices
     # Use default devices if the mapping is missing the configdb instrument specified in this observation
     elif instrument_name not in site_config['configdb_instrument_mapping']:
-        print('WARNING: configdb_instrument_mapping is missing instrument {instrument_name}, which we need for the current observation')
+        print(f'WARNING: configdb_instrument_mapping is missing instrument {instrument_name}, which we need for the current observation')
         print('Reverting to use default devices, which might make this observation a waste of time.')
         print('This should be an easy fix: add the configdb_instrument_mapping to the site config with correct devices specified')
         return devices
@@ -82,11 +100,17 @@ def get_devices_for_configuration(configuration: dict, observatory) -> dict:
         configdb_mapping = site_config['configdb_instrument_mapping'][instrument_name]
         devices['camera'] = o.device_by_name[configdb_mapping['camera']]
         devices['mount'] = o.device_by_name[configdb_mapping['mount']]
-        devices['filterwheel'] = o.device_by_name[configdb_mapping['filter_wheel']]
+        devices['filter_wheel'] = o.device_by_name[configdb_mapping['filter_wheel']]
         devices['focuser'] = o.device_by_name[configdb_mapping['focuser']]
     return devices
 
 class SiteProxy:
+    """
+    A class to handle communication with the site proxy service.
+    Manages configuration status updates for scheduled observations.
+    """
+    VALID_STATES = ['COMPLETED', 'FAILED', 'NOT_ATTEMPTED']
+
     def __init__(self):
         self.site_proxy_offline = False
         if 'SITE_PROXY_BASE_URL' not in os.environ:
@@ -103,24 +127,41 @@ class SiteProxy:
         self.session.headers.update({'Authorization': os.getenv('SITE_PROXY_TOKEN')})
 
     def _is_valid_timestamp(self, s):
-        """ Ensure that dates are formatted to match YYYY-mm-ddThh:mm:ss.sss
-        Works with a single string input or an array of date strings"""
+        """
+        Ensure that dates are formatted to match YYYY-mm-ddThh:mm:ss.sss
+        Works with a single string input or an array of date strings
+
+        Returns:
+            bool: True if all timestamps are valid, False otherwise
+        """
         pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$"
         if isinstance(s, list):
             return all(re.match(pattern, ts) for ts in s)
         return bool(re.match(pattern, s))
 
     def _update_configuration_status(self, config_status_id, state, summary=None):
+        """
+        Send an update to the site proxy about a configuration's status
+
+        Returns:
+            Response object or None if site proxy is offline
+        """
         if self.site_proxy_offline:
             print("Cannot update configuration status; missing env variables needed to connect to the site proxy.")
-            return
+            return None
+
         endpoint = f'{self.base_url}/api/configurationstatus/{config_status_id}'
         request_body = {
             "state": state,
         }
         if summary:
             request_body["summary"] = summary
-        return self.session.patch(endpoint, request_body)
+
+        try:
+            return self.session.patch(endpoint, request_body)
+        except requests.exceptions.RequestException as e:
+            print(f"Error updating configuration status: {e}")
+            return None
 
     def update_configuration_start(self, config_status_id):
         """ Update the status of a configuration when observing is started."""
@@ -128,7 +169,8 @@ class SiteProxy:
         return response
 
     def update_configuration_end(self, config_status_id, state, start, end, time_completed, reason="", events={}):
-        """ Update the status of a configuration when observing is finished.
+        """
+        Update the status of a configuration when observing is finished.
 
         Args:
             - config_status_id (str): the id for the configuration_status we are updating.
@@ -142,14 +184,13 @@ class SiteProxy:
             - events (json): optional, not sure what this is for
 
         Returns:
-            dict: response from the site proxy request
-
+            dict: response from the site proxy request or None if request failed
         """
-        if state not in ['COMPLETED', 'FAILED', 'NOT_ATTEMPTED']:
+        if state not in self.VALID_STATES:
             print(f'WARNING: invalid state given to update the configuration {config_status_id}.')
-            print(f'Recieved {state}, but must be one of COMPLETED, FAILED, or NOT_ATTEMPTED.')
+            print(f'Received {state}, but must be one of {", ".join(self.VALID_STATES)}.')
         if not self._is_valid_timestamp([start, end]):
-            print(f'WARNGING: not all timestamps in {[start, end]} are formatted correctly for configuration status update.')
+            print(f'WARNING: not all timestamps in {[start, end]} are formatted correctly for configuration status update.')
         summary = {
             "state": state,
             "start": start,
@@ -163,6 +204,8 @@ class SiteProxy:
 
 class SchedulerObservation:
     """
+    Handles execution of scheduled observations from the LCO system.
+
     Assumptions:
     - "type" is "EXPOSE" or "REPEAT_EXPOSE"
     - "guiding_config" is ignored in favor of smartstacks/substacks
@@ -179,13 +222,13 @@ class SchedulerObservation:
     - stays focused
     """
 
-    def __init__(self, observation, observatory):
+    def __init__(self, observation: dict, observatory) -> None:
         self.observation = observation
         self.o = observatory
 
         self.submitter_id = observation['submitter']
 
-        # This tracks how much time has been observerved for each configuration
+        # This tracks how much time has been observed for each configuration
         # We use the configuration status id as the key because we need to
         # differentiate between the same config running multiple times from the
         # configuration_repeat setting.
@@ -194,7 +237,16 @@ class SchedulerObservation:
             self.configuration_time_tracker[c['configuration_status']] = 0 # init with 0 seconds observed
 
 
-    def _go_to_target(self, mount_device, target, offset_ra=0, offset_dec=0):
+    def _go_to_target(self, mount_device, target: dict, offset_ra: float = 0, offset_dec: float = 0) -> None:
+        """
+        Slew to the target coordinates, applying any offsets
+
+        Args:
+            mount_device: The mount device to use for slewing
+            target: Dictionary containing target coordinates and other info
+            offset_ra: Offset in right ascension (hours)
+            offset_dec: Offset in declination (degrees)
+        """
         if target['type'] != "ICRS":
             print(f'Unsupported target type: {target["type"]}')
             return
@@ -210,11 +262,30 @@ class SchedulerObservation:
         print(f'Slewing to ra {corrected_ra}, dec {corrected_dec}')
         mount_device.go_command(ra=corrected_ra, dec=corrected_dec, objectname=target.get('name'))
 
-    def _do_defocus(self, focuser_device, amount):
+    # Note: Defocus functionality not implemented, kept for API compatibility
+    def _do_defocus(self, focuser_device, amount: float) -> None:
+        """
+        Placeholder for defocus functionality (not implemented)
+        """
         print(f'simulating defocus of {amount}')
         return
 
-    def _take_exposure(self, camera_device, filter_wheel_device, time, filter_name, smartstack=True, substack=True):
+    def _take_exposure(self, camera_device, filter_wheel_device, time: float, filter_name: str,
+                      smartstack: bool = True, substack: bool = True) -> dict:
+        """
+        Take an exposure with the specified parameters
+
+        Args:
+            camera_device: The camera device to use
+            filter_wheel_device: The filter wheel device to use
+            time: Exposure time in seconds
+            filter_name: Name of the filter to use
+            smartstack: Whether to use smartstack
+            substack: Whether to use substack
+
+        Returns:
+            dict: Result of the expose command
+        """
         required_params = {
             'time': time,
             'image_type': 'light',
@@ -235,12 +306,46 @@ class SchedulerObservation:
             skip_daytime_check=True,
         )
 
-    def _is_valid_config(self, config):
-        # validate configuration
-        print('simulating config validation (return True)')
+    def _is_valid_config(self, config: dict) -> bool:
+        """
+        Validate that a configuration is properly formed and can be executed
+
+        Args:
+            config: The configuration to validate
+
+        Returns:
+            bool: True if the configuration is valid, False otherwise
+        """
+        # Basic validation checks
+        required_keys = ['type', 'target', 'instrument_configs', 'configuration_status']
+        for key in required_keys:
+            if key not in config:
+                print(f"Configuration missing required key: {key}")
+                return False
+
+        # Validate the configuration type
+        if config['type'] not in ['EXPOSE', 'REPEAT_EXPOSE']:
+            print(f"Unsupported configuration type: {config['type']}")
+            return False
+
+        # Validate instrument configs
+        if not config['instrument_configs'] or not isinstance(config['instrument_configs'], list):
+            print("Configuration must have at least one instrument_config")
+            return False
+
+        # Other validation checks could be added here
+
         return True
 
-    def _do_configuration(self, configuration, devices, siteproxy):
+    def _do_configuration(self, configuration: dict, devices: dict, siteproxy: SiteProxy) -> None:
+        """
+        Execute a single configuration
+
+        Args:
+            configuration: The configuration to execute
+            devices: Dictionary of devices to use
+            siteproxy: The site proxy for status updates
+        """
         configuration_start_time = time.time()
         config_status_id = configuration['configuration_status']
         siteproxy.update_configuration_start(config_status_id)
@@ -258,15 +363,9 @@ class SchedulerObservation:
             for index, ic in enumerate(configuration['instrument_configs']):
                 print(f'starting instrument config #{index + 1} of {len(configuration["instrument_configs"])}')
                 self._do_instrument_config(ic, configuration, devices, exposure_sequence_done)
+
             # After configuration is done: report config status and return
-            start = timestamp_to_LCO_datestring(configuration_start_time)
-            end = timestamp_to_LCO_datestring(time.time())
-            state = "COMPLETED"
-            time_completed = self.configuration_time_tracker[config_status_id]
-            siteproxy.update_configuration_end(config_status_id, state, start, end, time_completed)
-            total_requested_time = sum([ic['exposure_count'] * ic['exposure_time'] for ic in configuration['instrument_configs']])
-            completed_percent = round(100 * time_completed / total_requested_time, 1)
-            print(f'Configuration complete. Observed {time_completed}s of {total_requested_time}s, or {completed_percent}%')
+            self._report_configuration_completion(configuration, configuration_start_time, siteproxy)
             return
 
         if config_type == "REPEAT_EXPOSE":
@@ -276,11 +375,8 @@ class SchedulerObservation:
                     print(f'type == REPEAT_EXPOSE, so we will continue looping over all instrument configs.')
                     print(f'remaining time for REPEAT_EXPOSE is {end_time - time.time()} seconds')
                     self._do_instrument_config(ic, configuration, devices, exposure_sequence_done)
-            start = timestamp_to_LCO_datestring(configuration_start_time)
-            end = timestamp_to_LCO_datestring(time.time())
-            state = "COMPLETED"
-            time_completed = self.configuration_time_tracker[config_status_id]
-            siteproxy.update_configuration_end(config_status_id, state, start, end, time_completed)
+
+            self._report_configuration_completion(configuration, configuration_start_time, siteproxy)
             return
 
         # If unknown config type: report status and return
@@ -292,6 +388,28 @@ class SchedulerObservation:
         reason = f'Unsupported configuration type {config_type}'
         siteproxy.update_configuration_end(config_status_id, state, start, end, time_completed, reason)
         return
+
+    def _report_configuration_completion(self, configuration: dict, start_time: float, siteproxy: SiteProxy) -> None:
+        """
+        Report the completion of a configuration to the site proxy
+
+        Args:
+            configuration: The completed configuration
+            start_time: When the configuration started (timestamp)
+            siteproxy: The site proxy for status updates
+        """
+        config_status_id = configuration['configuration_status']
+        start = timestamp_to_LCO_datestring(start_time)
+        end = timestamp_to_LCO_datestring(time.time())
+        state = "COMPLETED"
+        time_completed = self.configuration_time_tracker[config_status_id]
+        siteproxy.update_configuration_end(config_status_id, state, start, end, time_completed)
+
+        # Calculate and display completion statistics
+        total_requested_time = sum([ic['exposure_count'] * ic['exposure_time']
+                                   for ic in configuration['instrument_configs']])
+        completed_percent = round(100 * time_completed / total_requested_time, 1)
+        print(f'Configuration complete. Observed {time_completed}s of {total_requested_time}s, or {completed_percent}%')
 
 
     def _do_instrument_config(self, ic, config, devices, exposure_sequence_done: Callable[[], bool]) -> None:
@@ -343,4 +461,3 @@ class SchedulerObservation:
             else:
                 print('Config failed validation. Skipping.')
         print(f'OBSERVATION COMPLETE\n\n')
-
