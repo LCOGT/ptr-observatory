@@ -752,7 +752,9 @@ class Sequencer:
 
                 self.sync_and_refocus()
 
-            if  ((events['Observing Begins'] <= ephem_now < events['Observing Ends']) and
+            # TB override the daytime check here; remove the `True or` before merging
+            if  (True or
+                 (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and
                  not self.block_guard and
                  not g_dev["cam"].running_an_exposure_set and
                  (time.time() - self.project_call_timer > 10) and
@@ -774,6 +776,7 @@ class Sequencer:
                     self.update_calendar_blocks(start_time=datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
 
                     # only need to bother with the rest if there is more than 0 blocks.
+                    print('self.blocks length: ', len(self.blocks))
                     if not len(self.blocks) > 0:
                         self.block_guard=False
                         self.blockend= None
@@ -821,6 +824,7 @@ class Sequencer:
                                     plog ("Skipping a block that contains an empty project")
 
                                 elif identified_block['project'] != None:
+                                    print('project pointing is ok: ', pointing_is_ok(identified_block, self.config))
                                     if pointing_is_ok(identified_block, self.config):
                                         #TB
                                         # Temporary branch to handle the two different types of projects
@@ -829,11 +833,6 @@ class Sequencer:
                                             completed_block = self.execute_project_from_lco(identified_block)
                                         else:
                                             completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
-                                            try:
-                                                self.append_completes(completed_block['event_id'])
-                                            except:
-                                                plog ("block complete append didn't work")
-                                                plog(traceback.format_exc())
                                         #TB
                                         # Ignore this for now for testing purposes.
                                         # Maybe even long timer, if the scheduler is handling completion.
@@ -848,9 +847,11 @@ class Sequencer:
                                 else:
                                     plog ("Something didn't work, cancelling out of doing this project and putting it in the completes pile.")
                                     plog (block)
+                                    #TB
+                                    # Temporarily ignore the 'completes pile' whle developing
                                     plog('Skipping putting the project in the completes pile for development')
-                                    self.append_completes(block['event_id'])
-                                    self.blockend = None
+                                    # self.append_completes(block['event_id'])
+                                    # self.blockend = None
 
                 except:
                     plog(traceback.format_exc())
@@ -1180,6 +1181,19 @@ class Sequencer:
         return
 
     #TB helper functions
+    def rotate_to_position_angle(self, angle, wait=False):
+        try:
+            g_dev['rot'].rotator.MoveAbsolute(angle)
+            plog(f'Rotator move to angle:{angle} requested.')
+            if wait:
+                self.wait_for_rotator(msg='Rotator is moving...')
+                plog(f'Rotator move to angle:{angle} complete.')
+            else:
+                plog('Moving on without waiting for rotator to finish moving.')
+        except:
+            plog('Rotator failed to move as requested; continuing anyways')
+        return
+
     def check_if_results_indicate_block_end(self, result):
         """ Check for a block-terminating condition from the result of a command.
         Possible conditions: block finished, no current calendar res, roof shut, not night.
@@ -1261,6 +1275,63 @@ class Sequencer:
         return False
 
 
+    def execute_lco_observation(self, observation):
+        start = observation['start']
+        end = observation['end']
+        observation_metadata = {
+            'observation_name': observation['name'],
+            'submitter': observation['submitter'],
+            'proposal': observation['proposal'],
+            'id': observation['id'],
+            'request_group_id': observation['request_group_id'],
+        }
+
+        for config in observation['request']['configurations']:
+
+            corrected_coords = compute_target_coordinates(config['target'])
+            target_ra = corrected_coords['ra']
+            target_dec = corrected_coords['dec']
+            target_name = config['target']['name']
+
+            for inst_config in config['instrument_configs']:
+
+                # Do I need to do anything for mount pointing besides the go_command?
+                # Do I need to home the rotator before moving it to a position?
+
+                # Slew mount to target with offsets, then start tracking
+                offset_ra = inst_config['extra_params']['offset_ra']
+                offset_dec = inst_config['extra_params']['offset_dec']
+                g_dev['mnt'].go_command(ra=target_ra + offset_ra, dec=target_dec + offset_dec)
+                g_dev['mnt'].set_tracking_on()
+
+                # Move rotator to requested position angle
+                rotator_angle = inst_config['extra_params']['rotator_angle']
+                self.rotate_to_position_angle(rotator_angle, wait=True)
+
+
+                # Exposure info
+                required_params = {
+                    'time': inst_config['exposure_time'],
+                    'image_type': config['type'],
+                    'smartstack': config['extra_params'].get('smartstack', True),
+                    'substack': config['extra_params'].get('substack', True),
+                }
+                optional_params = {
+                    'count': inst_config['exposure_count'],
+                    'filter': inst_config['optical_elements']['filter'],
+                    'object_name': config['target']['name'],
+                    'zoom': inst_config['mode'],
+                }
+
+                exposure_command_result = g_dev['cam'].expose_command(
+                    required_params,
+                    optional_params,
+                    user_name=observation_metadata['submitter'],
+                    user_id=observation_metadata['submitter'],
+                    user_roles='system',
+                    observation_metadata=observation_metadata
+                )
+
 
 
     #TB
@@ -1269,6 +1340,11 @@ class Sequencer:
     # - add rotation from each exposure
     def execute_project_from_lco(self, block_specification):
         """
+
+        # Unknowns:
+        # When to center?
+        # When to autofocus?
+
         # Assumptions:
         # "type" is "EXPOSE" or "REPEAT_EXPOSE"
         # "guiding_config" is ignored in favor of smartstacks/substacks
@@ -1278,12 +1354,21 @@ class Sequencer:
 
         """
 
+        # TB
+        # if ( ephem.now() < g_dev['events']['Civil Dusk'] ) or \
+        #     (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
+        #     plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
+        #     plog ("WARNING: the lco scheduler assigned this observation. It should already avoid bad observing times so make sure we're not incorrectly blocking anything.")
+        #     g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")
+        #     return block_specification     #Added wer 20231103
+
         # Protect from manual commands interferring
         self.block_guard = True
         self.total_sequencer_control= True
 
         # Run the project
         observation = json.loads(block_specification['project']['full_lco_observation'])
+        # execute_project_from_lco1(observation, self.obs)
         SchedulerObservation(observation, self.obs).run()
 
         # Allow manual commands now that the project has completed
