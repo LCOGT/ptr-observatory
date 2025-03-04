@@ -199,11 +199,7 @@ astoptions = '-c '+str(cwd_in_wsl)+'/subprocesses/photometryparams/default.sexfu
 
 os.system('wsl --exec source-extractor ' + str(realwslfilename) + ' ' + astoptions  )
 
-# Remove temporary fits file
-try:
-    os.remove(wslfilename)
-except:
-    pass
+
 
 
 # Read the ASCII catalog
@@ -302,9 +298,9 @@ else:
     tweakorder=[2,3]
     
 
-os.system('wsl --exec mkdir /home/obs/wcstempfiles')
+#os.system('wsl --exec mkdir /home/obs/wcstempfiles')
 #os.system('ls ' + str(tempdir_in_wsl))
-os.system('wsl --exec cp ' + str(tempdir_in_wsl + '/test.fits /home/obs/wcstempfiles/test' + str(nextseq) + '.fits'))
+#os.system('wsl --exec cp ' + str(tempdir_in_wsl + '/test.fits /home/obs/wcstempfiles/test' + str(nextseq) + '.fits'))
 
 #save_xylist(acatalog, tempdir + '/test' + str(nextseq) + '.txt')
 
@@ -321,9 +317,20 @@ os.system('wsl --exec cp ' + str(tempdir_in_wsl + '/test.fits /home/obs/wcstempf
 
 #os.system("wsl --exec build-xylist -i " + tempdir_in_wsl + '/test' + str(nextseq) + '.txt -o ' + tempdir_in_wsl + '/test' + str(nextseq) + '.axy')
 
-os.system("wsl --exec solve-field  " + tempdir_in_wsl + '/test.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots --skip-solve" )
+#os.system("wsl --exec solve-field  " + tempdir_in_wsl + '/test.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots --skip-solve" )
+
+astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(pixlow) + ' --scale-high ' + str(pixhigh) + ' --ra ' + str(RAest) + ' --dec ' + str(DECest) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots'
+
+print (astoptions)
+
+os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
 
 
+# Remove temporary fits file
+try:
+    os.remove(wslfilename)
+except:
+    pass
 
 sys.exit()
 #breakpoint()
