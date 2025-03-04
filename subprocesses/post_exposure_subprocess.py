@@ -835,9 +835,10 @@ try:
 ##########################################
 
 
-    #################### HERE IS WHERE PLATESOLVE IS SENT OFF
+    #################### HERE IS WHERE FULLY REDUCED PLATESOLVE IS SENT OFF
+    ##### THIS IS CURRENTLY IN CONSTRUCTION, MOST SITES THIS IS NOT ENABLED.
     
-    if not pixscale == None: # or np.isnan(pixscale):
+    if not pixscale == None and selfconfig['fully_platesolve_images_at_site_rather_than_pipe']: # or np.isnan(pixscale):
         
     
     

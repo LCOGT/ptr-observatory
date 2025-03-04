@@ -79,6 +79,17 @@ site_config = {
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     'pipe_archive_folder_path': 'Z:/',  #WER changed Z to X 20231113 @1:16 UTC
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'C:/tempfolderforpipeline',
+
+
+    # The site can fully platesolve each image before it is sent off to s3 or a PIPE
+    # If there are spare enough cycles at the site, this saves time for the PIPE
+    # to concentrate on more resource heavy reductions. 
+    # Also leads to fully platesolved reduced images on the local site computer
+    # Usually set this to True
+    # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
+    'fully_platesolve_images_at_site_rather_than_pipe' : False,
+
+
     # Setup of folders on local and network drives.
     'client_hostname':  'ECO-0m28-OSC',
     'archive_path':  'C:/ptr/',
