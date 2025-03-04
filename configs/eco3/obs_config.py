@@ -642,7 +642,14 @@ site_config = {
                 'dither_enabled':  True,      #Set this way for tracking testing
 
 
-                'do_cosmics' : False,
+
+                'do_cosmics' : True,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
+                
+ 
                 'number_of_bias_to_collect' : 128,
                 'number_of_dark_to_collect' : 128,
                 'number_of_flat_to_collect' : 128,
@@ -651,6 +658,7 @@ site_config = {
                 'number_of_flat_to_store' : 128,
 
                 'dark_exposure': 100,
+
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",

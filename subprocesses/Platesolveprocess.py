@@ -237,11 +237,11 @@ print ("Pixelscale")
 print (pixscale)
 
 
-# Check we are working in unit16
-if not hdufocusdata.dtype == np.uint16:
-    raised_array=hdufocusdata - np.nanmin(hdufocusdata)
-    hdufocusdata = np.maximum(raised_array,0).astype(np.uint16)
-    del raised_array
+# # Check we are working in unit16
+# if not hdufocusdata.dtype == np.uint16:
+#     raised_array=hdufocusdata - np.nanmin(hdufocusdata)
+#     hdufocusdata = np.maximum(raised_array,0).astype(np.uint16)
+#     del raised_array
 
 
 

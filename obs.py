@@ -3023,7 +3023,7 @@ class Observatory:
                             platesolve_crop = 0.0
 
                             # yet another pickle debugger.
-                            if True:
+                            if False:
                                 pickle.dump(
                                     [
                                         hdufocusdata,
