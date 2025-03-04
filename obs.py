@@ -644,6 +644,7 @@ class Observatory:
                 pass
 
         # Report filter throughputs as part of bootup
+
         filter_throughput_shelf = shelve.open(
             self.obsid_path
             + "ptr_night_shelf/"
@@ -656,7 +657,7 @@ class Observatory:
             plog("Looks like there is no filter throughput shelf.")
         else:
             #First lts sort this shelf for lowest to highest throughput.
-            #breakpoint()
+            #breakpoint()  filter_thoughput_shelf['S2']  or ]=10, then close
             #filter_throughput_shelf = dict(sorted(filter_throughput_shelf.items(), key=lambda item: item[1], reverse=False)
             plog("Stored filter throughputs")
             for filtertempgain in list(filter_throughput_shelf.keys()):
@@ -665,6 +666,7 @@ class Observatory:
                     + " "
                     + str(filter_throughput_shelf[filtertempgain])
                 )
+
         filter_throughput_shelf.close()
 
         # Boot up filter offsets
@@ -725,7 +727,8 @@ class Observatory:
         self.update_status_thread.start()
 
         # # Initialisation complete!
-        # while True:
+        # bias_timer=time.time()
+        # while time.time()-bias_timer < 28800:
         #     g_dev['seq'].bias_dark_script(morn=True)
 
 
@@ -1583,7 +1586,7 @@ class Observatory:
                                                 "mnt"
                                             ].return_declination()
                                             self.devices["mount"].slew_async_directly(
-                                                ra=meridianra, dec=meridiandec
+                                                ra=meridianra, dec=meridiandec, wait_for_dome_after_direct_slew=False
                                             )
                                             plog("Meridian Probe")
 
@@ -2947,7 +2950,7 @@ class Observatory:
                     timeout_time = 800# + exposure_time + \
                         #self.devices["main_cam"].readout_time
                 else:
-                    timeout_time = 180# + exposure_time + \
+                    timeout_time = 60# + exposure_time + \
                         #self.devices["main_cam"].readout_time
 
                 platesolve_timeout_timer = time.time()
@@ -3293,10 +3296,17 @@ class Observatory:
 
 
                                 if self.sync_after_platesolving:
-                                    plog("Syncing mount after this solve")
+                                    if (
+                                        abs(err_ha * 15 * 3600)
+                                        < self.worst_potential_pointing_in_arcseconds
+                                    ) and (
+                                        abs(err_dec * 3600)
+                                        < self.worst_potential_pointing_in_arcseconds
+                                    ):
+                                        plog("Syncing mount after this solve")
 
-                                    self.devices["mount"].sync_to_pointing(
-                                        solved_ra, solved_dec)
+                                        self.devices["mount"].sync_to_pointing(
+                                            solved_ra, solved_dec)
                                     self.pointing_correction_requested_by_platesolve_thread = (
                                         False
                                     )
@@ -3556,24 +3566,24 @@ class Observatory:
                             overwrite=True,
                         )
 
-                    if slow_process[0] == "fits_file_save_and_UIqueue":
-                        fits.writeto(
-                            slow_process[1],
-                            slow_process[2],
-                            temphduheader,
-                            overwrite=True,
-                        )
-                        filepathaws = slow_process[4]
-                        filenameaws = slow_process[5]
-                        if "ARCHIVE_" in filenameaws:
-                        #     self.enqueue_for_PTRarchive(
-                        #         100000000000000, filepathaws, filenameaws
+                    # if slow_process[0] == "fits_file_save_and_UIqueue":
+                    #     fits.writeto(
+                    #         slow_process[1],
+                    #         slow_process[2],
+                    #         temphduheader,
+                    #         overwrite=True,
+                    #     )
+                    #     filepathaws = slow_process[4]
+                    #     filenameaws = slow_process[5]
+                        # if "ARCHIVE_" in filenameaws:
+                        # #     self.enqueue_for_PTRarchive(
+                        # #         100000000000000, filepathaws, filenameaws
+                        # #     )
+                        #     pass # skipping ingesting archive calibrations. Won't need the later one either eventually
+                        # else:
+                        #     self.enqueue_for_calibrationUI(
+                        #         50, filepathaws, filenameaws
                         #     )
-                            pass # skipping ingesting archive calibrations. Won't need the later one either eventually
-                        else:
-                            self.enqueue_for_calibrationUI(
-                                50, filepathaws, filenameaws
-                            )
 
                     if slow_process[0] == "localcalibration":
                         saver = 0
@@ -3708,7 +3718,7 @@ class Observatory:
                                         temp_file_type='flat'
                                     elif 'bias' in file_type:
                                         temp_file_type='bias'
-                                        
+
                                     max_files = self.devices['main_cam'].settings.get(f"number_of_{temp_file_type}_to_store", 64)
 
                                     exclude_pattern = "tempbiasdark" if "dark" in file_type else "tempcali" if "flat" in file_type else None

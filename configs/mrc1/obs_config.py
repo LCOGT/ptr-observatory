@@ -146,6 +146,9 @@ site_config = {
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': True,
     'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.
+    # These are options to minimise diskspace for calibrations
+    'produce_fits_file_for_final_calibrations': True,
+    'save_archive_versions_of_final_calibrations' : False, 
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
     # Number of files to send up to the ptrarchive simultaneously.
@@ -856,7 +859,7 @@ site_config = {
                 # If you have a higher resolution pixelscale it will use that instead.
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.
-                'drizzle_value_for_later_stacking':  0.5,
+                'drizzle_value_for_later_stacking':  0.74,
                 'dither_enabled':  True,      #Set this way for tracking testing
 
 

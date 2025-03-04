@@ -1609,7 +1609,7 @@ class Camera:
         # Camera overscan values
         self.overscan_values={}
         self.overscan_values['QHY600']=[0,38,32,0]
-        self.overscan_values['QHY268']=[24,0,0,4]
+        self.overscan_values['QHY268']=[0,34,24,4] #dunno , top, left, dunno (according to fits liberator)
         self.overscan_values['QHY461']=[2,2,50,50]
         self.overscan_values['SBIG16803']=[0,0,0,0]
 
@@ -3839,14 +3839,14 @@ class Camera:
                                 try:
                                     last_fwhm = g_dev['obs'].fwhmresult["FWHM"]
                                     #  NB NB WER this can be evil if telescope is not well set up. Should not adjust in Eng mode.
-                                    if last_fwhm > 4.0:
+                                    if last_fwhm > 7.0:
                                         exposure_time = exposure_time * 4
-                                    elif last_fwhm > 3:
+                                    elif last_fwhm > 4.5:
                                         exposure_time = exposure_time * 3
                                     elif last_fwhm > 2.5:
-                                        exposure_time = exposure_time * 2
+                                        exposure_time = exposure_time * 1.75
                                     elif last_fwhm > 2.0:
-                                        exposure_time = exposure_time * 1.5
+                                        exposure_time = exposure_time * 1.25
                                 except:
                                     plog(
                                         "can't adjust exposure time for pointing if no previous focus known")
@@ -5487,6 +5487,7 @@ class Camera:
                             raw_path, exist_ok=True, mode=0o777
                         )
 
+
                         thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header,
                                          frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, altpath, 'deprecated')),))
                         thread.daemon = True
@@ -6121,7 +6122,7 @@ class Camera:
                                 plog('Good flat value:  ' + str(central_median) +
                                      ' Not testing gain until flats in commissioned mode.')
 
-                            elif cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 3 * g_dev['seq'].current_filter_last_camera_gain_stdev):
+                            elif cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 5 * g_dev['seq'].current_filter_last_camera_gain_stdev):
                                 g_dev["obs"].send_to_user(
                                     'Good flat value:  ' + str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain, 2)))
                                 plog('Good flat value:  ' + str(central_median) +

@@ -64,6 +64,9 @@ ME = +216
    #20241026-95
 MA = -13
 ME = +91
+    #20250226-7
+MA = 68
+ME = 444    #  IH 1892  TF=284
 
 
 alt = round(ME -(aro_lift), 1)  #  Per TPOINT Manual. Positive means Raise

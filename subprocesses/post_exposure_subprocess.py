@@ -291,6 +291,9 @@ cam_config = selfconfig['camera'][camera_device_name]
 cam_settings = cam_config['settings']
 cam_alias = cam_config["name"]
 
+# init this value
+selfalt_path = 'no'
+
 # We are assuming that we should use the main rotator and focuser, but we should pass those in
 # the payload rather than assuming.
 rotator_name = selfconfig['device_roles']['main_rotator']
@@ -406,7 +409,7 @@ if substack:
             # int_array_flattened=substackimage.astype(int).ravel()
             # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
             # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-            unique,counts=np.unique(substackimage.ravel()[~np.isnan(substackimage.ravel())].astype(int), return_counts=True)
+            unique,counts=np.unique(substackimage.ravel()[~np.isnan(substackimage.ravel())].astype(np.int32), return_counts=True)
             m=counts.argmax()
             imageMode=unique[m]
             print ("Calculating Mode: " +str(time.time()-googtime))
@@ -557,7 +560,9 @@ if substack:
 # As it adds unnecessary costs to s3 (multiple downloads) and is really sorta unnecessary just in general for the PIPE
 # But we still dump out the absolutely raw frame for telops at the site.
 # So this holds onto the original frame until the very end.
+#absolutely_raw_frame=copy.deepcopy(np.asarray(img,dtype='np.float32'))
 absolutely_raw_frame=copy.deepcopy(img)
+img=np.asarray(img,dtype=np.float32)
 
 obsid_path = str(selfconfig["archive_path"] + '/' + obsname + '/').replace('//','/')
 
@@ -644,6 +649,7 @@ try:
                     # Variable to sort out an intermediate dark when between two scalable darks.
                     fraction_through_range=0
 
+                    print (exposure_time)
                     # If exactly the right exposure time, use the biasdark that exists
                     if exposure_time == 0.00004:
                         hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'fortymicrosecondBIASDARK_master_bin1.npy'))
@@ -777,7 +783,7 @@ try:
         googtime=time.time()
 
 
-        unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(int), return_counts=True)
+        unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(np.int32), return_counts=True)
 
 
         # int_array_flattened=hdu.data.astype(int).ravel()
@@ -812,8 +818,12 @@ try:
                                                     if not (imageMode-counter-10) in zeroValueArray[:,0]:
                                                         if not (imageMode-counter-11) in zeroValueArray[:,0]:
                                                             if not (imageMode-counter-12) in zeroValueArray[:,0]:
-                                                                zeroValue=(imageMode-counter)
-                                                                breaker =0
+                                                                if not (imageMode-counter-13) in zeroValueArray[:,0]:
+                                                                    if not (imageMode-counter-14) in zeroValueArray[:,0]:
+                                                                        if not (imageMode-counter-15) in zeroValueArray[:,0]:
+                                                                            if not (imageMode-counter-16) in zeroValueArray[:,0]:
+                                                                                zeroValue=(imageMode-counter)
+                                                                                breaker =0
 
         hdu.data[hdu.data < zeroValue] = np.nan
 
@@ -1680,6 +1690,8 @@ try:
         ]) and not a_dark_exposure:
         picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),cam_alias, ('fz_and_send', (raw_path + raw_name00 + ".fz").replace('.fz.fz','.fz'), copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
 
+        print (bn.nanmin(hdu.data))
+
         picklefilename='testlocalred'+str(time.time()).replace('.','')
         pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
 
@@ -2019,8 +2031,9 @@ try:
             os.makedirs(
                 raw_path, exist_ok=True
             )
-            thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, absolutely_raw_frame, hdu.header, frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','thisisdeprecated', dayobs, im_path_r, selfalt_path)),))
-            thread.daemon = True
+
+            thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, np.array(absolutely_raw_frame, dtype=np.float32), hdu.header, frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','thisisdeprecated', dayobs, im_path_r, selfalt_path)),))
+            thread.daemon = False # These need to be daemons because this parent thread will end imminently
             thread.start()
 
 
@@ -2043,7 +2056,7 @@ try:
                 )
                 thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', selfalt_path + dayobs + "/raw/" + raw_name00, absolutely_raw_frame, hdu.header, \
                                                    frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path)),))
-                thread.daemon = True
+                thread.daemon = False # These need to be daemons because this parent thread will end imminently
                 thread.start()
 
 

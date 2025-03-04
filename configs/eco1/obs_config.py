@@ -77,9 +77,15 @@ site_config = {
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': True,
     # LINKS TO PIPE FOLDER
+
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     'pipe_archive_folder_path': 'Z:/',  #WER changed Z to X 20231113 @1:16 UTC
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'C:/tempfolderforpipeline',
+
+    # These are options to minimise diskspace for calibrations
+    'produce_fits_file_for_final_calibrations': True,
+    'save_archive_versions_of_final_calibrations' : False, 
+
 
     # Setup of folders on local and network drives.
     'client_hostname':  'ECO-0m40',
@@ -699,7 +705,7 @@ site_config = {
                 # If you have a higher resolution pixelscale it will use that instead.
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.
-                'drizzle_value_for_later_stacking': 0.5,
+                'drizzle_value_for_later_stacking': 0.74,
                 'dither_enabled':  True,      #Set this way for tracking testing
 
 

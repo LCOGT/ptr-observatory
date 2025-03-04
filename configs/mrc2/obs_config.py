@@ -120,6 +120,9 @@ site_config = {
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'D:/local_ptr_temp/tempfolderforpipeline',
     'temporary_local_alt_archive_to_hold_files_while_copying' : 'D:/local_ptr_temp/tempfolderforaltpath',
+    # These are options to minimise diskspace for calibrations
+    'produce_fits_file_for_final_calibrations': True,
+    'save_archive_versions_of_final_calibrations' : False, 
 
     # Setup of folders on local and network drives.
     'client_hostname':  'mr2-0m60',
@@ -895,7 +898,7 @@ site_config = {
                 # If you have a higher resolution pixelscale it will use that instead.
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.                
-                'drizzle_value_for_later_stacking': 0.5,
+                'drizzle_value_for_later_stacking': 0.74,
                 'dither_enabled':  True,      #Set this way for tracking testing
 
                 # This is the absolute minimum and maximum exposure for the camera
