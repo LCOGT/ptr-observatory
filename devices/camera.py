@@ -2601,27 +2601,35 @@ class Camera:
             #breakpoint()
             
             while zwocamera.get_exposure_status() == 1:
-                #print ('waitingforzeo')
+                #print ('waitingforzeo')                          
                 time.sleep(0.05)
 
             time_before_last_substack_readout = time.time()
-            image = zwocamera.get_data_after_exposure()
+            try:
+                image = zwocamera.get_data_after_exposure()
 
-            image=np.frombuffer(image, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
+                image=np.frombuffer(image, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
+            
             #breakpoint()
 
 
 
-            time_after_last_substack_readout = time.time()
+                time_after_last_substack_readout = time.time()
 
-            readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
+                readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
 
-            # If it is the last file in the substack, throw it out to the slow process queue to save
-            # So that the camera can get started up again quicker.
-            if subexposure == (N_of_substacks -1 ):
-                #tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-                if not (self.overscan_down == 0 and self.overscan_up == 0 and self.overscan_left == 0 and self.overscan_right==0):
-                    image=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+                # If it is the last file in the substack, throw it out to the slow process queue to save
+                # So that the camera can get started up again quicker.
+                if subexposure == (N_of_substacks -1 ):
+                    #tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+                    if not (self.overscan_down == 0 and self.overscan_up == 0 and self.overscan_left == 0 and self.overscan_right==0):
+                        image=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+                    np.save(substacker_filenames[subexposure],image)
+            
+            except:
+                plog ("ZWO READOUT ERROR. Probably a timeout?")
+                plog(traceback.format_exc())
+                image=np.asarray([])
                 np.save(substacker_filenames[subexposure],image)
 
         self.readout_estimate= np.median(np.array(readout_estimate_holder))
@@ -2634,9 +2642,14 @@ class Camera:
             return 'substack_array'
         else:
 
-            frame = zwocamera.get_data_after_exposure()
+            try:
+                frame = zwocamera.get_data_after_exposure()
 
-            return np.frombuffer(frame, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
+                return np.frombuffer(frame, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
+            except:
+                plog ("ZWO READOUT ERROR. Probably a timeout?")
+                plog(traceback.format_exc())
+                return np.asarray([])
 
 
 
