@@ -165,7 +165,11 @@ class SiteProxy:
 
     def update_configuration_start(self, config_status_id):
         """ Update the status of a configuration when observing is started."""
+        print('Updating configuration status to ATTEMPTED for ', config_status_id)
         response = self._update_configuration_status(config_status_id, 'ATTEMPTED')
+        if response.status_code != 200:
+            print(f'WARNING: failed to update configuration status to ATTEMPTED for {config_status_id}.')
+            print(f'Reason: {response.text}')
         return response
 
     def update_configuration_end(self, config_status_id, state, start, end, time_completed, reason="", events={}):
@@ -186,6 +190,7 @@ class SiteProxy:
         Returns:
             dict: response from the site proxy request or None if request failed
         """
+        print(f'Updating configuration status to {state} for {config_status_id}')
         if state not in self.VALID_STATES:
             print(f'WARNING: invalid state given to update the configuration {config_status_id}.')
             print(f'Received {state}, but must be one of {", ".join(self.VALID_STATES)}.')
@@ -200,6 +205,9 @@ class SiteProxy:
             "events": events
         }
         response = self._update_configuration_status(config_status_id, state, summary)
+        if response.status_code != 200:
+            print(f'WARNING: failed to update configuration status to {state} for {config_status_id}.')
+            print(f'Reason: {response.text}')
         return response
 
 class SchedulerObservation:
