@@ -1544,9 +1544,10 @@ class Observatory:
                         self.time_of_last_slew, self.time_of_last_pulse
                     )
                     try:
+                        # If the time is right and the mount isn't slewing and the camera isn't exposing and platesolving isn't occuring, then do a meridian pulse.
                         if (time.time() - self.time_of_last_pulse) > 300 and not g_dev[
                             "mnt"
-                        ].currently_slewing:
+                        ].currently_slewing and not self.platesolve_is_processing and not self.pointing_recentering_requested_by_platesolve_thread and not g_dev['cam'].running_an_exposure_set:
                             # Check no other commands or exposures are happening
                             if (
                                 self.cmd_queue.empty()
