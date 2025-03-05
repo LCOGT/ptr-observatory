@@ -776,7 +776,7 @@ class Sequencer:
                     self.update_calendar_blocks(start_time=datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
 
                     # only need to bother with the rest if there is more than 0 blocks.
-                    plog('self.blocks length: ', len(self.blocks))
+                    plog('Number of reservations scheduled tonight: ', len(self.blocks))
                     if not len(self.blocks) > 0:
                         self.block_guard=False
                         self.blockend= None
@@ -785,7 +785,6 @@ class Sequencer:
                         identified_block=None
 
                         for block in self.blocks:  #  This merges project spec into the blocks.
-                            plog('current block: ', block)
                             plog(f'block start: {block["start"]}, now_date_timeZ: {now_date_timeZ}, block end: {block["end"]}')
                             if (block['start'] <= now_date_timeZ < block['end']) and not self.is_in_completes(block['event_id']):
                                 plog('trying to get project from projects api')
@@ -824,23 +823,25 @@ class Sequencer:
                                     plog ("Skipping a block that contains an empty project")
 
                                 elif identified_block['project'] != None:
-                                    plog('project pointing is ok: ', pointing_is_ok(identified_block, self.config))
-                                    if pointing_is_ok(identified_block, self.config):
-                                        #TB
-                                        # Temporary branch to handle the two different types of projects
-                                        plog('block origin: ', identified_block['origin'])
-                                        if identified_block['origin'] == 'LCO':
-                                            completed_block = self.execute_project_from_lco(identified_block)
-                                        else:
+                                    plog('block origin: ', identified_block['origin'])
+
+                                    # LCO Observations; don't worry about pointing checks
+                                    if identified_block['origin'] == 'LCO':
+                                        completed_block = self.execute_project_from_lco(identified_block)
+
+                                    # PTR Projects
+                                    else:
+                                        # For PTR, need to make sure pointing is good
+                                        if pointing_is_ok(identified_block, self.config):
                                             completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
-                                        #TB
-                                        # Ignore this for now for testing purposes.
-                                        # Maybe even long timer, if the scheduler is handling completion.
-                                        # try:
-                                        #     self.append_completes(completed_block['event_id'])
-                                        # except:
-                                        #     plog ("block complete append didn't work")
-                                        #     plog(traceback.format_exc())
+                                            try:
+                                                self.append_completes(completed_block['event_id'])
+                                            except:
+                                                plog ("block complete append didn't work")
+                                                plog(traceback.format_exc())
+                                        else:
+                                            plog(f'Tried to observe a PTR project but pointing check failed')
+
                                     self.blockend = None
                                 elif identified_block is None:
                                     self.blockend = None
