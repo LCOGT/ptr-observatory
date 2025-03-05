@@ -84,6 +84,9 @@ site_config = {
      'owner_alias': ['WER', 'TELOPS'],
      'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
      
+     
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
+    
    
     # Default safety settings
     'safety_check_period': 45,  # MF's original setting.

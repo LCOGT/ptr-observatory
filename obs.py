@@ -2951,7 +2951,7 @@ class Observatory:
                     timeout_time = 800# + exposure_time + \
                         #self.devices["main_cam"].readout_time
                 else:
-                    timeout_time = 60# + exposure_time + \
+                    timeout_time = self.config['platesolve_timeout']# + exposure_time + \
                         #self.devices["main_cam"].readout_time
 
                 platesolve_timeout_timer = time.time()
@@ -3047,7 +3047,8 @@ class Observatory:
                                         pointing_exposure,
                                         f'{path_to_jpeg}{jpeg_filename}',
                                         target_ra,
-                                        target_dec
+                                        target_dec,
+                                        timeout_time
                                     ],
                                     open('subprocesses/testplatesolvepickle','wb')
                                 )
@@ -3090,6 +3091,7 @@ class Observatory:
                                         f'{path_to_jpeg}{jpeg_filename}',
                                         target_ra,
                                         target_dec,
+                                        timeout_time,
                                     ],
                                     platesolve_subprocess.stdin,
                                 )

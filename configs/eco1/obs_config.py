@@ -44,7 +44,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
 
 
-
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
     # Default safety settings
     'safety_check_period': 45,  # MF's original setting.
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.

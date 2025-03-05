@@ -54,6 +54,8 @@ site_config = {
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
+    
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
 
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that

@@ -47,7 +47,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
     
     
-   
+    "platesolve_timeout": 150, # Default should be about 45 seconds, but slower computers will take longer
     
     
     # Default safety settings
