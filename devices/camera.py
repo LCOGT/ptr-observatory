@@ -4077,12 +4077,28 @@ class Camera:
                 if not os.path.exists(self.site_config['pipe_archive_folder_path'] + '/tokens'):
                     os.umask(0)
                     os.makedirs(
-                        self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
+
+                        self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)                
                 
-                try:
-                    with open(pipetokenfolder + "/" + token_name, 'w') as f:
-                        json.dump(real_time_files, f, indent=2)
-                except:
+                if self.is_osc:
+                    
+                    
+                    suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
+
+                    for suffix in suffixes:
+                        temp_file_holder = [str(real_time_files[0]).replace('-EX00.', f'{suffix}-EX00.')]
+                        try:
+                            with open(f"{pipetokenfolder}/{token_name}{suffix}", 'w') as f:
+                                json.dump(temp_file_holder, f, indent=2)
+                        except:
+                            plog(traceback.format_exc())
+                    
+                else:
+                    try:
+                        with open(pipetokenfolder + "/" + token_name, 'w') as f:
+                            json.dump(real_time_files, f, indent=2)
+                    except:
+
                         plog(traceback.format_exc())
 
     def stop_command(self, required_params, optional_params):

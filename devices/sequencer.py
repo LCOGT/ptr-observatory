@@ -2213,6 +2213,16 @@ class Sequencer:
         if not os.path.exists(g_dev['obs'].obsid_path + "smartstacks"):
             os.makedirs(g_dev['obs'].obsid_path + "smartstacks")
 
+        shutil.copy(
+            "subprocesses/fz_archive_file.py",
+            g_dev['obs'].local_calibration_path + "smartstacks/fz_archive_file.py",
+        )
+        shutil.copy(
+            "subprocesses/local_reduce_file_subprocess.py",
+            g_dev['obs'].local_calibration_path + "smartstacks/local_reduce_file_subprocess.py",
+        )
+
+
         # Reopening config and resetting all the things.
         self.obs.astro_events.calculate_events(endofnightoverride='yes')
         self.obs.astro_events.display_events()
