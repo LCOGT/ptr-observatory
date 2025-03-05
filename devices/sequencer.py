@@ -776,7 +776,7 @@ class Sequencer:
                     self.update_calendar_blocks(start_time=datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
 
                     # only need to bother with the rest if there is more than 0 blocks.
-                    print('self.blocks length: ', len(self.blocks))
+                    plog('self.blocks length: ', len(self.blocks))
                     if not len(self.blocks) > 0:
                         self.block_guard=False
                         self.blockend= None
@@ -785,10 +785,10 @@ class Sequencer:
                         identified_block=None
 
                         for block in self.blocks:  #  This merges project spec into the blocks.
-                            print('current block: ', block)
-                            print(f'block start: {block["start"]}, now_date_timeZ: {now_date_timeZ}, block end: {block["end"]}')
+                            plog('current block: ', block)
+                            plog(f'block start: {block["start"]}, now_date_timeZ: {now_date_timeZ}, block end: {block["end"]}')
                             if (block['start'] <= now_date_timeZ < block['end']) and not self.is_in_completes(block['event_id']):
-                                print('trying to get project from projects api')
+                                plog('trying to get project from projects api')
                                 try:
                                     url_proj = "https://projects.photonranch.org/projects/get-project"
                                     request_body = json.dumps({
@@ -801,7 +801,7 @@ class Sequencer:
                                         self.block_guard = True
                                         block['project']=project_response.json()
                                         identified_block=copy.deepcopy(block)
-                                        print('retrieved project: ', identified_block)
+                                        plog('retrieved project: ', identified_block)
                                     else:
                                         plog("Project response status code not 200")
                                         plog (str(project_response))
@@ -824,11 +824,11 @@ class Sequencer:
                                     plog ("Skipping a block that contains an empty project")
 
                                 elif identified_block['project'] != None:
-                                    print('project pointing is ok: ', pointing_is_ok(identified_block, self.config))
+                                    plog('project pointing is ok: ', pointing_is_ok(identified_block, self.config))
                                     if pointing_is_ok(identified_block, self.config):
                                         #TB
                                         # Temporary branch to handle the two different types of projects
-                                        print('block origin: ', identified_block['origin'])
+                                        plog('block origin: ', identified_block['origin'])
                                         if identified_block['origin'] == 'LCO':
                                             completed_block = self.execute_project_from_lco(identified_block)
                                         else:
@@ -1335,9 +1335,6 @@ class Sequencer:
 
 
     #TB
-    # TODO list, incomplete
-    # - add ra/dec offsets from each exposure
-    # - add rotation from each exposure
     def execute_project_from_lco(self, block_specification):
         """
 
