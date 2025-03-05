@@ -612,11 +612,12 @@ site_config = {
                 #         ['rp',   [3,  0],    0, 560.,   [1.2 ,  20], "Sloan r'"],     #10
                 #         ['NIR',  [0, 10],    0, 226.,   [0.65,  20], 'Near IR - redward of PL'],     #11  Value suspect 2023/10/23 WER
                 #         ['ip',   [4,  0],    0, 250.,   [.65 ,  20], "Sloan i'"],     #12
+                #         ['zs',   [5,  0],    0, 250.,   [.65 ,  20], "Sloan Z-short'"],     #12
                 #         ['BI',   [12, 0],    0, 155.,   [360 , 170], 'Bessell I'],     #13
                 #         ['up',   [1,  0],    0, 39.0,   [2   ,  20], "Sloan u'"],     #14
                 #         ['O3',   [0,  2],    0, 36.0,   [360 , 170], 'Oxygen III'],     #15    #guess
-                #         ['zp',   [0,  9],    0, 11.0,   [1.0 ,  20], "Sloan z-short"],     #16    # NB ZP is a broader filter than zs.
-                #         ['CR',   [0,  5],    0, 9.0,    [360 , 170], 'Continuum Red - for Star subtraction'],  #17
+                #         ['zp',   [0,  9],    0, 11.0,   [1.0 ,  20], "Sloan z'-wide"],     #16    # NB ZP is a broader filter than zs.
+                #         ['CR',   [0,  5],    0, 9.0,    [360 , 170], 'Continuum Re' - for Star subtraction'],  #17
                 #         ['HA',   [0,  3],    0, 8.0,    [360 , 170], 'Hydrogen Alpha - aka II'],     #18
                 #         ['N2',   [13, 0],    0, 4.5,    [360 , 170], 'Nitrogen II'],     #19
                 #         ['S2',   [0,  4],    0, 4.5,    [0.65,  20], 'Sulphur II'],     #20
