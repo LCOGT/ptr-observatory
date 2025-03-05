@@ -483,6 +483,116 @@ class Sequencer:
     ###############################
     #       Sequencer Commands and Scripts
     ###############################
+
+    def sync_and_refocus(self):
+
+        self.nightly_reset_complete = False
+        self.clock_focus_latch = True
+        self.total_sequencer_control=True
+
+        # Make sure folder is empty and clear for the evening
+        self.clear_archive_drive_of_old_files()
+
+
+
+        g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
+        g_dev['mnt'].go_command(alt=70,az= 90)
+        g_dev['mnt'].set_tracking_on()
+
+        # Super-duper double check that darkslide is open
+        if g_dev['cam'].has_darkslide:
+            g_dev['cam'].openDarkslide()
+        g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+
+        # Check it hasn't actually been homed this evening from the rotatorhome shelf
+        homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
+        if 'lasthome' in homerotator_time_shelf:
+            if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
+                self.rotator_has_been_homed_this_evening=True
+        homerotator_time_shelf.close()
+        if not self.rotator_has_been_homed_this_evening:
+            # Homing Rotator for the evening.
+            try:
+                while g_dev['rot'].rotator.IsMoving:
+                    plog("home rotator wait")
+                    time.sleep(1)
+                g_dev['obs'].send_to_user("Rotator being homed at beginning of night.", p_level='INFO')
+                time.sleep(0.5)
+                g_dev['rot'].home_command({},{})
+                while g_dev['rot'].rotator.IsMoving:
+                    plog("home rotator wait")
+                    time.sleep(1)
+                # Store last home time.
+                homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                homerotator_time_shelf['lasthome'] = time.time()
+                homerotator_time_shelf.close()
+
+                g_dev['mnt'].go_command(alt=70,az= 70)
+                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
+                while g_dev['rot'].rotator.IsMoving:
+                    plog("home rotator wait")
+                    time.sleep(1)
+                self.rotator_has_been_homed_this_evening=True
+                g_dev['obs'].rotator_has_been_checked_since_last_slew = True
+            except:
+                #plog ("no rotator to home or wait for.")
+                pass
+
+        g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
+            days=1
+        )  # Initialise last focus as yesterday
+
+        g_dev['foc'].set_initial_best_guess_for_focus()
+
+        g_dev['obs'].sync_after_platesolving=True
+
+        # Don't platesolve before a focus if we don't know what
+        # the pixelscale is yet.
+        do_normal_side_of_pier_later=False
+        if not g_dev['cam'].pixscale == None:
+            g_dev['obs'].send_to_user("Syncing on one side of the pier. Slewing then platesolving.")
+            
+            self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)
+            do_normal_side_of_pier_later=True
+
+        # Autofocus
+        req2 = {'target': 'near_tycho_star'}
+        opt = {}
+        self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
+
+
+        if do_normal_side_of_pier_later:
+            g_dev['mnt'].go_command(alt=70,az= 90)
+            g_dev['obs'].sync_after_platesolving=True
+            self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)
+            
+
+        # If we don't have a pixelscale, it is highly necessary
+        # If it just successfully focused or at least got in the ballpark,
+        # then we should attempt to get a pixelscale at this point
+        # If we don't do it at this point, it will attempt to at the start of a project anyway
+        if g_dev['cam'].pixscale == None:
+            plog ("As we have no recorded pixel scale yet, we are running a quite platesolve to measure it")
+            g_dev['obs'].send_to_user("Using a platesolve to measure the pixelscale of the camera", p_level='INFO')
+            g_dev['obs'].sync_after_platesolving=True
+            self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)
+
+        g_dev['obs'].sync_after_platesolving=False
+
+        g_dev['obs'].send_to_user("Syncing on the other side of the pier. Slewing then platesolving.")
+        g_dev['mnt'].go_command(alt=70,az= 270)
+        self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)
+
+        g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
+
+        g_dev['obs'].flush_command_queue()
+
+        self.total_sequencer_control=False
+
+        self.night_focus_ready=False
+        self.clock_focus_latch = False
+
+
     def manager(self):
         '''
         This is called by the update loop.   Call from local status probe was removed
@@ -560,70 +670,7 @@ class Sequencer:
                 if (g_dev['events']['Observing Begins'] < ephem_now < g_dev['events']['Observing Ends']):
 
                     self.total_sequencer_control=True
-                    g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
-                    g_dev['mnt'].go_command(alt=70,az= 70)
-                    g_dev['mnt'].set_tracking_on()
-
-                    # Super-duper double check that darkslide is open
-                    if g_dev['cam'].has_darkslide:
-                        g_dev['cam'].openDarkslide()
-                    g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
-
-                    # Check it hasn't actually been homed this evening from the rotatorhome shelf
-                    homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
-                    if 'lasthome' in homerotator_time_shelf:
-                        if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
-                            self.rotator_has_been_homed_this_evening=True
-                    homerotator_time_shelf.close()
-                    if not self.rotator_has_been_homed_this_evening:
-                        # Homing Rotator for the evening.
-                        try:
-                            while g_dev['rot'].rotator.IsMoving:
-                                plog("home rotator wait")
-                                time.sleep(1)
-                            g_dev['obs'].send_to_user("Rotator being homed at beginning of night.", p_level='INFO')
-                            time.sleep(0.5)
-                            g_dev['rot'].home_command({},{})
-                            while g_dev['rot'].rotator.IsMoving:
-                                plog("home rotator wait")
-                                time.sleep(1)
-                            # Store last home time.
-                            homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
-                            homerotator_time_shelf['lasthome'] = time.time()
-                            homerotator_time_shelf.close()
-
-                            g_dev['mnt'].go_command(alt=70,az= 70)
-                            g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
-                            while g_dev['rot'].rotator.IsMoving:
-                                plog("home rotator wait")
-                                time.sleep(1)
-                            self.rotator_has_been_homed_this_evening=True
-                            g_dev['obs'].rotator_has_been_checked_since_last_slew = True
-                        except:
-                            #plog ("no rotator to home or wait for.")
-                            pass
-
-                    g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
-                        days=1
-                    )  # Initialise last focus as yesterday
-
-                    g_dev['foc'].set_initial_best_guess_for_focus()
-
-                    g_dev['obs'].sync_after_platesolving=True
-
-                    # Autofocus
-                    req2 = {'target': 'near_tycho_star'}
-                    opt = {}
-                    self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
-
-                    g_dev['obs'].sync_after_platesolving=False
-
-                    g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
-
-                    g_dev['obs'].flush_command_queue()
-                    self.total_sequencer_control=False
-
-
+                    self.sync_and_refocus()
 
                 else:
                     self.night_focus_ready=True
@@ -702,93 +749,7 @@ class Sequencer:
             if ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
                     and self.night_focus_ready==True and not g_dev['obs'].scope_in_manual_mode and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch and not self.total_sequencer_control:
 
-                self.nightly_reset_complete = False
-                self.clock_focus_latch = True
-                self.total_sequencer_control=True
-
-                # Make sure folder is empty and clear for the evening
-                self.clear_archive_drive_of_old_files()
-
-
-
-                g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
-                g_dev['mnt'].go_command(alt=70,az= 70)
-                g_dev['mnt'].set_tracking_on()
-
-                # Super-duper double check that darkslide is open
-                if g_dev['cam'].has_darkslide:
-                    g_dev['cam'].openDarkslide()
-                g_dev['mnt'].wait_for_slew(wait_after_slew=False)
-
-                # Check it hasn't actually been homed this evening from the rotatorhome shelf
-                homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
-                if 'lasthome' in homerotator_time_shelf:
-                    if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
-                        self.rotator_has_been_homed_this_evening=True
-                homerotator_time_shelf.close()
-                if not self.rotator_has_been_homed_this_evening:
-                    # Homing Rotator for the evening.
-                    try:
-                        while g_dev['rot'].rotator.IsMoving:
-                            plog("home rotator wait")
-                            time.sleep(1)
-                        g_dev['obs'].send_to_user("Rotator being homed at beginning of night.", p_level='INFO')
-                        time.sleep(0.5)
-                        g_dev['rot'].home_command({},{})
-                        while g_dev['rot'].rotator.IsMoving:
-                            plog("home rotator wait")
-                            time.sleep(1)
-                        # Store last home time.
-                        homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
-                        homerotator_time_shelf['lasthome'] = time.time()
-                        homerotator_time_shelf.close()
-
-                        g_dev['mnt'].go_command(alt=70,az= 70)
-                        g_dev['mnt'].wait_for_slew(wait_after_slew=False)
-                        while g_dev['rot'].rotator.IsMoving:
-                            plog("home rotator wait")
-                            time.sleep(1)
-                        self.rotator_has_been_homed_this_evening=True
-                        g_dev['obs'].rotator_has_been_checked_since_last_slew = True
-                    except:
-                        #plog ("no rotator to home or wait for.")
-                        pass
-
-                g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
-                    days=1
-                )  # Initialise last focus as yesterday
-
-                g_dev['foc'].set_initial_best_guess_for_focus()
-
-                g_dev['obs'].sync_after_platesolving=True
-
-                # Autofocus
-                req2 = {'target': 'near_tycho_star'}
-                opt = {}
-                self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
-
-
-
-
-                # If we don't have a pixelscale, it is highly necessary
-                # If it just successfully focused or at least got in the ballpark,
-                # then we should attempt to get a pixelscale at this point
-                # If we don't do it at this point, it will attempt to at the start of a project anyway
-                if g_dev['cam'].pixscale == None:
-                    plog ("As we have no recorded pixel scale yet, we are running a quite platesolve to measure it")
-                    g_dev['obs'].send_to_user("Using a platesolve to measure the pixelscale of the camera", p_level='INFO')
-                    self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)
-
-                g_dev['obs'].sync_after_platesolving=False
-
-                g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
-
-                g_dev['obs'].flush_command_queue()
-
-                self.total_sequencer_control=False
-
-                self.night_focus_ready=False
-                self.clock_focus_latch = False
+                self.sync_and_refocus()
 
             if  (events['Observing Begins'] <= ephem_now \
                                        < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].running_an_exposure_set\
@@ -2252,6 +2213,16 @@ class Sequencer:
         if not os.path.exists(g_dev['obs'].obsid_path + "smartstacks"):
             os.makedirs(g_dev['obs'].obsid_path + "smartstacks")
 
+        shutil.copy(
+            "subprocesses/fz_archive_file.py",
+            g_dev['obs'].local_calibration_path + "smartstacks/fz_archive_file.py",
+        )
+        shutil.copy(
+            "subprocesses/local_reduce_file_subprocess.py",
+            g_dev['obs'].local_calibration_path + "smartstacks/local_reduce_file_subprocess.py",
+        )
+
+
         # Reopening config and resetting all the things.
         self.obs.astro_events.calculate_events(endofnightoverride='yes')
         self.obs.astro_events.display_events()
@@ -2456,13 +2427,15 @@ class Sequencer:
                 calibhduheader['OBSTYPE'] = 'DARK'
                 try:
                     # Save and upload master bias
-                    g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + filename_start+'_master_bin1.fits' ))
+                    if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                                                
+                        g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
                     if filename_start in ['DARK','halfsecondDARK', '2secondDARK', '10secondDARK', '30secondDARK', 'broadbandssDARK', '1']:
                         g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.npy', copy.deepcopy(masterDark)))
 
                     # Store a version of the bias for the archive too
-                    g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
+                    if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:
+                        g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterDark)))
@@ -2588,7 +2561,8 @@ class Sequencer:
                 try:
 
                     # Save and upload master bias
-                    g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib +filename_start+'_master_bin1.fits' ))
+                    if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                                                
+                        g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib +filename_start+'_master_bin1.fits' ))
 
 
                     #if filename_start in ['tensecBIASDARK','thirtysecBIASDARK']:
@@ -2597,7 +2571,8 @@ class Sequencer:
 
 
                     # Store a version of the bias for the archive too
-                    g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
+                    if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:                        
+                        g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
 
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -2794,11 +2769,14 @@ class Sequencer:
 
                 try:
                     # Save and upload master bias
-                    g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'BIAS_master_bin1.fits' ))
+                    if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                        
+                        g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'BIAS_master_bin1.fits' ))
+                    
                     g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.npy', copy.deepcopy(masterBias.astype(np.uint16))))
 
-                     # Store a version of the bias for the archive too
-                    g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits' ))
+                     # Store a version of the bias for the archive too                     
+                    if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:
+                        g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits' ))
 
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy',copy.deepcopy(masterBias.astype(np.uint16))))
@@ -2903,10 +2881,12 @@ class Sequencer:
                     g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + 'readnoise_variance_adu.npy', copy.deepcopy(variance_frame.astype('float32'))))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                     # Save and upload master bias
-                    g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'readnoise_variance_adu.fits', copy.deepcopy(variance_frame.astype('float32')), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'readnoise_variance_adu.fits' ))
+                    if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                        
+                        g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'readnoise_variance_adu.fits', copy.deepcopy(variance_frame.astype('float32')), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'readnoise_variance_adu.fits' ))
 
                     # Store a version of the bias for the archive too
-                    g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'readnoise_variance_adu.fits', copy.deepcopy(variance_frame.astype('float32')), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'readnoise_variance_adu.fits' ))
+                    if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:
+                        g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'readnoise_variance_adu.fits', copy.deepcopy(variance_frame.astype('float32')), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'readnoise_variance_adu.fits' ))
 
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'readnoise_variance_adu.npy', copy.deepcopy(variance_frame.astype('float32'))))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
@@ -3458,10 +3438,12 @@ class Sequencer:
                                 g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                                 # Save and upload master bias
-                                g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
+                                if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                                                
+                                    g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
 
-                                # Store a version of the bias for the archive too
-                                g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
+                                # Store a version of the bias for the archive too                                
+                                if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:
+                                    g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
 
                                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                                     g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
@@ -3576,18 +3558,20 @@ class Sequencer:
             plog ("Writing out bad pixel map npy and fits.")
             np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
 
-            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+            if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                                                
+                fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
 
-            filepathaws=g_dev['obs'].calib_masters_folder
-            filenameaws=tempfrontcalib + 'badpixelmask_bin1.fits'
-            g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
+            # filepathaws=g_dev['obs'].calib_masters_folder
+            # filenameaws=tempfrontcalib + 'badpixelmask_bin1.fits'
+            # g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
 
             # Store a version of the flat for the archive too
-            fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1, overwrite=True)
+            if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:                    
+                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1, overwrite=True)
 
-            filepathaws=g_dev['obs'].calib_masters_folder
-            filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
-            g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+            #filepathaws=g_dev['obs'].calib_masters_folder
+            #filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
+            #g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
             if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                 g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', copy.deepcopy( bad_pixel_mapper_array)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
             try:

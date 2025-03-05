@@ -727,7 +727,8 @@ class Observatory:
         self.update_status_thread.start()
 
         # # Initialisation complete!
-        # while True:
+        # bias_timer=time.time()
+        # while time.time()-bias_timer < 28800:
         #     g_dev['seq'].bias_dark_script(morn=True)
 
 
@@ -1543,9 +1544,10 @@ class Observatory:
                         self.time_of_last_slew, self.time_of_last_pulse
                     )
                     try:
+                        # If the time is right and the mount isn't slewing and the camera isn't exposing and platesolving isn't occuring, then do a meridian pulse.
                         if (time.time() - self.time_of_last_pulse) > 300 and not g_dev[
                             "mnt"
-                        ].currently_slewing:
+                        ].currently_slewing and not self.platesolve_is_processing and not self.pointing_recentering_requested_by_platesolve_thread and not g_dev['cam'].running_an_exposure_set:
                             # Check no other commands or exposures are happening
                             if (
                                 self.cmd_queue.empty()
@@ -1585,7 +1587,7 @@ class Observatory:
                                                 "mnt"
                                             ].return_declination()
                                             self.devices["mount"].slew_async_directly(
-                                                ra=meridianra, dec=meridiandec
+                                                ra=meridianra, dec=meridiandec, wait_for_dome_after_direct_slew=False
                                             )
                                             plog("Meridian Probe")
 
@@ -2949,7 +2951,7 @@ class Observatory:
                     timeout_time = 800# + exposure_time + \
                         #self.devices["main_cam"].readout_time
                 else:
-                    timeout_time = 60# + exposure_time + \
+                    timeout_time = self.config['platesolve_timeout']# + exposure_time + \
                         #self.devices["main_cam"].readout_time
 
                 platesolve_timeout_timer = time.time()
@@ -3022,7 +3024,7 @@ class Observatory:
                             platesolve_crop = 0.0
 
                             # yet another pickle debugger.
-                            if True:
+                            if False:
                                 pickle.dump(
                                     [
                                         hdufocusdata,
@@ -3045,7 +3047,8 @@ class Observatory:
                                         pointing_exposure,
                                         f'{path_to_jpeg}{jpeg_filename}',
                                         target_ra,
-                                        target_dec
+                                        target_dec,
+                                        timeout_time
                                     ],
                                     open('subprocesses/testplatesolvepickle','wb')
                                 )
@@ -3088,6 +3091,7 @@ class Observatory:
                                         f'{path_to_jpeg}{jpeg_filename}',
                                         target_ra,
                                         target_dec,
+                                        timeout_time,
                                     ],
                                     platesolve_subprocess.stdin,
                                 )
@@ -3565,24 +3569,24 @@ class Observatory:
                             overwrite=True,
                         )
 
-                    if slow_process[0] == "fits_file_save_and_UIqueue":
-                        fits.writeto(
-                            slow_process[1],
-                            slow_process[2],
-                            temphduheader,
-                            overwrite=True,
-                        )
-                        filepathaws = slow_process[4]
-                        filenameaws = slow_process[5]
-                        if "ARCHIVE_" in filenameaws:
-                        #     self.enqueue_for_PTRarchive(
-                        #         100000000000000, filepathaws, filenameaws
+                    # if slow_process[0] == "fits_file_save_and_UIqueue":
+                    #     fits.writeto(
+                    #         slow_process[1],
+                    #         slow_process[2],
+                    #         temphduheader,
+                    #         overwrite=True,
+                    #     )
+                    #     filepathaws = slow_process[4]
+                    #     filenameaws = slow_process[5]
+                        # if "ARCHIVE_" in filenameaws:
+                        # #     self.enqueue_for_PTRarchive(
+                        # #         100000000000000, filepathaws, filenameaws
+                        # #     )
+                        #     pass # skipping ingesting archive calibrations. Won't need the later one either eventually
+                        # else:
+                        #     self.enqueue_for_calibrationUI(
+                        #         50, filepathaws, filenameaws
                         #     )
-                            pass # skipping ingesting archive calibrations. Won't need the later one either eventually
-                        else:
-                            self.enqueue_for_calibrationUI(
-                                50, filepathaws, filenameaws
-                            )
 
                     if slow_process[0] == "localcalibration":
                         saver = 0

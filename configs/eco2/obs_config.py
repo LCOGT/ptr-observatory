@@ -41,7 +41,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
 
 
-
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
 
 
     # Default safety settings
@@ -79,6 +79,17 @@ site_config = {
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     'pipe_archive_folder_path': 'Z:/',  #WER changed Z to X 20231113 @1:16 UTC
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'C:/tempfolderforpipeline',
+
+
+    # The site can fully platesolve each image before it is sent off to s3 or a PIPE
+    # If there are spare enough cycles at the site, this saves time for the PIPE
+    # to concentrate on more resource heavy reductions. 
+    # Also leads to fully platesolved reduced images on the local site computer
+    # Usually set this to True
+    # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
+    'fully_platesolve_images_at_site_rather_than_pipe' : False,
+
+
     # Setup of folders on local and network drives.
     'client_hostname':  'ECO-0m28-OSC',
     'archive_path':  'C:/ptr/',
@@ -96,6 +107,9 @@ site_config = {
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': True,
     'keep_focus_images_on_disk': False,  # To save space, the focus file can not be saved.
+    # These are options to minimise diskspace for calibrations
+    'produce_fits_file_for_final_calibrations': True,
+    'save_archive_versions_of_final_calibrations' : False, 
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
     # Number of files to send up to the ptrarchive simultaneously.
@@ -631,7 +645,7 @@ site_config = {
                 # If you have a higher resolution pixelscale it will use that instead.
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.
-                'drizzle_value_for_later_stacking': 1.25,
+                'drizzle_value_for_later_stacking': 1.48,
                 'dither_enabled':  True,      #Set this way for tracking testing
 
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
@@ -674,6 +688,10 @@ site_config = {
                 'dark_exposure': 180,
 
                 'do_cosmics' : False,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : False,
+                # And debanding
+                'do_debanding' : False,
 
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,

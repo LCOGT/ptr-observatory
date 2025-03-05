@@ -206,7 +206,7 @@ def mid_stretch_jpeg(data):
 
 
 # Note this is a thread!
-def dump_main_data_out_to_post_exposure_subprocess(payload):
+def dump_main_data_out_to_post_exposure_subprocess(payload, post_processing_subprocess):
 
     # Here is a manual debug area which makes a pickle for debug purposes
     # Here is the test pickle that gets created for debugging (if commented)
@@ -214,13 +214,13 @@ def dump_main_data_out_to_post_exposure_subprocess(payload):
     #breakpoint()
 
 
-    post_processing_subprocess=subprocess.Popen(
-        ['python','subprocesses/post_exposure_subprocess.py'],
-        stdin=subprocess.PIPE,
-        stdout=None,
-        stderr=None,
-        bufsize=-1
-    )
+    # post_processing_subprocess=subprocess.Popen(
+    #     ['python','subprocesses/post_exposure_subprocess.py'],
+    #     stdin=subprocess.PIPE,
+    #     stdout=None,
+    #     stderr=None,
+    #     bufsize=-1
+    # )
 
     try:
         pickle.dump(payload, post_processing_subprocess.stdin)
@@ -1609,7 +1609,7 @@ class Camera:
         # Camera overscan values
         self.overscan_values={}
         self.overscan_values['QHY600']=[0,38,32,0]
-        self.overscan_values['QHY268']=[24,0,0,4]
+        self.overscan_values['QHY268']=[0,34,24,4] #dunno , top, left, dunno (according to fits liberator)
         self.overscan_values['QHY461']=[2,2,50,50]
         self.overscan_values['SBIG16803']=[0,0,0,0]
 
@@ -2601,27 +2601,35 @@ class Camera:
             #breakpoint()
             
             while zwocamera.get_exposure_status() == 1:
-                #print ('waitingforzeo')
+                #print ('waitingforzeo')                          
                 time.sleep(0.05)
 
             time_before_last_substack_readout = time.time()
-            image = zwocamera.get_data_after_exposure()
+            try:
+                image = zwocamera.get_data_after_exposure()
 
-            image=np.frombuffer(image, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
+                image=np.frombuffer(image, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
+            
             #breakpoint()
 
 
 
-            time_after_last_substack_readout = time.time()
+                time_after_last_substack_readout = time.time()
 
-            readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
+                readout_estimate_holder.append(time_after_last_substack_readout - time_before_last_substack_readout)
 
-            # If it is the last file in the substack, throw it out to the slow process queue to save
-            # So that the camera can get started up again quicker.
-            if subexposure == (N_of_substacks -1 ):
-                #tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-                if not (self.overscan_down == 0 and self.overscan_up == 0 and self.overscan_left == 0 and self.overscan_right==0):
-                    image=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+                # If it is the last file in the substack, throw it out to the slow process queue to save
+                # So that the camera can get started up again quicker.
+                if subexposure == (N_of_substacks -1 ):
+                    #tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+                    if not (self.overscan_down == 0 and self.overscan_up == 0 and self.overscan_left == 0 and self.overscan_right==0):
+                        image=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
+                    np.save(substacker_filenames[subexposure],image)
+            
+            except:
+                plog ("ZWO READOUT ERROR. Probably a timeout?")
+                plog(traceback.format_exc())
+                image=np.asarray([])
                 np.save(substacker_filenames[subexposure],image)
 
         self.readout_estimate= np.median(np.array(readout_estimate_holder))
@@ -2634,9 +2642,14 @@ class Camera:
             return 'substack_array'
         else:
 
-            frame = zwocamera.get_data_after_exposure()
+            try:
+                frame = zwocamera.get_data_after_exposure()
 
-            return np.frombuffer(frame, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
+                return np.frombuffer(frame, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
+            except:
+                plog ("ZWO READOUT ERROR. Probably a timeout?")
+                plog(traceback.format_exc())
+                return np.asarray([])
 
 
 
@@ -4064,9 +4077,29 @@ class Camera:
                 if not os.path.exists(self.site_config['pipe_archive_folder_path'] + '/tokens'):
                     os.umask(0)
                     os.makedirs(
-                        self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
-                with open(pipetokenfolder + "/" + token_name, 'w') as f:
-                    json.dump(real_time_files, f, indent=2)
+
+                        self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)                
+                
+                if self.is_osc:
+                    
+                    
+                    suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
+
+                    for suffix in suffixes:
+                        temp_file_holder = [str(real_time_files[0]).replace('-EX00.', f'{suffix}-EX00.')]
+                        try:
+                            with open(f"{pipetokenfolder}/{token_name}{suffix}", 'w') as f:
+                                json.dump(temp_file_holder, f, indent=2)
+                        except:
+                            plog(traceback.format_exc())
+                    
+                else:
+                    try:
+                        with open(pipetokenfolder + "/" + token_name, 'w') as f:
+                            json.dump(real_time_files, f, indent=2)
+                    except:
+
+                        plog(traceback.format_exc())
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
@@ -4475,6 +4508,16 @@ class Camera:
         if (not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing'):
 
             ######### Trigger off threads to wait for their respective files
+            
+            ## Spin up tha main post_processing_thread
+            post_processing_subprocess=subprocess.Popen(
+                ['python','subprocesses/post_exposure_subprocess.py'],
+                stdin=subprocess.PIPE,
+                stdout=None,
+                stderr=None,
+                bufsize=-1
+            )
+            
             # SMARTSTACK THREAD
             if (not frame_type.lower() in [
                 "bias",
@@ -5289,7 +5332,7 @@ class Camera:
 
                     # It actually takes a few seconds to spin up the main subprocess, so we farm this out to a thread
                     # So the code can continue more quickly to the next exposure.
-                    thread = threading.Thread(target=dump_main_data_out_to_post_exposure_subprocess, args=(payload,))
+                    thread = threading.Thread(target=dump_main_data_out_to_post_exposure_subprocess, args=(payload,post_processing_subprocess,))
                     thread.daemon = True
                     thread.start()
                     # dump_main_data_out_to_post_exposure_subprocess(payload)
@@ -5472,6 +5515,7 @@ class Camera:
                         os.makedirs(
                             raw_path, exist_ok=True, mode=0o777
                         )
+
 
                         thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, hdu.data, hdu.header,
                                          frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec, altpath, 'deprecated')),))
@@ -5750,7 +5794,21 @@ class Camera:
                                 minarea= (-9.2421 * self.pixscale) + 16.553
                             if minarea < 5:  # There has to be a min minarea though!
                                 minarea = 5
-                            sep.set_extract_pixstack(int(ix*iy - 1))
+                            #sep.set_extract_pixstack(int(ix*iy - 1))
+                            
+                            
+                            # Estimate needed pixstack: assume a fraction of pixels may be sources
+                            estimated_sources = max(1000, int(ix*iy * 0.1))
+                            
+                            # Base pixstack on estimated source count, with a scaling factor
+                            pixstack = int(estimated_sources * 10)
+                            
+                            # Apply limits to avoid excessive memory allocation
+                            pixstack = min(max(pixstack, 100000), 2000000)  # Keep within reasonable range
+                            
+                            # Set the pixel stack in SEP
+                            sep.set_extract_pixstack(pixstack)
+                            
                             sep.set_sub_object_limit(int(300000))
 
                             sepbkgerr=sepbkg.globalrms
@@ -5758,7 +5816,13 @@ class Camera:
                             try:
                                 sources = sep.extract(outputimg, 4.0, err=sepbkgerr, minarea=minarea)
                             except:
-                                print(traceback.format_exc())
+                                try:
+                                    print ("failed sep with background, trying without")
+                                    sources = sep.extract(outputimg, 4.0, minarea=minarea)
+                                except:
+                                
+                                    print(traceback.format_exc())
+                                    sources=[]
                                 #breakpoint()
 
                             # try:

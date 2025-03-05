@@ -291,6 +291,9 @@ cam_config = selfconfig['camera'][camera_device_name]
 cam_settings = cam_config['settings']
 cam_alias = cam_config["name"]
 
+# init this value
+selfalt_path = 'no'
+
 # We are assuming that we should use the main rotator and focuser, but we should pass those in
 # the payload rather than assuming.
 rotator_name = selfconfig['device_roles']['main_rotator']
@@ -406,7 +409,7 @@ if substack:
             # int_array_flattened=substackimage.astype(int).ravel()
             # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
             # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-            unique,counts=np.unique(substackimage.ravel()[~np.isnan(substackimage.ravel())].astype(int), return_counts=True)
+            unique,counts=np.unique(substackimage.ravel()[~np.isnan(substackimage.ravel())].astype(np.int32), return_counts=True)
             m=counts.argmax()
             imageMode=unique[m]
             print ("Calculating Mode: " +str(time.time()-googtime))
@@ -557,7 +560,9 @@ if substack:
 # As it adds unnecessary costs to s3 (multiple downloads) and is really sorta unnecessary just in general for the PIPE
 # But we still dump out the absolutely raw frame for telops at the site.
 # So this holds onto the original frame until the very end.
+#absolutely_raw_frame=copy.deepcopy(np.asarray(img,dtype='np.float32'))
 absolutely_raw_frame=copy.deepcopy(img)
+img=np.asarray(img,dtype=np.float32)
 
 obsid_path = str(selfconfig["archive_path"] + '/' + obsname + '/').replace('//','/')
 
@@ -644,6 +649,7 @@ try:
                     # Variable to sort out an intermediate dark when between two scalable darks.
                     fraction_through_range=0
 
+                    print (exposure_time)
                     # If exactly the right exposure time, use the biasdark that exists
                     if exposure_time == 0.00004:
                         hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'fortymicrosecondBIASDARK_master_bin1.npy'))
@@ -777,7 +783,7 @@ try:
         googtime=time.time()
 
 
-        unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(int), return_counts=True)
+        unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(np.int32), return_counts=True)
 
 
         # int_array_flattened=hdu.data.astype(int).ravel()
@@ -812,8 +818,12 @@ try:
                                                     if not (imageMode-counter-10) in zeroValueArray[:,0]:
                                                         if not (imageMode-counter-11) in zeroValueArray[:,0]:
                                                             if not (imageMode-counter-12) in zeroValueArray[:,0]:
-                                                                zeroValue=(imageMode-counter)
-                                                                breaker =0
+                                                                if not (imageMode-counter-13) in zeroValueArray[:,0]:
+                                                                    if not (imageMode-counter-14) in zeroValueArray[:,0]:
+                                                                        if not (imageMode-counter-15) in zeroValueArray[:,0]:
+                                                                            if not (imageMode-counter-16) in zeroValueArray[:,0]:
+                                                                                zeroValue=(imageMode-counter)
+                                                                                breaker =0
 
         hdu.data[hdu.data < zeroValue] = np.nan
 
@@ -825,7 +835,75 @@ try:
 ##########################################
 
 
-    #################### HERE IS WHERE PLATESOLVE IS SENT OFF
+    #################### HERE IS WHERE FULLY REDUCED PLATESOLVE IS SENT OFF
+    ##### THIS IS CURRENTLY IN CONSTRUCTION, MOST SITES THIS IS NOT ENABLED.
+    
+    if not pixscale == None and selfconfig['fully_platesolve_images_at_site_rather_than_pipe']: # or np.isnan(pixscale):
+        
+    
+    
+        # hdufocusdata=input_psolve_info[0]
+        # pixscale=input_psolve_info[2]
+        # is_osc=input_psolve_info[3]
+        # filepath=input_psolve_info[4]
+        # filebase=input_psolve_info[5]
+        # RAest=input_psolve_info[6]
+        # DECest=input_psolve_info[7]
+    
+        print ("HERE IS THE FULL PLATESOLVE PICKLE")
+        print (hdu.data)        
+        print (pixscale)
+        print (is_osc)
+        wcsfilepath=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq))
+        print (wcsfilepath)
+        wcsfilebase=selfconfig["obs_id"]+ "-" + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter) + "-" + dayobs+ "-"+ next_seq+ "-" + 'EX'+ "00.fits"
+        print (wcsfilebase)
+        print (corrected_ra_for_header * 15 )
+        print (corrected_dec_for_header)
+        print (next_seq)
+
+        # CHECK TEMP DIR ACTUALLY EXISTS
+        if not os.path.exists(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs):
+            os.makedirs(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs, mode=0o777)
+        
+        if not os.path.exists(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs'):
+            os.makedirs(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs', mode=0o777)
+        
+        if not os.path.exists(wcsfilepath):
+            os.makedirs(wcsfilepath, mode=0o777)
+        
+        try:
+            platesolve_subprocess = subprocess.Popen(
+                ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                bufsize=0,
+            )
+        except OSError:
+            print(traceback.format_exc())
+            pass
+
+        try:
+            pickle.dump(
+                [
+                    np.asarray(hdu.data,dtype=np.float32),
+                    pixscale,
+                    is_osc,
+                    wcsfilepath,
+                    wcsfilebase,
+                    corrected_ra_for_header * 15,
+                    corrected_dec_for_header,
+                    next_seq
+                    
+                ],
+                platesolve_subprocess.stdin,
+            )
+        except:
+            print("Problem in the platesolve pickle dump")
+            print(traceback.format_exc())
+        
+        
+        
 
 
     # assign the keyword values and comment of the keyword as a tuple to write both to header.
@@ -852,8 +930,18 @@ try:
     hdu.header['CONFMODE'] = ('default',  'LCO Configuration Mode')
     hdu.header["DOCOSMIC"] = (
         cam_settings["do_cosmics"],
-        "Cosmic ray removal",
+        "Cosmic ray removal in EVA",
     )
+    
+    hdu.header["DOSNP"] = (
+        cam_settings['do_saltandpepper'],
+        "Salt and Pepper removal in EVA",
+    )
+    hdu.header["DODBND"] = (
+        cam_settings['do_debanding'],
+        "Debanding removal in EVA",
+    )
+    
 
     hdu.header["CCDSTEMP"] = (
         round(setpoint, 2),     #WER fixed.
@@ -1603,6 +1691,8 @@ try:
         ]) and not a_dark_exposure:
         picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),cam_alias, ('fz_and_send', (raw_path + raw_name00 + ".fz").replace('.fz.fz','.fz'), copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
 
+        print (bn.nanmin(hdu.data))
+
         picklefilename='testlocalred'+str(time.time()).replace('.','')
         pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
 
@@ -1942,8 +2032,9 @@ try:
             os.makedirs(
                 raw_path, exist_ok=True
             )
-            thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, absolutely_raw_frame, hdu.header, frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','thisisdeprecated', dayobs, im_path_r, selfalt_path)),))
-            thread.daemon = True
+
+            thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, np.array(absolutely_raw_frame, dtype=np.float32), hdu.header, frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','thisisdeprecated', dayobs, im_path_r, selfalt_path)),))
+            thread.daemon = False # These need to be daemons because this parent thread will end imminently
             thread.start()
 
 
@@ -1966,7 +2057,7 @@ try:
                 )
                 thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', selfalt_path + dayobs + "/raw/" + raw_name00, absolutely_raw_frame, hdu.header, \
                                                    frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path)),))
-                thread.daemon = True
+                thread.daemon = False # These need to be daemons because this parent thread will end imminently
                 thread.start()
 
 

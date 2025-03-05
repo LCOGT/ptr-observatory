@@ -47,7 +47,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
     
     
-   
+    "platesolve_timeout": 150, # Default should be about 45 seconds, but slower computers will take longer
     
     
     # Default safety settings
@@ -61,7 +61,7 @@ site_config = {
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
     
-    'temperature_at_which_obs_too_hot_for_camera_cooling' : 35, 
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 36, 
     
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that 
@@ -103,6 +103,22 @@ site_config = {
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': False,
     'keep_focus_images_on_disk': False,  # To save space, the focus file can not be saved.   
+    # These are options to minimise diskspace for calibrations
+    'produce_fits_file_for_final_calibrations': True,
+    'save_archive_versions_of_final_calibrations' : False, 
+
+
+
+        # The site can fully platesolve each image before it is sent off to s3 or a PIPE
+    # If there are spare enough cycles at the site, this saves time for the PIPE
+    # to concentrate on more resource heavy reductions. 
+    # Also leads to fully platesolved reduced images on the local site computer
+    # Usually set this to True
+    # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
+    'fully_platesolve_images_at_site_rather_than_pipe' : False,
+
+
+    
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
     # Number of files to send up to the ptrarchive simultaneously.
@@ -128,7 +144,7 @@ site_config = {
     # How many minutes with respect to eve sunset start flats
     
     'bias_dark interval':  105.,   #minutes
-    'eve_sky_flat_sunset_offset': +5,  # 40 before Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -20,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 , 
     'clock_and_auto_focus_offset': 8,
@@ -389,7 +405,7 @@ site_config = {
             'focuser_movement_settle_time': 3,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
-            'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
+            'maximum_good_focus_in_arcsecond': 3.5, # highest value to consider as being in "good focus". Used to select last good focus value
             'reference': 3520, #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 10000,   #12672 actually
             'step_size': 1,
@@ -498,12 +514,15 @@ site_config = {
                 # We can't swip and swap because the biases and darks and flats will change, so we are sticking with 3 until
                 # something bad happens with 3 for some reason
                 #
-                # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
+                # In that sense, QHY600 NEEDS to be set at GAIN 26, Mode 1, offset 30 and the only thing to adjust is the offset.....
+                # The QHY268 is gain 56, mode 1, offset 30
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
-                'direct_qhy_readout_mode' : 0,        
-                'direct_qhy_gain' : 26,
-                'direct_qhy_offset' : 60,  
+                #
+
+                'direct_qhy_readout_mode' : 1,        
+                'direct_qhy_gain' : 56,
+                'direct_qhy_offset' : 30,  
                 
                 'direct_qhy_usb_traffic' : 60,
                 
@@ -594,7 +613,7 @@ site_config = {
                 'crop_preview_xright': 2,
                 'temp_setpoint': 5,    #Verify we can go colder, this system has a chiller
                 
-                'temp_setpoint_tolerance': 2.5,
+                'temp_setpoint_tolerance': 3.5,
                 
                 'has_chiller': True,
                 
@@ -604,7 +623,7 @@ site_config = {
                 # from the 15th of the month to the 15 of the month 
                 # 
                 # ( setpoint, day_warm_difference, day_warm troe our false)
-                'set_temp_setpoint_by_season' : True,
+                'set_temp_setpoint_by_season' : False,
                 'temp_setpoint_nov_to_feb' : ( 5, 8, True),
                 'temp_setpoint_feb_to_may' : ( 5, 8, True),
                 'temp_setpoint_may_to_aug' : ( 5, 8, True),
@@ -630,7 +649,7 @@ site_config = {
                 # If you have a higher resolution pixelscale it will use that instead.
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.                
-                'drizzle_value_for_later_stacking': 1.25,
+                'drizzle_value_for_later_stacking': 0.74,
                 'dither_enabled':  True,      #Set this way for tracking testing
                 
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
@@ -664,7 +683,7 @@ site_config = {
 
                 'number_of_bias_to_collect' : 32,
                 'number_of_dark_to_collect' : 32,
-                'number_of_flat_to_collect' : 8,
+                'number_of_flat_to_collect' : 32,
                 'number_of_bias_to_store' : 32,
                 'number_of_dark_to_store' : 32,
                 'number_of_flat_to_store' : 32 ,
@@ -673,6 +692,10 @@ site_config = {
                 'dark_exposure': 180,
                 
                 'do_cosmics' : False,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : False,                
+                # And debanding
+                'do_debanding' : False,
                 
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,

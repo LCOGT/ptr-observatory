@@ -21,7 +21,7 @@ from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 import datetime
 warnings.simplefilter('ignore', category=AstropyUserWarning)
-
+import bottleneck as bn
 #input_sep_info=pickle.load(sys.stdin.buffer)
 #input_sep_info=pickle.load(open('testfz1714133591386061','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
@@ -34,6 +34,16 @@ temphduheader=input_sep_info[0]
 selfconfig=input_sep_info[1]
 camname=input_sep_info[2]
 slow_process=input_sep_info[3]
+
+
+
+#### FZ Compression can't handle NAN so we need to use a sentinal value
+#### In our case, we use -512.3456789. This is low enough that it is highly
+#### unlikely that a pixel would have this real value  in the history of the universe
+#### But not so low it is impossible to use fits browsers
+actual_data=np.array(slow_process[2],dtype=np.float32)
+actual_data=np.nan_to_num(actual_data, nan=-251.2345733642578)
+
 
 googtime=time.time()
 
@@ -63,7 +73,7 @@ if not camera_config["settings"]["is_osc"]:
 
     # This routine saves the file ready for uploading to AWS
     hdufz = fits.CompImageHDU(
-        np.array(slow_process[2], dtype=np.float32), temphduheader
+        np.array(actual_data, dtype=np.float32), temphduheader
     )
 
     if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -87,11 +97,11 @@ else:  # Is an OSC
     # If it is an OSC, split out the components and save them individually.
     if camera_config["settings"]["osc_bayer"] == 'RGGB':
 
-        newhdured = slow_process[2][::2, ::2]
-        GTRonly = slow_process[2][::2, 1::2]
-        GBLonly = slow_process[2][1::2, ::2]
-        newhdublue = slow_process[2][1::2, 1::2]
-        clearV = (block_reduce(slow_process[2],2))
+        newhdured = actual_data[::2, ::2]
+        GTRonly = actual_data[::2, 1::2]
+        GBLonly = actual_data[1::2, ::2]
+        newhdublue = actual_data[1::2, 1::2]
+        clearV = (block_reduce(actual_data,2))
 
         oscmatchcode = (datetime.datetime.now().strftime("%d%m%y%H%M%S"))
 

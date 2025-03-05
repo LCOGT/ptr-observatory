@@ -88,7 +88,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "TELOPS"],
 
 
-
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
     # Default safety settings
     'safety_check_period': 120,  # MF's original setting was 45.
 
@@ -149,6 +149,10 @@ site_config = {
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     # WER changed Z to X 20231113 @1:16 UTC
     'pipe_archive_folder_path': 'X:/localptrarchive/',
+# These are options to minimise diskspace for calibrations
+    'produce_fits_file_for_final_calibrations': True,
+    'save_archive_versions_of_final_calibrations' : False, 
+
     # 'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # LINKS FOR OBS FOLDERS
     'client_hostname': "ARO-0m30",     # Generic place for this host to stash.
@@ -917,7 +921,7 @@ site_config = {
                 # If you have a higher resolution pixelscale it will use that instead.
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.
-                'drizzle_value_for_later_stacking': 0.5,
+                'drizzle_value_for_later_stacking': 0.74,
                 'dither_enabled':  True,  # Set this way for tracking testing
 
 
@@ -968,7 +972,11 @@ site_config = {
                 'dark_exposure': 180,
 
                 # In the EVA Pipeline, whether to run cosmic ray detection on individual images
-                'do_cosmics': False,
+                'do_cosmics': True,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
 
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,
