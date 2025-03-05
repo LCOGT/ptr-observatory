@@ -43,7 +43,7 @@ site_config = {
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
 
-
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
 
     # Default safety settings
     'safety_check_period': 45,  # MF's original setting.
@@ -101,6 +101,15 @@ site_config = {
 # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
     'save_archive_versions_of_final_calibrations' : False, 
+
+
+        # The site can fully platesolve each image before it is sent off to s3 or a PIPE
+    # If there are spare enough cycles at the site, this saves time for the PIPE
+    # to concentrate on more resource heavy reductions. 
+    # Also leads to fully platesolved reduced images on the local site computer
+    # Usually set this to True
+    # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
+    'fully_platesolve_images_at_site_rather_than_pipe' : False,
 
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
@@ -642,7 +651,14 @@ site_config = {
                 'dither_enabled':  True,      #Set this way for tracking testing
 
 
-                'do_cosmics' : False,
+
+                'do_cosmics' : True,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
+                
+ 
                 'number_of_bias_to_collect' : 128,
                 'number_of_dark_to_collect' : 128,
                 'number_of_flat_to_collect' : 128,
@@ -651,6 +667,7 @@ site_config = {
                 'number_of_flat_to_store' : 128,
 
                 'dark_exposure': 100,
+
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",

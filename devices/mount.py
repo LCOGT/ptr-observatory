@@ -1414,7 +1414,7 @@ class Mount:
         # Then once it is slewed, if there is a dome, it has to wait for the dome.
         # But if the dome isn't opened, then no reason to wait for the dome.        
         if self.config['needs_to_wait_for_dome'] and wait_for_dome and not self.rapid_park_indicator and wait_for_dome_after_direct_slew:
-            plog ("making sure dome is positioned correct.")
+            #plog ("making sure dome is positioned correct.")
             rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
             aa = AltAz(location=self.site_coordinates, obstime=Time.now())
             rd = rd.transform_to(aa)
@@ -1439,7 +1439,7 @@ class Mount:
                 #dome_azimuth= GET FROM wema
                 dome_timeout_timer=time.time()
                 dome_open_or_opening=True
-                while abs(obs_azimuth - dome_azimuth) > 5 and time.time() - dome_timeout_timer < 300 and not self.rapid_park_indicator and dome_open_or_opening:
+                while abs(obs_azimuth - dome_azimuth) > 15 and time.time() - dome_timeout_timer < 300 and not self.rapid_park_indicator and dome_open_or_opening:
                     
                     #plog ("making sure dome is positioned correct.")
                     rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
@@ -1456,7 +1456,7 @@ class Mount:
                     except:
                         plog ("Some error in getting the wema_enclosure")
                         
-                plog ("Dome Arrived")
+                #plog ("Dome Arrived")
             else:
                 plog ("Why wait for the dome if it isn't even open?")
                 

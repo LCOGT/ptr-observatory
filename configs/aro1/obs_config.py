@@ -88,7 +88,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "TELOPS"],
 
 
-
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
     # Default safety settings
     'safety_check_period': 120,  # MF's original setting was 45.
 
@@ -999,7 +999,11 @@ site_config = {
                 'dark_exposure': 180,
 
                 # In the EVA Pipeline, whether to run cosmic ray detection on individual images
-                'do_cosmics': False,
+                'do_cosmics': True,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
 
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,
