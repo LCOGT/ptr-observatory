@@ -5778,7 +5778,21 @@ class Camera:
                                 minarea= (-9.2421 * self.pixscale) + 16.553
                             if minarea < 5:  # There has to be a min minarea though!
                                 minarea = 5
-                            sep.set_extract_pixstack(int(ix*iy - 1))
+                            #sep.set_extract_pixstack(int(ix*iy - 1))
+                            
+                            
+                            # Estimate needed pixstack: assume a fraction of pixels may be sources
+                            estimated_sources = max(1000, int(ix*iy * 0.1))
+                            
+                            # Base pixstack on estimated source count, with a scaling factor
+                            pixstack = int(estimated_sources * 10)
+                            
+                            # Apply limits to avoid excessive memory allocation
+                            pixstack = min(max(pixstack, 100000), 2000000)  # Keep within reasonable range
+                            
+                            # Set the pixel stack in SEP
+                            sep.set_extract_pixstack(pixstack)
+                            
                             sep.set_sub_object_limit(int(300000))
 
                             sepbkgerr=sepbkg.globalrms
@@ -5786,7 +5800,13 @@ class Camera:
                             try:
                                 sources = sep.extract(outputimg, 4.0, err=sepbkgerr, minarea=minarea)
                             except:
-                                print(traceback.format_exc())
+                                try:
+                                    print ("failed sep with background, trying without")
+                                    sources = sep.extract(outputimg, 4.0, minarea=minarea)
+                                except:
+                                
+                                    print(traceback.format_exc())
+                                    sources=[]
                                 #breakpoint()
 
                             # try:
