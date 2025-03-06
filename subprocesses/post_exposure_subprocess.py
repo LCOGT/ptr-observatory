@@ -273,7 +273,7 @@ except:
 #A long tuple unpack of the payload
 (img, pier_side, is_osc, frame_type, reject_flat_by_known_gain, avg_mnt, avg_foc, avg_rot, \
  setpoint, tempccdtemp, ccd_humidity, ccd_pressure, darkslide_state, exposure_time, \
- this_exposure_filter, exposure_filter_offset, pane,opt, observer_user_name, hint, \
+ this_exposure_filter, exposure_filter_offset, pane,opt, observer_user_name, \
  azimuth_of_observation, altitude_of_observation, airmass_of_observation, pixscale, \
  smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, \
  dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, \
@@ -631,7 +631,7 @@ try:
     narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * cam_config['settings']['smart_stack_exposure_NB_multiplier']
     dark_exp_time = cam_config['settings']['dark_exposure']
     do_bias_also=False
-    
+
     #ALL images are calibrated at the site.... WHY WOULD YOU NOT?
     #The cost is largely I/O and to do that on multiple computers at multiple times
     #Is a large bottleneck and cost in time and, in s3, $
@@ -643,7 +643,7 @@ try:
             try:
                 if smartstackid == 'no':
 
-                    
+
 
 
                     # Variable to sort out an intermediate dark when between two scalable darks.
@@ -837,11 +837,11 @@ try:
 
     #################### HERE IS WHERE FULLY REDUCED PLATESOLVE IS SENT OFF
     ##### THIS IS CURRENTLY IN CONSTRUCTION, MOST SITES THIS IS NOT ENABLED.
-    
+
     if not pixscale == None and selfconfig['fully_platesolve_images_at_site_rather_than_pipe']: # or np.isnan(pixscale):
-        
-    
-    
+
+
+
         # hdufocusdata=input_psolve_info[0]
         # pixscale=input_psolve_info[2]
         # is_osc=input_psolve_info[3]
@@ -849,9 +849,9 @@ try:
         # filebase=input_psolve_info[5]
         # RAest=input_psolve_info[6]
         # DECest=input_psolve_info[7]
-    
+
         print ("HERE IS THE FULL PLATESOLVE PICKLE")
-        print (hdu.data)        
+        print (hdu.data)
         print (pixscale)
         print (is_osc)
         wcsfilepath=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq))
@@ -865,13 +865,13 @@ try:
         # CHECK TEMP DIR ACTUALLY EXISTS
         if not os.path.exists(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs):
             os.makedirs(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs, mode=0o777)
-        
+
         if not os.path.exists(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs'):
             os.makedirs(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs', mode=0o777)
-        
+
         if not os.path.exists(wcsfilepath):
             os.makedirs(wcsfilepath, mode=0o777)
-        
+
         try:
             platesolve_subprocess = subprocess.Popen(
                 ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
@@ -894,16 +894,16 @@ try:
                     corrected_ra_for_header * 15,
                     corrected_dec_for_header,
                     next_seq
-                    
+
                 ],
                 platesolve_subprocess.stdin,
             )
         except:
             print("Problem in the platesolve pickle dump")
             print(traceback.format_exc())
-        
-        
-        
+
+
+
 
 
     # assign the keyword values and comment of the keyword as a tuple to write both to header.
@@ -932,7 +932,7 @@ try:
         cam_settings["do_cosmics"],
         "Cosmic ray removal in EVA",
     )
-    
+
     hdu.header["DOSNP"] = (
         cam_settings['do_saltandpepper'],
         "Salt and Pepper removal in EVA",
@@ -941,7 +941,7 @@ try:
         cam_settings['do_debanding'],
         "Debanding removal in EVA",
     )
-    
+
 
     hdu.header["CCDSTEMP"] = (
         round(setpoint, 2),     #WER fixed.
@@ -991,7 +991,7 @@ try:
             round(camera_known_gain,3),
             "[e-/ADU] Pixel gain",
         )
-    
+
     hdu.header["ORIGGAIN"] = (
         round(camera_known_gain,3),
         "[e-/ADU] Original Pixel gain",
@@ -1309,7 +1309,7 @@ try:
         observer_user_name,
         "Observer name",
     )
-    hdu.header["OBSNOTE"] = hint[0:54]  # Needs to be truncated.
+    hdu.header["OBSNOTE"] = opt.get('hint', '')[0:54]  # Needs to be truncated.
 
     hdu.header["DITHER"] = (0, "[] Dither")  #This was intended to inform of a 5x5 pattern number
     hdu.header["OPERATOR"] = ("WER", "Site operator")

@@ -5284,7 +5284,6 @@ class Camera:
                             self.pane,
                             opt,
                             observer_user_name,
-                            self.hint,
                             azimuth_of_observation,
                             altitude_of_observation,
                             airmass_of_observation,
