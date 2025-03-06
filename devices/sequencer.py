@@ -776,7 +776,6 @@ class Sequencer:
                     self.update_calendar_blocks(start_time=datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
 
                     # only need to bother with the rest if there is more than 0 blocks.
-                    plog('Number of reservations scheduled tonight: ', len(self.blocks))
                     if not len(self.blocks) > 0:
                         self.block_guard=False
                         self.blockend= None
