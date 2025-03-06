@@ -3192,6 +3192,21 @@ class Camera:
 
         self.running_an_exposure_set = True
 
+        # Parse inputs from required_params and optional_params
+        exposure_time = float(required_params.get("time", 1.0))
+        imtype = required_params.get("image_type", "light")
+        self.smartstack = required_params.get('smartstack', True)
+        self.substacker = required_params.get('substack', True)
+
+        hint = optional_params.get("hint", "")
+        self.pane = optional_params.get("pane", None)
+        count = int(optional_params.get("count", 1))
+        if count < 1:
+            count = 1  # Hence frame does not repeat unless count > 1
+        self.zoom_factor = optional_params.get('zoom', "Full")
+        if imtype.lower() in ["pointing", "focus"]:
+            self.smartstack = False
+
         # First check that it isn't an exposure that doesn't need a check (e.g. bias, darks etc.)
         if not g_dev['obs'].assume_roof_open and not skip_open_check and not g_dev['obs'].scope_in_manual_mode:
             # Second check, if we are not open and available to observe, then .... don't observe!
@@ -3203,15 +3218,9 @@ class Camera:
                 self.running_an_exposure_set = False
                 return
 
-        # Need to pick up exposure time here
-        exposure_time = float(
-            required_params.get("time", 1.0)
-        )
 
         # Third check, check it isn't daytime and institute maximum exposure time
         # Unless it is a command from the sequencer flat_scripts or a requested calibration frame
-        imtype = required_params.get("image_type", "light")
-
         skip_daytime_check = False
         skip_calibration_check = False
 
@@ -3265,15 +3274,6 @@ class Camera:
         # And it is likely because it takes a non-zero time to get to Phase II
         # So even in the setup phase the "exposure" is "busy"
 
-        opt = optional_params
-        self.hint = optional_params.get("hint", "")
-        self.script = required_params.get("script", "None")
-
-        try:
-            self.zoom_factor = optional_params.get('zoom', "Full")
-        except:
-            plog("Problem with supplied Zoom factor, Camera line 2613")
-            self.zoom_factor = "Full"
 
         if imtype.lower() in ("bias"):
             exposure_time = 0.0
@@ -3316,14 +3316,6 @@ class Camera:
                 bias_dark_or_light_type_frame = 'light'
                 lamps = None
 
-        self.smartstack = required_params.get('smartstack', True)
-        if imtype.lower() in ["pointing", "focus"]:
-            self.smartstack = False
-
-        if required_params.get('substack', False) or required_params.get('subStack', False):
-            self.substacker = True
-        else:
-            self.substacker = False
 
         self.native_bin = self.settings["native_bin"]
         self.ccd_sum = str(1) + ' ' + str(1)
@@ -3331,12 +3323,6 @@ class Camera:
         self.estimated_readtime = (
             exposure_time + self.readout_time
         )
-        count = int(
-            optional_params.get("count", 1)
-        )
-
-        if count < 1:
-            count = 1  # Hence frame does not repeat unless count > 1
 
         # Here we set up the filter, and later on possibly rotational composition.
         try:
@@ -3986,8 +3972,7 @@ class Camera:
                             quick=quick,
                             low=ldr_handle_time,
                             high=ldr_handle_high_time,
-                            script=self.script,
-                            opt=opt,
+                            optional_params=optional_params,
                             solve_it=solve_it,
                             smartstackid=SmartStackID,
                             # longstackid=LongStackID,
@@ -4117,8 +4102,7 @@ class Camera:
         quick=False,
         low=0,
         high=0,
-        script="False",
-        opt=None,
+        optional_params=None,
         solve_it=False,
         smartstackid='no',
         sskcounter=0,
@@ -4140,7 +4124,6 @@ class Camera:
         substack=False,
         corrected_ra_for_header=0.0,
         corrected_dec_for_header=0.0
-
     ):
 
         plog(
@@ -4149,15 +4132,15 @@ class Camera:
         )
 
         try:
-            if opt["object_name"] == '':
-                opt["object_name"] = 'Unknown'
+            if optional_params["object_name"] == '':
+                optional_params["object_name"] = 'Unknown'
         except:
-            opt["object_name"] = 'Unknown'
+            optional_params["object_name"] = 'Unknown'
 
         try:
-            opt["object_name"]
+            optional_params["object_name"]
         except:
-            opt["object_name"] = 'Unknown'
+            optional_params["object_name"] = 'Unknown'
 
         try:
             filter_ui_info = this_exposure_filter
@@ -4210,31 +4193,31 @@ class Camera:
         # , 'y', 'up', 'u']:   NB NB we should create a code-wide list of Narrow bands, broadbands and widebands so we do not have mulitiple lists to manage.
         elif Nsmartstack > 1 and this_exposure_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr', 'su', 'sv', 'sb', 'sy', 'hd', 'hg']:
             plog("Starting narrowband " + str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
-                 + str(opt["object_name"])
+                 + str(optional_params["object_name"])
                  + " by user: " + str(observer_user_name))
             g_dev["obs"].send_to_user("Starting narrowband " + str(exposure_time) + "s smartstack " + str(
                 sskcounter+1) + " out of " + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
         elif Nsmartstack > 1:
             plog("Starting broadband " + str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
-                 + str(opt["object_name"])
+                 + str(optional_params["object_name"])
                  + " by user: " + str(observer_user_name))
             g_dev["obs"].send_to_user("Starting broadband " + str(exposure_time) + "s smartstack " + str(
                 sskcounter+1) + " out of " + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
         else:
-            if "object_name" in opt:
+            if "object_name" in optional_params:
                 g_dev["obs"].send_to_user(
                     "Starting "
                     + str(exposure_time)
                     + "s " + str(filter_ui_info) + " exposure of "
-                    + str(opt["object_name"])
+                    + str(optional_params["object_name"])
                     + " by user: "
                     + str(observer_user_name) + '. ' +
-                    str(int(opt['count']) - int(counter) + 1) +
-                    " of " + str(opt['count']),
+                    str(int(optional_params['count']) - int(counter) + 1) +
+                    " of " + str(optional_params['count']),
                     p_level="INFO",
                 )
 
-        count = int(opt['count'])
+        count = int(optional_params['count'])
 
         self.status_time = time.time() + 10
         self.post_mnt = []
@@ -4327,12 +4310,12 @@ class Camera:
         object_name = 'Unknown'
         object_specf = 'no'
 
-        if "object_name" in opt:
+        if "object_name" in optional_params:
             if (
-                opt["object_name"] != "Unspecified"
-                and opt["object_name"] != ""
+                optional_params["object_name"] != "Unspecified"
+                and optional_params["object_name"] != ""
             ):
-                object_name = opt["object_name"]
+                object_name = optional_params["object_name"]
                 object_specf = "yes"
         elif (
             g_dev["mnt"].object != "Unspecified"

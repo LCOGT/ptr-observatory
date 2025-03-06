@@ -1780,23 +1780,8 @@ class Sequencer:
 
             # Input the global smartstack and substack request from the project
             # Into the individual exposure requests
-            try:
-                try:
-                    # This is the "proper" way of doing things.
-                    do_sub_stack=block['project']['project_constraints']['sub_stack']
-                    #plog ("Picked up project substack properly")
-                except:
-                    # This is the old way for old projects
-                    do_sub_stack=block['project']['exposures'][0]['substack']
-            except:
-                do_sub_stack=True
-
-            try:
-                # This is the "proper" way of doing things.
-                do_smart_stack=block['project']['project_constraints']['smart_stack']
-            except:
-                # This is the old way for old projects
-                do_smart_stack=block['project']['exposures'][0]['smartstack']
+            do_sub_stack = block['project']['project_constraints'].get('sub_stack', True)
+            do_smart_stack=block['project']['project_constraints'].get('smart_stack', True)
 
             #Compute how many to do.
             left_to_do = 0
