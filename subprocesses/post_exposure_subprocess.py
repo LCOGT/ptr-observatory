@@ -273,7 +273,7 @@ except:
 #A long tuple unpack of the payload
 (img, pier_side, is_osc, frame_type, reject_flat_by_known_gain, avg_mnt, avg_foc, avg_rot, \
  setpoint, tempccdtemp, ccd_humidity, ccd_pressure, darkslide_state, exposure_time, \
- this_exposure_filter, exposure_filter_offset, pane,opt, observer_user_name, \
+ this_exposure_filter, exposure_filter_offset, opt, observer_user_name, \
  azimuth_of_observation, altitude_of_observation, airmass_of_observation, pixscale, \
  smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, \
  dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, \
@@ -284,6 +284,8 @@ except:
  corrected_dec_for_header, substacker_filenames, dayobs, exposure_filter_offset,null_filterwheel, \
  wema_config, smartstackthread_filename, septhread_filename, mainjpegthread_filename,\
  platesolvethread_filename) = payload
+
+pane = opt.get('pane')
 
 a_timer=time.time()
 

@@ -3330,8 +3330,6 @@ class Camera:
         else:
             self.substacker = False
 
-        self.pane = optional_params.get("pane", None)
-
         self.native_bin = self.settings["native_bin"]
         self.ccd_sum = str(1) + ' ' + str(1)
 
@@ -5281,7 +5279,6 @@ class Camera:
                             exposure_time,
                             this_exposure_filter,
                             exposure_filter_offset,
-                            self.pane,
                             opt,
                             observer_user_name,
                             azimuth_of_observation,

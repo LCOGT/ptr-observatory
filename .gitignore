@@ -3,6 +3,7 @@ venv/
 .env
 .credentials
 local_dev_stuff/
+CLAUDE.md
 
 __pycache__
 *.pyc
