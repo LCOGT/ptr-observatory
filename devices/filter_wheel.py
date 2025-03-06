@@ -23,7 +23,7 @@ from ptr_utility import plog
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: 
+if TYPE_CHECKING:
     from obs import Observatory
 
 class FilterWheel:
@@ -35,7 +35,6 @@ class FilterWheel:
         self.config = site_config["filter_wheel"][name]
         self.settings = self.config['settings']
         self.obs = observatory
-        self.previous_filter_name='none'
 
         # Configure the role, if it exists
         # Current design allows for only one role per device
@@ -96,7 +95,7 @@ class FilterWheel:
                 self.filter = win32com.client.Dispatch(driver)
                 self.ascom = True
                 self.maxim = False
-                self.theskyx = False                
+                self.theskyx = False
                 self.dual = False
                 self.custom = False
                 self.dummy=False
@@ -383,7 +382,7 @@ class FilterWheel:
                         elif self.dummy:
 
                             plog ("Yup. Dummy changed the filter")
-                            
+
                         elif self.ascom:
                             print (self.filter.Position)
                             self.filter.Position = self.filter_data[self.filt_pointer][1][0]
@@ -433,6 +432,28 @@ class FilterWheel:
         self.filter.TemperatureSetpoint = float(p_temp)
         self.filter.CoolerOn = True
         return self.filter.TemperatureSetpoint
+
+    def _get_filter_index(self, filter_name: str) -> int:
+        """
+        Check if a filter exists by name and return its index in filter_data.
+
+        Args:
+            filter_name: Name of the filter to search for
+
+        Returns:
+            Integer index of the filter in self.filter_data if found,
+            -1 if the filter is not found
+        """
+        # Convert input to lowercase for case-insensitive matching
+        filter_name = str(filter_name).lower()
+
+        # Loop through all filters and check for a matching name
+        for index, fil in enumerate(self.filter_data):
+            if filter_name == fil[0].lower(): # case-insensitive matching
+                return index
+
+        # If we get here, the filter wasn't found
+        return -1
 
     def get_status(self):
         """Returns filter name, number, offset, and wheel movement status."""
@@ -508,57 +529,52 @@ class FilterWheel:
     def set_name_command(self, req: dict, opt: dict):
         """Sets the filter position by filter name."""
 
-        self.filter_changing=True
+        self.filter_changing = True
+        using_substitute_filter = False
 
         try:
             filter_name = str(req["filter"]).lower()
         except:
             filter_name = str(req["filter_name"]).lower()
-        filter_identified = 0
 
-        for match in range(
-            len(self.filter_data)
-        ):
-
-            if filter_name in str(self.filter_data[match][0]).lower():
-                self.filt_pointer = match
-                filter_identified = 1
-                break
-
-        # If filter was not identified, find a substitute filter
-        if filter_identified == 0:
-
-            filter_name = str(self.substitute_filter(filter_name)).lower()
-            if "none" in filter_name:
+        # Try finding a filter with the requested name
+        filter_index = self._get_filter_index(filter_name)
+        # If that fails, try finding a substitute filter
+        if filter_index == -1:
+            plog(f"Filter {filter_name} not found, attempting to find a substitute.")
+            using_substitute_filter = True
+            filter_name = self.substitute_filter(filter_name)
+            try:
+                # Get the index for the substitute filter
+                filter_index = self._get_filter_index(filter_name)
+                if filter_index == -1:
+                    plog('Substitute filter is not available. This suggest a problem with the substitute_filter function.')
+                    raise Exception("Substitute filter not available.")
+            # No substitute found
+            except:
+                plog("No substitute filter found, skipping exposure.")
                 return "none", "none", "none"
-            for match in range(
-                len(self.filter_data)
-            ):
-                if filter_name in str(self.filter_data[match][0]).lower():
-                    self.filt_pointer = match
-                    filter_identified = 1
-                    break
 
-        if self.previous_filter_name==filter_name:
-            self.filter_changing=False
-            return self.previous_filter_name, self.previous_filter_match, self.filter_offset
+        # Do nothing if the filter is already set
+        if self.filter_selected == filter_name:
+            self.filter_changing = False
+            return self.filter_selected, self.filter_number, self.filter_offset
 
+        # Report the new filter name to the user
         try:
-            plog("Filter name is:  ", self.filter_data[match][0])
-            g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
+            original_filter_name = self.filter_data[filter_index][0] # preserve capitalization
+            plog(f"Filter name is:  {original_filter_name}")
+            g_dev["obs"].send_to_user(f"Filter set to:  {original_filter_name}")
         except:
             pass  # This is usually when it is just booting up and obs doesn't exist yet
 
+        # Define the filter we are about to set
         try:
-            self.filter_number = self.filt_pointer
-            self.filter_selected = str(filter_name).lower()
+            self.filt_pointer = filter_index
+            self.filter_number = filter_index
+            self.filter_selected = filter_name
             self.filter_selections = self.filter_data[self.filt_pointer][1]
-
-            if filter_name in self.filter_offsets:
-                self.filter_offset=self.filter_offsets[filter_name]
-
-            else:
-                self.filter_offset = 0
+            self.filter_offset = self.filter_offsets.get(filter_name, 0)
         except:
             plog("Failed to change filter. Returning.")
             self.filter_selected = 'none'
@@ -566,19 +582,15 @@ class FilterWheel:
             return None, None, None
 
         # Send in the filter change request
-        self.filter_change_requested=True
+        self.filter_change_requested = True
         # Then force the focus adjustment to the right offset position for the filter
         try:
             if not g_dev['seq'].focussing:
                 g_dev['foc'].adjust_focus(force_change=True)
         except:
-
             plog ("not adjusting focus for filter change on bootup")
 
-        self.previous_filter_name=filter_name
-        self.previous_filter_match=match
-
-        return filter_name, match, self.filter_offset
+        return filter_name, filter_index, self.filter_offset
 
     def home_command(self, opt: dict):
         """Sets the filter to the home position."""
@@ -732,5 +744,4 @@ class FilterWheel:
                 return str(sub).lower()
         # NB I suggest we pick the default (w) filter instead of skipping. WER
 
-        plog("No substitute filter found, skipping exposure.")
-        return "none", None, None
+        return None
