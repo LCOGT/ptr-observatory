@@ -551,7 +551,7 @@ class Sequencer:
         do_normal_side_of_pier_later=False
         if not g_dev['cam'].pixscale == None:
             g_dev['obs'].send_to_user("Syncing on one side of the pier. Slewing then platesolving.")
-            
+
             self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)
             do_normal_side_of_pier_later=True
 
@@ -565,7 +565,7 @@ class Sequencer:
             g_dev['mnt'].go_command(alt=70,az= 90)
             g_dev['obs'].sync_after_platesolving=True
             self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)
-            
+
 
         # If we don't have a pixelscale, it is highly necessary
         # If it just successfully focused or at least got in the ballpark,
@@ -2003,7 +2003,7 @@ class Sequencer:
 
             # Before parking, set the dark filter
             if g_dev["fil"].null_filterwheel == False:
-                self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command({"filter": 'dk'}, {})
+                self.current_filter, filter_number, filter_offset = g_dev["fil"].set_name_command({"filter": 'dk'}, {})
 
             if not g_dev['obs'].mountless_operation:
                 g_dev['mnt'].park_command({}, {}) # Get there early
@@ -2427,7 +2427,7 @@ class Sequencer:
                 calibhduheader['OBSTYPE'] = 'DARK'
                 try:
                     # Save and upload master bias
-                    if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                                                
+                    if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:
                         g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
                     if filename_start in ['DARK','halfsecondDARK', '2secondDARK', '10secondDARK', '30secondDARK', 'broadbandssDARK', '1']:
@@ -2561,7 +2561,7 @@ class Sequencer:
                 try:
 
                     # Save and upload master bias
-                    if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                                                
+                    if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:
                         g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib +filename_start+'_master_bin1.fits' ))
 
 
@@ -2571,7 +2571,7 @@ class Sequencer:
 
 
                     # Store a version of the bias for the archive too
-                    if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:                        
+                    if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:
                         g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
 
@@ -2769,12 +2769,12 @@ class Sequencer:
 
                 try:
                     # Save and upload master bias
-                    if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                        
+                    if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:
                         g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'BIAS_master_bin1.fits' ))
-                    
+
                     g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.npy', copy.deepcopy(masterBias.astype(np.uint16))))
 
-                     # Store a version of the bias for the archive too                     
+                     # Store a version of the bias for the archive too
                     if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:
                         g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits' ))
 
@@ -2881,7 +2881,7 @@ class Sequencer:
                     g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + 'readnoise_variance_adu.npy', copy.deepcopy(variance_frame.astype('float32'))))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                     # Save and upload master bias
-                    if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                        
+                    if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:
                         g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'readnoise_variance_adu.fits', copy.deepcopy(variance_frame.astype('float32')), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'readnoise_variance_adu.fits' ))
 
                     # Store a version of the bias for the archive too
@@ -3438,10 +3438,10 @@ class Sequencer:
                                 g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                                 # Save and upload master bias
-                                if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                                                
+                                if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:
                                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), calibhduheader, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
 
-                                # Store a version of the bias for the archive too                                
+                                # Store a version of the bias for the archive too
                                 if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:
                                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
 
@@ -3558,7 +3558,7 @@ class Sequencer:
             plog ("Writing out bad pixel map npy and fits.")
             np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
 
-            if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:                                                
+            if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
 
             # filepathaws=g_dev['obs'].calib_masters_folder
@@ -3566,7 +3566,7 @@ class Sequencer:
             # g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
 
             # Store a version of the flat for the archive too
-            if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:                    
+            if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1, overwrite=True)
 
             #filepathaws=g_dev['obs'].calib_masters_folder
@@ -4630,7 +4630,7 @@ class Sequencer:
     def filter_focus_offset_estimator_script(self):
 
         self.total_sequencer_control=True
-        
+
         self.measuring_focus_offsets=True
         plog ("Determining offsets between filters")
         plog ("First doing a normal run on the 'focus' filter first")
@@ -4707,7 +4707,7 @@ class Sequencer:
 
             if np.isnan(foc_pos):
                 plog ("initial focus on offset run failed, giving it another shot after extensive focus attempt.")
-                
+
                 try:
                     foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, dont_return_scope=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=chosen_filter)
                 except:
@@ -4715,8 +4715,8 @@ class Sequencer:
                     plog ("dodgy auto focus return")
                     foc_pos=np.nan
                     foc_fwhm=np.nan
-                
-                
+
+
                 plog ("focus position: " + str(foc_pos))
                 plog ("focus fwhm: " + str(foc_fwhm))
                 if np.isnan(foc_pos):

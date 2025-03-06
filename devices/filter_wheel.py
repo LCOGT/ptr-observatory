@@ -55,8 +55,11 @@ class FilterWheel:
         # Load filter offset shelf if avaiable
         self.filter_offsets={}
 
-        # Initialise variable
-        self.filter_selected = 'none'
+        # Initialise variables for the current filter position
+        # These reflect the current state of the system, so be careful that
+        # the initial values aren't confused for real state
+        self.current_filter_name = 'none'
+        self.current_filter_number = -1
 
         if driver is not None:
             self.null_filterwheel = False
@@ -136,15 +139,17 @@ class FilterWheel:
                 self.dual = True
                 self.custom = False
 
+                default_filter_number = self._get_default_filter_number()
+
                 while self.filter_front.Position == -1:
                     time.sleep(0.1)
-                self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
+                self.filter_front.Position = self.filter_data[default_filter_number][1][1]
 
                 while self.filter_back.Position == -1:
                     time.sleep(0.1)
-                self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
+                self.filter_back.Position = self.filter_data[default_filter_number][1][0]
 
-                plog(self.filter_selected, self.filter_offset)
+                plog(self.current_filter_name, self.filter_offset)
             elif driver == "ASCOM.FLI.FilterWheel" and self.dual_filter:
                 self.maxim = False
                 self.dual = True
@@ -189,20 +194,24 @@ class FilterWheel:
 
                 self.dual = True
                 self.custom = False
-                self.filter_selected = self.filter_data[self.filter_reference][0]
-                self.filter_number = self.filter_reference
-                self.filter_offset = self.filter_data[self.filter_reference][2]
+
+                # The code below should move the filter wheel to the default filter
+                default_filter_number = self._get_default_filter_number()
+                self.current_filter_name = self.filter_data[default_filter_number][0]
+                self.current_filter_number = default_filter_number
+                # The line below appears to be incorrect, since it will fetch the filter alias
+                self.filter_offset = self.filter_data[default_filter_number][2]
 
 
                 while self.filter_front.Position == -1:
                     time.sleep(0.1)
-                self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
+                self.filter_front.Position = self.filter_data[default_filter_number][1][1]
 
                 while self.filter_back.Position == -1:
                     time.sleep(0.1)
-                self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
+                self.filter_back.Position = self.filter_data[default_filter_number][1][0]
 
-                plog(self.filter_selected, self.filter_offset)
+                plog(self.current_filter_name, self.filter_offset)
 
             elif driver.lower() in ["maxim.ccdcamera", "maxim", "maximdl", "maximdlpro"]:
                 # NOTE: Changed since FLI Dual code is failing.
@@ -233,8 +242,8 @@ class FilterWheel:
                     ser = serial.Serial(str(driver), timeout=12)
                     filter_pos = str(ser.read().decode())
                     plog("QHY filter is Home", filter_pos)
-                    self.filter_number = 0
-                    self.filter_name = "lpr"
+                    self.current_filter_number = 0
+                    self.filter_name = "lpr" # not used... can we delete?
                 except:
                     plog("QHY Filter not connected.")
 
@@ -364,7 +373,7 @@ class FilterWheel:
 
                             except:
                                 pass
-                            self.filter_offset = float(self.filter_data[self.filt_pointer][2])
+                            self.filter_offset = float(self.filter_data[self.current_filter_number][2])
 
                         elif self.maxim and self.dual:
                             try:
@@ -377,7 +386,7 @@ class FilterWheel:
 
                         elif self.theskyx:
 
-                            self.filterwheel_update_wincom.FilterIndexZeroBased = self.filter_data[self.filt_pointer][1][0]
+                            self.filterwheel_update_wincom.FilterIndexZeroBased = self.filter_data[self.current_filter_number][1][0]
 
                         elif self.dummy:
 
@@ -385,7 +394,7 @@ class FilterWheel:
 
                         elif self.ascom:
                             print (self.filter.Position)
-                            self.filter.Position = self.filter_data[self.filt_pointer][1][0]
+                            self.filter.Position = self.filter_data[self.current_filter_number][1][0]
                             print (self.filter.Position)
                             while self.filter.Position == -1:
                                 #print ("Watiing for filter wheel")
@@ -402,7 +411,7 @@ class FilterWheel:
                                 plog ("Failed to change filter")
                                 pass
 
-                            self.filter_offset = float(self.filter_data[self.filt_pointer][2])
+                            self.filter_offset = float(self.filter_data[self.current_filter_number][2])
 
                         if self.wait_time_after_filter_change != 0:
                             #plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
@@ -433,7 +442,25 @@ class FilterWheel:
         self.filter.CoolerOn = True
         return self.filter.TemperatureSetpoint
 
-    def _get_filter_index(self, filter_name: str) -> int:
+    def _get_default_filter_number(self):
+        """
+        Get the index of the default filter in filter_data.
+
+        Returns:
+            Integer index of the filter in self.filter_data if found,
+            -1 if the filter is not found
+        """
+        default_name = self.settings.get("default_filter", None)
+        if default_name == None:
+            plog("WARNING: Default filter not set. Using fallback of filter 0.")
+            return 0
+        default_number = self._get_filter_number(default_name)
+        if default_number == -1: #
+            plog('WARNING: Default filter did not match any existing filters. Using fallback of filter 0.')
+            return 0
+        return default_number
+
+    def _get_filter_number(self, filter_name: str) -> int:
         """
         Check if a filter exists by name and return its index in filter_data.
 
@@ -461,8 +488,8 @@ class FilterWheel:
         try:
             f_move = False
             status = {
-                "filter_name": self.filter_selected,
-                "filter_number": self.filter_number,
+                "filter_name": self.current_filter_name,
+                "filter_number": self.current_filter_number,
                 "filter_offset": self.filter_offset,
                 "wheel_is_moving": f_move,
             }
@@ -513,11 +540,11 @@ class FilterWheel:
         ):
 
             if filter_name in str(self.filter_data[match][0]).lower():
-                self.filt_pointer = match
+                self.current_filter_number = match
                 break
 
         try:
-            filter_throughput = float(self.filter_data[self.filt_pointer][3])
+            filter_throughput = float(self.filter_data[self.current_filter_number][3])
         except:
             plog("Could not find an appropriate throughput for " +str(filter_name))
             filter_throughput = np.nan
@@ -538,31 +565,33 @@ class FilterWheel:
             filter_name = str(req["filter_name"]).lower()
 
         # Try finding a filter with the requested name
-        filter_index = self._get_filter_index(filter_name)
+        filter_number = self._get_filter_number(filter_name)
         # If that fails, try finding a substitute filter
-        if filter_index == -1:
+        if filter_number == -1:
             plog(f"Filter {filter_name} not found, attempting to find a substitute.")
             using_substitute_filter = True
+            requested_name = filter_name
             filter_name = self.substitute_filter(filter_name)
             try:
                 # Get the index for the substitute filter
-                filter_index = self._get_filter_index(filter_name)
-                if filter_index == -1:
+                filter_number = self._get_filter_number(filter_name)
+                if filter_number == -1:
                     plog('Substitute filter is not available. This suggest a problem with the substitute_filter function.')
                     raise Exception("Substitute filter not available.")
+                plog(f'Using substitute filter {filter_name} in place of {requested_name}.')
             # No substitute found
             except:
                 plog("No substitute filter found, skipping exposure.")
                 return "none", "none", "none"
 
         # Do nothing if the filter is already set
-        if self.filter_selected == filter_name:
+        if self.current_filter_name == filter_name:
             self.filter_changing = False
-            return self.filter_selected, self.filter_number, self.filter_offset
+            return self.current_filter_name, self.current_filter_number, self.filter_offset
 
         # Report the new filter name to the user
         try:
-            original_filter_name = self.filter_data[filter_index][0] # preserve capitalization
+            original_filter_name = self.filter_data[filter_number][0] # preserve capitalization
             plog(f"Filter name is:  {original_filter_name}")
             g_dev["obs"].send_to_user(f"Filter set to:  {original_filter_name}")
         except:
@@ -570,14 +599,13 @@ class FilterWheel:
 
         # Define the filter we are about to set
         try:
-            self.filt_pointer = filter_index
-            self.filter_number = filter_index
-            self.filter_selected = filter_name
-            self.filter_selections = self.filter_data[self.filt_pointer][1]
+            self.current_filter_name = filter_name
+            self.current_filter_number = filter_number
+            self.filter_selections = self.filter_data[self.current_filter_number][1]
             self.filter_offset = self.filter_offsets.get(filter_name, 0)
         except:
             plog("Failed to change filter. Returning.")
-            self.filter_selected = 'none'
+            self.current_filter_name = 'none'
             self.filter_changing=False
             return None, None, None
 
@@ -590,7 +618,7 @@ class FilterWheel:
         except:
             plog ("not adjusting focus for filter change on bootup")
 
-        return filter_name, filter_index, self.filter_offset
+        return filter_name, filter_number, self.filter_offset
 
     def home_command(self, opt: dict):
         """Sets the filter to the home position."""

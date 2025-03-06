@@ -2596,12 +2596,12 @@ class Camera:
             # image = np.ctypeslib.as_array(
             #     qhycam.camera_params[qhycam_id]['prev_img_data'])
 
-            
+
 
             #breakpoint()
-            
+
             while zwocamera.get_exposure_status() == 1:
-                #print ('waitingforzeo')                          
+                #print ('waitingforzeo')
                 time.sleep(0.05)
 
             time_before_last_substack_readout = time.time()
@@ -2609,7 +2609,7 @@ class Camera:
                 image = zwocamera.get_data_after_exposure()
 
                 image=np.frombuffer(image, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
-            
+
             #breakpoint()
 
 
@@ -2625,7 +2625,7 @@ class Camera:
                     if not (self.overscan_down == 0 and self.overscan_up == 0 and self.overscan_left == 0 and self.overscan_right==0):
                         image=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
                     np.save(substacker_filenames[subexposure],image)
-            
+
             except:
                 plog ("ZWO READOUT ERROR. Probably a timeout?")
                 plog(traceback.format_exc())
@@ -2927,7 +2927,7 @@ class Camera:
                 qhycam.camera_params[qhycam_id]['handle'])
         else:
 
-            
+
             # Boost Narrowband and low throughput broadband
             if not self.current_filter == None:
                 if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n"]:
@@ -3366,10 +3366,10 @@ class Camera:
                     )
 
                 # Check if filter needs changing, if so, change.
-                self.current_filter = g_dev['fil'].filter_selected
+                self.current_filter = g_dev['fil'].current_filter_name
                 if not self.current_filter == requested_filter_name:
                     try:
-                        self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
+                        self.current_filter, filter_number, filter_offset = g_dev["fil"].set_name_command(
                             {"filter": requested_filter_name}, {}
                         )
 
@@ -3388,7 +3388,7 @@ class Camera:
                     self.running_an_exposure_set = False
                     return
 
-                self.current_filter = g_dev['fil'].filter_selected
+                self.current_filter = g_dev['fil'].current_filter_name
             else:
                 requested_filter_name = 'none'
                 #plog('Warning: null filterwheel detected, skipping filter setup')
@@ -4078,11 +4078,11 @@ class Camera:
                     os.umask(0)
                     os.makedirs(
 
-                        self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)                
-                
+                        self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
+
                 if self.is_osc:
-                    
-                    
+
+
                     suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
 
                     for suffix in suffixes:
@@ -4092,7 +4092,7 @@ class Camera:
                                 json.dump(temp_file_holder, f, indent=2)
                         except:
                             plog(traceback.format_exc())
-                    
+
                 else:
                     try:
                         with open(pipetokenfolder + "/" + token_name, 'w') as f:
@@ -4508,7 +4508,7 @@ class Camera:
         if (not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing'):
 
             ######### Trigger off threads to wait for their respective files
-            
+
             ## Spin up tha main post_processing_thread
             post_processing_subprocess=subprocess.Popen(
                 ['python','subprocesses/post_exposure_subprocess.py'],
@@ -4517,7 +4517,7 @@ class Camera:
                 stderr=None,
                 bufsize=-1
             )
-            
+
             # SMARTSTACK THREAD
             if (not frame_type.lower() in [
                 "bias",
@@ -4993,7 +4993,7 @@ class Camera:
                                             # Swap the filter
                                             if g_dev["fil"].null_filterwheel == False:
                                                 if g_dev['seq'].next_filter_in_flat_run != 'none':
-                                                    self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
+                                                    self.current_filter, filter_number, filter_offset = g_dev["fil"].set_name_command(
                                                         {"filter": g_dev['seq'].next_filter_in_flat_run}, {
                                                         }
                                                     )
@@ -5060,10 +5060,10 @@ class Camera:
                                          str(self.current_filter))
                                     if not g_dev['seq'].block_next_filter_requested == 'None':
                                         # Check if filter needs changing, if so, change.
-                                        self.current_filter = g_dev['fil'].filter_selected
+                                        self.current_filter = g_dev['fil'].current_filter_name
                                         if not self.current_filter == g_dev['seq'].block_next_filter_requested:
                                             plog("Changing filter")
-                                            self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
+                                            self.current_filter, filter_number, filter_offset = g_dev["fil"].set_name_command(
                                                 {"filter": g_dev['seq'].block_next_filter_requested}, {
                                                 }
                                             )
@@ -5163,11 +5163,11 @@ class Camera:
                         if (Nsmartstack == 1 or (Nsmartstack == sskcounter+1)):
                             if not g_dev['seq'].block_next_filter_requested == 'None':
                                 # Check if filter needs changing, if so, change.
-                                self.current_filter = g_dev['fil'].filter_selected
+                                self.current_filter = g_dev['fil'].current_filter_name
                                 if not self.current_filter.lower() == g_dev['seq'].block_next_filter_requested.lower():
                                     plog(
                                         "Changing filter for next smartstack round.")
-                                    self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
+                                    self.current_filter, filter_number, filter_offset = g_dev["fil"].set_name_command(
                                         {"filter": g_dev['seq'].block_next_filter_requested}, {
                                         }
                                     )
@@ -5795,20 +5795,20 @@ class Camera:
                             if minarea < 5:  # There has to be a min minarea though!
                                 minarea = 5
                             #sep.set_extract_pixstack(int(ix*iy - 1))
-                            
-                            
+
+
                             # Estimate needed pixstack: assume a fraction of pixels may be sources
                             estimated_sources = max(1000, int(ix*iy * 0.1))
-                            
+
                             # Base pixstack on estimated source count, with a scaling factor
                             pixstack = int(estimated_sources * 10)
-                            
+
                             # Apply limits to avoid excessive memory allocation
                             pixstack = min(max(pixstack, 100000), 2000000)  # Keep within reasonable range
-                            
+
                             # Set the pixel stack in SEP
                             sep.set_extract_pixstack(pixstack)
-                            
+
                             sep.set_sub_object_limit(int(300000))
 
                             sepbkgerr=sepbkg.globalrms
@@ -5820,7 +5820,7 @@ class Camera:
                                     print ("failed sep with background, trying without")
                                     sources = sep.extract(outputimg, 4.0, minarea=minarea)
                                 except:
-                                
+
                                     print(traceback.format_exc())
                                     sources=[]
                                 #breakpoint()
