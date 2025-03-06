@@ -243,7 +243,6 @@ class FilterWheel:
                     filter_pos = str(ser.read().decode())
                     plog("QHY filter is Home", filter_pos)
                     self.current_filter_number = 0
-                    self.filter_name = "lpr" # not used... can we delete?
                 except:
                     plog("QHY Filter not connected.")
 
