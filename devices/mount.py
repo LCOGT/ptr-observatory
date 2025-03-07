@@ -1438,8 +1438,9 @@ class Mount:
             
                 #dome_azimuth= GET FROM wema
                 dome_timeout_timer=time.time()
-                dome_open_or_opening=True
-                while abs(obs_azimuth - dome_azimuth) > 15 and time.time() - dome_timeout_timer < 300 and not self.rapid_park_indicator and dome_open_or_opening:
+                #dome_open_or_opening=True
+                dome_is_slewing=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_slewing']['val'] 
+                while (abs(obs_azimuth - dome_azimuth) > 15 or dome_is_slewing) and time.time() - dome_timeout_timer < 300 and not self.rapid_park_indicator: # and dome_open_or_opening:
                     
                     #plog ("making sure dome is positioned correct.")
                     rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
@@ -1447,12 +1448,13 @@ class Mount:
                     rd = rd.transform_to(aa)
                     obs_azimuth = float(rd.az/u.deg)
                     
-                    plog ("d> " + str(obs_azimuth) + " " + str(dome_azimuth))
+                    plog ("d> " + str(obs_azimuth) + " " + str(dome_azimuth) + " " + " Dome Slewing: " + str(dome_is_slewing))
                     time.sleep(2)
                     try:
                         wema_enclosure_status=requests.get(uri_status, timeout=20)
                         dome_azimuth=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_azimuth']['val']
                         dome_open_or_opening=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['shutter_status']['val'] in ['Open', 'open','Opening','opening']
+                        dome_is_slewing=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_slewing']['val'] 
                     except:
                         plog ("Some error in getting the wema_enclosure")
                         
