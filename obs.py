@@ -2982,11 +2982,8 @@ class Observatory:
                     is_osc = self.devices["main_cam"].settings["is_osc"]
 
                     # Do not bother platesolving unless it is dark enough!!
-                    #TB
-                    if True or not (
-                        g_dev["events"]["Civil Dusk"]
-                        < ephem.now()
-                        < g_dev["events"]["Civil Dawn"]
+                    if not (
+                        g_dev["events"]["Civil Dusk"] < ephem.now() < g_dev["events"]["Civil Dawn"]
                     ):
                         plog("Too bright to consider platesolving!")
                     else:
