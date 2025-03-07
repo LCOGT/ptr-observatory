@@ -598,8 +598,8 @@ class Sequencer:
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
 
-        # ephem_now = ephem.now()
-        ephem_now = ephem.date('2025/01/30 1:00:00.00')
+        ephem_now = ephem.now()
+        #ephem_now = ephem.date('2025/01/30 1:00:00.00')
 
         if (
             (datetime.datetime.now() - g_dev['obs'].observing_status_timer)
@@ -622,6 +622,9 @@ class Sequencer:
         if enc_status == None:
             enc_status = {'shutter_status': 'Unknown'}
             enc_status['enclosure_mode'] = 'Automatic'
+
+        #print (enc_status)
+        #breakpoint()
 
         if events['Nightly Reset'] <= ephem_now :# < events['End Nightly Reset']):
              if self.nightly_reset_complete == False:
