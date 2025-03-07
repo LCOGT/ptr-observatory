@@ -8,7 +8,7 @@ Created on Tue Apr 20 22:19:25 2021
 """
 
 from PIL import Image  # , ImageDraw
-from astropy.coordinates import SkyCoord  # , AltAz
+from astropy.coordinates import SkyCoord , AltAz, get_sun
 from scipy.stats import binned_statistic
 from ctypes import *
 from ptr_utility import plog
@@ -84,6 +84,12 @@ def print_factors(x):
    for i in range(1, x + 1):
        if x % i == 0:
            print(i)
+
+def sun_az_alt_now(site_coordinates):
+
+    altazframe=AltAz(obstime=Time.now(), location=site_coordinates)
+    sun_coords=get_sun(Time.now()).transform_to(altazframe)
+    return sun_coords.az.degree, sun_coords.alt.degree
 
 
 def mid_stretch_jpeg(data):
@@ -1672,291 +1678,291 @@ class Camera:
             else:
                 return True
 
-    def in_line_quick_focus(self, hdufocusdata, im_path, text_name):
+    # def in_line_quick_focus(self, hdufocusdata, im_path, text_name):
 
-        try:
-            bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-        except:
-            hdufocusdata = np.asarray(hdufocusdata, dtype=float)
-            bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-        bkg.subfrom(hdufocusdata)
+    #     try:
+    #         bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+    #     except:
+    #         hdufocusdata = np.asarray(hdufocusdata, dtype=float)
+    #         bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
+    #     bkg.subfrom(hdufocusdata)
 
-        imageMedian = bn.nanmedian(hdufocusdata)
-        # Mop up any remaining nans
-        hdufocusdata[np.isnan(hdufocusdata)] = imageMedian
+    #     imageMedian = bn.nanmedian(hdufocusdata)
+    #     # Mop up any remaining nans
+    #     hdufocusdata[np.isnan(hdufocusdata)] = imageMedian
 
-        # Cut down focus image to central degree
-        fx, fy = hdufocusdata.shape
+    #     # Cut down focus image to central degree
+    #     fx, fy = hdufocusdata.shape
 
-        # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
-        # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
-        # So we chop the image down to a degree by a degree
-        # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
+    #     # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
+    #     # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
+    #     # So we chop the image down to a degree by a degree
+    #     # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
 
-        if self.pixscale == None:
-            # If we don't know the pixelscale, we don't know the size, but 1000 x 1000 should be big enough!!
-            # Get the current dimensions
-            height, width = hdufocusdata.shape[:2]
+    #     if self.pixscale == None:
+    #         # If we don't know the pixelscale, we don't know the size, but 1000 x 1000 should be big enough!!
+    #         # Get the current dimensions
+    #         height, width = hdufocusdata.shape[:2]
 
-            # Determine cropping bounds
-            new_height = min(height, 1000)
-            new_width = min(width, 1000)
+    #         # Determine cropping bounds
+    #         new_height = min(height, 1000)
+    #         new_width = min(width, 1000)
 
-            # Calculate start indices to center-crop
-            start_y = (height - new_height) // 2
-            start_x = (width - new_width) // 2
+    #         # Calculate start indices to center-crop
+    #         start_y = (height - new_height) // 2
+    #         start_x = (width - new_width) // 2
 
-            # Crop the image
-            hdufocusdata = hdufocusdata[start_y:start_y + new_height, start_x:start_x + new_width]
-        else:
-            fx_degrees = (fx * self.pixscale) / 3600
-            fy_degrees = (fy * self.pixscale) / 3600
-            crop_x = 0
-            crop_y = 0
-            if fx_degrees > 1.0:
-                ratio_crop = 1/fx_degrees
-                crop_x = int((fx - (ratio_crop * fx))/2)
-            if fy_degrees > 1.0:
-                ratio_crop = 1/fy_degrees
-                crop_y = int((fy - (ratio_crop * fy))/2)
-            if crop_x > 0 or crop_y > 0:
-                if crop_x == 0:
-                    crop_x = 2
-                if crop_y == 0:
-                    crop_y = 2
-                # Make sure it is an even number for OSCs
-                if (crop_x % 2) != 0:
-                    crop_x = crop_x+1
-                if (crop_y % 2) != 0:
-                    crop_y = crop_y+1
-                hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
+    #         # Crop the image
+    #         hdufocusdata = hdufocusdata[start_y:start_y + new_height, start_x:start_x + new_width]
+    #     else:
+    #         fx_degrees = (fx * self.pixscale) / 3600
+    #         fy_degrees = (fy * self.pixscale) / 3600
+    #         crop_x = 0
+    #         crop_y = 0
+    #         if fx_degrees > 1.0:
+    #             ratio_crop = 1/fx_degrees
+    #             crop_x = int((fx - (ratio_crop * fx))/2)
+    #         if fy_degrees > 1.0:
+    #             ratio_crop = 1/fy_degrees
+    #             crop_y = int((fy - (ratio_crop * fy))/2)
+    #         if crop_x > 0 or crop_y > 0:
+    #             if crop_x == 0:
+    #                 crop_x = 2
+    #             if crop_y == 0:
+    #                 crop_y = 2
+    #             # Make sure it is an even number for OSCs
+    #             if (crop_x % 2) != 0:
+    #                 crop_x = crop_x+1
+    #             if (crop_y % 2) != 0:
+    #                 crop_y = crop_y+1
+    #             hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
 
-        if self.is_osc:
+    #     if self.is_osc:
 
-            # Rapidly interpolate so that it is all one channel
-            # Wipe out red channel
-            hdufocusdata[::2, ::2] = np.nan
-            # Wipe out blue channel
-            hdufocusdata[1::2, 1::2] = np.nan
+    #         # Rapidly interpolate so that it is all one channel
+    #         # Wipe out red channel
+    #         hdufocusdata[::2, ::2] = np.nan
+    #         # Wipe out blue channel
+    #         hdufocusdata[1::2, 1::2] = np.nan
 
-            # To fill the checker board, roll the array in all four directions and take the average
-            # Which is essentially the bilinear fill without excessive math or not using numpy
-            # It moves true values onto nans and vice versa, so makes an array of true values
-            # where the original has nans and we use that as the fill
-            bilinearfill = np.roll(hdufocusdata, 1, axis=0)
-            bilinearfill = np.add(
-                bilinearfill, np.roll(hdufocusdata, -1, axis=0))
-            bilinearfill = np.add(
-                bilinearfill, np.roll(hdufocusdata, 1, axis=1))
-            bilinearfill = np.add(
-                bilinearfill, np.roll(hdufocusdata, -1, axis=1))
-            bilinearfill = np.divide(bilinearfill, 4)
-            hdufocusdata[np.isnan(hdufocusdata)] = 0
-            bilinearfill[np.isnan(bilinearfill)] = 0
-            hdufocusdata = hdufocusdata+bilinearfill
-            del bilinearfill
+    #         # To fill the checker board, roll the array in all four directions and take the average
+    #         # Which is essentially the bilinear fill without excessive math or not using numpy
+    #         # It moves true values onto nans and vice versa, so makes an array of true values
+    #         # where the original has nans and we use that as the fill
+    #         bilinearfill = np.roll(hdufocusdata, 1, axis=0)
+    #         bilinearfill = np.add(
+    #             bilinearfill, np.roll(hdufocusdata, -1, axis=0))
+    #         bilinearfill = np.add(
+    #             bilinearfill, np.roll(hdufocusdata, 1, axis=1))
+    #         bilinearfill = np.add(
+    #             bilinearfill, np.roll(hdufocusdata, -1, axis=1))
+    #         bilinearfill = np.divide(bilinearfill, 4)
+    #         hdufocusdata[np.isnan(hdufocusdata)] = 0
+    #         bilinearfill[np.isnan(bilinearfill)] = 0
+    #         hdufocusdata = hdufocusdata+bilinearfill
+    #         del bilinearfill
 
-        fx, fy = hdufocusdata.shape
-        tempstd = np.std(hdufocusdata)
-        saturate = self.settings["saturate"]
+    #     fx, fy = hdufocusdata.shape
+    #     tempstd = np.std(hdufocusdata)
+    #     saturate = self.settings["saturate"]
 
-        # Don't bother with stars with peaks smaller than 100 counts per arcsecond
-        if self.pixscale == None:
-            threshold = max(
-                3 * np.std(hdufocusdata[hdufocusdata < (5*tempstd)]), (100))
-        else:
-            threshold = max(
-                3 * np.std(hdufocusdata[hdufocusdata < (5*tempstd)]), (200*self.pixscale))
-        googtime = time.time()
-        list_of_local_maxima = localMax(hdufocusdata, threshold=threshold)
+    #     # Don't bother with stars with peaks smaller than 100 counts per arcsecond
+    #     if self.pixscale == None:
+    #         threshold = max(
+    #             3 * np.std(hdufocusdata[hdufocusdata < (5*tempstd)]), (100))
+    #     else:
+    #         threshold = max(
+    #             3 * np.std(hdufocusdata[hdufocusdata < (5*tempstd)]), (200*self.pixscale))
+    #     googtime = time.time()
+    #     list_of_local_maxima = localMax(hdufocusdata, threshold=threshold)
 
-        # Assess each point
-        pointvalues = np.zeros([len(list_of_local_maxima), 3], dtype=float)
-        counter = 0
-        googtime = time.time()
-        for point in list_of_local_maxima:
-            pointvalues[counter][0] = point[0]
-            pointvalues[counter][1] = point[1]
-            pointvalues[counter][2] = np.nan
-            in_range = False
-            if (point[0] > fx*0.1) and (point[1] > fy*0.1) and (point[0] < fx*0.9) and (point[1] < fy*0.9):
-                in_range = True
-            if in_range:
-                value_at_point = hdufocusdata[point[0], point[1]]
-                try:
-                    value_at_neighbours = (hdufocusdata[point[0]-1, point[1]]+hdufocusdata[point[0]+1,
-                                           point[1]]+hdufocusdata[point[0], point[1]-1]+hdufocusdata[point[0], point[1]+1])/4
-                except:
-                    print(traceback.format_exc())
-                # Check it isn't just a dot
-                if value_at_neighbours < (0.6*value_at_point):
-                    pointvalues[counter][2] = np.nan
-                # If not saturated and far away from the edge
-                elif value_at_point < 0.8*saturate:
-                    pointvalues[counter][2] = value_at_point
-                else:
-                    pointvalues[counter][2]=np.nan
-            counter=counter+1
-        # Trim list to remove things that have too many other things close to them.
+    #     # Assess each point
+    #     pointvalues = np.zeros([len(list_of_local_maxima), 3], dtype=float)
+    #     counter = 0
+    #     googtime = time.time()
+    #     for point in list_of_local_maxima:
+    #         pointvalues[counter][0] = point[0]
+    #         pointvalues[counter][1] = point[1]
+    #         pointvalues[counter][2] = np.nan
+    #         in_range = False
+    #         if (point[0] > fx*0.1) and (point[1] > fy*0.1) and (point[0] < fx*0.9) and (point[1] < fy*0.9):
+    #             in_range = True
+    #         if in_range:
+    #             value_at_point = hdufocusdata[point[0], point[1]]
+    #             try:
+    #                 value_at_neighbours = (hdufocusdata[point[0]-1, point[1]]+hdufocusdata[point[0]+1,
+    #                                        point[1]]+hdufocusdata[point[0], point[1]-1]+hdufocusdata[point[0], point[1]+1])/4
+    #             except:
+    #                 print(traceback.format_exc())
+    #             # Check it isn't just a dot
+    #             if value_at_neighbours < (0.6*value_at_point):
+    #                 pointvalues[counter][2] = np.nan
+    #             # If not saturated and far away from the edge
+    #             elif value_at_point < 0.8*saturate:
+    #                 pointvalues[counter][2] = value_at_point
+    #             else:
+    #                 pointvalues[counter][2]=np.nan
+    #         counter=counter+1
+    #     # Trim list to remove things that have too many other things close to them.
 
-        # remove nan rows
-        pointvalues = pointvalues[~np.isnan(pointvalues).any(axis=1)]
-        # reverse sort by brightness
-        pointvalues = pointvalues[pointvalues[:, 2].argsort()[::-1]]
+    #     # remove nan rows
+    #     pointvalues = pointvalues[~np.isnan(pointvalues).any(axis=1)]
+    #     # reverse sort by brightness
+    #     pointvalues = pointvalues[pointvalues[:, 2].argsort()[::-1]]
 
-        # The radius should be related to arcseconds on sky
-        # And a reasonable amount - 24'
-        try:
-            radius_of_radialprofile = int(24/self.pixscale)
-        except:
-            # if pixelscale is not defined make it big
-            radius_of_radialprofile = int(24/0.2)
+    #     # The radius should be related to arcseconds on sky
+    #     # And a reasonable amount - 24'
+    #     try:
+    #         radius_of_radialprofile = int(24/self.pixscale)
+    #     except:
+    #         # if pixelscale is not defined make it big
+    #         radius_of_radialprofile = int(24/0.2)
 
-        # Round up to nearest odd number to make a symmetrical array
-        radius_of_radialprofile = int(radius_of_radialprofile // 2 * 2 + 1)
-        halfradius_of_radialprofile = math.ceil(0.5*radius_of_radialprofile)
+    #     # Round up to nearest odd number to make a symmetrical array
+    #     radius_of_radialprofile = int(radius_of_radialprofile // 2 * 2 + 1)
+    #     halfradius_of_radialprofile = math.ceil(0.5*radius_of_radialprofile)
 
-        # Don't do them individually, set them up for multiprocessing
-        focus_multiprocess = []
-        for i in range(min(len(pointvalues), 200)):
-            cx = int(pointvalues[i][0])
-            cy = int(pointvalues[i][1])
-            cvalue = hdufocusdata[int(cx)][int(cy)]
+    #     # Don't do them individually, set them up for multiprocessing
+    #     focus_multiprocess = []
+    #     for i in range(min(len(pointvalues), 200)):
+    #         cx = int(pointvalues[i][0])
+    #         cy = int(pointvalues[i][1])
+    #         cvalue = hdufocusdata[int(cx)][int(cy)]
 
-            try:
-                temp_array = hdufocusdata[cx-halfradius_of_radialprofile:cx+halfradius_of_radialprofile,
-                                          cy-halfradius_of_radialprofile:cy+halfradius_of_radialprofile]
-            except:
-                print(traceback.format_exc())
-            # construct radial profile
-            cut_x, cut_y = temp_array.shape
-            cut_x_center = (cut_x/2)-1
-            cut_y_center = (cut_y/2)-1
-            radprofile = np.zeros([cut_x*cut_y, 2], dtype=float)
-            counter = 0
-            brightest_pixel_rdist = 0
-            brightest_pixel_value = 0
-            for q in range(cut_x):
-                for t in range(cut_y):
-                    r_dist = pow(pow((q-cut_x_center), 2) +
-                                 pow((t-cut_y_center), 2), 0.5)
-                    if q-cut_x_center < 0:  # or t-cut_y_center < 0:
-                        r_dist = r_dist*-1
-                    radprofile[counter][0] = r_dist
-                    radprofile[counter][1] = temp_array[q][t]
-                    if temp_array[q][t] > brightest_pixel_value:
-                        brightest_pixel_rdist = r_dist
-                        brightest_pixel_value = temp_array[q][t]
-                    counter = counter+1
-            # If the brightest pixel is in the center-ish
-            # then put it in contention
-            if self.pixscale == None:
-                if abs(brightest_pixel_rdist) < max(3, 3/0.2):
-                    focus_multiprocess.append(
-                        (cvalue, cx, cy, radprofile, 0.2))
+    #         try:
+    #             temp_array = hdufocusdata[cx-halfradius_of_radialprofile:cx+halfradius_of_radialprofile,
+    #                                       cy-halfradius_of_radialprofile:cy+halfradius_of_radialprofile]
+    #         except:
+    #             print(traceback.format_exc())
+    #         # construct radial profile
+    #         cut_x, cut_y = temp_array.shape
+    #         cut_x_center = (cut_x/2)-1
+    #         cut_y_center = (cut_y/2)-1
+    #         radprofile = np.zeros([cut_x*cut_y, 2], dtype=float)
+    #         counter = 0
+    #         brightest_pixel_rdist = 0
+    #         brightest_pixel_value = 0
+    #         for q in range(cut_x):
+    #             for t in range(cut_y):
+    #                 r_dist = pow(pow((q-cut_x_center), 2) +
+    #                              pow((t-cut_y_center), 2), 0.5)
+    #                 if q-cut_x_center < 0:  # or t-cut_y_center < 0:
+    #                     r_dist = r_dist*-1
+    #                 radprofile[counter][0] = r_dist
+    #                 radprofile[counter][1] = temp_array[q][t]
+    #                 if temp_array[q][t] > brightest_pixel_value:
+    #                     brightest_pixel_rdist = r_dist
+    #                     brightest_pixel_value = temp_array[q][t]
+    #                 counter = counter+1
+    #         # If the brightest pixel is in the center-ish
+    #         # then put it in contention
+    #         if self.pixscale == None:
+    #             if abs(brightest_pixel_rdist) < max(3, 3/0.2):
+    #                 focus_multiprocess.append(
+    #                     (cvalue, cx, cy, radprofile, 0.2))
 
 
-            else:
-                if abs(brightest_pixel_rdist) < max(3, 3/self.pixscale):
-                    focus_multiprocess.append(
-                        (cvalue, cx, cy, radprofile, self.pixscale))
+    #         else:
+    #             if abs(brightest_pixel_rdist) < max(3, 3/self.pixscale):
+    #                 focus_multiprocess.append(
+    #                     (cvalue, cx, cy, radprofile, self.pixscale))
 
-        # Temporary just fur testing
-        fwhm_results = []
-        number_to_collect = max(16, 2*os.cpu_count())
-        for i in range(len(focus_multiprocess)):
-            result = multiprocess_fast_gaussian_photometry(
-                focus_multiprocess[i])
-            if not np.isnan(result):
-                fwhm_results.append(result)
-                if len(fwhm_results) >= number_to_collect:
-                    break
+    #     # Temporary just fur testing
+    #     fwhm_results = []
+    #     number_to_collect = max(16, 2*os.cpu_count())
+    #     for i in range(len(focus_multiprocess)):
+    #         result = multiprocess_fast_gaussian_photometry(
+    #             focus_multiprocess[i])
+    #         if not np.isnan(result):
+    #             fwhm_results.append(result)
+    #             if len(fwhm_results) >= number_to_collect:
+    #                 break
 
-        rfp = abs(bn.nanmedian(fwhm_results)) * 4.710
-        if self.pixscale == None:
-            rfr= rfp
-            rfs = np.nanstd(fwhm_results)
-        else:
-            rfr = rfp * self.pixscale
-            rfs = np.nanstd(fwhm_results) * self.pixscale
-        if rfr < 1.0 or rfr > 12:
-            rfr = np.nan
-            rfp = np.nan
-            rfs = np.nan
+    #     rfp = abs(bn.nanmedian(fwhm_results)) * 4.710
+    #     if self.pixscale == None:
+    #         rfr= rfp
+    #         rfs = np.nanstd(fwhm_results)
+    #     else:
+    #         rfr = rfp * self.pixscale
+    #         rfs = np.nanstd(fwhm_results) * self.pixscale
+    #     if rfr < 1.0 or rfr > 12:
+    #         rfr = np.nan
+    #         rfp = np.nan
+    #         rfs = np.nan
 
-        fwhm_file = {}
-        fwhm_file['rfp'] = str(rfp)
-        fwhm_file['rfr'] = str(rfr)
-        fwhm_file['rfs'] = str(rfs)
-        fwhm_file['sky'] = str(imageMedian)
-        fwhm_file['sources'] = str(len(fwhm_results))
+    #     fwhm_file = {}
+    #     fwhm_file['rfp'] = str(rfp)
+    #     fwhm_file['rfr'] = str(rfr)
+    #     fwhm_file['rfs'] = str(rfs)
+    #     fwhm_file['sky'] = str(imageMedian)
+    #     fwhm_file['sources'] = str(len(fwhm_results))
 
-        # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
-        # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
-        hdusmalldata = np.array(hdufocusdata)
-        fx, fy = hdusmalldata.shape
+    #     # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
+    #     # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
+    #     hdusmalldata = np.array(hdufocusdata)
+    #     fx, fy = hdusmalldata.shape
 
-        aspect_ratio= fx/fy
-        if self.pixscale == None:
-            focus_jpeg_size=500
-        else:
-            focus_jpeg_size=0.2/(self.pixscale/3600)
-        if focus_jpeg_size < fx:
-            crop_width = (fx - focus_jpeg_size) / 2
-        else:
-            crop_width =2
+    #     aspect_ratio= fx/fy
+    #     if self.pixscale == None:
+    #         focus_jpeg_size=500
+    #     else:
+    #         focus_jpeg_size=0.2/(self.pixscale/3600)
+    #     if focus_jpeg_size < fx:
+    #         crop_width = (fx - focus_jpeg_size) / 2
+    #     else:
+    #         crop_width =2
 
-        if focus_jpeg_size < fy:
-            crop_height = (fy - (focus_jpeg_size / aspect_ratio)) / 2
-        else:
-            crop_height = 2
+    #     if focus_jpeg_size < fy:
+    #         crop_height = (fy - (focus_jpeg_size / aspect_ratio)) / 2
+    #     else:
+    #         crop_height = 2
 
-        # Make sure it is an even number for OSCs
-        if (crop_width % 2) != 0:
-            crop_width = crop_width+1
-        if (crop_height % 2) != 0:
-            crop_height = crop_height+1
+    #     # Make sure it is an even number for OSCs
+    #     if (crop_width % 2) != 0:
+    #         crop_width = crop_width+1
+    #     if (crop_height % 2) != 0:
+    #         crop_height = crop_height+1
 
-        crop_width = int(crop_width)
-        crop_height = int(crop_height)
+    #     crop_width = int(crop_width)
+    #     crop_height = int(crop_height)
 
-        if crop_width > 0 or crop_height > 0:
-            hdusmalldata = hdusmalldata[crop_width:-
-                                        crop_width, crop_height:-crop_height]
+    #     if crop_width > 0 or crop_height > 0:
+    #         hdusmalldata = hdusmalldata[crop_width:-
+    #                                     crop_width, crop_height:-crop_height]
 
-        hdusmalldata = hdusmalldata - bn.nanmin(hdusmalldata)
+    #     hdusmalldata = hdusmalldata - bn.nanmin(hdusmalldata)
 
-        stretched_data_float = mid_stretch_jpeg(hdusmalldata+1000)
-        stretched_256 = 255 * stretched_data_float
-        hot = np.where(stretched_256 > 255)
-        cold = np.where(stretched_256 < 0)
-        stretched_256[hot] = 255
-        stretched_256[cold] = 0
-        stretched_data_uint8 = stretched_256.astype("uint8")
-        hot = np.where(stretched_data_uint8 > 255)
-        cold = np.where(stretched_data_uint8 < 0)
-        stretched_data_uint8[hot] = 255
-        stretched_data_uint8[cold] = 0
+    #     stretched_data_float = mid_stretch_jpeg(hdusmalldata+1000)
+    #     stretched_256 = 255 * stretched_data_float
+    #     hot = np.where(stretched_256 > 255)
+    #     cold = np.where(stretched_256 < 0)
+    #     stretched_256[hot] = 255
+    #     stretched_256[cold] = 0
+    #     stretched_data_uint8 = stretched_256.astype("uint8")
+    #     hot = np.where(stretched_data_uint8 > 255)
+    #     cold = np.where(stretched_data_uint8 < 0)
+    #     stretched_data_uint8[hot] = 255
+    #     stretched_data_uint8[cold] = 0
 
-        iy, ix = stretched_data_uint8.shape
-        final_image = Image.fromarray(stretched_data_uint8)
+    #     iy, ix = stretched_data_uint8.shape
+    #     final_image = Image.fromarray(stretched_data_uint8)
 
-        if iy == ix:
-            final_image = final_image.resize(
-                (900, 900)
-            )
-        else:
-            final_image = final_image.resize(
-                (900, int(900 * iy / ix))
-            )
+    #     if iy == ix:
+    #         final_image = final_image.resize(
+    #             (900, 900)
+    #         )
+    #     else:
+    #         final_image = final_image.resize(
+    #             (900, int(900 * iy / ix))
+    #         )
 
-        self.current_focus_jpg = copy.deepcopy(final_image)
+    #     self.current_focus_jpg = copy.deepcopy(final_image)
 
-        del hdusmalldata
-        del stretched_data_float
-        del final_image
+    #     del hdusmalldata
+    #     del stretched_data_float
+    #     del final_image
 
-        return fwhm_file
+    #     return fwhm_file
 
     # Note this is a thread!
 
@@ -3248,7 +3254,9 @@ class Camera:
             skip_calibration_check = True
 
         if not skip_daytime_check and g_dev['obs'].daytime_exposure_time_safety_on:
+
             sun_az, sun_alt = self.obs.astro_events.sun_az_alt_now()
+
             if sun_alt > -5:
                 if exposure_time > float(self.settings['max_daytime_exposure']):
                     g_dev['obs'].send_to_user("Exposure time reduced to maximum daytime exposure time: " + str(
@@ -3329,7 +3337,12 @@ class Camera:
         fw_device = self.obs.devices['main_fw']
         if filterwheel_device is not None:
             fw_device = filterwheel_device
-        null_filterwheel = fw_device.null_filterwheel
+
+        try:
+            null_filterwheel = fw_device.null_filterwheel
+        except:
+            null_filterwheel =True
+        #breakpoint()
         try:
             if not null_filterwheel:
                 if imtype in ['bias', 'dark'] or a_dark_exposure:
@@ -3456,7 +3469,10 @@ class Camera:
                     # For narrowband and low throughput filters, increase base exposure time.
                     ssExp = ssExp * ssNBmult
             else:
-                this_exposure_filter = fw_device.name
+                try:
+                    this_exposure_filter = fw_device.name
+                except:
+                    this_exposure_filter = 'RGGB'
 
             if not imtype.lower() in ["light", "expose"]:
                 Nsmartstack = 1
@@ -3992,7 +4008,8 @@ class Camera:
                             substack=self.substacker,
                             corrected_ra_for_header=corrected_ra_for_header,
                             corrected_dec_for_header=corrected_dec_for_header,
-                            fw_device=fw_device
+                            fw_device=fw_device,
+                            null_filterwheel=null_filterwheel
                         )
 
                         self.retry_camera = 0
@@ -4121,11 +4138,17 @@ class Camera:
         substack=False,
         corrected_ra_for_header=0.0,
         corrected_dec_for_header=0.0,
-        fw_device=None
+        fw_device=None,
+        null_filterwheel=True
     ):
         if fw_device == None:
             fw_device = self.obs.devices['main_fw']
-        null_filterwheel = fw_device.null_filterwheel
+            
+        #breakpoint()
+        try:
+            this_exposure_filter = fw_device.current_filter_name
+        except:
+            this_exposure_filter = 'RGGB'
 
         plog(
             "Exposure Started:  " + str(exposure_time) + "s ",
@@ -5668,26 +5691,26 @@ class Camera:
                     elif self.pixscale > 1.0:
                         pixfoc=True
 
-                    # Instead of waiting for the photometry process we quickly measure the FWHM
-                    # in-line. Necessary particularly because the photometry subprocess can bank up.
+                    # # Instead of waiting for the photometry process we quickly measure the FWHM
+                    # # in-line. Necessary particularly because the photometry subprocess can bank up.
 
-                    if True:
-                    #if not pixfoc and (g_dev['foc'].focus_commissioned):
-                        fwhm_dict = self.in_line_quick_focus(
-                            outputimg, im_path, text_name)
-                        focus_image = False
+                    # if True:
+                    # #if not pixfoc and (g_dev['foc'].focus_commissioned):
+                    #     fwhm_dict = self.in_line_quick_focus(
+                    #         outputimg, im_path, text_name)
+                    #     focus_image = False
 
-                        plog ("FWHM from gaussian: " + str(fwhm_dict['rfr']))
+                    #     plog ("FWHM from gaussian: " + str(fwhm_dict['rfr']))
 
                     # If the FWHM is pretty small, then go ahead. If the FWHM is above 4.0 arcseconds,
                     # Lets go the slow route and check for donutes etc..
 
 
-                    if pixfoc or not (g_dev['foc'].focus_commissioned) or True:
+                    if True: # pixfoc or not (g_dev['foc'].focus_commissioned):
 
 
-                        plog ("high FWHM - ")
-                        print ("TRYING THE BLOB APPROACH")
+                        # plog ("high FWHM - ")
+                        # print ("TRYING THE BLOB APPROACH")
                         try:
                             # Export a binary table for astrometry.net
                             # sepimg = objdeflat.astype("float").copy(order="C")
@@ -5753,6 +5776,31 @@ class Camera:
                                         crop_y = crop_y+1
                                     outputimg = outputimg[crop_x:-crop_x, crop_y:-crop_y]
 
+                            if self.is_osc:
+
+                                # Rapidly interpolate so that it is all one channel
+                                # Wipe out red channel
+                                outputimg[::2, ::2] = np.nan
+                                # Wipe out blue channel
+                                outputimg[1::2, 1::2] = np.nan
+
+                                # To fill the checker board, roll the array in all four directions and take the average
+                                # Which is essentially the bilinear fill without excessive math or not using numpy
+                                # It moves true values onto nans and vice versa, so makes an array of true values
+                                # where the original has nans and we use that as the fill
+                                bilinearfill = np.roll(outputimg, 1, axis=0)
+                                bilinearfill = np.add(
+                                    bilinearfill, np.roll(outputimg, -1, axis=0))
+                                bilinearfill = np.add(
+                                    bilinearfill, np.roll(outputimg, 1, axis=1))
+                                bilinearfill = np.add(
+                                    bilinearfill, np.roll(outputimg, -1, axis=1))
+                                bilinearfill = np.divide(bilinearfill, 4)
+                                outputimg[np.isnan(outputimg)] = 0
+                                bilinearfill[np.isnan(bilinearfill)] = 0
+                                outputimg = outputimg+bilinearfill
+                                del bilinearfill
+
                             try:
                                 sepbkg = sep.Background(outputimg, bw=32, bh=32, fw=3, fh=3)
                             except:
@@ -5769,20 +5817,20 @@ class Camera:
                                 minarea= (-9.2421 * self.pixscale) + 16.553
                             if minarea < 5:  # There has to be a min minarea though!
                                 minarea = 5
-                            #sep.set_extract_pixstack(int(ix*iy - 1))
+                            sep.set_extract_pixstack(int(ix*iy - 1))
 
 
                             # Estimate needed pixstack: assume a fraction of pixels may be sources
-                            estimated_sources = max(1000, int(ix*iy * 0.1))
+                            #estimated_sources = max(1000, int(ix*iy * 0.1))
 
                             # Base pixstack on estimated source count, with a scaling factor
-                            pixstack = int(estimated_sources * 10)
+                            #pixstack = int(estimated_sources * 10)
 
                             # Apply limits to avoid excessive memory allocation
-                            pixstack = min(max(pixstack, 100000), 2000000)  # Keep within reasonable range
+                            #pixstack = min(max(pixstack, 100000), 2000000)  # Keep within reasonable range
 
                             # Set the pixel stack in SEP
-                            sep.set_extract_pixstack(pixstack)
+                            #sep.set_extract_pixstack(pixstack)
 
                             sep.set_sub_object_limit(int(300000))
 

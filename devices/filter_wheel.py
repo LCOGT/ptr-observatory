@@ -319,6 +319,7 @@ class FilterWheel:
             try:
                 # update when a filter change is requested or every so often.
                 if self.filter_change_requested or (self.filterwheel_update_timer < time.time() - self.filterwheel_update_period):
+                 
 
                     if self.filter_change_requested:
                         self.filter_change_requested=False
@@ -568,7 +569,7 @@ class FilterWheel:
         # If that fails, try finding a substitute filter
         if filter_number == -1:
             plog(f"Filter {filter_name} not found, attempting to find a substitute.")
-            using_substitute_filter = True
+            #using_substitute_filter = True
             requested_name = filter_name
             filter_name = self.substitute_filter(filter_name)
             try:

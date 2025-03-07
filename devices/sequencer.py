@@ -2784,7 +2784,7 @@ class Sequencer:
                     tempy=np.load(file, mmap_mode='r')
                     tempy=np.load(file)
                     tempmedian=bn.nanmedian(tempy)
-                    if tempy.size < 1000:
+                    if tempy.size < 60000:
                         plog ("corrupt dark skipped: " + str(file))
                         notcorrupt=False
                         del tempy
@@ -2919,7 +2919,7 @@ class Sequencer:
                     tempy=np.load(file, mmap_mode='r')
                     tempy=np.load(file)
                     tempmedian=bn.nanmedian(tempy)
-                    if tempy.size < 1000:
+                    if tempy.size < 60000:
                         plog ("corrupt dark skipped: " + str(file))
                         del tempy
                         notcorrupt=False
@@ -3098,7 +3098,7 @@ class Sequencer:
                 tempy=np.load(file, mmap_mode='r')
                 tempy=np.load(file)
                 tempmedian=bn.nanmedian(tempy)
-                if tempy.size < 1000:
+                if tempy.size < 60000:
                     plog ("tiny bias file skipped: " + str(file))
                     del tempy
                     os.remove(file)
@@ -4003,6 +4003,17 @@ class Sequencer:
             # Save the local boolean array
             plog ("Total bad pixels in image: " + str(bad_pixel_mapper_array.sum()))
             plog ("Writing out bad pixel map npy and fits.")
+            
+            fraction_true = np.sum(bad_pixel_mapper_array) / bad_pixel_mapper_array.size
+            
+            
+            # If there are more than five percent bad pixels something has gone wrong... so set the bad pixel mapper arry to all false
+            
+            if fraction_true > 0.05:
+                plog("The number of bad pixels detected is above 5% of the image.... something has gone awry. Setting a clear bad_pixel_map")
+                bad_pixel_mapper_array[:] = False
+                
+            
             np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
 
             if g_dev['obs'].config['produce_fits_file_for_final_calibrations']:
@@ -4250,9 +4261,29 @@ class Sequencer:
         else:
             morn = False
 
+        # If set to skip moon check, skip moon check
         if not g_dev['obs'].moon_checks_on:
             skip_moon_check=True
-
+            
+        
+        # If we don't have enough flats, then skip the moon check        
+        # Get the first directory in the path (if any)
+        subdirs = [d for d in os.listdir(g_dev['obs'].local_flat_folder) if os.path.isdir(os.path.join(g_dev['obs'].local_flat_folder, d))]
+        if subdirs:
+            first_directory = subdirs[0]
+            # Count files in the first directory
+            num_files = len([f for f in os.listdir(os.path.join(g_dev['obs'].local_flat_folder, first_directory)) 
+                             if os.path.isfile(os.path.join(g_dev['obs'].local_flat_folder, first_directory, f))])
+            print(f"Number of files in '{first_directory}': {num_files}")
+            
+        else:
+            print("No directories found.")
+            num_files=0
+        max_files = self.settings['number_of_flat_to_store']
+        if not ((num_files/max_files) > 0.8):
+            skip_moon_check=True
+       
+        
         if not (g_dev['obs'].enc_status['shutter_status'] == 'Open') and not (g_dev['obs'].enc_status['shutter_status'] == 'Sim. Open'):
             plog ("NOT DOING FLATS -- THE ROOF IS SHUT!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as the roof is shut.")
