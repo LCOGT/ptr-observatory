@@ -3248,7 +3248,7 @@ class Camera:
             skip_calibration_check = True
 
         if not skip_daytime_check and g_dev['obs'].daytime_exposure_time_safety_on:
-            sun_az, sun_alt = self.obs.events.sun_az_alt_now()
+            sun_az, sun_alt = self.obs.astro_events.sun_az_alt_now()
             if sun_alt > -5:
                 if exposure_time > float(self.settings['max_daytime_exposure']):
                     g_dev['obs'].send_to_user("Exposure time reduced to maximum daytime exposure time: " + str(
