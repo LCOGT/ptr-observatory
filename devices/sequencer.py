@@ -783,7 +783,6 @@ class Sequencer:
                         identified_block=None
 
                         for block in self.blocks:  #  This merges project spec into the blocks.
-                            plog(f'block start: {block["start"]}, now_date_timeZ: {now_date_timeZ}, block end: {block["end"]}')
                             if (block['start'] <= now_date_timeZ < block['end']) and not self.is_in_completes(block['event_id']):
                                 plog('trying to get project from projects api')
                                 try:
