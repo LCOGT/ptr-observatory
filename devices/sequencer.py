@@ -599,7 +599,6 @@ class Sequencer:
         '''
 
         ephem_now = ephem.now()
-        #ephem_now = ephem.date('2025/01/30 1:00:00.00')
 
         if (
             (datetime.datetime.now() - g_dev['obs'].observing_status_timer)
