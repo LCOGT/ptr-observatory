@@ -110,7 +110,7 @@ class SiteProxy:
     A class to handle communication with the site proxy service.
     Manages configuration status updates for scheduled observations.
     """
-    VALID_STATES = ['COMPLETED', 'FAILED', 'NOT_ATTEMPTED']
+    VALID_END_STATES = ['COMPLETED', 'FAILED', 'NOT_ATTEMPTED']
 
     def __init__(self):
         self.site_proxy_offline = False
@@ -192,9 +192,9 @@ class SiteProxy:
             dict: response from the site proxy request or None if request failed
         """
         plog(f'Updating configuration status to {state} for {config_status_id}')
-        if state not in self.VALID_STATES:
+        if state not in self.VALID_END_STATES:
             plog(f'WARNING: invalid state given to update the configuration {config_status_id}.')
-            plog(f'Received {state}, but must be one of {", ".join(self.VALID_STATES)}.')
+            plog(f'Received {state}, but must be one of {", ".join(self.VALID_END_STATES)}.')
         if not self._is_valid_timestamp([start, end]):
             plog(f'WARNING: not all timestamps in {[start, end]} are formatted correctly for configuration status update.')
         summary = {
@@ -279,14 +279,14 @@ class SchedulerObservation:
         plog(f'simulating defocus of {amount}')
         return
 
-    def _take_exposure(self, camera_device, filter_wheel_device, time: float, filter_name: str,
+    def _take_exposure(self, camera_device, filterwheel_device, time: float, filter_name: str,
                       smartstack: bool = True, substack: bool = True) -> dict:
         """
         Take an exposure with the specified parameters
 
         Args:
             camera_device: The camera device to use
-            filter_wheel_device: The filter wheel device to use
+            filterwheel_device: The filter wheel device to use
             time: Exposure time in seconds
             filter_name: Name of the filter to use
             smartstack: Whether to use smartstack
@@ -313,6 +313,7 @@ class SchedulerObservation:
             user_name=self.submitter_id,
             skip_open_check=True,
             skip_daytime_check=True,
+            filterwheel_device=filterwheel_device
         )
 
     def _is_valid_config(self, config: dict) -> bool:
@@ -341,8 +342,6 @@ class SchedulerObservation:
         if not config['instrument_configs'] or not isinstance(config['instrument_configs'], list):
             plog("Configuration must have at least one instrument_config")
             return False
-
-        # Other validation checks could be added here
 
         return True
 
