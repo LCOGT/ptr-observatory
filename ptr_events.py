@@ -435,6 +435,9 @@ class Events:
         self.close_and_park = self.sunrise + self.wema_config['morn_close_and_park']/1440
         #******************  NB NB Cool down and open comes from the WEMA Config.
         #***** Code in this computer has to verify open was not delayed or close is early.
+        
+        self.observing_begins=self.astroDark - self.config['astro_dark_buffer']/1440
+        self.observing_ends=self.astroEnd + self.config['astro_dark_buffer']/1440
 
         self.evnt = [('Eve Bias Dark      ', ephem.Date(self.cool_down_open - self.config['bias_dark interval']/1440)),
                      ('End Eve Bias Dark  ', ephem.Date(self.cool_down_open - (1.25*6)/1440)),
@@ -444,13 +447,13 @@ class Events:
                      ('Sun Set            ', ephem.Date(self.sunset)),
                      ('Civil Dusk         ', ephem.Date(self.civilDusk)),
                      ('End Eve Sky Flats  ', ephem.Date(self.civilDusk + self.config['end_eve_sky_flats_offset']/1440)),
-                     ('Observing Begins   ', ephem.Date(self.astroDark - self.config['astro_dark_buffer']/1440)),
-                     ('Clock & Auto Focus ', ephem.Date(self.nauticalDusk - self.config['clock_and_auto_focus_offset']/1440)),
+                     ('Observing Begins   ', ephem.Date(self.observing_begins)),
+                     ('Clock & Auto Focus ', ephem.Date(self.observing_begins - self.config['clock_and_auto_focus_offset']/1440)),
                      ('Naut Dusk          ', ephem.Date(self.nauticalDusk)),
                      ('Astro Dark         ', ephem.Date(self.astroDark)),
                      ('Middle of Night    ', ephem.Date(self.middleNight)),
                      ('End Astro Dark     ', ephem.Date(self.astroEnd)),
-                     ('Observing Ends     ', ephem.Date(self.astroEnd + self.config['astro_dark_buffer']/1440)),
+                     ('Observing Ends     ', ephem.Date(self.observing_ends)),
                      ('Naut Dawn          ', ephem.Date(self.nauticalDawn)),
                      ('Civil Dawn         ', ephem.Date(self.civilDawn)),
                      ('Morn Sky Flats     ', ephem.Date(self.sunrise + self.config['morn_flat_start_offset']/1440.)),
@@ -462,7 +465,7 @@ class Events:
                      ('Morn Bias Dark     ', ephem.Date(self.close_and_park + 2/1440.)),  #I guess this is warm-up time!
                      ('End Morn Bias Dark ', ephem.Date(night_reset := self.close_and_park +  self.config['bias_dark interval']/1440.)),
                      ('Nightly Reset      ', ephem.Date(night_reset + 2/1440.)),
-                     ('End Nightly Reset  ', ephem.Date(night_reset + self.config['end_night_processing_time']/1440.)),  #Just a Guess
+                     #('End Nightly Reset  ', ephem.Date(night_reset + self.config['end_night_processing_time']/1440.)),  #Just a Guess
                      ('Prior Moon Rise    ', ephem.Date(self.last_moonrise)),
                      ('Prior Moon Transit ', ephem.Date(self.last_moontransit)),
                      ('Prior Moon Set     ', ephem.Date(self.last_moonset)),

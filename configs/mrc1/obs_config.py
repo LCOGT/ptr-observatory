@@ -191,16 +191,13 @@ site_config = {
     #'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 ,
-    'clock_and_auto_focus_offset': 8,
+    'clock_and_auto_focus_offset': 15,
 
-    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
+    'astro_dark_buffer': 35,   #Min before and after AD to extend observing window
     #'morn_flat_start_offset': -5,       #min from Sunrise
     'morn_flat_start_offset': -10,       #min from Sunrise
     'morn_flat_end_offset':  +45,        #min from Sunrise
-    'end_night_processing_time':  90,   #  A guess
-    'observing_begins_offset': 18,
-    # How many minutes before Nautical Dawn to observe ....
-    'observing_ends_offset': 18,
+    
 
 
 

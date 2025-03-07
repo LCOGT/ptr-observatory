@@ -625,7 +625,7 @@ class Sequencer:
             enc_status = {'shutter_status': 'Unknown'}
             enc_status['enclosure_mode'] = 'Automatic'
 
-        if (events['Nightly Reset'] <= ephem_now < events['End Nightly Reset']):
+        if events['Nightly Reset'] <= ephem_now :# < events['End Nightly Reset']):
              if self.nightly_reset_complete == False:
                  self.nightly_reset_complete = True
                  self.nightly_reset_script()
