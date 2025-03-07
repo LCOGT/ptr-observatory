@@ -84,7 +84,7 @@ site_config = {
 
     # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
-    'save_archive_versions_of_final_calibrations' : False, 
+    'save_archive_versions_of_final_calibrations' : False,
 
     # The site can fully platesolve each image before it is sent off to s3 or a PIPE
     # If there are spare enough cycles at the site, this saves time for the PIPE
@@ -210,6 +210,27 @@ site_config = {
         'widefield_cam': None,
         'allsky_cam': None,
     },
+
+    # The LCO scheduler references a description of this site in configdb
+    # The logic in configdb is organized slightly differently than the PTR
+    # config files (like this one), but they should ultimately represent the
+    # same underlying hardware.
+    # When a PTR obsevatory is running an observation created by the scheduler,
+    # we'll use this to figure out what devices to use to run that observation.
+    # The key is the instrument name from configdb, and the value is a dict of
+    # device names from this config file for each type of device.
+    #
+    # This should only be modified if the configuration in configdb changes.
+    'configdb_instrument_mapping': {
+        'zwo1600m': {
+            'mount': 'ecocdkpier',
+            'camera': 'ec003zwo',
+            'filter_wheel': 'SBIG 8-position wheel',
+            'rotator': None,
+            'focuser': 'focuser'
+        }
+    },
+
     'device_types': [
             'mount',
             #'telescope',
@@ -442,15 +463,13 @@ site_config = {
             "filter_settle_time": 7, #how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
 
-            "driver": 'ASCOM.EFW2.FilterWheel',
-
-            #"driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+            "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
 
-                'default_filter': "pg",
+                'default_filter': "lum",
 
                 'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
                 'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters

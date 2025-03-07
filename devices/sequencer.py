@@ -3,6 +3,11 @@
 sequencer.py  sequencer.py  sequencer.py  sequencer.py  sequencer.py
 
 '''
+from devices.execute_project import SchedulerObservation
+from devices.sequencer_helpers import is_valid_utc_iso
+from devices.sequencer_helpers import pointing_is_ok
+from devices.sequencer_helpers import validate_project_format
+from devices.sequencer_helpers import compute_target_coordinates
 import time
 import datetime
 from dateutil import tz
@@ -83,6 +88,7 @@ IS_FLIPPED = 1
 IS_NORMAL = 0
 
 def ra_fix_h(ra):
+    """ Shift the ra to fall between 0 and 24"""
     while ra >= 24:
         ra -= 24
     while ra < 0:
@@ -106,14 +112,8 @@ def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
     response = requests.request(**request_kwargs)
     return response.json()
 
-def ra_fix(ra):
-    while ra >= 24:
-        ra -= 24
-    while ra < 0:
-        ra +=24
-    return ra
-
 def ra_dec_fix_hd(ra, dec):
+    """ Shift the ra to fall between 0 and 24 and dec between -90 and 90."""
     if dec > 90:
         dec = 180 - dec
         ra += 12
@@ -125,9 +125,6 @@ def ra_dec_fix_hd(ra, dec):
     while ra < 0:
         ra += 24
     return ra, dec
-
-
-
 
 
 class Sequencer:
@@ -601,7 +598,8 @@ class Sequencer:
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
 
-        ephem_now = ephem.now()
+        # ephem_now = ephem.now()
+        ephem_now = ephem.date('2025/01/30 1:00:00.00')
 
         if (
             (datetime.datetime.now() - g_dev['obs'].observing_status_timer)
@@ -632,7 +630,6 @@ class Sequencer:
                  self.nightly_reset_complete = True
 
         if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
-
             self.nightly_reset_complete = False
 
         not_slewing=False
@@ -642,7 +639,12 @@ class Sequencer:
             not_slewing=True
 
         # Don't attempt to start a sequence during an exposure OR when a function (usually TPOINT) has taken total control OR if it is doing something else or waiting to readjust.
-        if not self.total_sequencer_control and not g_dev['cam'].running_an_exposure_set and not_slewing and not g_dev['obs'].pointing_recentering_requested_by_platesolve_thread and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+        if (not self.total_sequencer_control and
+            not g_dev['cam'].running_an_exposure_set and
+            not_slewing and
+            not g_dev['obs'].pointing_recentering_requested_by_platesolve_thread and
+            not g_dev['obs'].pointing_correction_requested_by_platesolve_thread):
+
             ###########################################################################
             # While in this part of the sequencer, we need to have manual UI commands
             # turned off.  So that if a sequencer script starts running, we don't get
@@ -664,7 +666,6 @@ class Sequencer:
                 self.nightly_reset_complete = False
                 self.cool_down_latch = True
                 self.reset_completes()
-
 
                 # If the roof opens later then sync and refocus
                 if (g_dev['events']['Observing Begins'] < ephem_now < g_dev['events']['Observing Ends']):
@@ -751,9 +752,14 @@ class Sequencer:
 
                 self.sync_and_refocus()
 
-            if  (events['Observing Begins'] <= ephem_now \
-                                       < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].running_an_exposure_set\
-                                       and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
+            if self.obs.scope_in_manual_mode or (
+                (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and
+                 not self.block_guard and
+                 not g_dev["cam"].running_an_exposure_set and
+                 (time.time() - self.project_call_timer > 10) and
+                 not g_dev['obs'].scope_in_manual_mode and
+                 g_dev['obs'].open_and_enabled_to_observe and
+                 self.clock_focus_latch == False):
 
                 try:
                     self.nightly_reset_complete = False
@@ -766,7 +772,7 @@ class Sequencer:
                     self.project_call_timer = time.time()
 
                     # Mission critical calendar block update
-                    self.update_calendar_blocks()
+                    self.update_calendar_blocks(start_time=datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
 
                     # only need to bother with the rest if there is more than 0 blocks.
                     if not len(self.blocks) > 0:
@@ -777,9 +783,8 @@ class Sequencer:
                         identified_block=None
 
                         for block in self.blocks:  #  This merges project spec into the blocks.
-
                             if (block['start'] <= now_date_timeZ < block['end']) and not self.is_in_completes(block['event_id']):
-
+                                plog('trying to get project from projects api')
                                 try:
                                     url_proj = "https://projects.photonranch.org/projects/get-project"
                                     request_body = json.dumps({
@@ -792,6 +797,7 @@ class Sequencer:
                                         self.block_guard = True
                                         block['project']=project_response.json()
                                         identified_block=copy.deepcopy(block)
+                                        plog('retrieved project: ', identified_block)
                                     else:
                                         plog("Project response status code not 200")
                                         plog (str(project_response))
@@ -805,72 +811,65 @@ class Sequencer:
 
                                 if identified_block == None:
                                     plog ("identified block is None")
-                                    pointing_good=False
 
                                 elif identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
                                     plog ("identified block is real_time or none")
-                                    pointing_good=False
 
                                 elif identified_block['project'] == None:
                                     plog (identified_block)
                                     plog ("Skipping a block that contains an empty project")
-                                    pointing_good=False
 
                                 elif identified_block['project'] != None:
-                                    pointing_good=True
-                                    # If a block is identified, check it is in the sky and not in a poor location
-                                    target=identified_block['project']['project_targets'][0]
-                                    ra = float(target['ra'])
-                                    dec = float(target['dec'])
-                                    temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
-                                    temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
-                                    alt = temppointingaltaz.alt.degree
-                                    # Check the moon isn't right in front of the project target
-                                    moon_coords=get_body("moon", time=Time.now())
-                                    moon_dist = moon_coords.separation(temppointing)
-                                    if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
-                                        g_dev['obs'].send_to_user("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                                        plog("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                                        pointing_good=False
-                                    if alt < self.config['lowest_requestable_altitude']:
-                                        g_dev['obs'].send_to_user("Not running project as it is too low: " + str(alt) + " degrees.")
-                                        plog("Not running project as it is too low: " + str(alt) + " degrees.")
-                                        pointing_good=False
+                                    plog('block origin: ', identified_block['origin'])
 
-                                if pointing_good:
-                                    completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
-                                    #
-                                    try:
-                                        self.append_completes(completed_block['event_id'])
-                                    except:
-                                        plog ("block complete append didn't work")
-                                        plog(traceback.format_exc())
+                                    # LCO Observations; don't worry about pointing checks
+                                    if identified_block['origin'] == 'LCO':
+                                        completed_block = self.execute_project_from_lco(identified_block)
+
+                                    # PTR Projects
+                                    else:
+                                        # For PTR, need to make sure pointing is good
+                                        if pointing_is_ok(identified_block, self.config):
+                                            completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
+                                            try:
+                                                self.append_completes(completed_block['event_id'])
+                                            except:
+                                                plog ("block complete append didn't work")
+                                                plog(traceback.format_exc())
+                                        else:
+                                            plog(f'Tried to observe a PTR project but pointing check failed')
+
                                     self.blockend = None
                                 elif identified_block is None:
                                     self.blockend = None
                                 else:
                                     plog ("Something didn't work, cancelling out of doing this project and putting it in the completes pile.")
                                     plog (block)
+                                    plog('Skipping putting the project in the completes pile for development')
                                     self.append_completes(block['event_id'])
                                     self.blockend = None
-
-                    self.block_guard=False
-                    self.currently_mosaicing = False
-                    self.blockend = None
 
                 except:
                     plog(traceback.format_exc())
                     plog("Hang up in sequencer.")
-                    self.blockend = None
-                    self.block_guard=False
-                    self.currently_mosaicing = False
 
-                # Double check
+                self.currently_mosaicing = False
+                self.blockend = None
                 self.block_guard = False
 
 
-            if ((time.time() - self.time_roof_last_opened > self.config['time_to_wait_after_roof_opens_to_take_flats'] ) or g_dev['obs'].assume_roof_open) and not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
-                    self.config['auto_morn_sky_flat'])  and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
+            # Morning Sky Flat Routine
+            time_since_roof_opened = time.time() - self.time_roof_last_opened
+            enough_time_since_roof_open = time_since_roof_opened > self.config['time_to_wait_after_roof_opens_to_take_flats'] or g_dev['obs'].assume_roof_open
+            auto_morning_sky_flats_enabled = self.config['auto_morn_sky_flat']
+            is_in_morning_sky_flat_window = events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']
+            nothing_overriding_flats = not g_dev['obs'].scope_in_manual_mode and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe
+            if (enough_time_since_roof_open and
+                auto_morning_sky_flats_enabled and
+                is_in_morning_sky_flat_window and
+                nothing_overriding_flats and
+                not self.morn_sky_flat_latch and
+                not self.morn_flats_done):
 
                 self.morn_sky_flat_latch = True
                 self.current_script = "Morn Sky Flat script starting"
@@ -887,6 +886,8 @@ class Sequencer:
                 self.morn_sky_flat_latch = False
                 self.morn_flats_done = True
 
+
+            # Morning Bias Dark Routine
             if not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                       self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
 
@@ -1175,6 +1176,471 @@ class Sequencer:
     def create_OSC_raw_image(self, req_None, opt=None):
         return
 
+    def check_if_results_indicate_block_end(self, result):
+        """ Check for a block-terminating condition from the result of a command.
+        Possible conditions: block finished, no current calendar res, roof shut, not night.
+        Return True if block should stop, otherwise return False."""
+
+        end_condition_reached = False
+
+        # Do the checks
+        if result == 'blockend':
+            plog ("End of Block. Stopping block execution.")
+            end_condition_reached = True
+        elif result == 'calendarend':
+            plog ("Calendar Item containing block is no longer active. Stopping block execution.")
+            end_condition_reached = True
+        elif result == 'roofshut':
+            plog ("Roof Shut. Stopping block execution.")
+            end_condition_reached = True
+        elif result == 'outsideofnighttime':
+            plog ("Outside of Night Time. Stopping block execution.")
+            end_condition_reached = True
+
+        # Do cleanup (if ending) and return result.
+        if end_condition_reached:
+            self.blockend = None
+            self.currently_mosaicing = False
+            self.total_sequencer_control=False
+        return end_condition_reached
+
+    def check_for_external_block_ending_signals(self):
+        """ Check for a block-terminating condition from signals outside of the sequencer.
+        Possible conditions: stop command recieved, obs no longer open
+        Return True if block should stop, otherwise return False."""
+
+        end_condition_reached = False
+
+        if g_dev["obs"].stop_all_activity:
+            plog ("Stop all activity flag set. Stopping block execution.")
+            end_condition_reached = True
+        elif g_dev['obs'].open_and_enabled_to_observe == False:
+            plog ("Obs not longer open and enabled to observe. Cancelling out.")
+            end_condition_reached = True
+
+        # Do cleanup (if ending) and return result.
+        if end_condition_reached:
+            self.blockend = None
+            self.currently_mosaicing = False
+            self.total_sequencer_control=False
+        return end_condition_reached
+
+
+    def check_if_calendar_event_still_active(self, calendar_event_id):
+        """ Check if the calendar event exists and is still active.
+        If active, return True.
+        If calendar event isn't found or if it is found and is not active, do some cleanup and return False.
+        """
+        g_dev['obs'].request_scan_requests()
+        g_dev['obs'].request_update_calendar_blocks()
+        # Try matching the current block with the ones found in the latest scan
+        for block in self.blocks:
+            # If calendar event still exists
+            if block['event_id'] == calendar_event_id:
+                # Update blockend time in case it has changed
+                self.blockend = block['end']
+                now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
+                # If the block has ended, log reason and return False
+                if self.blockend and now_date_timeZ >= self.blockend :
+                    plog ("Block ended.")
+                    g_dev["obs"].send_to_user("Calendar Block Ended. Stopping project run.")
+                    self.blockend = None
+                    self.total_sequencer_control=False
+                    return False
+                else:
+                    return True
+        # If no matching calendar event found, do some cleanup and return False.
+        plog ("could not find calendar entry, cancelling out of block.")
+        g_dev["obs"].send_to_user("Calendar block removed. Stopping project run.")
+        self.blockend = None
+        self.total_sequencer_control=False
+        return False
+
+
+    def execute_lco_observation(self, observation):
+        start = observation['start']
+        end = observation['end']
+        observation_metadata = {
+            'observation_name': observation['name'],
+            'submitter': observation['submitter'],
+            'proposal': observation['proposal'],
+            'id': observation['id'],
+            'request_group_id': observation['request_group_id'],
+        }
+
+        for config in observation['request']['configurations']:
+
+            corrected_coords = compute_target_coordinates(config['target'])
+            target_ra = corrected_coords['ra']
+            target_dec = corrected_coords['dec']
+            target_name = config['target']['name']
+
+            for inst_config in config['instrument_configs']:
+
+                # Do I need to do anything for mount pointing besides the go_command?
+                # Do I need to home the rotator before moving it to a position?
+
+                # Slew mount to target with offsets, then start tracking
+                offset_ra = inst_config['extra_params']['offset_ra']
+                offset_dec = inst_config['extra_params']['offset_dec']
+                g_dev['mnt'].go_command(ra=target_ra + offset_ra, dec=target_dec + offset_dec)
+                g_dev['mnt'].set_tracking_on()
+
+                # Move rotator to requested position angle
+                rotator_angle = inst_config['extra_params']['rotator_angle']
+                self.rotate_to_position_angle(rotator_angle, wait=True)
+
+
+                # Exposure info
+                required_params = {
+                    'time': inst_config['exposure_time'],
+                    'image_type': config['type'],
+                    'smartstack': config['extra_params'].get('smartstack', True),
+                    'substack': config['extra_params'].get('substack', True),
+                }
+                optional_params = {
+                    'count': inst_config['exposure_count'],
+                    'filter': inst_config['optical_elements']['filter'],
+                    'object_name': config['target']['name'],
+                    'zoom': inst_config['mode'],
+                }
+
+                exposure_command_result = g_dev['cam'].expose_command(
+                    required_params,
+                    optional_params,
+                    user_name=observation_metadata['submitter'],
+                    user_id=observation_metadata['submitter'],
+                    user_roles='system',
+                    observation_metadata=observation_metadata
+                )
+
+    def execute_project_from_lco(self, block_specification):
+        """
+        Assumptions:
+        "type" is "EXPOSE" or "REPEAT_EXPOSE"
+        "guiding_config" is ignored in favor of smartstacks/substacks
+        "acquisition_config" is ignored
+        "rotator_mode" and "rotator_angle" are ignored (unsupported)
+
+        """
+
+        # Protect from manual commands interferring
+        self.block_guard = True
+        self.total_sequencer_control= True
+
+        # Run the project
+        observation = json.loads(block_specification['project']['full_lco_observation'])
+        # execute_project_from_lco1(observation, self.obs)
+        SchedulerObservation(observation, self.obs).run()
+
+        # Allow manual commands now that the project has completed
+        self.block_guard = False
+        self.total_sequencer_control= False
+        return
+
+        try: # make this code collapsible
+            self.block_guard = True
+            self.total_sequencer_control=True
+
+            plog('\n\n Starting a new project!  \n')
+            plog(block_specification, ' \n\n\n')
+
+            block = copy.deepcopy(block_specification)
+
+            # Validate the project before we try to start working on it.
+            project_format_is_valid, validation_msg = validate_project_format(block['project'])
+            if not project_format_is_valid:
+                plog(f"Project format is invalid. {validation_msg}")
+                g_dev['obs'].send_to_user(f"Project format is invalid. {validation_msg}. Ending block execution.")
+                self.blockend = None
+                return block_specification
+
+            # this variable is what we check to see if the calendar
+            # event still exists on AWS. If not, we assume it has been
+            # deleted or modified substantially.
+            calendar_event_id = block_specification['event_id']
+
+            for target in block['project']['project_targets']:
+                try:
+                    dest_ra = float(target['ra'])
+                    dest_dec = float(target['dec'])
+                    dest_ra, dest_dec = ra_dec_fix_hd(dest_ra, dest_dec)
+                    dest_name =target['name']
+                    user_name = block_specification['creator']
+                    user_id = block_specification['creator_id']
+                    user_roles = ['project']
+
+                except Exception as e:
+                    plog ("Could not execute project due to poorly formatted or corrupt project")
+                    plog (e)
+                    g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
+                    self.blockend = None
+                    continue
+
+                # Store this ra as the "block" ra for centering purposes
+                self.block_ra=copy.deepcopy(dest_ra)
+                self.block_dec=copy.deepcopy(dest_dec)
+
+                # Slew to target and initiate tracking
+                g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
+                g_dev['mnt'].set_tracking_on()
+                plog("tracking on")
+
+                # Check it hasn't actually been homed this evening from the rotatorhome shelf
+                homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                if 'lasthome' in homerotator_time_shelf:
+                    if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
+                        self.rotator_has_been_homed_this_evening=True
+                homerotator_time_shelf.close()
+
+                # Home the rotator
+                if not self.rotator_has_been_homed_this_evening:
+                    plog ("rotator hasn't been homed this evening, doing that now")
+                    try:
+                        # Wait for any existing movement to complete
+                        self.wait_for_rotator(msg='home rotator wait')
+                        g_dev['obs'].send_to_user("Rotator being homed as this has not been done this evening.", p_level='INFO')
+                        time.sleep(0.5)
+
+                        # Send the rotator home command and wait for it to complete
+                        g_dev['rot'].home_command({},{})
+                        self.wait_for_rotator(msg='home rotator wait')
+
+                        # Store last home time.
+                        homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                        homerotator_time_shelf['lasthome'] = time.time()
+                        homerotator_time_shelf.close()
+                        g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
+                        self.wait_for_slew(wait_after_slew=False)
+                        self.wait_for_rotator(msg='home rotator wait')
+                        self.rotator_has_been_homed_this_evening=True
+                        g_dev['obs'].rotator_has_been_checked_since_last_slew = True
+
+                    except:
+                        #plog ("no rotator to home or wait for.")
+                        pass
+
+
+                # Undertake a focus if necessary before starting observing the target
+                if g_dev["foc"].last_focus_fwhm == None or g_dev["foc"].focus_needed == True:
+
+                    g_dev['obs'].send_to_user("Running an initial autofocus run.")
+
+                    req2 = {'target': 'near_tycho_star'}
+
+                    self.auto_focus_script(req2, {}, throw = g_dev['foc'].throw)
+                    g_dev["foc"].focus_needed = False
+
+
+                # Input the global smartstack and substack request from the project
+                # Into the individual exposure requests
+
+                # Ignore smartstacks/substacks for now
+                do_sub_stack = True
+                do_smart_stack = True
+
+                # try:
+                #     try:
+                #         # This is the "proper" way of doing things.
+                #         do_sub_stack=block['project']['project_constraints']['sub_stack']
+                #         plog ("Picked up project substack properly")
+                #     except:
+                #         # This is the old way for old projects
+                #         do_sub_stack=block['project']['exposures'][0]['substack']
+                # except:
+                #     do_sub_stack=True
+
+                # try:
+                #     # This is the "proper" way of doing things.
+                #     do_smart_stack=block['project']['project_constraints']['smart_stack']
+                # except:
+                #     # This is the old way for old projects
+                #     do_smart_stack=block['project']['exposures'][0]['smartstack']
+
+                # Inject the substack and smartstack options into each exposure dict
+                for exposure in block['project']['exposures']:
+                    exposure['substack'] = do_sub_stack
+                    exposure['smartstack'] = do_smart_stack
+
+                plog(f"Number of exposures to complete: {len(block['project']['exposures'])}")
+
+                g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
+
+                # If you are just doing single frames, then the initial pointing isn't
+                # too stringent. But if you are doing a giant mosaic, then you need
+                # a reference that is very close to the target
+                absolute_distance_threshold = 10
+                #absolute_distance_threshold = 2 # This was used for mosaics; now just for reference.
+
+                #plog ("Checking whether the pointing reference is nearby. If so, we can skip the centering exposure...")
+                skip_centering=False
+                HAtemp=g_dev['mnt'].current_sidereal-dest_ra
+                # NB NB WER 20240710  the long key was missing and the following code appeared to be looping forever....
+                if g_dev['mnt'].rapid_pier_indicator == 0:
+                    distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_mount_reference_ha - HAtemp)
+                    distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_mount_reference_dec- dest_dec)
+                    absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(distance_from_current_reference_in_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
+                    plog ("absolute_distance from reference to requested position: " + str(round(absolute_distance,2)))
+                    if absolute_distance < absolute_distance_threshold and not self.config['always_do_a_centering_exposure_regardless_of_nearby_reference']:
+                        plog ("reference close enough to requested position, skipping centering exposure")
+                        skip_centering=True
+                else:
+                    distance_from_current_reference_in_ha = abs(g_dev['mnt'].last_flip_reference_ha - HAtemp)
+                    distance_from_current_reference_in_dec = abs(g_dev['mnt'].last_flip_reference_dec- dest_dec)
+                    #plog ("Dist in RA: " + str(round(distance_from_current_reference_in_ha,2)) + "Dist in Dec: " + str(round(distance_from_current_reference_in_dec,2)))
+                    absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(distance_from_current_reference_in_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
+                    plog ("absolute_distance from reference to requested position: " + str(round(absolute_distance,2)))
+                    if absolute_distance < absolute_distance_threshold and not self.config['always_do_a_centering_exposure_regardless_of_nearby_reference']:
+                        plog ("reference close enough to requested position, skipping centering exposure")
+                        skip_centering=True
+
+                if not skip_centering:
+                    plog ("Taking a quick pointing check and re_seek for new project block")
+                    result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True, calendar_event_id=calendar_event_id)
+
+                # It may be the case that reference pointing isn't quite good enough for mosaics? We shall find out.
+                self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
+                self.mosaic_center_dec=g_dev['mnt'].return_declination()
+
+                # This is where the actual exposures are taken
+                for block_exposure_counter, exposure in enumerate(block['project']['exposures']):
+
+                    # Before starting an exposure, check if the block should stop execution.
+                    calendar_event_still_active = self.check_if_calendar_event_still_active(calendar_event_id)
+                    block_ending_signal_found = self.check_for_external_block_ending_signals()
+                    if block_ending_signal_found or not calendar_event_still_active:
+                        return block_specification
+
+                    plog("Observing " + str(block['project']['project_targets'][0]['name']))
+                    plog(f"Executing exposure {block_exposure_counter + 1} of {len(block['project']['exposures'])}")
+                    plog("Exposure details: ", exposure)
+
+                    filter_requested = exposure.get('filter', 'None')
+
+                    # Try next block in sequence
+
+                    if g_dev["fil"].null_filterwheel == False:
+                        try:
+                            # Get the next filter ready, unless it is the last exposure in the block
+                            # In that case, prepare the filter from the first exposure.
+                            if not (block_exposure_counter + 1) ==len(block['project']['exposures']):
+                                self.block_next_filter_requested=block['project']['exposures'][block_exposure_counter+1]['filter']
+                            else:
+                                self.block_next_filter_requested=block['project']['exposures'][0]['filter']
+                        except:
+                            plog(traceback.format_exc())
+                            #breakpoint()
+                            self.block_next_filter_requested='None'
+                    else:
+                        self.block_next_filter_requested='None'
+
+
+                    try:
+                        repeat_count = int(exposure['repeat'])
+                        if repeat_count < 1: repeat_count = 1
+                    except:
+                        repeat_count = 1
+
+                    # MUCH safer to calculate these from first principles
+                    # Than rely on an owner getting this right!
+                    # dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
+                    # ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
+
+                    # These are not mosaic exposures
+                    zoom_factor = exposure['zoom'].lower()
+
+                    if g_dev['obs'].platesolve_errors_in_a_row > 4:
+                        # Get the pointing / central position of the
+                        g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
+
+                        # Quick pointing check and re_seek at the start of each project block
+                        # Otherwise everyone will get slightly off-pointing images
+                        # Necessary
+                        plog ("Taking a quick pointing check and re_seek for new mosaic block")
+                        result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True, calendar_event_id=calendar_event_id)
+                        self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
+                        self.mosaic_center_dec=g_dev['mnt'].return_declination()
+
+                        if self.check_if_results_indicate_block_end(result):
+                            return block_specification
+
+                    if self.check_for_external_block_ending_signals():
+                        return block_specification
+
+                    now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
+                    if self.blockend and now_date_timeZ >= self.blockend:
+                        self.blockend = None
+                        self.currently_mosaicing = False
+                        self.total_sequencer_control=False
+                        return block_specification
+
+                    if exposure['imtype'] == 'EXPOSE':
+
+                        # Set up options for exposure and take exposure.
+                        required_params = {
+                            'time': float(exposure['exposure']),
+                            'alias': str(g_dev['cam'].name),
+                            'image_type': exposure['imtype'],
+                            'smartstack': 'yes' if exposure['smartstack'] else 'no',
+                            'substack': exposure.get('substack', True),
+                            'block_end' : self.blockend
+                        }   #  NB Should pick up filter and constants from config
+                        optional_params = {
+                            'count': repeat_count,
+                            'filter': filter_requested,
+                            'hint': block['project_id'] + "##" + dest_name,
+                            'object_name': block['project']['project_targets'][0]['name'],
+                            'zoom': zoom_factor
+                        }
+                        plog('Sequencer is requesting the following exposure:', required_params, optional_params)
+
+                        # Take the exposure
+                        result = g_dev['cam'].expose_command(
+                                    required_params,
+                                    optional_params,
+                                    user_name=user_name,
+                                    user_id=user_id,
+                                    user_roles=user_roles,
+                                    no_AWS=False,
+                                    solve_it=False,
+                                    calendar_event_id=calendar_event_id
+                                ) #, zoom_factor=zoom_factor)
+
+                        # Check if the block should stop execution
+                        if self.check_if_results_indicate_block_end(result) or self.check_for_external_block_ending_signals():
+                            return block_specification
+
+                        # Check that the observing time hasn't completed or then night has not completed.
+                        # If so, set ended to True so that it cancels out of the exposure block.
+                        now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
+
+                        if self.blockend and now_date_timeZ >= self.blockend:
+                            self.blockend = None
+                            self.currently_mosaicing = False
+                            self.total_sequencer_control=False
+                            return block_specification
+
+                        if ephem.now() >= g_dev['events']['Observing Ends']:
+                            self.blockend = None
+                            self.currently_mosaicing = False
+                            self.total_sequencer_control=False
+                            return block_specification
+
+                    # For any exposures that are not EXPOSE type, skip them.
+                    else:
+                        plog(f"Skipping exposure {block_exposure_counter + 1} of {len(block['project']['exposures'])} as it is of type {exposure['imtype']}")
+
+            # Cleanup
+            plog("Project block has finished!")
+            self.currently_mosaicing = False
+            self.blockend = None
+            g_dev['obs'].flush_command_queue()
+            self.total_sequencer_control=False
+            return block_specification
+        except:
+            pass
+
+
     def execute_block(self, block_specification):
         """
         This function executes an observing block provided by a calendar event.
@@ -1240,24 +1706,18 @@ class Sequencer:
                 plog ("rotator hasn't been homed this evening, doing that now")
                 # Homing Rotator for the evening.
                 try:
-                    while g_dev['rot'].rotator.IsMoving:
-                        plog("home rotator wait")
-                        time.sleep(1)
+                    self.wait_for_rotator(msg='home rotator wait')
                     g_dev['obs'].send_to_user("Rotator being homed as this has not been done this evening.", p_level='INFO')
                     time.sleep(0.5)
                     g_dev['rot'].home_command({},{})
-                    while g_dev['rot'].rotator.IsMoving:
-                        plog("home rotator wait")
-                        time.sleep(1)
+                    self.wait_for_rotator(msg='home rotator wait')
                     # Store last home time.
                     homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
                     homerotator_time_shelf['lasthome'] = time.time()
                     homerotator_time_shelf.close()
                     g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
                     g_dev['mnt'].wait_for_slew(wait_after_slew=False)
-                    while g_dev['rot'].rotator.IsMoving:
-                        plog("home rotator wait")
-                        time.sleep(1)
+                    self.wait_for_rotator(msg='home rotator wait')
                     self.rotator_has_been_homed_this_evening=True
                     g_dev['obs'].rotator_has_been_checked_since_last_slew = True
 
@@ -1285,23 +1745,8 @@ class Sequencer:
 
             # Input the global smartstack and substack request from the project
             # Into the individual exposure requests
-            try:
-                try:
-                    # This is the "proper" way of doing things.
-                    do_sub_stack=block['project']['project_constraints']['sub_stack']
-                    #plog ("Picked up project substack properly")
-                except:
-                    # This is the old way for old projects
-                    do_sub_stack=block['project']['exposures'][0]['substack']
-            except:
-                do_sub_stack=True
-
-            try:
-                # This is the "proper" way of doing things.
-                do_smart_stack=block['project']['project_constraints']['smart_stack']
-            except:
-                # This is the old way for old projects
-                do_smart_stack=block['project']['exposures'][0]['smartstack']
+            do_sub_stack = block['project']['project_constraints'].get('sub_stack', True)
+            do_smart_stack=block['project']['project_constraints'].get('smart_stack', True)
 
             #Compute how many to do.
             left_to_do = 0
@@ -2224,7 +2669,7 @@ class Sequencer:
 
 
         # Reopening config and resetting all the things.
-        self.obs.astro_events.calculate_events(endofnightoverride='yes')
+        self.obs.events = self.obs.astro_events.calculate_events(endofnightoverride='yes')
         self.obs.astro_events.display_events()
 
         '''
@@ -3734,9 +4179,7 @@ class Sequencer:
                     if not self.rotator_has_been_homed_this_evening:
                         plog ("If rotator isn't homed, waiting for the zenith is a great time to do this!")
                         try:
-                            while g_dev['rot'].rotator.IsMoving:
-                                plog("home rotator wait")
-                                time.sleep(1)
+                            self.wait_for_rotator(msg='home rotator wait')
                             g_dev['obs'].send_to_user("Rotator being homed to be certain of appropriate skyflat positioning.", p_level='INFO')
                             time.sleep(0.5)
                             g_dev['rot'].home_command({},{})
@@ -3754,9 +4197,7 @@ class Sequencer:
                             self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=dont_wait_after_slew)
                             if not dont_wait_after_slew:
                                 g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
-                            while g_dev['rot'].rotator.IsMoving:
-                                plog("home rotator wait")
-                                time.sleep(1)
+                            self.wait_for_rotator(msg='home rotator wait')
                             self.rotator_has_been_homed_this_evening=True
                             g_dev['obs'].rotator_has_been_checked_since_last_slew = True
 
@@ -3972,15 +4413,11 @@ class Sequencer:
         if not self.rotator_has_been_homed_this_evening:
             # Homing Rotator for the evening.
             try:
-                while g_dev['rot'].rotator.IsMoving:
-                    plog("home rotator wait")
-                    time.sleep(1)
+                self.wait_for_rotator(msg='home rotator wait')
                 g_dev['obs'].send_to_user("Rotator being homed to be certain of appropriate skyflat positioning.", p_level='INFO')
                 time.sleep(0.5)
                 g_dev['rot'].home_command({},{})
-                while g_dev['rot'].rotator.IsMoving:
-                    plog("home rotator wait")
-                    time.sleep(1)
+                self.wait_for_rotator(msg='home rotator wait')
                 # Store last home time.
                 homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
                 homerotator_time_shelf['lasthome'] = time.time()
@@ -3989,9 +4426,7 @@ class Sequencer:
                 self.check_zenith_and_move_to_flat_spot(ending=self.flats_ending)
                 self.time_of_next_slew = time.time() + 600
                 g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
-                while g_dev['rot'].rotator.IsMoving:
-                    plog("home rotator wait")
-                    time.sleep(1)
+                self.wait_for_rotator(msg='home rotator wait')
                 self.rotator_has_been_homed_this_evening=True
                 g_dev['obs'].rotator_has_been_checked_since_last_slew = True
 
@@ -4293,6 +4728,7 @@ class Sequencer:
                                 # Particularly for AltAz, the slew and rotator rotation must have ended before exposing.
                                 g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                                 try:
+                                    self.wait_for_rotator(msg='flat rotator wait', sleep_interval_s=0.2)
                                     while g_dev['rot'].rotator.IsMoving:
                                         plog("flat rotator wait")
                                         time.sleep(0.2)
@@ -4754,7 +5190,6 @@ class Sequencer:
 
 
     def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, dont_return_scope=False, dont_log_focus=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
-
         self.focussing=True
         self.total_sequencer_control = True
 
@@ -4800,7 +5235,6 @@ class Sequencer:
                 return np.nan, np.nan
 
         g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow()
-
         # Reset focus tracker
         g_dev['foc'].focus_tracker = [np.nan] * 10
         throw = g_dev['foc'].throw
@@ -5102,9 +5536,7 @@ class Sequencer:
                 g_dev['mnt'].wait_for_slew(wait_after_slew=False)
 
                 try:
-                    while g_dev['rot'].rotator.IsMoving:
-                        plog("flat rotator wait")
-                        time.sleep(0.2)
+                    self.wait_for_rotator(msg='flat rotator wait', sleep_interval_s=0.2)
                 except:
                     pass
 
@@ -5215,6 +5647,7 @@ class Sequencer:
 
                         # First check if the minimum is too close to the edge
                         if minimum_index == 0 or minimum_index == 1:
+                            plog ('minimum index: ', minimum_index)
                             plog ("Minimum too close to the sampling edge, getting another dot")
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
@@ -5225,6 +5658,8 @@ class Sequencer:
                             g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
                         elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
+                            plog ('minimum index: ', minimum_index)
+                            plog ('minimum find: ', minimumfind)
 
                             plog ("Minimum too close to the sampling edge, getting another dot")
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
@@ -6396,11 +6831,14 @@ class Sequencer:
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
             return result
 
-    def update_calendar_blocks(self):
-
+    def update_calendar_blocks(self, start_time=None, end_time=None):
         """
         A function called that updates the calendar blocks - both to get new calendar blocks and to
         check that any running calendar blocks are still there with the same time window.
+
+        Args:
+        - start_time (str): get events ending after this time. string formatted as YYYY-mm-ddTHH:MM:SSZ
+        - end_time (str): get events ending before this time. string formatted as YYYY-mm-ddTHH:MM:SSZ
         """
 
         def ephem_date_to_utc_iso_string(ephem_date):
@@ -6408,8 +6846,17 @@ class Sequencer:
 
         calendar_update_url = "https://calendar.photonranch.org/calendar/siteevents"
 
-        start_time = ephem_date_to_utc_iso_string(g_dev['events']['Eve Sky Flats'])
-        end_time = ephem_date_to_utc_iso_string(g_dev['events']['End Morn Sky Flats'])
+        if start_time is None or not is_valid_utc_iso(start_time):
+            start_time = ephem_date_to_utc_iso_string(g_dev['events']['Eve Sky Flats'])
+        if end_time is None or not is_valid_utc_iso(end_time):
+            end_time = ephem_date_to_utc_iso_string(g_dev['events']['End Morn Sky Flats'])
+
+        # Make sure the times are formatted correctly
+        if not is_valid_utc_iso(start_time):
+            raise ValueError(f"start_time must be formatted YYYY-m-ddTHH:MM:SSZ. Actual input was {start_time}")
+        if not is_valid_utc_iso(end_time):
+            raise ValueError(f"end_time must be formatted YYYY-m-ddTHH:MM:SSZ. Actual input was {end_time}")
+
         body = json.dumps({
             "site": self.config["obs_id"],
             "start": start_time,

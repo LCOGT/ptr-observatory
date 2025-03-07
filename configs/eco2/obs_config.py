@@ -109,7 +109,7 @@ site_config = {
     'keep_focus_images_on_disk': False,  # To save space, the focus file can not be saved.
     # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
-    'save_archive_versions_of_final_calibrations' : False, 
+    'save_archive_versions_of_final_calibrations' : False,
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
     # Number of files to send up to the ptrarchive simultaneously.
@@ -206,6 +206,27 @@ site_config = {
         'widefield_cam': None,
         'allsky_cam': None,
     },
+
+    # The LCO scheduler references a description of this site in configdb
+    # The logic in configdb is organized slightly differently than the PTR
+    # config files (like this one), but they should ultimately represent the
+    # same underlying hardware.
+    # When a PTR obsevatory is running an observation created by the scheduler,
+    # we'll use this to figure out what devices to use to run that observation.
+    # The key is the instrument name from configdb, and the value is a dict of
+    # device names from this config file for each type of device.
+    #
+    # This should only be modified if the configuration in configdb changes.
+    'configdb_instrument_mapping': {
+        'qhy600c': {
+            'mount': 'ecocdkpier',
+            'camera': 'ec02cs',
+            'filter_wheel': None,
+            'rotator': None,
+            'focuser': 'focuser'
+        }
+    },
+
     'device_types': [
             'mount',     #NB NB WER added this back in 20240329.
             #'telescope',
@@ -616,7 +637,7 @@ site_config = {
                 # There is a cold bit and a hot bit and an inbetween bit.
                 # from the 15th of the month to the 15 of the month
                 #
-                # ( setpoint, dFay_warm_difference, day_warm troe our false)
+                # ( setpoint, day_warm_difference, day_warm true or false)
                 'set_temp_setpoint_by_season' : False,
                 'temp_setpoint_nov_to_feb' : ( 5, 8, True),
                 'temp_setpoint_feb_to_may' : ( 5, 8, True),

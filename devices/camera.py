@@ -1245,8 +1245,7 @@ class Camera:
             plog("Please note telescope is NOT connected to Maxim.")
 
         elif driver == 'dummy':
-            # NB NB NB Considerputting this up higher.
-            plog("Maxim camera is initializing.")
+            plog("Simulated camera is initializing.")
             self._connected = self._dummy_connected
             self._connect = self._dummy_connect
             self._set_setpoint = self._dummy_set_setpoint
@@ -1259,23 +1258,17 @@ class Camera:
             self._imageavailable = self._dummy_imageavailable
             self._getImageArray = self._dummy_getImageArray
 
-            self.description = "DUMMY"
+            self.description = "Simulated Camera"
             self.zwo=False
             self.maxim = False
             self.ascom = False
             self.theskyx = False
             self.qhydirect = False
-            plog("Maxim is connected:  ", self._connect(True))
-            # self.app = win32com.client.Dispatch("Maxim.Application")
-            # plog(self.camera)
-            # self.camera.SetFullFrame()
-            # self.camera.SetFullFrame
+            plog("Simulated camera is connected:  ", self._connect(True))
 
             self.imagesize_x = 2400
             self.imagesize_y = 2400
 
-            plog("Control is via Maxim camera interface, not ASCOM.")
-            plog("Please note telescope is NOT connected to Maxim.")
 
         # Before anything, abort any exposures because sometimes a long exposure
         # e.g. 500s could keep on going with theskyx (and maybe Maxim)
@@ -3193,9 +3186,30 @@ class Camera:
             skip_open_check=False,
             skip_daytime_check=False,
             manually_requested_calibration=False,
-            useastrometrynet=False):
+            useastrometrynet=False,
+            observation_metadata={},
+            filterwheel_device=None
+        ):
 
+        # We've had multiple cases of multiple camera exposures trying to go at once
+        # And it is likely because it takes a non-zero time to get to Phase II
+        # So even in the setup phase the "exposure" is "busy"
         self.running_an_exposure_set = True
+
+        # Parse inputs from required_params and optional_params
+        #
+        # Note that required_params and optional_params are passed into some
+        # subprocess functions too, so just because a value isn't defined here
+        # doesn't mean it's never used.
+        exposure_time = float(required_params.get("time", 1.0))
+        imtype = required_params.get("image_type", "light")
+        smartstack = required_params.get('smartstack', True)
+        self.substacker = required_params.get('substack', True)
+
+        count = int(optional_params.get("count", 1))
+        if count < 1:
+            count = 1  # Hence frame does not repeat unless count > 1
+        zoom_factor = optional_params.get('zoom', "Full")
 
         # First check that it isn't an exposure that doesn't need a check (e.g. bias, darks etc.)
         if not g_dev['obs'].assume_roof_open and not skip_open_check and not g_dev['obs'].scope_in_manual_mode:
@@ -3208,15 +3222,9 @@ class Camera:
                 self.running_an_exposure_set = False
                 return
 
-        # Need to pick up exposure time here
-        exposure_time = float(
-            required_params.get("time", 1.0)
-        )
 
         # Third check, check it isn't daytime and institute maximum exposure time
         # Unless it is a command from the sequencer flat_scripts or a requested calibration frame
-        imtype = required_params.get("image_type", "light")
-
         skip_daytime_check = False
         skip_calibration_check = False
 
@@ -3240,7 +3248,7 @@ class Camera:
             skip_calibration_check = True
 
         if not skip_daytime_check and g_dev['obs'].daytime_exposure_time_safety_on:
-            sun_az, sun_alt = self.obs.astro_events.sun_az_alt_now()
+            sun_az, sun_alt = self.obs.events.sun_az_alt_now()
             if sun_alt > -5:
                 if exposure_time > float(self.settings['max_daytime_exposure']):
                     g_dev['obs'].send_to_user("Exposure time reduced to maximum daytime exposure time: " + str(
@@ -3266,20 +3274,6 @@ class Camera:
                 self.running_an_exposure_set = False
                 return
 
-        # We've had multiple cases of multiple camera exposures trying to go at once
-        # And it is likely because it takes a non-zero time to get to Phase II
-        # So even in the setup phase the "exposure" is "busy"
-
-        opt = optional_params
-        self.hint = optional_params.get("hint", "")
-        self.script = required_params.get("script", "None")
-
-        try:
-            self.zoom_factor = optional_params.get('zoom', False)
-        except:
-            plog("Problem with supplied Zoom factor, Camera line 2613")
-            self.zoom_factor = "Full"
-
         if imtype.lower() in ("bias"):
             exposure_time = 0.0
             bias_dark_or_light_type_frame = 'bias'  # don't open the shutter.
@@ -3304,10 +3298,12 @@ class Camera:
         elif imtype.lower() == "focus":
             frame_type = "focus"
             bias_dark_or_light_type_frame = 'light'
+            smartstack = False
             lamps = None
         elif imtype.lower() == "pointing":
             frame_type = "pointing"
             bias_dark_or_light_type_frame = 'light'
+            smartstack = False
             lamps = None
         else:  # 'light', 'experimental', 'autofocus probe', 'quick', 'test image', or any other image type
             bias_dark_or_light_type_frame = 'light'
@@ -3321,96 +3317,75 @@ class Camera:
                 bias_dark_or_light_type_frame = 'light'
                 lamps = None
 
-        self.smartstack = required_params.get('smartstack', True)
-        if imtype.lower() in ["pointing", "focus"]:
-            self.smartstack = False
-
-        if required_params.get('substack', False) or required_params.get('subStack', False):
-            self.substacker = True
-        else:
-            self.substacker = False
-
         self.native_bin = self.settings["native_bin"]
         self.ccd_sum = str(1) + ' ' + str(1)
 
         self.estimated_readtime = (
             exposure_time + self.readout_time
         )
-        count = int(
-            optional_params.get("count", 1)
-        )
-
-        if count < 1:
-            count = 1  # Hence frame does not repeat unless count > 1
 
         # Here we set up the filter, and later on possibly rotational composition.
+        # default to using the main filter wheel, unless a specific one is specified
+        fw_device = self.obs.devices['main_fw']
+        if filterwheel_device is not None:
+            fw_device = filterwheel_device
+        null_filterwheel = fw_device.null_filterwheel
         try:
-            if not g_dev["fil"].null_filterwheel:
+            if not null_filterwheel:
                 if imtype in ['bias', 'dark'] or a_dark_exposure:
                     requested_filter_name = 'dk'
                     # NB NB not here, but we could index the perseus to get the camera
                     # more out of the beam.
-
                 elif imtype in ['pointing'] and self.settings['is_osc']:
                     requested_filter_name = 'lum'
                 else:
-                    requested_filter_name = str(
-                        optional_params.get(
-                            "filter",
+                    # If the filter wheel is sent a filter name that it doesn't
+                    # have, it will automatically use the default defined in the config
+                    requested_filter_name = optional_params.get('filter')
 
-                            # fallback: use the default filter from the main filter wheel
-                            self.obs.devices['main_fw'].settings["default_filter"]
-                        )
+                # Change the filter
+                # Note: the filterwheel will know if it is already set correctly
+                # so no need to check that here
+                self.current_filter = fw_device.current_filter_name
+                try:
+                    self.current_filter, filter_number, filter_offset = fw_device.set_name_command(
+                        {"filter": requested_filter_name}, {}
                     )
+                    self.current_offset = filter_offset
+                except:
+                    plog("Failed to change filter! Cancelling exposure.")
+                    plog(traceback.format_exc())
+                    self.running_an_exposure_set = False
+                    return 'filterwheel_error'
 
-                # Check if filter needs changing, if so, change.
-                self.current_filter = g_dev['fil'].current_filter_name
-                if not self.current_filter == requested_filter_name:
-                    try:
-                        self.current_filter, filter_number, filter_offset = g_dev["fil"].set_name_command(
-                            {"filter": requested_filter_name}, {}
-                        )
-
-                        self.current_offset = filter_offset
-
-                    except:
-                        plog("Failed to change filter! Cancelling exposure.")
-                        plog(traceback.format_exc())
-                        self.running_an_exposure_set = False
-                        return
-
+                # Handle unavailable filters
+                # This is because the requested filter isn't available,
+                # and we couldn't match with a reasonable substitute.
                 if self.current_filter == "none" or self.current_filter == None:
                     plog("skipping exposure as no adequate filter match found")
                     g_dev["obs"].send_to_user(
                         "Skipping Exposure as no adequate filter found for requested observation")
                     self.running_an_exposure_set = False
-                    return
+                    return 'requested_filter_not_found'
 
-                self.current_filter = g_dev['fil'].current_filter_name
+                self.current_filter = fw_device.current_filter_name
+                exposure_filter_offset = self.current_offset
             else:
-                requested_filter_name = 'none'
                 #plog('Warning: null filterwheel detected, skipping filter setup')
+                exposure_filter_offset = 0
+                requested_filter_name = 'none'
                 self.current_filter = None
         except Exception as e:
             plog("Camera filter setup:  ", e)
             plog(traceback.format_exc())
 
-
         # plog ("REQUESTED FILTER NAME: " + str(requested_filter_name))
         # plog ("CURRENT FILTER: " + str(self.current_filter))
-
-
         this_exposure_filter = copy.deepcopy( self.current_filter)
         # plog ("THIS EXPOSURE FILTER: " + str(this_exposure_filter))
 
-
-        if g_dev["fil"].null_filterwheel == False:
-            exposure_filter_offset = self.current_offset
-        else:
-            exposure_filter_offset = 0
-
-         # Always check rotator just before exposure  The Rot jitters wehn parked so
-         # this give rot moving report during bia darks
+        # Always check rotator just before exposure  The Rot jitters wehn parked so
+        # this give rot moving report during bia darks
         rot_report = 0
         if g_dev['rot'] != None:
             if not g_dev['mnt'].rapid_park_indicator and not g_dev['obs'].rotator_has_been_checked_since_last_slew:
@@ -3442,21 +3417,24 @@ class Camera:
 
             g_dev["obs"].request_update_status()
 
-            if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
-                if not g_dev['obs'].scope_in_manual_mode and g_dev['events']['Observing Ends'] < ephem.Date(ephem.now() + (exposure_time * ephem.second)):
+
+            now = ephem.Date(ephem.now())
+            exposure_end_time = ephem.Date(ephem.now() + (exposure_time * ephem.second))
+            observing_ends = self.obs.events['Observing Ends']
+            naut_dusk = self.obs.events['Naut Dusk']
+            naut_dawn = self.obs.events['Naut Dawn']
+
+            if imtype.lower() in ["light", "expose"] and not self.obs.scope_in_manual_mode:
+                # Exposure time must end before the end of the nighttime observing window
+                if observing_ends < exposure_end_time:
                     plog("Sorry, exposures are outside of night time.")
                     self.running_an_exposure_set = False
                     return 'outsideofnighttime'
-                if g_dev['events']['Sun Set'] > g_dev['events']['End Eve Sky Flats']:
-                    if not g_dev['obs'].scope_in_manual_mode and not (g_dev['events']['Sun Set'] < ephem.Date(ephem.now() + (exposure_time * ephem.second))):
-                        plog("Sorry, exposures are outside of night time.")
-                        self.running_an_exposure_set = False
-                        return 'outsideofnighttime'
-                if g_dev['events']['Sun Set'] < g_dev['events']['End Eve Sky Flats']:
-                    if not g_dev['obs'].scope_in_manual_mode and not (g_dev['events']['End Eve Sky Flats'] < ephem.Date(ephem.now() + (exposure_time * ephem.second))):
-                        plog("Sorry, exposures are outside of night time.")
-                        self.running_an_exposure_set = False
-                        return 'outsideofnighttime'
+                # Reject exposures that start before nautical dusk or end after nautical dawn
+                if now < naut_dusk or exposure_end_time > naut_dawn:
+                    plog("Sorry, exposures are outside of night time.")
+                    self.running_an_exposure_set = False
+                    return 'outsideofnighttime'
 
             self.pre_mnt = []
             self.pre_rot = []
@@ -3473,20 +3451,20 @@ class Camera:
             Nsmartstack = 1
             SmartStackID = 'no'
             smartstackinfo = 'no' # Just initialising this variable
-            if g_dev["fil"].null_filterwheel == False:
+            if not null_filterwheel:
                 if this_exposure_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
                     # For narrowband and low throughput filters, increase base exposure time.
                     ssExp = ssExp * ssNBmult
             else:
-                this_exposure_filter = g_dev['fil'].name
-                #
+                this_exposure_filter = fw_device.name
+
             if not imtype.lower() in ["light", "expose"]:
                 Nsmartstack = 1
                 SmartStackID = 'no'
                 smartstackinfo = 'no'
                 exposure_time = incoming_exposure_time
 
-            elif (self.smartstack == 'yes' or self.smartstack == True) and (incoming_exposure_time > ssExp):
+            elif (smartstack == 'yes' or smartstack == True) and (incoming_exposure_time > ssExp):
                 Nsmartstack = np.ceil(incoming_exposure_time / ssExp)
                 exposure_time = ssExp
                 SmartStackID = (
@@ -3573,7 +3551,7 @@ class Camera:
                         self.running_an_exposure_set = False
                         self.currently_in_smartstack_loop=False
                         self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
-                        return
+                        return 'stopcommand'
 
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
                     # Only do this check if a block end was provided.
@@ -3733,7 +3711,7 @@ class Camera:
                                                 self.write_out_realtimefiles_token_to_disk(
                                                     real_time_token, real_time_files)
                                                 self.running_an_exposure_set = False
-                                                return
+                                                return 'stopcommand'
 
                             if (bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type or a_dark_exposure) and not manually_requested_calibration:
 
@@ -3862,8 +3840,8 @@ class Camera:
                                     plog(
                                         "can't adjust exposure time for pointing if no previous focus known")
 
-                            if g_dev["fil"].null_filterwheel == False:
-                                while g_dev['fil'].filter_changing:
+                            if not null_filterwheel:
+                                while fw_device.filter_changing:
                                     time.sleep(0.05)
 
                             if not g_dev['obs'].scope_in_manual_mode:
@@ -3991,8 +3969,7 @@ class Camera:
                             quick=quick,
                             low=ldr_handle_time,
                             high=ldr_handle_high_time,
-                            script=self.script,
-                            opt=opt,
+                            optional_params=optional_params,
                             solve_it=solve_it,
                             smartstackid=SmartStackID,
                             # longstackid=LongStackID,
@@ -4009,12 +3986,13 @@ class Camera:
                             azimuth_of_observation=azimuth_of_observation,
                             altitude_of_observation=altitude_of_observation,
                             manually_requested_calibration=manually_requested_calibration,
-                            zoom_factor=self.zoom_factor,
+                            zoom_factor=zoom_factor,
                             useastrometrynet=useastrometrynet,
                             a_dark_exposure=a_dark_exposure,
                             substack=self.substacker,
                             corrected_ra_for_header=corrected_ra_for_header,
-                            corrected_dec_for_header=corrected_dec_for_header
+                            corrected_dec_for_header=corrected_dec_for_header,
+                            fw_device=fw_device
                         )
 
                         self.retry_camera = 0
@@ -4055,8 +4033,7 @@ class Camera:
                 else:
                     pass
 
-        self.write_out_realtimefiles_token_to_disk(
-            real_time_token, real_time_files)
+        self.write_out_realtimefiles_token_to_disk(real_time_token, real_time_files)
 
         #  This is the loop point for the seq count loop
         self.currently_in_smartstack_loop = False
@@ -4068,19 +4045,21 @@ class Camera:
         return expresult
 
     def write_out_realtimefiles_token_to_disk(self, token_name, real_time_files):
+        """
+        Write out real-time files token to disk for tracking.
 
+        Args:
+            token_name (str): Token for real-time file tracking
+            real_time_files (list): List of real-time file paths
+        """
         if self.site_config['save_raws_to_pipe_folder_for_nightly_processing']:
             if len(real_time_files) > 0:
                 pipetokenfolder = self.site_config['pipe_archive_folder_path'] + '/tokens'
                 if not os.path.exists(self.site_config['pipe_archive_folder_path'] + '/tokens'):
                     os.umask(0)
-                    os.makedirs(
-
-                        self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
+                    os.makedirs(self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
 
                 if self.is_osc:
-
-
                     suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
 
                     for suffix in suffixes:
@@ -4090,13 +4069,11 @@ class Camera:
                                 json.dump(temp_file_holder, f, indent=2)
                         except:
                             plog(traceback.format_exc())
-
                 else:
                     try:
                         with open(pipetokenfolder + "/" + token_name, 'w') as f:
                             json.dump(real_time_files, f, indent=2)
                     except:
-
                         plog(traceback.format_exc())
 
     def stop_command(self, required_params, optional_params):
@@ -4122,8 +4099,7 @@ class Camera:
         quick=False,
         low=0,
         high=0,
-        script="False",
-        opt=None,
+        optional_params=None,
         solve_it=False,
         smartstackid='no',
         sskcounter=0,
@@ -4144,9 +4120,12 @@ class Camera:
         a_dark_exposure=False,
         substack=False,
         corrected_ra_for_header=0.0,
-        corrected_dec_for_header=0.0
-
+        corrected_dec_for_header=0.0,
+        fw_device=None
     ):
+        if fw_device == None:
+            fw_device = self.obs.devices['main_fw']
+        null_filterwheel = fw_device.null_filterwheel
 
         plog(
             "Exposure Started:  " + str(exposure_time) + "s ",
@@ -4154,15 +4133,15 @@ class Camera:
         )
 
         try:
-            if opt["object_name"] == '':
-                opt["object_name"] = 'Unknown'
+            if optional_params["object_name"] == '':
+                optional_params["object_name"] = 'Unknown'
         except:
-            opt["object_name"] = 'Unknown'
+            optional_params["object_name"] = 'Unknown'
 
         try:
-            opt["object_name"]
+            optional_params["object_name"]
         except:
-            opt["object_name"] = 'Unknown'
+            optional_params["object_name"] = 'Unknown'
 
         try:
             filter_ui_info = this_exposure_filter
@@ -4215,31 +4194,31 @@ class Camera:
         # , 'y', 'up', 'u']:   NB NB we should create a code-wide list of Narrow bands, broadbands and widebands so we do not have mulitiple lists to manage.
         elif Nsmartstack > 1 and this_exposure_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr', 'su', 'sv', 'sb', 'sy', 'hd', 'hg']:
             plog("Starting narrowband " + str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
-                 + str(opt["object_name"])
+                 + str(optional_params["object_name"])
                  + " by user: " + str(observer_user_name))
             g_dev["obs"].send_to_user("Starting narrowband " + str(exposure_time) + "s smartstack " + str(
                 sskcounter+1) + " out of " + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
         elif Nsmartstack > 1:
             plog("Starting broadband " + str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
-                 + str(opt["object_name"])
+                 + str(optional_params["object_name"])
                  + " by user: " + str(observer_user_name))
             g_dev["obs"].send_to_user("Starting broadband " + str(exposure_time) + "s smartstack " + str(
                 sskcounter+1) + " out of " + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
         else:
-            if "object_name" in opt:
+            if "object_name" in optional_params:
                 g_dev["obs"].send_to_user(
                     "Starting "
                     + str(exposure_time)
                     + "s " + str(filter_ui_info) + " exposure of "
-                    + str(opt["object_name"])
+                    + str(optional_params["object_name"])
                     + " by user: "
                     + str(observer_user_name) + '. ' +
-                    str(int(opt['count']) - int(counter) + 1) +
-                    " of " + str(opt['count']),
+                    str(int(optional_params['count']) - int(counter) + 1) +
+                    " of " + str(optional_params['count']),
                     p_level="INFO",
                 )
 
-        count = int(opt['count'])
+        count = int(optional_params['count'])
 
         self.status_time = time.time() + 10
         self.post_mnt = []
@@ -4332,12 +4311,12 @@ class Camera:
         object_name = 'Unknown'
         object_specf = 'no'
 
-        if "object_name" in opt:
+        if "object_name" in optional_params:
             if (
-                opt["object_name"] != "Unspecified"
-                and opt["object_name"] != ""
+                optional_params["object_name"] != "Unspecified"
+                and optional_params["object_name"] != ""
             ):
-                object_name = opt["object_name"]
+                object_name = optional_params["object_name"]
                 object_specf = "yes"
         elif (
             g_dev["mnt"].object != "Unspecified"
@@ -4989,9 +4968,9 @@ class Camera:
                                             ) + 600
                                             g_dev['seq'].scope_already_nudged_by_camera_thread = True
                                             # Swap the filter
-                                            if g_dev["fil"].null_filterwheel == False:
+                                            if not null_filterwheel:
                                                 if g_dev['seq'].next_filter_in_flat_run != 'none':
-                                                    self.current_filter, filter_number, filter_offset = g_dev["fil"].set_name_command(
+                                                    self.current_filter, filter_number, filter_offset = fw_device.set_name_command(
                                                         {"filter": g_dev['seq'].next_filter_in_flat_run}, {
                                                         }
                                                     )
@@ -5058,10 +5037,10 @@ class Camera:
                                          str(self.current_filter))
                                     if not g_dev['seq'].block_next_filter_requested == 'None':
                                         # Check if filter needs changing, if so, change.
-                                        self.current_filter = g_dev['fil'].current_filter_name
+                                        self.current_filter = fw_device.current_filter_name
                                         if not self.current_filter == g_dev['seq'].block_next_filter_requested:
                                             plog("Changing filter")
-                                            self.current_filter, filter_number, filter_offset = g_dev["fil"].set_name_command(
+                                            self.current_filter, filter_number, filter_offset = fw_device.set_name_command(
                                                 {"filter": g_dev['seq'].block_next_filter_requested}, {
                                                 }
                                             )
@@ -5159,13 +5138,13 @@ class Camera:
                     if g_dev['seq'].block_guard and not g_dev['seq'].focussing and not frame_type == 'pointing' and not g_dev['seq'].currently_mosaicing:
                         # If this is the end of a smartstack set or it is a single shot then check the filter and change
                         if (Nsmartstack == 1 or (Nsmartstack == sskcounter+1)):
-                            if not g_dev['seq'].block_next_filter_requested == 'None':
+                            if hasattr(g_dev['seq'], 'block_next_filter_requested') and g_dev['seq'].block_next_filter_requested != 'None':
                                 # Check if filter needs changing, if so, change.
-                                self.current_filter = g_dev['fil'].current_filter_name
+                                self.current_filter = fw_device.current_filter_name
                                 if not self.current_filter.lower() == g_dev['seq'].block_next_filter_requested.lower():
                                     plog(
                                         "Changing filter for next smartstack round.")
-                                    self.current_filter, filter_number, filter_offset = g_dev["fil"].set_name_command(
+                                    self.current_filter, filter_number, filter_offset = fw_device.set_name_command(
                                         {"filter": g_dev['seq'].block_next_filter_requested}, {
                                         }
                                     )
@@ -5279,7 +5258,7 @@ class Camera:
                             exposure_time,
                             this_exposure_filter,
                             exposure_filter_offset,
-                            opt,
+                            optional_params,
                             observer_user_name,
                             azimuth_of_observation,
                             altitude_of_observation,
@@ -5314,10 +5293,10 @@ class Camera:
                             self.readout_time,
                             sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header,
                             self.substacker_filenames,
-                            self.obs.astro_events.day_directory,
+                            self.obs.events.get('day_directory'),
                             exposure_filter_offset,
-                            g_dev["fil"].null_filterwheel,
-                            self.obs.astro_events.wema_config, # there should be a cleaner way to get this
+                            null_filterwheel,
+                            self.obs.wema_config,
                             smartstackthread_filename,
                             septhread_filename,
                             mainjpegthread_filename,
