@@ -454,7 +454,7 @@ class Observatory:
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
         self.astro_events = Events(self.config, self.wema_config)
-        self.astro_events.calculate_events()
+        self.events = self.astro_events.calculate_events()
         self.astro_events.display_events()
 
         # If the camera is detected as substantially (20 degrees) warmer than the setpoint
@@ -4590,7 +4590,7 @@ class Observatory:
                     plog ("Failed rebooting, needs to be debugged")
                     breakpoint()
 
-        
+
 
         self.rebooting_theskyx=False
 

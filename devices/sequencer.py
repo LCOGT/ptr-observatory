@@ -2704,7 +2704,7 @@ class Sequencer:
 
 
         # Reopening config and resetting all the things.
-        self.obs.astro_events.calculate_events(endofnightoverride='yes')
+        self.obs.events = self.obs.astro_events.calculate_events(endofnightoverride='yes')
         self.obs.astro_events.display_events()
 
         '''
@@ -5271,8 +5271,6 @@ class Sequencer:
                 return np.nan, np.nan
 
         g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow()
-        #TB don't do autofocus in simulation mode
-        return
         # Reset focus tracker
         g_dev['foc'].focus_tracker = [np.nan] * 10
         throw = g_dev['foc'].throw

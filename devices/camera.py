@@ -3248,7 +3248,7 @@ class Camera:
             skip_calibration_check = True
 
         if not skip_daytime_check and g_dev['obs'].daytime_exposure_time_safety_on:
-            sun_az, sun_alt = self.obs.astro_events.sun_az_alt_now()
+            sun_az, sun_alt = self.obs.events.sun_az_alt_now()
             if sun_alt > -5:
                 if exposure_time > float(self.settings['max_daytime_exposure']):
                     g_dev['obs'].send_to_user("Exposure time reduced to maximum daytime exposure time: " + str(
@@ -3420,9 +3420,9 @@ class Camera:
 
             now = ephem.Date(ephem.now())
             exposure_end_time = ephem.Date(ephem.now() + (exposure_time * ephem.second))
-            observing_ends = self.obs.astro_events['Observing Ends']
-            naut_dusk = self.obs.astro_events['Naut Dusk']
-            naut_dawn = self.obs.astro_events['Naut Dawn']
+            observing_ends = self.obs.events['Observing Ends']
+            naut_dusk = self.obs.events['Naut Dusk']
+            naut_dawn = self.obs.events['Naut Dawn']
 
             if imtype.lower() in ["light", "expose"] and not self.obs.scope_in_manual_mode:
                 # Exposure time must end before the end of the nighttime observing window
@@ -5293,10 +5293,10 @@ class Camera:
                             self.readout_time,
                             sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header,
                             self.substacker_filenames,
-                            self.obs.astro_events.day_directory,
+                            self.obs.events.get('day_directory'),
                             exposure_filter_offset,
                             null_filterwheel,
-                            self.obs.astro_events.wema_config, # there should be a cleaner way to get this
+                            self.obs.wema_config,
                             smartstackthread_filename,
                             septhread_filename,
                             mainjpegthread_filename,
