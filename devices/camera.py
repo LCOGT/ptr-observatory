@@ -3342,7 +3342,7 @@ class Camera:
             null_filterwheel = fw_device.null_filterwheel
         except:
             null_filterwheel =True
-        
+        #breakpoint()
         try:
             if not null_filterwheel:
                 if imtype in ['bias', 'dark'] or a_dark_exposure:
@@ -4008,7 +4008,8 @@ class Camera:
                             substack=self.substacker,
                             corrected_ra_for_header=corrected_ra_for_header,
                             corrected_dec_for_header=corrected_dec_for_header,
-                            fw_device=fw_device
+                            fw_device=fw_device,
+                            null_filterwheel=null_filterwheel
                         )
 
                         self.retry_camera = 0
@@ -4137,7 +4138,8 @@ class Camera:
         substack=False,
         corrected_ra_for_header=0.0,
         corrected_dec_for_header=0.0,
-        fw_device=None
+        fw_device=None,
+        null_filterwheel=True
     ):
         if fw_device == None:
             fw_device = self.obs.devices['main_fw']
