@@ -5801,6 +5801,68 @@ class Camera:
                                 outputimg = outputimg+bilinearfill
                                 del bilinearfill
 
+                            #If it is a focus image then it will get sent in a different manner to the UI for a jpeg
+                            # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
+                            hdusmalldata = np.array(outputimg)
+                            fx, fy = hdusmalldata.shape
+
+                            aspect_ratio= fx/fy
+                            if self.pixscale == None:
+                                focus_jpeg_size=500
+                            else:
+                                focus_jpeg_size=0.2/(self.pixscale/3600)
+                            if focus_jpeg_size < fx:
+                                crop_width = (fx - focus_jpeg_size) / 2
+                            else:
+                                crop_width =2
+
+                            if focus_jpeg_size < fy:
+                                crop_height = (fy - (focus_jpeg_size / aspect_ratio)) / 2
+                            else:
+                                crop_height = 2
+
+                            # Make sure it is an even number for OSCs
+                            if (crop_width % 2) != 0:
+                                crop_width = crop_width+1
+                            if (crop_height % 2) != 0:
+                                crop_height = crop_height+1
+
+                            crop_width = int(crop_width)
+                            crop_height = int(crop_height)
+
+                            if crop_width > 0 or crop_height > 0:
+                                hdusmalldata = hdusmalldata[crop_width:-
+                                                            crop_width, crop_height:-crop_height]
+
+                            hdusmalldata = hdusmalldata - bn.nanmin(hdusmalldata)
+
+                            stretched_data_float = mid_stretch_jpeg(hdusmalldata+1000)
+                            stretched_256 = 255 * stretched_data_float
+                            hot = np.where(stretched_256 > 255)
+                            cold = np.where(stretched_256 < 0)
+                            stretched_256[hot] = 255
+                            stretched_256[cold] = 0
+                            stretched_data_uint8 = stretched_256.astype("uint8")
+                            hot = np.where(stretched_data_uint8 > 255)
+                            cold = np.where(stretched_data_uint8 < 0)
+                            stretched_data_uint8[hot] = 255
+                            stretched_data_uint8[cold] = 0
+
+                            iy, ix = stretched_data_uint8.shape
+                            final_image = Image.fromarray(stretched_data_uint8)
+
+                            if iy == ix:
+                                final_image = final_image.resize(
+                                    (900, 900)
+                                )
+                            else:
+                                final_image = final_image.resize(
+                                    (900, int(900 * iy / ix))
+                                )
+
+                            self.current_focus_jpg = copy.deepcopy(final_image)
+
+
                             try:
                                 sepbkg = sep.Background(outputimg, bw=32, bh=32, fw=3, fh=3)
                             except:
