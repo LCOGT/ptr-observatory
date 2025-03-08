@@ -4279,7 +4279,7 @@ class Sequencer:
         else:
             print("No directories found.")
             num_files=0
-        max_files = self.settings['number_of_flat_to_store']
+        max_files = g_dev['cam'].settings['number_of_flat_to_store']
         if not ((num_files/max_files) > 0.8):
             skip_moon_check=True
        
