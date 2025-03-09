@@ -469,7 +469,7 @@ class NightlyScheduleManager:
                     now_events.append(event)
         return now_events
 
-    def calendar_event_is_active(event_id):
+    def calendar_event_is_active(self, event_id):
         """ Check if a calendar event is active """
         return event_id in [event["id"] for event in self.events_happening_now()]
 
