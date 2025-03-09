@@ -1,135 +1,3 @@
-sample_ptr_calendar_response = [
-    {
-        "origin": "PTR",
-        "creator": "Tim Beccue",
-        "resourceId": "tbo2",
-        "site": "tbo2",
-        "creator_id": "google-oauth2|100354044221813550027",
-        "reservation_note": "",
-        "event_id": "a179dcad-d7b4-40c8-9a4e-bf2f0df0d9ff",
-        "reservation_type": "project",
-        "project_id": "Simple observation from LCO - tbo2#2025-02-04T05:04:55Z",
-        "end": "2025-03-08T01:35:00Z",
-        "project_priority": "standard",
-        "last_modified": "2025-03-08T00:30:54Z",
-        "start": "2025-03-07T23:35:00Z",
-        "title": "Tim Beccue",
-    }
-]
-
-sample_site_proxy_schedule_response = {
-    "count": 74,
-    "next": None,
-    "previous": None,
-    "results": [
-        {
-            "created": "2025-02-15T02:33:31.083076Z",
-            "enclosure": "enc1",
-            "end": "2025-02-15T03:11:43Z",
-            "id": 583120106,
-            "ipp_value": 1.05,
-            "modified": "2025-02-15T02:33:31.083071Z",
-            "name": "Full Complete Observation mrc1",
-            "observation_type": "NORMAL",
-            "priority": 10,
-            "proposal": "PTR_integration_test_proposal",
-            "request": {
-                "acceptability_threshold": 90.0,
-                "configuration_repeats": 2,
-                "configurations": [
-                    {
-                        "acquisition_config": {
-                            "extra_params": {},
-                            "mode": "OFF",
-                        },
-                        "configuration_status": 750654859,
-                        "constraints": {
-                            "extra_params": {},
-                            "max_airmass": 1.6,
-                            "max_lunar_phase": 1.0,
-                            "min_lunar_distance": 30.0,
-                        },
-                        "extra_params": {
-                            "dither_pattern": "custom",
-                            "smartstack": True,
-                            "substack": True,
-                        },
-                        "guide_camera_name": "",
-                        "guiding_config": {
-                            "exposure_time": None,
-                            "extra_params": {},
-                            "mode": "OFF",
-                            "optical_elements": {},
-                            "optional": True,
-                        },
-                        "id": 10840803,
-                        "instrument_configs": [
-                            {
-                                "exposure_count": 10,
-                                "exposure_time": 15.0,
-                                "extra_params": {
-                                    "offset_dec": 1,
-                                    "offset_ra": 2,
-                                    "rotator_angle": 0,
-                                },
-                                "mode": "full",
-                                "optical_elements": {"filter": "ptr-w"},
-                                "rois": [],
-                                "rotator_mode": "RPA",
-                            },
-                            {
-                                "exposure_count": 40,
-                                "exposure_time": 10.0,
-                                "extra_params": {
-                                    "offset_dec": 0,
-                                    "offset_ra": 0,
-                                    "rotator_angle": 0,
-                                },
-                                "mode": "full",
-                                "optical_elements": {"filter": "ptr-w"},
-                                "rois": [],
-                                "rotator_mode": "RPA",
-                            },
-                        ],
-                        "instrument_name": "qhy461",
-                        "instrument_type": "PTR-MRC1-0M31-QHY461",
-                        "priority": 1,
-                        "repeat_duration": None,
-                        "state": "PENDING",
-                        "summary": {},
-                        "target": {
-                            "dec": -7.6528696608383,
-                            "epoch": 2000.0,
-                            "extra_params": {},
-                            "hour_angle":None,
-                            "name": "40 Eridani",
-                            "parallax": 199.608,
-                            "proper_motion_dec": -3421.809,
-                            "proper_motion_ra": -2240.085,
-                            "ra": 63.8179984124771,
-                            "type": "ICRS",
-                        },
-                        "type": "EXPOSE",
-                    }
-                ],
-                "duration": 2094,
-                "extra_params": {},
-                "id": 3445217,
-                "modified": "2025-02-18T14:35:00.293445Z",
-                "observation_note": "",
-                "optimization_type": "TIME",
-                "state": "WINDOW_EXPIRED",
-            },
-            "request_group_id": 1885231,
-            "site": "mrc",
-            "start": "2025-02-15T02:36:49Z",
-            "state": "PENDING",
-            "submitter": "tbeccue",
-            "telescope": "0m31",
-        },
-    ],
-}
-
 
 from datetime import datetime
 from dateutil import parser
@@ -591,22 +459,135 @@ class NightlyScheduleManager:
         self._stop_threads.clear()
 
 
+# These are examples for reference. They are not used in the code.
+sample_ptr_calendar_response = [
+    {
+        "origin": "PTR",
+        "creator": "Tim Beccue",
+        "resourceId": "tbo2",
+        "site": "tbo2",
+        "creator_id": "google-oauth2|100354044221813550027",
+        "reservation_note": "",
+        "event_id": "a179dcad-d7b4-40c8-9a4e-bf2f0df0d9ff",
+        "reservation_type": "project",
+        "project_id": "Simple observation from LCO - tbo2#2025-02-04T05:04:55Z",
+        "end": "2025-03-08T01:35:00Z",
+        "project_priority": "standard",
+        "last_modified": "2025-03-08T00:30:54Z",
+        "start": "2025-03-07T23:35:00Z",
+        "title": "Tim Beccue",
+    }
+]
 
-def test_schedule_manager():
-    ptr_update_interval = 5
-    lco_update_intervale = 3
-    os.environ['SITE_PROXY_BASE_URL'] = "https://mrc-proxy.lco.global"
-    os.environ['SITE_PROXY_TOKEN'] = "bdb38dbd-c22e-4766-8553-4a0713ea824e"
-    test_start = parser.parse("2025-03-03T00:36:49Z").timestamp()
-    test_end   = parser.parse("2025-03-05T00:36:49Z").timestamp()
-    test_end = time.time() + 60*60*24
-    sm = NightlyScheduleManager("mrc1", test_start, test_end, "0m31", lco_update_interval=lco_update_intervale, ptr_update_interval=ptr_update_interval)
-    # sm = NightlyScheduleManager("tbo2", test_start, test_end, lco_update_interval=lco_update_intervale, ptr_update_interval=ptr_update_interval)
-    sm.start_update_threads()
-    print('start sleep')
-    time.sleep(10)
-    print('end sleep')
-    # print(sm.schedule)
-    print(sm.simple_schedule)
-    print(sm.events_happening_now())
-    print(sm.get_observation_to_run_now())
+sample_site_proxy_schedule_response = {
+    "count": 74,
+    "next": None,
+    "previous": None,
+    "results": [
+        {
+            "created": "2025-02-15T02:33:31.083076Z",
+            "enclosure": "enc1",
+            "end": "2025-02-15T03:11:43Z",
+            "id": 583120106,
+            "ipp_value": 1.05,
+            "modified": "2025-02-15T02:33:31.083071Z",
+            "name": "Full Complete Observation mrc1",
+            "observation_type": "NORMAL",
+            "priority": 10,
+            "proposal": "PTR_integration_test_proposal",
+            "request": {
+                "acceptability_threshold": 90.0,
+                "configuration_repeats": 2,
+                "configurations": [
+                    {
+                        "acquisition_config": {
+                            "extra_params": {},
+                            "mode": "OFF",
+                        },
+                        "configuration_status": 750654859,
+                        "constraints": {
+                            "extra_params": {},
+                            "max_airmass": 1.6,
+                            "max_lunar_phase": 1.0,
+                            "min_lunar_distance": 30.0,
+                        },
+                        "extra_params": {
+                            "dither_pattern": "custom",
+                            "smartstack": True,
+                            "substack": True,
+                        },
+                        "guide_camera_name": "",
+                        "guiding_config": {
+                            "exposure_time": None,
+                            "extra_params": {},
+                            "mode": "OFF",
+                            "optical_elements": {},
+                            "optional": True,
+                        },
+                        "id": 10840803,
+                        "instrument_configs": [
+                            {
+                                "exposure_count": 10,
+                                "exposure_time": 15.0,
+                                "extra_params": {
+                                    "offset_dec": 1,
+                                    "offset_ra": 2,
+                                    "rotator_angle": 0,
+                                },
+                                "mode": "full",
+                                "optical_elements": {"filter": "ptr-w"},
+                                "rois": [],
+                                "rotator_mode": "RPA",
+                            },
+                            {
+                                "exposure_count": 40,
+                                "exposure_time": 10.0,
+                                "extra_params": {
+                                    "offset_dec": 0,
+                                    "offset_ra": 0,
+                                    "rotator_angle": 0,
+                                },
+                                "mode": "full",
+                                "optical_elements": {"filter": "ptr-w"},
+                                "rois": [],
+                                "rotator_mode": "RPA",
+                            },
+                        ],
+                        "instrument_name": "qhy461",
+                        "instrument_type": "PTR-MRC1-0M31-QHY461",
+                        "priority": 1,
+                        "repeat_duration": None,
+                        "state": "PENDING",
+                        "summary": {},
+                        "target": {
+                            "dec": -7.6528696608383,
+                            "epoch": 2000.0,
+                            "extra_params": {},
+                            "hour_angle":None,
+                            "name": "40 Eridani",
+                            "parallax": 199.608,
+                            "proper_motion_dec": -3421.809,
+                            "proper_motion_ra": -2240.085,
+                            "ra": 63.8179984124771,
+                            "type": "ICRS",
+                        },
+                        "type": "EXPOSE",
+                    }
+                ],
+                "duration": 2094,
+                "extra_params": {},
+                "id": 3445217,
+                "modified": "2025-02-18T14:35:00.293445Z",
+                "observation_note": "",
+                "optimization_type": "TIME",
+                "state": "WINDOW_EXPIRED",
+            },
+            "request_group_id": 1885231,
+            "site": "mrc",
+            "start": "2025-02-15T02:36:49Z",
+            "state": "PENDING",
+            "submitter": "tbeccue",
+            "telescope": "0m31",
+        },
+    ],
+}
