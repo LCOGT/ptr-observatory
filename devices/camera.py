@@ -3422,7 +3422,7 @@ class Camera:
         incoming_exposure_time = copy.deepcopy(exposure_time)
         g_dev['obs'].request_scan_requests()
         if g_dev['seq'].blockend != None:
-            g_dev['obs'].request_update_calendar_blocks()
+            g_dev['seq'].schedule_manager.update_now()
         for seq in range(count):
 
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
@@ -3593,33 +3593,17 @@ class Camera:
                                 real_time_token, real_time_files)
                             return 'blockend'
 
-                    # Check that the calendar event that is running the exposure
-                    # Hasn't completed already
-                    # Check whether calendar entry is still existant.
-                    # If not, stop running block
-                    if not calendar_event_id == None:
-                        foundcalendar = False
-                        for tempblock in g_dev['seq'].blocks:
-                            try:
-                                if tempblock['event_id'] == calendar_event_id:
-                                    foundcalendar = True
-                                    g_dev['seq'].blockend = tempblock['end']
-                            except:
-                                plog("glitch in calendar finder")
-                                plog(str(tempblock))
-                        now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[
-                            0] + 'Z'
-                        if foundcalendar == False or now_date_timeZ >= g_dev['seq'].blockend:
-                            plog(
-                                "could not find calendar entry, cancelling out of block.")
-                            plog("And Cancelling SmartStacks.")
+                    # Stop if we're running from a block that has finished
+                    if calendar_event_id is not None:
+                        if g_dev['seq'].schedule_manager.calendar_event_is_active(calendar_event_id):
+                            plog('Calendar event is no longer active; cancelling current camera activity.')
                             Nsmartstack = 1
                             sskcounter = 2
                             self.currently_in_smartstack_loop = False
-                            self.write_out_realtimefiles_token_to_disk(
-                                real_time_token, real_time_files)
+                            self.write_out_realtimefiles_token_to_disk(real_time_token, real_time_files)
                             self.running_an_exposure_set = False
                             return 'calendarend'
+
 
                     if not g_dev['obs'].assume_roof_open and not g_dev['obs'].scope_in_manual_mode and 'Closed' in g_dev['obs'].enc_status['shutter_status'] and imtype not in ['bias', 'dark'] and not a_dark_exposure:
 
@@ -4143,7 +4127,7 @@ class Camera:
     ):
         if fw_device == None:
             fw_device = self.obs.devices['main_fw']
-            
+
         #breakpoint()
         try:
             this_exposure_filter = fw_device.current_filter_name
@@ -4296,7 +4280,7 @@ class Camera:
         if exposure_time <= 5.0:
             g_dev['obs'].request_scan_requests()
             if g_dev['seq'].blockend != None:
-                g_dev['obs'].request_update_calendar_blocks()
+                g_dev['seq'].schedule_manager.update_now()
             try:
                 focus_position = g_dev['foc'].current_focus_position
             except:
@@ -4957,7 +4941,7 @@ class Camera:
                         )
                         if remaining > 5 and not block_and_focus_check_done:
                             if g_dev['seq'].blockend != None:
-                                g_dev['obs'].request_update_calendar_blocks()
+                                g_dev['seq'].schedule_manager.update_now()
                             block_and_focus_check_done = True
 
                     # Need to have a time sleep to release the GIL to run the other threads
