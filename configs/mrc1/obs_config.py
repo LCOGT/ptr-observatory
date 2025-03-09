@@ -55,6 +55,8 @@ site_config = {
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
 
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
+
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
@@ -149,6 +151,17 @@ site_config = {
     # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
     'save_archive_versions_of_final_calibrations' : False,
+
+
+    # The site can fully platesolve each image before it is sent off to s3 or a PIPE
+    # If there are spare enough cycles at the site, this saves time for the PIPE
+    # to concentrate on more resource heavy reductions.
+    # Also leads to fully platesolved reduced images on the local site computer
+    # Usually set this to True
+    # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
+    'fully_platesolve_images_at_site_rather_than_pipe' : False,
+
+
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
     # Number of files to send up to the ptrarchive simultaneously.
@@ -263,6 +276,28 @@ site_config = {
         'sequencer',    #NB I think we will add "engineering or telops" to the model >>>>
         'telops',       #   >>>>
     ],
+
+    # The LCO scheduler references a description of this site in configdb
+    # The logic in configdb is organized slightly differently than the PTR
+    # config files (like this one), but they should ultimately represent the
+    # same underlying hardware.
+    # When a PTR obsevatory is running an observation created by the scheduler,
+    # we'll use this to figure out what devices to use to run that observation.
+    # The key is the instrument name from configdb, and the value is a dict of
+    # device names from this config file for each type of device.
+    #
+    # This should only be modified if the configuration in configdb changes.
+    'configdb_instrument_mapping': {
+        'qhy461': {
+            'mount': 'eastpier',
+            'camera': 'camera_1_1',
+            'filter_wheel': 'Dual filter wheel',
+            'rotator': 'rotator',
+            'focuser': 'focuser'
+        }
+    },
+    'configdb_telescope': '0m31',
+    'configdb_enclosure': 'enc1',
 
     'mount': {
         'eastpier': {       # NB There can only be one mount with our new model.  >>>>
@@ -927,7 +962,12 @@ site_config = {
 
 
                 # In the EVA Pipeline, whether to run cosmic ray detection on individual images
-                'do_cosmics': False,
+                'do_cosmics': True,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
+
 
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,

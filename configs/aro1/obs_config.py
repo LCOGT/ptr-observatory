@@ -304,6 +304,8 @@ site_config = {
             'focuser': 'focuser'
         }
     },
+    'configdb_telescope': '0m3',
+    'configdb_enclosure': 'roof',
 
     'device_types': [
         'mount',

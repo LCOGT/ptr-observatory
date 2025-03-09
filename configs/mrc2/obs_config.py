@@ -270,6 +270,8 @@ site_config = {
             'focuser': 'focuser'
         }
     },
+    'configdb_telescope': '0m61',
+    'configdb_enclosure': 'enc1',
 
     'device_types': [
         'mount',
