@@ -151,7 +151,7 @@ site_config = {
     'pipe_archive_folder_path': 'X:/localptrarchive/',
 # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
-    'save_archive_versions_of_final_calibrations' : False, 
+    'save_archive_versions_of_final_calibrations' : False,
 
     # 'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # LINKS FOR OBS FOLDERS
@@ -213,7 +213,7 @@ site_config = {
     'astro_dark_buffer': 35,  # Min before and after AD to extend observing window
     'morn_flat_start_offset': -10.,  # min from Sunrise
     'morn_flat_end_offset': +40.,  # min from Sunrise
-    
+
 
 
 
@@ -304,6 +304,8 @@ site_config = {
             'focuser': 'focuser'
         }
     },
+    'configdb_telescope': '0m3',
+    'configdb_enclosure': 'roof',
 
     'device_types': [
         'mount',

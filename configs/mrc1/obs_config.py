@@ -54,7 +54,7 @@ site_config = {
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
-    
+
     "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
 
     # These are the default values that will be set for the obs
@@ -150,12 +150,12 @@ site_config = {
     'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.
     # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
-    'save_archive_versions_of_final_calibrations' : False, 
+    'save_archive_versions_of_final_calibrations' : False,
 
 
     # The site can fully platesolve each image before it is sent off to s3 or a PIPE
     # If there are spare enough cycles at the site, this saves time for the PIPE
-    # to concentrate on more resource heavy reductions. 
+    # to concentrate on more resource heavy reductions.
     # Also leads to fully platesolved reduced images on the local site computer
     # Usually set this to True
     # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
@@ -197,7 +197,7 @@ site_config = {
     #'morn_flat_start_offset': -5,       #min from Sunrise
     'morn_flat_start_offset': -10,       #min from Sunrise
     'morn_flat_end_offset':  +45,        #min from Sunrise
-    
+
 
 
 
@@ -293,6 +293,8 @@ site_config = {
             'focuser': 'focuser'
         }
     },
+    'configdb_telescope': '0m31',
+    'configdb_enclosure': 'enc1',
 
     'mount': {
         'eastpier': {       # NB There can only be one mount with our new model.  >>>>
@@ -949,7 +951,7 @@ site_config = {
                 'do_saltandpepper' : True,
                 # And debanding
                 'do_debanding' : False,
-            
+
 
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,

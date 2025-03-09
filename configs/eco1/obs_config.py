@@ -88,12 +88,12 @@ site_config = {
 
     # The site can fully platesolve each image before it is sent off to s3 or a PIPE
     # If there are spare enough cycles at the site, this saves time for the PIPE
-    # to concentrate on more resource heavy reductions. 
+    # to concentrate on more resource heavy reductions.
     # Also leads to fully platesolved reduced images on the local site computer
     # Usually set this to True
     # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
     'fully_platesolve_images_at_site_rather_than_pipe' : True,
-    
+
 
     # Setup of folders on local and network drives.
     'client_hostname':  'ECO-0m40',
@@ -230,6 +230,8 @@ site_config = {
             'focuser': 'focuser'
         }
     },
+    'configdb_telescope': '0m43',
+    'configdb_enclosure': 'roof',
 
     'device_types': [
             'mount',
@@ -740,7 +742,7 @@ site_config = {
                 'do_saltandpepper' : True,
                 # And debanding
                 'do_debanding' : False,
-                
+
                 'number_of_bias_to_collect' : 64,
                 'number_of_dark_to_collect' : 64,
                 'number_of_flat_to_collect' : 10,
