@@ -115,7 +115,6 @@ class NightlyScheduleManager:
             return
         url = self.site_proxy_base_url + '/observation-portal/api/last_scheduled/'
         response = self.site_proxy.get(url)
-        plog(response.json())
         return response.json().get('last_scheduled')
 
 
