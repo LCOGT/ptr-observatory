@@ -19,7 +19,7 @@ import ephem
 from ptr_config import site_config
 from global_yard import g_dev
 
-from datetime import timezone, timedelta 
+from datetime import timezone, timedelta
 
 DAY_Directory= g_dev['day']
 
@@ -61,18 +61,29 @@ except KeyError:
 
 os.makedirs(plog_path, exist_ok=True)
 
-def plog(*args, loud = True):
+def plog(*args, color=None, loud=True):
     '''
     loud not used, consider adding an optional incoming module
     and error level, also make file format compatible with csv.
     '''
+    print_colors = {
+        'red': '\033[91m',
+        'green': '\033[92m',
+        'yellow': '\033[93m',
+        'blue': '\033[94m',
+        'magenta': '\033[95m',
+        'cyan': '\033[96m',
+        'reset': '\033[0m'
+    }
+    c = print_colors['reset']
+    r = print_colors['reset']
+    if color in print_colors:
+        c = print_colors[color]
 
     try:
-                
         if len(args) == 1 and args[0] in ['.', '>']:
-            print(args[0])
+            print(f'{c}{args[0]}{r}')
             return
-        
         args_to_str = ''
         exposure_report = False
         for item in args:
@@ -86,7 +97,7 @@ def plog(*args, loud = True):
         if args_to_str[:4] == '||  ':
             exposure_report = True
             args_to_str = args_to_str[4:]
-        print(args_to_str)
+        print(f'{c}{args_to_str}{r}')
         if not exposure_report:
             d_t = str(datetime.utcnow()) + ' '
             with open(plog_path + 'nightlog.txt', 'a') as file:
