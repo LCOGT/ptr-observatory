@@ -823,6 +823,7 @@ class Sequencer:
                             self.schedule_manager.add_completed_id(current_observation['id'])
                         else:
                             plog(f'Tried to observe PTR project {block["project_id"]} but pointing check failed')
+                            self.schedule_manager.add_completed_id(current_observation['id'])
 
                     # Catch if there's a bug with the origin. This should never run.
                     else:
