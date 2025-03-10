@@ -9,6 +9,7 @@ This is called from SmartStackProcess.py when it is running an OSC stack.
 As it is a relatively expensive (in time) operation, they need to run in parallel.
 """
 
+import builtins
 import numpy as np
 import sys
 import pickle
@@ -20,28 +21,19 @@ import warnings
 import datetime
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
-# Add the parent directory to the Python path
-# This allows importing modules from the root directory
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname((os.path.abspath(__file__)))))))
-# Add the root directory to the Python path
-root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
-print('SYSTEM PATH FROM LOCAL_REDUCE_FILE_SUBPROCESS.PY')
-print(sys.path)
-from ptr_utility import create_color_plog
-
-log_color = (0, 210, 210) # cyan
-plog = create_color_plog('reduce', log_color)
+def print(*args):
+    rgb = lambda r, g, b: f'\033[38;2;{r};{g};{b}m'
+    log_color = (0, 210, 210) # cyan
+    c = rgb(*log_color)
+    r = '\033[0m' # reset
+    builtins.print(f"{c}[sep]{r} {' '.join([str(x) for x in args])}")
 
 #input_sep_info=pickle.load(sys.stdin.buffer)
 #input_sep_info=pickle.load(open('testfz17141141966139522','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
 
-plog("Starting local_reduce_file_subprocess.py")
-plog(input_sep_info)
+print("Starting local_reduce_file_subprocess.py")
+print(input_sep_info)
 
 temphduheader=input_sep_info[0]
 selfconfig=input_sep_info[1]
