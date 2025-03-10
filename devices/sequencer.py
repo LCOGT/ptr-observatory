@@ -5617,7 +5617,7 @@ class Sequencer:
                     thread.daemon = True
                     thread.start()
                     # Fling the jpeg up
-                    g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
+                    g_dev['obs'].enqueue_for_fastAWS( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
                 else:
                     plog ("Haven't found a starting point yet..... travelling left and right to find a good starting point ")
                     #if position_counter & 1:
@@ -5672,7 +5672,7 @@ class Sequencer:
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
                             thread.start()
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
+                            g_dev['obs'].enqueue_for_fastAWS( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
                             g_dev['foc'].set_initial_best_guess_for_focus()
                             self.total_sequencer_control = False
                             self.focussing=False
@@ -5688,7 +5688,7 @@ class Sequencer:
                             thread.start()
 
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
+                            g_dev['obs'].enqueue_for_fastAWS( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
                         elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
                             plog ('minimum index: ', minimum_index)
@@ -5700,7 +5700,7 @@ class Sequencer:
                             thread.daemon = True
                             thread.start()
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
+                            g_dev['obs'].enqueue_for_fastAWS( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
 
 
@@ -5715,7 +5715,7 @@ class Sequencer:
                             thread.daemon = True
                             thread.start()
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
+                            g_dev['obs'].enqueue_for_fastAWS( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
                         # If right hand side is too low get another dot
                         elif focus_spots[-1][1] < (minimum_value * 1.5):
@@ -5725,7 +5725,7 @@ class Sequencer:
                             thread.daemon = True
                             thread.start()
                             # Fling the jpeg up
-                            g_dev['obs'].enqueue_for_fastUI( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
+                            g_dev['obs'].enqueue_for_fastAWS( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
 
                         # If the parabola is not centered roughly on the minimum point, then get another dot on
@@ -5773,7 +5773,7 @@ class Sequencer:
                                     thread.daemon = True
                                     thread.start()
                                     # Fling the jpeg up
-                                    g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
+                                    g_dev['obs'].enqueue_for_fastAWS(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
                                 elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
 
@@ -5783,7 +5783,7 @@ class Sequencer:
                                     thread.daemon = True
                                     thread.start()
                                     # Fling the jpeg up
-                                    g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
+                                    g_dev['obs'].enqueue_for_fastAWS(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
                             else:
                                 plog ("focus pos: " + str(fitted_focus_position))
@@ -5792,7 +5792,7 @@ class Sequencer:
                                 thread.daemon = True
                                 thread.start()
                                 # Fling the jpeg up
-                                g_dev['obs'].enqueue_for_fastUI(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
+                                g_dev['obs'].enqueue_for_fastAWS(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
                                 # Check that the solved minimum focussed position actually fits in between the lowest measured point and
                                 # the two next door measured points.
