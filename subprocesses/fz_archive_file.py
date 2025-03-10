@@ -34,7 +34,7 @@ def print(*args):
     builtins.print(f"{c}[fz_archive]{r} {' '.join([str(x) for x in args])}")
 
 print("Starting fz_archive_file.py")
-print(input_sep_info)
+# print(input_sep_info)
 
 
 temphduheader=input_sep_info[0]
