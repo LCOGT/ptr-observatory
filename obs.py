@@ -37,7 +37,9 @@ import argparse
 
 from astropy.io import fits
 from astropy.utils.data import check_download_cache
-from astropy.coordinates import get_sun
+from astropy.coordinates import get_sun, SkyCoord
+from astropy.time import Time
+import astropy.units as u
 
 import bottleneck as bn
 import numpy as np
