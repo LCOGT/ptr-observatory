@@ -4105,11 +4105,12 @@ class Camera:
             if not os.path.exists(localtokenfolder):
                 os.umask(0)
                 os.makedirs(localtokenfolder, mode=0o777)
-            
+            #breakpoint()
             if self.is_osc:
                 suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
-                temp_file_holder=[]
+                
                 for suffix in suffixes:
+                    temp_file_holder=[]
                     for tempfilename in real_time_files:                            
                         temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
                     try:
@@ -4120,7 +4121,7 @@ class Camera:
                     
                     #plonk it in the upload queue
                     try:
-                        g_dev['obs'].enqueue_for_fastAWS( localtokenfolder, token_name_s3 + suffix, 0)
+                        g_dev['obs'].enqueue_for_fastAWS( localtokenfolder+'/', token_name_s3 + suffix, 0)
                     except:
                         plog(traceback.format_exc())
             else:
@@ -4132,7 +4133,7 @@ class Camera:
                 
                 #plonk it in the upload queue
                 try:
-                    g_dev['obs'].enqueue_for_fastAWS( localtokenfolder, token_name_s3, 0)
+                    g_dev['obs'].enqueue_for_fastAWS( localtokenfolder+'/', token_name_s3, 0)
                 except:
                     plog(traceback.format_exc())
             
