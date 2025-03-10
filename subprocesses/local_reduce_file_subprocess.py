@@ -20,12 +20,28 @@ import warnings
 import datetime
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
+# Add the parent directory to the Python path
+# This allows importing modules from the root directory
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname((os.path.abspath(__file__)))))))
+# Add the root directory to the Python path
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+print('SYSTEM PATH FROM LOCAL_REDUCE_FILE_SUBPROCESS.PY')
+print(sys.path)
+from ptr_utility import create_color_plog
+
+log_color = (0, 210, 210) # cyan
+plog = create_color_plog('reduce', log_color)
+
 #input_sep_info=pickle.load(sys.stdin.buffer)
 #input_sep_info=pickle.load(open('testfz17141141966139522','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
 
-#print ("Starting local_reduce_file_subprocess.py")
-#print (input_sep_info)
+plog("Starting local_reduce_file_subprocess.py")
+plog(input_sep_info)
 
 temphduheader=input_sep_info[0]
 selfconfig=input_sep_info[1]
@@ -79,7 +95,7 @@ while (breaker != 0):
                                                         if not (imageMode-counter-13) in zeroValueArray[:,0]:
                                                             if not (imageMode-counter-14) in zeroValueArray[:,0]:
                                                                 if not (imageMode-counter-15) in zeroValueArray[:,0]:
-                                                                    if not (imageMode-counter-16) in zeroValueArray[:,0]: 
+                                                                    if not (imageMode-counter-16) in zeroValueArray[:,0]:
                                                                         zeroValue=(imageMode-counter)
                                                                         breaker =0
 
@@ -154,7 +170,7 @@ hdureduced.writeto(
     slow_process[1], overwrite=True, output_verify='silentfix'
 )  # Save flash reduced file locally
 
-if selfconfig["save_to_alt_path"] == "yes":  
+if selfconfig["save_to_alt_path"] == "yes":
     hdureduced.writeto( selfconfig['alt_path'] +'/' +temphduheader['OBSID'] +'/' +temphduheader['DAY-OBS'] + "/reduced/" + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
     )  # Save full raw file locally
 
