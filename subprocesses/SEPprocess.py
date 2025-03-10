@@ -11,6 +11,7 @@ import numpy as np
 import bottleneck as bn
 # Need this line to output the full array to text for the json
 np.set_printoptions(threshold=np.inf)
+import builtins
 import re
 from astropy.stats import median_absolute_deviation
 from astropy.nddata.utils import extract_array
@@ -39,7 +40,14 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 #import matplotlib.pyplot as plt
 from scipy.stats import binned_statistic
 
-#print("Starting sep_process.py")
+def print(*args):
+    rgb = lambda r, g, b: f'\033[38;2;{r};{g};{b}m'
+    log_color = (255, 130, 200) # pink
+    c = rgb(*log_color)
+    r = '\033[0m' # reset
+    builtins.print(f"{c}[sep]{r} {' '.join([str(x) for x in args])}")
+
+print("Starting sep_process.py")
 
 
 def gaussian(x, amplitude, mean, stddev):
