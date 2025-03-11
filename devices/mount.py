@@ -1440,7 +1440,14 @@ class Mount:
                 dome_timeout_timer=time.time()
                 #dome_open_or_opening=True
                 dome_is_slewing=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_slewing']['val'] 
-                while (abs(obs_azimuth - dome_azimuth) > 15 or dome_is_slewing) and time.time() - dome_timeout_timer < 300 and not self.rapid_park_indicator: # and dome_open_or_opening:
+                
+                # silly 360 degrees. who invented it.
+                actual_deviation=abs(obs_azimuth - dome_azimuth)
+                if actual_deviation > 180:
+                    actual_deviation = actual_deviation - 360
+                print (actual_deviation)
+                
+                while (actual_deviation > 30 or dome_is_slewing) and time.time() - dome_timeout_timer < 180 and not self.rapid_park_indicator: # and dome_open_or_opening:
                     
                     #plog ("making sure dome is positioned correct.")
                     rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
@@ -1457,6 +1464,12 @@ class Mount:
                         dome_is_slewing=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_slewing']['val'] 
                     except:
                         plog ("Some error in getting the wema_enclosure")
+                    
+                    # silly 360 degrees. who invented it.
+                    actual_deviation=abs(obs_azimuth - dome_azimuth)
+                    if actual_deviation > 180:
+                        actual_deviation = actual_deviation - 360
+                    print (actual_deviation)
                         
                 #plog ("Dome Arrived")
             else:

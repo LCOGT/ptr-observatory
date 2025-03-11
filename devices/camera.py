@@ -4096,46 +4096,46 @@ class Camera:
                         plog(traceback.format_exc())
                         
         if self.site_config['push_file_list_to_pipe_queue']:
+            if len(real_time_files) > 0:
             
-            #self.camera_path + g_dev["day"] + "/to_AWS/"
-            
-            token_name_s3='pipes3_'+token_name
-            
-            localtokenfolder=self.camera_path + g_dev["day"] + '/tokens'
-            if not os.path.exists(localtokenfolder):
-                os.umask(0)
-                os.makedirs(localtokenfolder, mode=0o777)
-            #breakpoint()
-            if self.is_osc:
-                suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
+                #self.camera_path + g_dev["day"] + "/to_AWS/"
                 
-                for suffix in suffixes:
-                    temp_file_holder=[]
-                    for tempfilename in real_time_files:                            
-                        temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
+                token_name_s3='pipes3_'+token_name
+                
+                localtokenfolder=self.camera_path + g_dev["day"] + '/tokens'
+                if not os.path.exists(localtokenfolder):
+                    os.umask(0)
+                    os.makedirs(localtokenfolder, mode=0o777)
+                if self.is_osc:
+                    suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
+                    
+                    for suffix in suffixes:
+                        temp_file_holder=[]
+                        for tempfilename in real_time_files:                            
+                            temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
+                        try:
+                            with open(f"{localtokenfolder}/{token_name_s3}{suffix}", 'w') as f:
+                                json.dump(temp_file_holder, f, indent=2)
+                        except:
+                            plog(traceback.format_exc())
+                        
+                        #plonk it in the upload queue
+                        try:
+                            g_dev['obs'].enqueue_for_fastAWS( localtokenfolder+'/', token_name_s3 + suffix, 0)
+                        except:
+                            plog(traceback.format_exc())
+                else:
                     try:
-                        with open(f"{localtokenfolder}/{token_name_s3}{suffix}", 'w') as f:
-                            json.dump(temp_file_holder, f, indent=2)
+                        with open(localtokenfolder + "/" + token_name_s3, 'w') as f:
+                            json.dump(real_time_files, f, indent=2)
                     except:
                         plog(traceback.format_exc())
                     
                     #plonk it in the upload queue
                     try:
-                        g_dev['obs'].enqueue_for_fastAWS( localtokenfolder+'/', token_name_s3 + suffix, 0)
+                        g_dev['obs'].enqueue_for_fastAWS( localtokenfolder+'/', token_name_s3, 0)
                     except:
                         plog(traceback.format_exc())
-            else:
-                try:
-                    with open(localtokenfolder + "/" + token_name_s3, 'w') as f:
-                        json.dump(real_time_files, f, indent=2)
-                except:
-                    plog(traceback.format_exc())
-                
-                #plonk it in the upload queue
-                try:
-                    g_dev['obs'].enqueue_for_fastAWS( localtokenfolder+'/', token_name_s3, 0)
-                except:
-                    plog(traceback.format_exc())
             
 
     def stop_command(self, required_params, optional_params):
