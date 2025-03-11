@@ -727,7 +727,7 @@ class FilterWheel:
         filter_groups = [
             (["U", "JU", "BU", "up"], ["up", "U", "BU","JU"]),  # U broadband
             (["Blue", "B", "JB", "BB", "PB"], ["BB", "PB","JB", "B"]),  # B broadband
-            (["Green", "JV", "BV", "PG"], ["BV", "JV","PG", "V"]),  # G broadband
+            (["Green", "JV", "BV", "PG","V"], ["BV", "JV","PG", "V"]),  # G broadband
             (["Red", "R", "BR", "r", "PR", "Rc", "rp"], ["rp", "BR", "PR", "Rc", "ip", "R"]),  # R broadband
             (["i", "Ic", "ip", "BI"], ["ip", "Ic", "BI"]),  # infrared broadband
             (["z", "zs", "zp"], ["zp", "zs", "z"]),  # NB z broadband  z and zs are different.  Y?  WER

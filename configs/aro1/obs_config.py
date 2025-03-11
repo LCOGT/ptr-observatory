@@ -139,7 +139,7 @@ site_config = {
     'simulate_open_roof': False,
     'auto_centering_off': False,
     'self_guide_on': True,
-    'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
     'owner_only_commands': False,
 
 
@@ -152,6 +152,7 @@ site_config = {
 # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
     'save_archive_versions_of_final_calibrations' : False,
+    'fully_platesolve_images_at_site_rather_than_pipe':False,
 
     # 'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # LINKS FOR OBS FOLDERS
