@@ -268,8 +268,12 @@ class SchedulerObservation:
         corrected_ra = proper_motion_parallax_adjusted_coords['ra'] + offset_ra
         corrected_dec = proper_motion_parallax_adjusted_coords['dec'] + offset_dec
 
-        plog(f'Slewing to ra {corrected_ra}, dec {corrected_dec}')
-        mount_device.go_command(ra=corrected_ra, dec=corrected_dec, objectname=target.get('name'))
+        if mount_device.last_ra_requested == corrected_ra and mount_device.last_dec_requested == corrected_dec:
+            plog(f'Mount is already pointing at ra {corrected_ra}, dec {corrected_dec}. No need to slew.')
+        else:
+            plog(f'Slewing to ra {corrected_ra}, dec {corrected_dec}')
+            mount_device.go_command(ra=corrected_ra, dec=corrected_dec, objectname=target.get('name'),
+                                    do_centering_routine=True, ignore_moon_dist=True)
 
     # Note: Defocus functionality not implemented, kept for API compatibility
     def _do_defocus(self, focuser_device, amount: float) -> None:
