@@ -32,8 +32,8 @@ def print(*args):
 #input_sep_info=pickle.load(open('testfz17141141966139522','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
 
-print("Starting local_reduce_file_subprocess.py")
-print(input_sep_info)
+#print("Starting local_reduce_file_subprocess.py")
+#print(input_sep_info)
 
 temphduheader=input_sep_info[0]
 selfconfig=input_sep_info[1]
