@@ -1371,6 +1371,9 @@ class Camera:
         self.end_of_last_exposure_time = time.time()
         self.camera_update_reboot = False
 
+        # Initialise variable to a blank array
+        self.current_focus_jpg=np.array([])
+
         # Figure out pixelscale from own observations
         # Or use the config value if there hasn't been enough
         # observations yet.

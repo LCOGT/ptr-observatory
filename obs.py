@@ -37,7 +37,7 @@ import argparse
 
 from astropy.io import fits
 from astropy.utils.data import check_download_cache
-from astropy.coordinates import get_sun, SkyCoord
+from astropy.coordinates import get_sun, SkyCoord, AltAz
 from astropy.time import Time
 import astropy.units as u
 
