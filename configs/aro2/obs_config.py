@@ -27,21 +27,21 @@ import json
 #pOWER SWITCH ON 10.15.0.60  CHANNEL 3 not the ones marked Camera
 
 
-obs_id = 'mrc1'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
+obs_id = 'aro2'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {
 
     # Instance type specifies whether this is an obs or a wema
     'instance_type' : 'obs',
     # If this is not a wema, this specifies the wema that this obs is connected to
-    'wema_name' : 'mrc',
+    'wema_name' : 'aro',
     # The unique identifier for this obs
-    'obs_id': 'mrc1',
+    'obs_id': 'aro2',
 
     # Name, local and owner stuff
-    'name': 'Mountain Ranch Camp Observatory 0m30 F3.8',
+    'name': 'Apache Ridge Observatory 0m45 f6.5?',
     'airport_code': 'SBA',
-    'location': 'Near Santa Barbara CA,  USA',
+    'location': 'Santa Fe, New Mexico,  USA',
     'telescope_description': '0m305 F3/8 A-P Honders Astrograph',
     'observatory_url': 'https://starz-r-us.sky/clearskies',
     'observatory_logo': None,
@@ -52,8 +52,26 @@ site_config = {
                     we lose charge of our democracy.
                     ''',  # i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
-    'owner_alias': ['WER', 'TELOPS'],
-    'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
+    'owner_alias': ['ANS', 'WER', 'TELOPS'],
+    'admin_aliases': ["ANS", "WER", "TELOPS", "TB"],
+
+    # Default safety settings
+    'safety_check_period': 120,  # MF's original setting was 45.
+
+    # Degrees. For normal pointing requests don't go this close to the sun.
+    'closest_distance_to_the_sun': 30,
+    # Degrees. For normal pointing requests don't go this close to the moon.
+    'closest_distance_to_the_moon': 5,
+    'minimum_distance_from_the_moon_when_taking_flats': 30,
+    # Degrees. For normal pointing requests don't allow requests to go this low.
+    'lowest_requestable_altitude': 15,
+    # Below this altitude, it will automatically try to home and park the scope to recover.
+    'lowest_acceptable_altitude': -10,
+    'degrees_to_avoid_zenith_area_for_calibrations': 0,
+    'degrees_to_avoid_zenith_area_in_general': 0,
+    'maximum_hour_angle_requestable': 9,
+    # NB NB WER ARO Obs has a chiller
+    'temperature_at_which_obs_too_hot_for_camera_cooling': 32,
 
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
@@ -117,7 +135,7 @@ site_config = {
     # The pointing may never be quite good enough to center the object without
     # a centering exposure. On initial commissioning, it should be set to always autocenter
     # until you are convinced the natural pointing with empirical corrections is "good enough"
-    'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
+
 
     # NB NB NB we should specify has_pipe# has_redis   and IP of redis   WER
 
@@ -167,23 +185,23 @@ site_config = {
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
     # Particularly useful for focus
-    'minimum_realistic_seeing': 1.0,
+    'minimum_realistic_seeing': 1.5,
     'has_lightning_detector': False,
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
 
-    'bias_dark interval':  115.,   #minutes
-    'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
+    'bias_dark interval':  120.,   #minutes
+    'eve_sky_flat_sunset_offset': -30.,  # 40 before Minutes  neg means before, + after.
     #'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
-    'end_eve_sky_flats_offset': 5 ,
-    'clock_and_auto_focus_offset': 8,
+    'end_eve_sky_flats_offset': 15 ,
+    'clock_and_auto_focus_offset': -10,
 
-    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
+    'astro_dark_buffer': 10,   #Min before and after AD to extend observing window
     #'morn_flat_start_offset': -5,       #min from Sunrise
     'morn_flat_start_offset': -10,       #min from Sunrise
-    'morn_flat_end_offset':  +45,        #min from Sunrise
+    'morn_flat_end_offset':  +40,        #min from Sunrise
     'end_night_processing_time':  90,   #  A guess
     'observing_begins_offset': 18,
     # How many minutes before Nautical Dawn to observe ....
@@ -193,7 +211,7 @@ site_config = {
 
     # Exposure times for standard system exposures
     'focus_exposure_time': 5,  # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 12,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
     'observing_check_period': 3,    # How many minutes between weather checks
@@ -203,25 +221,27 @@ site_config = {
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
 
-     'time_to_wait_after_roof_opens_to_take_flats': 60,   #Just imposing a minimum in case of a restart.
+     'time_to_wait_after_roof_opens_to_take_flats': 3,   #Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark':  True,
 
     # FOCUS OPTIONS
-    'periodic_focus_time': 3.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+    'periodic_focus_time': 2, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_trigger': 0.75,  # What FWHM increase is needed to trigger an autofocus
+    'focus_trigger': 0.5,  # What FWHM increase is needed to trigger an autofocus
 
     # PLATESOLVE options
-    'solve_nth_image': 27,  # Only solve every nth image   #20250112  Changed these two to make some sense. WER  Not rebooting tonight for this.
-    'solve_timer': 60,  # Only solve every X minutes
+    'solve_nth_image': 1,  # Only solve every nth image   #20250112  Changed these two to make some sense. WER  Not rebooting tonight for this.
+    'solve_timer': 0.05,  # Only solve every X minutes
     'threshold_mount_update': 45,  # only update mount when X arcseconds away
+    'limit_mount_tweak': 15,
+
 
 
 
     'defaults': {
-        'mount': 'eastpier',
+        'mount': 'aropier2',
         #'telescope': 'Main OTA',
         'focuser': 'focuser',
         'rotator': 'rotator',
@@ -238,7 +258,7 @@ site_config = {
     # Also important to note: these must match the roles in obs.py create_devices().
     # Roles are standardized across all sites even if not all roles are used at each site.
     'device_roles': {
-        'mount': 'eastpier',
+        'mount': 'aropier2',
         'main_rotator': 'rotator',
         'main_focuser': 'focuser',
         'main_fw': 'Dual filter wheel',
@@ -253,24 +273,23 @@ site_config = {
     'device_types': [
         'mount',
         #'telescope',
-        'screen',    #  We do have one!  >>>>
+        #'screen',    #  We do have one!  >>>>
         'rotator',
-
+        'focuser',
         'selector',     #  Right now not used  >>>>
         'filter_wheel',
-        'focuser',        #CHANGER ORDER 20240704 wer
         'camera',
         'sequencer',    #NB I think we will add "engineering or telops" to the model >>>>
-        'telops',       #   >>>>
+        #'telops',       #   >>>>
     ],
 
     'mount': {
-        'eastpier': {       # NB There can only be one mount with our new model.  >>>>
-
+        'aropier2': {       # NB There can only be one mount with our new model.  >>>>
+             'parent': 'enclosure1',
             'tel_id': '0m35',
-            'name': 'eastpier',
-            'hostIP':  '10.15.0.30',
-            'hostname':  'eastpier',
+            'name': 'aropier2',
+            'hostIP':  '10.0,0.102',
+            'hostname':  'aro2-0m45',
             'desc':  'Planewave L500 AltAz',
             'driver': 'ASCOM.PWI4.Telescope',  # Was 'ASCOM.AltAzDS.Telescope' prior to 20210417 WER
             'startup_script':  None,
@@ -293,12 +312,12 @@ site_config = {
             # Activity before and after parking
             'home_after_unpark': False,
             'home_before_park': False,
-            'settle_time_after_unpark' : 0,
-            'settle_time_after_park' : 0,
-            'time_inactive_until_park': 1800.0,  # How many seconds of inactivity until it will park the telescope
+            'settle_time_after_unpark' : 5,
+            'settle_time_after_park' : 5,
+            'time_inactive_until_park': 900.0,  # How many seconds of inactivity until it will park the telescope
 
             # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'
-            'permissive_mount_reset': 'yes',
+            'permissive_mount_reset': 'no',
 
             'settings': {
                 # Decimal degrees, North is Positive. These *could* be slightly different than site.
@@ -316,36 +335,21 @@ site_config = {
                 'fixed_screen _altitude': 0.0,
 
                 # Information about the horizon around the scope.
-                'horizon':  20,
+                'horizon':  25,
                 'horizon_detail': {  #In principle there can be slightly different Horizons for a multiple OTA obsp. >>>>
-                    '0': 32,
-                    '30': 35,
-                    '36.5': 39,
-                    '43': 28.6,
-                    '59': 32.7,
-                    '62': 28.6,
-                    '65': 25.2,
-                    '74': 22.6,
-                    '82': 20,
-                    '95.5': 20,
-                    '101.5': 14,
-                    '107.5': 12,
-                    '130': 12,
-                    '150': 20,
-                    '172': 28,
-                    '191': 25,
-                    '213': 20,
-                    '235': 15.3,
-                    '260': 11,
-                    '272': 17,
-                    '294': 16.5,
-                    '298.5': 18.6,
-                    '303': 20.6,
-                    '309': 27,
-                    '315': 32,
-                    '360': 32,
+                      '0.0': 25.,
+                      '90': 25.,
+                      '180': 25.,
+                      '270': 25.,
+                      '359': 25.
                 },
-
+                'ICRS2000_input_coords':  True,
+                # Refraction is applied during pointing.
+                'refraction_on': False,
+                'model_on': False,
+                'model_type': "Alt_Az",
+                # Rates implied by model and refraction applied during tracking.
+                'rates_on': False,
                 # What is the TPOINT model for those scopes where
                 # the mount software does not integrate these values.
                 'model': {          #In principle different OTA's could have offsets.
@@ -397,20 +401,20 @@ site_config = {
         'Main OTA': {      #MRC1 has two OTAs  >>>>
             #'parent': 'eastpier',   #THis is redundant and unecessary >>>>
             'name': 'Main OTA',
-            # 'desc':  'Planewave_CDK_14_F7.2',
-            'telescop': 'mrc1',  # The tenth telescope at mrc will be 'mrc10'. mrc2 already exists.
+            'desc':  'Planewave_CDK_17 _F6.8',
+            'telescop': 'aro2',  # The tenth telescope at mrc will be 'mrc10'. mrc2 already exists.
             # the important thing is sites contain only a to z, but the string may get longer.
             #  From the BZ perspective TELESCOP must be unique
-            'ptrtel': 'Astro-Physics Honders 304mm F3.8 Astrograph.',
+            'ptrtel': 'APW 450,, CDK.',
             'driver': 'None',  # Essentially this device is informational.  It is mostly about the optics.
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'collecting_area':  60352.0, #  79410.55*0.76
-            'obscuration':  24.0,  # %
-            'aperture': 305.0,
-            'f-ratio':  3.8,  # This and focal_length can be refined after a solve.
-            'focal_length':  1159.0,   #An earlier measurement found 1121mm for this and 0.691775 fr the pixel scale.
+            'collecting_area':  111836, #  79410.55*0.76
+            'obscuration':  23.7,  # %
+            'aperture': 432.0,
+            'f-ratio':  6.8,  # This and focal_length can be refined after a solve.
+            'focal_length':  2939.0,   #An earlier measurement found 1121mm for this and 0.691775 fr the pixel scale.
                                        #We need more data before changing these from the factory spec. 20250112 WER
             'screen_name': 'screen',
             'focuser_name':  'focuser',
@@ -504,23 +508,25 @@ site_config = {
             # Use previous best focus information to correct focuser for temperature change
             'correct_focus_for_temperature' : True,
             # highest value to consider as being in "good focus". Used to select last good focus value
-            'maximum_good_focus_in_arcsecond': 4,
+            'maximum_good_focus_in_arcsecond': 3,
 
             # When the focusser has no previous best focus values
             # start from this reference position
 
             'reference': 4037,  #20250111 Run after MF found good focus
             'z_compression': 0, #Not used as of 20250111
-
+            'z_coef_date':  '20240820',
             'relative_focuser': False,
             # Limits and steps for the focuser.
             'minimum': 0,    #  Units are microns
             'maximum': 12700,
             'step_size': 1.0,   #  This is misnamed!
-            'backlash':  0.0,
+            'backlash':  300,
             'throw': 70,
+            'focus_tolerance':  130,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  #  Steps per micron
+            'has_dial_indicator': False
         },
 # =============================================================================
 #         'focuser2': {         # >>>>

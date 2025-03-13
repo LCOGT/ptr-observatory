@@ -85,7 +85,7 @@ site_config = {
     'owner':  ['google-oauth2|102124071738955888216', \
                'google-oauth2|112401903840371673242'],  # Neyle,
     'owner_alias': ['ANS', 'WER'],
-    'admin_aliases': ["ANS", "WER", "TELOPS"],
+    'admin_aliases': ["ANS", "WER", "TELOPS", "TB"],
 
 
 
@@ -151,7 +151,7 @@ site_config = {
     'pipe_archive_folder_path': 'X:/localptrarchive/',
 # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
-    'save_archive_versions_of_final_calibrations' : False, 
+    'save_archive_versions_of_final_calibrations' : False,
 
     # 'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # LINKS FOR OBS FOLDERS
