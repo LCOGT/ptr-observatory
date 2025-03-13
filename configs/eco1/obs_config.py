@@ -44,7 +44,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
 
 
-
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
     # Default safety settings
     'safety_check_period': 45,  # MF's original setting.
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
@@ -77,12 +77,23 @@ site_config = {
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': True,
     # LINKS TO PIPE FOLDER
-    'save_raws_to_pipe_folder_for_nightly_processing': False,
-    'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
-    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
+
+    'save_raws_to_pipe_folder_for_nightly_processing': True,
+    'pipe_archive_folder_path': 'Z:/',  #WER changed Z to X 20231113 @1:16 UTC
+    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'C:/tempfolderforpipeline',
+
     # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
-    'save_archive_versions_of_final_calibrations' : False, 
+    'save_archive_versions_of_final_calibrations' : False,
+
+    # The site can fully platesolve each image before it is sent off to s3 or a PIPE
+    # If there are spare enough cycles at the site, this saves time for the PIPE
+    # to concentrate on more resource heavy reductions. 
+    # Also leads to fully platesolved reduced images on the local site computer
+    # Usually set this to True
+    # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
+    'fully_platesolve_images_at_site_rather_than_pipe' : True,
+    
 
     # Setup of folders on local and network drives.
     'client_hostname':  'ECO-0m40',
@@ -131,15 +142,12 @@ site_config = {
     'eve_sky_flat_sunset_offset': -40.5,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 ,
-    'clock_and_auto_focus_offset': 8,
-    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
+    'clock_and_auto_focus_offset': 15,
+    'astro_dark_buffer': 35,   #Min before and after AD to extend observing window
     'morn_flat_start_offset': -30,       #min from Sunrise
     'morn_flat_end_offset':  +45,        #min from Sunrise
     'end_night_processing_time':  90,   #  A guess
 
-    'observing_begins_offset': 18,
-    # How many minutes before civilDawn to do ....
-    'observing_ends_offset': 18,
 
 
     # Exposure times for standard system exposures
@@ -202,6 +210,27 @@ site_config = {
         'widefield_cam': None,
         'allsky_cam': None,
     },
+
+    # The LCO scheduler references a description of this site in configdb
+    # The logic in configdb is organized slightly differently than the PTR
+    # config files (like this one), but they should ultimately represent the
+    # same underlying hardware.
+    # When a PTR obsevatory is running an observation created by the scheduler,
+    # we'll use this to figure out what devices to use to run that observation.
+    # The key is the instrument name from configdb, and the value is a dict of
+    # device names from this config file for each type of device.
+    #
+    # This should only be modified if the configuration in configdb changes.
+    'configdb_instrument_mapping': {
+        'zwo1600m': {
+            'mount': 'ecocdkpier',
+            'camera': 'ec003zwo',
+            'filter_wheel': 'SBIG 8-position wheel',
+            'rotator': None,
+            'focuser': 'focuser'
+        }
+    },
+
     'device_types': [
             'mount',
             #'telescope',
@@ -428,13 +457,13 @@ site_config = {
     'filter_wheel': {
         "SBIG 8-position wheel": {
             "parent": "Main OTA",
-            "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
+            "name": "ZWO EFW2 Filter Wheel" ,  #"LCO filter wheel FW50_001d",
             'service_date': '20180101',
 
-            "filter_settle_time": 7, #how long to wait for the filter to settle after a filter change(seconds)
+            "filter_settle_time": 2, #how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
 
-            "driver": 'ASCOM.EFW2.FilterWheel',
+            "driver": "ASCOM.EFW2.FilterWheel",
 
             #"driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
@@ -442,7 +471,7 @@ site_config = {
             "dual_wheel": False,
             'settings': {
 
-                'default_filter': "pg",
+                'default_filter': "lum",
 
                 'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
                 'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
@@ -707,6 +736,11 @@ site_config = {
 
 
                 'do_cosmics' : False,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
+                
                 'number_of_bias_to_collect' : 64,
                 'number_of_dark_to_collect' : 64,
                 'number_of_flat_to_collect' : 10,

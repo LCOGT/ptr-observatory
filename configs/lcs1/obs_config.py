@@ -47,7 +47,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
     
     
-   
+    "platesolve_timeout": 150, # Default should be about 45 seconds, but slower computers will take longer
     
     
     # Default safety settings
@@ -99,13 +99,26 @@ site_config = {
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
     # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
-    'save_raw_to_disk': True,
+    'save_raw_to_disk': False,
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': False,
     'keep_focus_images_on_disk': False,  # To save space, the focus file can not be saved.   
     # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
     'save_archive_versions_of_final_calibrations' : False, 
+
+
+
+        # The site can fully platesolve each image before it is sent off to s3 or a PIPE
+    # If there are spare enough cycles at the site, this saves time for the PIPE
+    # to concentrate on more resource heavy reductions. 
+    # Also leads to fully platesolved reduced images on the local site computer
+    # Usually set this to True
+    # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
+    'fully_platesolve_images_at_site_rather_than_pipe' : False,
+
+
+    
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
     # Number of files to send up to the ptrarchive simultaneously.
@@ -134,14 +147,11 @@ site_config = {
     'eve_sky_flat_sunset_offset': -20,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 , 
-    'clock_and_auto_focus_offset': 8,
-    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
+    'clock_and_auto_focus_offset': 15,
+    'astro_dark_buffer': 35,   #Min before and after AD to extend observing window
     'morn_flat_start_offset': -40,       #min from Sunrise
     'morn_flat_end_offset':  +45,        #min from Sunrise
-    'end_night_processing_time':  90,   #  A guess
-    'observing_begins_offset': 18,    
-    # How many minutes before civilDawn to do ....
-    'observing_ends_offset': 18,   
+
     
     
     # Exposure times for standard system exposures
@@ -502,7 +512,7 @@ site_config = {
                 # something bad happens with 3 for some reason
                 #
                 # In that sense, QHY600 NEEDS to be set at GAIN 26, Mode 1, offset 30 and the only thing to adjust is the offset.....
-                # The QHY268 is gain 56, mode 1, offse
+                # The QHY268 is gain 56, mode 1, offset 30
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
                 #
@@ -679,6 +689,10 @@ site_config = {
                 'dark_exposure': 180,
                 
                 'do_cosmics' : False,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : False,                
+                # And debanding
+                'do_debanding' : False,
                 
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,

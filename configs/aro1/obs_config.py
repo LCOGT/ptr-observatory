@@ -88,7 +88,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB"],
 
 
-
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
     # Default safety settings
     'safety_check_period': 120,  # MF's original setting was 45.
 
@@ -139,7 +139,7 @@ site_config = {
     'simulate_open_roof': False,
     'auto_centering_off': False,
     'self_guide_on': True,
-    'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
     'owner_only_commands': False,
 
 
@@ -209,13 +209,11 @@ site_config = {
     'eve_sky_flat_sunset_offset': -30.,
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 15.,
-    'clock_and_auto_focus_offset': -10,  # min before start of observing
-    'astro_dark_buffer': 10,  # Min before and after AD to extend observing window
+    'clock_and_auto_focus_offset': 15,  # min before start of observing
+    'astro_dark_buffer': 35,  # Min before and after AD to extend observing window
     'morn_flat_start_offset': -10.,  # min from Sunrise
     'morn_flat_end_offset': +40.,  # min from Sunrise
-    'end_night_processing_time':  90.,  # A guess
-    # 'observing_begins_offset': -1,       #min from AstroDark
-    # How many minutes before civilDawn to do ....
+
 
 
 
@@ -279,6 +277,34 @@ site_config = {
         'widefield_cam': None,
         'allsky_cam': None,
     },
+
+    # The LCO scheduler references a description of this site in configdb
+    # The logic in configdb is organized slightly differently than the PTR
+    # config files (like this one), but they should ultimately represent the
+    # same underlying hardware.
+    # When a PTR obsevatory is running an observation created by the scheduler,
+    # we'll use this to figure out what devices to use to run that observation.
+    # The key is the instrument name from configdb, and the value is a dict of
+    # device names from this config file for each type of device.
+    #
+    # This should only be modified if the configuration in configdb changes.
+    'configdb_instrument_mapping': {
+        'qhy600-2.1': {
+            'mount': 'aropier1',
+            'camera': 'sq003ms',
+            'filter_wheel': 'LCO FW50_001d',
+            'rotator': None,
+            'focuser': 'focuser'
+        },
+        'qhy600-2.2': {
+            'mount': 'aropier1',
+            'camera': 'sq003ms',
+            'filter_wheel': 'LCO FW50_001d',
+            'rotator': None,
+            'focuser': 'focuser'
+        }
+    },
+
     'device_types': [
         'mount',
         # 'telescope',
@@ -616,11 +642,12 @@ site_config = {
                 #         ['rp',   [3,  0],    0, 560.,   [1.2 ,  20], "Sloan r'"],     #10
                 #         ['NIR',  [0, 10],    0, 226.,   [0.65,  20], 'Near IR - redward of PL'],     #11  Value suspect 2023/10/23 WER
                 #         ['ip',   [4,  0],    0, 250.,   [.65 ,  20], "Sloan i'"],     #12
+                #         ['zs',   [5,  0],    0, 250.,   [.65 ,  20], "Sloan Z-short'"],     #12
                 #         ['BI',   [12, 0],    0, 155.,   [360 , 170], 'Bessell I'],     #13
                 #         ['up',   [1,  0],    0, 39.0,   [2   ,  20], "Sloan u'"],     #14
                 #         ['O3',   [0,  2],    0, 36.0,   [360 , 170], 'Oxygen III'],     #15    #guess
-                #         ['zp',   [0,  9],    0, 11.0,   [1.0 ,  20], "Sloan z-short"],     #16    # NB ZP is a broader filter than zs.
-                #         ['CR',   [0,  5],    0, 9.0,    [360 , 170], 'Continuum Red - for Star subtraction'],  #17
+                #         ['zp',   [0,  9],    0, 11.0,   [1.0 ,  20], "Sloan z'-wide"],     #16    # NB ZP is a broader filter than zs.
+                #         ['CR',   [0,  5],    0, 9.0,    [360 , 170], 'Continuum Re' - for Star subtraction'],  #17
                 #         ['HA',   [0,  3],    0, 8.0,    [360 , 170], 'Hydrogen Alpha - aka II'],     #18
                 #         ['N2',   [13, 0],    0, 4.5,    [360 , 170], 'Nitrogen II'],     #19
                 #         ['S2',   [0,  4],    0, 4.5,    [0.65,  20], 'Sulphur II'],     #20
@@ -875,7 +902,7 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -8,  # 20240914 up from 3C, new camera installed 20240604
+                'temp_setpoint': -2,  # 20240914 up from 3C, new camera installed 20240604
                 'temp_setpoint_tolerance': 2,
                 'has_chiller': True,
                 # "temp_setpoint_tolarance": 1.5,
@@ -892,10 +919,10 @@ site_config = {
                 #
                 # ( setpoint, day_warm_difference, day_warm troe our false)
                 'set_temp_setpoint_by_season' : True,
-                'temp_setpoint_nov_to_feb' : ( -8, 6, True),
-                'temp_setpoint_feb_to_may' : ( -8, 6, True),
-                'temp_setpoint_may_to_aug' : ( -3, 8, True),
-                'temp_setpoint_aug_to_nov' : ( -3, 8, True),
+                'temp_setpoint_nov_to_feb' : ( -2, 0, True),
+                'temp_setpoint_feb_to_may' : ( -2, 0, True),
+                'temp_setpoint_may_to_aug' : ( -2, 0, True),
+                'temp_setpoint_aug_to_nov' : ( -2, 0, True),
                 #Prsumably this is setpoint by season if it is False:
                 'day_warm': True,  # This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 4,  # Assuming the Chiller is working.
@@ -971,7 +998,11 @@ site_config = {
                 'dark_exposure': 180,
 
                 # In the EVA Pipeline, whether to run cosmic ray detection on individual images
-                'do_cosmics': False,
+                'do_cosmics': True,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
 
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,

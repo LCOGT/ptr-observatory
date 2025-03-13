@@ -33,6 +33,7 @@ import shutil
 import glob
 import subprocess
 import pickle
+import argparse
 
 from astropy.io import fits
 from astropy.utils.data import check_download_cache
@@ -453,7 +454,7 @@ class Observatory:
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
         self.astro_events = Events(self.config, self.wema_config)
-        self.astro_events.calculate_events()
+        self.events = self.astro_events.calculate_events()
         self.astro_events.display_events()
 
         # If the camera is detected as substantially (20 degrees) warmer than the setpoint
@@ -727,7 +728,8 @@ class Observatory:
         self.update_status_thread.start()
 
         # # Initialisation complete!
-        # while True:
+        # bias_timer=time.time()
+        # while time.time()-bias_timer < 28800:
         #     g_dev['seq'].bias_dark_script(morn=True)
 
 
@@ -1543,9 +1545,10 @@ class Observatory:
                         self.time_of_last_slew, self.time_of_last_pulse
                     )
                     try:
+                        # If the time is right and the mount isn't slewing and the camera isn't exposing and platesolving isn't occuring, then do a meridian pulse.
                         if (time.time() - self.time_of_last_pulse) > 300 and not g_dev[
                             "mnt"
-                        ].currently_slewing:
+                        ].currently_slewing and not self.platesolve_is_processing and not self.pointing_recentering_requested_by_platesolve_thread and not g_dev['cam'].running_an_exposure_set:
                             # Check no other commands or exposures are happening
                             if (
                                 self.cmd_queue.empty()
@@ -1630,32 +1633,18 @@ class Observatory:
                     self.obs_settings_upload_timer = time.time()
                     status = {}
                     status["obs_settings"] = {}
-                    status["obs_settings"][
-                        "scope_in_manual_mode"
-                    ] = self.scope_in_manual_mode
+                    status["obs_settings"]["scope_in_manual_mode"] = self.scope_in_manual_mode
                     status["obs_settings"]["sun_safety_mode"] = self.sun_checks_on
                     status["obs_settings"]["moon_safety_mode"] = self.moon_checks_on
-                    status["obs_settings"][
-                        "altitude_safety_mode"
-                    ] = self.altitude_checks_on
+                    status["obs_settings"]["altitude_safety_mode"] = self.altitude_checks_on
                     status["obs_settings"]["lowest_altitude"] = -5
-                    status["obs_settings"][
-                        "daytime_exposure_safety_mode"
-                    ] = self.daytime_exposure_time_safety_on
+                    status["obs_settings"]["daytime_exposure_safety_mode"] = self.daytime_exposure_time_safety_on
                     status["obs_settings"]["daytime_exposure_time"] = 0.01
                     status["obs_settings"]["auto_center_on"] = not self.auto_centering_off
-                    status["obs_settings"][
-                        "admin_owner_commands_only"
-                    ] = self.admin_owner_commands_only
-                    status["obs_settings"][
-                        "simulating_open_roof"
-                    ] = self.assume_roof_open
-                    status["obs_settings"][
-                        "pointing_reference_on"
-                    ] = not self.mount_reference_model_off
-                    status["obs_settings"]["morning_flats_done"] = g_dev[
-                        "seq"
-                    ].morn_flats_done
+                    status["obs_settings"]["admin_owner_commands_only"] = self.admin_owner_commands_only
+                    status["obs_settings"]["simulating_open_roof"] = self.assume_roof_open
+                    status["obs_settings"]["pointing_reference_on"] = not self.mount_reference_model_off
+                    status["obs_settings"]["morning_flats_done"] = g_dev["seq"].morn_flats_done
                     status["obs_settings"]["timedottime_of_last_upload"] = time.time()
                     lane = "obs_settings"
                     try:
@@ -2949,7 +2938,7 @@ class Observatory:
                     timeout_time = 800# + exposure_time + \
                         #self.devices["main_cam"].readout_time
                 else:
-                    timeout_time = 60# + exposure_time + \
+                    timeout_time = self.config['platesolve_timeout']# + exposure_time + \
                         #self.devices["main_cam"].readout_time
 
                 platesolve_timeout_timer = time.time()
@@ -2994,9 +2983,7 @@ class Observatory:
 
                     # Do not bother platesolving unless it is dark enough!!
                     if not (
-                        g_dev["events"]["Civil Dusk"]
-                        < ephem.now()
-                        < g_dev["events"]["Civil Dawn"]
+                        g_dev["events"]["Civil Dusk"] < ephem.now() < g_dev["events"]["Civil Dawn"]
                     ):
                         plog("Too bright to consider platesolving!")
                     else:
@@ -3022,7 +3009,7 @@ class Observatory:
                             platesolve_crop = 0.0
 
                             # yet another pickle debugger.
-                            if True:
+                            if False:
                                 pickle.dump(
                                     [
                                         hdufocusdata,
@@ -3045,7 +3032,8 @@ class Observatory:
                                         pointing_exposure,
                                         f'{path_to_jpeg}{jpeg_filename}',
                                         target_ra,
-                                        target_dec
+                                        target_dec,
+                                        timeout_time
                                     ],
                                     open('subprocesses/testplatesolvepickle','wb')
                                 )
@@ -3088,6 +3076,7 @@ class Observatory:
                                         f'{path_to_jpeg}{jpeg_filename}',
                                         target_ra,
                                         target_dec,
+                                        timeout_time,
                                     ],
                                     platesolve_subprocess.stdin,
                                 )
@@ -3565,24 +3554,24 @@ class Observatory:
                             overwrite=True,
                         )
 
-                    if slow_process[0] == "fits_file_save_and_UIqueue":
-                        fits.writeto(
-                            slow_process[1],
-                            slow_process[2],
-                            temphduheader,
-                            overwrite=True,
-                        )
-                        filepathaws = slow_process[4]
-                        filenameaws = slow_process[5]
-                        if "ARCHIVE_" in filenameaws:
-                        #     self.enqueue_for_PTRarchive(
-                        #         100000000000000, filepathaws, filenameaws
+                    # if slow_process[0] == "fits_file_save_and_UIqueue":
+                    #     fits.writeto(
+                    #         slow_process[1],
+                    #         slow_process[2],
+                    #         temphduheader,
+                    #         overwrite=True,
+                    #     )
+                    #     filepathaws = slow_process[4]
+                    #     filenameaws = slow_process[5]
+                        # if "ARCHIVE_" in filenameaws:
+                        # #     self.enqueue_for_PTRarchive(
+                        # #         100000000000000, filepathaws, filenameaws
+                        # #     )
+                        #     pass # skipping ingesting archive calibrations. Won't need the later one either eventually
+                        # else:
+                        #     self.enqueue_for_calibrationUI(
+                        #         50, filepathaws, filenameaws
                         #     )
-                            pass # skipping ingesting archive calibrations. Won't need the later one either eventually
-                        else:
-                            self.enqueue_for_calibrationUI(
-                                50, filepathaws, filenameaws
-                            )
 
                     if slow_process[0] == "localcalibration":
                         saver = 0
@@ -4598,7 +4587,7 @@ class Observatory:
                     plog ("Failed rebooting, needs to be debugged")
                     breakpoint()
 
-        
+
 
         self.rebooting_theskyx=False
 
@@ -4611,5 +4600,22 @@ class Observatory:
 
 
 if __name__ == "__main__":
-    o = Observatory(ptr_config.obs_id, ptr_config.site_config)
+    parser = argparse.ArgumentParser(description="Run a Photon Ranch observatory")
+    parser.add_argument('-eng', '--engineering', action="store_true", help="Engineering mode: disable all safety checks from the config")
+    args = parser.parse_args()
+
+    obs_id = ptr_config.obs_id
+    site_config = ptr_config.site_config
+
+    if args.engineering:
+        site_config['scope_in_manual_mode'] = True
+        site_config['mount_reference_model_off'] = False
+        site_config['sun_checks_on'] = False
+        site_config['moon_checks_on'] = False
+        site_config['altitude_checks_on'] = False
+        site_config['daytime_exposure_time_safety_on'] = False
+        site_config['simulate_open_roof'] = True
+        site_config['auto_centering_off'] = True
+
+    o = Observatory(obs_id, site_config)
     o.run()  # This is meant to be a never ending loop.

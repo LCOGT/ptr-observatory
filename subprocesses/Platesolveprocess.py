@@ -205,6 +205,11 @@ pointing_exposure=input_psolve_info[17]
 jpeg_filename_with_full_path=input_psolve_info[18]
 target_ra=input_psolve_info[19]
 target_dec=input_psolve_info[20]
+try:
+    platesolve_timeout=input_psolve_info[21]
+except:
+    platesolve_timeout=180
+
 
 try:
     os.remove(cal_path + 'platesolve.pickle')
@@ -231,17 +236,17 @@ binnedthree=False
 if pixscale == None:
     cpu_limit = 180
 else:
-    cpu_limit = 30
+    cpu_limit = int(platesolve_timeout*0.75)
 
 print ("Pixelscale")
 print (pixscale)
 
 
-# Check we are working in unit16
-if not hdufocusdata.dtype == np.uint16:
-    raised_array=hdufocusdata - np.nanmin(hdufocusdata)
-    hdufocusdata = np.maximum(raised_array,0).astype(np.uint16)
-    del raised_array
+# # Check we are working in unit16
+# if not hdufocusdata.dtype == np.uint16:
+#     raised_array=hdufocusdata - np.nanmin(hdufocusdata)
+#     hdufocusdata = np.maximum(raised_array,0).astype(np.uint16)
+#     del raised_array
 
 
 
@@ -356,11 +361,11 @@ realwslfilename='/mnt/'+ realwslfilename[0] + realwslfilename[1]
 if pixscale == None:
     low_pixscale= 0.05
     high_pixscale=10.0
-    initial_radius=10
+    initial_radius=25
 else:
     low_pixscale = 0.97 * pixscale
     high_pixscale = 1.03 * pixscale
-    initial_radius=2
+    initial_radius=10
 
 print ("Just before solving: " +str(time.time()-googtime))
 
@@ -570,144 +575,148 @@ if solve == 'error':
 if solve != 'error' and pointing_exposure and not pixscale == None:
 
 
-    pointing_image = mid_stretch_jpeg(pointing_image)
-
-    solved_ra = solve["ra_j2000_hours"]
-    solved_dec = solve["dec_j2000_degrees"]
-    solved_arcsecperpixel = solve["arcsec_per_pixel"]
-
-
-
-    RA_where_it_actually_is=solved_ra
-    DEC_where_it_actually_is=solved_dec
-
-    #make a fake header to create the WCS object
-    tempheader = fits.PrimaryHDU()
-    tempheader=tempheader.header
-    tempheader['CTYPE1'] = 'RA---TAN'
-    tempheader['CTYPE2'] = 'DEC--TAN'
-    tempheader['CUNIT1'] = 'deg'
-    tempheader['CUNIT2'] = 'deg'
-    tempheader['CRVAL1'] = RA_where_it_actually_is * 15.0
-    tempheader['CRVAL2'] = DEC_where_it_actually_is
-    tempheader['CRPIX1'] = int(pointing_image.shape[0] / 2)
-    tempheader['CRPIX2'] = int(pointing_image.shape[1] / 2)
-    tempheader['NAXIS'] = 2
-    tempheader['CDELT1'] = float(pixscale) / 3600
-    tempheader['CDELT2'] = float(pixscale) / 3600
-
-
-    # Size of field in degrees
-    x_deg_field_size=(float(pixscale) / (3600)) * pointing_image.shape[0]
-    y_deg_field_size=(float(pixscale) / (3600)) * pointing_image.shape[1] / cos(radians(DEC_where_it_actually_is ))
-
-    print (x_deg_field_size)
-    print (y_deg_field_size)
-
-    xfig=9
-    yfig=9*(pointing_image.shape[0]/pointing_image.shape[1])
-    aspect=1/(pointing_image.shape[0]/pointing_image.shape[1])
-    print (pointing_image.shape[0]/pointing_image.shape[1])
-
-    # Create a temporary WCS
-    # Representing where it actually is.
-    wcs=WCS(header=tempheader)
-
-    plt.rcParams["figure.facecolor"] = 'black'
-    plt.rcParams["text.color"] = 'yellow'
-    plt.rcParams["xtick.color"] = 'yellow'
-    plt.rcParams["ytick.color"] = 'yellow'
-    plt.rcParams["axes.labelcolor"] = 'yellow'
-    plt.rcParams["axes.titlecolor"] = 'yellow'
-
-    plt.rcParams['figure.figsize'] = [xfig, yfig]
-    ax = plt.subplot(projection=wcs, facecolor='black')
-
-    #fig.set_facecolor('black')
-    ax.set_facecolor('black')
-    ax.imshow(pointing_image, origin='lower', cmap='gray')
-    ax.grid(color='yellow', ls='solid')
-    ax.set_xlabel('Right Ascension')
-    ax.set_ylabel('Declination')
-
-
-    print ([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is])
-
-    ax.plot([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is],  linestyle='dashed',color='green',
-          linewidth=2, markersize=12,transform=ax.get_transform('fk5'))
-    # #ax.set_autoscale_on(False)
-
-    # ax.plot([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is],  linestyle='dashed',color='white',
-    #       linewidth=2, markersize=12,transform=ax.get_transform('fk5'))
-
-
-    # This should point to the center of the box.
-    ax.scatter(target_ra * 15, target_dec, transform=ax.get_transform('icrs'), s=300,
-                edgecolor='red', facecolor='none')
-
-    # ax.scatter(target_ra * 15, target_dec, transform=ax.get_transform('icrs'), s=300,
-    #             edgecolor='white', facecolor='none')
-
-
-    # This should point to the center of the current image
-    ax.scatter(RA_where_it_actually_is * 15, DEC_where_it_actually_is, transform=ax.get_transform('icrs'), s=300,
-                edgecolor='white', facecolor='none')
-
-    # This should point to the where the telescope is reporting it is positioned.
-    ax.scatter(pointing_ra * 15, pointing_dec, transform=ax.get_transform('icrs'), s=300,
-                edgecolor='lime', facecolor='none')
-
-    # r = Quadrangle((target_ra * 15 - 0.5 * y_deg_field_size, target_dec - 0.5 * x_deg_field_size)*u.deg, y_deg_field_size*u.deg, x_deg_field_size*u.deg,
-    #                 edgecolor='red', facecolor='none',
-    #                 transform=ax.get_transform('icrs'))
-
-    r = Quadrangle((target_ra * 15 - 0.5 * y_deg_field_size, target_dec - 0.5 * x_deg_field_size)*u.deg, y_deg_field_size*u.deg, x_deg_field_size*u.deg,
-                    edgecolor='red', facecolor='none',
-                    transform=ax.get_transform('icrs'))
-
-
-    ax.add_patch(r)
-    # ax.axes.set_aspect(aspect)
-    # plt.axis('scaled')
-    # plt.gca().set_aspect(aspect)
-
-    # breakpoint()
-    # plt.canvas.draw()
-    # temp_canvas = plt.canvas
-    # plt.close()
-    # pil_image=Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_rgb())
-
-    # pil_image.save(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
-    # os.rename(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'),jpeg_filename_with_full_path)
-
-    plt.savefig(jpeg_filename_with_full_path.replace('.jpg','matplotlib.png'), dpi=100, bbox_inches='tight', pad_inches=0)
-
-
-    im = Image.open(jpeg_filename_with_full_path.replace('.jpg','matplotlib.png'))
-
-    # Get amount of padding to add
-    fraction_of_padding=(im.size[0]/im.size[1])/aspect
-    padding_added_pixels=int(((fraction_of_padding * im.size[1])- im.size[1])/2)
-    if padding_added_pixels > 0:
-        im=add_margin(im,padding_added_pixels,0,padding_added_pixels,0,(0,0,0))
-
-    im=im.convert('RGB')
-
     try:
-        im.save(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
-        os.rename(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'),jpeg_filename_with_full_path)
+        pointing_image = mid_stretch_jpeg(pointing_image)
+    
+        solved_ra = solve["ra_j2000_hours"]
+        solved_dec = solve["dec_j2000_degrees"]
+        solved_arcsecperpixel = solve["arcsec_per_pixel"]
+    
+    
+    
+        RA_where_it_actually_is=solved_ra
+        DEC_where_it_actually_is=solved_dec
+    
+        #make a fake header to create the WCS object
+        tempheader = fits.PrimaryHDU()
+        tempheader=tempheader.header
+        tempheader['CTYPE1'] = 'RA---TAN'
+        tempheader['CTYPE2'] = 'DEC--TAN'
+        tempheader['CUNIT1'] = 'deg'
+        tempheader['CUNIT2'] = 'deg'
+        tempheader['CRVAL1'] = RA_where_it_actually_is * 15.0
+        tempheader['CRVAL2'] = DEC_where_it_actually_is
+        tempheader['CRPIX1'] = int(pointing_image.shape[0] / 2)
+        tempheader['CRPIX2'] = int(pointing_image.shape[1] / 2)
+        tempheader['NAXIS'] = 2
+        tempheader['CDELT1'] = float(pixscale) / 3600
+        tempheader['CDELT2'] = float(pixscale) / 3600
+    
+    
+        # Size of field in degrees
+        x_deg_field_size=(float(pixscale) / (3600)) * pointing_image.shape[0]
+        y_deg_field_size=(float(pixscale) / (3600)) * pointing_image.shape[1] / cos(radians(DEC_where_it_actually_is ))
+    
+        print (x_deg_field_size)
+        print (y_deg_field_size)
+    
+        xfig=9
+        yfig=9*(pointing_image.shape[0]/pointing_image.shape[1])
+        aspect=1/(pointing_image.shape[0]/pointing_image.shape[1])
+        print (pointing_image.shape[0]/pointing_image.shape[1])
+    
+        # Create a temporary WCS
+        # Representing where it actually is.
+        wcs=WCS(header=tempheader)
+    
+        plt.rcParams["figure.facecolor"] = 'black'
+        plt.rcParams["text.color"] = 'yellow'
+        plt.rcParams["xtick.color"] = 'yellow'
+        plt.rcParams["ytick.color"] = 'yellow'
+        plt.rcParams["axes.labelcolor"] = 'yellow'
+        plt.rcParams["axes.titlecolor"] = 'yellow'
+    
+        plt.rcParams['figure.figsize'] = [xfig, yfig]
+        ax = plt.subplot(projection=wcs, facecolor='black')
+    
+        #fig.set_facecolor('black')
+        ax.set_facecolor('black')
+        ax.imshow(pointing_image, origin='lower', cmap='gray')
+        ax.grid(color='yellow', ls='solid')
+        ax.set_xlabel('Right Ascension')
+        ax.set_ylabel('Declination')
+    
+    
+        print ([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is])
+    
+        ax.plot([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is],  linestyle='dashed',color='green',
+              linewidth=2, markersize=12,transform=ax.get_transform('fk5'))
+        # #ax.set_autoscale_on(False)
+    
+        # ax.plot([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is],  linestyle='dashed',color='white',
+        #       linewidth=2, markersize=12,transform=ax.get_transform('fk5'))
+    
+    
+        # This should point to the center of the box.
+        ax.scatter(target_ra * 15, target_dec, transform=ax.get_transform('icrs'), s=300,
+                    edgecolor='red', facecolor='none')
+    
+        # ax.scatter(target_ra * 15, target_dec, transform=ax.get_transform('icrs'), s=300,
+        #             edgecolor='white', facecolor='none')
+    
+    
+        # This should point to the center of the current image
+        ax.scatter(RA_where_it_actually_is * 15, DEC_where_it_actually_is, transform=ax.get_transform('icrs'), s=300,
+                    edgecolor='white', facecolor='none')
+    
+        # This should point to the where the telescope is reporting it is positioned.
+        ax.scatter(pointing_ra * 15, pointing_dec, transform=ax.get_transform('icrs'), s=300,
+                    edgecolor='lime', facecolor='none')
+    
+        # r = Quadrangle((target_ra * 15 - 0.5 * y_deg_field_size, target_dec - 0.5 * x_deg_field_size)*u.deg, y_deg_field_size*u.deg, x_deg_field_size*u.deg,
+        #                 edgecolor='red', facecolor='none',
+        #                 transform=ax.get_transform('icrs'))
+    
+        r = Quadrangle((target_ra * 15 - 0.5 * y_deg_field_size, target_dec - 0.5 * x_deg_field_size)*u.deg, y_deg_field_size*u.deg, x_deg_field_size*u.deg,
+                        edgecolor='red', facecolor='none',
+                        transform=ax.get_transform('icrs'))
+    
+    
+        ax.add_patch(r)
+        # ax.axes.set_aspect(aspect)
+        # plt.axis('scaled')
+        # plt.gca().set_aspect(aspect)
+    
+        # breakpoint()
+        # plt.canvas.draw()
+        # temp_canvas = plt.canvas
+        # plt.close()
+        # pil_image=Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_rgb())
+    
+        # pil_image.save(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
+        # os.rename(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'),jpeg_filename_with_full_path)
+    
+        plt.savefig(jpeg_filename_with_full_path.replace('.jpg','matplotlib.png'), dpi=100, bbox_inches='tight', pad_inches=0)
+    
+    
+        im = Image.open(jpeg_filename_with_full_path.replace('.jpg','matplotlib.png'))
+    
+        # Get amount of padding to add
+        fraction_of_padding=(im.size[0]/im.size[1])/aspect
+        padding_added_pixels=int(((fraction_of_padding * im.size[1])- im.size[1])/2)
+        if padding_added_pixels > 0:
+            im=add_margin(im,padding_added_pixels,0,padding_added_pixels,0,(0,0,0))
+    
+        im=im.convert('RGB')
+    
+        try:
+            im.save(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
+            os.rename(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'),jpeg_filename_with_full_path)
+        except:
+            print ("tried to save a jpeg when there is already a jpge")
+            print(traceback.format_exc())
+    
+        try:
+            os.remove(jpeg_filename_with_full_path.replace('.jpg','matplotlib.jpg'))
+        except:
+            pass
+    
+        try:
+            os.remove(jpeg_filename_with_full_path.replace('.jpg','matplotlib.png'))
+        except:
+            pass
+
     except:
-        print ("tried to save a jpeg when there is already a jpge")
+        print ("Odd jpeg error in platesolving")
         print(traceback.format_exc())
-
-    try:
-        os.remove(jpeg_filename_with_full_path.replace('.jpg','matplotlib.jpg'))
-    except:
-        pass
-
-    try:
-        os.remove(jpeg_filename_with_full_path.replace('.jpg','matplotlib.png'))
-    except:
-        pass
-
 

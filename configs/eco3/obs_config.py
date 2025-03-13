@@ -43,7 +43,7 @@ site_config = {
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
 
-
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
 
     # Default safety settings
     'safety_check_period': 45,  # MF's original setting.
@@ -102,6 +102,15 @@ site_config = {
     'produce_fits_file_for_final_calibrations': True,
     'save_archive_versions_of_final_calibrations' : False, 
 
+
+        # The site can fully platesolve each image before it is sent off to s3 or a PIPE
+    # If there are spare enough cycles at the site, this saves time for the PIPE
+    # to concentrate on more resource heavy reductions. 
+    # Also leads to fully platesolved reduced images on the local site computer
+    # Usually set this to True
+    # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
+    'fully_platesolve_images_at_site_rather_than_pipe' : False,
+
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
     # Number of files to send up to the ptrarchive simultaneously.
@@ -132,16 +141,11 @@ site_config = {
     'eve_sky_flat_sunset_offset': -40.5,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 ,
-    'clock_and_auto_focus_offset': 8,
-    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
+    'clock_and_auto_focus_offset': 15,
+    'astro_dark_buffer': 35,   #Min before and after AD to extend observing window
     'morn_flat_start_offset': -30,       #min from Sunrise
     'morn_flat_end_offset':  +45,        #min from Sunrise
-    'end_night_processing_time':  90,   #  A guess
-
-    'observing_begins_offset': 18,
-    # How many minutes before civilDawn to do ....
-    'observing_ends_offset': 18,
-
+    
 
     # Exposure times for standard system exposures
     'focus_exposure_time': 15,  # Exposure time in seconds for exposure image
@@ -530,7 +534,7 @@ site_config = {
                'flipx_jpeg' : False,
                'flipy_jpeg' : False,
                'rotate180_jpeg' : False,
-               'rotate90_jpeg' : True,
+               'rotate90_jpeg' : False,
                'rotate270_jpeg' : False,
 
                # For large fields of view, crop the images down to solve faster.
@@ -642,15 +646,23 @@ site_config = {
                 'dither_enabled':  True,      #Set this way for tracking testing
 
 
-                'do_cosmics' : False,
-                'number_of_bias_to_collect' : 64,
-                'number_of_dark_to_collect' : 64,
-                'number_of_flat_to_collect' : 10,
-                'number_of_bias_to_store' : 64,
-                'number_of_dark_to_store' : 64,
-                'number_of_flat_to_store' : 64,
 
-                'dark_exposure': 180,
+                'do_cosmics' : True,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
+                
+ 
+                'number_of_bias_to_collect' : 128,
+                'number_of_dark_to_collect' : 128,
+                'number_of_flat_to_collect' : 128,
+                'number_of_bias_to_store' : 128,
+                'number_of_dark_to_store' : 128,
+                'number_of_flat_to_store' : 128,
+
+                'dark_exposure': 100,
+
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",
