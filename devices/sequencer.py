@@ -807,6 +807,7 @@ class Sequencer:
                         self.block_guard = True
                         self.total_sequencer_control= True
 
+                        #breakpoint()
                         # Run the observation
                         SchedulerObservation(observation, self.obs).run()
 
@@ -1175,6 +1176,8 @@ class Sequencer:
         # Protect from manual commands interferring
         self.block_guard = True
         self.total_sequencer_control= True
+
+        #breakpoint()
 
         # Run the project
         observation = json.loads(block_specification['project']['full_lco_observation'])
