@@ -237,6 +237,15 @@ class SchedulerObservation:
 
         self.submitter_id = observation['submitter']
 
+        # Check against this to determine whether a slew will require a full
+        # platesolve or not
+        self.last_requested_target = dict()
+
+        # Save the coordinates the mount believes it is pointing at (which may differ from the
+        # actual pointing), so that we can make use of the faster async_slew_direct function
+        self.last_solved_mount_ra = None
+        self.last_solved_mount_dec = None
+
         # This tracks how much time has been observed for each configuration
         # We use the configuration status id as the key because we need to
         # differentiate between the same config running multiple times from the
@@ -246,60 +255,57 @@ class SchedulerObservation:
             self.configuration_time_tracker[c['configuration_status']] = 0 # init with 0 seconds observed
 
 
-    def _go_to_target(self, mount_device, target: dict, offset_ra: float = 0, offset_dec: float = 0, current_block_ra: float = 0, current_block_dec: float=0, mosaic_center_ra: float=0, mosaic_center_dec: float=0) -> None:
+    def _go_to_target(self, mount_device, target: dict, offset_ra: float = 0, offset_dec: float = 0) -> None:
         """
         Slew to the target coordinates, applying any offsets
 
         Args:
             mount_device: The mount device to use for slewing
             target: Dictionary containing target coordinates and other info
-            offset_ra: Offset in right ascension (hours)
-            offset_dec: Offset in declination (degrees)
+            offset_ra: Offset in right ascension (arcseconds)
+            offset_dec: Offset in declination (arcseconds)
         """
         if target['type'] != "ICRS":
             plog(f'Unsupported target type: {target["type"]}')
             return
 
+        # convert from arcsec to hours
+        offset_ra = offset_ra / 54000
+        # convert from arcsec to degrees
+        offset_dec = offset_dec / 3600
+
         plog('In go_to_target function during LCO observation run')
         plog(target)
         # update the pointing to account for proper motion and parallax
         proper_motion_parallax_adjusted_coords = compute_target_coordinates(target)
+        ra = proper_motion_parallax_adjusted_coords['ra'] # units: hours
+        dec = proper_motion_parallax_adjusted_coords['dec'] # units: degrees
+        plog(f"central ra: {ra}")
+        plog(f"central dec: {dec}")
 
+        # Large mount movements should be centered using a platesolve routine.
+        # Do this whenever the target has changed from the previous pointing.
+        if self.last_requested_target != target:
+            mount_device.go_command(ra=ra, dec=dec, objectname=target.get('name'), do_centering_routine=True, ignore_moon_dist=True)
+            self.last_requested_target = target
+            # Save the mount coordinates (which are slightly different than the actual coordinates)
+            # for current/future offsets from the same central pointing
+            self.last_solved_mount_ra = mount_device.right_ascension_directly_from_mount
+            self.last_solved_mount_dec = mount_device.declination_directly_from_mount
+            plog(f"Pointing is now at ra,dec of {ra}, {dec} according to platesolve.")
+            plog(f"Mount has registered this as {self.last_solved_mount_ra}, {self.last_solved_mount_dec}")
 
-        # First decide if this positioning needs a platesolve
-        # We only need to platesolve to find the centrepoint of a series of offsets.
-        # If it isn't currently centered at the target central coordinates, do 
-        # a full platesolve slew.
-        if not (proper_motion_parallax_adjusted_coords['ra'] == current_block_ra and proper_motion_parallax_adjusted_coords['dec'] == current_block_dec):
-            mount_device.go_command(ra=corrected_ra, dec=corrected_dec, objectname=target.get('name'),
-                                    do_centering_routine=True, ignore_moon_dist=True)
-        
-        ## add ra/dec offsets
-        #corrected_ra = proper_motion_parallax_adjusted_coords['ra'] + offset_ra
-        #corrected_dec = proper_motion_parallax_adjusted_coords['dec'] + offset_dec
-        
-        # Once the platesolve have taken hold, we have the ra_scope, dec_scope of the ra_actual and the dec_actual
-        # The scope will ALWAYS be thinking it is pointing elsewhere. Every mount will always be off by some amount
-        # So here we use the - relatively rarely used - slew_async_directly - function to nudge the scope to the
-        # new offset. In the local area of the sky, this is acceptably accurate... actually pretty great.
-        # But you don't need to nudge if there is no offset.
-        if not (offset_ra == 0 and offset_dec == 0):
-            new_ra = mosaic_center_ra + offset_ra
-            new_dec= mosaic_center_dec + offset_dec
-            mount_device.slew_async_directly(ra=new_ra, dec=new_dec)
+        # If we're already close to our requested pointing, we can use a faster
+        # slewing method that isn't reliable for large movements, but works well
+        # for small adjustments
+        #
+        # The slew_async_directly method uses the mount coordinates rather than
+        # the actual coordinats, which is why we saved the mount ra/dec after
+        # the plate solve (above).
+        mount_ra_with_offset = self.last_solved_mount_ra + offset_ra
+        mount_dec_with_offset = self.last_solved_mount_dec + offset_dec
+        mount_device.slew_async_directly(ra=mount_ra_with_offset, dec=mount_dec_with_offset)
 
-
-
-
-
-
-
-        #if mount_device.last_ra_requested == corrected_ra and mount_device.last_dec_requested == corrected_dec:
-        #    plog(f'Mount is already pointing at ra {corrected_ra}, dec {corrected_dec}. No need to slew.')
-        #else:
-        #    plog(f'Slewing to ra {corrected_ra}, dec {corrected_dec}')
-        #    mount_device.go_command(ra=corrected_ra, dec=corrected_dec, objectname=target.get('name'),
-        #                            do_centering_routine=True, ignore_moon_dist=True)
 
     # Note: Defocus functionality not implemented, kept for API compatibility
     def _do_defocus(self, focuser_device, amount: float) -> None:
@@ -395,7 +401,7 @@ class SchedulerObservation:
             ''' Return True if configuration type is an exposure sequence and the duration has been exceeded'''
             return config_type == 'REPEAT_EXPOSE' and time.time() > end_time
 
-        self._go_to_target(devices['mount'], configuration['target'], self.devices['sequencer'].block_ra, self.devices['sequencer'].block_dec, self.devices['sequencer'].mosaic_center_ra, self.devices['sequencer'].mosaic_center_dec)
+        self._go_to_target(devices['mount'], configuration['target'])
 
         if config_type == "EXPOSE":
             for index, ic in enumerate(configuration['instrument_configs']):
@@ -464,7 +470,7 @@ class SchedulerObservation:
 
         offset_ra = ic['extra_params'].get('offset_ra', 0)
         offset_dec = ic['extra_params'].get('offset_dec', 0)
-        self._go_to_target(mount, config['target'], offset_ra, offset_dec, self.devices['sequencer'].block_dec, self.devices['sequencer'].mosaic_center_ra, self.devices['sequencer'].mosaic_center_dec)
+        self._go_to_target(mount, config['target'], offset_ra, offset_dec)
 
         exposure_time = ic['exposure_time']
         exposure_count = ic['exposure_count']
