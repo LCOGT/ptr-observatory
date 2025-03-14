@@ -1912,20 +1912,33 @@ class Observatory:
                                 "lowest_acceptable_altitude"
                             ]
                             if mount_altitude < lowest_acceptable_altitude:
-                                plog(
-                                    "Altitude too low! "
-                                    + str(mount_altitude)
-                                    + ". Parking scope for safety!"
-                                )
-                                if not self.devices["mount"].rapid_park_indicator:
-                                    if (
-                                        not self.devices["sequencer"].morn_bias_dark_latch
-                                        and not self.devices["sequencer"].bias_dark_latch
-                                    ):
-                                        self.cancel_all_activity()
-                                    if self.devices["mount"].home_before_park:
-                                        self.devices["mount"].home_command()
-                                    self.devices["mount"].park_command()
+
+                                plog ("previous status while not slewing reports a low altitude")
+                                plog ("waiting for a new mount update to double-check this")
+                                self.devices["mount"].wait_for_mount_update()
+                                self.devices["mount"].get_status()
+                                time.sleep(2)
+                                # Check again
+                                mount_altitude = float(
+                                self.devices["mount"].previous_status["altitude"]
+                            )
+                                if mount_altitude < lowest_acceptable_altitude:
+                                    plog(
+                                        "Altitude too low! "
+                                        + str(mount_altitude)
+                                        + ". Parking scope for safety!"
+                                    )
+                                    
+                                    breakpoint()
+                                    if not self.devices["mount"].rapid_park_indicator:
+                                        if (
+                                            not self.devices["sequencer"].morn_bias_dark_latch
+                                            and not self.devices["sequencer"].bias_dark_latch
+                                        ):
+                                            self.cancel_all_activity()
+                                        if self.devices["mount"].home_before_park:
+                                            self.devices["mount"].home_command()
+                                        self.devices["mount"].park_command()
                         except Exception as e:
                             plog(traceback.format_exc())
                             plog(e)

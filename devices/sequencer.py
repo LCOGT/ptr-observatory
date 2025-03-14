@@ -807,6 +807,7 @@ class Sequencer:
                         self.block_guard = True
                         self.total_sequencer_control= True
 
+                        #breakpoint()
                         # Run the observation
                         SchedulerObservation(observation, self.obs).run()
 
@@ -1175,6 +1176,8 @@ class Sequencer:
         # Protect from manual commands interferring
         self.block_guard = True
         self.total_sequencer_control= True
+
+        #breakpoint()
 
         # Run the project
         observation = json.loads(block_specification['project']['full_lco_observation'])
@@ -4119,7 +4122,7 @@ class Sequencer:
         else:
             print("No directories found.")
             num_files=0
-        max_files = self.settings['number_of_flat_to_store']
+        max_files = g_dev['cam'].settings['number_of_flat_to_store']
         if not ((num_files/max_files) > 0.8):
             skip_moon_check=True
 
