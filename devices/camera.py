@@ -3439,7 +3439,9 @@ class Camera:
             observing_ends = self.obs.events['Observing Ends']
             naut_dusk = self.obs.events['Naut Dusk']
             naut_dawn = self.obs.events['Naut Dawn']
-
+            observng_begins = self.obs.events['Observing Begins']
+            
+            
             if imtype.lower() in ["light", "expose"] and not self.obs.scope_in_manual_mode:
                 # Exposure time must end before the end of the nighttime observing window
                 if observing_ends < exposure_end_time:
@@ -3447,7 +3449,7 @@ class Camera:
                     self.running_an_exposure_set = False
                     return 'outsideofnighttime'
                 # Reject exposures that start before nautical dusk or end after nautical dawn
-                if now < naut_dusk or exposure_end_time > naut_dawn:
+                if now < observng_begins or exposure_end_time > observing_ends :
                     plog("Sorry, exposures are outside of night time.")
                     self.running_an_exposure_set = False
                     return 'outsideofnighttime'
@@ -4016,6 +4018,9 @@ class Camera:
                         self.shutter_open = False
                         continue
             self.currently_in_smartstack_loop = False
+            
+            
+            self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
 
         # If the pier just flipped, trigger a recentering exposure.
         # This is here because a single exposure may have a flip in it, hence
@@ -4037,7 +4042,7 @@ class Camera:
                 else:
                     pass
 
-        self.write_out_realtimefiles_token_to_disk(real_time_token, real_time_files)
+        #self.write_out_realtimefiles_token_to_disk(real_time_token, real_time_files)
 
         #  This is the loop point for the seq count loop
         self.currently_in_smartstack_loop = False
@@ -4056,6 +4061,12 @@ class Camera:
             token_name (str): Token for real-time file tracking
             real_time_files (list): List of real-time file paths
         """
+        
+        # Append the seq number to the token_name 
+        # As it is possible to have two images taken very close in time
+        token_name=token_name + str(self.next_seq)
+        
+        
         if self.site_config['save_raws_to_pipe_folder_for_nightly_processing']:
             if len(real_time_files) > 0:
                 pipetokenfolder = self.site_config['pipe_archive_folder_path'] + '/tokens'

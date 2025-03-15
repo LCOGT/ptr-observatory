@@ -739,7 +739,7 @@ site_config = {
 
                 'do_cosmics' : False,
                 # Simialrly for Salt and Pepper
-                'do_saltandpepper' : True,
+                'do_saltandpepper' : False,
                 # And debanding
                 'do_debanding' : False,
 

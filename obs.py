@@ -1929,7 +1929,7 @@ class Observatory:
                                         + ". Parking scope for safety!"
                                     )
                                     
-                                    breakpoint()
+                                    
                                     if not self.devices["mount"].rapid_park_indicator:
                                         if (
                                             not self.devices["sequencer"].morn_bias_dark_latch
@@ -2993,7 +2993,7 @@ class Observatory:
                             target_ra = self.devices["mount"].last_ra_requested
                             target_dec = self.devices["mount"].last_dec_requested
 
-                            if self.devices["sequencer"].block_guard and not self.devices["sequencer"].focussing:
+                            if self.devices["sequencer"].block_guard and not self.devices["sequencer"].lco_block and not self.devices["sequencer"].focussing:
                                 target_ra = self.devices["sequencer"].block_ra
                                 target_dec = self.devices["sequencer"].block_dec
 

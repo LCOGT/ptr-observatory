@@ -190,6 +190,8 @@ class Sequencer:
         self.block_ra=False
         self.block_dec=False
 
+        self.lco_block=False
+
         # Time of next slew is a variable that helps keep the scope positioned on the solar flat spot during flats
         self.time_of_next_slew = time.time()
 
@@ -806,6 +808,7 @@ class Sequencer:
 
                         self.block_guard = True
                         self.total_sequencer_control= True
+                        self.lco_block=True
 
                         #breakpoint()
                         # Run the observation
@@ -813,6 +816,7 @@ class Sequencer:
 
                         # Allow manual commands now that the project has completed
                         self.block_guard = False
+                        self.lco_block=False
                         self.total_sequencer_control= False
 
                     # Run a PTR project
@@ -1176,14 +1180,14 @@ class Sequencer:
         # Protect from manual commands interferring
         self.block_guard = True
         self.total_sequencer_control= True
-
+        self.lco_block=True
         #breakpoint()
 
         # Run the project
         observation = json.loads(block_specification['project']['full_lco_observation'])
         # execute_project_from_lco1(observation, self.obs)
         SchedulerObservation(observation, self.obs).run()
-
+        self.lco_block=False
         # Allow manual commands now that the project has completed
         self.block_guard = False
         self.total_sequencer_control= False
