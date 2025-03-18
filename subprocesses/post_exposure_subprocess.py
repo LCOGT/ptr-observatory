@@ -28,7 +28,15 @@ import traceback
 #from astropy.stats import sigma_clip
 from joblib import Parallel, delayed
 
-print('Starting post_exposure_subprocess.py')
+# Add the parent directory to the Python path
+# This allows importing modules from the root directory
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from ptr_utility import create_color_plog
+
+log_color = (180, 100, 240) # bright purple
+plog = create_color_plog('postexp', log_color)
+
+plog('Starting post_exposure_subprocess.py')
 
 def sigma_clip_mad(data, sigma=2.5, maxiters=10):
     """
@@ -268,7 +276,7 @@ try:
 
 except:
     payload=pickle.load(open('testpostprocess.pickle','rb'))
-    print ("ignoring exception")
+    plog ("ignoring exception")
 #expresult={}
 #A long tuple unpack of the payload
 (img, pier_side, is_osc, frame_type, reject_flat_by_known_gain, avg_mnt, avg_foc, avg_rot, \
@@ -306,11 +314,11 @@ else:
 focuser_name = selfconfig['device_roles']['main_focuser']
 focuser_alias = selfconfig['focuser'][focuser_name]['name']
 if len(selfconfig['rotator']) > 1:
-    print('Warning: more than one rotator in config file, so post_exposure_subprocess.py is arbitrarily choosing to use main_rotator.')
-    print('Since there is more than one rotator configured, the script should be modified to pass the correct rotator name as an argument.')
+    plog('Warning: more than one rotator in config file, so post_exposure_subprocess.py is arbitrarily choosing to use main_rotator.')
+    plog('Since there is more than one rotator configured, the script should be modified to pass the correct rotator name as an argument.')
 if len(selfconfig['focuser']) > 1:
-    print('Warning: more than one focuser in config file, so post_exposure_subprocess.py is arbitrarily choosing to use main_focuser.')
-    print('Since there is more than one focuser configured, the script should be modified to pass the correct rotator name as an argument.')
+    plog('Warning: more than one focuser in config file, so post_exposure_subprocess.py is arbitrarily choosing to use main_focuser.')
+    plog('Since there is more than one focuser configured, the script should be modified to pass the correct rotator name as an argument.')
 
 # hack to get telescope working: choose the first one in the dict. This will probably work as expected
 # unless there are ever more than one telescope in the config file, so we'll check for that and
@@ -318,8 +326,8 @@ if len(selfconfig['focuser']) > 1:
 telescope_name = list(selfconfig['telescope'].keys())[0]
 telescope_config = selfconfig['telescope'][telescope_name]
 if len(selfconfig['telescope']) > 1:
-    print('Warning: more than one telescope in config file, and post_exposure_subprocess.py is picking one at random.')
-    print('If there is more than one telescope configured, the correct one should be passed as an argument to this script.')
+    plog('Warning: more than one telescope in config file, and post_exposure_subprocess.py is picking one at random.')
+    plog('If there is more than one telescope configured, the correct one should be passed as an argument to this script.')
 
 obsname=selfconfig['obs_id']
 localcalibrationdirectory=selfconfig['local_calibration_path'] + selfconfig['obs_id'] + '/'
@@ -327,7 +335,7 @@ tempfrontcalib=obsname + '_' + cam_alias +'_'
 
 localcalibmastersdirectory= localcalibrationdirectory+ "archive/" + cam_alias + "/calibmasters" + "/"
 
-#print (substack)
+#plog (substack)
 
 #breakpoint()
 
@@ -370,32 +378,32 @@ if substack:
     for substackfilename in substacker_filenames:
 
         substackimage=np.load(substackfilename).astype('float32')
-        #print (substackimage.shape)
+        #plog (substackimage.shape)
         #notsubstackimage=np.load(substackfilename)
-        #print (notsubstackimage.shape)
+        #plog (notsubstackimage.shape)
         try:
             if exp_of_substacks == 10:
-                #print ("Dedarking 0")
+                #plog ("Dedarking 0")
                 #loadbias=np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy')
-                #print (loadbias.shape)
+                #plog (loadbias.shape)
                 substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
             else:
                 substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
         except:
-            print(traceback.format_exc())
-            print ("Couldn't biasdark substack")
+            plog(traceback.format_exc())
+            plog ("Couldn't biasdark substack")
             pass
         try:
             substackimage = copy.deepcopy(np.divide(substackimage, np.load(localcalibrationdirectory  + 'archive/' + cam_alias + '/calibmasters/' + 'masterFlat_' + this_exposure_filter + "_bin" + str(1) +'.npy')))
         except:
-            print ("couldn't flat field substack")
+            plog ("couldn't flat field substack")
             #breakpoint()
             pass
         # Bad pixel map sub stack array
         try:
             substackimage[np.load(localcalibrationdirectory  + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'badpixelmask_bin1.npy')] = np.nan
         except:
-            print ("Couldn't badpixel substack")
+            plog ("Couldn't badpixel substack")
             pass
 
 
@@ -414,7 +422,7 @@ if substack:
             unique,counts=np.unique(substackimage.ravel()[~np.isnan(substackimage.ravel())].astype(np.int32), return_counts=True)
             m=counts.argmax()
             imageMode=unique[m]
-            print ("Calculating Mode: " +str(time.time()-googtime))
+            plog ("Calculating Mode: " +str(time.time()-googtime))
 
             #Zerothreshing image
             #googtime=time.time()
@@ -449,9 +457,9 @@ if substack:
             substackimage[substackimage < zeroValue] = np.nan
 
             # Deband the image
-            #print (bn.nanmax(substackimage))
+            #plog (bn.nanmax(substackimage))
             #substackimage = debanding(substackimage)
-            #print (bn.nanmax(substackimage))
+            #plog (bn.nanmax(substackimage))
 
             #breakpoint()
 
@@ -483,7 +491,7 @@ if substack:
             #     )
 
             # except:
-            #     print ("failed on subprocess directoty, trying current directory")
+            #     plog ("failed on subprocess directoty, trying current directory")
             #     crosscorrelation_subprocess_array.append(
             #         subprocess.Popen(
             #             ['python','crosscorrelation_subprocess.py'],
@@ -502,7 +510,7 @@ if substack:
                 crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
 
             #crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
-            print (counter-1)
+            plog (counter-1)
 
 
             if False:
@@ -524,7 +532,7 @@ if substack:
 
         file_wait_timeout_timer=time.time()
         while (not os.path.exists(waitfile)) and (time.time()-file_wait_timeout_timer < 600) :
-            #print ("waiting for " + str(waitfile))
+            #plog ("waiting for " + str(waitfile))
             time.sleep(0.2)
 
         if time.time()-file_wait_timeout_timer > 599:
@@ -542,12 +550,12 @@ if substack:
 
     # Once collected and done, nanmedian the array into the single image
 
-    #print (bn.nanmax(sub_stacker_array[0]))
-    #print (bn.nanmax(sub_stacker_array[1]))
-    #print (bn.nanmax(sub_stacker_array[2]))
+    #plog (bn.nanmax(sub_stacker_array[0]))
+    #plog (bn.nanmax(sub_stacker_array[1]))
+    #plog (bn.nanmax(sub_stacker_array[2]))
     img=bn.nanmedian(sub_stacker_array, axis=2) * len(substacker_filenames)
 
-    #print (bn.nanmax(img))
+    #plog (bn.nanmax(img))
 
     # Once we've got the substack stacked, delete the original images
     for waitfile in crosscorrel_filename_waiter:
@@ -651,7 +659,7 @@ try:
                     # Variable to sort out an intermediate dark when between two scalable darks.
                     fraction_through_range=0
 
-                    print (exposure_time)
+                    plog (exposure_time)
                     # If exactly the right exposure time, use the biasdark that exists
                     if exposure_time == 0.00004:
                         hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'fortymicrosecondBIASDARK_master_bin1.npy'))
@@ -736,7 +744,7 @@ try:
                 elif exposure_time == narrowband_ss_biasdark_exp_time:
                     hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.npy'))
                 else:
-                    print ("DUNNO WHAT HAPPENED!")
+                    plog ("DUNNO WHAT HAPPENED!")
                     hdu.data = hdu.data - np.load(localcalibmastersdirectory + tempfrontcalib + 'BIAS_master_bin1.npy')
                     hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'DARK_master_bin1.npy') * exposure_time)
             except:
@@ -744,9 +752,9 @@ try:
                     hdu.data = hdu.data - np.load(localcalibmastersdirectory + tempfrontcalib + 'BIAS_master_bin1.npy')
                     hdu.data = hdu.data - (np.load(localcalibmastersdirectory + tempfrontcalib + 'DARK_master_bin1.npy') * exposure_time)
                 except:
-                    print ("Could not bias or dark file.")
+                    plog ("Could not bias or dark file.")
         except Exception as e:
-            print("debias/darking light frame failed: ", e)
+            plog("debias/darking light frame failed: ", e)
 
         # If using a scaled dark remove the bias as well
         if do_bias_also:
@@ -760,7 +768,7 @@ try:
         try:
             hdu.data = np.divide(hdu.data, np.load(localcalibmastersdirectory + 'masterFlat_'+this_exposure_filter + "_bin" + str(1) +'.npy'))
         except Exception as e:
-            print("flatting light frame failed", e)
+            plog("flatting light frame failed", e)
             #hdu.data = data_save
 
 
@@ -768,7 +776,7 @@ try:
             hdu.data[np.load(localcalibmastersdirectory + tempfrontcalib + 'badpixelmask_bin1.npy')] = np.nan
 
         except Exception as e:
-            print("Bad Pixel Masking light frame failed: ", e)
+            plog("Bad Pixel Masking light frame failed: ", e)
 
         hdu.data = hdu.data.astype('float32')
 
@@ -793,8 +801,8 @@ try:
         # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
         m=counts.argmax()
         imageMode=unique[m]
-        print ("Calculated Mode: " + str(imageMode))
-        print ("Calculating Mode: " +str(time.time()-googtime))
+        plog ("Calculated Mode: " + str(imageMode))
+        plog ("Calculating Mode: " +str(time.time()-googtime))
 
 
         # Zerothreshing image
@@ -829,7 +837,7 @@ try:
 
         hdu.data[hdu.data < zeroValue] = np.nan
 
-        print ("Zero Threshing Image: " +str(time.time()-googtime))
+        plog ("Zero Threshing Image: " +str(time.time()-googtime))
 
         #hdu.data = debanding(hdu.data)
 
@@ -852,17 +860,17 @@ try:
         # RAest=input_psolve_info[6]
         # DECest=input_psolve_info[7]
 
-        print ("HERE IS THE FULL PLATESOLVE PICKLE")
-        print (hdu.data)
-        print (pixscale)
-        print (is_osc)
+        plog ("HERE IS THE FULL PLATESOLVE PICKLE")
+        plog (hdu.data)
+        plog (pixscale)
+        plog (is_osc)
         wcsfilepath=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq))
-        print (wcsfilepath)
+        plog (wcsfilepath)
         wcsfilebase=selfconfig["obs_id"]+ "-" + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter) + "-" + dayobs+ "-"+ next_seq+ "-" + 'EX'+ "00.fits"
-        print (wcsfilebase)
-        print (corrected_ra_for_header * 15 )
-        print (corrected_dec_for_header)
-        print (next_seq)
+        plog (wcsfilebase)
+        plog (corrected_ra_for_header * 15 )
+        plog (corrected_dec_for_header)
+        plog (next_seq)
 
         # CHECK TEMP DIR ACTUALLY EXISTS
         if not os.path.exists(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs):
@@ -882,7 +890,7 @@ try:
                 bufsize=0,
             )
         except OSError:
-            print(traceback.format_exc())
+            plog(traceback.format_exc())
             pass
 
         try:
@@ -901,8 +909,8 @@ try:
                 platesolve_subprocess.stdin,
             )
         except:
-            print("Problem in the platesolve pickle dump")
-            print(traceback.format_exc())
+            plog("Problem in the platesolve pickle dump")
+            plog(traceback.format_exc())
 
 
 
@@ -1304,8 +1312,8 @@ try:
         )
         hdu.header["OBJCTDEC"] = (avg_mnt['declination'], "[deg] Object dec")
     except:
-        # print("problem with the premount?")
-        # print(traceback.format_exc())
+        # plog("problem with the premount?")
+        # plog(traceback.format_exc())
         pass
     hdu.header["OBSERVER"] = (
         observer_user_name,
@@ -1426,7 +1434,7 @@ try:
         hdu.header["FOCUSTMP"] = (avg_foc[2], "[C] Focuser temperature")
         hdu.header["FOCUSMOV"] = (avg_foc[3], "Focuser is moving")
     except:
-        print("There is something fishy in the focuser routine")
+        plog("There is something fishy in the focuser routine")
 
 
     #breakpoint()
@@ -1693,7 +1701,7 @@ try:
         ]) and not a_dark_exposure:
         picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),cam_alias, ('fz_and_send', (raw_path + raw_name00 + ".fz").replace('.fz.fz','.fz'), copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
 
-        print (bn.nanmin(hdu.data))
+        plog (bn.nanmin(hdu.data))
 
         picklefilename='testlocalred'+str(time.time()).replace('.','')
         pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
@@ -1783,7 +1791,7 @@ try:
     hdu.data[np.isnan(hdu.data)] = imageMode
         #num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
 
-    print ("Denan Image: " +str(time.time()-googtime))
+    plog ("Denan Image: " +str(time.time()-googtime))
 
     # If this is set to true, then it will output a sample of the image.
     if False:
@@ -1912,7 +1920,7 @@ try:
                 hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
                 saver = 1
             except Exception as e:
-                print("Failed to write raw file: ", e)
+                plog("Failed to write raw file: ", e)
 
         # This puts the file into the smartstack queue
         # And gets it underway ASAP.
@@ -2085,8 +2093,8 @@ try:
 
 
 except:
-    print(traceback.format_exc())
+    plog(traceback.format_exc())
 
-print ("FINISHED! in " + str(time.time()-a_timer))
+plog ("FINISHED! in " + str(time.time()-a_timer))
 
 #breakpoint()

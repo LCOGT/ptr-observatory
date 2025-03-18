@@ -83,7 +83,7 @@ site_config = {
 
     # The site can fully platesolve each image before it is sent off to s3 or a PIPE
     # If there are spare enough cycles at the site, this saves time for the PIPE
-    # to concentrate on more resource heavy reductions. 
+    # to concentrate on more resource heavy reductions.
     # Also leads to fully platesolved reduced images on the local site computer
     # Usually set this to True
     # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
@@ -226,6 +226,8 @@ site_config = {
             'focuser': 'focuser'
         }
     },
+    'configdb_telescope': '0m28',
+    'configdb_enclosure': 'roof',
 
     'device_types': [
             'mount',     #NB NB WER added this back in 20240329.

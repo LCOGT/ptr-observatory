@@ -14,7 +14,7 @@ import sys
 import pickle
 import os
 import time
-#import traceback
+import builtins
 from astropy.io import fits
 from astropy.nddata import block_reduce
 from astropy.utils.exceptions import AstropyUserWarning
@@ -26,8 +26,15 @@ import bottleneck as bn
 #input_sep_info=pickle.load(open('testfz1714133591386061','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
 
-#print ("Starting fz_archive_file.py")
-#print (input_sep_info)
+def print(*args):
+    rgb = lambda r, g, b: f'\033[38;2;{r};{g};{b}m'
+    log_color = (240, 200, 90) # gold
+    c = rgb(*log_color)
+    r = '\033[0m' # reset
+    builtins.print(f"{c}[fz_archive]{r} {' '.join([str(x) for x in args])}")
+
+print("Starting fz_archive_file.py")
+# print(input_sep_info)
 
 
 temphduheader=input_sep_info[0]

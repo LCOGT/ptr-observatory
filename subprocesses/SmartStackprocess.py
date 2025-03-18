@@ -23,11 +23,20 @@ from math import sqrt
 import traceback
 import copy
 
+# Add the parent directory to the Python path
+# This allows importing modules from the root directory
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from ptr_utility import create_color_plog
+
+log_color = (50,200,50) # bright green
+plog = create_color_plog('sstk', log_color)
+
+
 input_sstk_info = pickle.load(sys.stdin.buffer)
 # input_sstk_info=pickle.load(open('testsmartstackpickle','rb'))
 
-print("Starting SmartStackprocess.py")
-print(input_sstk_info)
+plog("Starting SmartStackprocess.py")
+plog(input_sstk_info)
 
 
 smartstackthread_filename=input_sstk_info[0]
@@ -74,7 +83,7 @@ while (not os.path.exists(smartstackthread_filename)) and (time.time()-file_wait
 
 if time.time()-file_wait_timeout_timer > 599:
     sys.exit()
-    
+
 (image_filename, imageMode) = pickle.load(
     open(smartstackthread_filename, 'rb'))
 
@@ -145,7 +154,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
             ):
                 if True:
 
-                    print ("Storing single original image")
+                    plog ("Storing single original image")
 
                     # Store original image
                     np.save(
@@ -157,7 +166,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                     try:
                         os.remove(jpeg_path + smartstackid + '.busy')
                     except:
-                        print ("COULDNT DELETE BUSY TOKEN! ALERT!")
+                        plog ("COULDNT DELETE BUSY TOKEN! ALERT!")
 
                 else:
                     reprojection_failed = True
@@ -175,10 +184,10 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                 googtime=time.time()
                 edge_crop=100
                 xoff, yoff = cross_correlation_shifts(block_reduce(de_nanned_reference_frame[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean), block_reduce(tempnan[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean),zeromean=False)
-                print (time.time()-googtime)
-                print ("3x")
-                print (str(-yoff*3) + " " + str(-xoff*3))
-                print (str(round(-yoff*3)) + " " + str(round(-xoff*3)))
+                plog (time.time()-googtime)
+                plog ("3x")
+                plog (str(-yoff*3) + " " + str(-xoff*3))
+                plog (str(round(-yoff*3)) + " " + str(round(-xoff*3)))
                 imageshift=[round(-yoff*3),round(-xoff*3)]
 
                 if abs(imageshift[0]) > 0:
@@ -211,7 +220,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                 try:
                     os.remove(jpeg_path + smartstackid + '.busy')
                 except:
-                    print("COULDNT DELETE BUSY TOKEN! ALERT!")
+                    plog("COULDNT DELETE BUSY TOKEN! ALERT!")
 
         if reprojection_failed == True:  # If we couldn't make a stack send a jpeg of the original image.
             storedsStack = imgdata
@@ -270,7 +279,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                   'temp.jpg'), jpeg_path + jpeg_name.replace('EX10', 'EX20'))
         # Resizing the array to an appropriate shape for the jpg and the small fits
         # insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
-        print('Zoom factor is:  ', zoom_factor)
+        plog('Zoom factor is:  ', zoom_factor)
         if zoom_factor is not False:
             if zoom_factor in ['full', 'Full', '100%']:
                 zoom = (0.0, 0.0, 0.0, 0.0)  # Trim nothing
@@ -310,7 +319,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
             yb *= iy
             trial_image = final_image.crop((int(xl), int(yt), int(ix-xr), int(iy-yb)))
             ix, iy = trial_image.size
-            print("Zoomed Image size:", ix, iy)
+            plog("Zoomed Image size:", ix, iy)
             final_image = trial_image
         if iy == ix:
             final_image = final_image.resize(
@@ -419,33 +428,33 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                     crosscorrel_filename_waiter.append(
                         obsid_path + "smartstacks/" + output_filename)
 
-                    #print (crosscorrelation_subprocess_array)
+                    #plog (crosscorrelation_subprocess_array)
 
                     crosscorrelation_subprocess_array.append(
                         subprocess.Popen(
-                            ['python', 'subprocesses/crosscorrelation_subprocess.py'], 
-                            stdin=subprocess.PIPE, 
-                            stdout=None, 
+                            ['python', 'subprocesses/crosscorrelation_subprocess.py'],
+                            stdin=subprocess.PIPE,
+                            stdout=None,
                             bufsize=-1
                         )
                     )
-                    #print(counter)
-                    #print (crosscorrelation_subprocess_array[counter])
+                    #plog(counter)
+                    #plog (crosscorrelation_subprocess_array[counter])
                     pickle.dump(pickler, crosscorrelation_subprocess_array[counter].stdin)
                     crosscorrelation_subprocess_array[counter].stdin.flush()
                     counter=counter+1
 
             # Wait for the three crosscorrels to happen
             for waitfile in crosscorrel_filename_waiter:
-                
-                file_wait_timeout_timer=time.time()                
-                    
+
+                file_wait_timeout_timer=time.time()
+
                 while (not os.path.exists(waitfile)) and (time.time()-file_wait_timeout_timer < 600):
                     time.sleep(0.2)
-                    
+
                 if time.time()-file_wait_timeout_timer > 599:
                     sys.exit()
-                    
+
             if len(crosscorrel_filename_waiter) > 0:
                 for waitfile in crosscorrel_filename_waiter:
 
@@ -488,7 +497,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
             try:
                 os.remove(jpeg_path + smartstackid + '.busy')
             except:
-                print("COULDNT DELETE BUSY TOKEN! ALERT!")
+                plog("COULDNT DELETE BUSY TOKEN! ALERT!")
 
             pickle.dump(reprojection_failed, open(jpeg_path + 'smartstack.pickle', 'wb'))
 
@@ -586,7 +595,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
 
             # Resizing the array to an appropriate shape for the small jpg
             ix, iy = final_image.size
-            print('Zoom factor is:  ', zoom_factor)
+            plog('Zoom factor is:  ', zoom_factor)
             if zoom_factor is not False:
                 if zoom_factor in ['full', 'Full', '100%']:
                     zoom = (0.0, 0.0, 0.0, 0.0)  # Trim nothing
@@ -633,7 +642,7 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                 yb *= iy
                 trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
                 ix, iy = trial_image.size
-                print("Zoomed Image size:", ix, iy)
+                plog("Zoomed Image size:", ix, iy)
                 final_image = trial_image
 
             iy, ix = final_image.size

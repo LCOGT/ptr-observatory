@@ -160,6 +160,8 @@ site_config = {
     'solve_nth_image': 1,  # Only solve every nth image
     'solve_timer': 0.05,  # Only solve every X minutes
     'threshold_mount_update': 45,  # only update mount when X arcseconds away
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
+    'fully_platesolve_images_at_site_rather_than_pipe' : True,
 
 
 

@@ -1272,6 +1272,7 @@ class Camera:
             self.qhydirect = False
             plog("Simulated camera is connected:  ", self._connect(True))
 
+            self.pixscale = 0.75
             self.imagesize_x = 2400
             self.imagesize_y = 2400
 
@@ -1371,21 +1372,24 @@ class Camera:
         self.end_of_last_exposure_time = time.time()
         self.camera_update_reboot = False
 
+        # Initialise variable to a blank array
+        self.current_focus_jpg=np.array([])
+
         # Figure out pixelscale from own observations
         # Or use the config value if there hasn't been enough
         # observations yet.
 
         try:
-            self.pixelscale_shelf = shelve.open(
-                g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name))
-            try:
-                pixelscale_list = self.pixelscale_shelf['pixelscale_list']
-                self.pixscale = bn.nanmedian(pixelscale_list)
-                plog('1x1 pixel scale: ' + str(self.pixscale))
-            except:
-
-                pixelscale_list=None
-                self.pixscale = None
+            if not self.dummy:
+                self.pixelscale_shelf = shelve.open(
+                    g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name))
+                try:
+                    pixelscale_list = self.pixelscale_shelf['pixelscale_list']
+                    self.pixscale = bn.nanmedian(pixelscale_list)
+                    plog('1x1 pixel scale: ' + str(self.pixscale))
+                except:
+                    pixelscale_list=None
+                    self.pixscale = None
 
 
             # self.pixelscale_shelf.close()
@@ -1395,25 +1399,22 @@ class Camera:
             # else:
             #     self.pixscale = None   #Yes a hack
         except:
-            if self.dummy:
-                self.pixscale=0.75
-            else:
-                plog("ALERT: PIXELSCALE SHELF CORRUPTED. WIPING AND STARTING AGAIN")
-                self.pixscale = None
-                plog(traceback.format_exc())
-                try:
-                    if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dat'):
-                        os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
-                                  'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dat')
-                    if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dir'):
-                        os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
-                                  'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dir')
-                    if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name) + '.bak'):
-                        os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
-                                  'pixelscale' + self.alias + str(g_dev['obs'].name) + '.bak')
+            plog("ALERT: PIXELSCALE SHELF CORRUPTED. WIPING AND STARTING AGAIN")
+            self.pixscale = None
+            plog(traceback.format_exc())
+            try:
+                if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dat'):
+                    os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
+                                'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dat')
+                if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dir'):
+                    os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
+                                'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dir')
+                if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name) + '.bak'):
+                    os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
+                                'pixelscale' + self.alias + str(g_dev['obs'].name) + '.bak')
 
-                except:
-                    plog(traceback.format_exc())
+            except:
+                plog(traceback.format_exc())
 
 
         """
@@ -3422,7 +3423,7 @@ class Camera:
         incoming_exposure_time = copy.deepcopy(exposure_time)
         g_dev['obs'].request_scan_requests()
         if g_dev['seq'].blockend != None:
-            g_dev['obs'].request_update_calendar_blocks()
+            g_dev['seq'].schedule_manager.update_now()
         for seq in range(count):
 
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
@@ -3436,6 +3437,8 @@ class Camera:
             observing_ends = self.obs.events['Observing Ends']
             naut_dusk = self.obs.events['Naut Dusk']
             naut_dawn = self.obs.events['Naut Dawn']
+            observing_begins = self.obs.events['Observing Begins']
+
 
             if imtype.lower() in ["light", "expose"] and not self.obs.scope_in_manual_mode:
                 # Exposure time must end before the end of the nighttime observing window
@@ -3444,7 +3447,7 @@ class Camera:
                     self.running_an_exposure_set = False
                     return 'outsideofnighttime'
                 # Reject exposures that start before nautical dusk or end after nautical dawn
-                if now < naut_dusk or exposure_end_time > naut_dawn:
+                if now < observing_begins or exposure_end_time > observing_ends :
                     plog("Sorry, exposures are outside of night time.")
                     self.running_an_exposure_set = False
                     return 'outsideofnighttime'
@@ -3593,33 +3596,17 @@ class Camera:
                                 real_time_token, real_time_files)
                             return 'blockend'
 
-                    # Check that the calendar event that is running the exposure
-                    # Hasn't completed already
-                    # Check whether calendar entry is still existant.
-                    # If not, stop running block
-                    if not calendar_event_id == None:
-                        foundcalendar = False
-                        for tempblock in g_dev['seq'].blocks:
-                            try:
-                                if tempblock['event_id'] == calendar_event_id:
-                                    foundcalendar = True
-                                    g_dev['seq'].blockend = tempblock['end']
-                            except:
-                                plog("glitch in calendar finder")
-                                plog(str(tempblock))
-                        now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[
-                            0] + 'Z'
-                        if foundcalendar == False or now_date_timeZ >= g_dev['seq'].blockend:
-                            plog(
-                                "could not find calendar entry, cancelling out of block.")
-                            plog("And Cancelling SmartStacks.")
+                    # Stop if we're running from a block that has finished
+                    if calendar_event_id is not None:
+                        if not g_dev['seq'].schedule_manager.calendar_event_is_active(calendar_event_id):
+                            plog('Calendar event is no longer active; cancelling current camera activity.')
                             Nsmartstack = 1
                             sskcounter = 2
                             self.currently_in_smartstack_loop = False
-                            self.write_out_realtimefiles_token_to_disk(
-                                real_time_token, real_time_files)
+                            self.write_out_realtimefiles_token_to_disk(real_time_token, real_time_files)
                             self.running_an_exposure_set = False
                             return 'calendarend'
+
 
                     if not g_dev['obs'].assume_roof_open and not g_dev['obs'].scope_in_manual_mode and 'Closed' in g_dev['obs'].enc_status['shutter_status'] and imtype not in ['bias', 'dark'] and not a_dark_exposure:
 
@@ -4030,6 +4017,9 @@ class Camera:
                         continue
             self.currently_in_smartstack_loop = False
 
+
+            self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+
         # If the pier just flipped, trigger a recentering exposure.
         # This is here because a single exposure may have a flip in it, hence
         # we check here.
@@ -4050,7 +4040,7 @@ class Camera:
                 else:
                     pass
 
-        self.write_out_realtimefiles_token_to_disk(real_time_token, real_time_files)
+        #self.write_out_realtimefiles_token_to_disk(real_time_token, real_time_files)
 
         #  This is the loop point for the seq count loop
         self.currently_in_smartstack_loop = False
@@ -4069,6 +4059,12 @@ class Camera:
             token_name (str): Token for real-time file tracking
             real_time_files (list): List of real-time file paths
         """
+
+        # Append the seq number to the token_name
+        # As it is possible to have two images taken very close in time
+        token_name=token_name + str(self.next_seq)
+
+
         if self.site_config['save_raws_to_pipe_folder_for_nightly_processing']:
             if len(real_time_files) > 0:
                 pipetokenfolder = self.site_config['pipe_archive_folder_path'] + '/tokens'
@@ -4143,7 +4139,7 @@ class Camera:
     ):
         if fw_device == None:
             fw_device = self.obs.devices['main_fw']
-            
+
         #breakpoint()
         try:
             this_exposure_filter = fw_device.current_filter_name
@@ -4296,7 +4292,7 @@ class Camera:
         if exposure_time <= 5.0:
             g_dev['obs'].request_scan_requests()
             if g_dev['seq'].blockend != None:
-                g_dev['obs'].request_update_calendar_blocks()
+                g_dev['seq'].schedule_manager.update_now()
             try:
                 focus_position = g_dev['foc'].current_focus_position
             except:
@@ -4957,7 +4953,7 @@ class Camera:
                         )
                         if remaining > 5 and not block_and_focus_check_done:
                             if g_dev['seq'].blockend != None:
-                                g_dev['obs'].request_update_calendar_blocks()
+                                g_dev['seq'].schedule_manager.update_now()
                             block_and_focus_check_done = True
 
                     # Need to have a time sleep to release the GIL to run the other threads
