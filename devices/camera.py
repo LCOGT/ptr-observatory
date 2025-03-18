@@ -1272,6 +1272,7 @@ class Camera:
             self.qhydirect = False
             plog("Simulated camera is connected:  ", self._connect(True))
 
+            self.pixscale = 0.75
             self.imagesize_x = 2400
             self.imagesize_y = 2400
 
@@ -1379,16 +1380,16 @@ class Camera:
         # observations yet.
 
         try:
-            self.pixelscale_shelf = shelve.open(
-                g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name))
-            try:
-                pixelscale_list = self.pixelscale_shelf['pixelscale_list']
-                self.pixscale = bn.nanmedian(pixelscale_list)
-                plog('1x1 pixel scale: ' + str(self.pixscale))
-            except:
-
-                pixelscale_list=None
-                self.pixscale = None
+            if not self.dummy:
+                self.pixelscale_shelf = shelve.open(
+                    g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name))
+                try:
+                    pixelscale_list = self.pixelscale_shelf['pixelscale_list']
+                    self.pixscale = bn.nanmedian(pixelscale_list)
+                    plog('1x1 pixel scale: ' + str(self.pixscale))
+                except:
+                    pixelscale_list=None
+                    self.pixscale = None
 
 
             # self.pixelscale_shelf.close()
@@ -1398,25 +1399,22 @@ class Camera:
             # else:
             #     self.pixscale = None   #Yes a hack
         except:
-            if self.dummy:
-                self.pixscale=0.75
-            else:
-                plog("ALERT: PIXELSCALE SHELF CORRUPTED. WIPING AND STARTING AGAIN")
-                self.pixscale = None
-                plog(traceback.format_exc())
-                try:
-                    if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dat'):
-                        os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
-                                  'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dat')
-                    if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dir'):
-                        os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
-                                  'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dir')
-                    if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name) + '.bak'):
-                        os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
-                                  'pixelscale' + self.alias + str(g_dev['obs'].name) + '.bak')
+            plog("ALERT: PIXELSCALE SHELF CORRUPTED. WIPING AND STARTING AGAIN")
+            self.pixscale = None
+            plog(traceback.format_exc())
+            try:
+                if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dat'):
+                    os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
+                                'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dat')
+                if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dir'):
+                    os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
+                                'pixelscale' + self.alias + str(g_dev['obs'].name) + '.dir')
+                if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + self.alias + str(g_dev['obs'].name) + '.bak'):
+                    os.remove(g_dev['obs'].obsid_path + 'ptr_night_shelf/' +
+                                'pixelscale' + self.alias + str(g_dev['obs'].name) + '.bak')
 
-                except:
-                    plog(traceback.format_exc())
+            except:
+                plog(traceback.format_exc())
 
 
         """
@@ -3600,7 +3598,7 @@ class Camera:
 
                     # Stop if we're running from a block that has finished
                     if calendar_event_id is not None:
-                        if g_dev['seq'].schedule_manager.calendar_event_is_active(calendar_event_id):
+                        if not g_dev['seq'].schedule_manager.calendar_event_is_active(calendar_event_id):
                             plog('Calendar event is no longer active; cancelling current camera activity.')
                             Nsmartstack = 1
                             sskcounter = 2

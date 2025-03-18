@@ -1501,9 +1501,9 @@ class Sequencer:
         This function executes an observing block provided by a calendar event.
         """
 
-
-        if (ephem.now() < g_dev['events']['Civil Dusk'] ) or \
-            (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
+        if not self.obs.scope_in_manual_mode and \
+            (ephem.now() < g_dev['events']['Civil Dusk'] \
+            or g_dev['events']['Civil Dawn'] < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")
             return block_specification     #Added wer 20231103
@@ -1667,7 +1667,7 @@ class Sequencer:
                 for exposure in block['project']['exposures']:
 
                     # Check for terminal conditions
-                    if self.schedule_manager.calendar_event_is_active(block['event_id']):
+                    if not self.schedule_manager.calendar_event_is_active(block['event_id']):
                         plog ("Block ended.")
                         g_dev["obs"].send_to_user("Calendar Block Ended. Stopping project run.")
                         self.blockend = None
@@ -6573,7 +6573,7 @@ class Sequencer:
                     plog ("Site bailing out of Centering")
                     return
 
-                if calendar_event_id is not None and self.schedule_manager.calendar_event_is_active(calendar_event_id):
+                if calendar_event_id is not None and not self.schedule_manager.calendar_event_is_active(calendar_event_id):
                     self.obs.send_to_user("Calendar Block Ended. Stopping project run.")
                     plog("Calendar Block Ended. Stopping project run.")
                     self.blockend = None
