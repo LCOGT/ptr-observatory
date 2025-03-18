@@ -334,7 +334,7 @@ if len(acatalog) > 5:
 
     os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
 
-
+#plog (wslfilename)
 # Remove temporary fits file
 try:
     os.remove(wslfilename)
