@@ -630,7 +630,7 @@ class Mount:
 
         self.wait_for_mount_update()
         self.get_status()
-        
+
         #breakpoint()
 
 
@@ -1181,26 +1181,28 @@ class Mount:
                                 if self.slewtoAsyncRequested:
                                     self.slewtoAsyncRequested=False
 
-                                    # Don't slew while exposing!
-
+                                    # Don't slew while exposing!                                    
+                                    # although we need SOME reasonable timeout!
+                                    camera_wait_timeout=time.time()
+                                    
                                     try:
-                                        while g_dev['cam'].shutter_open:
+                                        while g_dev['cam'].shutter_open and (time.time() - camera_wait_timeout < 120):
                                             plog ("mount thread waiting for camera")
                                             time.sleep(0.2)
                                     except:
                                         plog ("mount thread camera wait failed.")
-                                    
-                                    # Figure out the implied azimuth for that ra and dec at this location                      
-                                    observation_time=Time.now()                                    
+
+                                    # Figure out the implied azimuth for that ra and dec at this location
+                                    observation_time=Time.now()
                                     sky_coord=SkyCoord(ra=self.slewtoRA*15*u.deg, dec=self.slewtoDEC*u.deg)
                                     # Convert to AltAz frame
                                     altaz_frame = AltAz(obstime=observation_time, location=self.site_coordinates)
                                     altaz_coords = sky_coord.transform_to(altaz_frame)
-                                    
+
                                     # # Extract altitude and azimuth
                                     # obs_altitude = altaz_coords.alt.deg
                                     # obs_azimuth = altaz_coords.az.deg
-                                    
+
                                     self.target_az=altaz_coords.az.deg
                                     self.target_alt=altaz_coords.alt.deg
                                     self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
@@ -1353,10 +1355,10 @@ class Mount:
                 plog(traceback.format_exc())
 
     def wait_for_slew(self, wait_after_slew=True, wait_for_dome=True, wait_for_dome_after_direct_slew=True):
-        
-        
+
+
         wait_for_slew_timer=time.time()
-        
+
         try:
             actually_slewed=False
             if not self.rapid_park_indicator:
@@ -1369,36 +1371,36 @@ class Mount:
                         movement_reporting_timer = time.time()
                     self.get_mount_coordinates_after_next_update()
                     g_dev['obs'].update_status(mount_only=True, dont_wait=True)
-                    
-                    
+
+
                     # The planewave can (rarely, but non-zero)
                     # just get caught while slewing.
                     # This routine catches and remedies that.
-                    
+
                     if time.time() - wait_for_slew_timer > 120:
                         plog ("Waited too long to slew! What is going on?")
                         wait_for_slew_timer=time.time()
                         # Only happens with PWI4 for some reason
                         if self.driver=='ASCOM.PWI4.Telescope':
                             plog ("Too long on a PWI4. Rebooting PWI4 and getting it to get where it is meant to.")
-                            
+
                             os.system('taskkill /IM PWI4.exe /F')
                             time.sleep(10)
                             subprocess.Popen('"C:\Program Files (x86)\PlaneWave Instruments\PlaneWave Interface 4\PWI4.exe"', shell=True)
                             time.sleep(10)
                             urllib.request.urlopen("http://localhost:8220/mount/connect")
                             time.sleep(5)
-                            
+
                             self.mount_update_reboot=True
                             self.slewtoAsyncRequested=True
-                            
+
                             self.wait_for_mount_update=True
-                            
+
                             # Kick the telescope back to where it is meant to be pointing.
-                            
-                    
-                        
-                        
+
+
+
+
 
                 # Then wait for slew_time to settle
                 if actually_slewed and wait_after_slew:
@@ -1410,59 +1412,59 @@ class Mount:
             plog(traceback.format_exc())
             if self.theskyx:
                 g_dev['obs'].kill_and_reboot_theskyx(self.current_icrs_ra, self.current_icrs_dec)
-                
+
         # Then once it is slewed, if there is a dome, it has to wait for the dome.
-        # But if the dome isn't opened, then no reason to wait for the dome.        
+        # But if the dome isn't opened, then no reason to wait for the dome.
         if self.config['needs_to_wait_for_dome'] and wait_for_dome and not self.rapid_park_indicator and wait_for_dome_after_direct_slew:
             #plog ("making sure dome is positioned correct.")
             rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
             aa = AltAz(location=self.site_coordinates, obstime=Time.now())
             rd = rd.transform_to(aa)
             obs_azimuth = float(rd.az/u.deg)
-            
-            
+
+
             wema_name=g_dev['obs'].config['wema_name']
             uri_status = f"https://status.photonranch.org/status/{wema_name}/enclosure"
 
 
-            
+
             try:
                 wema_enclosure_status=requests.get(uri_status, timeout=20)
                 dome_azimuth=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_azimuth']['val']
             except:
                 plog ("Some error in getting the wema_enclosure")
-            
-            
+
+
             # Only bother waiting if dome is open or opening
             if wema_enclosure_status.json()['status']['enclosure']['enclosure1']['shutter_status']['val'] in ['Open', 'open','Opening','opening']:
-            
+
                 #dome_azimuth= GET FROM wema
                 dome_timeout_timer=time.time()
                 #dome_open_or_opening=True
-                dome_is_slewing=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_slewing']['val'] 
+                dome_is_slewing=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_slewing']['val']
                 while (abs(obs_azimuth - dome_azimuth) > 15 or dome_is_slewing) and time.time() - dome_timeout_timer < 300 and not self.rapid_park_indicator: # and dome_open_or_opening:
-                    
+
                     #plog ("making sure dome is positioned correct.")
                     rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
                     aa = AltAz(location=self.site_coordinates, obstime=Time.now())
                     rd = rd.transform_to(aa)
                     obs_azimuth = float(rd.az/u.deg)
-                    
+
                     plog ("d> " + str(obs_azimuth) + " " + str(dome_azimuth) + " " + " Dome Slewing: " + str(dome_is_slewing))
                     time.sleep(2)
                     try:
                         wema_enclosure_status=requests.get(uri_status, timeout=20)
                         dome_azimuth=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_azimuth']['val']
                         dome_open_or_opening=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['shutter_status']['val'] in ['Open', 'open','Opening','opening']
-                        dome_is_slewing=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_slewing']['val'] 
+                        dome_is_slewing=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_slewing']['val']
                     except:
                         plog ("Some error in getting the wema_enclosure")
-                        
+
                 #plog ("Dome Arrived")
             else:
                 plog ("Why wait for the dome if it isn't even open?")
-                
-        
+
+
         return
 
     def return_side_of_pier(self):
@@ -1945,7 +1947,8 @@ class Mount:
     def go_command(self, skyflatspot=None, ra=None, dec=None, az=None, alt=None, ha=None, \
                    objectname=None, offset=False, calibrate=False, auto_center=False, \
                    silent=False, skip_open_test=False,tracking_rate_ra = 0, \
-                   tracking_rate_dec =  0, do_centering_routine=False, dont_wait_after_slew=False):
+                   tracking_rate_dec =  0, do_centering_routine=False, dont_wait_after_slew=False, \
+                   ignore_moon_dist=False):
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
 
@@ -2019,7 +2022,7 @@ class Mount:
 
         # Second thing, check that we aren't pointing at the moon
         # UNLESS we have actually chosen to look at the moon.
-        if g_dev['obs'].moon_checks_on:
+        if g_dev['obs'].moon_checks_on and not ignore_moon_dist:
             if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
                 plog("Moon Request detected")
             else:

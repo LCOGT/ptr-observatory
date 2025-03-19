@@ -48,7 +48,7 @@ def compute_target_coordinates(target: dict) -> dict:
 
     # Apply proper motion to calculate position at the observation time
     target_observed = target.apply_space_motion(new_obstime=observation_time)
-   
+
     # Return with ra in hours (0 to 24) and dec in degrees (-90 to 90)
     return {'ra': target_observed.ra.hour, 'dec': target_observed.dec.degree}
 
@@ -123,8 +123,9 @@ def pointing_is_ok(block, config) -> bool:
     # If the block comes from the scheduler, it should have already vetted the pointing,
     # so assume the pointing is fine.
     # Even if the scheduler is wrong, let's not override it and risk making the bugs
-    # harder to track. 
+    # harder to track.
     if block.get('origin', 'PTR') == 'LCO':
+        plog('Skipping pointing check for LCO block')
         return pointing_ok
 
     # If a block is identified, check it is in the sky and not in a poor location
@@ -147,4 +148,3 @@ def pointing_is_ok(block, config) -> bool:
         plog("Not running project as it is too low: " + str(alt) + " degrees.")
         pointing_ok = False
     return pointing_ok
-    
