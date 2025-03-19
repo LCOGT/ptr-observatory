@@ -1181,10 +1181,12 @@ class Mount:
                                 if self.slewtoAsyncRequested:
                                     self.slewtoAsyncRequested=False
 
-                                    # Don't slew while exposing!
-
+                                    # Don't slew while exposing!                                    
+                                    # although we need SOME reasonable timeout!
+                                    camera_wait_timeout=time.time()
+                                    
                                     try:
-                                        while g_dev['cam'].shutter_open:
+                                        while g_dev['cam'].shutter_open and (time.time() - camera_wait_timeout < 120):
                                             plog ("mount thread waiting for camera")
                                             time.sleep(0.2)
                                     except:
