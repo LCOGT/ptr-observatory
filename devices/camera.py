@@ -4143,7 +4143,7 @@ class Camera:
     ):
         if fw_device == None:
             fw_device = self.obs.devices['main_fw']
-            
+
         #breakpoint()
         try:
             this_exposure_filter = fw_device.current_filter_name

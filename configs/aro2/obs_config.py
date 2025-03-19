@@ -39,10 +39,10 @@ site_config = {
     'obs_id': 'aro2',
 
     # Name, local and owner stuff
-    'name': 'Apache Ridge Observatory 0m45 f6.5?',
-    'airport_code': 'SBA',
+    'name': "Apache Ridge Observatory  PW 0m45 f6.8  52'X39'",
+    'airport_code': 'SAF',
     'location': 'Santa Fe, New Mexico,  USA',
-    'telescope_description': '0m305 F3/8 A-P Honders Astrograph',
+    'telescope_description': 'PW 0m45 F6.8',
     'observatory_url': 'https://starz-r-us.sky/clearskies',
     'observatory_logo': None,
     'mpc_code':  'ZZ23',  # This is made up for now.
@@ -52,8 +52,8 @@ site_config = {
                     we lose charge of our democracy.
                     ''',  # i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
-    'owner_alias': ['ANS', 'WER', 'TELOPS'],
-    'admin_aliases': ["ANS", "WER", "TELOPS", "TB"],
+    'owner_alias': ['ANS', 'WER'],
+    'admin_aliases': ["ANS", "WER", "TELOPS", "MF",  "TB"],
 
     # Default safety settings
     'safety_check_period': 120,  # MF's original setting was 45.
@@ -64,14 +64,14 @@ site_config = {
     'closest_distance_to_the_moon': 5,
     'minimum_distance_from_the_moon_when_taking_flats': 30,
     # Degrees. For normal pointing requests don't allow requests to go this low.
-    'lowest_requestable_altitude': 15,
+    'lowest_requestable_altitude': 20,
     # Below this altitude, it will automatically try to home and park the scope to recover.
-    'lowest_acceptable_altitude': -10,
+    'lowest_acceptable_altitude': 0,
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
-    'degrees_to_avoid_zenith_area_in_general': 0,
-    'maximum_hour_angle_requestable': 9,
+    'degrees_to_avoid_zenith_area_in_general': 3,
+    'maximum_hour_angle_requestable': 9,  #This limit makes little sense
     # NB NB WER ARO Obs has a chiller
-    'temperature_at_which_obs_too_hot_for_camera_cooling': 32,
+    'temperature_at_which_obs_too_hot_for_camera_cooling': 30,
 
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
@@ -152,8 +152,8 @@ site_config = {
     'client_hostname':  'mrc-0m30',  # This is also the long-name  Client is confusing!
     'archive_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
     'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
-    'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
-    'plog_path':  'Q:/ptr/mrc1/',  # place where night logs can be found.
+    'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
+    'plog_path':  'D:/ptr/aor2/',  # place where night logs can be found.
     'save_to_alt_path': 'no',
     'archive_age': 2,  # Number of days to keep files in the local archive before deletion. Negative means never delete
 
@@ -401,11 +401,11 @@ site_config = {
         'Main OTA': {      #MRC1 has two OTAs  >>>>
             #'parent': 'eastpier',   #THis is redundant and unecessary >>>>
             'name': 'Main OTA',
-            'desc':  'Planewave_CDK_17 _F6.8',
+            'desc':  'Planewave_CDK_17_F6.8',
             'telescop': 'aro2',  # The tenth telescope at mrc will be 'mrc10'. mrc2 already exists.
             # the important thing is sites contain only a to z, but the string may get longer.
             #  From the BZ perspective TELESCOP must be unique
-            'ptrtel': 'APW 450,, CDK.',
+            'ptrtel': 'APW 450, CDK.',
             'driver': 'None',  # Essentially this device is informational.  It is mostly about the optics.
             'startup_script':  None,
             'recover_script':  None,
@@ -603,11 +603,11 @@ site_config = {
 
                 'auto_color_options': ['OSC'],  # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
                 # B, G, R filter codes for this camera if it is a monochrome camera with filters
-                'mono_RGB_colour_filters': ['pb', 'pg', 'pr'],
-                'mono_RGB_relative_weights': [1.2, 1, 0.8],
+                'mono_RGB_colour_filters': ['pr', 'pg', 'pb'],
+                'mono_RGB_relative_weights': [0.8, 1, 2],
                 # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
-                'mono_Narrowband_colour_filters': ['ha', 'o3', 's2'],
-                'mono_Narrowband_relative_weights': [1.0, 2, 2.5],
+                'mono_Narrowband_colour_filters': ['ha', 'o3', 's2'],  #these should implement basic Hubble or CFHT Pallets
+                'mono_Narrowband_relative_weights': [1.0, 2, 2.5],  #Consider adding CWL and BW to the table below
 
                 'filter_data': [['air',     [0, 0],   'ai'],  # 1
                                 ['V',       [0, 1],   'V '],  # 2  Wheel closest to camera
@@ -682,7 +682,7 @@ site_config = {
 
             'detector':  'Sony IMX461 BSI Mono',  # It would be good to build out a table of chip characteristics  6280 x 4210  Inspect: 62:4102, 4:6076  Sony 6244X4168 Active Optical black Hor 16, rear 0, Vert 22, rear 0
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
-            'file_mode_path':  'Q:/archive/sq0100sm/maxim/',  # NB NB all file_mode Maxim stuff should go!
+            'file_mode_path':  'D:/archive/sq0100sm/maxim/',  # NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
             'settings': {
 
@@ -857,7 +857,7 @@ site_config = {
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
                 'x_pixel':  3.76,  #  pixel size in microns
                 'y_pixel':  3.76,  #  pixel size in microns
-                'manual_onebyone_pix_scale': 0.66913,  #  This is the 1x1 binning pixelscale    3.76*206255/1159000
+                'manual_onebyone_pix_scale': 0.2639,  #  This is the 1x1 binning pixelscale    3.76*206255/1159000
                 'native_bin': 1,   #  Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
 
 

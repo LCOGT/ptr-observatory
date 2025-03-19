@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py
 Observatory is the central organising part of a given observatory system.
@@ -9,6 +8,7 @@ involve multiple devices and fundamental operations of the OBS.
 It also organises the various queues that process, send, slice and dice data.
 """
 # The ingester should only be imported after environment variables are loaded in.
+
 from dotenv import load_dotenv
 load_dotenv(".env")
 import ocs_ingester.exceptions
@@ -63,6 +63,7 @@ from ptr_events import Events
 from ptr_utility import plog
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
+
 
 warnings.simplefilter("ignore", category=AstropyUserWarning)
 
@@ -4600,6 +4601,7 @@ class Observatory:
 
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser(description="Run a Photon Ranch observatory")
     parser.add_argument('-eng', '--engineering', action="store_true", help="Engineering mode: disable all safety checks from the config")
     args = parser.parse_args()

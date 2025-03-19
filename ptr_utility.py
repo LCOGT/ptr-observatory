@@ -19,7 +19,7 @@ import ephem
 from ptr_config import site_config
 from global_yard import g_dev
 
-from datetime import timezone, timedelta 
+from datetime import timezone, timedelta
 
 DAY_Directory= g_dev['day']
 
@@ -68,11 +68,11 @@ def plog(*args, loud = True):
     '''
 
     try:
-                
+
         if len(args) == 1 and args[0] in ['.', '>']:
             print(args[0])
             return
-        
+
         args_to_str = ''
         exposure_report = False
         for item in args:
