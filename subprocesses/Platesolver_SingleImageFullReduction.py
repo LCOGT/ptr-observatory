@@ -46,13 +46,17 @@ from astropy.stats import sigma_clip
 import subprocess
 from astropy.table import Table
 
-# Add the parent directory to the Python path
-# This allows importing modules from the root directory
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from ptr_utility import create_color_plog
+# # Add the parent directory to the Python path
+# # This allows importing modules from the root directory
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# from ptr_utility import create_color_plog
 
-log_color = (170, 150, 255) # lavender
-plog = create_color_plog('platesolve', log_color)
+# log_color = (170, 150, 255) # lavender
+# plog = create_color_plog('full_platesolve', log_color)
+
+# Michael overrode this temporarily because it was spitting a bug out
+# while racing against the impending sunrise!
+plog=print
 
 def save_xylist(astropy_table, output_filename="xylist.txt"):
     """
@@ -103,7 +107,7 @@ def save_sources_as_fits(astropy_table, output_filename="sources.fits"):
     plog(f"Sources saved as {output_filename}")
 
 input_psolve_info=pickle.load(sys.stdin.buffer)
-#input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
+#input_psolve_info=pickle.load(open('testsingleimageplatesolvepickle','rb'))
 
 hdufocusdata=input_psolve_info[0]
 pixscale=input_psolve_info[1]
@@ -326,20 +330,45 @@ else:
 #os.system("wsl --exec build-xylist -i " + tempdir_in_wsl + '/test' + str(nextseq) + '.txt -o ' + tempdir_in_wsl + '/test' + str(nextseq) + '.axy')
 
 #os.system("wsl --exec solve-field  " + tempdir_in_wsl + '/test.fits' +" -D /home/obs/wcstempfiles --x-column X_IMAGE --y-column Y_IMAGE --sort-column FLUX_AUTO --crpix-center --tweak-order " +str (tweakorder[0]) + " --width " +str(imagew) +" --height " +str(imageh) +" --scale-units arcsecperpix --scale-low " + str(pixlow) + " --scale-high " + str(pixhigh) + " --scale-units arcsecperpix --ra " + str(RAest) + " --dec " + str(DECest) + " --radius 10 --cpulimit 300 --depth 1-100 --overwrite --no-verify --no-plots --skip-solve" )
-
+print ()
 if len(acatalog) > 5:
-    astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(pixlow) + ' --scale-high ' + str(pixhigh) + ' --ra ' + str(RAest) + ' --dec ' + str(DECest) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots'
+    astoptions = '--crpix-center --tweak-order ' + str(tweakorder[0]) +' --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(pixlow) + ' --scale-high ' + str(pixhigh) + ' --ra ' + str(RAest) + ' --dec ' + str(DECest) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots --new-fits none'
 
     plog (astoptions)
 
-    os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
+    os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename) + ' > output.txt')
 
-#plog (wslfilename)
-# Remove temporary fits file
-try:
-    os.remove(wslfilename)
-except:
-    pass
+    plog (wslfilename)
+    # Remove temporary fits file
+    # try:
+    #     os.remove(wslfilename)
+    # except:
+    #     pass
+    
+    if os.path.exists (wslfilename.replace('.fits','.wcs')):
+        plog ("successfully made wcs!")
+    else:
+        astoptions = '--crpix-center --tweak-order ' + str(tweakorder[1]) +' --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(pixlow) + ' --scale-high ' + str(pixhigh) + ' --ra ' + str(RAest) + ' --dec ' + str(DECest) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots --new-fits none'
+        plog (astoptions)
+
+        os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
+
+        plog (wslfilename)
+        
+        if os.path.exists (wslfilename.replace('.fits','.wcs')):
+            plog ("successfully made wcs!")
+        else:
+            plog ("Not a successful wcs this time :(")
+            with open(wslfilename.replace('.fits','.failed'), 'w') as file:
+                file.write('failed')
+else:
+    with open(wslfilename.replace('.fits','.failed'), 'w') as file:
+        file.write('failed')
+            
+
+sys.exit()
+
+wslfilename.replace('.fits','.wcs')
 
 sys.exit()
 #breakpoint()

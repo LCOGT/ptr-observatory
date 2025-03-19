@@ -1,12 +1,6 @@
 
 """
-This is actually a sub-sub-process.
-Each of the OSC colours needs to be SEParately SEP'ed so that
-each can be astroaligned to their separate coloured smartstack image.
-Say that three times fast.
-
-This is called from SmartStackProcess.py when it is running an OSC stack.
-As it is a relatively expensive (in time) operation, they need to run in parallel.
+This creates an fz file for the archive
 """
 
 import numpy as np
@@ -21,10 +15,16 @@ from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 import datetime
 warnings.simplefilter('ignore', category=AstropyUserWarning)
-import bottleneck as bn
+#import bottleneck as bn
+
+from astropy import wcs
+from astropy.coordinates import SkyCoord
 #input_sep_info=pickle.load(sys.stdin.buffer)
 #input_sep_info=pickle.load(open('testfz1714133591386061','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
+
+
+#input_sep_info=pickle.load(open('C:\ptr\eco1\smartstacks/testlocalred17424062603143346','rb'))
 
 def print(*args):
     rgb = lambda r, g, b: f'\033[38;2;{r};{g};{b}m'
@@ -41,7 +41,7 @@ temphduheader=input_sep_info[0]
 selfconfig=input_sep_info[1]
 camname=input_sep_info[2]
 slow_process=input_sep_info[3]
-
+wcsfilename=slow_process[7]
 
 
 #### FZ Compression can't handle NAN so we need to use a sentinal value
@@ -74,6 +74,71 @@ if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
     if not os.path.exists(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])):
         os.umask(0)
         os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS']))
+
+# Wait here for potential wcs solution
+
+print ("Waiting for: " +wcsfilename.replace('.fits','.wcs'))
+
+wcs_timeout_timer=time.time()
+while True:
+    if os.path.exists (wcsfilename.replace('.fits','.wcs')):
+        print ("success!")
+        
+        
+        #if os.path.exists(wcsname):
+        print ("wcs exists: " + str(wcsfilename.replace('.fits','.wcs')))
+        wcsheader = fits.open(wcsfilename.replace('.fits','.wcs'))[0].header
+        temphduheader.update(wcs.WCS(wcsheader).to_header(relax=True))
+        
+        # # Create a WCS instance from your header
+        # wcstrue = wcs.WCS(temphduheader)
+        
+        # Get the RA/DEC at the reference pixel (CRPIX1, CRPIX2)
+        ra_ref = temphduheader['CRVAL1']
+        dec_ref = temphduheader['CRVAL2']
+        
+        tempointing = SkyCoord(ra_ref, dec_ref, unit='deg')
+        tempointing=tempointing.to_string("hmsdms").split(' ')
+
+        temphduheader["RA"] = (
+            tempointing[0],
+            "[hms] Telescope right ascension",
+        )
+        temphduheader["DEC"] = (
+            tempointing[1],
+            "[dms] Telescope declination",
+        )
+        
+        temphduheader["RA-HMS"] = temphduheader["RA"]
+        temphduheader["DEC-DMS"] = temphduheader["DEC"]
+        
+        temphduheader["ORIGRA"] = temphduheader["RA"]
+        temphduheader["ORIGDEC"] = temphduheader["DEC"]
+        temphduheader["RAhrs"] = (
+            round(ra_ref / 15,8),
+            "[hrs] Telescope right ascension",
+        )
+        temphduheader["RADEG"] = round(ra_ref,8)
+        temphduheader["DECDEG"] = round(dec_ref,8)
+
+        temphduheader["TARG-CHK"] = (
+            (ra_ref)
+            + dec_ref,
+            "[deg] Sum of RA and dec",
+        )
+       
+        
+        del wcsheader
+        
+        break
+    if os.path.exists (wcsfilename.replace('.fits','.failed')):
+        print ("failure!")
+        break
+    if (time.time() - wcs_timeout_timer) > 120:
+        print ("took too long")
+        break
+    time.sleep(2)
+    
 
 if not camera_config["settings"]["is_osc"]:
 

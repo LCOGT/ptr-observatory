@@ -423,7 +423,7 @@ site_config = {
             'focuser_movement_settle_time': 3,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
-            'maximum_good_focus_in_arcsecond': 3.0, # highest value to consider as being in "good focus". Used to select last good focus value
+            'maximum_good_focus_in_arcsecond': 6.0, # highest value to consider as being in "good focus". Used to select last good focus value
             'reference': 23100,    #  20210313  Nominal at 10C Primary temperature
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 50000,   #12672 actually

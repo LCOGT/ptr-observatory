@@ -1,0 +1,36 @@
+Reading input file 1 of 1: "/mnt/c/ptr/eco1/archive/ec003zwo/20250319/wcs/42278/eco1-ec003zwo_expose_lum-20250319-00042278-EX00.fits"...
+Extracting sources...
+Sorting brightness using MAG_AUTO and BACKGROUND columns failed; falling back to MAG_AUTO.
+Reading sort column "MAG_AUTO"
+Sorting sort column
+mmapping input file
+Copying table header.
+Writing row 0
+Done
+Solving...
+Reading file "/mnt/c/ptr/eco1/archive/ec003zwo/20250319/wcs/42278/eco1-ec003zwo_expose_lum-20250319-00042278-EX00.axy"...
+Only searching for solutions within 20 degrees of RA,Dec (201.165,-58.7416)
+Field 1 did not solve (index index-52m1-41.fits, field objects 1-10).
+Field 1 did not solve (index index-52m1-40.fits, field objects 1-10).
+Field 1 did not solve (index index-52m1-38.fits, field objects 1-10).
+Field 1 did not solve (index index-52m1-36.fits, field objects 1-10).
+Field 1 did not solve (index index-5206-41.fits, field objects 1-10).
+Field 1 did not solve (index index-5206-40.fits, field objects 1-10).
+Field 1 did not solve (index index-5206-38.fits, field objects 1-10).
+Field 1 did not solve (index index-5206-36.fits, field objects 1-10).
+Field 1 did not solve (index index-5205-41.fits, field objects 1-10).
+Field 1 did not solve (index index-5205-40.fits, field objects 1-10).
+Field 1 did not solve (index index-5205-38.fits, field objects 1-10).
+Field 1 did not solve (index index-5205-36.fits, field objects 1-10).
+  log-odds ratio 400.476 (8.40137e+173), 45 match, 0 conflict, 387 distractors, 49 index.
+  RA,Dec = (201.167,-58.7421), pixel scale 0.269048 arcsec/pix.
+  Hit/miss:   Hit/miss: +++++++++++++++++++-+++-+-+++++-++----+++---++----+++---------+-+------------+---+------------+-----
+Field 1: solved with index index-5204-41.fits.
+Field 1 solved: writing to file /mnt/c/ptr/eco1/archive/ec003zwo/20250319/wcs/42278/eco1-ec003zwo_expose_lum-20250319-00042278-EX00.solved to indicate this.
+Field: /mnt/c/ptr/eco1/archive/ec003zwo/20250319/wcs/42278/eco1-ec003zwo_expose_lum-20250319-00042278-EX00.fits
+Field center: (RA,Dec) = (201.166645, -58.742119) deg.
+Field center: (RA H:M:S, Dec D:M:S) = (13:24:39.995, -58:44:31.627).
+Field size: 20.8792 x 15.7813 arcminutes
+Field rotation angle: up is -91.8206 degrees E of N
+Field parity: neg
+

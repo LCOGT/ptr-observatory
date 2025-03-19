@@ -881,6 +881,23 @@ try:
 
         if not os.path.exists(wcsfilepath):
             os.makedirs(wcsfilepath, mode=0o777)
+            
+            
+        # yet another pickle debugger.
+        if True:
+            pickle.dump(
+                [
+                    np.asarray(hdu.data,dtype=np.float32),
+                    pixscale,
+                    is_osc,
+                    wcsfilepath,
+                    wcsfilebase,
+                    corrected_ra_for_header * 15,
+                    corrected_dec_for_header,
+                    next_seq
+                ],
+                open('subprocesses/testsingleimageplatesolvepickle','wb')
+            )
 
         try:
             platesolve_subprocess = subprocess.Popen(
@@ -913,6 +930,9 @@ try:
             plog(traceback.format_exc())
 
 
+
+    # While we wait for the platesolving to happen we do all the other stuff
+    # And we will pick up the solution towards the end.
 
 
 
@@ -1699,12 +1719,20 @@ try:
         "skyflat",
         "pointing"
         ]) and not a_dark_exposure:
-        picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),cam_alias, ('fz_and_send', (raw_path + raw_name00 + ".fz").replace('.fz.fz','.fz'), copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
+        
+        if selfconfig['fully_platesolve_images_at_site_rather_than_pipe']:
+            wcsfilename=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq)) +'/' + selfconfig["obs_id"]+ "-" + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter) + "-" + dayobs+ "-"+ next_seq+ "-" + 'EX'+ "00.fits"
+        else:
+            wcsfilename='none'
 
-        plog (bn.nanmin(hdu.data))
+        picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),cam_alias, ('fz_and_send', (raw_path + raw_name00 + ".fz").replace('.fz.fz','.fz'), copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure, wcsfilename))
+
+        #plog (bn.nanmin(hdu.data))
 
         picklefilename='testlocalred'+str(time.time()).replace('.','')
         pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
+
+        #sys.exit()
 
         subprocess.Popen(
             ['python','fz_archive_file.py',picklefilename],
