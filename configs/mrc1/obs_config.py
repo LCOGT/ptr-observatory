@@ -159,7 +159,7 @@ site_config = {
     # Also leads to fully platesolved reduced images on the local site computer
     # Usually set this to True
     # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
-    'fully_platesolve_images_at_site_rather_than_pipe' : False,
+    'fully_platesolve_images_at_site_rather_than_pipe' : True,
 
 
     # A certain type of naming that sorts filenames by numberid first

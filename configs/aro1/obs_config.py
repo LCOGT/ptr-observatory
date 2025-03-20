@@ -190,6 +190,14 @@ site_config = {
     # Number of files to send over to the altarchive simultaneously.
     'number_of_simultaneous_altarchive_streams': 4,
 
+    # The site can fully platesolve each image before it is sent off to s3 or a PIPE
+    # If there are spare enough cycles at the site, this saves time for the PIPE
+    # to concentrate on more resource heavy reductions.
+    # Also leads to fully platesolved reduced images on the local site computer
+    # Usually set this to True
+    # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
+    'fully_platesolve_images_at_site_rather_than_pipe' : True,
+
 
     # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
     # So this is False for Bisques and true for everyone else.
@@ -455,7 +463,8 @@ site_config = {
             'name': 'Main OTA',
             'telescop': 'aro1',
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
-            'ptrtel': 'cvagr-0m30-f9-f4p9-001',
+            'telescope_description':  'Ceravolo 0m30 F4.9/F9 Astrograph',
+            'ptrtel': 'cvagr-0m30-f4.9-f4p9-001',
             # Essentially this device is informational.  It is mostly about the optics.
             'driver': None,
             'collecting_area': 31808,  # This is correct as of 20230420 WER
