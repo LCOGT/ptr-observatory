@@ -105,15 +105,15 @@ site_config = {
     'degrees_to_avoid_zenith_area_in_general' : 0,  #Hill prevents seeing much below pole @ MRC
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 30,
 
-    # These are the default values that will be set for the obs
-    # on a reboot of obs.py. They are safety checks that
-    # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': False,   #This is poorly named  the Enclosure is Manual vs Auto
-    'mount_reference_model_off': False,
-    'sun_checks_on': False,
-    'moon_checks_on': False,
-    'altitude_checks_on': False,
-    'daytime_exposure_time_safety_on': False,
+    # # These are the default values that will be set for the obs
+    # # on a reboot of obs.py. They are safety checks that
+    # # can be toggled by an admin in the Observe tab.
+    # 'scope_in_manual_mode': False,   #This is poorly named  the Enclosure is Manual vs Auto
+    # 'mount_reference_model_off': False,
+    # 'sun_checks_on': False,
+    # 'moon_checks_on': False,
+    # 'altitude_checks_on': False,
+    # 'daytime_exposure_time_safety_on': False,
 
     # Depending on the pointing capacity of the scope OR the field of view OR both
     # The pointing may never be quite good enough to center the object without
@@ -171,6 +171,8 @@ site_config = {
     # Number of files to send over to the altarchive simultaneously.
     'number_of_simultaneous_altarchive_streams' : 4,
 
+    
+    'push_file_list_to_pipe_queue': False,
 
     # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
     # So this is False for Bisques and true for everyone else.

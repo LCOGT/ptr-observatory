@@ -190,6 +190,10 @@ site_config = {
     # Number of files to send over to the altarchive simultaneously.
     'number_of_simultaneous_altarchive_streams': 4,
 
+    
+
+    'push_file_list_to_pipe_queue': False,
+
     # The site can fully platesolve each image before it is sent off to s3 or a PIPE
     # If there are spare enough cycles at the site, this saves time for the PIPE
     # to concentrate on more resource heavy reductions.
