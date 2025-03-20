@@ -34,6 +34,7 @@ class Events:
 
         # Fallback if we're missing the wema config
         if wema_config is None:
+
             plog(f"WARNING: failed to get config for wema for use with Events. Fallback to hardcoded values that are probably wrong for the site being run!!")
             self.wema_config={}
             self.wema_config['latitude']=7.378917
@@ -436,14 +437,17 @@ class Events:
         #******************  NB NB Cool down and open comes from the WEMA Config.
         #***** Code in this computer has to verify open was not delayed or close is early.
 
+#         # MTF instituted a hard 35 minute deviation to be systemwide to deal reasonably
+#         # with the LCO scheduler. We don't need different values for different scopes anyway realistically.
+#         # self.observing_begins=self.astroDark - self.config['astro_dark_buffer']/1440
+#         # self.observing_ends=self.astroEnd + self.config['astro_dark_buffer']/1440
 
-        # MTF instituted a hard 35 minute deviation to be systemwide to deal reasonably
-        # with the LCO scheduler. We don't need different values for different scopes anyway realistically.
-        # self.observing_begins=self.astroDark - self.config['astro_dark_buffer']/1440
-        # self.observing_ends=self.astroEnd + self.config['astro_dark_buffer']/1440
+#         self.observing_begins=self.astroDark - 35/1440
+#         self.observing_ends=self.astroEnd + 35/1440
 
-        self.observing_begins=self.astroDark - 35/1440
-        self.observing_ends=self.astroEnd + 35/1440
+        self.observing_begins=self.astroDark - self.config['astro_dark_buffer']/1440
+        self.observing_ends=self.astroEnd + self.config['astro_dark_buffer']/1440
+
 
         self.evnt = [('Eve Bias Dark      ', ephem.Date(self.cool_down_open - self.config['bias_dark interval']/1440)),
                      ('End Eve Bias Dark  ', ephem.Date(self.cool_down_open - (1.25*6)/1440)),
