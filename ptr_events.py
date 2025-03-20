@@ -437,6 +437,7 @@ class Events:
         #******************  NB NB Cool down and open comes from the WEMA Config.
         #***** Code in this computer has to verify open was not delayed or close is early.
 
+
 #         # MTF instituted a hard 35 minute deviation to be systemwide to deal reasonably
 #         # with the LCO scheduler. We don't need different values for different scopes anyway realistically.
 #         # self.observing_begins=self.astroDark - self.config['astro_dark_buffer']/1440
@@ -444,6 +445,7 @@ class Events:
 
 #         self.observing_begins=self.astroDark - 35/1440
 #         self.observing_ends=self.astroEnd + 35/1440
+
 
         self.observing_begins=self.astroDark - self.config['astro_dark_buffer']/1440
         self.observing_ends=self.astroEnd + self.config['astro_dark_buffer']/1440
