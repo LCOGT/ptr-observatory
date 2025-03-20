@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py  obs.py
 Observatory is the central organising part of a given observatory system.
@@ -9,6 +8,7 @@ involve multiple devices and fundamental operations of the OBS.
 It also organises the various queues that process, send, slice and dice data.
 """
 # The ingester should only be imported after environment variables are loaded in.
+
 from dotenv import load_dotenv
 load_dotenv(".env")
 import ocs_ingester.exceptions
@@ -37,9 +37,9 @@ import argparse
 
 from astropy.io import fits
 from astropy.utils.data import check_download_cache
-from astropy.coordinates import SkyCoord, get_sun, AltAz
+from astropy.coordinates import get_sun, SkyCoord, AltAz
 from astropy.time import Time
-from astropy import units as u
+import astropy.units as u
 
 import bottleneck as bn
 import numpy as np
@@ -63,6 +63,7 @@ from ptr_events import Events
 from ptr_utility import plog
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
+
 
 warnings.simplefilter("ignore", category=AstropyUserWarning)
 
@@ -402,14 +403,6 @@ class Observatory:
             target=self.scan_request_thread)
         self.scan_request_thread.daemon = True
         self.scan_request_thread.start()
-
-        # And one for updating calendar blocks
-        self.currently_updating_calendar_blocks = False
-        self.calendar_block_queue = queue.Queue(maxsize=0)
-        self.calendar_block_thread = threading.Thread(
-            target=self.calendar_block_thread)
-        self.calendar_block_thread.daemon = True
-        self.calendar_block_thread.start()
 
         self.too_hot_temperature = self.config[
             "temperature_at_which_obs_too_hot_for_camera_cooling"
@@ -1920,20 +1913,33 @@ class Observatory:
                                 "lowest_acceptable_altitude"
                             ]
                             if mount_altitude < lowest_acceptable_altitude:
-                                plog(
-                                    "Altitude too low! "
-                                    + str(mount_altitude)
-                                    + ". Parking scope for safety!"
-                                )
-                                if not self.devices["mount"].rapid_park_indicator:
-                                    if (
-                                        not self.devices["sequencer"].morn_bias_dark_latch
-                                        and not self.devices["sequencer"].bias_dark_latch
-                                    ):
-                                        self.cancel_all_activity()
-                                    if self.devices["mount"].home_before_park:
-                                        self.devices["mount"].home_command()
-                                    self.devices["mount"].park_command()
+
+                                plog ("previous status while not slewing reports a low altitude")
+                                plog ("waiting for a new mount update to double-check this")
+                                self.devices["mount"].wait_for_mount_update()
+                                self.devices["mount"].get_status()
+                                time.sleep(2)
+                                # Check again
+                                mount_altitude = float(
+                                self.devices["mount"].previous_status["altitude"]
+                            )
+                                if mount_altitude < lowest_acceptable_altitude:
+                                    plog(
+                                        "Altitude too low! "
+                                        + str(mount_altitude)
+                                        + ". Parking scope for safety!"
+                                    )
+                                    
+                                    
+                                    if not self.devices["mount"].rapid_park_indicator:
+                                        if (
+                                            not self.devices["sequencer"].morn_bias_dark_latch
+                                            and not self.devices["sequencer"].bias_dark_latch
+                                        ):
+                                            self.cancel_all_activity()
+                                        if self.devices["mount"].home_before_park:
+                                            self.devices["mount"].home_command()
+                                        self.devices["mount"].park_command()
                         except Exception as e:
                             plog(traceback.format_exc())
                             plog(e)
@@ -2728,20 +2734,6 @@ class Observatory:
                 # Need this to be as LONG as possible.  Essentially this sets the rate of checking scan requests.
                 time.sleep(3)
 
-    # Note this is a thread!
-    def calendar_block_thread(self):
-        while True:
-            if not self.calendar_block_queue.empty():
-                #one_at_a_time = 1
-                self.calendar_block_queue.get(block=False)
-                self.currently_updating_calendar_blocks = True
-                self.devices["sequencer"].update_calendar_blocks()
-                self.currently_updating_calendar_blocks = False
-                self.calendar_block_queue.task_done()
-                time.sleep(3)
-            else:
-                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-                time.sleep(5)
 
     # Note this is a thread!
     # It also produces the '.' heartbeat to let you know it is running.
@@ -3002,7 +2994,7 @@ class Observatory:
                             target_ra = self.devices["mount"].last_ra_requested
                             target_dec = self.devices["mount"].last_dec_requested
 
-                            if self.devices["sequencer"].block_guard and not self.devices["sequencer"].focussing:
+                            if self.devices["sequencer"].block_guard and not self.devices["sequencer"].lco_block and not self.devices["sequencer"].focussing:
                                 target_ra = self.devices["sequencer"].block_ra
                                 target_dec = self.devices["sequencer"].block_dec
 
@@ -4348,8 +4340,7 @@ class Observatory:
                 "shutter_status"
             ] in ["Open", "open"]:
                 self.devices["sequencer"].time_roof_last_opened = time.time()
-                # reset blocks so it can restart a calendar event
-                self.devices["sequencer"].reset_completes()
+                self.devices["sequencer"].schedule_manager.clear_completed_ids()
                 self.devices["sequencer"].last_roof_status = "Open"
 
             if self.devices["sequencer"].last_roof_status == "Open" and aws_enclosure_status[
@@ -4527,9 +4518,6 @@ class Observatory:
     def request_scan_requests(self):
         self.scan_request_queue.put("normal", block=False)
 
-    def request_update_calendar_blocks(self):
-        if not self.currently_updating_calendar_blocks:
-            self.calendar_block_queue.put("normal", block=False)
 
     def flush_command_queue(self):
         # So this command reads the commands waiting and just ... ignores them
@@ -4645,6 +4633,7 @@ class Observatory:
 
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser(description="Run a Photon Ranch observatory")
     parser.add_argument('-eng', '--engineering', action="store_true", help="Engineering mode: disable all safety checks from the config")
     args = parser.parse_args()

@@ -9,6 +9,7 @@ This is called from SmartStackProcess.py when it is running an OSC stack.
 As it is a relatively expensive (in time) operation, they need to run in parallel.
 """
 
+import builtins
 import numpy as np
 import sys
 import pickle
@@ -20,12 +21,19 @@ import warnings
 import datetime
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
+def print(*args):
+    rgb = lambda r, g, b: f'\033[38;2;{r};{g};{b}m'
+    log_color = (0, 210, 210) # cyan
+    c = rgb(*log_color)
+    r = '\033[0m' # reset
+    builtins.print(f"{c}[sep]{r} {' '.join([str(x) for x in args])}")
+
 #input_sep_info=pickle.load(sys.stdin.buffer)
 #input_sep_info=pickle.load(open('testfz17141141966139522','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
 
-#print ("Starting local_reduce_file_subprocess.py")
-#print (input_sep_info)
+#print("Starting local_reduce_file_subprocess.py")
+#print(input_sep_info)
 
 temphduheader=input_sep_info[0]
 selfconfig=input_sep_info[1]
@@ -79,7 +87,7 @@ while (breaker != 0):
                                                         if not (imageMode-counter-13) in zeroValueArray[:,0]:
                                                             if not (imageMode-counter-14) in zeroValueArray[:,0]:
                                                                 if not (imageMode-counter-15) in zeroValueArray[:,0]:
-                                                                    if not (imageMode-counter-16) in zeroValueArray[:,0]: 
+                                                                    if not (imageMode-counter-16) in zeroValueArray[:,0]:
                                                                         zeroValue=(imageMode-counter)
                                                                         breaker =0
 
@@ -154,7 +162,7 @@ hdureduced.writeto(
     slow_process[1], overwrite=True, output_verify='silentfix'
 )  # Save flash reduced file locally
 
-if selfconfig["save_to_alt_path"] == "yes":  
+if selfconfig["save_to_alt_path"] == "yes":
     hdureduced.writeto( selfconfig['alt_path'] +'/' +temphduheader['OBSID'] +'/' +temphduheader['DAY-OBS'] + "/reduced/" + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
     )  # Save full raw file locally
 

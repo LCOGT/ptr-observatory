@@ -48,6 +48,14 @@ from astropy.visualization.wcsaxes import Quadrangle
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
+# Add the parent directory to the Python path
+# This allows importing modules from the root directory
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from ptr_utility import create_color_plog
+
+log_color = (80,145,255) # vibrant blue
+plog = create_color_plog('platesolve', log_color)
+
 
 #from scipy import optimize
 
@@ -238,8 +246,8 @@ if pixscale == None:
 else:
     cpu_limit = int(platesolve_timeout*0.75)
 
-print ("Pixelscale")
-print (pixscale)
+plog ("Pixelscale")
+plog (pixscale)
 
 
 # # Check we are working in unit16
@@ -259,7 +267,7 @@ googtime=time.time()
 # If this is an osc image, then interpolate so it is just the green filter image of the same size.
 if is_osc:
     hdufocusdata=hdufocusdata.astype(np.float32)
-    
+
     # Rapidly interpolate so that it is all one channel
     # Wipe out red channel
     hdufocusdata[::2, ::2]=np.nan
@@ -367,7 +375,7 @@ else:
     high_pixscale = 1.03 * pixscale
     initial_radius=10
 
-print ("Just before solving: " +str(time.time()-googtime))
+plog ("Just before solving: " +str(time.time()-googtime))
 
 # Save an image to the disk to use with source-extractor
 # We don't need accurate photometry, so integer is fine.
@@ -382,13 +390,13 @@ hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
 
 astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius ' + str(initial_radius) + ' --cpulimit ' +str(cpu_limit) + ' --overwrite --no-verify --no-plots'
 
-print (astoptions)
+plog (astoptions)
 
 os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
 
 # If successful, then a file of the same name but ending in solved exists.
 if os.path.exists(wslfilename.replace('.fits','.wcs')):
-    print ("IT EXISTS! WCS SUCCESSFUL!")
+    plog ("IT EXISTS! WCS SUCCESSFUL!")
     wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
     solve={}
     solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
@@ -407,11 +415,11 @@ if os.path.exists(wslfilename.replace('.fits','.wcs')):
         solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
     elif binnedthree:
         solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-    print (solve)
+    plog (solve)
 
 else:
 
-    print ("FAILED NORMAL, TRYING HAIL MARY ATTEMPT")
+    plog ("FAILED NORMAL, TRYING HAIL MARY ATTEMPT")
     # Remove the previous attempt which was just a table fits
     temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
     for f in temp_files_to_remove:
@@ -424,13 +432,13 @@ else:
 
     astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots'
 
-    print (astoptions)
+    plog (astoptions)
 
     os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
 
     # If successful, then a file of the same name but ending in solved exists.
     if os.path.exists(wslfilename.replace('.fits','.wcs')):
-        print ("IT EXISTS! WCS SUCCESSFUL!")
+        plog ("IT EXISTS! WCS SUCCESSFUL!")
         wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
         solve={}
         solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
@@ -449,7 +457,7 @@ else:
             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
         elif binnedthree:
             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-        print (solve)
+        plog (solve)
     else:
         solve = 'error'
 
@@ -466,7 +474,7 @@ for f in temp_files_to_remove:
 
 ##################################
 
-print (cal_path+ 'platesolve.pickle')
+plog (cal_path+ 'platesolve.pickle')
 
 
 #sys.exit()
@@ -496,8 +504,8 @@ except:
 time.sleep(1)
 
 
-print (solve)
-print ("solver: " +str(time.time()-googtime))
+plog (solve)
+plog ("solver: " +str(time.time()-googtime))
 
 
 def add_margin(pil_img, top, right, bottom, left, color):
@@ -568,8 +576,8 @@ if solve == 'error':
         final_image.save(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
         os.rename(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'),jpeg_filename_with_full_path)
     except:
-        print ("problem in saving, likely trying to overwrite an existing file.")
-        print(traceback.format_exc())
+        plog ("problem in saving, likely trying to overwrite an existing file.")
+        plog(traceback.format_exc())
 
 
 if solve != 'error' and pointing_exposure and not pixscale == None:
@@ -577,16 +585,16 @@ if solve != 'error' and pointing_exposure and not pixscale == None:
 
     try:
         pointing_image = mid_stretch_jpeg(pointing_image)
-    
+
         solved_ra = solve["ra_j2000_hours"]
         solved_dec = solve["dec_j2000_degrees"]
         solved_arcsecperpixel = solve["arcsec_per_pixel"]
-    
-    
-    
+
+
+
         RA_where_it_actually_is=solved_ra
         DEC_where_it_actually_is=solved_dec
-    
+
         #make a fake header to create the WCS object
         tempheader = fits.PrimaryHDU()
         tempheader=tempheader.header
@@ -601,122 +609,122 @@ if solve != 'error' and pointing_exposure and not pixscale == None:
         tempheader['NAXIS'] = 2
         tempheader['CDELT1'] = float(pixscale) / 3600
         tempheader['CDELT2'] = float(pixscale) / 3600
-    
-    
+
+
         # Size of field in degrees
         x_deg_field_size=(float(pixscale) / (3600)) * pointing_image.shape[0]
         y_deg_field_size=(float(pixscale) / (3600)) * pointing_image.shape[1] / cos(radians(DEC_where_it_actually_is ))
-    
-        print (x_deg_field_size)
-        print (y_deg_field_size)
-    
+
+        plog (x_deg_field_size)
+        plog (y_deg_field_size)
+
         xfig=9
         yfig=9*(pointing_image.shape[0]/pointing_image.shape[1])
         aspect=1/(pointing_image.shape[0]/pointing_image.shape[1])
-        print (pointing_image.shape[0]/pointing_image.shape[1])
-    
+        plog (pointing_image.shape[0]/pointing_image.shape[1])
+
         # Create a temporary WCS
         # Representing where it actually is.
         wcs=WCS(header=tempheader)
-    
+
         plt.rcParams["figure.facecolor"] = 'black'
         plt.rcParams["text.color"] = 'yellow'
         plt.rcParams["xtick.color"] = 'yellow'
         plt.rcParams["ytick.color"] = 'yellow'
         plt.rcParams["axes.labelcolor"] = 'yellow'
         plt.rcParams["axes.titlecolor"] = 'yellow'
-    
+
         plt.rcParams['figure.figsize'] = [xfig, yfig]
         ax = plt.subplot(projection=wcs, facecolor='black')
-    
+
         #fig.set_facecolor('black')
         ax.set_facecolor('black')
         ax.imshow(pointing_image, origin='lower', cmap='gray')
         ax.grid(color='yellow', ls='solid')
         ax.set_xlabel('Right Ascension')
         ax.set_ylabel('Declination')
-    
-    
-        print ([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is])
-    
+
+
+        plog ([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is])
+
         ax.plot([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is],  linestyle='dashed',color='green',
               linewidth=2, markersize=12,transform=ax.get_transform('fk5'))
         # #ax.set_autoscale_on(False)
-    
+
         # ax.plot([target_ra * 15,RA_where_it_actually_is * 15],[ target_dec, DEC_where_it_actually_is],  linestyle='dashed',color='white',
         #       linewidth=2, markersize=12,transform=ax.get_transform('fk5'))
-    
-    
+
+
         # This should point to the center of the box.
         ax.scatter(target_ra * 15, target_dec, transform=ax.get_transform('icrs'), s=300,
                     edgecolor='red', facecolor='none')
-    
+
         # ax.scatter(target_ra * 15, target_dec, transform=ax.get_transform('icrs'), s=300,
         #             edgecolor='white', facecolor='none')
-    
-    
+
+
         # This should point to the center of the current image
         ax.scatter(RA_where_it_actually_is * 15, DEC_where_it_actually_is, transform=ax.get_transform('icrs'), s=300,
                     edgecolor='white', facecolor='none')
-    
+
         # This should point to the where the telescope is reporting it is positioned.
         ax.scatter(pointing_ra * 15, pointing_dec, transform=ax.get_transform('icrs'), s=300,
                     edgecolor='lime', facecolor='none')
-    
+
         # r = Quadrangle((target_ra * 15 - 0.5 * y_deg_field_size, target_dec - 0.5 * x_deg_field_size)*u.deg, y_deg_field_size*u.deg, x_deg_field_size*u.deg,
         #                 edgecolor='red', facecolor='none',
         #                 transform=ax.get_transform('icrs'))
-    
+
         r = Quadrangle((target_ra * 15 - 0.5 * y_deg_field_size, target_dec - 0.5 * x_deg_field_size)*u.deg, y_deg_field_size*u.deg, x_deg_field_size*u.deg,
                         edgecolor='red', facecolor='none',
                         transform=ax.get_transform('icrs'))
-    
-    
+
+
         ax.add_patch(r)
         # ax.axes.set_aspect(aspect)
         # plt.axis('scaled')
         # plt.gca().set_aspect(aspect)
-    
+
         # breakpoint()
         # plt.canvas.draw()
         # temp_canvas = plt.canvas
         # plt.close()
         # pil_image=Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_rgb())
-    
+
         # pil_image.save(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
         # os.rename(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'),jpeg_filename_with_full_path)
-    
+
         plt.savefig(jpeg_filename_with_full_path.replace('.jpg','matplotlib.png'), dpi=100, bbox_inches='tight', pad_inches=0)
-    
-    
+
+
         im = Image.open(jpeg_filename_with_full_path.replace('.jpg','matplotlib.png'))
-    
+
         # Get amount of padding to add
         fraction_of_padding=(im.size[0]/im.size[1])/aspect
         padding_added_pixels=int(((fraction_of_padding * im.size[1])- im.size[1])/2)
         if padding_added_pixels > 0:
             im=add_margin(im,padding_added_pixels,0,padding_added_pixels,0,(0,0,0))
-    
+
         im=im.convert('RGB')
-    
+
         try:
             im.save(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
             os.rename(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'),jpeg_filename_with_full_path)
         except:
-            print ("tried to save a jpeg when there is already a jpge")
-            print(traceback.format_exc())
-    
+            plog ("tried to save a jpeg when there is already a jpge")
+            plog(traceback.format_exc())
+
         try:
             os.remove(jpeg_filename_with_full_path.replace('.jpg','matplotlib.jpg'))
         except:
             pass
-    
+
         try:
             os.remove(jpeg_filename_with_full_path.replace('.jpg','matplotlib.png'))
         except:
             pass
 
     except:
-        print ("Odd jpeg error in platesolving")
-        print(traceback.format_exc())
+        plog ("Odd jpeg error in platesolving")
+        plog(traceback.format_exc())
 

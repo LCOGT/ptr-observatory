@@ -17,7 +17,15 @@ import bottleneck as bn
 #from astropy.stats import sigma_clip
 from joblib import Parallel, delayed
 
-#print("Starting crosscorrelation_subprocess.py")
+# Add the parent directory to the Python path
+# This allows importing modules from the root directory
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from ptr_utility import create_color_plog
+
+log_color = (0,180, 160) # teal
+plog = create_color_plog('crosscor', log_color)
+
+plog("Starting crosscorrelation_subprocess.py")
 
 payload=pickle.load(sys.stdin.buffer)
 #payload=pickle.load(open('crosscorrelprocess.pickle','rb'))
@@ -285,7 +293,7 @@ try:
             imageshiftsign = -1
         substackimage=np.roll(substackimage, imageshiftabs*imageshiftsign, axis=1)
 except:
-    print(traceback.format_exc())
+    plog(traceback.format_exc())
 
 try:
     os.remove(temporary_substack_directory + output_filename +'temp')

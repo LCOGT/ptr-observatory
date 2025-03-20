@@ -85,7 +85,7 @@ site_config = {
     'owner':  ['google-oauth2|102124071738955888216', \
                'google-oauth2|112401903840371673242'],  # Neyle,
     'owner_alias': ['ANS', 'WER'],
-    'admin_aliases': ["ANS", "WER", "TELOPS"],
+    'admin_aliases': ["ANS", "WER", "TELOPS", "TB"],
 
 
     "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
@@ -139,7 +139,7 @@ site_config = {
     'simulate_open_roof': False,
     'auto_centering_off': False,
     'self_guide_on': True,
-    'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
     'owner_only_commands': False,
 
 
@@ -151,7 +151,7 @@ site_config = {
     'pipe_archive_folder_path': 'X:/localptrarchive/',
 # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
-    'save_archive_versions_of_final_calibrations' : False, 
+    'save_archive_versions_of_final_calibrations' : False,
 
     # 'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # LINKS FOR OBS FOLDERS
@@ -213,7 +213,7 @@ site_config = {
     'astro_dark_buffer': 35,  # Min before and after AD to extend observing window
     'morn_flat_start_offset': -10.,  # min from Sunrise
     'morn_flat_end_offset': +40.,  # min from Sunrise
-    
+
 
 
 
@@ -304,6 +304,8 @@ site_config = {
             'focuser': 'focuser'
         }
     },
+    'configdb_telescope': '0m3',
+    'configdb_enclosure': 'roof',
 
     'device_types': [
         'mount',
@@ -902,7 +904,7 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -8,  # 20240914 up from 3C, new camera installed 20240604
+                'temp_setpoint': -2,  # 20240914 up from 3C, new camera installed 20240604
                 'temp_setpoint_tolerance': 2,
                 'has_chiller': True,
                 # "temp_setpoint_tolarance": 1.5,
@@ -919,10 +921,10 @@ site_config = {
                 #
                 # ( setpoint, day_warm_difference, day_warm troe our false)
                 'set_temp_setpoint_by_season' : True,
-                'temp_setpoint_nov_to_feb' : ( -8, 6, True),
-                'temp_setpoint_feb_to_may' : ( -8, 6, True),
-                'temp_setpoint_may_to_aug' : ( -3, 8, True),
-                'temp_setpoint_aug_to_nov' : ( -3, 8, True),
+                'temp_setpoint_nov_to_feb' : ( -2, 0, True),
+                'temp_setpoint_feb_to_may' : ( -2, 0, True),
+                'temp_setpoint_may_to_aug' : ( -2, 0, True),
+                'temp_setpoint_aug_to_nov' : ( -2, 0, True),
                 #Prsumably this is setpoint by season if it is False:
                 'day_warm': True,  # This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 4,  # Assuming the Chiller is working.
