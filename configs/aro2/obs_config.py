@@ -111,25 +111,25 @@ site_config = {
     # Default safety settings
     'eng_mode': True,
     'has_lightning_detector': False,
-    'safety_check_period': 45,  # MF's original setting.
-    'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
-    'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
-    'minimum_distance_from_the_moon_when_taking_flats': 30,
-    'lowest_requestable_altitude': 15,  # Degrees. For normal pointing requests don't allow requests to go this low.
-    'lowest_acceptable_altitude' : 10, # Below this altitude, it will automatically try to home and park the scope to recover.
-    'degrees_to_avoid_zenith_area_for_calibrations': 5,
-    'degrees_to_avoid_zenith_area_in_general' : 0,  #Hill prevents seeing much below pole @ MRC
-    'temperature_at_which_obs_too_hot_for_camera_cooling' : 30,
+    # 'safety_check_period': 45,  # MF's original setting.
+    # 'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
+    # 'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
+    # 'minimum_distance_from_the_moon_when_taking_flats': 30,
+    # 'lowest_requestable_altitude': 15,  # Degrees. For normal pointing requests don't allow requests to go this low.
+    # 'lowest_acceptable_altitude' : 10, # Below this altitude, it will automatically try to home and park the scope to recover.
+    # 'degrees_to_avoid_zenith_area_for_calibrations': 5,
+    # 'degrees_to_avoid_zenith_area_in_general' : 0,  #Hill prevents seeing much below pole @ MRC
+    # 'temperature_at_which_obs_too_hot_for_camera_cooling' : 30,
 
-    # These are the default values that will be set for the obs
-    # on a reboot of obs.py. They are safety checks that
-    # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': False,   #This is poorly named  the Enclosure is Manual vs Auto
-    'mount_reference_model_off': False,
-    'sun_checks_on': False,
-    'moon_checks_on': False,
-    'altitude_checks_on': False,
-    'daytime_exposure_time_safety_on': False,
+    # # These are the default values that will be set for the obs
+    # # on a reboot of obs.py. They are safety checks that
+    # # can be toggled by an admin in the Observe tab.
+    # 'scope_in_manual_mode': False,   #This is poorly named  the Enclosure is Manual vs Auto
+    # 'mount_reference_model_off': False,
+    # 'sun_checks_on': False,
+    # 'moon_checks_on': False,
+    # 'altitude_checks_on': False,
+    # 'daytime_exposure_time_safety_on': False,
 
     # Depending on the pointing capacity of the scope OR the field of view OR both
     # The pointing may never be quite good enough to center the object without
@@ -176,6 +176,16 @@ site_config = {
     # Number of files to send over to the altarchive simultaneously.
     'number_of_simultaneous_altarchive_streams' : 4,
 
+
+    # The site can fully platesolve each image before it is sent off to s3 or a PIPE
+    # If there are spare enough cycles at the site, this saves time for the PIPE
+    # to concentrate on more resource heavy reductions.
+    # Also leads to fully platesolved reduced images on the local site computer
+    # Usually set this to True
+    # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
+    'fully_platesolve_images_at_site_rather_than_pipe' : True,
+
+    "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
 
     # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
     # So this is False for Bisques and true for everyone else.
