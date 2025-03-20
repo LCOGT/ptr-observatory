@@ -514,7 +514,7 @@ class Observatory:
 
         self.fast_queue = queue.Queue(maxsize=0)
         self.fast_queue_thread = threading.Thread(
-            target=self.fast_to_ui, args=())
+            target=self.fast_to_aws, args=())
         self.fast_queue_thread.daemon = True
         self.fast_queue_thread.start()
 
@@ -3115,7 +3115,7 @@ class Observatory:
                             if solve == "error":
                                 # send up the platesolve image
                                 info_image_channel = 1 # send as an info image to this channel
-                                self.enqueue_for_fastUI(
+                                self.enqueue_for_fastAWS(
                                     path_to_jpeg, jpeg_filename, exposure_time, info_image_channel
                                 )
 
@@ -3132,7 +3132,7 @@ class Observatory:
                             else:
                                 # send up the platesolve image
                                 info_image_channel = 1 # send as an info image to this channel
-                                self.enqueue_for_fastUI(
+                                self.enqueue_for_fastAWS(
                                     path_to_jpeg, jpeg_filename, exposure_time, info_image_channel
                                 )
 
@@ -3854,7 +3854,7 @@ class Observatory:
                 time.sleep(5)
 
     # Note this is a thread!
-    def fast_to_ui(self):
+    def fast_to_aws(self):
         """Sends small files specifically focussed on UI responsiveness to AWS.
 
         This is primarily a queue for files that need to get to the UI FAST.
@@ -3881,13 +3881,12 @@ class Observatory:
 
                     filepath = f"{path_to_file_directory}{filename}" # Full path to the file on disk
                 except Exception as e:
-                    plog("Error in fast_to_ui: problem parsing the arguments")
+                    plog("Error in fast_to_aws: problem parsing the arguments")
                     plog(e)
                     plog("This is what was recieved: ", pri_image)
-                    plog("fast_to_ui did not upload an image.")
+                    plog("fast_to_aws did not upload an image.")
                     continue
-
-
+                                
                 # Here we parse the file, set up and send to AWS
                 try:
                     if filepath == "":
@@ -3896,8 +3895,54 @@ class Observatory:
 
                     # If the file is there now
                     if os.path.exists(filepath) and not "EX20" in filename:
+                        
+                        # First check it isn't a pipeline file to go up to the pipe queue
+                        if 'pipes3_' in filename:
+                            
+                            # re-open the text files and parse into a list
+                            with open(filepath, 'r') as file:
+                                image_filenames_for_pipe = file.read().splitlines()
+                            image_filenames_for_pipe=[item.strip('[]"').replace('"', '').replace(' ', '') for item in image_filenames_for_pipe if item not in ['[', ']']] 
+                        
+                            # formulate the enqueuement request to the pipe
+                            pipe_request={}
+                            pipe_request["queue_name"] = self.name
+                            
+                            payload={}
+                            payload['request'] = 'EVA_process_files'
+                            payload['request_content'] = image_filenames_for_pipe
+                            
+                            pipe_request["payload"] = payload
+                            pipe_request["sender"] = self.name
+                            
+                            uri_status = "https://api.photonranch.org/api/pipe/enqueue"
+                            try:
+            
+                                response = requests.post(uri_status,json=pipe_request, timeout=20)# allow_redirects=False, headers=close_headers)
+                                # print (response)
+                                # print (response.content)
+                                            
+                                # print ('404' in str(response))  
+                                  
+                                if not '200' in str(response):
+                                #     print ("WE GOT SOMETHING!")
+                                # else:
+                                    print ("we got something from the pipe aws that we didn't want.")
+                                    print (response)
+                                    print (response.content)
+                                    print ("putting it back in the queue")
+                                    self.fast_queue.put(pri_image, block=False)
+                                    
+                                    
+                            except:
+                                print ("blahblahblah. broken broken broken")
+                                plog((traceback.format_exc()))
+                            
+                            #breakpoint()
+                        
+                        
                         # To the extent it has a size
-                        if os.stat(filepath).st_size > 0:
+                        elif os.stat(filepath).st_size > 0:
 
                             request_body = {
                                 "object_name": filename,
@@ -3955,7 +4000,7 @@ class Observatory:
                     plog("something strange in the UI uploader")
                     plog((traceback.format_exc()))
                 self.fast_queue.task_done()
-                time.sleep(0.5)
+                time.sleep(0.05)
             else:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
                 time.sleep(1)
@@ -4405,10 +4450,10 @@ class Observatory:
         image = (im_path, name, time.time())
         self.ptrarchive_queue.put((priority, image), block=False)
 
-    def enqueue_for_fastUI(self, im_path, filename, exposure_time, info_image_channel=None):
+    def enqueue_for_fastAWS(self, im_path, filename, exposure_time, info_image_channel=None):
         """ Add an entry to the queue (self.fast_queue) that feeds the quick image upload thread.
         Entries are added before the file is created. The queue is monitored by the
-        fast_to_ui method which is run as a separate thread. It checks for existence of
+        fast_to_aws method which is run as a separate thread. It checks for existence of
         the files in the queue, and once they exist, it uploads them and removes
         the corresponding entry from the queue.
 

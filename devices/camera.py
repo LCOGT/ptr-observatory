@@ -4075,8 +4075,10 @@ class Camera:
                 if self.is_osc:
                     suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
 
+                    temp_file_holder=[]
                     for suffix in suffixes:
-                        temp_file_holder = [str(real_time_files[0]).replace('-EX00.', f'{suffix}-EX00.')]
+                        for tempfilename in real_time_files:                            
+                            temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
                         try:
                             with open(f"{pipetokenfolder}/{token_name}{suffix}", 'w') as f:
                                 json.dump(temp_file_holder, f, indent=2)
@@ -4088,6 +4090,49 @@ class Camera:
                             json.dump(real_time_files, f, indent=2)
                     except:
                         plog(traceback.format_exc())
+                        
+        if self.site_config['push_file_list_to_pipe_queue']:
+            if len(real_time_files) > 0:
+            
+                #self.camera_path + g_dev["day"] + "/to_AWS/"
+                
+                token_name_s3='pipes3_'+token_name
+                
+                localtokenfolder=self.camera_path + g_dev["day"] + '/tokens'
+                if not os.path.exists(localtokenfolder):
+                    os.umask(0)
+                    os.makedirs(localtokenfolder, mode=0o777)
+                if self.is_osc:
+                    suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
+                    
+                    for suffix in suffixes:
+                        temp_file_holder=[]
+                        for tempfilename in real_time_files:                            
+                            temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
+                        try:
+                            with open(f"{localtokenfolder}/{token_name_s3}{suffix}", 'w') as f:
+                                json.dump(temp_file_holder, f, indent=2)
+                        except:
+                            plog(traceback.format_exc())
+                        
+                        #plonk it in the upload queue
+                        try:
+                            g_dev['obs'].enqueue_for_fastAWS( localtokenfolder+'/', token_name_s3 + suffix, 0)
+                        except:
+                            plog(traceback.format_exc())
+                else:
+                    try:
+                        with open(localtokenfolder + "/" + token_name_s3, 'w') as f:
+                            json.dump(real_time_files, f, indent=2)
+                    except:
+                        plog(traceback.format_exc())
+                    
+                    #plonk it in the upload queue
+                    try:
+                        g_dev['obs'].enqueue_for_fastAWS( localtokenfolder+'/', token_name_s3, 0)
+                    except:
+                        plog(traceback.format_exc())
+            
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
@@ -4636,7 +4681,7 @@ class Camera:
                     plog(traceback.format_exc())
 
                 path_to_image_directory = f"{self.camera_path}{g_dev['day']}/to_AWS/"
-                g_dev['obs'].enqueue_for_fastUI(path_to_image_directory, jpeg_name, exposure_time)
+                g_dev['obs'].enqueue_for_fastAWS(path_to_image_directory, jpeg_name, exposure_time)
 
             else:
                 smartstackthread_filename='no'
@@ -4692,7 +4737,7 @@ class Camera:
             packet=(avg_foc,exposure_time,this_exposure_filter, airmass_of_observation)
             g_dev['obs'].file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
 
-            g_dev['obs'].enqueue_for_fastUI(im_path, text_name, exposure_time)
+            g_dev['obs'].enqueue_for_fastAWS(im_path, text_name, exposure_time)
 
             # JPEG process
             if smartstackid == 'no':
@@ -4757,7 +4802,7 @@ class Camera:
 
                 del jpeg_subprocess
 
-                g_dev['obs'].enqueue_for_fastUI(
+                g_dev['obs'].enqueue_for_fastAWS(
                     self.camera_path + g_dev['day'] + "/to_AWS/",
                     jpeg_name,
                     exposure_time
@@ -6087,7 +6132,7 @@ class Camera:
                     )
                     text.write(str(hdusmallheader))
                     text.close()
-                    g_dev['obs'].enqueue_for_fastUI( im_path, text_name, exposure_time)
+                    g_dev['obs'].enqueue_for_fastAWS( im_path, text_name, exposure_time)
 
                     return expresult
 
