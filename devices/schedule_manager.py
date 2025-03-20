@@ -36,7 +36,7 @@ class NightlyScheduleManager:
         - configdb_enclosure (str): name of the enclosure in configdb, used like above
         """
 
-        self.site_proxy_offline = False
+        self.site_proxy_offline = not include_lco_scheduler # Set site proxy offline if we're not including the lco scheduler
         if include_lco_scheduler:
             if 'SITE_PROXY_BASE_URL' not in os.environ:
                 plog('ERROR: the environment variable SITE_PROXY_BASE_URL is missing and scheduler observations won\'t work.')
@@ -244,13 +244,13 @@ class NightlyScheduleManager:
         """ Update the schedule now """
         if not override_warning:
             plog(f'Updating full schedule now. Note that this already happens every {self.ptr_update_interval}s and {self.lco_update_interval}s so it may not be necessary to call this manually.')
+
         # Create threads for each update operation
         lco_thread = threading.Thread(
             target=self.update_lco_schedule,
             name="LCO_Update_Now_Thread",
             daemon=True
         )
-
         ptr_thread = threading.Thread(
             target=self.update_ptr_schedule,
             name="PTR_Update_Now_Thread",
