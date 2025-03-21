@@ -947,7 +947,11 @@ site_config = {
 
 
                 # In the EVA Pipeline, whether to run cosmic ray detection on individual images
-                'do_cosmics': False,
+                'do_cosmics': True,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
 
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,
