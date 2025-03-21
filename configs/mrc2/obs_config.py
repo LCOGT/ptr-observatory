@@ -134,7 +134,7 @@ site_config = {
     # Also leads to fully platesolved reduced images on the local site computer
     # Usually set this to True
     # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
-    'fully_platesolve_images_at_site_rather_than_pipe' : False,
+    'fully_platesolve_images_at_site_rather_than_pipe' : True,
 
     # Setup of folders on local and network drives.
     'client_hostname':  'mr2-0m60',
@@ -161,7 +161,8 @@ site_config = {
    # Number of files to send over to the altarchive simultaneously.
    'number_of_simultaneous_altarchive_streams' : 4,
 
-
+    
+    'push_file_list_to_pipe_queue': False,
    # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
    # So this is False for Bisques and true for everyone else.
    'run_main_update_in_a_thread': True,

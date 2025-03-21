@@ -120,6 +120,8 @@ site_config = {
     'number_of_simultaneous_altarchive_streams' : 4,
 
 
+    'push_file_list_to_pipe_queue': False,
+    
     # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
     # So this is False for Bisques and true for everyone else.
     'run_main_update_in_a_thread': False,

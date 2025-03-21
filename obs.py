@@ -1982,7 +1982,8 @@ class Observatory:
                     current_camera_temperature = round(
                         current_camera_temperature, 1)
                     if (
-                        abs(
+                        #abs(   #20250315 WER   Make this test unidirectional.
+                            (
                             float(current_camera_temperature)
                             - float(self.devices["main_cam"].setpoint)
                         )

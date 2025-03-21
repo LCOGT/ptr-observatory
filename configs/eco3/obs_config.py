@@ -100,16 +100,16 @@ site_config = {
     'keep_focus_images_on_disk': False,  # To save space, the focus file can not be saved.
 # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
-    'save_archive_versions_of_final_calibrations' : False, 
+    'save_archive_versions_of_final_calibrations' : False,
 
 
         # The site can fully platesolve each image before it is sent off to s3 or a PIPE
     # If there are spare enough cycles at the site, this saves time for the PIPE
-    # to concentrate on more resource heavy reductions. 
+    # to concentrate on more resource heavy reductions.
     # Also leads to fully platesolved reduced images on the local site computer
     # Usually set this to True
     # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
-    'fully_platesolve_images_at_site_rather_than_pipe' : False,
+    'fully_platesolve_images_at_site_rather_than_pipe' : True,
 
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
@@ -121,6 +121,7 @@ site_config = {
     'number_of_simultaneous_altarchive_streams' : 4,
 
 
+    'push_file_list_to_pipe_queue': False,
 
     # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
     # So this is False for Bisques and true for everyone else.
@@ -145,7 +146,7 @@ site_config = {
     'astro_dark_buffer': 35,   #Min before and after AD to extend observing window
     'morn_flat_start_offset': -30,       #min from Sunrise
     'morn_flat_end_offset':  +45,        #min from Sunrise
-    
+
 
     # Exposure times for standard system exposures
     'focus_exposure_time': 15,  # Exposure time in seconds for exposure image
@@ -652,8 +653,8 @@ site_config = {
                 'do_saltandpepper' : True,
                 # And debanding
                 'do_debanding' : False,
-                
- 
+
+
                 'number_of_bias_to_collect' : 128,
                 'number_of_dark_to_collect' : 128,
                 'number_of_flat_to_collect' : 128,
