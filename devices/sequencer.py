@@ -1726,8 +1726,20 @@ class Sequencer:
 
                     # MUCH safer to calculate these from first principles
                     # Than rely on an owner getting this right!
-                    dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
-                    ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
+                    try:
+                        dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
+                        ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
+                    except:
+                        dec_field_deg = None
+                        ra_field_deg = None
+                        plog("failed to get field size as no piselscale is known")
+                        plog ("Attempting to get pixel scale as we must be commissioining")
+                        g_dev["obs"].send_to_user("Pixelscale not known. Attempting a platesolve to find it.")
+                        result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False, calendar_event_id=calendar_event_id)
+                        dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
+                        ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
+
+
                     self.currently_mosaicing = False
 
                     # A hack to get older projects working. should be deleted at some point.
