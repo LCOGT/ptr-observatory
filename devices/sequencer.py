@@ -5693,6 +5693,13 @@ class Sequencer:
                                     g_dev['obs'].fwhmresult["FWHM"] = fitted_focus_fwhm
                                     g_dev['obs'].fwhmresult["mean_focus"] = fitted_focus_position
                                     self.total_sequencer_control = False
+
+
+                                    if g_dev['cam'].pixscale == None:
+                                        plog ("Now we are in focus but we don't have a pixelscale, attempting a platesolve to get that value")
+                                        g_dev["obs"].send_to_user("Now we are in focus but we don't have a pixelscale, attempting a platesolve to get that value")
+                                        self.centering_exposure(no_confirmation=True, try_hard=True)
+
                                     return fitted_focus_position,fitted_focus_fwhm
 
                                 else:
