@@ -594,7 +594,7 @@ class Sequencer:
             g_dev['obs'].sync_after_platesolving=True
             self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)
 
-        g_dev['obs'].sync_after_platesolving=False
+        g_dev['obs'].sync_after_platesolving=True
 
         g_dev['obs'].send_to_user("Syncing on the other side of the pier. Slewing then platesolving.")
         g_dev['mnt'].go_command(alt=70,az= 270)
