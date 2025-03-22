@@ -3831,7 +3831,10 @@ class Camera:
                                 try:
                                     last_fwhm = g_dev['obs'].fwhmresult["FWHM"]
                                     #  NB NB WER this can be evil if telescope is not well set up. Should not adjust in Eng mode.
-                                    if last_fwhm > 7.0:
+
+                                    if self.pixscale == None: #If we don't have a pixelscale  we don't really know what the seeing is, but best to give it a little increase
+                                        exposure_time=exposure_time * 2
+                                    elif last_fwhm > 7.0:
                                         exposure_time = exposure_time * 4
                                     elif last_fwhm > 4.5:
                                         exposure_time = exposure_time * 3
@@ -4077,7 +4080,7 @@ class Camera:
 
                     temp_file_holder=[]
                     for suffix in suffixes:
-                        for tempfilename in real_time_files:                            
+                        for tempfilename in real_time_files:
                             temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
                         try:
                             with open(f"{pipetokenfolder}/{token_name}{suffix}", 'w') as f:
@@ -4090,31 +4093,31 @@ class Camera:
                             json.dump(real_time_files, f, indent=2)
                     except:
                         plog(traceback.format_exc())
-                        
+
         if self.site_config['push_file_list_to_pipe_queue']:
             if len(real_time_files) > 0:
-            
+
                 #self.camera_path + g_dev["day"] + "/to_AWS/"
-                
+
                 token_name_s3='pipes3_'+token_name
-                
+
                 localtokenfolder=self.camera_path + g_dev["day"] + '/tokens'
                 if not os.path.exists(localtokenfolder):
                     os.umask(0)
                     os.makedirs(localtokenfolder, mode=0o777)
                 if self.is_osc:
                     suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
-                    
+
                     for suffix in suffixes:
                         temp_file_holder=[]
-                        for tempfilename in real_time_files:                            
+                        for tempfilename in real_time_files:
                             temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
                         try:
                             with open(f"{localtokenfolder}/{token_name_s3}{suffix}", 'w') as f:
                                 json.dump(temp_file_holder, f, indent=2)
                         except:
                             plog(traceback.format_exc())
-                        
+
                         #plonk it in the upload queue
                         try:
                             g_dev['obs'].enqueue_for_fastAWS( localtokenfolder+'/', token_name_s3 + suffix, 0)
@@ -4126,13 +4129,13 @@ class Camera:
                             json.dump(real_time_files, f, indent=2)
                     except:
                         plog(traceback.format_exc())
-                    
+
                     #plonk it in the upload queue
                     try:
                         g_dev['obs'].enqueue_for_fastAWS( localtokenfolder+'/', token_name_s3, 0)
                     except:
                         plog(traceback.format_exc())
-            
+
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
