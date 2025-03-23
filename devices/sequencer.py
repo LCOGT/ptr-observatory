@@ -2905,6 +2905,11 @@ class Sequencer:
             os.system("taskkill /IM Aladin.exe /F")
         except:
             pass
+        
+        if self.currently_regenerating_masters:
+            plog("Already in the process of regenerating masters. Will need to wait until the current cycle is done.")
+            g_dev["obs"].send_to_user("Already in the process of regenerating masters. Will need to wait until the current cycle is done.")
+            return
 
         self.currently_regenerating_masters = True
 
