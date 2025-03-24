@@ -594,7 +594,7 @@ class Sequencer:
             g_dev['obs'].sync_after_platesolving=True
             self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)
 
-        g_dev['obs'].sync_after_platesolving=False
+        g_dev['obs'].sync_after_platesolving=True
 
         g_dev['obs'].send_to_user("Syncing on the other side of the pier. Slewing then platesolving.")
         g_dev['mnt'].go_command(alt=70,az= 270)
@@ -1726,8 +1726,20 @@ class Sequencer:
 
                     # MUCH safer to calculate these from first principles
                     # Than rely on an owner getting this right!
-                    dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
-                    ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
+                    try:
+                        dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
+                        ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
+                    except:
+                        dec_field_deg = None
+                        ra_field_deg = None
+                        plog("failed to get field size as no piselscale is known")
+                        plog ("Attempting to get pixel scale as we must be commissioining")
+                        g_dev["obs"].send_to_user("Pixelscale not known. Attempting a platesolve to find it.")
+                        result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False, calendar_event_id=calendar_event_id)
+                        dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
+                        ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
+
+
                     self.currently_mosaicing = False
 
                     # A hack to get older projects working. should be deleted at some point.
@@ -2893,6 +2905,11 @@ class Sequencer:
             os.system("taskkill /IM Aladin.exe /F")
         except:
             pass
+        
+        if self.currently_regenerating_masters:
+            plog("Already in the process of regenerating masters. Will need to wait until the current cycle is done.")
+            g_dev["obs"].send_to_user("Already in the process of regenerating masters. Will need to wait until the current cycle is done.")
+            return
 
         self.currently_regenerating_masters = True
 
@@ -5681,6 +5698,13 @@ class Sequencer:
                                     g_dev['obs'].fwhmresult["FWHM"] = fitted_focus_fwhm
                                     g_dev['obs'].fwhmresult["mean_focus"] = fitted_focus_position
                                     self.total_sequencer_control = False
+
+
+                                    if g_dev['cam'].pixscale == None:
+                                        plog ("Now we are in focus but we don't have a pixelscale, attempting a platesolve to get that value")
+                                        g_dev["obs"].send_to_user("Now we are in focus but we don't have a pixelscale, attempting a platesolve to get that value")
+                                        self.centering_exposure(no_confirmation=True, try_hard=True)
+
                                     return fitted_focus_position,fitted_focus_fwhm
 
                                 else:

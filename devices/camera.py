@@ -3832,7 +3832,10 @@ class Camera:
                                 try:
                                     last_fwhm = g_dev['obs'].fwhmresult["FWHM"]
                                     #  NB NB WER this can be evil if telescope is not well set up. Should not adjust in Eng mode.
-                                    if last_fwhm > 7.0:
+
+                                    if self.pixscale == None: #If we don't have a pixelscale  we don't really know what the seeing is, but best to give it a little increase
+                                        exposure_time=exposure_time * 2
+                                    elif last_fwhm > 7.0:
                                         exposure_time = exposure_time * 4
                                     elif last_fwhm > 4.5:
                                         exposure_time = exposure_time * 3

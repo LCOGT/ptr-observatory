@@ -104,7 +104,7 @@ site_config = {
     'simulate_open_roof': False,
     'auto_centering_off': False,
     'self_guide_on': True,
-    'always_do_a_centering_exposure_regardless_of_nearby_reference': False,
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
     'owner_only_commands': False,
 
 
@@ -153,9 +153,9 @@ site_config = {
     'archive_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
     'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
-    'plog_path':  'D:/ptr/aor2/',  # place where night logs can be found.
+    'plog_path':  'D:/ptr/aro2/',  # place where night logs can be found.
     'save_to_alt_path': 'no',
-    'archive_age': 2,  # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age': 3,  # Number of days to keep files in the local archive before deletion. Negative means never delete
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
@@ -177,6 +177,8 @@ site_config = {
     'number_of_simultaneous_altarchive_streams' : 4,
 
 
+    'push_file_list_to_pipe_queue': False,
+
     # The site can fully platesolve each image before it is sent off to s3 or a PIPE
     # If there are spare enough cycles at the site, this saves time for the PIPE
     # to concentrate on more resource heavy reductions.
@@ -184,6 +186,8 @@ site_config = {
     # Usually set this to True
     # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
     'fully_platesolve_images_at_site_rather_than_pipe' : True,
+
+
 
     "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
 
@@ -523,9 +527,9 @@ site_config = {
             # When the focusser has no previous best focus values
             # start from this reference position
 
-            'reference': 4037,  #20250111 Run after MF found good focus
+            'reference': 4036,  #20250321 Run after adjusting collar
             'z_compression': 0, #Not used as of 20250111
-            'z_coef_date':  '20240820',
+            'z_coef_date':  '20250321',
             'relative_focuser': False,
             # Limits and steps for the focuser.
             'minimum': 0,    #  Units are microns
@@ -620,24 +624,44 @@ site_config = {
                 'mono_Narrowband_relative_weights': [1.0, 2, 2.5],  #Consider adding CWL and BW to the table below
 
                 'filter_data': [['air',     [0, 0],   'ai'],  # 1
-                                ['V',       [0, 1],   'V '],  # 2  Wheel closest to camera
-                                ['B',       [0, 2],   "B "],  # 3
-                                ['zs',      [0, 3],   "zs"],  # 4
-                                ['w',       [0, 4],   'w '],  # 5
-                                ['up',      [0, 5],   'up'],  # 6
-                                ['gp',      [0, 6],   'gp'],  # 7
-                                ['rp',      [0, 7],   'rp'],  # 8
-                                ['ip',      [0, 8],   'ip'],  # 9
+                                ['V',       [1, 0],   'V '],  # 2  Wheel closest to camera
+                                ['B',       [2, 0],   "B "],  # 3
+                                ['zs',      [3, 0],   "zs"],  # 4
+                                ['w',       [4, 0],   'w '],  # 5
+                                ['up',      [5, 0],   'up'],  # 6
+                                ['gp',      [6, 0],   'gp'],  # 7
+                                ['rp',      [7, 0],   'rp'],  # 8
+                                ['ip',      [0, 0],   'ip'],  # 9
 
-                                ['sy',      [1, 0],   'sy'],  # 10 Wheel closest to rotator
-                                ['sb',      [2, 0],   'sb'],  # 11
-                                ['sv',      [3, 0],   'sv'],  # 12
-                                ['su',      [4, 0],   'su'],  # 13
-                                ['O3',      [5, 0],   'o3'],  # 14
-                                ['Hb',      [6, 0],   'hb'],  # 15
-                                ['Ha',      [7, 0],   "ha"],  # 16
-                                ['S2',      [8, 0],   's2'],  # 17
-                                ['dk',      [8, 5],   'dk']], # 18
+                                ['sy',      [0 ,1],   'sy'],  # 10 Wheel closest to rotator
+                                ['sb',      [0 ,2],   'sb'],  # 11
+                                ['sv',      [0, 3],   'sv'],  # 12
+                                ['su',      [0, 4],   'su'],  # 13
+                                ['O3',      [0, 5],   'o3'],  # 14
+                                ['Hb',      [0, 6],   'hb'],  # 15
+                                ['Ha',      [0, 7],   "ha"],  # 16
+                                ['S2',      [0, 8],   's2'],  # 17
+                                ['dk',      [5 ,8],   'dk']], # 18
+
+                # 'filter_data': [['air',     [0, 0],   'ai'],  # 1
+                #                 ['V',       [0, 1],   'V '],  # 2  Wheel closest to camera
+                #                 ['B',       [0, 2],   "B "],  # 3
+                #                 ['zs',      [0, 3],   "zs"],  # 4
+                #                 ['w',       [4, 0],   'w '],  # 5
+                #                 ['up',      [0, 5],   'up'],  # 6
+                #                 ['gp',      [0, 6],   'gp'],  # 7
+                #                 ['rp',      [0, 7],   'rp'],  # 8
+                #                 ['ip',      [0, 8],   'ip'],  # 9
+
+                #                 ['sy',      [1, 0],   'sy'],  # 10 Wheel closest to rotator
+                #                 ['sb',      [2, 0],   'sb'],  # 11
+                #                 ['sv',      [3, 0],   'sv'],  # 12
+                #                 ['su',      [4, 0],   'su'],  # 13
+                #                 ['O3',      [5, 0],   'o3'],  # 14
+                #                 ['Hb',      [6, 0],   'hb'],  # 15
+                #                 ['Ha',      [7, 0],   "ha"],  # 16
+                #                 ['S2',      [8, 0],   's2'],  # 17
+                #                 ['dk',      [8, 5],   'dk']], # 18
 
                 'focus_filter' : 'w',
 
@@ -943,7 +967,11 @@ site_config = {
 
 
                 # In the EVA Pipeline, whether to run cosmic ray detection on individual images
-                'do_cosmics': False,
+                'do_cosmics': True,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
 
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,
