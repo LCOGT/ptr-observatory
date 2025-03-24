@@ -153,9 +153,9 @@ site_config = {
     'archive_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
     'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
-    'plog_path':  'D:/ptr/aor2/',  # place where night logs can be found.
+    'plog_path':  'D:/ptr/aro2/',  # place where night logs can be found.
     'save_to_alt_path': 'no',
-    'archive_age': 2,  # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age': 3,  # Number of days to keep files in the local archive before deletion. Negative means never delete
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
@@ -527,16 +527,16 @@ site_config = {
             # When the focusser has no previous best focus values
             # start from this reference position
 
-            'reference': 4037,  #20250111 Run after MF found good focus
+            'reference': 3850,  #20250321 Run after adjusting collar
             'z_compression': 0, #Not used as of 20250111
-            'z_coef_date':  '20240820',
+            'z_coef_date':  '20250325',
             'relative_focuser': False,
             # Limits and steps for the focuser.
             'minimum': 0,    #  Units are microns
             'maximum': 12700,
             'step_size': 1.0,   #  This is misnamed!
             'backlash':  300,
-            'throw': 70,
+            'throw': 200,
             'focus_tolerance':  130,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  #  Steps per micron

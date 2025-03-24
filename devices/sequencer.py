@@ -594,7 +594,7 @@ class Sequencer:
             g_dev['obs'].sync_after_platesolving=True
             self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=False)
 
-        g_dev['obs'].sync_after_platesolving=False
+        g_dev['obs'].sync_after_platesolving=True
 
         g_dev['obs'].send_to_user("Syncing on the other side of the pier. Slewing then platesolving.")
         g_dev['mnt'].go_command(alt=70,az= 270)
@@ -2905,6 +2905,11 @@ class Sequencer:
             os.system("taskkill /IM Aladin.exe /F")
         except:
             pass
+        
+        if self.currently_regenerating_masters:
+            plog("Already in the process of regenerating masters. Will need to wait until the current cycle is done.")
+            g_dev["obs"].send_to_user("Already in the process of regenerating masters. Will need to wait until the current cycle is done.")
+            return
 
         self.currently_regenerating_masters = True
 
@@ -4939,11 +4944,16 @@ class Sequencer:
         g_dev['obs'].flush_command_queue()
 
 
-        # If the camera pixelscale is None then we are in commissioning mode and
-        # need to restack the calibrations straight away
-        # so this triggers off the stacking process to happen in a thread.
-        if g_dev['cam'].pixscale == None:
-            self.master_restack_queue.put( 'force', block=False)
+        # # If the camera pixelscale is None then we are in commissioning mode and
+        # # need to restack the calibrations straight away
+        # # so this triggers off the stacking process to happen in a thread.
+        # if g_dev['cam'].pixscale == None:
+        #     
+        
+        # We should always restack after getting new flats
+        self.master_restack_queue.put( 'justflatsreally', block=False)
+
+        
 
         self.total_sequencer_control = False
 

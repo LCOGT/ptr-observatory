@@ -74,6 +74,7 @@ site_config = {
 
     'location': 'Santa Fe, New Mexico,  USA',
     # This is meant to be an optional informatinal website associated with the observatory.
+    'telescope_description': 'CV 0m30 f4.9',
     'observatory_url': 'https://starz-r-us.sky/clearskies2',
     'observatory_logo': None,   #
     'mpc_code':  'ZZ23',  # This is made up for now.
@@ -166,6 +167,10 @@ site_config = {
     # Number of days to keep files in the local archive before deletion. Negative means never delete
     'archive_age': 4.0,
 
+
+    'plog_path':  'F:/ptr/aro1/',  # place where night logs can be found.  May not be used on aro1 wer 20250322
+
+
     'redis_available':  True,
     'redis_ip': "10.0.0.174:6379",
 
@@ -190,7 +195,7 @@ site_config = {
     # Number of files to send over to the altarchive simultaneously.
     'number_of_simultaneous_altarchive_streams': 4,
 
-    
+
 
     'push_file_list_to_pipe_queue': False,
 
@@ -301,14 +306,14 @@ site_config = {
     #
     # This should only be modified if the configuration in configdb changes.
     'configdb_instrument_mapping': {
-        'qhy600-2.1': {
+        'qhy600-2a': {
             'mount': 'aropier1',
             'camera': 'sq003ms',
             'filter_wheel': 'LCO FW50_001d',
             'rotator': None,
             'focuser': 'focuser'
         },
-        'qhy600-2.2': {
+        'qhy600-2b': {
             'mount': 'aropier1',
             'camera': 'sq003ms',
             'filter_wheel': 'LCO FW50_001d',
@@ -562,7 +567,7 @@ site_config = {
             'start_at_config_reference': False,
             'correct_focus_for_temperature': True,
             # highest value to consider as being in "good focus". Used to select last good focus value
-            'maximum_good_focus_in_arcsecond': 3.0,
+            'maximum_good_focus_in_arcsecond': 5.0,
             'focuser_movement_settle_time': 3,
             # F4.9 setup
             'reference':  5221.2,    #  20241204
@@ -939,9 +944,9 @@ site_config = {
                 'temp_setpoint_may_to_aug' : ( -2, 0, True),
                 'temp_setpoint_aug_to_nov' : ( -2, 0, True),
                 #Prsumably this is setpoint by season if it is False:
-                'day_warm': True,  # This is converted to a 0 or 1 depending on the Boolean value
+                'day_warm': False,  # This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 4,  # Assuming the Chiller is working.
-                'protect_camera_from_overheating': False,
+                'protect_camera_from_overheating': True,
 
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
@@ -1023,7 +1028,7 @@ site_config = {
                 'has_darkslide':  True,
                 'darkslide_type': 'bistable',
                 'darkslide_can_report':  False,
-                'darkslide_com':  'COM10',
+                'darkslide_com':  'COM17',
                 'shutter_type': "Electronic",
 
 
