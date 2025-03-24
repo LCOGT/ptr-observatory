@@ -1655,6 +1655,7 @@ class Camera:
 
         if self.darkslide_state != 'Open':
             if self.darkslide_type is not None:
+
                 opened = self.darkslide_instance.openDarkslide()
             elif self.darkslide_type == 'ASCOM_FLI_SHUTTER':
                 self.camera.Action('SetShutter', 'open')
@@ -4077,7 +4078,7 @@ class Camera:
 
                     temp_file_holder=[]
                     for suffix in suffixes:
-                        for tempfilename in real_time_files:                            
+                        for tempfilename in real_time_files:
                             temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
                         try:
                             with open(f"{pipetokenfolder}/{token_name}{suffix}", 'w') as f:
@@ -4090,31 +4091,31 @@ class Camera:
                             json.dump(real_time_files, f, indent=2)
                     except:
                         plog(traceback.format_exc())
-                        
+
         if self.site_config['push_file_list_to_pipe_queue']:
             if len(real_time_files) > 0:
-            
+
                 #self.camera_path + g_dev["day"] + "/to_AWS/"
-                
+
                 token_name_s3='pipes3_'+token_name
-                
+
                 localtokenfolder=self.camera_path + g_dev["day"] + '/tokens'
                 if not os.path.exists(localtokenfolder):
                     os.umask(0)
                     os.makedirs(localtokenfolder, mode=0o777)
                 if self.is_osc:
                     suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
-                    
+
                     for suffix in suffixes:
                         temp_file_holder=[]
-                        for tempfilename in real_time_files:                            
+                        for tempfilename in real_time_files:
                             temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
                         try:
                             with open(f"{localtokenfolder}/{token_name_s3}{suffix}", 'w') as f:
                                 json.dump(temp_file_holder, f, indent=2)
                         except:
                             plog(traceback.format_exc())
-                        
+
                         #plonk it in the upload queue
                         try:
                             g_dev['obs'].enqueue_for_fastAWS( localtokenfolder+'/', token_name_s3 + suffix, 0)
@@ -4126,13 +4127,13 @@ class Camera:
                             json.dump(real_time_files, f, indent=2)
                     except:
                         plog(traceback.format_exc())
-                    
+
                     #plonk it in the upload queue
                     try:
                         g_dev['obs'].enqueue_for_fastAWS( localtokenfolder+'/', token_name_s3, 0)
                     except:
                         plog(traceback.format_exc())
-            
+
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
