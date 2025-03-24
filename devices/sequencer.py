@@ -2385,7 +2385,7 @@ class Sequencer:
             # need to restack the calibrations straight away
             # so this triggers off the stacking process to happen in a thread.
             if g_dev['cam'].pixscale == None:
-                self.master_restack_queue.put( 'force', block=False)
+                self.master_restack_queue.put( 'g0', block=False) # We don't need to force all files, just reprocess those we need to. 
 
             self.bias_dark_latch = False
             break
@@ -3097,26 +3097,7 @@ class Sequencer:
 
             # Now that we have the master bias, we can estimate the readnoise actually
             # by comparing the standard deviations between the bias and the masterbias
-            if g_dev['cam'].camera_known_gain <1000:
-                # readnoise_array=[]
-                # post_readnoise_array=[]
-                # i=0
-                # for file in inputList:
-
-                #     hdu1data=np.load(file)-masterBias
-                #     hdu1data = hdu1data[500:-500,500:-500]
-                #     stddiffimage=bn.nanstd(pow(pow(hdu1data,2),0.5))
-
-                #     est_read_noise= (stddiffimage * g_dev['cam'].camera_known_gain) / 1.414
-                #     readnoise_array.append(est_read_noise)
-                #     post_readnoise_array.append(stddiffimage)
-                #     i=i+1
-
-                # readnoise_array=np.array(readnoise_array)
-
-                # #breakpoint()
-
-
+            if g_dev['cam'].camera_known_gain <1000:    
 
                 def estimate_read_noise_chunked(bias_frames, frame_shape, gain=1.0, chunk_size=10, masterBias=None):
                     """
@@ -3143,7 +3124,6 @@ class Sequencer:
 
                     # Step 3: Compute the mean variance across all pixels
                     mean_variance = bn.nanmean(pixel_variance)
-                    #stdev_variance = bn.nanstd(pixel_variance)
 
                     # Step 4: Compute the read noise in ADU
                     read_noise_adu = np.sqrt(mean_variance)
@@ -3892,42 +3872,19 @@ class Sequencer:
                 except:
                     plog ("Couldnt remove old dark file: " + str(file))
 
-            try:
-                del masterBias
-            except:
-                pass
-            try:
-                del masterDark
-            except:
-                pass
-            try:
-                del twosecond_masterDark
-            except:
-                pass
-            try:
-                del tensecond_masterDark
-            except:
-                pass
-            try:
-                del broadbandss_masterDark
-            except:
-                pass
-            try:
-                del broadbandss_masterBiasDark
-            except:
-                pass
-            try:
-                del narrowbandss_masterDark
-            except:
-                pass
-            try:
-                del narrowbandss_masterBiasDark
-            except:
-                pass
-            try:
-                del bad_pixel_mapper_array
-            except:
-                pass
+            # Clean up variables
+            to_delete = [
+                'masterBias', 'masterDark', 'twosecond_masterDark', 
+                'tensecond_masterDark', 'broadbandss_masterDark', 
+                'broadbandss_masterBiasDark', 'narrowbandss_masterDark', 
+                'narrowbandss_masterBiasDark', 'bad_pixel_mapper_array'
+            ]
+        
+            for var in to_delete:
+                try:
+                    del locals()[var]
+                except KeyError:
+                    pass
 
         # Regenerate gain and readnoise
         g_dev['cam'].camera_known_gain=70000.0
@@ -4061,10 +4018,8 @@ class Sequencer:
                             g_dev['obs'].rotator_has_been_checked_since_last_slew = True
 
                         except:
-                            #plog ("no rotator to home or wait for.")
                             pass
 
-                    #time.sleep(30)
 
                     g_dev['obs'].request_scan_requests()
 
