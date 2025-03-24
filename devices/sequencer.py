@@ -4944,11 +4944,16 @@ class Sequencer:
         g_dev['obs'].flush_command_queue()
 
 
-        # If the camera pixelscale is None then we are in commissioning mode and
-        # need to restack the calibrations straight away
-        # so this triggers off the stacking process to happen in a thread.
-        if g_dev['cam'].pixscale == None:
-            self.master_restack_queue.put( 'force', block=False)
+        # # If the camera pixelscale is None then we are in commissioning mode and
+        # # need to restack the calibrations straight away
+        # # so this triggers off the stacking process to happen in a thread.
+        # if g_dev['cam'].pixscale == None:
+        #     
+        
+        # We should always restack after getting new flats
+        self.master_restack_queue.put( 'justflatsreally', block=False)
+
+        
 
         self.total_sequencer_control = False
 

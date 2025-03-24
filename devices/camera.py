@@ -2504,8 +2504,11 @@ class Camera:
             zwocamera.start_exposure()
 
         else:
-
-            # Boost Narrowband and low throughput broadband
+            
+            if self.current_filter==None:
+                self.current_filter='none'
+            
+            # Boost Narrowband and low throughput 
             if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n"]:
                 exp_of_substacks = 30
                 N_of_substacks = int((exposure_time / exp_of_substacks))

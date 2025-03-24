@@ -599,11 +599,16 @@ class Mount:
         self.currently_slewing= False
         self.abort_slew_requested=False
         self.find_home_requested=False
+        
+        
+        prev_tracking=copy.deepcopy(self.mount.Tracking)
         try:
-            self.mount.Tracking = False
+            self.mount.Tracking = True
             self.can_set_tracking=True
         except:
             self.can_set_tracking=False
+        if self.can_set_tracking:
+            self.mount.Tracking= prev_tracking
 
         self.sync_mount_requested=False
 
