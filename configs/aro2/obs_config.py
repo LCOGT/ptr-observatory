@@ -527,16 +527,16 @@ site_config = {
             # When the focusser has no previous best focus values
             # start from this reference position
 
-            'reference': 4036,  #20250321 Run after adjusting collar
+            'reference': 3850,  #20250321 Run after adjusting collar
             'z_compression': 0, #Not used as of 20250111
-            'z_coef_date':  '20250321',
+            'z_coef_date':  '20250325',
             'relative_focuser': False,
             # Limits and steps for the focuser.
             'minimum': 0,    #  Units are microns
             'maximum': 12700,
             'step_size': 1.0,   #  This is misnamed!
             'backlash':  300,
-            'throw': 70,
+            'throw': 200,
             'focus_tolerance':  130,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  #  Steps per micron
