@@ -92,7 +92,8 @@ class Focuser:
         self.dummy = (driver == 'dummy')
 
         # Even in simulator mode, this variable needs to be set
-        self.theskyx = (driver == "CCDSoft2XAdaptor.ccdsoft5Camera" or "TheSky64.ccdsoftCamera")
+        self.theskyx = (driver == "CCDSoft2XAdaptor.ccdsoft5Camera") or (driver == "TheSky64.ccdsoftCamera")
+
 
         if self.dummy:
             self.focuser = 'dummy'
