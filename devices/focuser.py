@@ -92,7 +92,7 @@ class Focuser:
         self.dummy = (driver == 'dummy')
 
         # Even in simulator mode, this variable needs to be set
-        self.theskyx = (driver == "CCDSoft2XAdaptor.ccdsoft5Camera" or "TheSky64.ccdsoftCamera")
+        self.theskyx = (driver == "CCDSoft2XAdaptor.ccdsoft5Camera") or (driver == "TheSky64.ccdsoftCamera")
 
         if self.dummy:
             self.focuser = 'dummy'
@@ -126,6 +126,7 @@ class Focuser:
             time.sleep(4)
         
         if not self.dummy and not self.relative_focuser:
+            #breakpoint()
             if not self.theskyx:
                 self.current_focus_position=self.focuser.Position * self.steps_to_micron
             else:
