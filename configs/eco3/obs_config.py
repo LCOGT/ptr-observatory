@@ -75,11 +75,11 @@ site_config = {
 
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': True,
+    'ingest_raws_directly_to_archive': False,
     # LINKS TO PIPE FOLDER
-    'save_raws_to_pipe_folder_for_nightly_processing': False,
-    'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
-    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
+    'save_raws_to_pipe_folder_for_nightly_processing': True,
+    'pipe_archive_folder_path': 'X:/',  #WER changed Z to X 20231113 @1:16 UTC
+    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'C:/tempfolderforpipeline',
 
     # Setup of folders on local and network drives.
     'client_hostname':  'ECO-planetscope',
@@ -139,7 +139,7 @@ site_config = {
     # How many minutes with respect to eve sunset start flats
 
     'bias_dark interval':  105.,   #minutes
-    'eve_sky_flat_sunset_offset': -40.5,  # 40 before Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -20.5,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 ,
     'clock_and_auto_focus_offset': 15,
@@ -149,7 +149,7 @@ site_config = {
 
 
     # Exposure times for standard system exposures
-    'focus_exposure_time': 15,  # Exposure time in seconds for exposure image
+    'focus_exposure_time': 8,  # Exposure time in seconds for exposure image
     'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
@@ -184,7 +184,7 @@ site_config = {
         'focuser': 'focuser',
         'rotator': 'rotator',
         'selector': None,
-        'filter_wheel': 'RGGB',
+        'filter_wheel': 'clear',
         'camera': 'eco3zwo',
         'sequencer': 'sequencer'
         },
@@ -390,22 +390,22 @@ site_config = {
             'parent': 'Main OTA',
             'name': 'focuser',
             'desc':  'Planewave Focuser',
-            #'driver': 'ASCOM.myDCFocuserASCOM.Focuser',
-            'driver': 'dummy',
-			'com_port':  'COM9',
+             'driver': "TheSky64.ccdsoftCamera",
+            #'driver': 'ASCOM.GeminiFocuserPro.Focuser',
+			'com_port':  'COM3',
 
-            'relative_focuser': True,
+            'relative_focuser': False,
 
-            'focuser_movement_settle_time': 10,
+            'focuser_movement_settle_time': 6,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
-            'reference': 23100,    #  20210313  Nominal at 10C Primary temperature
+            'reference': 2500,    #  20210313  Nominal at 10C Primary temperature
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 50000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 300,
+            'throw' : 150,
             'unit': 'counts',
             'unit_conversion': 1.0,
             'has_dial_indicator': False
@@ -623,7 +623,7 @@ site_config = {
                 'readout_speed': 0.08,
                 'readout_seconds': 1.0,
                 'smart_stack_exposure_time' : 30,
-                'substack': True, # Substack with this camera
+                'substack': False, # Substack with this camera
 
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
@@ -654,10 +654,11 @@ site_config = {
                 # And debanding
                 'do_debanding' : False,
 
+ 
+                'number_of_bias_to_collect' : 32,
+                'number_of_dark_to_collect' : 32,
+                'number_of_flat_to_collect' : 32,
 
-                'number_of_bias_to_collect' : 128,
-                'number_of_dark_to_collect' : 128,
-                'number_of_flat_to_collect' : 128,
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 128,

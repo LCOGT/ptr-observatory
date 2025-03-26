@@ -126,7 +126,7 @@ site_config = {
 
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': True,   #which archive? I assume not the datalab / ptrarchive , but 'injest' implies LCO archive  WER
+    'ingest_raws_directly_to_archive': False,   #which archive? I assume not the datalab / ptrarchive , but 'injest' implies LCO archive  WER
     'save_calib_and_misc_files': True,
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': False,
