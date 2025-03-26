@@ -92,7 +92,8 @@ class Focuser:
         self.dummy = (driver == 'dummy')
 
         # Even in simulator mode, this variable needs to be set
-        self.theskyx = (driver == "CCDSoft2XAdaptor.ccdsoft5Camera")
+        self.theskyx = (driver == "CCDSoft2XAdaptor.ccdsoft5Camera") or (driver == "TheSky64.ccdsoftCamera")
+
 
         if self.dummy:
             self.focuser = 'dummy'
@@ -114,6 +115,8 @@ class Focuser:
                         except:
                             plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
 
+        #breakpoint()
+
         self.micron_to_steps = float(
             self.config["unit_conversion"]
         )  #  Note this can be a bogus value
@@ -127,7 +130,11 @@ class Focuser:
             if not self.theskyx:
                 self.current_focus_position=self.focuser.Position * self.steps_to_micron
             else:
-                self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
+                try:
+                    self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
+                except:
+                    self.current_focus_position=self.focuser.focPosition * self.steps_to_micron
+                
         else:
             self.current_focus_position=2000
 
@@ -144,10 +151,16 @@ class Focuser:
         self.focuser_message = "-"
         if not self.dummy and not self.relative_focuser :
             if self.theskyx:
-                plog(
-                    "Focuser connected, at:  ",
-                    round(self.focuser.focPosition() * self.steps_to_micron, 1),
-                )
+                try:
+                    plog(
+                        "Focuser connected, at:  ",
+                        round(self.focuser.focPosition() * self.steps_to_micron, 1),
+                    )
+                except:
+                    plog(
+                        "Focuser connected, at:  ",
+                        round(self.focuser.focPosition * self.steps_to_micron, 1),
+                    )
             else:
                 plog(
                     "Focuser connected, at:  ",
@@ -222,6 +235,9 @@ class Focuser:
                             plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
 
 
+            #breakpoint()
+
+
         # This stopping mechanism allows for threads to close cleanly.
         while True:
             self.focuser_is_moving=False
@@ -241,20 +257,30 @@ class Focuser:
                         if self.theskyx:
                             
                             requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
-                            difference_in_position=self.focuser_update_wincom.focPosition() - requestedPosition
-                            absdifference_in_position=abs(self.focuser_update_wincom.focPosition() - requestedPosition)
+                            try:
+                                difference_in_position=self.focuser_update_wincom.focPosition() - requestedPosition
+                                absdifference_in_position=abs(self.focuser_update_wincom.focPosition() - requestedPosition)
+                            except:
+                                difference_in_position=self.focuser_update_wincom.focPosition - requestedPosition
+                                absdifference_in_position=abs(self.focuser_update_wincom.focPosition - requestedPosition)
                             print (difference_in_position)
                             print (absdifference_in_position)
                             if difference_in_position < 0 :
                                 self.focuser_update_wincom.focMoveOut(absdifference_in_position)
                             else:
                                 self.focuser_update_wincom.focMoveIn(absdifference_in_position)
-                            print (self.focuser_update_wincom.focPosition())
+                            try:
+                                print (self.focuser_update_wincom.focPosition())
+                            except:
+                                print ("failed")
+                                print (self.focuser_update_wincom.focPosition)
      
                             time.sleep(self.config['focuser_movement_settle_time'])
-                            self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
-    
-    
+                            try:
+                                self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
+                            except:
+                                self.current_focus_position=int(self.focuser_update_wincom.focPosition * self.steps_to_micron)
+                            
                         else:
                             if not self.relative_focuser:
                                 self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))
@@ -315,7 +341,11 @@ class Focuser:
                             self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
         
                         else:
-                            self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
+                            try:
+                                self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
+                            except:
+                                self.current_focus_position=int(self.focuser_update_wincom.focPosition * self.steps_to_micron)
+                            
                 else:
                     # NOTHING DOING FOR DUMMY FOCUSSING AT THIS STAGE
                     pass
@@ -359,7 +389,7 @@ class Focuser:
                 ),
                 "focus_temperature": self.current_focus_temperature,
                 "comp": reported_focus_temp_slope,
-                "filter_offset": g_dev["fil"].filter_offset,
+                "filter_offset": 0,
             }
 
             elif g_dev['fil'].null_filterwheel == False:
@@ -660,7 +690,7 @@ class Focuser:
         position = int(float(req["position"])) * self.micron_to_steps
         self.guarded_move(position)
         self.last_known_focus = position
-        plog("Forces last known focus to be new position Line 551 in focuser WER 20400917")
+        #plog("Forces last known focus to be new position Line 551 in focuser WER 20400917")
 
     def stop_command(self, req: dict, opt: dict):
         """stop focuser movement"""
