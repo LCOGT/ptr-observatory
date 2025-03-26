@@ -145,7 +145,7 @@ site_config = {
 
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': True,  # This it the OCS-archive, archive-photonranch.org
+    'ingest_raws_directly_to_archive': False,  # This it the OCS-archive, archive-photonranch.org
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     # WER changed Z to X 20231113 @1:16 UTC
