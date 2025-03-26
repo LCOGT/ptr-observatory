@@ -145,10 +145,10 @@ site_config = {
     'ingest_raws_directly_to_archive': True,   #which archive? I assume not the datalab / ptrarchive , but 'injest' implies LCO archive  WER
     'save_calib_and_misc_files': True,
     # LINKS TO PIPE FOLDER
-    'save_raws_to_pipe_folder_for_nightly_processing': False,
+    'save_raws_to_pipe_folder_for_nightly_processing': True,
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
-    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'D:/tempfolderforpipeline',
-    'temporary_local_alt_archive_to_hold_files_while_copying' : 'D:/tempfolderforaltpath',
+    # 'temporary_local_pipe_archive_to_hold_files_while_copying' : 'D:/tempfolderforpipeline',
+    # 'temporary_local_alt_archive_to_hold_files_while_copying' : 'D:/tempfolderforaltpath',
     'client_hostname':  'mrc-0m30',  # This is also the long-name  Client is confusing!
     'archive_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
     'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
@@ -631,10 +631,10 @@ site_config = {
                                 ['up',      [5, 0],   'up'],  # 6
                                 ['gp',      [6, 0],   'gp'],  # 7
                                 ['rp',      [7, 0],   'rp'],  # 8
-                                ['ip',      [0, 0],   'ip'],  # 9
+                                ['ip',      [8, 0],   'ip'],  # 9
 
-                                ['sy',      [0 ,1],   'sy'],  # 10 Wheel closest to rotator
-                                ['sb',      [0 ,2],   'sb'],  # 11
+                                ['sy',      [0, 1],   'sy'],  # 10 Wheel closest to rotator
+                                ['sb',      [0, 2],   'sb'],  # 11
                                 ['sv',      [0, 3],   'sv'],  # 12
                                 ['su',      [0, 4],   'su'],  # 13
                                 ['O3',      [0, 5],   'o3'],  # 14
