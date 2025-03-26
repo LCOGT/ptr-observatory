@@ -946,7 +946,7 @@ site_config = {
                 #Prsumably this is setpoint by season if it is False:
                 'day_warm': False,  # This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 4,  # Assuming the Chiller is working.
-                'protect_camera_from_overheating': True,
+                'protect_camera_from_overheating': False,
 
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
