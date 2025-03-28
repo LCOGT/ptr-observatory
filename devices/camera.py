@@ -3429,6 +3429,8 @@ class Camera:
         g_dev['obs'].request_scan_requests()
         if g_dev['seq'].blockend != None:
             g_dev['seq'].schedule_manager.update_now()
+            
+        unique_batch_code=self.obs.name + '_' + str(datetime.datetime.now()).replace(' ','_').replace('.','d').replace(':','-')
         for seq in range(count):
 
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
@@ -4004,7 +4006,9 @@ class Camera:
                             corrected_ra_for_header=corrected_ra_for_header,
                             corrected_dec_for_header=corrected_dec_for_header,
                             fw_device=fw_device,
-                            null_filterwheel=null_filterwheel
+                            null_filterwheel=null_filterwheel,
+                            unique_batch_code=unique_batch_code,
+                            count=count
                         )
 
                         self.retry_camera = 0
@@ -4188,7 +4192,9 @@ class Camera:
         corrected_ra_for_header=0.0,
         corrected_dec_for_header=0.0,
         fw_device=None,
-        null_filterwheel=True
+        null_filterwheel=True,
+        unique_batch_code='blah',
+        count=1
     ):
         if fw_device == None:
             fw_device = self.obs.devices['main_fw']
@@ -5312,6 +5318,7 @@ class Camera:
                         ha_corr=g_dev["mnt"].ha_corr
                         dec_corr=g_dev["mnt"].dec_corr
 
+                    
                     payload=copy.deepcopy(
                         (
                             outputimg,
@@ -5372,7 +5379,9 @@ class Camera:
                             smartstackthread_filename,
                             septhread_filename,
                             mainjpegthread_filename,
-                            platesolvethread_filename
+                            platesolvethread_filename,
+                            count,
+                            unique_batch_code
                             )
                         )
 

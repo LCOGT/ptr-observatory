@@ -291,7 +291,7 @@ except:
  substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header, \
  corrected_dec_for_header, substacker_filenames, dayobs, exposure_filter_offset,null_filterwheel, \
  wema_config, smartstackthread_filename, septhread_filename, mainjpegthread_filename,\
- platesolvethread_filename) = payload
+ platesolvethread_filename, number_of_exposures_requested, unique_batch_code) = payload
 
 pane = opt.get('pane')
 
@@ -1157,6 +1157,11 @@ try:
             "[s] Requested Total Exposure Time",
         )  # This is the exposure in seconds specified by the user
 
+        
+
+
+        
+
         if not smartstackid == 'no':
             hdu.header["EXPREQSE"] = (
                 exposure_time,
@@ -1239,6 +1244,15 @@ try:
             "[s] Actual exposure length",
         )  # Ideally this needs to be calculated from actual times
 
+            
+            
+    hdu.header["NEXPREQ"] = (
+        number_of_exposures_requested,
+        "Number of exposures requested",
+    )  # This is the exposure in seconds specified by the user
+    
+    hdu.header["BATCHCDE"] = ( unique_batch_code, 'unique batch code for this set of images')
+    
     hdu.header["BUNIT"] = "adu"
 
     hdu.header["FILTER"] = (
