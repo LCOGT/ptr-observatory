@@ -4754,7 +4754,8 @@ class Camera:
             g_dev['obs'].enqueue_for_fastAWS(im_path, text_name, exposure_time)
 
             # JPEG process
-            if smartstackid == 'no':
+            # Smartstack jpegs are done elsewhere and pointing jpegs are made by the platesolve routine
+            if smartstackid == 'no' and not frame_type=='pointing':
                 mainjpegthread_filename=self.local_calibration_path + "smartstacks/mainjpeg" + str(time.time()).replace('.','') + '.pickle'
                 is_osc = self.settings["is_osc"]
                 osc_bayer = self.settings["osc_bayer"]
@@ -4900,6 +4901,8 @@ class Camera:
                             firstframesmartstack = False
                         platesolvethread_filename=self.local_calibration_path + "smartstacks/platesolve" + str(time.time()).replace('.','') + '.pickle'
 
+                        #breakpoint()
+
                         g_dev['obs'].to_platesolve(
                             (
                                 platesolvethread_filename,
@@ -4914,8 +4917,8 @@ class Camera:
                                 firstframesmartstack,
                                 useastrometrynet,
                                 False,
-                                '', # filename of jpg
-                                '', # path to jpg directory
+                                jpeg_name, # filename
+                                f'{im_path_r}{g_dev["day"]}/to_AWS/', #path to jpg directory
                                 'reference',
                                 exposure_time
                             )
