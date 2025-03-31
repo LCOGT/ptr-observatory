@@ -3160,7 +3160,7 @@ class Observatory:
                                     path_to_jpeg, jpeg_filename, exposure_time, info_image_channel
                                 )
 
-                                plog("Planewave solve came back as error")
+                                plog("Platesolve solve came back as error")
                                 self.last_platesolved_ra = np.nan
                                 self.last_platesolved_dec = np.nan
                                 self.last_platesolved_ra_err = np.nan

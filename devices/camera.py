@@ -4079,29 +4079,68 @@ class Camera:
 
         if self.site_config['save_raws_to_pipe_folder_for_nightly_processing']:
             if len(real_time_files) > 0:
-                pipetokenfolder = self.site_config['pipe_archive_folder_path'] + '/tokens'
-                if not os.path.exists(self.site_config['pipe_archive_folder_path'] + '/tokens'):
+                
+                # This is the failsafe directory.... if it can't be written to the PIPE folder
+                # Which is usually a shared drive on the network, it gets saved here
+                failsafe_directory=self.site_config['archive_path'] + 'failsafe'
+                if not os.path.exists(failsafe_directory):
                     os.umask(0)
-                    os.makedirs(self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
-
-                if self.is_osc:
-                    suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
-
-                    temp_file_holder=[]
-                    for suffix in suffixes:
-                        for tempfilename in real_time_files:
-                            temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
+                    os.makedirs(failsafe_directory)
+                failsafetokenfolder=failsafe_directory+ '/tokens'
+                if not os.path.exists(failsafe_directory+ '/tokens'):
+                    os.umask(0)
+                    os.makedirs(failsafe_directory+ '/tokens')
+                
+                try:
+                    pipetokenfolder = self.site_config['pipe_archive_folder_path'] + '/tokens'
+                    if not os.path.exists(self.site_config['pipe_archive_folder_path'] + '/tokens'):
+                        os.umask(0)
+                        os.makedirs(self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
+    
+                    if self.is_osc:
+                        suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
+    
+                        temp_file_holder=[]
+                        for suffix in suffixes:
+                            for tempfilename in real_time_files:
+                                temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
+                            try:
+                                with open(f"{pipetokenfolder}/{token_name}{suffix}", 'w') as f:
+                                    json.dump(temp_file_holder, f, indent=2)
+                            except:
+                                plog(traceback.format_exc())
+                    else:
                         try:
-                            with open(f"{pipetokenfolder}/{token_name}{suffix}", 'w') as f:
-                                json.dump(temp_file_holder, f, indent=2)
+                            with open(pipetokenfolder + "/" + token_name, 'w') as f:
+                                json.dump(real_time_files, f, indent=2)
                         except:
                             plog(traceback.format_exc())
-                else:
-                    try:
-                        with open(pipetokenfolder + "/" + token_name, 'w') as f:
-                            json.dump(real_time_files, f, indent=2)
-                    except:
-                        plog(traceback.format_exc())
+                except:
+                    plog ("failed token upload to pipe folder, saving to failsafe")
+                    # pipetokenfolder = self.site_config['pipe_archive_folder_path'] + '/tokens'
+                    # if not os.path.exists(self.site_config['pipe_archive_folder_path'] + '/tokens'):
+                    #     os.umask(0)
+                    #     os.makedirs(self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
+    
+                    if self.is_osc:
+                        suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
+    
+                        temp_file_holder=[]
+                        for suffix in suffixes:
+                            for tempfilename in real_time_files:
+                                temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
+                            try:
+                                with open(f"{failsafetokenfolder}/{token_name}{suffix}", 'w') as f:
+                                    json.dump(temp_file_holder, f, indent=2)
+                            except:
+                                plog(traceback.format_exc())
+                    else:
+                        try:
+                            with open(failsafetokenfolder + "/" + token_name, 'w') as f:
+                                json.dump(real_time_files, f, indent=2)
+                        except:
+                            plog(traceback.format_exc())
+                    
 
         if self.site_config['push_file_list_to_pipe_queue']:
             if len(real_time_files) > 0:

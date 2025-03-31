@@ -60,6 +60,10 @@ camera_name = selfconfig['device_roles']['main_cam']
 camera_config = selfconfig["camera"][camera_name]
 
 
+# This is the failsafe directory.... if it can't be written to the PIPE folder
+# Which is usually a shared drive on the network, it gets saved here
+failsafe_directory=selfconfig['archive_path'] + 'failsafe'
+
 # Create the fz file ready for PTR Archive
 # Note that even though the raw file is int16,
 # The compression and a few pieces of software require float32
@@ -67,13 +71,21 @@ camera_config = selfconfig["camera"][camera_name]
 temphduheader["BZERO"] = 0  # Make sure there is no integer scaling left over
 temphduheader["BSCALE"] = 1  # Make sure there is no integer scaling left over
 if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
-    pipefolder = selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])
-    if not os.path.exists(selfconfig['pipe_archive_folder_path']+'/'+ str(temphduheader['INSTRUME'])):
+    
+    if not os.path.exists(failsafe_directory):
         os.umask(0)
-        os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']))
-    if not os.path.exists(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])):
-        os.umask(0)
-        os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS']))
+        os.makedirs(failsafe_directory)
+    try:
+        pipefolder = selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])
+        if not os.path.exists(selfconfig['pipe_archive_folder_path']+'/'+ str(temphduheader['INSTRUME'])):
+            os.umask(0)
+            os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']))
+        if not os.path.exists(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])):
+            os.umask(0)
+            os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS']))
+    except:
+        print ("looks like an error making the pipe archive folder path")
+    
 
 # Wait here for potential wcs solution
 
@@ -149,10 +161,20 @@ if not camera_config["settings"]["is_osc"]:
     )
 
     if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
-        hdufz.writeto(
-            pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), overwrite=True
-        )
-        os.rename(pipefolder + '/' +str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'),pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').replace('.tempfits.fz','.fits.fz'))
+        try:
+            hdufz.writeto(
+                pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), overwrite=True
+            )
+            os.rename(pipefolder + '/' +str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'),pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').replace('.tempfits.fz','.fits.fz'))
+
+        except:
+            print ("Failed to save file to pipe folder, saving to storage area for later upload")
+            hdufz.writeto(
+                failsafe_directory + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), overwrite=True
+            )
+            os.rename(failsafe_directory + '/' +str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'),failsafe_directory  + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').replace('.tempfits.fz','.fits.fz'))
+
+            
 
     if selfconfig['ingest_raws_directly_to_archive']:
 
@@ -201,10 +223,21 @@ else:  # Is an OSC
         )
 
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
-            hdufz.writeto(
-                pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
-            )
-            os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
+            
+            try:
+            
+                hdufz.writeto(
+                    pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
+                )
+                os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
+            
+            except:
+                print ("Failed to save file to pipe folder, saving to storage area for later upload")
+                hdufz.writeto(
+                    failsafe_directory + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), overwrite=True
+                )
+                os.rename(failsafe_directory + '/' +str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'),failsafe_directory  + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').replace('.tempfits.fz','.fits.fz'))
+
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
 
@@ -225,8 +258,17 @@ else:  # Is an OSC
         )
 
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
-            hdufz.writeto(pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True)
-            os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
+            try:
+                hdufz.writeto(pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True)
+                os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
+            
+            except:
+                print ("Failed to save file to pipe folder, saving to storage area for later upload")
+                hdufz.writeto(
+                    failsafe_directory + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), overwrite=True
+                )
+                os.rename(failsafe_directory + '/' +str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'),failsafe_directory  + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').replace('.tempfits.fz','.fits.fz'))
+
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
 
@@ -246,10 +288,19 @@ else:  # Is an OSC
         )
 
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
-            hdufz.writeto(
-                pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
-            )
-            os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
+            try:
+                hdufz.writeto(
+                    pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
+                )
+                os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
+
+            except:
+                print ("Failed to save file to pipe folder, saving to storage area for later upload")
+                hdufz.writeto(
+                    failsafe_directory + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), overwrite=True
+                )
+                os.rename(failsafe_directory + '/' +str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'),failsafe_directory  + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').replace('.tempfits.fz','.fits.fz'))
+
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
 
@@ -278,12 +329,20 @@ else:  # Is an OSC
             os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
+            try:
+                hdufz.writeto(
+                    tempfilename.replace('-EX', 'B1-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
+                )  # Save full fz file locally
+    
+                os.rename(tempfilename.replace('-EX', 'B1-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'B1-EX'))
+            
+            except:
+                print ("Failed to save file to pipe folder, saving to storage area for later upload")
+                hdufz.writeto(
+                    failsafe_directory + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), overwrite=True
+                )
+                os.rename(failsafe_directory + '/' +str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), failsafe_directory + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').replace('.tempfits.fz','.fits.fz'))
 
-            hdufz.writeto(
-                tempfilename.replace('-EX', 'B1-EX').replace('.fits','.tempfits'), overwrite=True#, output_verify='silentfix'
-            )  # Save full fz file locally
-
-            os.rename(tempfilename.replace('-EX', 'B1-EX').replace('.fits','.tempfits'),tempfilename.replace('-EX', 'B1-EX'))
 
         del newhdublue
 
@@ -299,10 +358,19 @@ else:  # Is an OSC
         )
 
         if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
-            hdufz.writeto(
-                pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'), overwrite=True
-            )
-            os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
+            try:
+                hdufz.writeto(
+                    pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'), overwrite=True
+                )
+                os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
+            
+            except:
+                print ("Failed to save file to pipe folder, saving to storage area for later upload")
+                hdufz.writeto(
+                    failsafe_directory + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), overwrite=True
+                )
+                os.rename(failsafe_directory + '/' +str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'),failsafe_directory  + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').replace('.tempfits.fz','.fits.fz'))
+
 
         if selfconfig['send_files_at_end_of_night'] == 'no' and selfconfig['ingest_raws_directly_to_archive']:
 
