@@ -392,7 +392,7 @@ class Events:
         self.mid_moon_ra = moon.ra
         self.mid_moon_dec = moon.dec
         self.mid_moon_phase = moon.phase
-        plog('Middle night,  Moon Ra Dec Phase:  ', moon.ra, moon.dec, moon.phase)  # , moon.az, moon.alt)
+        plog('Middle night,  Moon Ra Dec Phase:  ', moon.ra, moon.dec, round(moon.phase,2))  # , moon.az, moon.alt)
 
         # The end of the night is when "End Morn Bias Dark" occurs. All timings must end with that
         # as this is when the night ends and the schedule gets reconfigured. So anything scheduled AFTER
