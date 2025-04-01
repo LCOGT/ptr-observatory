@@ -22,6 +22,7 @@ import subprocess
 from math import sqrt
 import traceback
 import copy
+import bottleneck as bn
 
 # Add the parent directory to the Python path
 # This allows importing modules from the root directory
@@ -230,22 +231,52 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
 
          # Resizing the array to an appropriate shape for the jpg and the small fits
 
-        # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-        stretched_data_float = Stretch().stretch(storedsStack) # + 1000)  WER 20240622
-        del storedsStack
-        stretched_256 = 255 * stretched_data_float
-        hot = np.where(stretched_256 > 255)
-        cold = np.where(stretched_256 < 0)
-        stretched_256[hot] = 255
-        stretched_256[cold] = 0
-        stretched_data_uint8 = stretched_256.astype("uint8")
-        hot = np.where(stretched_data_uint8 > 255)
-        cold = np.where(stretched_data_uint8 < 0)
-        stretched_data_uint8[hot] = 255
-        stretched_data_uint8[cold] = 0
+        # Make a decision on whether to stretch or to zscale
+        plog ("Pre-jpeg stuff")
+        plog ("Mean: "+ str(bn.nanmean(storedsStack)))
+        plog ("Median: " + str(bn.nanmedian(storedsStack)))
+        plog ("std: " + str(bn.nanstd(storedsStack)))
+        plog ("range: " + str(bn.nanmax(storedsStack)-bn.nanmin(storedsStack)))
+        if True: # If image appropriate for stretching
 
-        iy, ix = stretched_data_uint8.shape
-        final_image = Image.fromarray(stretched_data_uint8)
+            # Code to stretch the image to fit into the 256 levels of grey for a jpeg
+            stretched_data_float = Stretch().stretch(storedsStack) # + 1000)  WER 20240622
+            del storedsStack
+            stretched_256 = 255 * stretched_data_float
+            hot = np.where(stretched_256 > 255)
+            cold = np.where(stretched_256 < 0)
+            stretched_256[hot] = 255
+            stretched_256[cold] = 0
+            stretched_data_uint8 = stretched_256.astype("uint8")
+            hot = np.where(stretched_data_uint8 > 255)
+            cold = np.where(stretched_data_uint8 < 0)
+            stretched_data_uint8[hot] = 255
+            stretched_data_uint8[cold] = 0
+
+            iy, ix = stretched_data_uint8.shape
+            final_image = Image.fromarray(stretched_data_uint8)
+        else: # Don't stretch it, just zscale it?
+            # Step 1: Z-Scale Normalization
+            mean = bn.nanmean(storedsStack)
+            std = bn.nanstd(storedsStack)
+            normalized = (storedsStack - mean) / std
+
+
+            # Apply an offset to make the background darker
+            normalized += -3.0  # For example, try -0.5 or -1.0 for darker backgrounds
+
+            # Clip to the desired range [-3, 3]
+            clipped = np.clip(normalized, -3, 3)
+
+            # Step 2: Rescale to 8-bit range [0, 255]
+            scaled = ((clipped + 3) / 6) * 255  # Mapping from [-3, 3] to [0, 255]
+            scaled = scaled.astype(np.uint8)
+
+            # Step 3
+            iy, ix = scaled.shape
+            final_image = Image.fromarray(scaled)
+
+
 
         # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
         if transpose_jpeg:

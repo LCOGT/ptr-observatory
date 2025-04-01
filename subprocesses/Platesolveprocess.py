@@ -40,7 +40,7 @@ from math import cos, radians
 #     demosaicing_CFA_Bayer_Menon2007)
 import matplotlib.pyplot as plt
 #import math
-from PIL import Image#, ImageOps
+from PIL import Image, ImageDraw, ImageFont#, ImageOps
 #from scipy.stats import binned_statistic
 from astropy.wcs import WCS
 from astropy import units as u
@@ -51,11 +51,13 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 # Add the parent directory to the Python path
 # This allows importing modules from the root directory
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from ptr_utility import create_color_plog
 
-log_color = (80,145,255) # vibrant blue
-plog = create_color_plog('platesolve', log_color)
-
+try:
+    from ptr_utility import create_color_plog
+    log_color = (80,145,255) # vibrant blue
+    plog = create_color_plog('platesolve', log_color)
+except:
+    plog = print
 
 #from scipy import optimize
 
@@ -257,7 +259,7 @@ plog (pixscale)
 #     del raised_array
 
 
-
+#breakpoint()
 # Keep a copy of the normal image if this is a pointing image
 # This is needed to make the plot right at the end if successful
 pointing_image=copy.deepcopy(hdufocusdata)
@@ -419,47 +421,47 @@ if os.path.exists(wslfilename.replace('.fits','.wcs')):
 
 else:
 
-    plog ("FAILED NORMAL, TRYING HAIL MARY ATTEMPT")
-    # Remove the previous attempt which was just a table fits
-    temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
-    for f in temp_files_to_remove:
-        try:
-            os.remove(f)
-        except:
-            pass
+    # plog ("FAILED NORMAL, TRYING HAIL MARY ATTEMPT")
+    # # Remove the previous attempt which was just a table fits
+    # temp_files_to_remove=glob.glob(cal_path + 'wsltemp*')
+    # for f in temp_files_to_remove:
+    #     try:
+    #         os.remove(f)
+    #     except:
+    #         pass
 
-    # run for the first time
+    # # run for the first time
 
-    astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots'
+    # astoptions = '--crpix-center --tweak-order 2 --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(low_pixscale) + ' --scale-high ' + str(high_pixscale) + ' --ra ' + str(pointing_ra * 15) + ' --dec ' + str(pointing_dec) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots'
 
-    plog (astoptions)
+    # plog (astoptions)
 
-    os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
+    # os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
 
-    # If successful, then a file of the same name but ending in solved exists.
-    if os.path.exists(wslfilename.replace('.fits','.wcs')):
-        plog ("IT EXISTS! WCS SUCCESSFUL!")
-        wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
-        solve={}
-        solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
-        solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
+    # # If successful, then a file of the same name but ending in solved exists.
+    # if os.path.exists(wslfilename.replace('.fits','.wcs')):
+    #     plog ("IT EXISTS! WCS SUCCESSFUL!")
+    #     wcs_header=fits.open(wslfilename.replace('.fits','.wcs'))[0].header
+    #     solve={}
+    #     solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
+    #     solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
 
-        wcs = WCS(wcs_header)
+    #     wcs = WCS(wcs_header)
 
-        # Get the CD matrix or CDELT values
-        cd = wcs.pixel_scale_matrix
-        pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
-        solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
+    #     # Get the CD matrix or CDELT values
+    #     cd = wcs.pixel_scale_matrix
+    #     pixel_scale_deg = np.sqrt(np.sum(cd**2, axis=0))  # in degrees per pixel
+    #     solve["arcsec_per_pixel"]  = pixel_scale_deg * 3600  # Convert to arcseconds per pixel
 
-        solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
+    #     solve["arcsec_per_pixel"]  = solve["arcsec_per_pixel"][0]
 
-        if binnedtwo:
-            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
-        elif binnedthree:
-            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-        plog (solve)
-    else:
-        solve = 'error'
+    #     if binnedtwo:
+    #         solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+    #     elif binnedthree:
+    #         solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+    #     plog (solve)
+    # else:
+    solve = 'error'
 
 
 
@@ -539,43 +541,92 @@ if solve == 'error':
     max_size=1000
     pointing_image  = resize_array(pointing_image , max_size)
 
-    pointing_image = mid_stretch_jpeg(pointing_image)
+    pointing_image = mid_stretch_jpeg(pointing_image)*256
+    pointing_image = np.asarray(pointing_image, dtype=int)
     final_image = Image.fromarray(pointing_image).convert("L")
 
-    # Convert grayscale to RGB
-    red_image = Image.new("RGB", final_image.size)
-    for x in range(final_image.width):
-        for y in range(final_image.height):
-            grayscale_value = final_image.getpixel((x, y))
-            red_image.putpixel((x, y), (grayscale_value, 0, 0))  # Map grayscale to red
+    #breakpoint()
 
-    final_image=red_image
+    # # Convert grayscale to RGB
+    # red_image = Image.new("RGB", final_image.size)
+    # for x in range(final_image.width):
+    #     for y in range(final_image.height):
+    #         grayscale_value = final_image.getpixel((x, y))
+    #         red_image.putpixel((x, y), (grayscale_value, 0, 0))  # Map grayscale to red
 
-    # ix, iy = final_image.size
-    # if iy == ix:
-    #     final_image = final_image.resize(
-    #         (900, 900)
-    #     )
-    # else:
-    #     if False:
-    #         final_image = final_image.resize(
+    # final_image=red_image
 
-    #             (int(900 * iy / ix), 900)
 
-    #         )
-    #     else:
-    #         final_image = final_image.resize(
-
-    #             (900, int(900 * iy / ix))
-
-    #         )
-
+    # final_image = final_image.convert('RGB')
+    
+    # # Create a drawing context
+    # draw = ImageDraw.Draw(final_image)
+    
+    # # Load a font (default PIL font used here; for custom fonts, provide a path to a .ttf file)
+    # font = ImageFont.load_default()
+    
+    # # Set position, text, and color
+    # text = "FAILED"
+    # position = (10, 10)  # top-left corner
+    # color = (255, 0, 0)  # red
+    
+    # # Draw the text on the image
+    # draw.text(position, text, fill=color, font=font)
+    
+    # max_size = 1000
+    # pointing_image = resize_array(pointing_image, max_size)
+    # pointing_image = mid_stretch_jpeg(pointing_image)
+    
+    # # Assuming pointing_image is a grayscale NumPy array (2D)
+    # final_image = Image.fromarray(pointing_image.astype('uint8'))  # Keep it grayscale without converting
     final_image = final_image.convert('RGB')
-
+    # Convert grayscale to RGB with red tint
+    # red_image = Image.new("RGB", final_image.size)
+    # for x in range(final_image.width):
+        # for y in range(final_image.height):
+        #     grayscale_value = final_image.getpixel((x, y))
+        #     red_image.putpixel((x, y), (grayscale_value, 0, 0))  # Map grayscale to red
+    
+    # Drawing context on red_image
+    draw = ImageDraw.Draw(final_image)
+    
+    # Font and text config
+    #font = ImageFont.load_default()
+    font = ImageFont.truetype("arial.ttf", size=180)
+    text = "FAILED"
+    position = (10, 10)
+    color = (255, 0, 0)  # Red (RGB only, not RGBA)
+    
+    # Draw the text
+    draw.text(position, text, fill=color, font=font)
+    
+    
+    # Convert grayscale to red-mapped RGB
+    #red_image = Image.new("RGB", final_image.size)
+    # for x in range(final_image.width):
+    #     for y in range(final_image.height):
+    #         g = final_image.getpixel((x, y))
+    #         red_image.putpixel((x, y), (g, 0, 0))  # red tint only
+    
+    # # Draw on RGB image
+    # draw = ImageDraw.Draw(red_image)
+    # font = ImageFont.load_default()
+    # text = "FAILED"
+    # position = (10, 10)
+    # draw.text(position, text, fill=(255, 0, 0), font=font)
+    
+    
     try:
         final_image.save(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'), keep_rgb=True)#, quality=95)
+        try:
+            os.remove(jpeg_filename_with_full_path)
+        except:
+            pass
+        
         os.rename(jpeg_filename_with_full_path.replace('.jpg','temp.jpg'),jpeg_filename_with_full_path)
     except:
+        
+        #breakpoint()
         plog ("problem in saving, likely trying to overwrite an existing file.")
         plog(traceback.format_exc())
 

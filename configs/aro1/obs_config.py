@@ -182,6 +182,7 @@ site_config = {
     'send_files_at_end_of_night': 'no',
     # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
     'save_raw_to_disk': True,
+    'save_substack_components_raws': True, # this setting saves the component 10s/30s completely raw files out as well during a substack
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': True,
     # To save space, the focus file can not be saved.

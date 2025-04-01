@@ -19,6 +19,7 @@ from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 import datetime
+from astropy.nddata import block_reduce
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
 def print(*args):
@@ -45,15 +46,10 @@ googtime=time.time()
 hdureduced = fits.PrimaryHDU()
 hdureduced.data = slow_process[2]
 hdureduced.header = temphduheader
-hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
-hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
-hdureduced.header["DATE"] = (
-    datetime.date.strftime(
-        datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
-    ),
-    "Date FITS file was written",
-)
 hdureduced.data = hdureduced.data.astype("float32")
+
+
+
 
 
 # int_array_flattened=hdureduced.data.astype(int).ravel()
@@ -157,6 +153,28 @@ for nancoord in nan_coords:
 
 # Mop up any remaining nans
 hdureduced.data[np.isnan(hdureduced.data)] =edgefillvalue
+
+
+if hdureduced.header["PIXSCALE"] < 0.3:
+    hdureduced.data=block_reduce(hdureduced.data,3)
+    hdureduced.header["PIXSCALE"]=hdureduced.header["PIXSCALE"]*3
+    hdureduced.header["CDELT1"]=hdureduced.header["CDELT1"]*3
+    hdureduced.header["CDELT2"]=hdureduced.header["CDELT2"]*3
+elif hdureduced.header["PIXSCALE"] < 0.6:
+    hdureduced.data=block_reduce(hdureduced.data,2)
+    hdureduced.header["PIXSCALE"]=hdureduced.header["PIXSCALE"]*2
+    hdureduced.header["CDELT1"]=hdureduced.header["CDELT1"]*2
+    hdureduced.header["CDELT2"]=hdureduced.header["CDELT2"]*2
+
+hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
+hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
+hdureduced.header["DATE"] = (
+    datetime.date.strftime(
+        datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
+    ),
+    "Date FITS file was written",
+)
+
 
 hdureduced.writeto(
     slow_process[1], overwrite=True, output_verify='silentfix'

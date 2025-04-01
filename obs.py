@@ -2902,6 +2902,8 @@ class Observatory:
         the platesolving process and completing it.
 
         """
+        
+        platesolve_subprocess=None
 
         while True:
             if not self.platesolve_queue.empty():
@@ -2931,7 +2933,7 @@ class Observatory:
                     timeout_time = 800# + exposure_time + \
                         #self.devices["main_cam"].readout_time
                 else:
-                    timeout_time = self.config['platesolve_timeout']# + exposure_time + \
+                    timeout_time = self.config['platesolve_timeout'] + 30 # + exposure_time + \
                         #self.devices["main_cam"].readout_time
 
                 platesolve_timeout_timer = time.time()
@@ -2982,6 +2984,7 @@ class Observatory:
                     else:
                         try:
                             try:
+                                
                                 os.remove(
                                     self.local_calibration_path + "platesolve.pickle"
                                 )
@@ -3001,8 +3004,10 @@ class Observatory:
 
                             platesolve_crop = 0.0
 
+                            #breakpoint()
+
                             # yet another pickle debugger.
-                            if False:
+                            if True:
                                 pickle.dump(
                                     [
                                         hdufocusdata,
@@ -3034,48 +3039,83 @@ class Observatory:
 
                             #breakpoint()
 
-                            try:
-                                platesolve_subprocess = subprocess.Popen(
-                                    ["python", "subprocesses/Platesolveprocess.py"],
-                                    stdin=subprocess.PIPE,
-                                    stdout=subprocess.PIPE,
-                                    bufsize=0,
-                                )
-                            except OSError:
-                                plog(traceback.format_exc())
-                                pass
+                            # try:
+                            #     platesolve_subprocess = subprocess.Popen(
+                            #         ["python", "subprocesses/Platesolveprocess.py"],
+                            #         stdin=subprocess.PIPE,
+                            #         #stdout=subprocess.PIPE,
+                            #         stdout=None,
+                            #         #bufsize=0,
+                            #     )
+                            # except OSError:
+                            #     plog(traceback.format_exc())
+                            #     pass
+                            pickledata=pickle.dumps(
+                                [
+                                    hdufocusdata,
+                                    hduheader,
+                                    self.local_calibration_path,
+                                    cal_name,
+                                    frame_type,
+                                    time_platesolve_requested,
+                                    pixscale,
+                                    pointing_ra,
+                                    pointing_dec,
+                                    platesolve_crop,
+                                    False,
+                                    1,
+                                    self.devices["main_cam"].settings["saturate"],
+                                    self.devices["main_cam"].camera_known_readnoise,
+                                    self.config["minimum_realistic_seeing"],
+                                    is_osc,
+                                    useastronometrynet,
+                                    pointing_exposure,
+                                    f'{path_to_jpeg}{jpeg_filename}',
+                                    target_ra,
+                                    target_dec,
+                                    timeout_time,
+                                ]
+                            )
+                            
+                            platesolve_subprocess = subprocess.run(
+                                ["python", "subprocesses/Platesolveprocess.py"],
+                                input=pickledata,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                text=False  # MUST be False for binary data
+                            )
 
-                            try:
-                                pickle.dump(
-                                    [
-                                        hdufocusdata,
-                                        hduheader,
-                                        self.local_calibration_path,
-                                        cal_name,
-                                        frame_type,
-                                        time_platesolve_requested,
-                                        pixscale,
-                                        pointing_ra,
-                                        pointing_dec,
-                                        platesolve_crop,
-                                        False,
-                                        1,
-                                        self.devices["main_cam"].settings["saturate"],
-                                        self.devices["main_cam"].camera_known_readnoise,
-                                        self.config["minimum_realistic_seeing"],
-                                        is_osc,
-                                        useastronometrynet,
-                                        pointing_exposure,
-                                        f'{path_to_jpeg}{jpeg_filename}',
-                                        target_ra,
-                                        target_dec,
-                                        timeout_time,
-                                    ],
-                                    platesolve_subprocess.stdin,
-                                )
-                            except:
-                                plog("Problem in the platesolve pickle dump")
-                                plog(traceback.format_exc())
+                            # try:
+                            #     pickle.dump(
+                            #         [
+                            #             hdufocusdata,
+                            #             hduheader,
+                            #             self.local_calibration_path,
+                            #             cal_name,
+                            #             frame_type,
+                            #             time_platesolve_requested,
+                            #             pixscale,
+                            #             pointing_ra,
+                            #             pointing_dec,
+                            #             platesolve_crop,
+                            #             False,
+                            #             1,
+                            #             self.devices["main_cam"].settings["saturate"],
+                            #             self.devices["main_cam"].camera_known_readnoise,
+                            #             self.config["minimum_realistic_seeing"],
+                            #             is_osc,
+                            #             useastronometrynet,
+                            #             pointing_exposure,
+                            #             f'{path_to_jpeg}{jpeg_filename}',
+                            #             target_ra,
+                            #             target_dec,
+                            #             timeout_time,
+                            #         ],
+                            #         platesolve_subprocess.stdin,
+                            #     )
+                            # except:
+                            #     plog("Problem in the platesolve pickle dump")
+                            #     plog(traceback.format_exc())
 
                             del hdufocusdata
 
@@ -3086,12 +3126,12 @@ class Observatory:
                             if (time.time() - platesolve_timeout_timer) > timeout_time:
                                 plog("platesolve timed out")
                                 solve = "error"
-                                platesolve_subprocess.kill()
+                                # Make sure any existing subprocess is ended
+                                try:
+                                    platesolve_subprocess.kill()
+                                except:
+                                    pass
 
-                                # try:
-                                #     os.system("taskkill /IM ps3cli.exe /F")
-                                # except:
-                                #     pass
 
                             elif os.path.exists(
                                 self.local_calibration_path + "platesolve.pickle"
@@ -3120,7 +3160,7 @@ class Observatory:
                                     path_to_jpeg, jpeg_filename, exposure_time, info_image_channel
                                 )
 
-                                plog("Planewave solve came back as error")
+                                plog("Platesolve solve came back as error")
                                 self.last_platesolved_ra = np.nan
                                 self.last_platesolved_dec = np.nan
                                 self.last_platesolved_ra_err = np.nan
