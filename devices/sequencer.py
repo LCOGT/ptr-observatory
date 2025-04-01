@@ -2916,12 +2916,16 @@ class Sequencer:
         g_dev["obs"].send_to_user("Currently regenerating local masters.")
 
         if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-            pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
-            if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path']+'/calibrations'):
-                os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] + '/calibrations')
-
-            if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias):
-                os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias)
+            try:
+                pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
+                if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path']+'/calibrations'):
+                    os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] + '/calibrations')
+    
+                if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias):
+                    os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias)
+            except:
+                plog("pipefolder failure")
+                plog(traceback.format_exc())
         else:
             pipefolder=''
 
