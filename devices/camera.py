@@ -2504,11 +2504,11 @@ class Camera:
             zwocamera.start_exposure()
 
         else:
-            
+
             if self.current_filter==None:
                 self.current_filter='none'
-            
-            # Boost Narrowband and low throughput 
+
+            # Boost Narrowband and low throughput
             if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n"]:
                 exp_of_substacks = 30
                 N_of_substacks = int((exposure_time / exp_of_substacks))
@@ -3429,7 +3429,7 @@ class Camera:
         g_dev['obs'].request_scan_requests()
         if g_dev['seq'].blockend != None:
             g_dev['seq'].schedule_manager.update_now()
-            
+
         unique_batch_code=self.obs.name + '_' + str(datetime.datetime.now()).replace(' ','_').replace('.','d').replace(':','-')
         for seq in range(count):
 
@@ -3896,6 +3896,8 @@ class Camera:
                                 exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time = time.time()
 
+
+
                             # After sending the exposure command, the camera is exposing
                             # So commands placed here are essentially "cost-free" in terms of overhead.
                             # As long as they don't take longer than the actual exposure time
@@ -4079,7 +4081,7 @@ class Camera:
 
         if self.site_config['save_raws_to_pipe_folder_for_nightly_processing']:
             if len(real_time_files) > 0:
-                
+
                 # This is the failsafe directory.... if it can't be written to the PIPE folder
                 # Which is usually a shared drive on the network, it gets saved here
                 failsafe_directory=self.site_config['archive_path'] + 'failsafe'
@@ -4090,16 +4092,16 @@ class Camera:
                 if not os.path.exists(failsafe_directory+ '/tokens'):
                     os.umask(0)
                     os.makedirs(failsafe_directory+ '/tokens')
-                
+
                 try:
                     pipetokenfolder = self.site_config['pipe_archive_folder_path'] + '/tokens'
                     if not os.path.exists(self.site_config['pipe_archive_folder_path'] + '/tokens'):
                         os.umask(0)
                         os.makedirs(self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
-    
+
                     if self.is_osc:
                         suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
-    
+
                         temp_file_holder=[]
                         for suffix in suffixes:
                             for tempfilename in real_time_files:
@@ -4121,10 +4123,10 @@ class Camera:
                     # if not os.path.exists(self.site_config['pipe_archive_folder_path'] + '/tokens'):
                     #     os.umask(0)
                     #     os.makedirs(self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
-    
+
                     if self.is_osc:
                         suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
-    
+
                         temp_file_holder=[]
                         for suffix in suffixes:
                             for tempfilename in real_time_files:
@@ -4140,7 +4142,7 @@ class Camera:
                                 json.dump(real_time_files, f, indent=2)
                         except:
                             plog(traceback.format_exc())
-                    
+
 
         if self.site_config['push_file_list_to_pipe_queue']:
             if len(real_time_files) > 0:
@@ -5099,8 +5101,8 @@ class Camera:
                                     if not  g_dev['obs'].auto_centering_off:
                                         g_dev['obs'].check_platesolve_and_nudge()
 
-                                # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
-                                elif self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+                                # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip or parked.
+                                elif self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not g_dev['mnt'].rapid_park_indicator and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
                                     if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                                         if (self.pixscale == None):
                                             ra_random_dither = (
@@ -5183,9 +5185,9 @@ class Camera:
 
                 if self.shutter_open:
                     self.shutter_open = False
-                    plog("Shutter Closed.")
+                    plog("Light Gathering Complete.")
 
-                plog("Exposure Complete")
+                plog("Readout Complete")
 
                 post_overhead_timer = time.time()
 
@@ -5206,7 +5208,7 @@ class Camera:
                                g_dev['obs'].check_platesolve_and_nudge()
 
                         # Don't nudge scope if it wants to correct the pointing or is slewing or there has been a pier flip.
-                        elif self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+                        elif self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing and not g_dev['mnt'].rapid_park_indicator and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
                             if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                                 if (self.pixscale == None):
                                     ra_random_dither = (
@@ -5301,6 +5303,8 @@ class Camera:
                             return expresult
                         try:
                             outputimg = self._getImageArray()  # .astype(np.float32)
+
+                            breakpoint()
                             imageCollected = 1
 
                             if False:
@@ -5360,7 +5364,7 @@ class Camera:
                         ha_corr=g_dev["mnt"].ha_corr
                         dec_corr=g_dev["mnt"].dec_corr
 
-                    
+
                     payload=copy.deepcopy(
                         (
                             outputimg,

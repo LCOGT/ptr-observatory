@@ -254,12 +254,15 @@ def write_raw_file_out(packet):
     hdu = fits.PrimaryHDU()
     hdu.data = hdudata
     hdu.header = hduheader
+
     hdu.header["DATE"] = (
         datetime.date.strftime(
             datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
         ),
         "Date FITS file was written",
     )
+
+
     hdu.writeto( raw_name, overwrite=True, output_verify='silentfix')
     try:
         hdu.close()
@@ -300,6 +303,7 @@ a_timer=time.time()
 cam_config = selfconfig['camera'][camera_device_name]
 cam_settings = cam_config['settings']
 cam_alias = cam_config["name"]
+current_camera_name = cam_config["name"]
 
 # init this value
 selfalt_path = 'no'
@@ -378,6 +382,31 @@ if substack:
     for substackfilename in substacker_filenames:
 
         substackimage=np.load(substackfilename).astype('float32')
+
+        im_path_r = selfcamera_path
+        raw_path = im_path_r + dayobs + "/raw/"
+        raw_name00 = (
+            selfconfig["obs_id"]
+            + "-"
+            + current_camera_name + '_' + str(frame_type) + '_' + str(this_exposure_filter)
+            + "-"
+            + dayobs
+            + "-"
+            + next_seq
+            + "-EX"
+            + "00ss"+str(counter+1)+".fits"
+        )
+        if selfconfig['save_substack_components_raws']:
+
+
+            # Create a blank FITS header
+            substackheader = fits.Header()
+
+            thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_path', raw_path  + raw_name00, copy.deepcopy(substackimage),substackheader, \
+                                               frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path)),))
+            thread.daemon = False # These need to be daemons because this parent thread will end imminently
+            thread.start()
+
         #plog (substackimage.shape)
         #notsubstackimage=np.load(substackfilename)
         #plog (notsubstackimage.shape)
@@ -881,8 +910,8 @@ try:
 
         if not os.path.exists(wcsfilepath):
             os.makedirs(wcsfilepath, mode=0o777)
-            
-            
+
+
         # yet another pickle debugger.
         if True:
             pickle.dump(
@@ -1157,10 +1186,10 @@ try:
             "[s] Requested Total Exposure Time",
         )  # This is the exposure in seconds specified by the user
 
-        
 
 
-        
+
+
 
         if not smartstackid == 'no':
             hdu.header["EXPREQSE"] = (
@@ -1244,15 +1273,15 @@ try:
             "[s] Actual exposure length",
         )  # Ideally this needs to be calculated from actual times
 
-            
-            
+
+
     hdu.header["NEXPREQ"] = (
         number_of_exposures_requested,
         "Number of exposures requested",
     )  # This is the exposure in seconds specified by the user
-    
+
     hdu.header["BATCHCDE"] = ( unique_batch_code, 'unique batch code for this set of images')
-    
+
     hdu.header["BUNIT"] = "adu"
 
     hdu.header["FILTER"] = (
@@ -1487,7 +1516,7 @@ try:
 
     hdu.header["REQNUM"] = ("00000001", "Request number")
     hdu.header["ISMASTER"] = (False, "Is master image")
-    current_camera_name = cam_config["name"]
+
 
     hdu.header["FRAMENUM"] = (int(next_seq), "Running frame number")
     hdu.header["SMARTSTK"] = smartstackid # ID code for an individual smart stack group
@@ -1733,7 +1762,7 @@ try:
         "skyflat",
         "pointing"
         ]) and not a_dark_exposure:
-        
+
         if selfconfig['fully_platesolve_images_at_site_rather_than_pipe']:
             wcsfilename=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq)) +'/' + selfconfig["obs_id"]+ "-" + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter) + "-" + dayobs+ "-"+ next_seq+ "-" + 'EX'+ "00.fits"
         else:
@@ -2085,6 +2114,12 @@ try:
                 raw_path, exist_ok=True
             )
 
+            if substack:
+                os.makedirs(
+                    raw_path + 'substacks', exist_ok=True
+                )
+                raw_path=raw_path+'/substacks/'
+
             thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, np.array(absolutely_raw_frame, dtype=np.float32), hdu.header, frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','thisisdeprecated', dayobs, im_path_r, selfalt_path)),))
             thread.daemon = False # These need to be daemons because this parent thread will end imminently
             thread.start()
@@ -2107,6 +2142,16 @@ try:
                 os.makedirs(
                    selfalt_path + dayobs + "/raw/" , exist_ok=True
                 )
+
+                selfalt_path=selfalt_path + dayobs + "/raw/"
+
+                if substack:
+                    os.makedirs(
+                        selfalt_path + dayobs + "/raw/substacks" , exist_ok=True
+                    )
+                    selfalt_path=selfalt_path + dayobs + "/raw/substacks/"
+
+
                 thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', selfalt_path + dayobs + "/raw/" + raw_name00, absolutely_raw_frame, hdu.header, \
                                                    frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path)),))
                 thread.daemon = False # These need to be daemons because this parent thread will end imminently
