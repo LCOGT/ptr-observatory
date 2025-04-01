@@ -777,13 +777,17 @@ class Sequencer:
                 self.sync_and_refocus()
 
             # This is where we find observations/projects to run
-            if self.obs.scope_in_manual_mode or (
-                (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and    # it's during observing hours
-                 not self.block_guard and                           # there aren't any blocks running currently
-                 not g_dev["cam"].running_an_exposure_set and       # the camera isn't exposing
-                 (time.time() - self.project_call_timer > 10) and   # it's been at least 10 seconds since the last project call
-                 g_dev['obs'].open_and_enabled_to_observe and       # the observatory is open and enabled to observe
-                 self.clock_focus_latch == False):                  # ??
+            #if self.obs.scope_in_manual_mode or (
+                          # If telescope is not in manual mode. 
+            if (
+                (not g_dev['obs'].scope_in_manual_mode) and # Telescope not in manual mode
+                (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and  # it's during observing hours
+                not self.block_guard and  # there aren't any blocks running currently
+                not g_dev["cam"].running_an_exposure_set and  # the camera isn't exposing
+                (time.time() - self.project_call_timer > 10) and  # it's been at least 10 seconds since the last project call
+                g_dev['obs'].open_and_enabled_to_observe and  # the observatory is open and enabled to observe
+                self.clock_focus_latch == False  # ??
+            ):
 
                 if not self.reported_on_observing_period_beginning:
                     self.reported_on_observing_period_beginning=True
@@ -5688,6 +5692,12 @@ class Sequencer:
 
                                     g_dev['foc'].last_known_focus = fitted_focus_position
                                     g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+                                    
+                                    
+                                    
+                                    #Here calculate the throw
+                                    breakpoint()
+                                    
 
                                     # We don't take a confirming exposure because there is no point actually and just wastes time.
                                     # You can see if it is focussed with the first target shot.
