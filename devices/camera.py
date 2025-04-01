@@ -5303,8 +5303,6 @@ class Camera:
                             return expresult
                         try:
                             outputimg = self._getImageArray()  # .astype(np.float32)
-
-                            breakpoint()
                             imageCollected = 1
 
                             if False:
