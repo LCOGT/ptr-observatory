@@ -5964,12 +5964,23 @@ class Camera:
 
                             sepbkgerr=sepbkg.globalrms
 
+                            # try:
+                            #     sources = sep.extract(outputimg, 2.0, err=sepbkgerr, minarea=minarea)
+                            # except:
+                            #     try:
+                            #         print ("failed sep with background, trying without")
+                            #         sources = sep.extract(outputimg, 2.0, minarea=minarea)
+                            #     except:
+
+                            #         print(traceback.format_exc())
+                            #         sources=[]
+                                    
                             try:
-                                sources = sep.extract(outputimg, 4.0, err=sepbkgerr, minarea=minarea)
+                                sources, segmentation_map = sep.extract(outputimg, 2.0, err=sepbkgerr, minarea=minarea, deblend_nthresh=64, deblend_cont=0.001, filter_kernel=None, segmentation_map=True)
                             except:
                                 try:
                                     print ("failed sep with background, trying without")
-                                    sources = sep.extract(outputimg, 4.0, minarea=minarea)
+                                    sources, segmentation_map = sep.extract(outputimg, 2.0, minarea=minarea, deblend_nthresh=64, deblend_cont=0.001, filter_kernel=None, segmentation_map=True)
                                 except:
 
                                     print(traceback.format_exc())
@@ -5982,12 +5993,66 @@ class Camera:
 
                             sources = sources[sources["peak"] < 0.8 * image_saturation_level ]
                             sources = sources[sources["cpeak"] < 0.8 * image_saturation_level ]
-                            sources = sources[sources["flux"] > 750]
+                            #sources = sources[sources["flux"] > 750]
                             # BANZAI prune nans from table
                             nan_in_row = np.zeros(len(sources), dtype=bool)
                             for col in sources.colnames:
                                 nan_in_row |= np.isnan(sources[col])
                             sources = sources[~nan_in_row]
+
+
+                            def identify_donuts(objects, image, segmentation_map, donut_threshold=0.3):
+                                '''
+                                Identify potential donuts based on radial profile analysis.
+                                Returns a list of donut-like sources.
+                                '''
+                                donuts = []
+                                for obj in objects:
+                                    x, y, a, b, theta = obj['x'], obj['y'], obj['a'], obj['b'], obj['theta']
+                                    r = max(a, b) * 3  # Define radius for measuring donut structure
+                            
+                                    try:
+                                        # Extract radial profile
+                                        radial_profile = np.zeros(int(r))
+                                        for i in range(int(r)):
+                                            flux, _, _ = sep.sum_circle(image, x, y, i + 1)
+                                            radial_profile[i] = flux
+                            
+                                        # Check for a peak away from the center
+                                        if len(radial_profile) > 2 and np.argmax(radial_profile[1:]) > 1:  # Peak is not at the very center
+                                            donuts.append(obj)
+                            
+                                    except Exception:
+                                        continue
+                            
+                                return donuts
+                            
+                            
+                            def measure_donut_size(obj, image):
+                                '''
+                                Alternative size measurement method for donuts
+                                Uses a larger aperture or fitting techniques.
+                                '''
+                                x, y, a, b, theta = obj['x'], obj['y'], obj['a'], obj['b'], obj['theta']
+                                r = max(a, b) * 2.5  # Increase aperture size for donut
+                            
+                                # Measure flux in larger aperture
+                                flux, fluxerr, flag = sep.sum_circle(image, x, y, r)
+                            
+                                return {'x': x, 'y': y, 'flux': flux, 'radius': r}
+
+
+                            donuts = identify_donuts(sources, outputimg, segmentation_map)
+                            
+                            
+                            # Measure size of each donut
+                            donut_sizes = [measure_donut_size(d, outputimg) for d in donuts]
+                            
+                            plog ("Donuts detected: " + str(len(donuts)))
+                            
+                            
+                            if len(donuts) > 0:
+                                breakpoint()
 
 
                             try:

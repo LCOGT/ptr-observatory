@@ -1,4 +1,4 @@
-Reading input file 1 of 1: "/mnt/f/ptr/aro1/archive/sq003ms/20250325/wcs/58033/aro1-sq003ms_expose_bv-20250325-00058033-EX00.fits"...
+Reading input file 1 of 1: "/mnt/c/ptr/eco1/archive/ec003zwo/20250401/wcs/52923/eco1-ec003zwo_expose_bb-20250401-00052923-EX00.fits"...
 Extracting sources...
 Sorting brightness using MAG_AUTO and BACKGROUND columns failed; falling back to MAG_AUTO.
 Reading sort column "MAG_AUTO"
@@ -8,50 +8,74 @@ Copying table header.
 Writing row 0
 Done
 Solving...
-Reading file "/mnt/f/ptr/aro1/archive/sq003ms/20250325/wcs/58033/aro1-sq003ms_expose_bv-20250325-00058033-EX00.axy"...
-Only searching for solutions within 20 degrees of RA,Dec (202.47,47.1953)
-Field 1 did not solve (index index-5206-27.fits, field objects 1-10).
-Field 1 did not solve (index index-5206-11.fits, field objects 1-10).
-Field 1 did not solve (index index-5206-10.fits, field objects 1-10).
-Field 1 did not solve (index index-5206-09.fits, field objects 1-10).
-Field 1 did not solve (index index-5206-08.fits, field objects 1-10).
-Field 1 did not solve (index index-5206-06.fits, field objects 1-10).
-Field 1 did not solve (index index-5205-27.fits, field objects 1-10).
-Field 1 did not solve (index index-5205-11.fits, field objects 1-10).
-Field 1 did not solve (index index-5205-10.fits, field objects 1-10).
-Field 1 did not solve (index index-5205-09.fits, field objects 1-10).
-Field 1 did not solve (index index-5205-08.fits, field objects 1-10).
-Field 1 did not solve (index index-5205-06.fits, field objects 1-10).
-Field 1 did not solve (index index-5204-27.fits, field objects 1-10).
-Field 1 did not solve (index index-5204-11.fits, field objects 1-10).
-Field 1 did not solve (index index-5204-10.fits, field objects 1-10).
-Field 1 did not solve (index index-5204-09.fits, field objects 1-10).
-Field 1 did not solve (index index-5204-08.fits, field objects 1-10).
-Field 1 did not solve (index index-5204-06.fits, field objects 1-10).
-Field 1 did not solve (index index-5203-27.fits, field objects 1-10).
-Field 1 did not solve (index index-5203-11.fits, field objects 1-10).
-Field 1 did not solve (index index-5203-10.fits, field objects 1-10).
-Field 1 did not solve (index index-5203-09.fits, field objects 1-10).
-Field 1 did not solve (index index-5203-08.fits, field objects 1-10).
-Field 1 did not solve (index index-5203-06.fits, field objects 1-10).
-Field 1 did not solve (index index-5202-27.fits, field objects 1-10).
-Field 1 did not solve (index index-5202-11.fits, field objects 1-10).
-Field 1 did not solve (index index-5202-10.fits, field objects 1-10).
-Field 1 did not solve (index index-5202-09.fits, field objects 1-10).
-Field 1 did not solve (index index-5202-08.fits, field objects 1-10).
-Field 1 did not solve (index index-5202-06.fits, field objects 1-10).
-Field 1 did not solve (index index-4111.fits, field objects 1-10).
-Field 1 did not solve (index index-4110.fits, field objects 1-10).
-Field 1 did not solve (index index-4109.fits, field objects 1-10).
-  log-odds ratio 187.328 (2.26624e+81), 25 match, 0 conflict, 21 distractors, 29 index.
-  RA,Dec = (202.44,47.2158), pixel scale 0.526813 arcsec/pix.
-  Hit/miss:   Hit/miss: +-++++-+++--++++++--++-+---+++---+-+--++-----+(best)------------------------------------------------------
-Field 1: solved with index index-4108.fits.
-Field 1 solved: writing to file /mnt/f/ptr/aro1/archive/sq003ms/20250325/wcs/58033/aro1-sq003ms_expose_bv-20250325-00058033-EX00.solved to indicate this.
-Field: /mnt/f/ptr/aro1/archive/sq003ms/20250325/wcs/58033/aro1-sq003ms_expose_bv-20250325-00058033-EX00.fits
-Field center: (RA,Dec) = (202.439115, 47.215359) deg.
-Field center: (RA H:M:S, Dec D:M:S) = (13:29:45.388, +47:12:55.293).
-Field size: 83.82 x 56.0797 arcminutes
-Field rotation angle: up is -177.623 degrees E of N
+Reading file "/mnt/c/ptr/eco1/archive/ec003zwo/20250401/wcs/52923/eco1-ec003zwo_expose_bb-20250401-00052923-EX00.axy"...
+Only searching for solutions within 20 degrees of RA,Dec (289.14,-40.2091)
+Field 1 did not solve (index index-52m1-47.fits, field objects 1-10).
+Field 1 did not solve (index index-52m1-46.fits, field objects 1-10).
+Field 1 did not solve (index index-52m1-45.fits, field objects 1-10).
+Field 1 did not solve (index index-52m1-44.fits, field objects 1-10).
+Field 1 did not solve (index index-52m1-42.fits, field objects 1-10).
+Field 1 did not solve (index index-52m1-28.fits, field objects 1-10).
+Field 1 did not solve (index index-5206-47.fits, field objects 1-10).
+Field 1 did not solve (index index-5206-46.fits, field objects 1-10).
+Field 1 did not solve (index index-5206-45.fits, field objects 1-10).
+Field 1 did not solve (index index-5206-44.fits, field objects 1-10).
+Field 1 did not solve (index index-5206-42.fits, field objects 1-10).
+Field 1 did not solve (index index-5206-28.fits, field objects 1-10).
+Field 1 did not solve (index index-5205-47.fits, field objects 1-10).
+Field 1 did not solve (index index-5205-46.fits, field objects 1-10).
+Field 1 did not solve (index index-5205-45.fits, field objects 1-10).
+Field 1 did not solve (index index-5205-44.fits, field objects 1-10).
+Field 1 did not solve (index index-5205-42.fits, field objects 1-10).
+Field 1 did not solve (index index-5205-28.fits, field objects 1-10).
+Field 1 did not solve (index index-5204-47.fits, field objects 1-10).
+Field 1 did not solve (index index-5204-46.fits, field objects 1-10).
+Field 1 did not solve (index index-5204-45.fits, field objects 1-10).
+Field 1 did not solve (index index-5204-44.fits, field objects 1-10).
+Field 1 did not solve (index index-5204-42.fits, field objects 1-10).
+Field 1 did not solve (index index-5204-28.fits, field objects 1-10).
+Field 1 did not solve (index index-5203-47.fits, field objects 1-10).
+Field 1 did not solve (index index-5203-46.fits, field objects 1-10).
+Field 1 did not solve (index index-5203-45.fits, field objects 1-10).
+Field 1 did not solve (index index-5203-44.fits, field objects 1-10).
+Field 1 did not solve (index index-5203-42.fits, field objects 1-10).
+Field 1 did not solve (index index-5203-28.fits, field objects 1-10).
+Field 1 did not solve (index index-5202-47.fits, field objects 1-10).
+Field 1 did not solve (index index-5202-46.fits, field objects 1-10).
+Field 1 did not solve (index index-5202-45.fits, field objects 1-10).
+Field 1 did not solve (index index-5202-44.fits, field objects 1-10).
+Field 1 did not solve (index index-5202-42.fits, field objects 1-10).
+Field 1 did not solve (index index-5202-28.fits, field objects 1-10).
+Field 1 did not solve (index index-5201-47.fits, field objects 1-10).
+Field 1 did not solve (index index-5201-46.fits, field objects 1-10).
+Field 1 did not solve (index index-5201-45.fits, field objects 1-10).
+Field 1 did not solve (index index-5201-44.fits, field objects 1-10).
+Field 1 did not solve (index index-5201-42.fits, field objects 1-10).
+Field 1 did not solve (index index-5201-28.fits, field objects 1-10).
+Field 1 did not solve (index index-5200-47.fits, field objects 1-10).
+Field 1 did not solve (index index-5200-46.fits, field objects 1-10).
+Field 1 did not solve (index index-5200-45.fits, field objects 1-10).
+Field 1 did not solve (index index-5200-44.fits, field objects 1-10).
+Field 1 did not solve (index index-5200-42.fits, field objects 1-10).
+Field 1 did not solve (index index-5200-28.fits, field objects 1-10).
+Field 1 did not solve (index index-4107.fits, field objects 1-10).
+Field 1 did not solve (index index-52m1-47.fits, field objects 11-20).
+Field 1 did not solve (index index-52m1-46.fits, field objects 11-20).
+Field 1 did not solve (index index-52m1-45.fits, field objects 11-20).
+Field 1 did not solve (index index-52m1-44.fits, field objects 11-20).
+Field 1 did not solve (index index-52m1-42.fits, field objects 11-20).
+Field 1 did not solve (index index-52m1-28.fits, field objects 11-20).
+Field 1 did not solve (index index-5206-47.fits, field objects 11-20).
+Field 1 did not solve (index index-5206-46.fits, field objects 11-20).
+  log-odds ratio 52.5022 (6.3303e+22), 5 match, 0 conflict, 8 distractors, 10 index.
+  RA,Dec = (289.138,-40.2138), pixel scale 0.269201 arcsec/pix.
+  Hit/miss:   Hit/miss: ++-+--+-----+(best)-------------------------------------------------------------------++++
+Field 1: solved with index index-5206-45.fits.
+Field 1 solved: writing to file /mnt/c/ptr/eco1/archive/ec003zwo/20250401/wcs/52923/eco1-ec003zwo_expose_bb-20250401-00052923-EX00.solved to indicate this.
+Field: /mnt/c/ptr/eco1/archive/ec003zwo/20250401/wcs/52923/eco1-ec003zwo_expose_bb-20250401-00052923-EX00.fits
+Field center: (RA,Dec) = (289.138236, -40.214033) deg.
+Field center: (RA H:M:S, Dec D:M:S) = (19:16:33.177, -40:12:50.517).
+Field size: 20.9063 x 15.8072 arcminutes
+Field rotation angle: up is 88.0837 degrees E of N
 Field parity: neg
 

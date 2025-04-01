@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 plt.ioff()
 import queue
 import threading
-
+from scipy.integrate import quad
 from glob import glob
 import traceback
 from ptr_utility import plog
@@ -5454,8 +5454,24 @@ class Sequencer:
                     time.sleep(1)
 
                 # Take the shot
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
-                spot = g_dev['obs'].fwhmresult['FWHM']
+                result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+                
+
+                if result == 'roofshut':
+                    plog ("Roof Shut, Site bailing out of Centering")
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+                    self.total_sequencer_control = False
+                    self.focussing=False
+                    return
+
+                if result == 'outsideofnighttime':
+                    plog ("Outside of Night Time. Site bailing out of Centering")
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+                    self.total_sequencer_control = False
+                    self.focussing=False
+                    return
+                
+                spot = g_dev['obs'].fwhmresult['FWHM']                
                 foc_pos=g_dev['foc'].current_focus_position
 
                 g_dev['obs'].send_to_user("Focus at test position: " + str(foc_pos) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
@@ -5696,8 +5712,24 @@ class Sequencer:
                                     
                                     
                                     #Here calculate the throw
-                                    breakpoint()
+                                    f_prime = np.polyder(f)  # Derivative of the polynomial
+
+                                    # Define the integrand for arc length calculation
+                                    integrand = lambda x: np.sqrt(1 + (f_prime(x))**2)
                                     
+                                    # Calculate the arc length over the entire range of x
+                                    arc_length, _ = quad(integrand, np.min(x), np.max(x))
+                                    
+                                    # Decide how many points you want (similar to your original plot)
+                                    #num_points = len(x)
+                                    num_points = 6
+                                    
+                                    # Calculate step length along the curve
+                                    curve_step_length = arc_length / (num_points - 1)
+                                    
+                                    plog("Estimated Optimal Throw:", curve_step_length)
+                                                                        
+                                    g_dev['foc'].report_optimal_throw(curve_step_length)
 
                                     # We don't take a confirming exposure because there is no point actually and just wastes time.
                                     # You can see if it is focussed with the first target shot.
