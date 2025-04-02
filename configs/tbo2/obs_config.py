@@ -165,6 +165,8 @@ site_config = {
     "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
     'fully_platesolve_images_at_site_rather_than_pipe' : True,
 
+    'push_file_list_to_pipe_queue': False,
+
 
 
     'defaults': {

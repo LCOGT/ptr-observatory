@@ -144,3 +144,15 @@ def create_color_plog(process_id, rgb256=tuple):
     """
     rgb = lambda r, g, b: f'\033[38;2;{r};{g};{b}m'
     return partial(plog, process=process_id, color=rgb(*rgb256))
+
+# Allows use of `plog.err('error msg')` which will print with a red [ERROR] in front.
+def err(*args, **kwargs):
+    red = f'\033[38;2;255;0;0m'
+    plog(*args, **kwargs, color=red, process='ERROR')
+plog.err = err
+
+# Allows use of `plog.warn('warning msg')` which will print with a yellow [WARNING] in front
+def warn(*args, **kwargs):
+    yellow = f'\033[38;2;241;183;14m'
+    plog(*args, **kwargs, color=yellow, process='WARNING')
+plog.warn = warn

@@ -13,6 +13,9 @@ def timestamp_to_LCO_datestring(t):
     """ Takes a Unix timestamp and converts to YYYY-mm-ddThh-mm-ss.sss in UTC """
     return datetime.fromtimestamp(t, tz=timezone.utc).isoformat(timespec='milliseconds').split('+')[0]
 
+def get_now_lco():
+    return timestamp_to_LCO_datestring(time.time())
+
 
 def configdb_instrument_mapping_passes_validation(site_config) -> bool:
     """
@@ -25,7 +28,7 @@ def configdb_instrument_mapping_passes_validation(site_config) -> bool:
         bool: True if the mapping is valid, False otherwise
     """
     if 'configdb_instrument_mapping' not in site_config:
-        plog('WARNING: tried to validate the configdb mapping in the site config but it was missing.')
+        plog.warn('tried to validate the configdb mapping in the site config but it was missing.')
         return False
 
     required_devices = [
@@ -51,7 +54,7 @@ def configdb_instrument_mapping_passes_validation(site_config) -> bool:
                 problems.append(f'Instrument {instrument} is missing a mapping for device type: {device_type}')
 
     if len(problems) > 0:
-        plog('WARNING: errors found while validating the configdb_instrument_mapping:')
+        plog.err('errors found while validating the configdb_instrument_mapping:')
         for p in problems:
             plog(p)
         return False
@@ -87,12 +90,12 @@ def get_devices_for_configuration(configuration: dict, observatory) -> dict:
 
     # Use default devices if the mapping fails validation
     if not configdb_instrument_mapping_passes_validation(site_config):
-        plog('Reverting to use default devices, which might make this observation a waste of time.')
+        plog.warn('Reverting to use default devices, which might make this observation a waste of time.')
         plog('This should be an easy fix: update the site config with a configdb_instrument_mapping with correct device names')
         return devices
     # Use default devices if the mapping is missing the configdb instrument specified in this observation
     elif instrument_name not in site_config['configdb_instrument_mapping']:
-        plog(f'WARNING: configdb_instrument_mapping is missing instrument {instrument_name}, which we need for the current observation')
+        plog.warn(f'configdb_instrument_mapping is missing instrument {instrument_name}, which we need for the current observation')
         plog('Reverting to use default devices, which might make this observation a waste of time.')
         plog('This should be an easy fix: add the configdb_instrument_mapping to the site config with correct devices specified')
         return devices
@@ -115,11 +118,11 @@ class SiteProxy:
     def __init__(self):
         self.site_proxy_offline = False
         if 'SITE_PROXY_BASE_URL' not in os.environ:
-            plog('WARNING: the environment variable SITE_PROXY_BASE_URL is missing and scheduler observations won\'t work.')
+            plog.warn('the environment variable SITE_PROXY_BASE_URL is missing and scheduler observations won\'t work.')
             plog('Please add this to the .env file and restart the observatory.')
             self.site_proxy_offline = True
         if 'SITE_PROXY_TOKEN' not in os.environ:
-            plog('WARNING: the environment variable SITE_PROXY_TOKEN is missing, which means we can\'t communicate with the site proxy')
+            plog.warn('the environment variable SITE_PROXY_TOKEN is missing, which means we can\'t communicate with the site proxy')
             plog('Please add this to the .env file and restart the observatory.')
             self.site_proxy_offline = True
 
@@ -140,9 +143,20 @@ class SiteProxy:
             return all(re.match(pattern, ts) for ts in s)
         return bool(re.match(pattern, s))
 
-    def _update_configuration_status(self, config_status_id, state, summary=None):
+    def update_configuration_status(self, config_status_id, state, summary=None):
         """
         Send an update to the site proxy about a configuration's status
+
+        Args:
+            config_status_id (int): found in configuration['configuration_status']
+            state (str): one of PENDING, ATTEMPTED, NOT_ATTEMPTED, COMPLETED, FAILED
+            summary (dict, optional): Additional information about the configuration execution, containing:
+                start (str): ISO format timestamp of when execution started
+                end (str): ISO format timestamp of when execution ended
+                state (str): Final state of execution, e.g., 'COMPLETED'
+                reason (str): Explanation for the state, especially useful for failures
+                time_completed (str): Execution duration in seconds
+                events (dict): Any events that occurred during execution
 
         Returns:
             Response object or None if site proxy is offline
@@ -161,15 +175,20 @@ class SiteProxy:
         try:
             return self.session.patch(endpoint, data=json.dumps(request_body))
         except requests.exceptions.RequestException as e:
-            plog(f"Error updating configuration status: {e}")
+            plog.err(f"failed to update configuration status: {e}")
             return None
+
+    def update_exposure_start_time(self, config_status_id, start_time):
+        plog('Site proxy doesn\'t currently support updating exposures_start_time')
+        return
+
 
     def update_configuration_start(self, config_status_id):
         """ Update the status of a configuration when observing is started."""
         plog('Updating configuration status to ATTEMPTED for ', config_status_id)
-        response = self._update_configuration_status(config_status_id, 'ATTEMPTED')
+        response = self.update_configuration_status(config_status_id, 'ATTEMPTED')
         if response.status_code != 200:
-            plog(f'WARNING: failed to update configuration status to ATTEMPTED for {config_status_id}.')
+            plog.warn(f'failed to update configuration status to ATTEMPTED for {config_status_id}.')
             plog(f'Reason: {response.text}')
         return response
 
@@ -183,7 +202,7 @@ class SiteProxy:
                 Note: this is different from the configuration id!
             - state (str): either COMPLETED, FAILED, or (rarely) NOT_ATTEMPTED
             - start (str): when the configuration started in UTC: YYYY-mm-ddThh:mm:ss.sss
-            - end (str): when the configuration started in UTC: YYYY-mm-ddThh:mm:ss.sss
+            - end (str): when the configuration ended in UTC: YYYY-mm-ddThh:mm:ss.sss
             - time_completed (str): seconds of time observed during this configuration
             - reason (str): if the configuration failed, the reason why
             - events (json): optional, not sure what this is for
@@ -193,10 +212,10 @@ class SiteProxy:
         """
         plog(f'Updating configuration status to {state} for {config_status_id}')
         if state not in self.VALID_END_STATES:
-            plog(f'WARNING: invalid state given to update the configuration {config_status_id}.')
+            plog.err(f'invalid state given to update the configuration {config_status_id}.')
             plog(f'Received {state}, but must be one of {", ".join(self.VALID_END_STATES)}.')
         if not self._is_valid_timestamp([start, end]):
-            plog(f'WARNING: not all timestamps in {[start, end]} are formatted correctly for configuration status update.')
+            plog.warn(f'not all timestamps in {[start, end]} are formatted correctly for configuration status update.')
         summary = {
             "state": state,
             "start": start,
@@ -205,9 +224,12 @@ class SiteProxy:
             "reason": reason,
             "events": events
         }
-        response = self._update_configuration_status(config_status_id, state, summary)
-        if response.status_code != 200:
-            plog(f'WARNING: failed to update configuration status to {state} for {config_status_id}.')
+        response = self.update_configuration_status(config_status_id, state, summary)
+        if response is None:
+            plog.err(f'failed to update configuration status to {state} for {config_status_id}.')
+            plog(f'Reason: site proxy is offline')
+        elif response.status_code != 200:
+            plog.err(f'failed to update configuration status to {state} for {config_status_id}.')
             plog(f'Reason: {response.text}')
         return response
 
@@ -226,9 +248,6 @@ class SchedulerObservation:
     - observation stops when the scheduled time has finished
     - manual commands don't interfere
 
-    Manually verify:
-    - pointing is decent
-    - stays focused
     """
 
     def __init__(self, observation: dict, observatory) -> None:
@@ -246,6 +265,8 @@ class SchedulerObservation:
         self.last_solved_mount_ra = None
         self.last_solved_mount_dec = None
 
+        self.siteproxy = SiteProxy()
+
         # This tracks how much time has been observed for each configuration
         # We use the configuration status id as the key because we need to
         # differentiate between the same config running multiple times from the
@@ -253,6 +274,52 @@ class SchedulerObservation:
         self.configuration_time_tracker = {}
         for c in observation['request']['configurations']:
             self.configuration_time_tracker[c['configuration_status']] = 0 # init with 0 seconds observed
+
+    def stop_condition_reached(self, at_time: float = None) -> tuple:
+        """ Check for stop conditions at various times during a project execution.
+
+        Checks:
+        - The observation is no longer currently scheduled
+        - The observatory has closed
+        - A stop command has been recieved.
+
+        Args:
+            at_time (float, opt): unix time. If specified, check if the observation is scheduled to stop by this time.
+
+        Returns: tuple of (stop_now, reason)
+            stop_now (bool): True if we should stop, else False
+            reason (str): reason for stopping
+        """
+        if at_time is None:
+            at_time = time.time()
+
+        observation_id = self.observation['id']
+        request_id = self.observation['request']['id']
+        schedule_manager = self.o.devices['sequencer'].schedule_manager
+        observation_currently_scheduled = schedule_manager.calendar_event_is_active(observation_id, at_time)
+        request_currently_scheduled = schedule_manager.is_observation_request_scheduled(request_id, at_time)
+
+        # Just make a note if the scheduler modified the original observation
+        if not observation_currently_scheduled and request_currently_scheduled:
+            plog('INFO: during an observation of an LCO request, the observation ID changed but the request ID did not.')
+            plog('This just means the scheduler adjusted the current observation. No action needed.')
+
+        # Observatory status
+        scope_in_manual_mode = self.o.scope_in_manual_mode # not used, but here as a reminder that it's an option
+        shutter_closed = 'Closed' in self.o.enc_status['shutter_status']
+        observatory_closed = not self.o.open_and_enabled_to_observe
+        stop_all_activity_flag = self.o.stop_all_activity
+
+        if not request_currently_scheduled:
+            return True, 'The observation request is not scheduled at the provided time'
+
+        if shutter_closed or observatory_closed:
+            return True, 'The observatory is no longer open and able to observe'
+
+        if stop_all_activity_flag:
+            return True, 'Received a stop_all_activity command'
+
+        return False, 'Ok to continue observing'
 
 
     def _go_to_target(self, mount_device, target: dict, offset_ra: float = 0, offset_dec: float = 0) -> None:
@@ -381,73 +448,20 @@ class SchedulerObservation:
 
         return True
 
-    def _do_configuration(self, configuration: dict, devices: dict, siteproxy: SiteProxy) -> None:
-        """
-        Execute a single configuration
-
-        Args:
-            configuration: The configuration to execute
-            devices: Dictionary of devices to use
-            siteproxy: The site proxy for status updates
-        """
-        configuration_start_time = time.time()
-        config_status_id = configuration['configuration_status']
-        siteproxy.update_configuration_start(config_status_id)
-
-        config_type = configuration['type']
-        repeat_duration = configuration.get('repeat_duration') or 0 # fallback to keep number type
-        end_time = configuration_start_time + repeat_duration
-        def exposure_sequence_done():
-            ''' Return True if configuration type is an exposure sequence and the duration has been exceeded'''
-            return config_type == 'REPEAT_EXPOSE' and time.time() > end_time
-
-        self._go_to_target(devices['mount'], configuration['target'])
-
-        if config_type == "EXPOSE":
-            for index, ic in enumerate(configuration['instrument_configs']):
-                plog(f'starting instrument config #{index + 1} of {len(configuration["instrument_configs"])}')
-                self._do_instrument_config(ic, configuration, devices, exposure_sequence_done)
-
-            # After configuration is done: report config status and return
-            self._report_configuration_completion(configuration, configuration_start_time, siteproxy)
-            return
-
-        if config_type == "REPEAT_EXPOSE":
-            while not exposure_sequence_done():
-                for index, ic in enumerate(configuration['instrument_configs']):
-                    plog(f'starting instrument config #{index + 1} of {len(configuration["instrument_configs"])}')
-                    plog(f'type == REPEAT_EXPOSE, so we will continue looping over all instrument configs.')
-                    plog(f'remaining time for REPEAT_EXPOSE is {end_time - time.time()} seconds')
-                    self._do_instrument_config(ic, configuration, devices, exposure_sequence_done)
-
-            self._report_configuration_completion(configuration, configuration_start_time, siteproxy)
-            return
-
-        # If unknown config type: report status and return
-        plog(f"Unsupported configuration type {config_type}. Skipping this configuration.")
-        start = timestamp_to_LCO_datestring(configuration_start_time)
-        end = timestamp_to_LCO_datestring(time.time())
-        state = 'NOT_ATTEMPTED'
-        time_completed = 0
-        reason = f'Unsupported configuration type {config_type}'
-        siteproxy.update_configuration_end(config_status_id, state, start, end, time_completed, reason)
-        return
-
-    def _report_configuration_completion(self, configuration: dict, start_time: float, siteproxy: SiteProxy) -> None:
+    def _report_configuration_completion(self, configuration: dict, start_time: float) -> None:
         """
         Report the completion of a configuration to the site proxy
 
         Args:
             configuration: The completed configuration
             start_time: When the configuration started (timestamp)
-            siteproxy: The site proxy for status updates
         """
         config_status_id = configuration['configuration_status']
         start = timestamp_to_LCO_datestring(start_time)
         end = timestamp_to_LCO_datestring(time.time())
         state = "COMPLETED"
         time_completed = self.configuration_time_tracker[config_status_id]
-        siteproxy.update_configuration_end(config_status_id, state, start, end, time_completed)
+        self.siteproxy.update_configuration_end(config_status_id, state, start, end, time_completed)
 
         # Calculate and display completion statistics
         total_requested_time = sum([ic['exposure_count'] * ic['exposure_time']
@@ -456,38 +470,167 @@ class SchedulerObservation:
         plog(f'Configuration complete. Observed {time_completed}s of {total_requested_time}s, or {completed_percent}%')
 
 
-    def _do_instrument_config(self, ic, config, devices, exposure_sequence_done: Callable[[], bool]) -> None:
-        mount = devices['mount']
-        focuser = devices['focuser']
-        camera = devices['camera']
-        filter_wheel = devices['filter_wheel']
+    def _do_instrument_config(self, ic, config, devices, exposure_sequence_done: Callable[[], bool]) -> tuple:
+        """
+        Run a single instrument configuration.
 
-        # Ignore defocus for now, since focus routine is tied to camera expose command and I need to untangle them first.
-        defocus = ic['extra_params'].get('defocus', False)
-        if defocus:
-            plog(f'Defocus was requested with value {defocus}, but this has not been implemented yet.')
-            # do_defocus(focuser, defocus)
+        Args:
+            ic (dict): instrument configuration to run
+            config (dict): the configuration that contains the instrument configuration
+            devices (dict): get the observatory device by key (mount, focuser, camera, filter_wheel)
+            exposure_sequence_done (func): returns true if we're running in an EXPOSE_SEQUENCE configuration type, and
+                                            the time as expired. Used to break out of an in-progress instrument config.
 
-        offset_ra = ic['extra_params'].get('offset_ra', 0)
-        offset_dec = ic['extra_params'].get('offset_dec', 0)
-        self._go_to_target(mount, config['target'], offset_ra, offset_dec)
+        Returns: tuple of (time_observed, reason)
+            time_observed (str): total successful exposure time, in seconds
+            reason (str): description why the instrument config is stopping
+        """
 
-        exposure_time = ic['exposure_time']
-        exposure_count = ic['exposure_count']
-        smartstack = config.get('smartstack', True)
-        substack = config.get('substack', True)
-        filter_name = ic['optical_elements']['filter'].strip('ptr-')
-        for _ in range(exposure_count):
-            if exposure_sequence_done():
-                break
-            expose_result = self._take_exposure(camera, filter_wheel, exposure_time, filter_name, smartstack=smartstack, substack=substack)
-            plog('expose result: ', expose_result)
+        time_observed = 0
 
-            # Update the time observed for this configuration
-            if isinstance(expose_result, dict) and 'error' in expose_result and not expose_result['error']:
-                self.configuration_time_tracker[config['configuration_status']] += exposure_time
-            else:
-                plog('Error in exposure result. Response was ', expose_result)
+        try:
+            mount = devices['mount']
+            focuser = devices['focuser']
+            camera = devices['camera']
+            filter_wheel = devices['filter_wheel']
+
+            # Ignore defocus for now, since focus routine is tied to camera expose command and I need to untangle them first.
+            defocus = ic['extra_params'].get('defocus', False)
+            if defocus:
+                plog(f'Defocus was requested with value {defocus}, but this has not been implemented yet.')
+                # do_defocus(focuser, defocus)
+
+            offset_ra = ic['extra_params'].get('offset_ra', 0)
+            offset_dec = ic['extra_params'].get('offset_dec', 0)
+            self._go_to_target(mount, config['target'], offset_ra, offset_dec)
+
+            stop, reason = self.stop_condition_reached()
+            if stop:
+                return time_observed, reason
+
+            exposure_time = ic['exposure_time']
+            exposure_count = ic['exposure_count']
+            smartstack = config.get('smartstack', True)
+            substack = config.get('substack', True)
+            filter_name = ic['optical_elements']['filter'].strip('ptr-')
+            for _ in range(exposure_count):
+                # Check if the EXPOSE_SEQUENCE configuration is out of time, and we should stop now.
+                if exposure_sequence_done():
+                    return time_observed, 'SEQUENCE_END'
+
+                # Check for other stop signals
+                stop, reason = self.stop_condition_reached()
+                if stop:
+                    return time_observed, reason
+
+                expose_result = self._take_exposure(camera, filter_wheel, exposure_time, filter_name, smartstack=smartstack, substack=substack)
+                plog('expose result: ', expose_result)
+
+                # Update the time observed for this configuration
+                if isinstance(expose_result, dict) and 'error' in expose_result and not expose_result['error']:
+                    time_observed += exposure_time
+                    self.configuration_time_tracker[config['configuration_status']] += exposure_time
+                else:
+                    plog('Error in exposure result. Response was ', expose_result)
+
+
+            plog(f'Finished instrument configuration. Exposed {time_observed} of {exposure_count * exposure_time} seconds')
+            return time_observed, 'SUCCESS'
+
+        except Exception as e:
+            plog.warn(f'Unexpected failure while observing an instrument configuration: {e}')
+            return time_observed, 'FAIL'
+
+
+    def _do_configuration(self, configuration: dict, devices: dict) -> dict:
+        """
+        Execute a single configuration
+
+        Args:
+            configuration: The configuration to execute
+            devices: Dictionary of devices to use
+
+        Returns (dict): This is essentially the "summary" used to report configuration status
+            start (str): time the configuration started in UTC "%Y-%m-%dT%H:%M:%S"
+            end (str): time the configuration ended in UTC "%Y-%m-%dT%H:%M:%S"
+            reason (str): why the configuration ended as not completed (if applicable), or emtpy
+            state (str): the end state of this configuration--one of NOT_ATTEMPTED, COMPLETED, FAILED
+            time_completed (float): amount of time successfully observed, in seconds
+            events (dict): events dict
+
+
+        """
+
+        # Start the configuration
+        configuration_start_time = time.time()
+        config_status_id = configuration['configuration_status']
+        self.siteproxy.update_configuration_start(config_status_id)
+
+        # Helper function for generating our return value
+        def create_summary(state: str, time_completed: int = 0, reason: str = '', events: dict = {}):
+            return {
+                'start': timestamp_to_LCO_datestring(configuration_start_time),
+                'end': timestamp_to_LCO_datestring(time.time()),
+                'state': state,
+                'time_completed': time_completed,
+                'reason': reason,
+                'events': events,
+            }
+
+        # Create a helper function for identifying the end of an exposure sequence window
+        config_type = configuration['type']
+        repeat_duration = configuration.get('repeat_duration') or 0 # fallback to keep number type
+        repeat_expose_end_time = configuration_start_time + repeat_duration
+        def exposure_sequence_done():
+            ''' Return True if configuration type is an exposure sequence and the duration has been exceeded'''
+            return config_type == 'REPEAT_EXPOSE' and time.time() > repeat_expose_end_time
+
+        # Run the configuration
+        try:
+            self._go_to_target(devices['mount'], configuration['target'])
+
+            # Check for stop conditions
+            stop, reason = self.stop_condition_reached()
+            if stop:
+                return create_summary('NOT_ATTEMPTED', reason=reason)
+
+            # Update the time when we start taking exposures (not implemented yet)
+            exposure_start_time = time.time()
+            self.siteproxy.update_exposure_start_time(config_status_id, timestamp_to_LCO_datestring(exposure_start_time))
+
+            if config_type == "EXPOSE":
+                configuration_total_time_observed =  0
+                for index, ic in enumerate(configuration['instrument_configs']):
+
+                    # Check for stop conditions
+                    stop, reason = self.stop_condition_reached()
+                    if stop:
+                        return create_summary('COMPLETED', configuration_total_time_observed, reason)
+
+                    plog(f'starting instrument config #{index + 1} of {len(configuration["instrument_configs"])}')
+                    time_observed, reason = self._do_instrument_config(ic, configuration, devices, exposure_sequence_done)
+                    configuration_total_time_observed += time_observed
+                # Upon completion, return summary
+                return create_summary('COMPLETED', configuration_total_time_observed)
+
+            if config_type == "REPEAT_EXPOSE":
+                configuration_total_time_observed = 0
+                while not exposure_sequence_done():
+                    for index, ic in enumerate(configuration['instrument_configs']):
+                        plog(f'starting instrument config #{index + 1} of {len(configuration["instrument_configs"])}')
+                        plog(f'type == REPEAT_EXPOSE, so we will continue looping over all instrument configs.')
+                        plog(f'remaining time for REPEAT_EXPOSE is {repeat_expose_end_time - time.time()} seconds')
+                        time_observed, reason = self._do_instrument_config(ic, configuration, devices, exposure_sequence_done)
+                        configuration_total_time_observed += time_observed
+                return create_summary('COMPLETED', configuration_total_time_observed)
+
+            # If unknown config type: report status and return
+            reason = f"Unsupported configuration type {config_type} for PTR. Skipping this configuration."
+            plog(reason)
+            return create_summary('NOT_ATTEMPTED', 0, reason)
+        except Exception as e:
+            plog.err(f'Configuration failed unexpectedly: {e}')
+            return create_summary('FAILED', reason=f"Unexpected error: {e}")
 
 
     def run(self):
@@ -495,13 +638,28 @@ class SchedulerObservation:
         plog('Starting the following observation from LCO:')
         plog(json.dumps(self.observation, indent=2))
         request = self.observation['request']
-        siteproxy = SiteProxy()
 
         for index, configuration in enumerate(request['configurations']):
             plog(f'starting config #{index + 1} of {len(request["configurations"])}')
             if self._is_valid_config(configuration):
                 devices = get_devices_for_configuration(configuration, self.o)
-                self._do_configuration(configuration, devices, siteproxy)
+                summary = self._do_configuration(configuration, devices)
+                self.siteproxy.update_configuration_status(configuration['configuration_status'], summary['state'], summary)
             else:
-                plog('Config failed validation. Skipping.')
+                # Set a NOT_ATTEMPTED state for this configuration
+                config_status_id = configuration['configuration_status']
+                now = timestamp_to_LCO_datestring(time.time())
+                reason = 'Configuration validation failed'
+                summary = {
+                    "start": now,
+                    "end": now,
+                    "state": "NOT_ATTEMPTED",
+                    "reason": reason,
+                    "time_completed": 0,
+                    "events": {}
+                }
+                plog(f'setting configuration {config_status_id} to NOT_ATTEMPTED: {reason}')
+                self.siteproxy.update_configuration_status(config_status_id, 'NOT_ATTEMPTED', summary)
         plog(f'OBSERVATION COMPLETE\n\n')
+
+# %%
