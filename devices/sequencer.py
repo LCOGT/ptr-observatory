@@ -39,7 +39,7 @@ from glob import glob
 import traceback
 from ptr_utility import plog
 import requests
-
+import glob
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
@@ -270,7 +270,75 @@ class Sequencer:
 
         # Clear archive drive on initialisation
         self.clear_archive_drive_of_old_files()
+        
+        # Copy previous failed pipe fails if they can
+        self.attempt_to_copy_failed_pipe_files()
 
+
+    def attempt_to_copy_failed_pipe_files(self):
+        
+        plog ("BOO")
+        
+        
+
+        thread = threading.Thread(target=self.copy_failed_pipe_files_thread, args=())
+        thread.daemon = True
+        thread.start()
+
+    def copy_failed_pipe_files_thread(self):       
+        
+        
+        failsafe_directory=self.config['archive_path'] + 'failsafe'
+        if not os.path.exists(failsafe_directory):
+            os.umask(0)
+            os.makedirs(failsafe_directory)
+            
+            
+        failsafetokenfolder=failsafe_directory+ '/tokens'
+        if not os.path.exists(failsafe_directory+ '/tokens'):
+            os.umask(0)
+            os.makedirs(failsafe_directory+ '/tokens')
+        #copy_failed_pipe_files_thread
+        
+        # Copy over the fits files
+        tempfilelist= glob.glob(failsafe_directory +'/*.fits.fz')
+        for tempfile in tempfilelist:
+            
+            cameraname= tempfile.split('\\')[-1].split('-')[1].split('_')[0]
+            
+            if not os.path.exists(self.config['pipe_archive_folder_path'] +'/'+cameraname):
+                os.umask(0)
+                os.makedirs(self.config['pipe_archive_folder_path'] +'/'+cameraname)
+                
+            dayobs= tempfile.split('\\')[-1].split('-')[2]
+            
+            if not os.path.exists(self.config['pipe_archive_folder_path'] +'/'+cameraname+'/'+dayobs):
+                os.umask(0)
+                os.makedirs(self.config['pipe_archive_folder_path'] +'/'+cameraname+'/'+dayobs)
+            
+            pipefolder = self.config['pipe_archive_folder_path'] +'/'+cameraname+'/'+dayobs
+    
+            
+            try:
+                shutil.move(tempfile, pipefolder)
+            except:
+                plog(traceback.format_exc())
+                
+        pipetokenfolder = self.config['pipe_archive_folder_path'] + '/tokens'
+        if not os.path.exists(self.config['pipe_archive_folder_path'] + '/tokens'):
+            os.umask(0)
+            os.makedirs(self.config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
+
+        
+        # Copy over the token files
+        tempfilelist= glob.glob(failsafe_directory +'/tokens/*')
+        for tempfile in tempfilelist:
+            try:
+                shutil.move(tempfile, pipetokenfolder)
+            except:
+                plog(traceback.format_exc())
+                
+        #breakpoint()
 
     def run_archive_clearing_thread(self):
 
@@ -280,13 +348,13 @@ class Sequencer:
             plog ("Clearing archive of old files")
             #plog (g_dev['obs'].obsid_path + 'archive/')
             dir_path=g_dev['obs'].obsid_path + 'archive/'
-            cameras=glob(dir_path + "*/")
+            cameras=glob.glob(dir_path + "*/")
             #plog (cameras)
             for camera in cameras:  # Go through each camera directory
                 #plog ("*****************************************")
                 #plog ("Camera: " + str(camera))
                 timenow_cull=time.time()
-                directories=glob(camera + "*/")
+                directories=glob.glob(camera + "*/")
                 deleteDirectories=[]
                 deleteTimes=[]
                 for q in range(len(directories)):

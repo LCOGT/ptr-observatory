@@ -3587,24 +3587,6 @@ class Observatory:
                             overwrite=True,
                         )
 
-                    # if slow_process[0] == "fits_file_save_and_UIqueue":
-                    #     fits.writeto(
-                    #         slow_process[1],
-                    #         slow_process[2],
-                    #         temphduheader,
-                    #         overwrite=True,
-                    #     )
-                    #     filepathaws = slow_process[4]
-                    #     filenameaws = slow_process[5]
-                        # if "ARCHIVE_" in filenameaws:
-                        # #     self.enqueue_for_PTRarchive(
-                        # #         100000000000000, filepathaws, filenameaws
-                        # #     )
-                        #     pass # skipping ingesting archive calibrations. Won't need the later one either eventually
-                        # else:
-                        #     self.enqueue_for_calibrationUI(
-                        #         50, filepathaws, filenameaws
-                        #     )
 
                     if slow_process[0] == "localcalibration":
                         saver = 0
