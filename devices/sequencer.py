@@ -2679,6 +2679,9 @@ class Sequencer:
 
         # Now time to regenerate the local masters
         self.master_restack_queue.put( 'g0', block=False)
+        
+        # Copy previous failed pipe fails if they can
+        self.attempt_to_copy_failed_pipe_files()
 
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
