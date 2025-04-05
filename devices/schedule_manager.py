@@ -117,8 +117,20 @@ class NightlyScheduleManager:
         if self.site_proxy_offline:
             return
         url = self.site_proxy_base_url + '/observation-portal/api/last_scheduled/'
-        response = self.site_proxy.get(url)
-        return response.json().get('last_scheduled')
+        try:
+            response = self.site_proxy.get(url)
+            # Check if the response is successful and not empty
+            if response.status_code == 200 and response.text.strip():
+                return response.json().get('last_scheduled')
+            else:
+                plog(f"Warning: LCO scheduler API returned unexpected response. Status: {response.status_code}, Content: {response.text}")
+                return None
+        except json.JSONDecodeError:
+            plog(f"Warning: Could not decode JSON from LCO scheduler API. Response content: {response.text}")
+            return None
+        except requests.exceptions.RequestException as e:
+            plog(f"Warning: Error connecting to LCO scheduler API: {str(e)}")
+            return None
 
 
     def update_lco_schedule(self, start_time=None, end_time=None):
