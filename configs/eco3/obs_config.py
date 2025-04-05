@@ -21,6 +21,7 @@ obs_id = 'eco3' # THIS IS THE NAME OF THIS OBSERVATORY
 site_config = {
     # Instance type specifies whether this is an obs or a wema
     'instance_type' : 'obs',
+    'instance_is_public': False,
     # If this is not a wema, this specifies the wema that this obs is connected to
     'wema_name' : 'eco',
     # The unique identifier for this obs
