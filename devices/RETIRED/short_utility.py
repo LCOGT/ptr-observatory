@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+
+short_utility.py  short_utility.py  short_utility.py  short_utility.py
 Created on Thu Dec 21 23:03:06 2023
 
 @author: obs

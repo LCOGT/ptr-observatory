@@ -1,0 +1,41 @@
+wsl --install -d ubuntu
+
+(you will need to reboot here)
+
+When it reboots, it will install further and when it is done ask you for a username and password
+
+username: obs
+password: observatory
+
+sudo apt update
+sudo apt upgrade
+sudo apt install astrometry.net
+sudo apt install source-extractor
+sudo apt install psfex
+sudo apt install htpdate # This package allows time syncs using http for those clocks behind school firewalls
+
+wget -r --no-parent http://data.astrometry.net/4100/   # TYCHO
+wget -r --no-parent https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/   # GAIA
+
+wget https://users.castle.unc.edu/~vkoupr/ucac5_anet.zip # UCAC5
+unzip ucac5_anet.zip
+
+wget -r --no-parent https://data.astrometry.net/4200/     # 2mass... good for the reddened galactic plane but quite big.
+
+
+move the downloaded fits files to /usr/local/astrometry/data/  or  /usr/share/astrometry/
+
+##########
+The following is needed if you want to run certain features that need to run as root automatically
+such as the htpupdateclock.bat file. 
+
+sudo visudo
+
+Change "%sudo   ALL=(ALL:ALL) ALL" to "%sudo   ALL=(ALL:ALL) NOPASSWD: ALL"
+
+########
+HTTP CLOCK SCHEDULE (ONLY IF WINDOWS NTP ISN't working!)
+
+To schedule the http clock update task you need to make a task schedule running SyncTimeHTTP.ps1 with the higest privileges 
+powershell.exe
+with arguments: -ExecutionPolicy Bypass -File "C:\Scripts\SyncTime.ps1" (where you change this to direct to the ps1 file)

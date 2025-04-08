@@ -1,7 +1,16 @@
+'''
+rotator.py  rotator.py  rotator.py  rotator.py  rotator.py  rotator.py
+
+'''
 import time
 import win32com.client
 import psutil
 from global_yard import g_dev
+
+# We only use Observatory in type hints, so use a forward reference to prevent circular imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from obs import Observatory
 
 
 def findProcessIdByName(processName):
@@ -22,31 +31,44 @@ def findProcessIdByName(processName):
     return listOfProcessObjects
 
 class Rotator:
-    def __init__(self, driver: str, name: str, config: dict):
+    def __init__(self, driver: str, name: str, site_config: dict, observatory: 'Observatory'):
         self.name = name
+        self.config = site_config['rotator'][name]
+        self.obs = observatory
         g_dev["rot"] = self
+
+        # Configure the role, if it exists
+        # Current design allows for only one role per device
+        # We can add more roles by changing self.role to a list and adjusting any references
+        self.role = None
+        for role, device in site_config['device_roles'].items():
+            if device == name:
+                self.role = role
+                break
+
         win32com.client.pythoncom.CoInitialize()
+
         self.driver=driver
-        self.rotator = win32com.client.Dispatch(driver)        
+        self.rotator = win32com.client.Dispatch(driver)
         time.sleep(3)
 
         self.rotator.Connected = True
         self.rotator_message = "-"
         print("Rotator connected,  at:  ", round(self.rotator.TargetPosition, 4))
-        
-        # The telescope driver also needs to be connected
+
+        #The telescope driver also needs to be connected
         self.rotator_telescope = win32com.client.Dispatch(driver.replace('Rotator','Telescope'))
         try:
             self.rotator_telescope.Connected = True
         except:
-            breakpoint()            
-        
+            breakpoint()
+
         self.TargetPosition=self.rotator.TargetPosition
         self.Position=self.rotator.Position
         self.IsMoving=self.rotator.IsMoving
-        
+
         self.rotator_meant_to_be_rotating = True
-                    
+
     def get_status(self):
         """
         The position is expressed as an angle from 0 up to but not including
@@ -58,13 +80,13 @@ class Rotator:
         mechanical rotator position angle and the true Equatorial Position
         Angle of the imager, and compensate for any difference.
         """
-        
+
         self.TargetPosition=self.rotator.TargetPosition
         self.Position=self.rotator.Position
         self.IsMoving=self.rotator.IsMoving
         # NB we had an exception here with Target position.  mORE THAN ONE OF THESE! 220210709
         try:
-            
+
             status = {
                 "position_angle": round(self.TargetPosition, 4),
                 "rotator_moving": self.IsMoving,
@@ -145,4 +167,4 @@ class Rotator:
         """Sets the rotator to the home position."""
         print("rotator cmd: home")
         self.rotator.Action('HomeDevice',1)
-        
+

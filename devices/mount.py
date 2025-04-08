@@ -1,5 +1,7 @@
 
 """
+mount.py  mount.py  mount.py  mount.py  mount.py  mount.py  mount.py  mount.py
+
 20200310 WER
 General comments.  Note use of double quotes.  Maybe this is our convention for polemics and trading opinions then we strip
 out of the Production source?
@@ -43,11 +45,20 @@ from math import cos, radians    #"What plan do we have for making some imports 
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
 from astropy.time import Time
 from astropy import units as u
-from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun, get_moon, FK5#, ICRS
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun,  FK5, get_body#, ICRS
 import math
 import ephem
 from ptr_utility import plog
 import time
+import requests
+import subprocess
+import urllib
+import os
+
+# We only use Observatory in type hints, so use a forward reference to prevent circular imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from obs import Observatory
 
 DEBUG = False
 
@@ -131,26 +142,26 @@ def dec_fix_r(pDec):   #NB NB Note this limits not fixes!!!
 def ra_dec_fix_r(ra, dec): #Note this is not a mechanical (TPOINT) transformation of dec and HA/RA
     if dec > PIOVER2:
         dec = PI - dec
-        ra -= PI
+        ra += PI
     if dec < -PIOVER2:
         dec = -PI - dec
         ra += PI
-    if ra < 0:
+    while ra < 0:
         ra += TWOPI
-    if ra >= TWOPI:
+    while ra >= TWOPI:
         ra -= TWOPI
     return ra, dec
 
 def ra_dec_fix_h(ra, dec):
     if dec > 90:
         dec = 180 - dec
-        ra -= 12
+        ra += 12
     if dec < -90:
         dec = -180 - dec
         ra += 12
-    if ra >= 24:
+    while ra >= 24:
         ra -= 24
-    if ra < 0:
+    while ra < 0:
         ra += 24
     return ra, dec
 
@@ -199,25 +210,41 @@ class Mount:
     that is rarely disturbed or removed.
     '''
 
-    def __init__(self, driver: str, name: str, settings: dict, config: dict, astro_events, tel=False):
+    def __init__(self, driver: str, name: str, config: dict, observatory: 'Observatory', tel=False):
         self.name = name
-        self.astro_events = astro_events
+        self.obs = observatory # use this to access the parent obsevatory class
         g_dev['mnt'] = self
 
         self.obsid = config['obs_id']
-        self.obsid_path = g_dev['obs'].obsid_path
-        self.config = config
-        self.device_name = name
-        self.settings = settings
+        self.obsid_path = self.obs.obsid_path
+        self.config = config['mount'][name]
+        self.site_config = config
+        self.wema_config = self.obs.wema_config
+        self.settings = self.config['settings']
+
+        self.role = 'mount' # since we'll only ever have one mount, it automatically gets the role of 'mount'
 
         win32com.client.pythoncom.CoInitialize()
-        self.mount = win32com.client.Dispatch(driver)
 
-        try:
-            self.mount.Connected = True
-        except:
-            self.mount_busy=False
-            plog(traceback.format_exc())
+        # Set the dummy flag
+        if driver == 'dummy':
+            self.dummy=True
+        else:
+            self.dummy=False
+
+
+        if not self.dummy:
+
+            self.mount = win32com.client.Dispatch(driver)
+
+            try:
+                self.mount.Connected = True
+            except:
+                self.mount_busy=False
+                plog(traceback.format_exc())
+
+        else:
+            self.mount='dummy'
 
         self.driver = driver
 
@@ -226,37 +253,52 @@ class Mount:
         else:
             self.theskyx = False
 
-        self.site_coordinates = EarthLocation(lat=float(g_dev['evnt'].wema_config['latitude'])*u.deg, \
-                                lon=float(g_dev['evnt'].wema_config['longitude'])*u.deg,
-                                height=float(g_dev['evnt'].wema_config['elevation'])*u.m)
-        self.latitude_r = g_dev['evnt'].wema_config['latitude']*DTOR
+        self.site_coordinates = EarthLocation(lat=float(self.wema_config['latitude'])*u.deg, \
+                                lon=float(self.wema_config['longitude'])*u.deg,
+                                height=float(self.wema_config['elevation'])*u.m)
+        self.latitude_r = self.wema_config['latitude']*DTOR
         self.sin_lat = math.sin(self.latitude_r)
         self.cos_lat = math.cos(self.latitude_r)
-        self.pressure =g_dev['evnt'].wema_config['reference_pressure']
-        self.temperature = g_dev['evnt'].wema_config['reference_ambient']
+        self.pressure =self.wema_config['reference_pressure']
+        self.temperature = self.wema_config['reference_ambient']
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
         self.mount_message = "-"
-        self.has_paddle = config['mount']['mount1']['has_paddle']
+        self.has_paddle = config['mount'][name]['has_paddle']
 
         self.object = "Unspecified"
-        self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+        self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
         #DIRECT MOUNT POSITION READ #1
         #NB NB this is toally incorrect.  The mount is mechanical. self.current_icrs_ra is used!
-        self.current_icrs_ra = self.mount.RightAscension  #this _icrs_ reference is used in saftey check..
-        self.current_icrs_dec = self.mount.Declination
-        self.current_mount_sidereal = self.mount.SiderealTime
-        self.current_mechanical_ra = self.mount.RightAscension
-        self.current_mechanical_dec = self.mount.Declination
-        self.current_mechanical_sidereal = self.mount.SiderealTime
+        if not self.dummy:
+            self.current_icrs_ra = self.mount.RightAscension  #this _icrs_ reference is used in saftey check..
+            self.current_icrs_dec = self.mount.Declination
+            #self.current_mount_sidereal = self.mount.SiderealTime
+            self.current_mechanical_ra = self.mount.RightAscension
+            self.current_mechanical_dec = self.mount.Declination
+            #self.current_mechanical_sidereal = self.mount.SiderealTime
+        else:
+
+            self.current_icrs_ra = 1.0  #this _icrs_ reference is used in saftey check..
+            self.current_icrs_dec = 1.0
+            #self.current_mount_sidereal = 1.0
+            self.current_mechanical_ra = 1.0
+            self.current_mechanical_dec = 1.0
+            #self.current_mechanical_sidereal = 1.0
+
+
+
+
+
         try:
-            self.ICRS2000 = config["mount"]["mount1"]["settings"]['ICRS2000_input_coords']
-            self.refr_on = config["mount"]["mount1"]["settings"]["refraction_on"]
-            self.model_on = config["mount"]["mount1"]["settings"]["model_on"]
-            self.model_type = config["mount"]["mount1"]["settings"]["model_type"]
-            self.rates_on = config["mount"]["mount1"]["settings"]["rates_on"]
+
+            self.ICRS2000 = self.settings['ICRS2000_input_coords']
+            self.refr_on = self.settings["refraction_on"]
+            self.model_on = self.settings["model_on"]
+            self.model_type = self.settings["model_type"]
+            self.rates_on = self.settings["rates_on"]
         except:
             self.ICRS2000 = True    #This is the default for coordinates provided by the PTR GUI
             self.refr_on = False    #These also are probably the settings for The SkyX since it does all this internally.
@@ -266,7 +308,7 @@ class Mount:
 
         if self.model_type == 'Equatorial':
             try:
-                self.model = config["mount"]["mount1"]["settings"]["model_equat"]
+                self.model = self.settings["model_equat"]
             except:
                 plog ("No model in config, using 0 model")
                 self.model = {
@@ -287,7 +329,7 @@ class Mount:
                     }
         else:
             try:
-                self.model = config["mount"]["mount1"]["settings"]["model_altAz"]
+                self.model = self.settings["model_altAz"]
             except:
                 plog ("No model in config, using 0 model")
                 self.model = {
@@ -315,22 +357,23 @@ class Mount:
         self.prior_roll_rate = 0
         self.prior_pitch_rate = 0
         self.offset_received = False
-        self.west_clutch_ra_correction = config['mount']['mount1']['west_clutch_ra_correction']
-        self.west_clutch_dec_correction = config['mount']['mount1']['west_clutch_dec_correction']
-        self.east_flip_ra_correction = config['mount']['mount1']['east_flip_ra_correction']
-        self.east_flip_dec_correction = config['mount']['mount1']['east_flip_dec_correction']
-        self.settle_time_after_unpark = config['mount']['mount1']['settle_time_after_unpark']
-        self.settle_time_after_park = config['mount']['mount1']['settle_time_after_park']
+        self.west_clutch_ra_correction = self.config['west_clutch_ra_correction']
+        self.west_clutch_dec_correction = self.config['west_clutch_dec_correction']
+        self.east_flip_ra_correction = self.config['east_flip_ra_correction']
+        self.east_flip_dec_correction  = self.config['east_flip_dec_correction']
+        self.settle_time_after_unpark = self.config['settle_time_after_unpark']
+        self.settle_time_after_park = self.config['settle_time_after_park']
 
         self.refraction = 0
-        self.target_az = 0   #Degrees Azimuth
+        self.target_az = -500   #Degrees Azimuth    THESE ARE SO THE DOME CAN READ THIS FROM STATUS AND MOVE DOME AHEAD OF THE SCOPE
+        self.target_alt = -500  # Degrees Altitude  THE ALTITUDE IS IMPORTANT TO MAKE CORRECTIONS TO THE DOME AZIMUTH FOR DIFFERENT SIDES OF THE PIER.
         self.ha_corr = 0
         self.dec_corr = 0
         self.seek_commanded = False
-        self.home_after_unpark = config['mount']['mount1']['home_after_unpark']
-        self.home_before_park = config['mount']['mount1']['home_before_park']
+        self.home_after_unpark = self.config['home_after_unpark']
+        self.home_before_park = self.config['home_before_park']
         self.parking_or_homing=False
-        self.wait_after_slew_time= config['mount']['mount1']['wait_after_slew_time']
+        self.wait_after_slew_time= self.config['wait_after_slew_time']
         if abs(self.east_flip_ra_correction) > 0 or abs(self.east_flip_dec_correction) > 0:
             self.flip_correction_needed = True
             plog("Flip correction may be needed.")
@@ -340,17 +383,21 @@ class Mount:
             plog("Mount connected.")
         else:
             plog("Auxillary Tel/OTA connected.")
-        plog(self.mount.Description)
+        try:
+            plog(self.mount.Description)
+        except:
+            pass
         self.ra_offset = 0.0
         self.dec_offset = 0.0
         self.move_time = 0
-        self.obs = ephem.Observer()
-        self.obs.long = g_dev['evnt'].wema_config['longitude']*DTOR
-        self.obs.lat = g_dev['evnt'].wema_config['latitude']*DTOR
-
+        self.ephem_obs = ephem.Observer()
+        self.ephem_obs.long = self.wema_config['longitude']*DTOR
+        self.ephem_obs.lat = self.wema_config['latitude']*DTOR
+        self.tpt_timer = time.time()
         self.theskyx_tracking_rescues = 0
 
-        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + self.name + str(g_dev['obs'].name))
+
         try:
             self.longterm_storage_of_mount_references=mnt_shelf['longterm_storage_of_mount_references']
             self.longterm_storage_of_flip_references=mnt_shelf['longterm_storage_of_flip_references']
@@ -360,9 +407,9 @@ class Mount:
             self.longterm_storage_of_flip_references=[]
         mnt_shelf.close()
 
-        plog ("Mount deviations, mount then flip:")
-        plog (self.longterm_storage_of_mount_references)
-        plog (self.longterm_storage_of_flip_references)
+        plog ("Mount deviations, for mount then for flipflip:",
+                self.longterm_storage_of_mount_references,
+                self.longterm_storage_of_flip_references)
 
         self.last_mount_reference_time=time.time() - 86400
         self.last_flip_reference_time=time.time() - 86400
@@ -381,9 +428,14 @@ class Mount:
         # before exposures after bootup
 
         #DIRECT MOUNT POSITION READ #2
-        self.last_ra_requested = self.mount.RightAscension
-        self.last_dec_requested = self.mount.Declination
-        self.last_sidereal_requested = self.mount.SiderealTime
+        if not self.dummy:
+            self.last_ra_requested = self.mount.RightAscension
+            self.last_dec_requested = self.mount.Declination
+            #self.last_sidereal_requested = self.mount.SiderealTime
+        else:
+            self.last_ra_requested = 1.0
+            self.last_dec_requested = 1.0
+            #self.last_sidereal_requested = 1.0
 
         self.last_tracking_rate_ra = 0
         self.last_tracking_rate_dec = 0
@@ -392,21 +444,26 @@ class Mount:
         self.currently_creating_status = False
 
         # Minimising ASCOM calls by holding these as internal variables
-        if self.mount.CanSetRightAscensionRate:
-            plog ("Can Set RightAscensionRate")
-            self.CanSetRightAscensionRate=True
-        else:
-            plog ("CANNOT Set RightAscensionRate")
-            self.CanSetRightAscensionRate=False
-        self.RightAscensionRate = self.mount.RightAscensionRate
+        if not self.dummy:
+            if self.mount.CanSetRightAscensionRate:
+                plog ("Can Set RightAscensionRate")
+                self.CanSetRightAscensionRate=True
+            else:
+                plog ("CANNOT Set RightAscensionRate")
+                self.CanSetRightAscensionRate=False
+            self.RightAscensionRate = self.mount.RightAscensionRate
 
-        if self.mount.CanSetDeclinationRate:
-            self.CanSetDeclinationRate = True
-            plog ("Can Set DeclinationRate")
+            if self.mount.CanSetDeclinationRate:
+                self.CanSetDeclinationRate = True
+                plog ("Can Set DeclinationRate")
+            else:
+                self.CanSetDeclinationRate = False
+                plog ("CANNOT Set DeclinationRate")
+            self.DeclinationRate = self.mount.DeclinationRate
         else:
+            self.CanSetRightAscensionRate=False
             self.CanSetDeclinationRate = False
-            plog ("CANNOT Set DeclinationRate")
-        self.DeclinationRate = self.mount.DeclinationRate
+
 
         #IMPORTANT Ap1600 Info.
 
@@ -415,32 +472,57 @@ class Mount:
                   #The rates display on the AP GpTo ASCOM driver (tall skinny window)
                   #is correct and shows the input asec/sec values.
 
-        self.EquatorialSystem = self.mount.EquatorialSystem
+        if not self.dummy:
+            self.EquatorialSystem = self.mount.EquatorialSystem
+            self.previous_pier_side = self.mount.sideOfPier
+            self.pier_side_last_check = self.mount.sideOfPier
 
-        self.previous_pier_side = self.mount.sideOfPier
-        self.pier_side_last_check = self.mount.sideOfPier
+        else:
+
+            self.EquatorialSystem = 'J2000'
+            self.previous_pier_side = 1
+            self.pier_side_last_check = 1
+
+
         self.request_new_pierside=False
-        self.request_new_pierside_ra=1.0
+        self.request_new_pierside_ra=1.0   #Why these values?
         self.request_new_pierside_dec=1.0
 
-        self.can_park = self.mount.CanPark
-        self.can_set_tracking = self.mount.CanSetTracking
-
-        self.can_sync_mount = self.mount.CanSync
+        if not self.dummy:
+            self.can_park = self.mount.CanPark
+            self.can_set_tracking = self.mount.CanSetTracking
+            self.can_sync_mount = self.mount.CanSync
+        else:
+            self.can_park = False
+            self.can_set_tracking = False
+            self.can_sync_mount = False
 
         # The update_status routine collects the current atpark status and pier status.
         # This is a slow command, so unless the code needs to know IMMEDIATELY
         # whether the scope is parked, then this is polled rather than directly
         # asking ASCOM/MOUNT
-        self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
-        self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
+        if not self.dummy:
+            self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
+            self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
 
-        #DIRECT MOUNT POSITION READ #3
-        self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
-        self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
-        #Verified these set the rates additively to mount supplied refraction rate.20231221 WER
-        self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount.RightAscensionRate)
-        self.declination_rate_directly_from_mount = copy.deepcopy(self.mount.DeclinationRate)
+            #DIRECT MOUNT POSITION READ #3
+            self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
+            self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
+            #Verified these set the rates additively to mount supplied refraction rate.20231221 WER
+            self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount.RightAscensionRate)
+            self.declination_rate_directly_from_mount = copy.deepcopy(self.mount.DeclinationRate)
+
+        else:
+            self.rapid_park_indicator=True
+            self.rapid_pier_indicator=1
+
+            #DIRECT MOUNT POSITION READ #3
+            self.right_ascension_directly_from_mount = 1.0
+            self.declination_directly_from_mount = 1.0
+            #Verified these set the rates additively to mount supplied refraction rate.20231221 WER
+            self.right_ascension_rate_directly_from_mount = 1.0
+            self.declination_rate_directly_from_mount = 0.0
+
 
 
         # initialisation values
@@ -449,14 +531,21 @@ class Mount:
         self.az = 160
         self.zen = 45
         self.inverse_icrs_and_rates_timer=time.time() - 180
-        self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
+        if not self.dummy:
+            self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
+        else:
+            self.current_tracking_state=True
+
         self.request_tracking_on = False
         self.request_tracking_off = False
 
         self.request_set_RightAscensionRate=False
         self.request_set_DeclinationRate=False
 
-        self.CanFindHome = self.mount.CanFindHome
+        if not self.dummy:
+            self.CanFindHome = self.mount.CanFindHome
+        else:
+            self.CanFindHome = False
 
         # This is a latch to prevent multiple commands being sent to latch at the same time.
         self.mount_busy=False
@@ -465,16 +554,20 @@ class Mount:
 
         tempunparked=False
         # if mount is parked, temporarily unpark it quickly to test pierside functions.
-        if self.mount.AtPark:
-            self.mount.Unpark()
-            tempunparked=True
-            self.rapid_park_indicator=False
+        time.sleep(2)
+
+        if not self.dummy:
+            if self.mount.AtPark:
+                self.mount.Unpark()
+                time.sleep(3)
+                tempunparked=True
+                self.rapid_park_indicator=False
 
         # Here we figure out if it can report pierside. If it cannot, we need
         # not keep calling the mount to ask for it, which is slow and prone
         # to an ascom crash.
         try:
-            self.pier_side = g_dev["mnt"].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
+            self.pier_side = self.mount.sideOfPier  # 0 == Tel Looking West, is flipped.
             self.can_report_pierside = True
         except Exception:
             plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
@@ -484,7 +577,7 @@ class Mount:
 
         # Similarly for DestinationSideOfPier
         try:
-            g_dev["mnt"].mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
+            self.mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
             self.can_report_destination_pierside = True
         except Exception:
             plog ("Mount cannot report destination pierside. Setting the code not to ask again.")
@@ -499,23 +592,29 @@ class Mount:
         else:
             self.pier_side_str = "Looking East"
 
-        if tempunparked:
+        if tempunparked and not self.dummy:
             self.mount.Park()
             self.rapid_park_indicator=True
 
         self.currently_slewing= False
         self.abort_slew_requested=False
         self.find_home_requested=False
+        
+        
+        prev_tracking=copy.deepcopy(self.mount.Tracking)
         try:
-            self.mount.Tracking = False
+            self.mount.Tracking = True
             self.can_set_tracking=True
         except:
             self.can_set_tracking=False
+        if self.can_set_tracking:
+            self.mount.Tracking= prev_tracking
 
         self.sync_mount_requested=False
 
-        self.syncToRA=12.0   
-        self.syncToDEC=-20.0 
+        self.syncToRA=12.0
+        self.syncToDEC=-20.0
+
 
         self.unpark_requested=False
         self.park_requested=False
@@ -531,10 +630,13 @@ class Mount:
         self.mount_update_reboot=False
 
         self.mount_update_thread=threading.Thread(target=self.mount_update_thread)
+        self.mount_update_thread.daemon = True
         self.mount_update_thread.start()
 
         self.wait_for_mount_update()
         self.get_status()
+
+        #breakpoint()
 
 
 #First add in various needed functions for coordinate conversions
@@ -579,7 +681,7 @@ class Mount:
     def apply_refraction_in_alt(self, pApp_alt):  # Deg, C. , mmHg     #note change to mbar
 
         # From Astronomical Algorithms.  Max error 0.89" at 0 elev.
-        # 20210328 This code does not the right thing if star is below the Pole and is refracted above it.
+        # 20210328 This code does not do the right thing if star is below the Pole and is refracted above it.
 
         if not self.refr_on:
             return pApp_alt, 0.0
@@ -679,7 +781,7 @@ class Mount:
         ra_app_h, dec_app_d = ra_dec_fix_h(ra, dec)
 
         #First, convert Ra to Ha
-        self.sid_now_h = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+        self.sid_now_h = float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
         #First, convert Ra to Ha
         ha_app_h = ha_fix_h(self.sid_now_h - ra_app_h)
@@ -758,10 +860,11 @@ class Mount:
         if not self.model_on:
             return (pRoll_h, pPitch_d)
         else:
-
+            #print('MA, ME: ', math.degrees(self.model['ma']), math.degrees(self.model['me']))
             # R to HD convention
             # pRoll  in Hours
             # pPitch in degrees
+            # NB Incoming model terms should be in radians.
             #Apply IH and ID to incoming coordinates, and if needed GEM correction.
             rRoll = math.radians(pRoll_h * HTOD) - self.model['ih']  #This is the basic calibration for Park Position.
             rPitch = math.radians(pPitch_d) - self.model['id']
@@ -860,7 +963,11 @@ class Mount:
                 self.decCorr = (dec_fix_r(corrPitch - pPitch_d*DTOR))*RTOS
                 # 20210328  Note this may not work at Pole.
                 #if enable:
-                if DEBUG: print("Corrections in asec:  ", round(self.raCorr, 2), round(self.decCorr, 2))
+
+                cur_time = time.time()
+                if self.tpt_timer + 45 < cur_time:
+                    #plog("Corrections in asec:  ", round(self.raCorr, 2), round(self.decCorr, 2))
+                    self.tpt_timer = cur_time
                 return (corrRoll*RTOH, corrPitch*RTOD )
             elif not GEM:
                 #if loud:
@@ -964,20 +1071,22 @@ class Mount:
     # Note this is a thread!
     def mount_update_thread(self):   # NB is this the best name for this? Update vs Command
 
-        win32com.client.pythoncom.CoInitialize()
 
-        self.mount_update_wincom = win32com.client.Dispatch(self.driver)
-        try:
-            self.mount_update_wincom.Connected = True
-        except:
-            # perhaps the AP mount doesn't like this.
-            pass
+        if not self.dummy:
+            win32com.client.pythoncom.CoInitialize()
+
+            self.mount_update_wincom = win32com.client.Dispatch(self.driver)
+            try:
+                self.mount_update_wincom.Connected = True
+            except:
+                # perhaps the AP mount doesn't like this.
+                pass
 
         # This stopping mechanism allows for threads to close cleanly.
         while True:
             try:
                 # update every so often, but update rapidly if slewing.
-                if self.mount_update_reboot:
+                if self.mount_update_reboot and not self.dummy:
                     win32com.client.pythoncom.CoInitialize()
                     self.mount_update_wincom = win32com.client.Dispatch(self.driver)
                     try:
@@ -991,14 +1100,18 @@ class Mount:
 
                     self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                     self.currently_slewing=False
-                    g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
+                    self.pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
 
 
                     self.mount_updates=self.mount_updates + 1  #A monotonic increasing integer counter
 
                 if self.currently_slewing or (((self.mount_update_timer < time.time() - self.mount_update_period) and not self.mount_update_paused)):# or (no(self.currently_slewing) and not self.mount_update_paused):
 
-                    self.currently_slewing= self.mount_update_wincom.Slewing
+
+                    if not self.dummy:
+                        self.currently_slewing= self.mount_update_wincom.Slewing
+                    else:
+                        self.currently_slewing=False
 
                     if self.currently_slewing:
                         try:
@@ -1011,7 +1124,7 @@ class Mount:
                             # quickly as possible
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-                            
+
                             if self.model_on:
                                 # Dont need to correct temporary slewing values as it is moving
                                 self.inverse_icrs_ra = self.right_ascension_directly_from_mount
@@ -1025,141 +1138,218 @@ class Mount:
                         self.mount_updates=self.mount_updates + 1
                         self.mount_update_timer=time.time()
                     else:
-                        #  Starting here ae tha vari0us mount commands and reads...
-                        try:
 
-                            if self.can_sync_mount:
-                                if self.sync_mount_requested:
-                                    self.sync_mount_requested=False
-                                    self.mount_update_wincom.SyncToCoordinates(self.syncToRA,self.syncToDEC)
+                        if not self.dummy:
+                            #  Starting here ae tha vari0us mount commands and reads...
+                            try:
 
-                            if self.unpark_requested:
-                                self.unpark_requested=False
-                                self.mount_update_wincom.Unpark()
-                                self.rapid_park_indicator=False
+                                if self.can_sync_mount:
+                                    if self.sync_mount_requested:
+                                        self.sync_mount_requested=False
+                                        #breakpoint()
+                                        self.mount_update_wincom.SyncToCoordinates(self.syncToRA,self.syncToDEC)
 
-                            if self.park_requested:
-                                self.park_requested=False
-                                self.mount_update_wincom.Park()
-                                self.rapid_park_indicator=True
+                                if self.unpark_requested:
+                                    self.unpark_requested=False
+                                    self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
+                                    self.target_alt=-500
+                                    self.mount_update_wincom.Unpark()
+                                    self.rapid_park_indicator=False
 
-                            if self.find_home_requested:
-                                self.find_home_requested=False
-                                if self.mount_update_wincom.AtHome:
-                                    plog("Mount is at home.")
-                                else:
-                                    g_dev['obs'].time_of_last_slew=time.time()
-                                    if self.mount_update_wincom.AtPark:
-                                        self.mount_update_wincom.Unpark()
+                                if self.park_requested:
+                                    self.park_requested=False
+                                    self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
+                                    self.target_alt=-500
+                                    self.mount_update_wincom.Park()
+                                    self.rapid_park_indicator=True
 
-                                    while self.mount_update_wincom.Slewing:
-                                        plog("waiting for slew before homing")
-                                        time.sleep(0.2)
-                                    self.mount_update_wincom.FindHome()
+                                if self.find_home_requested:
+                                    self.find_home_requested=False
+                                    self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
+                                    self.target_alt=-500
+                                    if self.mount_update_wincom.AtHome:
+                                        plog("Mount is at home.")
+                                    else:
+                                        g_dev['obs'].time_of_last_slew=time.time()
+                                        if self.mount_update_wincom.AtPark:
+                                            self.mount_update_wincom.Unpark()
 
-                            if self.abort_slew_requested:
-                                self.abort_slew_requested=False
-                                self.mount_update_wincom.AbortSlew()
+                                        while self.mount_update_wincom.Slewing:
+                                            plog("waiting for slew before homing")
+                                            time.sleep(0.2)
+                                        self.mount_update_wincom.FindHome()
+
+                                if self.abort_slew_requested:
+                                    self.abort_slew_requested=False
+                                    self.mount_update_wincom.AbortSlew()
+
+                                if self.slewtoAsyncRequested:
+                                    self.slewtoAsyncRequested=False
+
+                                    # Don't slew while exposing!                                    
+                                    # although we need SOME reasonable timeout!
+                                    camera_wait_timeout=time.time()
+                                    
+                                    try:
+                                        while g_dev['cam'].shutter_open and (time.time() - camera_wait_timeout < 120):
+                                            plog ("mount thread waiting for camera")
+                                            time.sleep(0.2)
+                                    except:
+                                        plog ("mount thread camera wait failed.")
+
+                                    # Figure out the implied azimuth for that ra and dec at this location
+                                    observation_time=Time.now()
+                                    sky_coord=SkyCoord(ra=self.slewtoRA*15*u.deg, dec=self.slewtoDEC*u.deg)
+                                    # Convert to AltAz frame
+                                    altaz_frame = AltAz(obstime=observation_time, location=self.site_coordinates)
+                                    altaz_coords = sky_coord.transform_to(altaz_frame)
+
+                                    # # Extract altitude and azimuth
+                                    # obs_altitude = altaz_coords.alt.deg
+                                    # obs_azimuth = altaz_coords.az.deg
+
+                                    self.target_az=altaz_coords.az.deg
+                                    self.target_alt=altaz_coords.alt.deg
+                                    self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
+                                    self.currently_slewing=True
+
+                                # If we aren't slewing this update and we haven't
+                                # updated the position for half a minute, update the position.
+                                elif (time.time() - self.inverse_icrs_and_rates_timer) > 30:
+
+                                    if self.model_on:
+
+                                        self.inverse_icrs_ra, self.inverse_icrs_dec, self.inverse_ra_vel, self.inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
+                                        self.inverse_icrs_and_rates_timer=time.time()
+
+                                        if self.CanSetRightAscensionRate:
+                                            self.request_set_RightAscensionRate=False
+                                            try:
+                                                self.mount_update_wincom.RightAscensionRate=self.inverse_ra_vel
+                                                #plog ("new RA rate set: " +str(self.RightAscensionRate))
+                                            except:
+                                                pass  #This faults if mount is parked.
+                                            self.RightAscensionRate=self.inverse_ra_vel
+                                            #plog ("new RA rate set: " +str(self.RightAscensionRate))
+
+                                        if self.CanSetDeclinationRate:
+                                            self.request_set_DeclinationRate=False
+                                            try:
+                                                self.mount_update_wincom.DeclinationRate=self.inverse_dec_vel
+                                                #plog ("new DEC rate set: " +str(self.DeclinationRate))
+                                            except:
+                                                pass  #This faults if mount is parked.
+                                            self.DeclinationRate=self.inverse_dec_vel
+
+                                if self.request_tracking_on:
+                                    self.request_tracking_on = False
+                                    if  self.can_set_tracking:
+                                        self.mount_update_wincom.Tracking = True
+
+                                if self.request_tracking_off:
+                                    self.request_tracking_off = False
+                                    if  self.can_set_tracking:
+                                        self.mount_update_wincom.Tracking = False
+
+                                if self.request_new_pierside:
+                                    self.request_new_pierside=False
+                                    if self.can_report_destination_pierside:
+                                        self.new_pierside=self.mount_update_wincom.DestinationSideOfPier(self.request_new_pierside_ra, self.request_new_pierside_dec)
+
+                                if self.request_set_RightAscensionRate and self.CanSetRightAscensionRate:
+                                    self.request_set_RightAscensionRate=False
+                                    self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
+                                    self.RightAscensionRate=self.request_new_RightAscensionRate
+                                    #plog ("new RA rate set: " +str(self.RightAscensionRate))
+
+                                if self.request_set_DeclinationRate and self.CanSetDeclinationRate:
+                                    self.request_set_DeclinationRate=False
+                                    self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
+                                    self.DeclinationRate=self.request_new_DeclinationRate
+                                    #plog ("new DEC rate set: " +str(self.DeclinationRate))
+
+                                if self.request_find_home:
+                                    self.request_find_home=False
+                                    try:
+                                        self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
+                                        self.target_alt=-500
+                                        self.mount_update_wincom.FindHome()
+                                    except:
+                                        plog("Perhaps Mount cannot find home?")
+                                        plog(traceback.format_exc())
+                                        try:
+                                            plog("Mount is not capable of finding home. Slewing to home_alt and home_az from config")
+                                            alt = float(self.settings["home_altitude"])
+                                            az = float(self.settings["home_azimuth"])
+                                            #temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
+                                            altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
+                                            ra = altazskycoord.icrs.ra.deg /15
+                                            dec = altazskycoord.icrs.dec.deg
+                                            self.target_az=-500 # - 500 indicates that the mount is homing, parking or unparking and it's target is irrelevant
+                                            self.target_alt=-500
+                                            self.mount_update_wincom.SlewToCoordinatesAsync(ra , dec)
+                                            self.currently_slewing=True
+
+                                        except:
+                                            plog(traceback.format_exc())
+
+                                self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
+
+                                if not self.rapid_park_indicator:
+                                    if self.can_report_pierside:
+                                        self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
+                                        self.current_tracking_state=self.mount_update_wincom.Tracking
+                                        try:
+                                            if not (self.pier_side_last_check==self.rapid_pier_indicator):
+                                                self.pier_flip_detected=True
+                                                plog ("PIERFLIP DETECTED!")
+                                        except:
+                                            plog ("missing pier_side_last_check variable probs")
+                                            plog(traceback.format_exc())
+                                        self.pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
+
+                                #DIRECT MOUNT POSITION READ #5
+                                self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
+                                self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
+                                self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
+                                self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
+
+                            except:
+                                plog ("Issue in normal mount thread")
+                                plog(traceback.format_exc())
+                            self.mount_updates=self.mount_updates + 1
+                            self.mount_update_timer=time.time()
+
+                        else:
+                            #print ("mount dummy loop")
 
                             if self.slewtoAsyncRequested:
                                 self.slewtoAsyncRequested=False
 
-                                # Don't slew while exposing!
-                                try:
-                                    while g_dev['cam'].shutter_open:
-                                        plog ("mount thread waiting for camera")
-                                        time.sleep(0.2)
-                                except:
-                                    plog ("mount thread camera wait failed.")
+                                # # Don't slew while exposing!
+                                # try:
+                                #     while g_dev['cam'].shutter_open:
+                                #         plog ("mount thread waiting for camera")
+                                #         time.sleep(0.2)
+                                # except:
+                                #     plog ("mount thread camera wait failed.")
 
-                                self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-                                self.currently_slewing=True
+                                #self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
 
-                            # If we aren't slewing this update and we haven't
-                            # updated the position for half a minute, update the position.
-                            elif (time.time() - self.inverse_icrs_and_rates_timer) > 30:
+                                #self.currently_slewing=True
 
-                                if self.model_on:
+                                self.right_ascension_directly_from_mount = copy.deepcopy(self.slewtoRA)
+                                self.declination_directly_from_mount = copy.deepcopy(self.slewtoDEC)
+                                self.current_icrs_ra = copy.deepcopy(self.slewtoRA)  #this _icrs_ reference is used in saftey check..
+                                self.current_icrs_dec =  copy.deepcopy(self.slewtoDEC)
+                                #self.current_mount_sidereal = self.mount.SiderealTime
+                                self.current_mechanical_ra = copy.deepcopy(self.slewtoRA)
+                                self.current_mechanical_dec =  copy.deepcopy(self.slewtoDEC)
 
-                                    self.inverse_icrs_ra, self.inverse_icrs_dec, self.inverse_ra_vel, self.inverse_dec_vel = self.transform_mechanical_to_icrs(self.right_ascension_directly_from_mount, self.declination_directly_from_mount,  self.rapid_pier_indicator)
-                                    self.inverse_icrs_and_rates_timer=time.time()
 
-                                    if self.CanSetRightAscensionRate:
-                                        self.request_set_RightAscensionRate=False
-                                        try:
-                                            self.mount_update_wincom.RightAscensionRate=self.inverse_ra_vel
-                                            #plog ("new RA rate set: " +str(self.RightAscensionRate))
-                                        except:
-                                            pass  #This faults if mount is parked.
-                                        self.RightAscensionRate=self.inverse_ra_vel
-                                        #plog ("new RA rate set: " +str(self.RightAscensionRate))
+                            self.mount_updates=self.mount_updates + 1  #A monotonic increasing integer counter
+                            self.mount_update_timer=time.time()
 
-                                    if self.CanSetDeclinationRate:
-                                        self.request_set_DeclinationRate=False
-                                        try:
-                                            self.mount_update_wincom.DeclinationRate=self.inverse_dec_vel
-                                            #plog ("new DEC rate set: " +str(self.DeclinationRate))
-                                        except:
-                                            pass  #This faults if mount is parked.
-                                        self.DeclinationRate=self.inverse_dec_vel
-
-                            if self.request_tracking_on:
-                                self.request_tracking_on = False
-                                if  self.can_set_tracking:
-                                    self.mount_update_wincom.Tracking = True
-
-                            if self.request_tracking_off:
-                                self.request_tracking_off = False
-                                if  self.can_set_tracking:
-                                    self.mount_update_wincom.Tracking = False
-
-                            if self.request_new_pierside:
-                                self.request_new_pierside=False
-                                if self.can_report_destination_pierside:
-                                    self.new_pierside=self.mount_update_wincom.DestinationSideOfPier(self.request_new_pierside_ra, self.request_new_pierside_dec)
-
-                            if self.request_set_RightAscensionRate and self.CanSetRightAscensionRate:
-                                self.request_set_RightAscensionRate=False
-                                self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
-                                self.RightAscensionRate=self.request_new_RightAscensionRate
-                                #plog ("new RA rate set: " +str(self.RightAscensionRate))
-
-                            if self.request_set_DeclinationRate and self.CanSetDeclinationRate:
-                                self.request_set_DeclinationRate=False
-                                self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
-                                self.DeclinationRate=self.request_new_DeclinationRate
-                                #plog ("new DEC rate set: " +str(self.DeclinationRate))
-
-                            if self.request_find_home:
-                                self.request_find_home=False
-                                self.mount_update_wincom.FindHome()
-
-                            self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
-
-                            if not self.rapid_park_indicator:
-                                if self.can_report_pierside:
-                                    self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
-                                    self.current_tracking_state=self.mount_update_wincom.Tracking
-                                    try:
-                                        if not (g_dev['mnt'].pier_side_last_check==g_dev['mnt'].rapid_pier_indicator):
-                                            self.pier_flip_detected=True
-                                            plog ("PIERFLIP DETECTED!")
-                                    except:
-                                        plog ("missing pier_side_last_check variable probs")
-                                        plog(traceback.format_exc())
-                                    g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
-
-                            #DIRECT MOUNT POSITION READ #5
-                            self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
-                            self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-                            self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
-                            self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
-
-                        except:
-                            plog ("Issue in normal mount thread")
-                            plog(traceback.format_exc())
-                        self.mount_updates=self.mount_updates + 1
-                        self.mount_update_timer=time.time()
 
                 else:
                     if not self.currently_slewing:
@@ -1169,28 +1359,134 @@ class Mount:
                 plog ("some type of glitch in the mount thread: " + str(e))
                 plog(traceback.format_exc())
 
-    def wait_for_slew(self, wait_after_slew=True):
+    def wait_for_slew(self, wait_after_slew=True, wait_for_dome=True, wait_for_dome_after_direct_slew=True):
+
+
+        wait_for_slew_timer=time.time()
+
         try:
             actually_slewed=False
-            if not g_dev['mnt'].rapid_park_indicator:
+            if not self.rapid_park_indicator:
                 movement_reporting_timer = time.time()
-                while g_dev['mnt'].return_slewing():
+                while self.return_slewing():
                     if actually_slewed==False:
                         actually_slewed=True
                     if time.time() - movement_reporting_timer > g_dev['obs'].status_interval:
                         plog('m>')
                         movement_reporting_timer = time.time()
-                    g_dev['mnt'].get_mount_coordinates_after_next_update()
+                    self.get_mount_coordinates_after_next_update()
                     g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+
+
+                    # The planewave can (rarely, but non-zero)
+                    # just get caught while slewing.
+                    # This routine catches and remedies that.
+
+                    if time.time() - wait_for_slew_timer > 120:
+                        plog ("Waited too long to slew! What is going on?")
+                        wait_for_slew_timer=time.time()
+                        # Only happens with PWI4 for some reason
+                        if self.driver=='ASCOM.PWI4.Telescope':
+                            plog ("Too long on a PWI4. Rebooting PWI4 and getting it to get where it is meant to.")
+
+                            os.system('taskkill /IM PWI4.exe /F')
+                            time.sleep(10)
+                            subprocess.Popen('"C:\Program Files (x86)\PlaneWave Instruments\PlaneWave Interface 4\PWI4.exe"', shell=True)
+                            time.sleep(10)
+                            urllib.request.urlopen("http://localhost:8220/mount/connect")
+                            time.sleep(5)
+
+                            self.mount_update_reboot=True
+                            self.slewtoAsyncRequested=True
+
+                            self.wait_for_mount_update=True
+
+                            # Kick the telescope back to where it is meant to be pointing.
+
+
+
+
 
                 # Then wait for slew_time to settle
                 if actually_slewed and wait_after_slew:
-                    time.sleep(g_dev['mnt'].wait_after_slew_time)
+                    time.sleep(self.wait_after_slew_time)
 
-        except: #  Exception as e:
+        except:
             self.mount_busy=False
             plog("Motion check faulted.")
             plog(traceback.format_exc())
+            if self.theskyx:
+                g_dev['obs'].kill_and_reboot_theskyx(self.current_icrs_ra, self.current_icrs_dec)
+
+        # Then once it is slewed, if there is a dome, it has to wait for the dome.
+        # But if the dome isn't opened, then no reason to wait for the dome.
+        if self.config['needs_to_wait_for_dome'] and wait_for_dome and not self.rapid_park_indicator and wait_for_dome_after_direct_slew:
+            #plog ("making sure dome is positioned correct.")
+            rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
+            aa = AltAz(location=self.site_coordinates, obstime=Time.now())
+            rd = rd.transform_to(aa)
+            obs_azimuth = float(rd.az/u.deg)
+
+
+            wema_name=g_dev['obs'].config['wema_name']
+            uri_status = f"https://status.photonranch.org/status/{wema_name}/enclosure"
+
+
+
+            try:
+                wema_enclosure_status=requests.get(uri_status, timeout=20)
+                dome_azimuth=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_azimuth']['val']
+            except:
+                plog ("Some error in getting the wema_enclosure")
+
+
+            # Only bother waiting if dome is open or opening
+            if wema_enclosure_status.json()['status']['enclosure']['enclosure1']['shutter_status']['val'] in ['Open', 'open','Opening','opening']:
+
+                #dome_azimuth= GET FROM wema
+                dome_timeout_timer=time.time()
+                #dome_open_or_opening=True
+
+                dome_is_slewing=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_slewing']['val'] 
+                
+                # silly 360 degrees. who invented it.
+                actual_deviation=abs(obs_azimuth - dome_azimuth)
+                if actual_deviation > 180:
+                    actual_deviation = actual_deviation - 360
+                print (actual_deviation)
+                
+                while (actual_deviation > 30 or dome_is_slewing) and time.time() - dome_timeout_timer < 180 and not self.rapid_park_indicator: # and dome_open_or_opening:
+                    
+
+                    #plog ("making sure dome is positioned correct.")
+                    rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
+                    aa = AltAz(location=self.site_coordinates, obstime=Time.now())
+                    rd = rd.transform_to(aa)
+                    obs_azimuth = float(rd.az/u.deg)
+
+                    plog ("d> " + str(obs_azimuth) + " " + str(dome_azimuth) + " " + " Dome Slewing: " + str(dome_is_slewing))
+                    time.sleep(2)
+                    try:
+                        wema_enclosure_status=requests.get(uri_status, timeout=20)
+                        dome_azimuth=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_azimuth']['val']
+                        dome_open_or_opening=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['shutter_status']['val'] in ['Open', 'open','Opening','opening']
+                        dome_is_slewing=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_slewing']['val']
+                    except:
+                        plog ("Some error in getting the wema_enclosure")
+
+                    
+                    # silly 360 degrees. who invented it.
+                    actual_deviation=abs(obs_azimuth - dome_azimuth)
+                    if actual_deviation > 180:
+                        actual_deviation = actual_deviation - 360
+                    print (actual_deviation)
+                        
+
+                #plog ("Dome Arrived")
+            else:
+                plog ("Why wait for the dome if it isn't even open?")
+
+
         return
 
     def return_side_of_pier(self):
@@ -1299,14 +1595,14 @@ class Mount:
         return self.current_rate_ra, self.current_rate_dec
 
     # This is called directly from the obs code to probe for flips, recenter, etc. Hence "directly"
-    def slew_async_directly(self, ra, dec):
-        self.wait_for_slew(wait_after_slew=False)
+    def slew_async_directly(self, ra, dec, wait_for_dome_after_direct_slew=True):
+        self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
         #### Slew to CoordinatesAsync block
         self.slewtoRA = ra
         self.slewtoDEC = dec
         self.slewtoAsyncRequested=True
         self.wait_for_mount_update()
-        self.wait_for_slew(wait_after_slew=False)
+        self.wait_for_slew(wait_after_slew=False, wait_for_dome_after_direct_slew=wait_for_dome_after_direct_slew)
         ###################################
         g_dev['obs'].rotator_has_been_checked_since_last_slew=False
 
@@ -1330,6 +1626,7 @@ class Mount:
                 'message': self.mount_message[:32]
             }
         elif self.tel == True:
+            #breakpoint()
             rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
             aa = AltAz(location=self.site_coordinates, obstime=Time.now())
             rd = rd.transform_to(aa)
@@ -1390,7 +1687,11 @@ class Mount:
                 'pier_side_str': self.pier_side_str,
                 'azimuth': round(az, 3),
                 'target_az': round(self.target_az, 3),
+                'target_alt' : round(self.target_alt,3),
                 'altitude': round(alt, 3),
+                'is_parked': self.rapid_park_indicator,
+                'is_tracking': self.current_tracking_state,
+                'is_slewing': self.currently_slewing,
                 'zenith_distance': round(zen, 3),
                 'airmass': round(airmass,4),
                 'coordinate_system': str(self.rdsys),
@@ -1412,7 +1713,7 @@ class Mount:
         pre.append(time.time())
         pre.append(self.current_icrs_ra)
         pre.append(self.current_icrs_dec)
-        pre.append(float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle))
+        pre.append(float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle))
         pre.append(0.0)
         pre.append(0.0)
         pre.append(self.az)
@@ -1453,18 +1754,18 @@ class Mount:
         air_avg = abs(round((pre[9] + post[9])/2, 4))
         if air_avg > 20.0:
             air_avg = 20.0
-        if pre[10] and post[10]:
-            park_avg = True
-        else:
-            park_avg = False
-        if pre[11] or post[11]:
-            track_avg = True
-        else:
-            track_avg = False
-        if pre[12] or post[12]:
-            slew_avg = True
-        else:
-            slew_avg = False
+        # if pre[10] and post[10]:
+        #     park_avg = True
+        # else:
+        #     park_avg = False
+        # if pre[11] or post[11]:
+        #     track_avg = True
+        # else:
+        #     track_avg = False
+        # if pre[12] or post[12]:
+        #     slew_avg = True
+        # else:
+        #     slew_avg = False
 
         status = {
             'timestamp': t_avg,
@@ -1474,14 +1775,16 @@ class Mount:
             'tracking_right_ascension_rate': rar_avg,
             'tracking_declination_rate': decr_avg,
             'azimuth':  az_avg,
+            'target_az': round(self.target_az, 3),
+            'target_alt' : round(self.target_alt,3),
             'altitude': alt_avg,
             'zenith_distance': zen_avg,
             'airmass': air_avg,
             'coordinate_system': str(self.rdsys),
             'instrument': str(self.inst),
-            'is_parked': park_avg,
-            'is_tracking': track_avg,
-            'is_slewing': slew_avg,
+            'is_parked': self.rapid_park_indicator,
+            'is_tracking': self.current_tracking_state,
+            'is_slewing': self.currently_slewing,
             'move_time': self.move_time
 
         }
@@ -1492,20 +1795,22 @@ class Mount:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
+        plog("Action for mount is:  ", action)
 
         if action == "go":
+            object_name = opt['object']
             if 'ra' in req:
-                result = self.go_command(ra=req['ra'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
+                result = self.go_command(ra=req['ra'], dec=req['dec'],objectname=object_name)   #  Entered from Target Explorer or Telescope tabs.
             elif 'az' in req:
-                result = self.go_command(az=req['az'], alt=req['alt'])   #  Entered from Target Explorer or Telescope tabs.
+                result = self.go_command(az=req['az'], alt=req['alt'],objectname=object_name)   #  Entered from Target Explorer or Telescope tabs.
             elif 'ha' in req:
-                result = self.go_command(ha=req['ha'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
+                result = self.go_command(ha=req['ha'], dec=req['dec'],objectname=object_name)   #  Entered from Target Explorer or Telescope tabs.
 
             # BECAUSE THERE IS NOW NO SEPARATE BUTTON FOR SLEW AND CENTER
             # ALL MANUALLY COMMANDED SHOTS HAVE TO BE CENTERED.
             # if 'do_centering_routine' in opt and result != 'refused':
             #     if opt['do_centering_routine']:
-            if result != 'refused':
+            if result != 'refused' and not (g_dev['cam'].pixscale == None):
                 g_dev['seq'].centering_exposure()
 
         elif action == "stop":
@@ -1513,19 +1818,22 @@ class Mount:
 
         elif action == 'center_on_pixels':
             if g_dev['obs'].open_and_enabled_to_observe:
-                if True:
+                if False:
                     g_dev['obs'].send_to_user("Feature Not Implemented At This Moment.")
                 else:
-                    plog (command)
+                    plog ('center on pixels entered, good luck! and clear skies.')
                     try:
 
                         # Need to convert image fraction into offset
-                        image_y = req['image_x']
+                        # NB NB Need to change x and y names, they are backwards. REproting is OK though.
+                        image_y = req['image_x']  #Fraction of image axis
                         image_x = req['image_y']
-                        # And the current pixel scale
-                        pixscale=float(req['header_pixscale'])
-                        pixscale_hours=(pixscale/60/60) / 15
-                        pixscale_degrees=(pixscale/60/60)
+                        # And the current pixel scale.  Note however the Ra and DEc come from the displayed image header
+
+                        #pixscale=  0.5283 ## asec/pixel  BIG TEMP HACK!
+                        pixscale = float(req['header_pixscale'])
+                        pixscale_hours=(pixscale/60/60) / 15  # hrs/pixel ~ 10e-6
+                        pixscale_degrees=(pixscale/60/60)   # deg/pix  ~ 1.5e-4
                         # Calculate the RA and Dec of the pointing
                         center_image_ra=float(req['header_rahrs'])
                         center_image_dec=float(req['header_decdeg'])
@@ -1540,24 +1848,27 @@ class Mount:
                         #y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
                         x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
                         y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
-                        plog ("X pixel shift: " + str(x_pixel_shift))
                         plog ("Y pixel shift: " + str(y_pixel_shift))
+                        plog ("X pixel shift: " + str(x_pixel_shift))
+
 
                         gora=center_image_ra + (y_pixel_shift * pixscale_hours)
                         godec=center_image_dec - (x_pixel_shift * pixscale_degrees)
 
-                        plog ("X centre shift (asec): " + str((x_pixel_shift * pixscale)))
-                        plog ("Y centre shift (asec): " + str(((y_pixel_shift * pixscale))))
+                        plog ("X center shift (asec): " + str((x_pixel_shift * pixscale)))
+                        plog ("Y center shift (asec): " + str(((y_pixel_shift * pixscale))))
 
-                        plog ("X centre shift (hours): " + str((x_pixel_shift * pixscale_hours)))
-                        plog ("Y centre shift (degrees): " + str(((y_pixel_shift * pixscale_degrees))))
+                        plog ("X center shift (hours): " + str((x_pixel_shift * pixscale_hours)))
+                        plog ("Y center shift (degrees): " + str(((y_pixel_shift * pixscale_degrees))))
+
+
                         #plog ("New RA: " + str(req['ra']))
                         #plog ("New DEC: " + str(req['dec']))
 
                         #plog ("New RA - Old RA = "+ str(float(req['ra'])-center_image_ra))
                         #plog ("New dec - Old dec = "+ str(float(req['dec'])-center_image_dec))
 
-                        self.wait_for_slew(wait_after_slew=False)
+                        self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
                         #### Slew to CoordinatesAsync block
                         self.slewtoRA = gora
@@ -1584,19 +1895,22 @@ class Mount:
 
 
         elif action == "home":
+            #breakpoint()
+            # pass
             self.home_command(req, opt)
         elif action == "tracking":
             self.tracking_command(req, opt)
         elif action in ["pivot", 'zero', 'ra=sid, dec=0']:
-            ra =  (Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle
+            ra =  (Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle
             dec = 0.0
             self.go_command(ra=ra, dec=dec, offset=False)
         elif action == "park":
             self.park_command(req, opt)
         elif action == "unpark":
+            #breakpoint()
             self.unpark_command(req, opt)
         elif action == 'sky_flat_position':
-            g_dev['mnt'].go_command(skyflatspot=True)
+            self.go_command(skyflatspot=True)
         else:
             plog(f"Command <{action}> not recognized.")
 
@@ -1655,12 +1969,14 @@ class Mount:
     def go_command(self, skyflatspot=None, ra=None, dec=None, az=None, alt=None, ha=None, \
                    objectname=None, offset=False, calibrate=False, auto_center=False, \
                    silent=False, skip_open_test=False,tracking_rate_ra = 0, \
-                   tracking_rate_dec =  0, do_centering_routine=False, dont_wait_after_slew=False):
+                   tracking_rate_dec =  0, do_centering_routine=False, dont_wait_after_slew=False, \
+                   ignore_moon_dist=False):
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
 
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle.
+
         try:
             sun_coords=get_sun(Time.now())
             if skyflatspot != None:
@@ -1684,8 +2000,8 @@ class Mount:
 
                 plog ("Moving to requested Flat Spot, az: " + str(round(az,1)) + " alt: " + str(round(alt,1)))
 
-                if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
-                    if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                if self.site_config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+                    if (90-alt) < self.site_config['degrees_to_avoid_zenith_area_for_calibrations']:
                         g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
                         plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
                         return 'refused'
@@ -1720,7 +2036,7 @@ class Mount:
 
         sun_dist = sun_coords.separation(temppointing)
         if g_dev['obs'].sun_checks_on:
-            if sun_dist.degree <  self.config['closest_distance_to_the_sun'] and g_dev['obs'].open_and_enabled_to_observe:
+            if sun_dist.degree <  self.site_config['closest_distance_to_the_sun'] and g_dev['obs'].open_and_enabled_to_observe:
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
                     plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
@@ -1728,13 +2044,13 @@ class Mount:
 
         # Second thing, check that we aren't pointing at the moon
         # UNLESS we have actually chosen to look at the moon.
-        if g_dev['obs'].moon_checks_on:
+        if g_dev['obs'].moon_checks_on and not ignore_moon_dist:
             if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
                 plog("Moon Request detected")
             else:
-                moon_coords=get_moon(Time.now())
+                moon_coords=get_body('moon', Time.now())  #20250103  Per deprication warning.
                 moon_dist = moon_coords.separation(temppointing)
-                if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
+                if moon_dist.degree <  self.site_config['closest_distance_to_the_moon']:
                     g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
                     plog("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
                     return 'refused'
@@ -1742,13 +2058,14 @@ class Mount:
         # Third thing, check that the requested coordinates are not
         # below a reasonable altitude
         if g_dev['obs'].altitude_checks_on:
-            if alt < self.config['lowest_requestable_altitude']:
+            if alt < self.site_config['lowest_requestable_altitude']:
                 g_dev['obs'].send_to_user("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
                 plog("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
                 return 'refused'
 
         # Fourth thing, check that the roof is open and we are enabled to observe
-        if (g_dev['obs'].open_and_enabled_to_observe==False )  and not g_dev['obs'].scope_in_manual_mode:
+        # if the skip open test variable is not set.
+        if (g_dev['obs'].open_and_enabled_to_observe==False ) and not skip_open_test and not g_dev['obs'].scope_in_manual_mode:
             g_dev['obs'].send_to_user("Refusing pointing request as the observatory is not enabled to observe.")
             plog(g_dev['obs'].open_and_enabled_to_observe)
             plog("Refusing pointing request as the observatory is not enabled to observe.")
@@ -1761,14 +2078,16 @@ class Mount:
 
         self.unpark_command()   #can we qualify this?
 
+        #  NB NB This list should be expanded to include the Planets, Ceres, Vesta, and maybe the key ice-giant moons.
+        #  NB NB in addition input from a TLE may make sense, particulary a list of say 24 Geosats.
 
-        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
-            self.obs.date = ephem.now()
+        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna', 'Lun', 'lun']:
+            self.ephem_obs.date = ephem.now()
             moon = ephem.Moon()
-            moon.compute(self.obs)
+            moon.compute(self.ephem_obs)
             ra1, dec1 = moon.ra*RTOH, moon.dec*RTOD
-            self.obs.date = ephem.Date(ephem.now() + 1/144)   #  10 minutes
-            moon.compute(self.obs)
+            self.ephem_obs.date = ephem.Date(ephem.now() + 1/144)   #  10 minutes
+            moon.compute(self.ephem_obs)
             ra2, dec2 = moon.ra*RTOH, moon.dec*RTOD
             dra_moon = (ra2 - ra1)*15*3600/600
             ddec_moon = (dec2 - dec1)*3600/600
@@ -1776,6 +2095,75 @@ class Mount:
             dec=dec1
             tracking_rate_ra=dra_moon
             tracking_rate_dec = ddec_moon
+            plog("Moon:  ", ra, dec, dra_moon, ddec_moon)
+
+        if self.object in ['Sun', 'sun', 'Sol', 'sol']:
+            #breakpoint()
+            self.ephem_obs.date = ephem.now()
+            sun = ephem.Sun()
+            sun.compute(self.ephem_obs)
+            ra1, dec1 = sun.ra*RTOH, sun.dec*RTOD
+            self.ephem_obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
+            sun.compute(self.ephem_obs)
+            ra2, dec2 =sun.ra*RTOH, sun.dec*RTOD
+            dra_sun = (ra2 - ra1)*15*3600/3600
+            ddec_sun = (dec2 - dec1)*3600/3600
+            ra=ra1
+            dec=dec1
+            tracking_rate_ra=dra_sun
+            tracking_rate_dec = ddec_sun
+            plog("Sun:  ", ra, dec, dra_sun, ddec_sun)
+
+        if self.object in ['Venus', 'venus', 'Ven', 'ven']:
+             #breakpoint()
+             self.ephem_obs.date = ephem.now()
+             venus = ephem.Venus()
+             venus.compute(self.ephem_obs)
+             ra1, dec1 = venus.ra*RTOH, venus.dec*RTOD
+             self.ephem_obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
+             venus.compute(self.ephem_obs)
+             ra2, dec2 =venus.ra*RTOH, venus.dec*RTOD
+             dra_venus = (ra2 - ra1)*15*3600/3600
+             ddec_venus = (dec2 - dec1)*3600/3600
+             ra=ra1
+             dec=dec1
+             tracking_rate_ra=dra_venus
+             tracking_rate_dec = ddec_venus
+             plog("Venus:  ", ra, dec, dra_venus, ddec_venus)
+
+        if  self.object in ['Saturn', 'Saturn', 'Sat', 'sat']:
+              #breakpoint()
+              self.ephem_obs.date = ephem.now()
+              saturn = ephem.Saturn()
+              saturn.compute(self.ephem_obs)
+              ra1, dec1 = saturn.ra*RTOH, saturn.dec*RTOD
+              self.ephem_obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
+              saturn.compute(self.ephem_obs)
+              ra2, dec2 =saturn.ra*RTOH, saturn.dec*RTOD
+              dra_saturn = (ra2 - ra1)*15*3600/3600
+              ddec_saturn = (dec2 - dec1)*3600/3600
+              ra=ra1
+              dec=dec1
+              tracking_rate_ra=dra_saturn
+              tracking_rate_dec = ddec_saturn
+              plog("Saturn:  ", ra, dec, dra_saturn, ddec_saturn)
+
+        if  self.object in ['Neptune', 'neptune', 'Nep', 'nep']:
+              #breakpoint()
+              self.ephem_obs.date = ephem.now()
+              neptune = ephem.Neptune()
+              neptune.compute(self.ephem_obs)
+              ra1, dec1 = neptune.ra*RTOH, neptune.dec*RTOD
+              self.ephem_obs.date = ephem.Date(ephem.now() + 1/24)   #  1 hour
+              neptune.compute(self.ephem_obs)
+              ra2, dec2 =neptune.ra*RTOH, neptune.dec*RTOD
+              dra_neptune = (ra2 - ra1)*15*3600/3600
+              ddec_neptune = (dec2 - dec1)*3600/3600
+              ra=ra1
+              dec=dec1
+              tracking_rate_ra=dra_neptune
+              tracking_rate_dec = ddec_neptune
+              plog("Neptune:  ", ra, dec, dra_neptune, ddec_neptune)
 
         # During flats the scope is so continuously nudged as to make reporting of nudges meaningless... so don't report.
         if not skyflatspot:
@@ -1792,11 +2180,11 @@ class Mount:
         self.last_tracking_rate_dec = tracking_rate_dec
         self.last_seek_time = time.time() - 5000
 
-        self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+        self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
         self.previous_pier_side=self.rapid_pier_indicator
 
-        plog ("RA and Dec pre icrs to mech: " + str(round(ra,6))+ " " + str(round(dec,6)))
+        plog ("RA and Dec ICRS prior to mech: " + str(round(ra,6))+ " " + str(round(dec,6)))
 
         ###################################### HERE IS WHERE THE NEW WAYNE STUFF SHOULD GO
 
@@ -1883,14 +2271,14 @@ class Mount:
         else:
             delta_ra=0
             delta_dec=0
-            
+
         # First move, then check the pier side
         successful_move=0
         while successful_move==0:
             try:
-                self.wait_for_slew(wait_after_slew=False)
+                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 g_dev['obs'].time_of_last_slew=time.time()
-                g_dev['mnt'].last_slew_was_pointing_slew = True
+                self.last_slew_was_pointing_slew = True
 
                 #### Slew to CoordinatesAsync block
                 self.slewtoRA = ra
@@ -1912,15 +2300,15 @@ class Mount:
                     retry=0
                     while retry <3:
                         try:
-                            if g_dev['mnt'].theskyx:
+                            if self.theskyx:
                                 plog (traceback.format_exc())
                                 #breakpoint()
                                 plog("The SkyX had an error.")
                                 plog("Usually this is because of a broken connection.")
                                 plog("Killing then waiting 60 seconds then reconnecting")
-                                g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                                g_dev['obs'].kill_and_reboot_theskyx(-1,-1)
                                 self.unpark_command()
-                                self.wait_for_slew(wait_after_slew=False)
+                                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                                 if ra < 0:
                                     ra=ra+24
                                 if ra > 24:
@@ -1946,8 +2334,8 @@ class Mount:
                     self.mount_busy=False
                     plog (traceback.format_exc())
 
-            g_dev["mnt"].pier_side=self.rapid_pier_indicator
-            if self.previous_pier_side == g_dev["mnt"].pier_side or self.can_report_destination_pierside:
+            self.pier_side=self.rapid_pier_indicator
+            if self.previous_pier_side == self.pier_side or self.can_report_destination_pierside:
                 successful_move=1
             else:
                 # if g_dev['obs'].mount_reference_model_off:
@@ -1957,8 +2345,8 @@ class Mount:
                 #     dec=self.last_dec_requested + delta_dec
 
                 ra = ra_fix_h(ra)
-                self.wait_for_slew(wait_after_slew=False)
-                g_dev['mnt'].last_slew_was_pointing_slew = True
+                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
+                self.last_slew_was_pointing_slew = True
                 #### Slew to CoordinatesAsync block
                 self.slewtoRA = ra
                 self.slewtoDEC = dec
@@ -1977,7 +2365,7 @@ class Mount:
         if not self.current_tracking_state:
             try:
                 if not dont_wait_after_slew:
-                    self.wait_for_slew(wait_after_slew=False)
+                    self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                     self.set_tracking_on()
             except Exception:
                 # Yes, this is an awfully non-elegant way to force a mount to start
@@ -1986,14 +2374,14 @@ class Mount:
                 self.mount_busy=False
                 if "Property write Tracking is not implemented in this driver" in str(traceback.format_exc()):
                     pass
-                elif g_dev['mnt'].theskyx:
+                elif self.theskyx:
                     plog (traceback.format_exc())
                     plog("The SkyX had an error.")
                     plog("Usually this is because of a broken connection.")
                     plog("Killing then waiting 60 seconds then reconnecting")
-                    g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                    g_dev['obs'].kill_and_reboot_theskyx(-1,-1)
                     self.unpark_command()
-                    self.wait_for_slew(wait_after_slew=False)
+                    self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                     if ra < 0:
                         ra=ra+24
                     if ra > 24:
@@ -2018,7 +2406,7 @@ class Mount:
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
         if not dont_wait_after_slew:
-            self.wait_for_slew(wait_after_slew=False)
+            self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
 
         #g_dev['obs'].drift_tracker_ra=0
@@ -2049,7 +2437,7 @@ class Mount:
             self.find_home_requested=True
             self.wait_for_mount_update()
             g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-            self.wait_for_slew(wait_after_slew=False)
+            self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
             self.get_mount_coordinates()
         else:
             plog("Mount is not capable of finding home. Slewing to home_alt and home_az")
@@ -2057,10 +2445,10 @@ class Mount:
             home_alt = self.settings["home_altitude"]
             home_az = self.settings["home_azimuth"]
             g_dev['obs'].time_of_last_slew=time.time()
-            g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True, skyflatspot=True)
+            self.go_command(alt=home_alt,az= home_az, skip_open_test=True)
 
-            self.wait_for_slew(wait_after_slew=False)
-        self.wait_for_slew(wait_after_slew=False)
+            self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
+        self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
         self.parking_or_homing=False
 
     def flat_panel_command(self, req, opt):
@@ -2081,7 +2469,7 @@ class Mount:
                 if g_dev['obs'] is not None:  #THis gets called before obs is created
                     g_dev['obs'].send_to_user("Parking Mount. This can take a moment.")
                 g_dev['obs'].time_of_last_slew=time.time()
-                self.wait_for_slew(wait_after_slew=False)
+                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 self.park_requested=True
                 sleep_period= self.mount_update_period / 4
                 current_updates=copy.deepcopy(self.mount_updates)
@@ -2090,7 +2478,7 @@ class Mount:
 
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 self.rapid_park_indicator=True
-                self.wait_for_slew(wait_after_slew=False)
+                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                 if self.settle_time_after_park > 0:
                     time.sleep(self.settle_time_after_park)
                     plog("Waiting " + str(self.settle_time_after_park) + " seconds for mount to settle.")
@@ -2125,7 +2513,7 @@ class Mount:
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
 
                 self.rapid_park_indicator=False
-                self.wait_for_slew(wait_after_slew=False)
+                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
 
                 if self.settle_time_after_unpark > 0:
                     time.sleep(self.settle_time_after_unpark)
@@ -2133,44 +2521,44 @@ class Mount:
 
                 if self.home_after_unpark:
                     try:
-                        self.wait_for_slew(wait_after_slew=False)
+                        self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                         self.request_find_home=True
                         self.wait_for_mount_update()
                         g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-                        self.wait_for_slew(wait_after_slew=False)
+                        self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                     except:
                         try:
                             home_alt = self.settings["home_altitude"]
                             home_az = self.settings["home_azimuth"]
-                            self.wait_for_slew(wait_after_slew=False)
-                            g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True, skyflatspot=True)
-                            self.wait_for_slew(wait_after_slew=False)
+                            self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
+                            self.go_command(alt=home_alt,az= home_az, skip_open_test=True)
+                            self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                         except:
-                            if g_dev['mnt'].theskyx:
+                            if self.theskyx:
 
                                 plog("The SkyX had an error.")
                                 plog("Usually this is because of a broken connection.")
                                 plog("Killing then waiting 60 seconds then reconnecting")
-                                g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                                g_dev['obs'].kill_and_reboot_theskyx(-1,-1)
                                 self.unpark_command()
                                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                                 self.rapid_park_indicator=False
-                                self.wait_for_slew(wait_after_slew=False)
+                                self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                                 home_alt = self.settings["home_altitude"]
                                 home_az = self.settings["home_azimuth"]
-                                g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True, skyflatspot=True)
+                                self.go_command(alt=home_alt,az= home_az, skip_open_test=True)
                             else:
                                 plog (traceback.format_exc())
-                    self.wait_for_slew(wait_after_slew=False)
+                    self.wait_for_slew(wait_after_slew=False, wait_for_dome=False)
             self.parking_or_homing=False
 
 
     def record_mount_reference(self, deviation_ha, deviation_dec, pointing_ra, pointing_dec):
 
         # The HA is for the actual requested HA, NOT the solved ra
-        HA=self.current_sidereal - pointing_ra + deviation_ha
+        HA= ha_fix_h(self.current_sidereal - pointing_ra + deviation_ha)
 
-        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + self.name + str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = deviation_ha
         mnt_shelf['dec_cal_offset'] = deviation_dec
         mnt_shelf['last_mount_reference_time']=time.time()
@@ -2192,7 +2580,7 @@ class Mount:
         counter=0
         deleteList=[]
         for entry in self.longterm_storage_of_mount_references:
-            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
+            distance_from_new_reference= abs(ha_fix_h(entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
             if distance_from_new_reference < 2:
                 plog ("Found and removing an old reference close to new reference: " + str(entry))
                 #self.longterm_storage_of_mount_references.remove(entry)
@@ -2212,9 +2600,9 @@ class Mount:
     def record_flip_reference(self, deviation_ha, deviation_dec, pointing_ra, pointing_dec):
 
         # The HA is for the actual requested HA, NOT the solved ra
-        HA=self.current_sidereal - pointing_ra + deviation_ha
+        HA= ha_fix_h(self.current_sidereal - pointing_ra + deviation_ha)
 
-        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + self.name + str(g_dev['obs'].name))
         mnt_shelf['flip_ra_cal_offset'] = deviation_ha    #NB NB NB maybe best to reverse signs here??
         mnt_shelf['flip_dec_cal_offset'] = deviation_dec
         mnt_shelf['last_flip_reference_time']=time.time()
@@ -2245,7 +2633,7 @@ class Mount:
         counter=0
         deleteList=[]
         for entry in self.longterm_storage_of_flip_references:
-            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
+            distance_from_new_reference= abs(ha_fix_h(entry[1] -HA) * 15) + abs(entry[2] - pointing_dec+deviation_dec)
             if distance_from_new_reference < 2:
                 plog ("Found and removing an old reference close to new reference: " + str(entry))
                 #self.longterm_storage_of_mount_references.remove(entry)
@@ -2263,7 +2651,8 @@ class Mount:
 
     def get_mount_reference(self, pointing_ra, pointing_dec):
 
-        HA = self.current_sidereal - pointing_ra
+        HA = ha_fix_h(self.current_sidereal - pointing_ra)  #  WER 20240817 added this reductin to Ha airthmetic
+
         # Have a look through shelf to find closest reference:
 
         # Removing older references
@@ -2271,7 +2660,7 @@ class Mount:
         found_close_reference= False
 
         for entry in self.longterm_storage_of_flip_references:
-            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec)
+            distance_from_new_reference= abs(ha_fix_h(entry[1] -HA) * 15) + abs(entry[2] - pointing_dec)
             if distance_from_new_reference < 5:
                 if distance_from_new_reference < distance_from_closest_reference:
                     found_close_reference=True
@@ -2289,7 +2678,7 @@ class Mount:
 
             return close_reference[3], close_reference[4]
 
-        distance_from_current_reference_in_ha = abs(self.last_mount_reference_ha - HA)
+        distance_from_current_reference_in_ha = abs(ha_fix_h(self.last_mount_reference_ha - HA))
         distance_from_current_reference_in_dec = abs(self.last_mount_reference_dec- pointing_dec)
         absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(pointing_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
 
@@ -2303,13 +2692,13 @@ class Mount:
 
     def get_flip_reference(self, pointing_ra, pointing_dec):
 
-        HA = self.current_sidereal - pointing_ra
+        HA = ha_fix_h(self.current_sidereal - pointing_ra)
 
         distance_from_closest_reference=180
         found_close_reference= False
 
         for entry in self.longterm_storage_of_flip_references:
-            distance_from_new_reference= abs((entry[1] -HA) * 15) + abs(entry[2] - pointing_dec)
+            distance_from_new_reference= abs(ha_fix_h(entry[1] -HA) * 15) + abs(entry[2] - pointing_dec)
             if distance_from_new_reference < 5:
                 if distance_from_new_reference < distance_from_closest_reference:
                     found_close_reference=True
@@ -2327,7 +2716,7 @@ class Mount:
 
             return close_reference[3], close_reference[4]
 
-        distance_from_current_reference_in_ha = abs(self.last_flip_reference_ha - HA)
+        distance_from_current_reference_in_ha = abs(ha_fix_h(self.last_flip_reference_ha - HA))
         distance_from_current_reference_in_dec = abs(self.last_flip_reference_dec- pointing_dec)
         absolute_distance=pow(pow(distance_from_current_reference_in_ha*cos(radians(pointing_dec)),2)+pow(distance_from_current_reference_in_dec,2),0.5)
 

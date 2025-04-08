@@ -13,8 +13,15 @@ import os
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
-
 warnings.simplefilter("ignore", category=RuntimeWarning)
+
+# Add the parent directory to the Python path
+# This allows importing modules from the root directory
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from ptr_utility import create_color_plog
+
+log_color = (120, 220, 170) # mint
+plog = create_color_plog('mainjpg', log_color)
 
 # Pick up the pickled array
 debug = False
@@ -25,8 +32,8 @@ else:
     #NB Use this input file for debugging this code.
     #input_jpeg_info=pickle.load(open('C:\\Users\\user\\Documents\\GitHub\\ptr-observatory\\testjpegpickle','rb'))
     input_jpeg_info=pickle.load(open('../testjpegpickle','rb'))
-    print("HERE IS THE INCOMING: ")
-    print(input_jpeg_info)
+    plog("Starting mainjpeg.py")
+    plog(input_jpeg_info)
 
 
 mainjpegthread_filename=input_jpeg_info[0]
@@ -55,18 +62,22 @@ xr=input_jpeg_info[22]
 squash_on_x_axis=input_jpeg_info[23]
 #try:
 zoom_factor = input_jpeg_info[24].lower()
-#     print("Mainjpeg received:", zoom_factor)
+#     plog("Mainjpeg received:", zoom_factor)
 # except:
-#     print("Zoom_factor paramater faulted.")
+#     plog("Zoom_factor paramater faulted.")
 jpeg_path = input_jpeg_info[25]
 jpeg_name = input_jpeg_info[26]
 
 
 
 # This process is set to spin up early, so it loads
-# and waits for a filename token to get started.    
-while not os.path.exists(mainjpegthread_filename):    
-    time.sleep(0.2)    
+# and waits for a filename token to get started.
+file_wait_timeout_timer=time.time()
+while (not os.path.exists(mainjpegthread_filename)) and (time.time()-file_wait_timeout_timer < 600):
+    time.sleep(0.2)
+if time.time()-file_wait_timeout_timer > 599:
+    sys.exit()
+
 
 (image_filename,edgefillvalue)=pickle.load(open(mainjpegthread_filename,'rb'))
 hdusmalldata=np.load(image_filename)
@@ -82,7 +93,7 @@ if is_osc:
             hdublue = hdusmalldata[1::2, 1::2]
 
     else:
-        print("this bayer grid not implemented yet")
+        plog("this bayer grid not implemented yet")
 
 # Code to stretch the image to fit into the 256 levels of grey for a jpeg
 # But only if it isn't a smartstack, if so wait for the reduce queue
@@ -194,7 +205,7 @@ if smartstackid == 'no':
             jpeg_path + jpeg_name.replace('EX10', 'EX20')
             #paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
         )
-        
+
         # Resizing the array to an appropriate shape for the small jpg
         #iy, ix = final_image.size
         ix, iy = final_image.size
@@ -202,7 +213,7 @@ if smartstackid == 'no':
             final_image=final_image.crop((xl,yt,iy-xr,ix-yb))
             iy, ix = final_image.size
             #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
-        print('Zoom factor is:  ', zoom_factor)
+        plog('Zoom factor is:  ', zoom_factor)
         if zoom_factor is not False:
             if zoom_factor in ['full', 'Full', '100%']:
                 zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
@@ -241,9 +252,9 @@ if smartstackid == 'no':
             yb *= iy
             trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
             ix, iy = trial_image.size
-            print("Zoomed Image size:", ix, iy)
+            plog("Zoomed Image size:", ix, iy)
             final_image = trial_image
-            
+
         iy, ix = final_image.size
         if ix == iy:
             final_image = final_image.resize((900, 900))
@@ -301,10 +312,10 @@ if smartstackid == 'no':
         final_image.save(
             jpeg_path + jpeg_name.replace('EX10', 'EX20')
         )
-        
+
         # Resizing the array to an appropriate shape for the jpg and the small fits
         ix, iy = final_image.size
-        print('Zoom factor is:  ', zoom_factor)
+        plog('Zoom factor is:  ', zoom_factor)
         if zoom_factor is not False:
             if zoom_factor in ['full', 'Full', '100%']:
                 zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
@@ -343,7 +354,7 @@ if smartstackid == 'no':
             yb *= iy
             trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
             ix, iy = trial_image.size
-            print("Zoomed Image size:", ix, iy)
+            plog("Zoomed Image size:", ix, iy)
             final_image = trial_image
 
         if iy == ix:

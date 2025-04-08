@@ -1,3 +1,8 @@
+'''
+switch.py  switch.py  switch.py  switch.py  switch.py  switch.py  switch.py
+
+'''
+
 import win32com.client
 
 
@@ -7,7 +12,7 @@ class Switch:
         self.switch = win32com.client.Dispatch(driver)
         self.switch.Connected = True
 
-        print(f"switch connected.")
+        print("switch connected.")
         print(self.switch.Description)
 
     def get_status(self):
@@ -34,15 +39,15 @@ class Switch:
 
     def on_command(self, req: dict, opt: dict):
         """set the switch to `on`"""
-        print(f"switch cmd: on")
+        print("switch cmd: on")
         pass
 
     def off_command(self, req: dict, opt: dict):
         """set the switch to `off`"""
-        print(f"switch cmd: off")
+        print("switch cmd: off")
         pass
 
     def pulse_command(self, req: dict, opt: dict):
         """set the switch to `pulse`"""
-        print(f"switch cmd: pulse")
+        print("switch cmd: pulse")
         pass

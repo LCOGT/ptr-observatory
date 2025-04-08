@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+sep_process.py  sep_process.py  sep_process.py  sep_process.py  sep_process.py
+
 Created on Sun Apr 23 04:37:30 2023
 
 @author: observatory
@@ -17,25 +19,36 @@ import time
 import traceback
 import math
 import os
+import sys
 import json
 import sep
 import copy
 from auto_stretch.stretch import Stretch
 from astropy.io import fits
-import sys
+#import sys
 # from astropy.nddata import block_reduce
 # from colour_demosaicing import (
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
 #     # demosaicing_CFA_Bayer_Malvar2004,
 #     demosaicing_CFA_Bayer_Menon2007)
-from PIL import Image, ImageDraw 
+from PIL import Image, ImageDraw
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 #import matplotlib.pyplot as plt
-
 from scipy.stats import binned_statistic
+
+# Add the parent directory to the Python path
+# This allows importing modules from the root directory
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from ptr_utility import create_color_plog
+
+log_color = (255, 130, 200) # pink
+plog = create_color_plog('platesolve', log_color)
+
+
+plog("Starting sep_process.py")
 
 
 def gaussian(x, amplitude, mean, stddev):
@@ -54,12 +67,17 @@ def radial_profile(data, center):
     radialprofile = tbin / nr
     return radialprofile
 
-
+#try:
 input_sep_info=pickle.load(sys.stdin.buffer)
+# except:
+#     plog("No input to the SEP Process.")
+#     breakpoint()
+#     plog ("Post breakpoint print statement.")
+
 #input_sep_info=pickle.load(open('testSEPpickle','rb'))
 
-#print ("HERE IS THE INCOMING. ")
-#print (input_sep_info)
+#plog ("HERE IS THE INCOMING. ")
+#plog (input_sep_info)
 
 septhread_filename=input_sep_info[0]
 pixscale=input_sep_info[1]
@@ -88,9 +106,16 @@ exposure_time=input_sep_info[28]
 
 ############ WAITER FOR
 # the filename token to arrive to start processing
-print (septhread_filename)
-while not os.path.exists(septhread_filename):
+plog (septhread_filename)
+
+file_wait_timeout_timer=time.time()
+
+while (not os.path.exists(septhread_filename)) and (time.time()-file_wait_timeout_timer < 600):
     time.sleep(0.2)
+
+if time.time()-file_wait_timeout_timer > 599:
+    sys.exit()
+
 
 (image_filename,imageMode, unique, counts)=pickle.load(open(septhread_filename,'rb'))
 
@@ -99,7 +124,8 @@ hdufocusdata=np.load(image_filename)
 
 hduheader=fits.open(image_filename.replace('.npy','.head'))[0].header
 
-if np.isnan(pixscale):
+# If there is no known pixelscale yet use a standard value just to get rough photometry
+if pixscale == None:
     pixscale = 0.5
 
 # The photometry has a timelimit that is half of the exposure time
@@ -107,9 +133,10 @@ time_limit=max(min (float(hduheader['EXPTIME'])*0.5, 20, exposure_time*0.5),5)
 
 minimum_exposure_for_extended_stuff = 10
 
-print ("Time Limit: " + str(time_limit))
+plog ("Time Limit: " + str(time_limit))
 
-# https://stackoverflow.com/questions/9111711/get-coordinates-of-local-maxima-in-2d-array-above-certain-value
+# https://stackoverflow.com/questions/9111711/get-coordinates-of-local-maxima \
+    #-in-2d-array-above-certain-value
 def localMax(a, include_diagonal=True, threshold=-np.inf) :
     # Pad array so we can handle edges
     ap = np.pad(a, ((1,1),(1,1)), constant_values=-np.inf )
@@ -165,6 +192,7 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
 
 else:
 
+
     if is_osc:
         # Rapidly interpolate so that it is all one channel
 
@@ -176,7 +204,7 @@ else:
         # To fill the checker board, roll the array in all four directions and take the average
         # Which is essentially the bilinear fill without excessive math or not using numpy
         # It moves true values onto nans and vice versa, so makes an array of true values
-        # where the original has nans and we use that as the fill        
+        # where the original has nans and we use that as the fill
         bilinearfill=np.roll(hdufocusdata,1,axis=0)
         bilinearfill=np.add(bilinearfill, np.roll(hdufocusdata,-1,axis=0))
         bilinearfill=np.add(bilinearfill, np.roll(hdufocusdata,1,axis=1))
@@ -191,9 +219,9 @@ else:
 
         fx, fy = hdufocusdata.shape        #
 
-        # if real_mode:
         bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
         bkg.subfrom(hdufocusdata)
+
         tempstd=np.std(hdufocusdata)
         hduheader["IMGSTDEV"] = ( tempstd, "Median Value of Image Array" )
         try:
@@ -203,7 +231,7 @@ else:
 
         googtime=time.time()
         list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
-        print ("Finding Local Maxima: " + str(time.time()-googtime))
+        plog ("Finding Local Maxima: " + str(time.time()-googtime))
 
         # Assess each point
         pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
@@ -223,12 +251,12 @@ else:
                 try:
                     value_at_neighbours=(hdufocusdata[point[0]-1,point[1]]+hdufocusdata[point[0]+1,point[1]]+hdufocusdata[point[0],point[1]-1]+hdufocusdata[point[0],point[1]+1])/4
                 except:
-                    print(traceback.format_exc())
+                    plog(traceback.format_exc())
                     #breakpoint()
 
                 # Check it isn't just a dot
                 if value_at_neighbours < (0.4*value_at_point):
-                    #print ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
+                    #plog ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
                     pointvalues[counter][2]=np.nan
 
                 # If not saturated and far away from the edge
@@ -240,7 +268,7 @@ else:
 
             counter=counter+1
 
-        print ("Sorting out bad pixels from the mix: " + str(time.time()-googtime))
+        plog ("Sorting out bad pixels from the mix: " + str(time.time()-googtime))
 
 
         # Trim list to remove things that have too many other things close to them.
@@ -259,7 +287,7 @@ else:
         fwhmlist=[]
         sources=[]
         photometry=[]
-        
+
         # The radius should be related to arcseconds on sky
         # And a reasonable amount - 12'
         try:
@@ -298,7 +326,7 @@ else:
         for i in range(len(pointvalues)):
             # Don't take too long!
             if ((time.time() - timer_for_bailing) > time_limit):# and good_radials > 20:
-                print ("Time limit reached! Bailout!")
+                plog ("Time limit reached! Bailout!")
                 break
 
             cx= int(pointvalues[i][0])
@@ -306,10 +334,10 @@ else:
             cvalue=hdufocusdata[int(cx)][int(cy)]
             try:
                 temp_array=hdufocusdata[cx-halfradius_of_radialprofile:cx+halfradius_of_radialprofile,cy-halfradius_of_radialprofile:cy+halfradius_of_radialprofile]
-                
+
             except:
-                print(traceback.format_exc())
-                
+                plog(traceback.format_exc())
+
             #construct radial profile
             cut_x,cut_y=temp_array.shape
             cut_x_center=(cut_x/2)-1
@@ -332,7 +360,7 @@ else:
                         brightest_pixel_rdist=r_dist
                         brightest_pixel_value=temp_array[q][t]
                     counter=counter+1
-                    
+
             # If the brightest pixel is in the center-ish
             # then attempt a fit
             try:
@@ -367,7 +395,7 @@ else:
                     # Also remove any things that don't have many pixels above 20
                     # DO THIS SOON
                     if edgevalue_left < 0.6*cvalue and  edgevalue_right < 0.6*cvalue:
-                        
+
                         # Different faster fitter to consider
                         peak_value_index=np.argmax(actualprofile[:,1])
                         peak_value=actualprofile[peak_value_index][1]
@@ -390,8 +418,8 @@ else:
                             for spotty in range(number_of_positions_to_test):
                                 sum_of_positions_times_values=sum_of_positions_times_values+(actualprofile[peak_value_index-poswidth+spotty][1]*actualprofile[peak_value_index-poswidth+spotty][0])
                                 sum_of_values=sum_of_values+actualprofile[peak_value_index-poswidth+spotty][1]
-                            peak_position=(sum_of_positions_times_values / sum_of_values)                            
-                            temppos=abs(actualprofile[:,0] - peak_position).argmin()                           
+                            peak_position=(sum_of_positions_times_values / sum_of_values)
+                            temppos=abs(actualprofile[:,0] - peak_position).argmin()
                             tempvalue=actualprofile[temppos,1]
                             temppeakvalue=copy.deepcopy(tempvalue)
                             # Get lefthand quarter percentiles
@@ -409,7 +437,7 @@ else:
                             counter=1
                             while tempvalue > 0.25*temppeakvalue:
                                 tempvalue=actualprofile[temppos+counter,1]
-                                #print (tempvalue)
+                                #plog (tempvalue)
                                 if tempvalue > 0.75:
                                     threequartertemp=temppos+counter
                                 counter=counter+1
@@ -467,9 +495,9 @@ else:
                                             pass
                                         pass
                                     else:
-                                        #print ("gone through and sampled range enough")
+                                        #plog ("gone through and sampled range enough")
                                         break
-                                
+
 
                                 # if it isn't a unreasonably small fwhm then measure it.
                                 if (2.355 * smallest_fpopt[2]) > (0.8 / pixscale) :
@@ -491,8 +519,8 @@ else:
                 except:
                     pass
 
-        print ("Extracting and Gaussianingx: " + str(time.time()-googtime))
-        print ("N of sources processed: " + str(len(sources)))
+        plog ("Extracting and Gaussianingx: " + str(time.time()-googtime))
+        plog ("N of sources processed: " + str(len(sources)))
 
         rfp = abs(bn.nanmedian(fwhmlist)) * 4.710
         rfr = rfp * pixscale
@@ -514,14 +542,14 @@ else:
         try:
             os.rename(im_path + text_name.replace('.txt', '.tempfwhm'),im_path + text_name.replace('.txt', '.fwhm'))
         except:
-            print ("tried to save fwhm file but it was already there.")
+            plog ("tried to save fwhm file but it was already there.")
 
         # This pickled sep file is for internal use - usually used by the smartstack thread to align mono smartstacks.
         pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.tempsep'),'wb'))
         try:
             os.rename(im_path + text_name.replace('.txt', '.tempsep'),im_path + text_name.replace('.txt', '.sep'))
         except:
-            print ("tried to save sep file but it was already there.")
+            plog ("tried to save sep file but it was already there.")
 
         # Grab the central arcminute out of the image.
         cx = int(fx/2)
@@ -563,7 +591,7 @@ if not frame_type == 'focus':
     hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
     hduheader["IMGMED"] = ( np.median(hdufocusdata), "Median Value of Image Array" )
     hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata), "Median Absolute Deviation of Image Array" )
-    print ("Basic Image Stats: " +str(time.time()-googtime))
+    plog ("Basic Image Stats: " +str(time.time()-googtime))
 
 # We don't need to calculate the histogram
 # If we aren't keeping the image.
@@ -585,9 +613,9 @@ if frame_type=='expose':
             breaker =0
     hdufocusdata[hdufocusdata < zeroValue] = imageMode
     histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
-    print ("Histogram: " + str(time.time()-googtime))
+    plog ("Histogram: " + str(time.time()-googtime))
     imageinspection_json_snippets['histogram']= re.sub('\s+',' ',str(histogramdata))
-    
+
 try:
     hduheader["SEPSKY"] = sepsky
 except:
@@ -646,7 +674,7 @@ starinspection_json_snippets['header']=headerdict
 googtime=time.time()
 try:
     imageinspection_json_snippets['photometry']=re.sub('\s+',' ',str(photometry))
-    print ("Writing out Photometry: " + str(time.time()-googtime))
+    plog ("Writing out Photometry: " + str(time.time()-googtime))
 except:
     pass
 if do_sep and (not frame_type=='focus'):
@@ -719,8 +747,9 @@ if do_sep and (not frame_type=='focus'):
 
                 # Get out raw histogram construction data
                 # Get a flattened array with all nans removed
-                int_array_flattened=statistic_area.astype(int).ravel()
-                unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                unique,counts=np.unique(statistic_area.ravel()[~np.isnan(statistic_area.ravel())].astype(int), return_counts=True)
+                # int_array_flattened=statistic_area.astype(int).ravel()
+                # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
                 m=counts.argmax()
                 imageMode=unique[m]
 
@@ -732,9 +761,9 @@ if do_sep and (not frame_type=='focus'):
 
         slice_n_dice['boxstats']=boxstats
 
-        print ("Slices and Dices: " + str(time.time()-googtime))
+        plog ("Slices and Dices: " + str(time.time()-googtime))
         imageinspection_json_snippets['sliceanddice']=re.sub('\s+',' ',str(slice_n_dice)).replace('dtype=float32','').replace('array','')
-        
+
     except:
         pass
 
@@ -743,14 +772,14 @@ if not frame_type == 'focus':
     googtime=time.time()
     with open(im_path + 'image_' + text_name.replace('.txt', '.json'), 'w') as f:
         json.dump(imageinspection_json_snippets, f)
-    print ("Writing out image inspection: " + str(time.time()-googtime))
+    plog ("Writing out image inspection: " + str(time.time()-googtime))
 
     try:
         # Writing out the radial profile snippets
         # This seems to take the longest time, so down here it goes
         googtime=time.time()
         starinspection_json_snippets['radialprofiles']=re.sub('\s+',' ',str(sources))
-        print ("ASCIIing Radial Profiles: " + str(time.time()-googtime))
+        plog ("ASCIIing Radial Profiles: " + str(time.time()-googtime))
         googtime=time.time()
 
     except:
@@ -758,7 +787,7 @@ if not frame_type == 'focus':
 
     with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
         json.dump(starinspection_json_snippets, f)
-    print ("Writing out star inspection: " + str(time.time()-googtime))
+    plog ("Writing out star inspection: " + str(time.time()-googtime))
 
 
 

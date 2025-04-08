@@ -1,7 +1,10 @@
 env/
 venv/
+local_dev_stuff/
 .env
 .credentials
+local_dev_stuff/
+CLAUDE.md
 
 __pycache__
 *.pyc
@@ -10,6 +13,7 @@ __pycache__
 sandbox/
 .vscode/
 .pylint
+CLAUDE.md
 
 .DS_Store
 support_info/Installers/WCSIndexFiles/Kepler.zip
@@ -25,3 +29,8 @@ subprocesses/testSEPpickle
 subprocesses/testSEPpickle
 subprocesses/testpostprocess.pickle
 subprocesses/crosscorrelprocess.pickle
+subprocesses/Platesolveprocess - Copy (3).py
+subprocesses/testsingleimageplatesolvepickle
+output.txt
+output.txt
+output.txt
