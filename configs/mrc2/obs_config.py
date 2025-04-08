@@ -465,6 +465,7 @@ site_config = {
             'minimum': 0,    #NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
             'throw': 300,
+            'depth_of_focus': 102.7, # +/- 2*focal-ratio^2(0.555) -- unit is microns, result is +/-2 = 4x or 0.1 mm for this telescope
             'step_size': 1,
             'backlash':  0,
             'unit': 'steps',
@@ -821,14 +822,13 @@ site_config = {
                 # This is the area for cooling related settings
                 'cooler_on': True,
 
-                'temp_setpoint': -5.0,  # Verify we can go colder
-                'rated_max_delta': -45, # Rated capacity for TEC to go below ambient.
+                'temp_setpoint': 2,  # Verify we can go colder
+                'rated_max_delta': -20, # Rated capacity for TEC to go below ambient.
+                "temp_setpoint_tolarance": 2.0,   # Centigrade
                 'has_chiller': True,
                 'ambient_water_cooler':  False,  #QHY sells these.           
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  14,  # C  15 - 45 = -30 so do not exceed that target or run
-                                            #TEC above 85% -- better more like 80%.  FLI 50100 at -20 uses 85% power with actual ambient
-                                            # of 18C.  60% at -15C, so -17.5 seems good. Really hot days mean the TEC ha do do more work.
+                'chiller_ref_temp':  15,  # C 
                 'day_warm': False,
                 'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,

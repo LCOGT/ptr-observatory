@@ -3621,7 +3621,7 @@ class Camera:
                         red_name01
                         ]
 
-                # Another pickle debugger
+
                 if False :
                     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
                     
