@@ -382,7 +382,8 @@ class SchedulerObservation:
         plog(f'simulating defocus of {amount}')
         return
 
-    def _take_exposure(self, camera_device, filterwheel_device, time: float, filter_name: str,
+    # TODO: add target name to optional_params.object_name
+    def _take_exposure(self, camera_device, filterwheel_device, time: float, filter_name: str, target_name: str,
                       smartstack: bool = True, substack: bool = True) -> dict:
         """
         Take an exposure with the specified parameters
@@ -406,7 +407,8 @@ class SchedulerObservation:
         }
         optional_params = {
             'filter': filter_name,
-            'count': 1
+            'count': 1,
+            'object_name': target_name
         }
         plog(f'Exposing image with filter {filter_name} for {time}s')
         return camera_device.expose_command(
@@ -502,6 +504,7 @@ class SchedulerObservation:
 
             offset_ra = ic['extra_params'].get('offset_ra', 0)
             offset_dec = ic['extra_params'].get('offset_dec', 0)
+            target_name = config['target'].get('name', 'Unknown Target')
             self._go_to_target(mount, config['target'], offset_ra, offset_dec)
 
             stop, reason = self.stop_condition_reached()
@@ -523,7 +526,7 @@ class SchedulerObservation:
                 if stop:
                     return time_observed, reason
 
-                expose_result = self._take_exposure(camera, filter_wheel, exposure_time, filter_name, smartstack=smartstack, substack=substack)
+                expose_result = self._take_exposure(camera, filter_wheel, exposure_time, filter_name, target_name, smartstack=smartstack, substack=substack)
                 plog('expose result: ', expose_result)
 
                 # Update the time observed for this configuration

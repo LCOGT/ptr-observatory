@@ -2795,14 +2795,14 @@ class Observatory:
         while True:
             if not self.ptrarchive_queue.empty():
                 items = []
-                for q in range(
+                for _ in range(
                     min(number_of_simultaneous_uploads,
                         self.ptrarchive_queue.qsize())
                 ):
                     items.append(self.ptrarchive_queue.get(block=False))
 
                 with ThreadPool(processes=number_of_simultaneous_uploads) as pool:
-                    for result in pool.map(self.ptrarchive_uploader, items):
+                    for _ in pool.map(self.ptrarchive_uploader, items):
                         self.ptrarchive_queue.task_done()
             else:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
@@ -2902,7 +2902,7 @@ class Observatory:
         the platesolving process and completing it.
 
         """
-        
+
         platesolve_subprocess=None
 
         while True:
@@ -2984,7 +2984,7 @@ class Observatory:
                     else:
                         try:
                             try:
-                                
+
                                 os.remove(
                                     self.local_calibration_path + "platesolve.pickle"
                                 )
@@ -3076,7 +3076,7 @@ class Observatory:
                                     timeout_time,
                                 ]
                             )
-                            
+
                             platesolve_subprocess = subprocess.run(
                                 ["python", "subprocesses/Platesolveprocess.py"],
                                 input=pickledata,
