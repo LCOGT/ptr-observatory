@@ -4772,12 +4772,6 @@ class Camera:
                 else:
                     pier_side=g_dev["mnt"].pier_side
 
-                # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                if False:
-                    #NB set this path to create test pickle for makejpeg routine.
-                    pickle.dump([mainjpegthread_filename, smartstackid, 'paths', pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                        osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                            rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor,self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name], open('testjpegpickle','wb'))
                 try:
                     jpeg_subprocess = subprocess.Popen(
                         ['python', 'subprocesses/mainjpeg.py'],
@@ -4786,47 +4780,62 @@ class Camera:
                         bufsize=-1
                     )
                 except OSError:
-                    pass
+                    plog.err('JPEG subprocess failed to start')
+                    plog.err(traceback.format_exc())
+
+                jpeg_output_dir = self.camera_path + g_dev['day'] + "/to_AWS/"
                 try:
-                    pickle.dump(
-                        [
-                            mainjpegthread_filename,
-                            smartstackid,
-                            'paths',
-                            pier_side,
-                            is_osc,
-                            osc_bayer,
-                            osc_background_cut,
-                            osc_brightness_enhance,
-                            osc_contrast_enhance,
-                            osc_colour_enhance,
-                            osc_saturation_enhance,
-                            osc_sharpness_enhance,
-                            transpose_jpeg,
-                            flipx_jpeg,
-                            flipy_jpeg,
-                            rotate180_jpeg,
-                            rotate90_jpeg,
-                            rotate270_jpeg,
-                            crop_preview,
-                            yb,
-                            yt,
-                            xl,
-                            xr,
-                            squash_on_x_axis,
-                            zoom_factor,
-                            self.camera_path + g_dev['day'] + "/to_AWS/",
-                            jpeg_name
-                        ],
-                        jpeg_subprocess.stdin)
+                    mainjpeg_config = {
+                        "mainjpegthread_filename": mainjpegthread_filename,
+                        "smartstackid": smartstackid,
+                        "pier_side": pier_side,
+                        "is_osc": is_osc,
+                        "osc_settings": {
+                            "bayer": osc_bayer,
+                            "background_cut": osc_background_cut,
+                            "brightness_enhance": osc_brightness_enhance,
+                            "contrast_enhance": osc_contrast_enhance,
+                            "colour_enhance": osc_colour_enhance,
+                            "saturation_enhance": osc_saturation_enhance,
+                            "sharpness_enhance": osc_sharpness_enhance
+                        },
+                        "jpeg_transforms": {
+                            "transpose": transpose_jpeg,
+                            "flipx": flipx_jpeg,
+                            "flipy": flipy_jpeg,
+                            "rotate180": rotate180_jpeg,
+                            "rotate90": rotate90_jpeg,
+                            "rotate270": rotate270_jpeg
+                        },
+                        "crop": {
+                            "enabled": crop_preview,
+                            "ybottom": yb,
+                            "ytop": yt,
+                            "xleft": xl,
+                            "xright": xr
+                        },
+                        "squash_on_x_axis": squash_on_x_axis,
+                        "zoom_factor": zoom_factor,
+                        "output_dir": jpeg_output_dir,
+                        "jpeg_filename": jpeg_name
+                    }
+
+                    # Here is a manual debug area which makes a pickle for debug purposes.
+                    # Default is False, but can be manually set to True for code debugging
+                    debug = False
+                    if debug:
+                        #NB set this path to create test pickle for makejpeg routine.
+                        pickle.dump(mainjpeg_config, open('testjpegpickle', 'wb'))
+                    else:
+                        pickle.dump(mainjpeg_config, jpeg_subprocess.stdin)
                 except:
-                    plog("Problem in the jpeg pickle dump")
-                    plog(traceback.format_exc())
+                    plog.warn("Problem in the jpeg pickle dump")
+                    plog.warn(traceback.format_exc())
 
                 del jpeg_subprocess
 
                 g_dev['obs'].enqueue_for_fastAWS(
-                    self.camera_path + g_dev['day'] + "/to_AWS/",
+                    jpeg_output_dir,
                     jpeg_name,
                     exposure_time
                 )
