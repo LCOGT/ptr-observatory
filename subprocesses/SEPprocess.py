@@ -67,42 +67,53 @@ def radial_profile(data, center):
     radialprofile = tbin / nr
     return radialprofile
 
-#try:
-input_sep_info=pickle.load(sys.stdin.buffer)
-# except:
-#     plog("No input to the SEP Process.")
-#     breakpoint()
-#     plog ("Post breakpoint print statement.")
+try:
+    config = pickle.load(sys.stdin.buffer)
+except:
+    plog("No input to the SEP Process.")
+#   config=pickle.load(open('testSEPpickle','rb'))
 
-#input_sep_info=pickle.load(open('testSEPpickle','rb'))
 
-#plog ("HERE IS THE INCOMING. ")
-#plog (input_sep_info)
+# Extract values from the structured dictionary
+# File info
+septhread_filename = config["file_info"]["septhread_filename"]
+im_path = config["file_info"]["im_path"]
+text_name = config["file_info"]["text_name"]
+cal_path = config["file_info"]["cal_path"]
+cal_name = config["file_info"]["cal_name"]
 
-septhread_filename=input_sep_info[0]
-pixscale=input_sep_info[1]
-readnoise=input_sep_info[2]
-avg_foc=input_sep_info[3]
-focus_image=input_sep_info[4]
-im_path=input_sep_info[5]
-text_name=input_sep_info[6]
-hduheader=input_sep_info[7]
-cal_path=input_sep_info[8]
-cal_name=input_sep_info[9]
-frame_type=input_sep_info[10]
-focus_position=input_sep_info[11]
-gdevevents=input_sep_info[12]
-ephemnow=input_sep_info[13]
-focus_crop_width = input_sep_info[14]
-focus_crop_height = input_sep_info[15]
-is_osc= input_sep_info[16]
-interpolate_for_focus= input_sep_info[17]
-interpolate_for_sep= input_sep_info[20]
-focus_jpeg_size= input_sep_info[23]
-saturate= input_sep_info[24]
-minimum_realistic_seeing=input_sep_info[25]
-do_sep=input_sep_info[27]
-exposure_time=input_sep_info[28]
+# Camera settings
+pixscale = config["camera_settings"]["pixscale"]
+readnoise = config["camera_settings"]["readnoise"]
+native_bin = config["camera_settings"]["native_bin"]
+saturate = config["camera_settings"]["saturate"]
+
+# Focus data
+avg_foc = config["focus_data"]["avg_foc"]
+focus_image = config["focus_data"]["focus_image"]
+focus_position = config["focus_data"]["focus_position"]
+focus_crop_width = config["focus_data"]["focus_crop_width"]
+focus_crop_height = config["focus_data"]["focus_crop_height"]
+focus_jpeg_size = config["focus_data"]["focus_jpeg_size"]
+
+# Processing options
+is_osc = config["processing_options"]["is_osc"]
+frame_type = config["processing_options"]["frame_type"]
+interpolate_for_focus = config["processing_options"]["interpolate_for_focus"]
+bin_for_focus = config["processing_options"]["bin_for_focus"]
+focus_bin_value = config["processing_options"]["focus_bin_value"]
+interpolate_for_sep = config["processing_options"]["interpolate_for_sep"]
+bin_for_sep = config["processing_options"]["bin_for_sep"]
+sep_bin_value = config["processing_options"]["sep_bin_value"]
+do_sep = config["processing_options"]["do_sep"]
+minimum_realistic_seeing = config["processing_options"]["minimum_realistic_seeing"]
+
+# Metadata
+hduheader = config["metadata"]["hduheader"]
+gdevevents = config["metadata"]["events"]
+ephemnow = config["metadata"]["ephem_now"]
+exposure_time = config["metadata"]["exposure_time"]
+
 
 ############ WAITER FOR
 # the filename token to arrive to start processing
@@ -645,7 +656,7 @@ except:
     hduheader["NSTARS"] = ( -99, 'Number of star-like sources in image')
 
 
-if input_sep_info[1] == None:
+if pixscale == None:
     hduheader['PIXSCALE']='Unknown'
 else:
     hduheader['PIXSCALE']=float(pixscale)

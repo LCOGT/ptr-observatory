@@ -4523,10 +4523,6 @@ class Camera:
             saturate=self.settings["saturate"]
             minimum_realistic_seeing=self.site_config['minimum_realistic_seeing']
 
-            # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-            if False:
-                pickle.dump([septhread_filename, self.pixscale, self.camera_known_readnoise, avg_foc, focus_image, im_path, text_name, 'hduheader', cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,self.native_bin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
-
             try:
                 sep_subprocess = subprocess.Popen(
                     ['python', 'subprocesses/SEPprocess.py'],
@@ -4538,42 +4534,61 @@ class Camera:
                 pass
 
             try:
-                pickle.dump([
-                    septhread_filename,
-                    self.pixscale,
-                    self.camera_known_readnoise,
-                    avg_foc,
-                    focus_image,
-                    im_path,
-                    text_name,
-                    'hduheader',
-                    cal_path,
-                    cal_name,
-                    frame_type,
-                    focus_position,
-                    g_dev['events'],
-                    ephem.now(),
-                    0.0,
-                    0.0,
-                    is_osc,
-                    interpolate_for_focus,
-                    bin_for_focus,
-                    focus_bin_value,
-                    interpolate_for_sep,
-                    bin_for_sep,
-                    sep_bin_value,
-                    focus_jpeg_size,
-                    saturate,
-                    minimum_realistic_seeing,
-                    self.native_bin,
-                    do_sep,
-                    exposure_time], sep_subprocess.stdin)
-            except:
-                plog("Problem in the SEP pickle dump")
-                plog(traceback.format_exc())
-            packet=(avg_foc,exposure_time,this_exposure_filter, airmass_of_observation)
-            g_dev['obs'].file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
+                sep_config = {
+                    "file_info": {
+                        "septhread_filename": septhread_filename,
+                        "im_path": im_path,
+                        "text_name": text_name,
+                        "cal_path": cal_path,
+                        "cal_name": cal_name
+                    },
+                    "camera_settings": {
+                        "pixscale": self.pixscale,
+                        "readnoise": self.camera_known_readnoise,
+                        "native_bin": self.native_bin,
+                        "saturate": saturate
+                    },
+                    "focus_data": {
+                        "avg_foc": avg_foc,
+                        "focus_image": focus_image,
+                        "focus_position": focus_position,
+                        "focus_crop_width": 0.0,
+                        "focus_crop_height": 0.0,
+                        "focus_jpeg_size": focus_jpeg_size
+                    },
+                    "processing_options": {
+                        "is_osc": is_osc,
+                        "frame_type": frame_type,
+                        "interpolate_for_focus": interpolate_for_focus,
+                        "bin_for_focus": bin_for_focus,
+                        "focus_bin_value": focus_bin_value,
+                        "interpolate_for_sep": interpolate_for_sep,
+                        "bin_for_sep": bin_for_sep,
+                        "sep_bin_value": sep_bin_value,
+                        "do_sep": do_sep,
+                        "minimum_realistic_seeing": minimum_realistic_seeing
+                    },
+                    "metadata": {
+                        "hduheader": 'hduheader',
+                        "events": g_dev['events'],
+                        "ephem_now": ephem.now(),
+                        "exposure_time": exposure_time
+                    }
+                }
 
+                # Here is a manual debug area which makes a pickle for debug purposes.
+                # Default is False, but can be manually set to True for code debugging
+                sep_debug = False
+                if sep_debug:
+                    pickle.dump(sep_config, open('subprocesses/testSEPpickle', 'wb'))
+                else:
+                    pickle.dump(sep_config, sep_subprocess.stdin)
+            except:
+                plog.warn("Problem in the SEP pickle dump")
+                plog.warn(traceback.format_exc())
+
+            packet = (avg_foc,exposure_time,this_exposure_filter, airmass_of_observation)
+            g_dev['obs'].file_wait_and_act_queue.put((im_path + text_name.replace('.txt', '.fwhm'), time.time(),packet))
             g_dev['obs'].enqueue_for_fastAWS(im_path, text_name, exposure_time)
 
             # JPEG process
@@ -4665,8 +4680,8 @@ class Camera:
 
                     # Here is a manual debug area which makes a pickle for debug purposes.
                     # Default is False, but can be manually set to True for code debugging
-                    debug = False
-                    if debug:
+                    jpeg_debug = False
+                    if jpeg_debug:
                         #NB set this path to create test pickle for makejpeg routine.
                         pickle.dump(mainjpeg_config, open('testjpegpickle', 'wb'))
                     else:
