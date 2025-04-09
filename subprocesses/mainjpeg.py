@@ -27,48 +27,50 @@ plog = create_color_plog('mainjpg', log_color)
 # Pick up the pickled array
 debug = False
 if not debug:
-    input_jpeg_info=pickle.load(sys.stdin.buffer)
+    config = pickle.load(sys.stdin.buffer)
 else:
     #breakpoint()
     #NB Use this input file for debugging this code.
     #input_jpeg_info=pickle.load(open('C:\\Users\\user\\Documents\\GitHub\\ptr-observatory\\testjpegpickle','rb'))
-    input_jpeg_info=pickle.load(open('../testjpegpickle','rb'))
-    plog("Starting mainjpeg.py")
-    plog(input_jpeg_info)
+    config = pickle.load(open('../testjpegpickle','rb'))
+    plog("Starting mainjpeg.py in debug mode")
+    plog(config)
 
+# Extract input values
+mainjpegthread_filename = config["mainjpegthread_filename"]
+smartstackid = config["smartstackid"]
+pier_side = config["pier_side"]
+is_osc = config["is_osc"]
 
-mainjpegthread_filename=input_jpeg_info[0]
-smartstackid=input_jpeg_info[1]
-paths=input_jpeg_info[2]
-pier_side=input_jpeg_info[3]
-is_osc=input_jpeg_info[4]
-osc_bayer=input_jpeg_info[5]
-osc_background_cut=input_jpeg_info[6]
-osc_brightness_enhance=input_jpeg_info[7]
-osc_contrast_enhance=input_jpeg_info[8]
-osc_colour_enhance=input_jpeg_info[9]
-osc_saturation_enhance=input_jpeg_info[10]
-osc_sharpness_enhance=input_jpeg_info[11]
-transpose_jpeg=input_jpeg_info[12]
-flipx_jpeg=input_jpeg_info[13]
-flipy_jpeg=input_jpeg_info[14]
-rotate180_jpeg=input_jpeg_info[15]
-rotate90_jpeg=input_jpeg_info[16]
-rotate270_jpeg=input_jpeg_info[17]
-crop_preview=input_jpeg_info[18]
-yb=input_jpeg_info[19]
-yt=input_jpeg_info[20]
-xl=input_jpeg_info[21]
-xr=input_jpeg_info[22]
-squash_on_x_axis=input_jpeg_info[23]
-#try:
-zoom_factor = input_jpeg_info[24].lower()
-#     plog("Mainjpeg received:", zoom_factor)
-# except:
-#     plog("Zoom_factor paramater faulted.")
-jpeg_path = input_jpeg_info[25]
-jpeg_name = input_jpeg_info[26]
+# OSC settings
+osc_bayer = config["osc_settings"]["bayer"]
+osc_background_cut = config["osc_settings"]["background_cut"]
+osc_brightness_enhance = config["osc_settings"]["brightness_enhance"]
+osc_contrast_enhance = config["osc_settings"]["contrast_enhance"]
+osc_colour_enhance = config["osc_settings"]["colour_enhance"]
+osc_saturation_enhance = config["osc_settings"]["saturation_enhance"]
+osc_sharpness_enhance = config["osc_settings"]["sharpness_enhance"]
 
+# JPEG transformation settings
+transpose_jpeg = config["jpeg_transforms"]["transpose"]
+flipx_jpeg = config["jpeg_transforms"]["flipx"]
+flipy_jpeg = config["jpeg_transforms"]["flipy"]
+rotate180_jpeg = config["jpeg_transforms"]["rotate180"]
+rotate90_jpeg = config["jpeg_transforms"]["rotate90"]
+rotate270_jpeg = config["jpeg_transforms"]["rotate270"]
+
+# Crop settings
+crop_preview = config["crop"]["enabled"]
+yb = config["crop"]["ybottom"]
+yt = config["crop"]["ytop"]
+xl = config["crop"]["xleft"]
+xr = config["crop"]["xright"]
+
+# Other settings
+squash_on_x_axis = config["squash_on_x_axis"]
+zoom_factor = config["zoom_factor"].lower()
+output_dir = config["output_dir"]
+jpeg_filename = config["jpeg_filename"]
 
 
 # This process is set to spin up early, so it loads
@@ -204,8 +206,7 @@ if smartstackid == 'no':
 
         # Save high-res version of JPEG.
         final_image.save(
-            jpeg_path + jpeg_name.replace('EX10', 'EX20')
-            #paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
+            output_dir + jpeg_filename.replace('EX10', 'EX20')
         )
 
         # Resizing the array to an appropriate shape for the small jpg
@@ -267,7 +268,7 @@ if smartstackid == 'no':
                 final_image = final_image.resize((900, int(900 * iy / ix)))
 
         final_image.save(
-            jpeg_path + jpeg_name
+            output_dir + jpeg_filename
         )
         del final_image
 
@@ -313,7 +314,7 @@ if smartstackid == 'no':
 
         # Save high-res version of JPEG.
         final_image.save(
-            jpeg_path + jpeg_name.replace('EX10', 'EX20')
+            output_dir + jpeg_filename.replace('EX10', 'EX20')
         )
 
         # Resizing the array to an appropriate shape for the jpg and the small fits
@@ -378,7 +379,7 @@ if smartstackid == 'no':
 
                 )
         final_image.save(
-            jpeg_path + jpeg_name
+            output_dir + jpeg_filename
         )
         del final_image
 
