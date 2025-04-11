@@ -5818,25 +5818,32 @@ class Sequencer:
                                     minimum_sources_in_bordering_focus_spot=min(filtered[0][1],filtered[1][1])
                                     
                                     
-                                    if not self.dummy:
-                                        g_dev['cam'].focusexposure_shelf = shelve.open(
+                                    if not g_dev['cam'].dummy:
+                                        focusexposure_shelf = shelve.open(
                                             g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'focusexposure' + g_dev['cam'].alias + str(g_dev['obs'].name))
                                         try:
                                             focusexposure_list = g_dev['cam'].focusexposure_shelf['focusexposure_list']
-                                            breakpoint()
+                                            focusexposure_list.append([minimum_sources_in_bordering_focus_spot,g_dev['cam'].focus_exposure])
+                                            
+                                            print (focusexposure_list)
+                                            focusarray=np.asarray(focusexposure_list)
+                                            #breakpoint()
+                                            focusexposure_shelf['focusexposure_list'] = focusexposure_list
                                             
                                             #self.focus_exposure = bn.nanmedian(pixelscale_list)
                                             plog('Focus Exposure time: ' + str(self.focus_exposure))
                                         except:
                                             plog ("No focus exposure shelf yet so just storing this one.")
-                                            g_dev['cam'].focusexposure_shelf['focusexposure_list']=[[minimum_sources_in_bordering_focus_spot,g_dev['cam'].focus_exposure]]
+                                            plog(traceback.format_exc())
+                                            focusexposure_shelf['focusexposure_list']=[[minimum_sources_in_bordering_focus_spot,g_dev['cam'].focus_exposure]]
                                             # Having a crack at a first exposure time
                                             # Try to linearly scale to 50 sources, but don't go over 60 seconds.
+                                            #breakpoint()
                                             g_dev['cam'].focus_exposure=min((50/minimum_sources_in_bordering_focus_spot)*g_dev['cam'].focus_exposure, 60)
                                         
-                                        self.focusexposure_shelf.close()
+                                        focusexposure_shelf.close()
                                     
-                                    breakpoint()
+                                    #breakpoint()
 
                                     # We don't take a confirming exposure because there is no point actually and just wastes time.
                                     # You can see if it is focussed with the first target shot.

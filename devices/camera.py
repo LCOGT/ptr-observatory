@@ -1424,10 +1424,16 @@ class Camera:
                 g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'focusexposure' + self.alias + str(g_dev['obs'].name))
             try:
                 focusexposure_list = self.focusexposure_shelf['focusexposure_list']
-                self.focus_exposure = bn.nanmedian(pixelscale_list)
-                plog('Focus Exposure time: ' + str(self.focus_exposure))
+                print ("Focusexposurelist")
+                print (focusexposure_list)
+               # breakpoint()
+                
+                self.focus_exposure = self.site_config['focus_exposure_time']
+                # self.focus_exposure = bn.nanmedian(pixelscale_list)
+                # plog('Focus Exposure time: ' + str(self.focus_exposure))
             except:
                 plog ("No focus exposure shelf so using the config value.")
+                plog(traceback.format_exc())
                 focusexposure_list=None
                 self.focus_exposure = self.site_config['focus_exposure_time']
             self.focusexposure_shelf.close()

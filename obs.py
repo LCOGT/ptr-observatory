@@ -720,11 +720,13 @@ class Observatory:
         self.update_status_thread.daemon = True
         self.update_status_thread.start()
 
-        # # Initialisation complete!
+        # # # Initialisation complete!
         # bias_timer=time.time()
-        # while time.time()-bias_timer < 28800:
-        #     g_dev['seq'].bias_dark_script(morn=True)
-
+        # while time.time()-bias_timer < 10000:
+        #     #g_dev['seq'].bias_dark_script(morn=True)
+        #     req2 = {'target': 'near_tycho_star'}
+        #     opt = {}
+        #     foc_pos, foc_fwhm=g_dev['seq'].auto_focus_script(req2, opt, dont_return_scope=True, skip_timer_check=True, filter_choice='focus')
 
     def create_devices(self):
         """Create and store device objects by type, including role assignments.
