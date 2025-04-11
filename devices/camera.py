@@ -1390,6 +1390,7 @@ class Camera:
                 except:
                     pixelscale_list=None
                     self.pixscale = None
+                self.pixelscale_shelf.close()
 
 
             # self.pixelscale_shelf.close()
@@ -1415,6 +1416,21 @@ class Camera:
 
             except:
                 plog(traceback.format_exc())
+
+
+        # Focus exposure time shelf self-adjustment
+        if not self.dummy:
+            self.focusexposure_shelf = shelve.open(
+                g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'focusexposure' + self.alias + str(g_dev['obs'].name))
+            try:
+                focusexposure_list = self.focusexposure_shelf['focusexposure_list']
+                self.focus_exposure = bn.nanmedian(pixelscale_list)
+                plog('Focus Exposure time: ' + str(self.focus_exposure))
+            except:
+                plog ("No focus exposure shelf so using the config value.")
+                focusexposure_list=None
+                self.focus_exposure = self.site_config['focus_exposure_time']
+            self.focusexposure_shelf.close()
 
 
         """

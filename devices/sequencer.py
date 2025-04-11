@@ -5286,7 +5286,7 @@ class Sequencer:
                 plog ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
                 plog(traceback.format_exc())
 
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(g_dev['cam'].name), 'image_type': 'focus'}
+            req = {'time': g_dev['cam'].focus_exposure,  'alias':  str(g_dev['cam'].name), 'image_type': 'focus'}
             opt = { 'count': 1, 'filter': 'focus'}
 
             if self.stop_script_called:
@@ -5393,7 +5393,7 @@ class Sequencer:
 
         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
 
-        focus_exposure_time=self.config['focus_exposure_time']
+        focus_exposure_time=g_dev['cam'].focus_exposure
 
         # Boost broadband
         if filter_choice.lower() in [ "blue", "b", "jb", "bb", "pb","green", "jv", "bv", "pg","red", "r", "br", "r", "pr", "rc", "rp","i", "ic", "ip", "bi","gp", "g"]:
@@ -5415,6 +5415,7 @@ class Sequencer:
         spots_tried=[]
         extra_tries=0
         new_focus_position_to_attempt = central_starting_focus # Initialise this variable
+        n_of_sources=[] # to track good exposure time
         while True:
 
             im_path_r = g_dev['cam'].camera_path
@@ -5546,6 +5547,12 @@ class Sequencer:
                 foc_pos=g_dev['foc'].current_focus_position
 
                 g_dev['obs'].send_to_user("Focus at test position: " + str(foc_pos) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
+
+                # Store the number of sources with the position to later estimate the optimal exposure time.
+                
+                #breakpoint()
+                n_of_sources.append([foc_pos,g_dev['obs'].fwhmresult['No_of_sources']])
+
 
                 if not np.isnan(spot):
                     if spot < 30.0:
@@ -5690,20 +5697,10 @@ class Sequencer:
                             g_dev['obs'].enqueue_for_fastAWS( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
 
-                        # If the parabola is not centered roughly on the minimum point, then get another dot on
-                        # The necessary side
-                        # elif True:
-                            # I've hit a point where it tries to solve, but it is the wrong point at the moment!
-                            # breakpoint()
-
-
                         # Otherwise if it seems vaguely plausible to get a fit... give it a shot
                         else:
                             # If you can fit a parabola, then you've got the focus
                             # If fit, then break
-
-
-
                             fit_failed=False
                             try:
                                 fit = np.polyfit(x, y, 2)
@@ -5719,8 +5716,6 @@ class Sequencer:
                                 plog ("crit points didn't work dunno y yet.")
                                 plog(traceback.format_exc())
                                 fit_failed=True
-
-                            #breakpoint()
 
                             if fit_failed:
                                 plog ("Fit failed. Usually due to a lack of data on one side of the curve. Grabbing another dot on the smaller side of the curve")
@@ -5801,6 +5796,47 @@ class Sequencer:
                                     plog("Estimated Optimal Throw:", curve_step_length)
                                                                         
                                     g_dev['foc'].report_optimal_throw(curve_step_length)
+                                    
+                                    
+                                    
+                                    # NOW calculate how many sources we get near the best focus
+                                    # Sort by key value
+                                    sorted_data = sorted(n_of_sources, key=lambda x: x[0])
+                                    
+                                    # Find the immediate next lower and next higher
+                                    lower = [x for x in sorted_data if x[0] < fitted_focus_position]
+                                    higher = [x for x in sorted_data if x[0] > fitted_focus_position]
+                                    
+                                    next_lower = lower[-1] if lower else None
+                                    next_higher = higher[0] if higher else None
+                                    
+                                    # Choose either or both
+                                    filtered = [entry for entry in [next_lower, next_higher] if entry is not None]
+                                    
+                                    #print(filtered)
+                                    
+                                    minimum_sources_in_bordering_focus_spot=min(filtered[0][1],filtered[1][1])
+                                    
+                                    
+                                    if not self.dummy:
+                                        g_dev['cam'].focusexposure_shelf = shelve.open(
+                                            g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'focusexposure' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                                        try:
+                                            focusexposure_list = g_dev['cam'].focusexposure_shelf['focusexposure_list']
+                                            breakpoint()
+                                            
+                                            #self.focus_exposure = bn.nanmedian(pixelscale_list)
+                                            plog('Focus Exposure time: ' + str(self.focus_exposure))
+                                        except:
+                                            plog ("No focus exposure shelf yet so just storing this one.")
+                                            g_dev['cam'].focusexposure_shelf['focusexposure_list']=[[minimum_sources_in_bordering_focus_spot,g_dev['cam'].focus_exposure]]
+                                            # Having a crack at a first exposure time
+                                            # Try to linearly scale to 50 sources, but don't go over 60 seconds.
+                                            g_dev['cam'].focus_exposure=min((50/minimum_sources_in_bordering_focus_spot)*g_dev['cam'].focus_exposure, 60)
+                                        
+                                        self.focusexposure_shelf.close()
+                                    
+                                    breakpoint()
 
                                     # We don't take a confirming exposure because there is no point actually and just wastes time.
                                     # You can see if it is focussed with the first target shot.
