@@ -20,6 +20,7 @@ obs_id = 'tbo2' # THIS IS THE NAME OF THIS OBSERVATORY
 site_config = {
     # Instance type specifies whether this is an obs or a wema
     'instance_type' : 'obs',
+    'instance_is_private': False,
     # If this is not a wema, this specifies the wema that this obs is connected to
     'wema_name' : 'tbo',
     # The unique identifier for this obs
@@ -163,6 +164,8 @@ site_config = {
     'threshold_mount_update': 45,  # only update mount when X arcseconds away
     "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer
     'fully_platesolve_images_at_site_rather_than_pipe' : True,
+
+    'push_file_list_to_pipe_queue': False,
 
 
 

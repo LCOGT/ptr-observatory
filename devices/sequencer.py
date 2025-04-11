@@ -164,6 +164,11 @@ class Sequencer:
                 configdb_enclosure=configdb_enclosure,
             )
 
+        # Add a fake lco observation to the calendar, used for testing
+        # self.schedule_manager.inject_fake_lco_observation(lat=self.obs.wema_config['latitude'], lng=self.obs.wema_config['longitude'])
+        # plog(self.schedule_manager.schedule)
+
+
         # Various on/off switches that block multiple actions occuring at a single time.
         self.af_guard = False
         self.block_guard = False
@@ -795,7 +800,7 @@ class Sequencer:
 
                 try:
                     # Get the observation to run now (or None)
-                    current_observation = self.schedule_manager.get_observation_to_run_now()
+                    current_observation = self.schedule_manager.get_observation_to_run()
 
                     # Nothing to observe
                     if current_observation is None:

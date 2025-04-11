@@ -39,20 +39,20 @@ class NightlyScheduleManager:
         self.site_proxy_offline = not include_lco_scheduler # Set site proxy offline if we're not including the lco scheduler
         if include_lco_scheduler:
             if 'SITE_PROXY_BASE_URL' not in os.environ:
-                plog('ERROR: the environment variable SITE_PROXY_BASE_URL is missing and scheduler observations won\'t work.')
+                plog.err('the environment variable SITE_PROXY_BASE_URL is missing and scheduler observations won\'t work.')
                 plog('Please add this to the .env file and restart the observatory.')
                 self.site_proxy_offline = True
             if 'SITE_PROXY_TOKEN' not in os.environ:
-                plog('ERROR: the environment variable SITE_PROXY_TOKEN is missing, which means we can\'t communicate with the site proxy')
+                plog.err('ERROR: the environment variable SITE_PROXY_TOKEN is missing, which means we can\'t communicate with the site proxy')
                 plog('Please add this to the .env file and restart the observatory.')
                 self.site_proxy_offline = True
             if configdb_telescope == None:
-                plog('ERROR: the configdb_telescope is not set. This is required to fetch the schedule from the site proxy.')
+                plog.err('the configdb_telescope is not set. This is required to fetch the schedule from the site proxy.')
                 plog('Observations from the scheduler will not be fetched.')
                 self.site_proxy_offline = True
             if configdb_enclosure == None:
-                plog('WARNING: the configdb_enclosure is not set. This is useful for better filtering of site proxy scheudles.')
-                plog('It should be an easy value to add to the site config')
+                plog.warn('the configdb_enclosure is not set. This is useful for better filtering of site proxy scheudles.')
+                plog.warn('It should be an easy value to add to the site config')
         self.site_proxy_base_url = os.getenv('SITE_PROXY_BASE_URL')
         self.site_proxy = requests.Session()
         self.site_proxy.headers.update({'Authorization': os.getenv('SITE_PROXY_TOKEN')})
@@ -62,9 +62,9 @@ class NightlyScheduleManager:
         self.site = site
 
         if schedule_start > schedule_end:
-            plog("ERROR: schedule_start is after schedule_end. This is probably not what you want.")
+            plog.err("schedule_start is after schedule_end. This is probably not what you want.")
         if schedule_end < time.time():
-            plog("WARNING: schedule_end is in the past. This is probably not what you want.")
+            plog.warn("schedule_end is in the past. This is probably not what you want.")
         self.schedule_start = schedule_start
         self.schedule_end   = schedule_end
 
@@ -90,6 +90,9 @@ class NightlyScheduleManager:
         # Lock for thread-safe operations
         self._lock = threading.RLock()
 
+        plog(f"Starting the schedule manager")
+        plog(f"PTR schedules: {True}")
+        plog(f"LCO schedules: {not self.site_proxy_offline}")
         self.start_update_threads()
 
 
@@ -114,8 +117,20 @@ class NightlyScheduleManager:
         if self.site_proxy_offline:
             return
         url = self.site_proxy_base_url + '/observation-portal/api/last_scheduled/'
-        response = self.site_proxy.get(url)
-        return response.json().get('last_scheduled')
+        try:
+            response = self.site_proxy.get(url)
+            # Check if the response is successful and not empty
+            if response.status_code == 200 and response.text.strip():
+                return response.json().get('last_scheduled')
+            else:
+                plog(f"Warning: LCO scheduler API returned unexpected response. Status: {response.status_code}, Content: {response.text}")
+                return None
+        except json.JSONDecodeError:
+            plog(f"Warning: Could not decode JSON from LCO scheduler API. Response content: {response.text}")
+            return None
+        except requests.exceptions.RequestException as e:
+            plog(f"Warning: Error connecting to LCO scheduler API: {str(e)}")
+            return None
 
 
     def update_lco_schedule(self, start_time=None, end_time=None):
@@ -327,22 +342,30 @@ class NightlyScheduleManager:
         with self._lock:
             return len(self._ptr_events + self._lco_events) == 0
 
-    def events_happening_now(self):
-        now_events = []
-        now = time.time()
+    def get_active_events(self, unix_time=None):
+        """ Get events happening now (default), or at a specific time (if provided). """
+        if unix_time is None:
+            unix_time = time.time()
+        events = []
         with self._lock:
             for event in self.schedule:
-                if event["start"] <= now <= event["end"]:
-                    now_events.append(event)
-        return now_events
+                if event["start"] <= unix_time <= event["end"]:
+                    events.append(event)
+        return events
 
-    def calendar_event_is_active(self, event_id):
-        """ Check if a calendar event is active """
-        return event_id in [event["id"] for event in self.events_happening_now()]
+    def is_observation_request_scheduled(self, obs_req_id, unix_time=None):
+        """ Check if an obsevation request (lco) is scheduled now (default), or at an optionally specified time. """
+        observations = self.get_active_events(unix_time)
+        lco_observation = next((obs for obs in observations if obs['origin'] == "lco"), None)
+        return lco_observation and lco_observation['event']['request']['id'] == obs_req_id
 
-    def get_observation_to_run_now(self):
+    def calendar_event_is_active(self, event_id, unix_time=None):
+        """ Check if a calendar event is active now (default), or at an optionally specified time """
+        return event_id in [event["id"] for event in self.get_active_events(unix_time)]
+
+    def get_observation_to_run(self, unix_time=None):
         """
-        Get an observation that is scheduled to run now.
+        Get an observation that is scheduled to run now (default), or at an optionally specified time.
         If there are any observations from the LCO scheduler, return the first one.
         Otherwise, return the first PTR event with a project attached.
 
@@ -365,11 +388,15 @@ class NightlyScheduleManager:
         if self.schedule_is_empty:
             return None
 
-        with self._lock:
-            current_events = self.events_happening_now()
-            current_events = [x for x in current_events if not self.check_is_completed(x["id"])]
+        # Default to now
+        if unix_time is None:
+            unix_time = time.time()
 
-            for event in current_events:
+        with self._lock:
+            events = self.get_active_events(unix_time)
+            events = [x for x in events if not self.check_is_completed(x["id"])]
+
+            for event in events:
                 # First check for scheduler events, and return the first one if available
                 if event["origin"] == "lco":
                     return event
@@ -457,6 +484,252 @@ class NightlyScheduleManager:
         # Reset the stop event
         self._stop_threads.clear()
 
+
+    # The rest of the functions in this class are used to inject a fake observation for simple testing
+    def inject_fake_lco_observation(self, request=None, end_time_offset=3600, lat=None, lng=None):
+        """
+        Inject a fake LCO observation for testing purposes.
+
+        Args:
+            request (dict, optional): The request configuration to use for the fake observation.
+                                    If None, a default request will be generated.
+            end_time_offset (int, optional): Number of seconds from now when the
+                                            observation will end. Defaults to 3600 (1 hour).
+            lat (float, optional): Latitude in degrees for target visibility calculation.
+                                Defaults to None (which will use a bright default target).
+            lng (float, optional): Longitude in degrees for target visibility calculation.
+                                Defaults to None (which will use a bright default target).
+
+        Returns:
+            dict: The created fake event
+        """
+        # Calculate start time (1 minute ago)
+        start_time = time.time() - 60
+
+        # Calculate end time (default: 1 hour from now)
+        end_time = time.time() + end_time_offset
+
+        # Generate a request if one isn't provided
+        if request is None:
+            request = self.generate_fake_request(lat, lng)
+
+        # Create a unique ID for this fake observation
+        fake_id = f"fake_lco_{int(time.time())}"
+
+        # Create the fake event with the structure expected by the scheduler
+        fake_event = {
+            "start": start_time,
+            "end": end_time,
+            "id": fake_id,
+            "origin": "lco",
+            "event": {
+                "id": fake_id,
+                "start": datetime.fromtimestamp(start_time).isoformat() + "Z",
+                "end": datetime.fromtimestamp(end_time).isoformat() + "Z",
+                "request": request,
+                # Add other required fields from a typical LCO event
+                "name": "Fake LCO Observation",
+                "site": self.site,
+                "enclosure": self.configdb_enclosure or "enc1",
+                "telescope": self.configdb_telescope or "0m31",
+                "state": "PENDING",
+                "observation_type": "NORMAL",
+                "created": "2025-02-15T02:33:31.083076Z",
+                "ipp_value": 1.05,
+                "modified": "2025-02-15T02:33:31.083071Z",
+                "priority": 10,
+                "proposal": "PTR_integration_test_proposal",
+                "request_group_id": 12345,
+                "submitter": "tbeccue",
+            }
+        }
+
+        # Add the fake event to the LCO events list
+        with self._lock:
+            self._lco_events.append(fake_event)
+
+        plog(f"Injected fake LCO observation with ID {fake_id}")
+        return fake_event
+
+    def find_visible_target(self, lat=None, lng=None):
+        """
+        Find a target that's likely to be visible at the given coordinates.
+
+        Args:
+            lat (float, optional): Latitude in degrees. If None, a bright default target is used.
+            lng (float, optional): Longitude in degrees. If None, a bright default target is used.
+
+        Returns:
+            tuple: (name, ra_deg, dec_deg, note) of the selected target
+        """
+        import math
+        from datetime import datetime
+
+        # List of bright targets that could be visible at various times
+        # Format: name, RA (degrees), Dec (degrees), notes
+        bright_targets = [
+            ("Sirius", 101.28, -16.71, "Brightest star"),
+            ("Canopus", 95.99, -52.70, "Second brightest star"),
+            ("Arcturus", 213.91, 19.18, "Bright northern star"),
+            ("Vega", 279.23, 38.78, "Summer star in northern hemisphere"),
+            ("Capella", 79.17, 45.99, "Bright winter star in northern hemisphere"),
+            ("Rigel", 78.63, -8.20, "Bright star in Orion"),
+            ("Betelgeuse", 88.79, 7.41, "Red supergiant in Orion"),
+            ("Altair", 297.69, 8.87, "Bright summer star"),
+            ("Aldebaran", 68.98, 16.51, "Bright red giant"),
+            ("Antares", 247.35, -26.43, "Red supergiant in Scorpius"),
+            ("Spica", 201.29, -11.16, "Bright star in Virgo"),
+            ("Pollux", 116.32, 28.03, "Bright star in Gemini"),
+            ("Deneb", 310.35, 45.28, "Bright star in Cygnus"),
+            ("Regulus", 152.09, 11.96, "Bright star in Leo"),
+            ("Fomalhaut", 344.41, -29.62, "Bright star in Southern hemisphere"),
+            ("M31 Galaxy", 10.68, 41.27, "Andromeda Galaxy"),
+            ("M42 Nebula", 83.82, -5.39, "Orion Nebula"),
+            ("M45 Cluster", 56.75, 24.11, "Pleiades star cluster")
+        ]
+
+        # If lat/lng not provided, return default target
+        if lat is None or lng is None:
+            # Default to Sirius as it's the brightest star
+            return bright_targets[0]
+
+        # Current time for visibility calculations
+        now = datetime.utcnow()
+        current_time = now.hour + now.minute/60.0  # Hours in UTC
+
+        # Convert lng to local sidereal time (rough approximation)
+        local_sidereal_time = (current_time + lng/15.0) % 24
+
+        # For each target, calculate if it might be above horizon
+        visible_targets = []
+        for target in bright_targets:
+            name, ra_deg, dec_deg, _ = target
+
+            # Convert RA from degrees to hours
+            ra_hours = ra_deg / 15.0
+
+            # Calculate hour angle (rough approximation)
+            hour_angle = (local_sidereal_time - ra_hours) % 24
+            if hour_angle > 12:
+                hour_angle = hour_angle - 24
+
+            # Calculate altitude (simplified formula)
+            # sin(alt) = sin(lat)*sin(dec) + cos(lat)*cos(dec)*cos(ha)
+            dec_rad = math.radians(dec_deg)
+            lat_rad = math.radians(lat)
+            ha_rad = math.radians(hour_angle * 15)  # Convert hour angle to degrees then to radians
+
+            altitude = math.asin(math.sin(lat_rad) * math.sin(dec_rad) +
+                            math.cos(lat_rad) * math.cos(dec_rad) * math.cos(ha_rad))
+            altitude_deg = math.degrees(altitude)
+
+            # If above horizon (with some margin), add to visible targets
+            if altitude_deg > 15:  # 15 degrees above horizon for better visibility
+                visible_targets.append((target, altitude_deg))
+
+        # Sort by altitude and take the highest one
+        if visible_targets:
+            visible_targets.sort(key=lambda x: x[1], reverse=True)
+            selected_target = visible_targets[0][0]
+            plog(f"Selected target for fake observation: {selected_target[0]} ({selected_target[3]})")
+            return selected_target
+
+        # If no targets are visible, return default
+        plog("No targets above 15 degrees found, defaulting to Sirius")
+        return bright_targets[0]
+
+    def generate_fake_request(self, lat=None, lng=None):
+        """
+        Generate a fake observation request with a target that's likely to be visible
+        at the given coordinates.
+
+        Args:
+            lat (float, optional): Latitude in degrees. If None, a bright default target is used.
+            lng (float, optional): Longitude in degrees. If None, a bright default target is used.
+
+        Returns:
+            dict: A properly formatted request object for use in fake observations
+        """
+        from datetime import datetime
+
+        # Find a suitable target
+        name, ra_deg, dec_deg, note = self.find_visible_target(lat, lng)
+
+        # Create a request ID based on current timestamp
+        request_id = int(time.time() * 1000)
+
+        # Build a request object that matches the expected structure
+        request = {
+            "acceptability_threshold": 90.0,
+            "configuration_repeats": 1,
+            "configurations": [
+                {
+                    "acquisition_config": {
+                        "extra_params": {},
+                        "mode": "OFF",
+                    },
+                    "configuration_status": request_id + 1,
+                    "constraints": {
+                        "extra_params": {},
+                        "max_airmass": 2.0,
+                        "max_lunar_phase": 1.0,
+                        "min_lunar_distance": 30.0,
+                    },
+                    "extra_params": {
+                        "smartstack": True,
+                    },
+                    "guide_camera_name": "",
+                    "guiding_config": {
+                        "exposure_time": None,
+                        "extra_params": {},
+                        "mode": "OFF",
+                        "optical_elements": {},
+                        "optional": True,
+                    },
+                    "id": request_id + 2,
+                    "instrument_configs": [
+                        {
+                            "exposure_count": 5,
+                            "exposure_time": 10.0,
+                            "extra_params": {
+                                "rotator_angle": 0,
+                            },
+                            "mode": "full",
+                            "optical_elements": {"filter": "ptr-w"},
+                            "rois": [],
+                            "rotator_mode": "RPA",
+                        }
+                    ],
+                    "instrument_name": "qhy461" if hasattr(self, 'configdb_telescope') and self.configdb_telescope else "main_camera",
+                    "instrument_type": f"PTR-{self.site.upper()}" if hasattr(self, 'site') and self.site else "PTR-TEST",
+                    "priority": 1,
+                    "repeat_duration": None,
+                    "state": "PENDING",
+                    "summary": {},
+                    "target": {
+                        "dec": dec_deg,
+                        "epoch": 2000.0,
+                        "extra_params": {},
+                        "hour_angle": None,
+                        "name": name,
+                        "parallax": 0,
+                        "proper_motion_dec": 0,
+                        "proper_motion_ra": 0,
+                        "ra": ra_deg,
+                        "type": "ICRS",
+                    },
+                    "type": "EXPOSE",
+                }
+            ],
+            "duration": 300,  # 5 minutes
+            "extra_params": {},
+            "id": request_id,
+            "modified": datetime.utcnow().isoformat() + "Z",
+            "observation_note": "This is a fake observation for testing",
+            "optimization_type": "TIME",
+            "state": "PENDING",
+        }
+        return request
 
 # These are examples for reference. They are not used in the code.
 sample_ptr_calendar_response = [

@@ -14,8 +14,14 @@ sudo apt install source-extractor
 sudo apt install psfex
 sudo apt install htpdate # This package allows time syncs using http for those clocks behind school firewalls
 
-wget -r --no-parent http://data.astrometry.net/4100/
-wget -r --no-parent https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/
+wget -r --no-parent http://data.astrometry.net/4100/   # TYCHO
+wget -r --no-parent https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/   # GAIA
+
+wget https://users.castle.unc.edu/~vkoupr/ucac5_anet.zip # UCAC5
+unzip ucac5_anet.zip
+
+wget -r --no-parent https://data.astrometry.net/4200/     # 2mass... good for the reddened galactic plane but quite big.
+
 
 move the downloaded fits files to /usr/local/astrometry/data/  or  /usr/share/astrometry/
 
