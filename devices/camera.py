@@ -5940,7 +5940,7 @@ class Camera:
                             else:
                                 temp_focus_bin=1
 
-
+                            #breakpoint()
                             # Utilise smartstacks directory as it is a temp directory that gets cleared out                            
                             tempdir=self.local_calibration_path + "smartstacks/"
                             tempdir_in_wsl=tempdir.split(':')
@@ -5948,284 +5948,66 @@ class Camera:
                             tempdir_in_wsl='/mnt/'+ tempdir_in_wsl[0] + tempdir_in_wsl[1]
                             tempdir_in_wsl=tempdir_in_wsl.replace('\\','/')
                             
+                            tempfitsname=str(time.time()).replace('.','d') + '.fits'
+                            
+                            # Save an image to the disk to use with source-extractor++
+                            # We don't need accurate photometry, so integer is fine.
+                            hdufocus = fits.PrimaryHDU()
+                            hdufocus.data = outputimg#.astype(np.uint16)#.astype(np.float32)
+                            #hdufocus.header = hduheader
+                            hdufocus.header["NAXIS1"] = outputimg.shape[0]
+                            hdufocus.header["NAXIS2"] = outputimg.shape[1]
+                            hdufocus.writeto(tempdir + tempfitsname, overwrite=True, output_verify='silentfix')
                             
                             
                             #astoptions = '-c '+str(cwd_in_wsl)+'/subprocesses/photometryparams/default.sexfull -PARAMETERS_NAME ' + str(cwd_in_wsl)+'/subprocesses/photometryparams/default.paramastrom -CATALOG_NAME '+ str(tempdir_in_wsl + '/test.cat') + ' -SATUR_LEVEL 65535 -GAIN 1 -BACKPHOTO_TYPE LOCAL -DETECT_THRESH 1.5 -ANALYSIS_THRESH 1.5 -SEEING_FWHM 2.0 -FILTER_NAME ' + str(cwd_in_wsl)+'/subprocesses/photometryparams/sourceex_convs/gauss_2.0_5x5.conv'
 
-                            os.system('wsl --exec sourceextractor++ ' + str(realwslfilename) + ' ' + astoptions  )
+                            if self.camera_known_gain < 1000:
+                                segain=self.camera_known_gain
+                            else:
+                                segain=0
+                                
+                            if self.pixscale == None:
+                                minarea=5
+                            else:
+                                minarea= ((-9.2421 * self.pixscale) + 16.553)/ temp_focus_bin
+                            if minarea < 5:  # There has to be a min minarea though!
+                                minarea = 5
+                                
+                                
+                                                        
+
+                            os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3  --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties FluxRadius --flux-fraction 0.5"')
                             
                             #sourcextractor++ --detection-image eco1-ec003zwo_expose_lum-20250401-00052726-EX00.fits --output-catalog-filename goog.txt --output-catalog-format ASCII --output-properties FluxRadius --flux-fraction 0.5
 
+                            # catalog = Table.read(str(tempdir_in_wsl+ tempfitsname.replace('.fits','.txt'), format="ascii")
+                            # print(catalog.colnames)
+                            # print(catalog[:5])  # show first 5 rows
 
-                            # current_working_directory=os.getcwd()
-                            # cwd_in_wsl=current_working_directory.split(':')
-                            # cwd_in_wsl[0]=cwd_in_wsl[0].lower()
-                            # cwd_in_wsl='/mnt/'+ cwd_in_wsl[0] + cwd_in_wsl[1]
-                            # cwd_in_wsl=cwd_in_wsl.replace('\\','/')
 
-                            tempdir_in_wsl=tempdir.split(':')
-                            tempdir_in_wsl[0]=tempdir_in_wsl[0].lower()
-                            tempdir_in_wsl='/mnt/'+ tempdir_in_wsl[0] + tempdir_in_wsl[1]
-                            tempdir_in_wsl=tempdir_in_wsl.replace('\\','/')
-
-                            
-                            # # Calculate background noise level
-                            # bkg_sigma = mad_std(outputimg, ignore_nan=True)
-                            # threshold = 2.5 *bkg_sigma
+                            #breakpoint()
                             
                             
-                            # from photutils.detection import find_peaks
-                            # def radial_profile(data, center):
-                            #     y, x = np.indices(data.shape)
-                            #     r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
-                            #     r = r.astype(int)
+                            catalog=Table.read(tempdir+ tempfitsname.replace('.fits','cat.fits'))
+                            # Remove rows where FLUX_RADIUS is 0 or NaN
+                            mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)
+                            catalog = catalog[mask]
                             
-                            #     tbin = np.bincount(r.ravel(), data.ravel())
-                            #     nr = np.bincount(r.ravel())
-                            #     radialprofile = tbin / nr
+                            # Median half flux radius
+                            #median_half_flux_radius=np.median(catalog['flux_radius'])
+                            #fwhm_this_time=median_half_flux_radius*2
                             
-                            #     return radialprofile
-
-                            # # Handle NaN values by replacing them with zeros
-                            # image_data = np.nan_to_num(outputimg, nan=0.0)
-                            # # Find peaks (potential stars)
-                            # peaks_tbl = find_peaks(image_data, threshold, box_size=100)
+                            fwhm_values=sigma_clip(np.asarray(catalog['flux_radius']),sigma=3, maxiters=5)
+                            fwhm_values=fwhm_values.data[~fwhm_values.mask]
                             
-                            
-                            # # Calculate FWHM using radial profile
-                            # fwhm_values = []
-                        
-                            # for peak in peaks_tbl:
-                            #     x_peak = peak['x_peak']
-                            #     y_peak = peak['y_peak']
-                        
-                            #     # Extract a small cutout around the star
-                            #     size = 15  # Larger size for radial profile analysis
-                            #     x_min = int(x_peak) - size
-                            #     x_max = int(x_peak) + size + 1
-                            #     y_min = int(y_peak) - size
-                            #     y_max = int(y_peak) + size + 1
-                            #     cutout = image_data[y_min:y_max, x_min:x_max]
-                        
-                            #     if cutout.size == 0 or cutout.shape[0] < 3 or cutout.shape[1] < 3:
-                            #         continue
-                        
-                            #     # Compute radial profile
-                            #     profile = radial_profile(cutout, center=(cutout.shape[1]//2, cutout.shape[0]//2))
-                            #     peak_value = np.max(profile)
-                            #     half_max = peak_value / 2.0
-                        
-                            #     # Find where profile crosses half-maximum value
-                            #     try:
-                            #         above_half_max = np.where(profile >= half_max)[0]
-                            #         fwhm = above_half_max[-1] - above_half_max[0]  # FWHM in pixels
-                            #         fwhm_values.append(fwhm)
-                            #     except IndexError:
-                            #         continue
-                        
-                            # if fwhm_values:
-                            #     print(f'Detected {len(fwhm_values)} stars.')
-                            #     print(f'Mean FWHM: {np.mean(fwhm_values):.2f} pixels')
-                            #     print(f'Median FWHM: {np.median(fwhm_values):.2f} pixels')
-                            # else:
-                            #     print('No valid stars found for FWHM calculation.')
-                            
-                            
-                            # # Initialize DAOStarFinder
-                            # star_finder = DAOStarFinder(fwhm=3.0, threshold=2.5*bkg_sigma)
-                            
-                            # # Detect stars
-                            # stars = star_finder(outputimg)
-                            
-                            # if stars is None:
-                            #     print('No stars detected. Adjust the threshold or FWHM values.')
-                            # else:
-                            #     # Display detected stars
-                            #     positions = np.transpose((stars['xcentroid'], stars['ycentroid']))
-                            #     apertures = CircularAperture(positions, r=4.)
-                            
-                            #     plt.figure(figsize=(10, 10))
-                            #     plt.imshow(outputimg, cmap='gray', origin='lower', vmin=np.percentile(outputimg, 5), vmax=np.percentile(outputimg, 99))
-                            #     apertures.plot(color='red', lw=1.5)
-                            #     plt.title('Detected Stars')
-                            #     plt.show()
-                            
-                            #     # Display star properties
-                            #     fwhm_values = stars['fwhm']
-                            #     print(f'Detected {len(fwhm_values)} stars.')
-                            #     print(f'Mean FWHM: {np.mean(fwhm_values):.2f} pixels')
-                            #     print(f'Median FWHM: {np.median(fwhm_values):.2f} pixels')
-                            
-                            #     # # Save results to a file
-                            #     # stars.write('star_fwhm_results.csv', format='csv', overwrite=True)
-                            #     # print('Results saved to star_fwhm_results.csv')
-
-                            # breakpoint()
-
-                            # try:
-                            #     sepbkg = sep.Background(outputimg, bw=128, bh=128, fw=5, fh=5)
-                            # except:
-                            #     outputimg=outputimg.astype("float").copy(order="C")
-                            #     sepbkg = sep.Background(outputimg, bw=128, bh=128, fw=5, fh=5)
-
-                            # sepbkg.subfrom(outputimg)
-
-                            # ix, iy = outputimg.shape
-
-                            # if self.pixscale == None:
-                            #     minarea=5
-                            # else:
-                            #     minarea= ((-9.2421 * self.pixscale) + 16.553)/ temp_focus_bin
-                            # if minarea < 5:  # There has to be a min minarea though!
-                            #     minarea = 5
-
-                            # sep.set_extract_pixstack(int(ix*iy - 1))
-
-                            # sep.set_sub_object_limit(int(300000))
-
-                            # sepbkgerr=sepbkg.globalrms
-
-                            # # try:
-                            # #     sources = sep.extract(outputimg, 2.0, err=sepbkgerr, minarea=minarea)
-                            # # except:
-                            # #     try:
-                            # #         print ("failed sep with background, trying without")
-                            # #         sources = sep.extract(outputimg, 2.0, minarea=minarea)
-                            # #     except:
-
-                            # #         print(traceback.format_exc())
-                            # #         sources=[]
-                                    
-                            # try:
-                            #     sources, segmentation_map = sep.extract(outputimg, 1.4, err=sepbkgerr, minarea=minarea, deblend_nthresh=64, deblend_cont=0.001, filter_kernel=None, segmentation_map=True)
-                            # except:
-                            #     try:
-                            #         print ("failed sep with background, trying without")
-                            #         sources, segmentation_map = sep.extract(outputimg, 1.4, minarea=minarea, deblend_nthresh=64, deblend_cont=0.001, filter_kernel=None, segmentation_map=True)
-                            #     except:
-
-                            #         print(traceback.format_exc())
-                            #         sources=[]
-
-                            # sources = Table(sources)
-                            # sources = sources[sources['flag'] < 8]
-
-                            # image_saturation_level = self.settings["saturate"]
-
-                            # sources = sources[sources["peak"] < 0.8 * image_saturation_level ]
-                            # sources = sources[sources["cpeak"] < 0.8 * image_saturation_level ]
-                            # #sources = sources[sources["flux"] > 750]
-                            # # BANZAI prune nans from table
-                            # nan_in_row = np.zeros(len(sources), dtype=bool)
-                            # for col in sources.colnames:
-                            #     nan_in_row |= np.isnan(sources[col])
-                            # sources = sources[~nan_in_row]
-
-
-                            
-
-                            # def identify_donuts(objects, image, segmentation_map, donut_threshold=0.3):
-                            #     '''
-                            #     Identify potential donuts based on radial profile analysis.
-                            #     Returns a list of donut-like sources.
-                            #     '''
-                            #     donuts = []
-                            #     for obj in objects:
-                            #         x, y, a, b, theta = obj['x'], obj['y'], obj['a'], obj['b'], obj['theta']
-                            #         r = max(a, b) * 3  # Define radius for measuring donut structure
-                            
-                            #         try:
-                            #             # Extract radial profile
-                            #             radial_profile = np.zeros(int(r))
-                            #             for i in range(int(r)):
-                            #                 flux, _, _ = sep.sum_circle(image, x, y, i + 1)
-                            #                 radial_profile[i] = flux
-                            
-                            #             # Check for a peak away from the center
-                            #             if len(radial_profile) > 2 and np.argmax(radial_profile[1:]) > 1:  # Peak is not at the very center
-                            #                 donuts.append(obj)
-                            
-                            #         except Exception:
-                            #             continue
-                            
-                            #     return donuts
-                            
-                            
-                            # def measure_donut_size(obj, image):
-                            #     '''
-                            #     Alternative size measurement method for donuts
-                            #     Uses a larger aperture or fitting techniques.
-                            #     '''
-                            #     x, y, a, b, theta = obj['x'], obj['y'], obj['a'], obj['b'], obj['theta']
-                            #     r = max(a, b) * 2.5  # Increase aperture size for donut
-                            
-                            #     # Measure flux in larger aperture
-                            #     flux, fluxerr, flag = sep.sum_circle(image, x, y, r)
-                            
-                            #     return {'x': x, 'y': y, 'flux': flux, 'radius': r}
-
-
-                            # donuts = identify_donuts(sources, outputimg, segmentation_map)
-                            
-                            
-                            # # Measure size of each donut
-                            # donut_sizes = [measure_donut_size(d, outputimg) for d in donuts]
-                            
-                            # plog ("Donuts detected: " + str(len(donuts)))
-                            
-                            
-                            # if len(donuts) > 0:
-                            #     breakpoint()
-
-
-                            # xdonut= abs(np.median(sources['xpeak']-sources['x']))
-                            # ydonut= abs(np.median(sources['ypeak']-sources['y']))
-
-                            # print ("Xdonut: " +str(xdonut))
-                            # print ("Ydonut: " +str(ydonut))
-                            
-                            # donut_sizes=[]
-                            # for source in sources:
-                            #     donut_sizes.append(max(source['a'],source['b']))
-                            # #print ("donut size: " + str(np.median(donut_sizes)))
-                            # print ("donut size: " + str(np.median(donut_sizes) * self.pixscale *  temp_focus_bin * 2.32))
-
-                            #breakpoint()            
-
-                            # try:
-
-                            #     sources['FWHM'], _ = sep.flux_radius(outputimg, sources['x'], sources['y'], sources['a'], 0.5,
-                            #                                          subpix=5)
-
-                            #     # Need to reject any stars that have FWHM that are less than a extremely
-                            #     # perfect night as artifacts
-                            #     if not (self.pixscale == None):
-
-                            #         sources = sources[sources['FWHM'] > (0.8 / (self.pixscale * temp_focus_bin))]
-                            #     sources = sources[sources['FWHM'] != 0]
-
-                            #     # BANZAI prune nans from table
-                            #     nan_in_row = np.zeros(len(sources), dtype=bool)
-                            #     for col in sources.colnames:
-                            #         nan_in_row |= np.isnan(sources[col])
-                            #     sources = sources[~nan_in_row]
-
-                            # except:
-                            #     print ("couldn't do blob photometry: ")
-                            #     print(traceback.format_exc())
-
+                            # The HFR and the fwhm are roughly twice
+                            fwhm_values=fwhm_values *2
 
                         except:
                             print ("couldn't do blob photometry: ")
                             print(traceback.format_exc())
                             
-                            
-                        # if fwhm_values:
-                        #     print(f'Detected {len(fwhm_values)} stars.')
-                        #     print(f'Mean FWHM: {np.mean(fwhm_values):.2f} pixels')
-                        #     print(f'Median FWHM: {np.median(fwhm_values):.2f} pixels')
-                        # else:
-                        #     print('No valid stars found for FWHM calculation.')
                             
                             
                         plog("No. of detections:  ", len(fwhm_values))
