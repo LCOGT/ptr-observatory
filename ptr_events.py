@@ -465,7 +465,7 @@ class Events:
                      ('End Eve Sky Flats  ', ephem.Date(self.observing_begins - 16/1440)),
                      
                      #('Clock & Auto Focus ', ephem.Date(self.observing_begins - self.config['clock_and_auto_focus_offset']/1440)),
-                     ('Clock & Auto Focus ', ephem.Date(self.observing_begins - 15/1440)), # 15 minutes before observing. 
+                     ('Clock & Auto Focus ', ephem.Date(self.observing_begins - 15/1440)), # 15 minutes before observing.
                      ('Observing Begins   ', ephem.Date(self.observing_begins)),
                      ('Naut Dusk          ', ephem.Date(self.nauticalDusk)),
                      ('Astro Dark         ', ephem.Date(self.astroDark)),
