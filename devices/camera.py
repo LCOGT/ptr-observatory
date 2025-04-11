@@ -1426,16 +1426,51 @@ class Camera:
                 focusexposure_list = self.focusexposure_shelf['focusexposure_list']
                 print ("Focusexposurelist")
                 print (focusexposure_list)
-               # breakpoint()
                 
-                self.focus_exposure = self.site_config['focus_exposure_time']
+                focusarray=np.asarray(focusexposure_list)
+                
+                
+                # Get unique exposure times
+                # Extract the unique values from the second column
+                unique_groups = np.unique(focusarray[:, 1])
+                
+                # For each group, compute the median of the corresponding values from column 0
+                result = []
+                for group in unique_groups:
+                    values = focusarray[focusarray[:, 1] == group, 0]
+                    median = np.median(values)
+                    result.append([median, group])
+                
+                result = np.array(result)
+                print(result)
+                
+                # Update exposure time.
+                
+                # Find the index where the median (column 0) is closest to 40
+                target = 40
+                idx = np.argmin(np.abs(result[:, 0] - target))
+                
+                # Report the corresponding group (column 1)
+                closest_group = result[idx, 1]
+                print(closest_group)
+                
+                # Then linearly extrapolate to actually getting 40 targets
+                ratio = 40/result[idx,0]       
+                new_estimated_exposure_time= ratio * closest_group
+                
+                g_dev['cam'].focus_exposure=int(min(new_estimated_exposure_time,60))
+                
+                print ("Updated Focus Exposure time: " + str(self.focus_exposure))
+                
+                
+                #self.focus_exposure = int(self.site_config['focus_exposure_time'])
                 # self.focus_exposure = bn.nanmedian(pixelscale_list)
                 # plog('Focus Exposure time: ' + str(self.focus_exposure))
             except:
                 plog ("No focus exposure shelf so using the config value.")
                 plog(traceback.format_exc())
                 focusexposure_list=None
-                self.focus_exposure = self.site_config['focus_exposure_time']
+                self.focus_exposure = int(self.site_config['focus_exposure_time'])
             self.focusexposure_shelf.close()
 
 

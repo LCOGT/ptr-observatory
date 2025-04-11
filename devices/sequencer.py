@@ -5822,16 +5822,50 @@ class Sequencer:
                                         focusexposure_shelf = shelve.open(
                                             g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'focusexposure' + g_dev['cam'].alias + str(g_dev['obs'].name))
                                         try:
-                                            focusexposure_list = g_dev['cam'].focusexposure_shelf['focusexposure_list']
+                                            focusexposure_list = focusexposure_shelf['focusexposure_list']
                                             focusexposure_list.append([minimum_sources_in_bordering_focus_spot,g_dev['cam'].focus_exposure])
                                             
                                             print (focusexposure_list)
                                             focusarray=np.asarray(focusexposure_list)
+                                            
+                                            
+                                            # Get unique exposure times
+                                            # Extract the unique values from the second column
+                                            unique_groups = np.unique(focusarray[:, 1])
+                                            
+                                            # For each group, compute the median of the corresponding values from column 0
+                                            result = []
+                                            for group in unique_groups:
+                                                values = focusarray[focusarray[:, 1] == group, 0]
+                                                median = np.median(values)
+                                                result.append([median, group])
+                                            
+                                            result = np.array(result)
+                                            print(result)
+                                            
+                                            # Update exposure time.
+                                            
+                                            # Find the index where the median (column 0) is closest to 40
+                                            target = 40
+                                            idx = np.argmin(np.abs(result[:, 0] - target))
+                                            
+                                            # Report the corresponding group (column 1)
+                                            closest_group = result[idx, 1]
+                                            print(closest_group)
+                                            
+                                            # Then linearly extrapolate to actually getting 40 targets
+                                            ratio = 40/result[idx,0]       
+                                            new_estimated_exposure_time= ratio * closest_group
+                                            
+                                            g_dev['cam'].focus_exposure=int(min(new_estimated_exposure_time,60))
+                                            
+                                            print ("Updated Exposure time: " + str(g_dev['cam'].focus_exposure))
+                                            
                                             #breakpoint()
                                             focusexposure_shelf['focusexposure_list'] = focusexposure_list
                                             
                                             #self.focus_exposure = bn.nanmedian(pixelscale_list)
-                                            plog('Focus Exposure time: ' + str(self.focus_exposure))
+                                            plog('Focus Exposure time: ' + str(g_dev['cam'].focus_exposure))
                                         except:
                                             plog ("No focus exposure shelf yet so just storing this one.")
                                             plog(traceback.format_exc())
@@ -5839,9 +5873,10 @@ class Sequencer:
                                             # Having a crack at a first exposure time
                                             # Try to linearly scale to 50 sources, but don't go over 60 seconds.
                                             #breakpoint()
-                                            g_dev['cam'].focus_exposure=min((50/minimum_sources_in_bordering_focus_spot)*g_dev['cam'].focus_exposure, 60)
-                                        
-                                        focusexposure_shelf.close()
+                                            g_dev['cam'].focus_exposure=int(min((50/minimum_sources_in_bordering_focus_spot)*g_dev['cam'].focus_exposure, 60))
+                                            print ("Updated Exposure time: " + str(g_dev['cam'].focus_exposure))
+                                            
+                                            focusexposure_shelf.close()
                                     
                                     #breakpoint()
 
