@@ -4250,10 +4250,11 @@ class Camera:
         except:
             this_exposure_filter = 'RGGB'
 
-        plog(
-            "Exposure Started:  " + str(exposure_time) + "s ",
-            frame_type
-        )
+        plog(f"Exposure Started: {exposure_time}s {frame_type}")
+
+        # Simulate timing of exposure for dummy camera
+        if self.dummy:
+            time.sleep(exposure_time)
 
         try:
             if optional_params["object_name"] == '':

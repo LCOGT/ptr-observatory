@@ -14,6 +14,7 @@ Conversion constants could be CAP-case as in R2D, R2AS, H2S, etc.
 
 
 import os
+import shutil
 import ephem
 from ptr_config import site_config
 from global_yard import g_dev
@@ -156,3 +157,22 @@ def warn(*args, **kwargs):
     yellow = f'\033[38;2;241;183;14m'
     plog(*args, **kwargs, color=yellow, process='WARNING')
 plog.warn = warn
+
+def centered_text(text, fill_char="-"):
+    # Get terminal width
+    terminal_width = shutil.get_terminal_size().columns
+
+    # Calculate padding
+    text_length = len(text)
+    padding = terminal_width - text_length - 2  # -2 for the fill characters on each side
+    left_padding = padding // 2
+    right_padding = padding - left_padding
+
+    # Create the final string
+    return fill_char * left_padding + text + fill_char * right_padding
+
+def loud(*args, **kwargs):
+    bright_green = f'\033[38;2;163;255;87m'
+    text = centered_text('ATTENTION')
+    plog(*args, **kwargs, color=bright_green, process=text)
+plog.loud = loud

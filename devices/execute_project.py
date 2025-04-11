@@ -311,13 +311,22 @@ class SchedulerObservation:
         stop_all_activity_flag = self.o.stop_all_activity
 
         if not request_currently_scheduled:
-            return True, 'The observation request is not scheduled at the provided time'
+            if at_time is not None:
+                message = 'The observation request is not scheduled at the provided time'
+            else:
+                message = 'The observation request is no longer scheduled'
+            plog(f"STOP CONDITION: {message}")
+            return True, message
 
         if shutter_closed or observatory_closed:
-            return True, 'The observatory is no longer open and able to observe'
+            message = 'The observatory is no longer "open and able to observe"'
+            plog(f"STOP CONDITION: {message}")
+            return True, message
 
         if stop_all_activity_flag:
-            return True, 'Received a stop_all_activity command'
+            message = 'Received a stop_all_activity command'
+            plog(f"STOP CONDITION: {message}")
+            return True, message
 
         return False, 'Ok to continue observing'
 
@@ -382,7 +391,6 @@ class SchedulerObservation:
         plog(f'simulating defocus of {amount}')
         return
 
-    # TODO: add target name to optional_params.object_name
     def _take_exposure(self, camera_device, filterwheel_device, time: float, filter_name: str, target_name: str,
                       smartstack: bool = True, substack: bool = True) -> dict:
         """
