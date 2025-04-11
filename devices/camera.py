@@ -3857,7 +3857,8 @@ class Camera:
                             fw_device=fw_device,
                             null_filterwheel=null_filterwheel,
                             unique_batch_code=unique_batch_code,
-                            count=count
+                            count=count,
+                            observation_metadata=observation_metadata
                         )
                         #breakpoint()   WERexplore
                         self.retry_camera = 0
@@ -4081,7 +4082,8 @@ class Camera:
         fw_device=None,
         null_filterwheel=True,
         unique_batch_code='blah',
-        count=1
+        count=1,
+        observation_metadata={}
     ):
 
         obs_id = self.site_config['obs_id']
@@ -4410,70 +4412,6 @@ class Camera:
                     clean_exposure_time = str(exposure_time).replace('.', 'd')
                     red_name01 = f"{obs_id}-{clean_name}-{str(this_exposure_filter)}-{next_seq}-{clean_exposure_time}-{im_type}01.fits"
 
-                if self.settings["is_osc"]:
-                    picklepayload = [
-                        smartstackthread_filename,
-                        smartstackid,
-                        self.settings["is_osc"],
-                        self.local_calibration_path,
-                        self.pixscale,
-                        self.settings["transpose_jpeg"],
-                        self.settings['flipx_jpeg'],
-                        self.settings['flipy_jpeg'],
-                        self.settings['rotate180_jpeg'],
-                        self.settings['rotate90_jpeg'],
-                        self.settings['rotate270_jpeg'],
-                        g_dev["mnt"].pier_side,
-                        self.settings["squash_on_x_axis"],
-                        self.settings["osc_bayer"],
-                        self.settings["saturate"],
-                        self.native_bin,
-                        self.camera_known_readnoise,
-                        self.site_config['minimum_realistic_seeing'],
-                        self.settings['osc_brightness_enhance'],
-                        self.settings['osc_contrast_enhance'],
-                        self.settings['osc_colour_enhance'],
-                        self.settings['osc_saturation_enhance'],
-                        self.settings['osc_sharpness_enhance'],
-                        crop_preview, yb, yt, xl, xr,
-                        zoom_factor, self.camera_path +
-                        g_dev['day'] + "/to_AWS/",
-                        jpeg_name,
-                        im_path_r + g_dev['day'] + "/reduced/",
-                        red_name01
-                        ]
-                else:
-                    picklepayload = [
-                        smartstackthread_filename,
-                        smartstackid,
-                        False,
-                        self.obsid_path,
-                        self.pixscale,
-                        self.settings["transpose_jpeg"],
-                        self.settings['flipx_jpeg'],
-                        self.settings['flipy_jpeg'],
-                        self.settings['rotate180_jpeg'],
-                        self.settings['rotate90_jpeg'],
-                        self.settings['rotate270_jpeg'],
-                        g_dev["mnt"].pier_side,
-                        self.settings["squash_on_x_axis"],
-                        None,
-                        self.settings["saturate"],
-                        self.native_bin,
-                        self.camera_known_readnoise,
-                        self.site_config['minimum_realistic_seeing'],
-                        0, 0, 0, 0, 0,
-                        crop_preview, yb, yt, xl, xr,
-                        zoom_factor, self.camera_path +
-                        g_dev['day'] + "/to_AWS/",
-                        jpeg_name,
-                        im_path_r + g_dev['day'] + "/reduced/",
-                        red_name01
-                    ]
-
-
-                if False :
-                    pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
                 try:
                     smartstack_subprocess = subprocess.Popen(
@@ -4485,13 +4423,62 @@ class Camera:
                 except OSError:
                     pass
 
-                self.camera_path + g_dev['day'] + "/to_AWS/"
-
                 try:
-                    pickle.dump(picklepayload, smartstack_subprocess.stdin)
+                    smartstack_config = {
+                        "file_info": {
+                            "smartstackthread_filename": smartstackthread_filename,
+                            "smartstackid": smartstackid,
+                            "obsid_path": self.local_calibration_path if self.settings["is_osc"] else self.obsid_path,
+                            "jpeg_path": self.camera_path + g_dev['day'] + "/to_AWS/",
+                            "jpeg_name": jpeg_name,
+                            "red_path": im_path_r + g_dev['day'] + "/reduced/",
+                            "red_name01": red_name01
+                        },
+                        "camera_settings": {
+                            "is_osc": self.settings["is_osc"],
+                            "pixscale": self.pixscale,
+                            "native_bin": self.native_bin,
+                            "readnoise": self.camera_known_readnoise,
+                            "image_saturation_level": self.settings["saturate"],
+                            "minimum_realistic_seeing": self.site_config['minimum_realistic_seeing']
+                        },
+                        "image_transforms": {
+                            "transpose_jpeg": self.settings["transpose_jpeg"],
+                            "flipx_jpeg": self.settings['flipx_jpeg'],
+                            "flipy_jpeg": self.settings['flipy_jpeg'],
+                            "rotate180_jpeg": self.settings['rotate180_jpeg'],
+                            "rotate90_jpeg": self.settings['rotate90_jpeg'],
+                            "rotate270_jpeg": self.settings['rotate270_jpeg'],
+                            "pier_side": g_dev["mnt"].pier_side,
+                            "squash_on_x_axis": self.settings["squash_on_x_axis"]
+                        },
+                        "osc_settings": {
+                            "osc_bayer": self.settings["osc_bayer"] if self.settings["is_osc"] else None,
+                            "osc_brightness_enhance": self.settings['osc_brightness_enhance'] if self.settings["is_osc"] else 0,
+                            "osc_contrast_enhance": self.settings['osc_contrast_enhance'] if self.settings["is_osc"] else 0,
+                            "osc_colour_enhance": self.settings['osc_colour_enhance'] if self.settings["is_osc"] else 0,
+                            "osc_saturation_enhance": self.settings['osc_saturation_enhance'] if self.settings["is_osc"] else 0,
+                            "osc_sharpness_enhance": self.settings['osc_sharpness_enhance'] if self.settings["is_osc"] else 0
+                        },
+                        "crop_settings": {
+                            "crop_preview": crop_preview,
+                            "ybottom": yb,
+                            "ytop": yt,
+                            "xleft": xl,
+                            "xright": xr,
+                            "zoom_factor": zoom_factor
+                        }
+                    }
+
+                    # Manual debugging flag
+                    debug_smartstack = False
+                    if debug_smartstack:
+                        pickle.dump(smartstack_config, open('subprocesses/testsmartstackpickle', 'wb'))
+                    else:
+                        pickle.dump(smartstack_config, smartstack_subprocess.stdin)
                 except:
-                    plog("Problem in the smartstack pickle dump")
-                    plog(traceback.format_exc())
+                    plog.warn("Problem in the smartstack pickle dump")
+                    plog.warn(traceback.format_exc())
 
                 path_to_image_directory = f"{self.camera_path}{g_dev['day']}/to_AWS/"
                 g_dev['obs'].enqueue_for_fastAWS(path_to_image_directory, jpeg_name, exposure_time)
@@ -4500,14 +4487,10 @@ class Camera:
                 smartstackthread_filename='no'
 
             # SEP THREAD
-            septhread_filename = self.local_calibration_path + \
-                "smartstacks/sep" + \
-                str(time.time()).replace('.', '') + '.pickle'
+            septhread_filename = f"{self.local_calibration_path}smartstacks/sep{time.time().replace('.', '')}.pickle"
 
-            if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-                do_sep = False
-            else:
-                do_sep = True
+            # Enable SEP between civil dusk and dawn
+            do_sep = g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']
 
             is_osc = self.settings["is_osc"]
 

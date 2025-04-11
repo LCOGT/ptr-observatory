@@ -36,54 +36,59 @@ from ptr_utility import create_color_plog
 log_color = (50,200,50) # bright green
 plog = create_color_plog('sstk', log_color)
 
-
-input_sstk_info = pickle.load(sys.stdin.buffer)
+config = pickle.load(sys.stdin.buffer)
 # input_sstk_info=pickle.load(open('testsmartstackpickle','rb'))
 
-plog("Starting SmartStackprocess.py")
-plog(input_sstk_info)
+# File info
+smartstackthread_filename = config["file_info"]["smartstackthread_filename"]
+smartstackid = config["file_info"]["smartstackid"]
+obsid_path = config["file_info"]["obsid_path"]
+jpeg_path = config["file_info"]["jpeg_path"]
+jpeg_name = config["file_info"]["jpeg_name"]
+red_path = config["file_info"]["red_path"]
+red_name01 = config["file_info"]["red_name01"]
 
+# Camera settings
+is_osc = config["camera_settings"]["is_osc"]
+pixscale = config["camera_settings"]["pixscale"]
+nativebin = config["camera_settings"]["native_bin"]
+readnoise = config["camera_settings"]["readnoise"]
+image_saturation_level = config["camera_settings"]["image_saturation_level"]
+minimum_realistic_seeing = config["camera_settings"]["minimum_realistic_seeing"]
 
-smartstackthread_filename=input_sstk_info[0]
-smartstackid=input_sstk_info[1]
-is_osc=input_sstk_info[2]
-obsid_path=input_sstk_info[3]
-pixscale=input_sstk_info[4]
-transpose_jpeg=input_sstk_info[5]
-flipx_jpeg=input_sstk_info[6]
-flipy_jpeg=input_sstk_info[7]
-rotate180_jpeg=input_sstk_info[8]
-rotate90_jpeg=input_sstk_info[9]
-rotate270_jpeg=input_sstk_info[10]
-pier_side=input_sstk_info[11]
-squash_on_x_axis=input_sstk_info[12]
-osc_bayer=input_sstk_info[13]
-image_saturation_level=input_sstk_info[14]
-nativebin=1
-readnoise=input_sstk_info[16]
-minimum_realistic_seeing=input_sstk_info[17]
-osc_brightness_enhance=input_sstk_info[18]
-osc_contrast_enhance=input_sstk_info[19]
-osc_colour_enhance=input_sstk_info[20]
-osc_saturation_enhance=input_sstk_info[21]
-osc_sharpness_enhance=input_sstk_info[22]
-crop_preview=input_sstk_info[23]
-yb = input_sstk_info[24]
-yt = input_sstk_info[25]
-xl = input_sstk_info[26]
-xr = input_sstk_info[27]
-zoom_factor = input_sstk_info[28].lower()
-jpeg_path=input_sstk_info[29]
-jpeg_name=input_sstk_info[30]
-red_path=input_sstk_info[31]
-red_name01=input_sstk_info[32]
+# Image transforms
+transpose_jpeg = config["image_transforms"]["transpose_jpeg"]
+flipx_jpeg = config["image_transforms"]["flipx_jpeg"]
+flipy_jpeg = config["image_transforms"]["flipy_jpeg"]
+rotate180_jpeg = config["image_transforms"]["rotate180_jpeg"]
+rotate90_jpeg = config["image_transforms"]["rotate90_jpeg"]
+rotate270_jpeg = config["image_transforms"]["rotate270_jpeg"]
+pier_side = config["image_transforms"]["pier_side"]
+squash_on_x_axis = config["image_transforms"]["squash_on_x_axis"]
+
+# OSC settings
+osc_bayer = config["osc_settings"]["osc_bayer"]
+osc_brightness_enhance = config["osc_settings"]["osc_brightness_enhance"]
+osc_contrast_enhance = config["osc_settings"]["osc_contrast_enhance"]
+osc_colour_enhance = config["osc_settings"]["osc_colour_enhance"]
+osc_saturation_enhance = config["osc_settings"]["osc_saturation_enhance"]
+osc_sharpness_enhance = config["osc_settings"]["osc_sharpness_enhance"]
+
+# Crop settings
+crop_preview = config["crop_settings"]["crop_preview"]
+yb = config["crop_settings"]["ybottom"]
+yt = config["crop_settings"]["ytop"]
+xl = config["crop_settings"]["xleft"]
+xr = config["crop_settings"]["xright"]
+zoom_factor = config["crop_settings"]["zoom_factor"].lower()
+
 
 # Function for aligning the three colour layers
 # maybe later subprocess although maybe it isn't offensive in cycle usage... we shall see.
 def align_and_crop(images, upsample_factor=100, shift_order=1):
     """
     Align a list of 2D numpy arrays by translation and crop to their common overlap.
-    
+
     Parameters
     ----------
     images : list of 2D ndarrays
@@ -92,7 +97,7 @@ def align_and_crop(images, upsample_factor=100, shift_order=1):
         Precision for sub-pixel registration (higher = finer).
     shift_order : int
         Interpolation order for scipy.ndimage.shift.
-    
+
     Returns
     -------
     aligned_cropped : list of 2D ndarrays
@@ -104,7 +109,7 @@ def align_and_crop(images, upsample_factor=100, shift_order=1):
     ref = images[0]
     aligned = [ref.copy()]
     shifts = [(0.0, 0.0)]
-    
+
     # 2) register & shift others
     for img in images[1:]:
         shift_est, error, diffphase = phase_cross_correlation(
@@ -116,22 +121,22 @@ def align_and_crop(images, upsample_factor=100, shift_order=1):
             mode='constant', cval=np.nan
         )
         aligned.append(img_shifted)
-    
+
     # 3) mask valid pixels in all images
     mask = np.isfinite(aligned[0])
     for im in aligned[1:]:
         mask &= np.isfinite(im)
-    
+
     # 4) compute bounding box of overlap
     rows, cols = np.where(mask)
     rmin, rmax = rows.min(), rows.max()
     cmin, cmax = cols.min(), cols.max()
-    
+
     # 5) crop each aligned image
     aligned_cropped = [
         im[rmin:rmax+1, cmin:cmax+1] for im in aligned
     ]
-    
+
     return aligned_cropped, shifts
 
 # for squishing down osc frames for a jpeg
@@ -608,25 +613,25 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
             newhdugreen[np.isnan(newhdugreen)] =imageMode
             newhdured[np.isnan(newhdured)] =imageMode
             newhdublue[np.isnan(newhdublue)] =imageMode
-            
-                        
-            # These images now can be squished for speed to make the jpeg preview. 
+
+
+            # These images now can be squished for speed to make the jpeg preview.
             newhdugreen, (block_y, block_x) = auto_binning(newhdugreen, max_side=2500)
             newhdured, (block_y, block_x) = auto_binning(newhdured, max_side=2500)
             newhdublue, (block_y, block_x) = auto_binning(newhdublue, max_side=2500)
-            
+
             # Then aligned
             googtime=time.time()
             aligned_imgs, shifts = align_and_crop([newhdugreen, newhdured, newhdublue])
-                       
+
             print("Applied shifts:", shifts)
             print ("TIME: " + str(time.time() - googtime))
 
-            # crop off some crusty edges            
+            # crop off some crusty edges
             border = 50
             final_images = [im[border:-border, border:-border] for im in aligned_imgs]
-            
-            
+
+
             newhdugreen=copy.deepcopy(aligned_imgs[0])
             newhdured=copy.deepcopy(aligned_imgs[1])
             newhdublue=copy.deepcopy(aligned_imgs[2])
