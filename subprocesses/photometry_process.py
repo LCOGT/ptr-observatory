@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-sep_process.py  sep_process.py  sep_process.py  sep_process.py  sep_process.py
+photometry_process.py   photometry_process.py   photometry_process.py
 
 Created on Sun Apr 23 04:37:30 2023
 
@@ -45,10 +45,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ptr_utility import create_color_plog
 
 log_color = (255, 130, 200) # pink
-plog = create_color_plog('platesolve', log_color)
+plog = create_color_plog('photometry', log_color)
 
 
-plog("Starting sep_process.py")
+plog("Starting photometry_process.py")
 
 
 def gaussian(x, amplitude, mean, stddev):
@@ -69,15 +69,15 @@ def radial_profile(data, center):
 
 use_test_inputs = False
 if use_test_inputs:
-    plog("Using test inputs for the SEP process")
-    inputs = pickle.load(open('testSEPpickle','rb'))
+    plog("Using test inputs for the photometry process")
+    inputs = pickle.load(open('test_photometry_subprocess_pickle','rb'))
 else:
     inputs = pickle.load(sys.stdin.buffer)
 
 
 # Extract values from the structured dictionary
 # File info
-septhread_filename = inputs["file_info"]["septhread_filename"]
+photometry_thread_filename = inputs["file_info"]["photometry_thread_filename"]
 im_path = inputs["file_info"]["im_path"]
 text_name = inputs["file_info"]["text_name"]
 cal_path = inputs["file_info"]["cal_path"]
@@ -112,18 +112,18 @@ exposure_time = inputs["metadata"]["exposure_time"]
 
 ############ WAITER FOR
 # the filename token to arrive to start processing
-plog (septhread_filename)
+plog (photometry_thread_filename)
 
 file_wait_timeout_timer=time.time()
 
-while (not os.path.exists(septhread_filename)) and (time.time()-file_wait_timeout_timer < 600):
+while (not os.path.exists(photometry_thread_filename)) and (time.time()-file_wait_timeout_timer < 600):
     time.sleep(0.2)
 
 if time.time()-file_wait_timeout_timer > 599:
     sys.exit()
 
 
-(image_filename,imageMode, unique, counts)=pickle.load(open(septhread_filename,'rb'))
+(image_filename,imageMode, unique, counts)=pickle.load(open(photometry_thread_filename,'rb'))
 
 
 hdufocusdata=np.load(image_filename)

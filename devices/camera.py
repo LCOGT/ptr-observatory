@@ -4473,33 +4473,31 @@ class Camera:
                 smartstackthread_filename='no'
 
 
-            # SEP THREAD
-            septhread_filename = f"{self.local_calibration_path}smartstacks/sep{time.time().replace('.', '')}.pickle"
+            # Photometry Thread
+            photometry_thread_filename = f"{self.local_calibration_path}smartstacks/sep{time.time().replace('.', '')}.pickle"
 
             # Enable SEP between civil dusk and dawn
             do_sep = g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']
 
             is_osc = self.settings["is_osc"]
-
             focus_jpeg_size = 500
-
             saturate=self.settings["saturate"]
             minimum_realistic_seeing=self.site_config['minimum_realistic_seeing']
 
             try:
-                sep_subprocess = subprocess.Popen(
-                    ['python', 'subprocesses/SEPprocess.py'],
+                photometry_subprocess = subprocess.Popen(
+                    ['python', 'subprocesses/photometry_process.py'],
                     stdin=subprocess.PIPE,
                     stdout=None,
                     bufsize=-1
                 )
             except:
-                plog.err('SEP subprocess failed to start')
+                plog.err('Photometry subprocess failed to start')
 
             try:
-                sep_subprocess_inputs = {
+                photometry_subprocess_inputs = {
                     "file_info": {
-                        "septhread_filename": septhread_filename,
+                        "photometry_thread_filename": photometry_thread_filename,
                         "im_path": im_path,
                         "text_name": text_name,
                         "cal_path": cal_path,
@@ -4535,13 +4533,13 @@ class Camera:
 
                 # Here is a manual debug area which makes a pickle for debug purposes.
                 # Default is False, but can be manually set to True for code debugging
-                sep_debug = False
-                if sep_debug:
-                    pickle.dump(sep_subprocess_inputs, open('subprocesses/testSEPpickle', 'wb'))
+                phot_debug = False
+                if phot_debug:
+                    pickle.dump(photometry_subprocess_inputs, open('subprocesses/test_photometry_subprocess_pickle', 'wb'))
                 else:
-                    pickle.dump(sep_subprocess_inputs, sep_subprocess.stdin)
+                    pickle.dump(photometry_subprocess_inputs, photometry_subprocess.stdin)
             except:
-                plog.warn("Problem in the SEP pickle dump")
+                plog.warn("Problem in the photometry pickle dump")
                 plog.warn(traceback.format_exc())
 
             packet = (avg_foc,exposure_time,this_exposure_filter, airmass_of_observation)
@@ -5219,7 +5217,7 @@ class Camera:
                         },
                         "thread_files": {
                             "smartstackthread_filename": smartstackthread_filename,
-                            "septhread_filename": septhread_filename,
+                            "photometry_thread_filename": photometry_thread_filename,
                             "mainjpegthread_filename": mainjpegthread_filename,
                             "platesolvethread_filename": platesolvethread_filename
                         },

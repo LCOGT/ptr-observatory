@@ -368,7 +368,7 @@ dayobs = inputs["config_settings"]["day_directory"]
 
 # Thread files
 smartstackthread_filename = inputs["thread_files"]["smartstackthread_filename"]
-septhread_filename = inputs["thread_files"]["septhread_filename"]
+photometry_thread_filename = inputs["thread_files"]["photometry_thread_filename"]
 mainjpegthread_filename = inputs["thread_files"]["mainjpegthread_filename"]
 platesolvethread_filename = inputs["thread_files"]["platesolvethread_filename"]
 
@@ -1931,16 +1931,16 @@ try:
 
 
         try:
-            os.remove(septhread_filename+ '.temp')
+            os.remove(photometry_thread_filename+ '.temp')
         except:
             pass
-        pickle.dump((image_filename,imageMode, unique, counts), open(septhread_filename+ '.temp', 'wb'))
+        pickle.dump((image_filename,imageMode, unique, counts), open(photometry_thread_filename+ '.temp', 'wb'))
 
         try:
-            os.remove(septhread_filename)
+            os.remove(photometry_thread_filename)
         except:
             pass
-        os.rename(septhread_filename + '.temp', septhread_filename)
+        os.rename(photometry_thread_filename + '.temp', photometry_thread_filename)
 
 
         if smartstackid != 'no':
