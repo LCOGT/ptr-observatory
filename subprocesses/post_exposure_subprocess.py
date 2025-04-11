@@ -343,7 +343,7 @@ dayobs = inputs["config_settings"]["day_directory"]
 
 # Thread files
 smartstackthread_filename = inputs["thread_files"]["smartstackthread_filename"]
-septhread_filename = inputs["thread_files"]["septhread_filename"]
+photometry_thread_filename = inputs["thread_files"]["photometry_thread_filename"]
 mainjpegthread_filename = inputs["thread_files"]["mainjpegthread_filename"]
 platesolvethread_filename = inputs["thread_files"]["platesolvethread_filename"]
 
@@ -2018,18 +2018,18 @@ try:
 
 
         #g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))
-        #np.save(hdusmalldata, septhread_filename)
+        #np.save(hdusmalldata, photometry_thread_filename)
         try:
-            os.remove(septhread_filename+ '.temp')
+            os.remove(photometry_thread_filename+ '.temp')
         except:
             pass
-        pickle.dump((image_filename,imageMode, unique, counts), open(septhread_filename+ '.temp', 'wb'))
+        pickle.dump((image_filename,imageMode, unique, counts), open(photometry_thread_filename+ '.temp', 'wb'))
 
         try:
-            os.remove(septhread_filename)
+            os.remove(photometry_thread_filename)
         except:
             pass
-        os.rename(septhread_filename + '.temp', septhread_filename)
+        os.rename(photometry_thread_filename + '.temp', photometry_thread_filename)
 
 
         if smartstackid != 'no':
