@@ -4494,13 +4494,6 @@ class Camera:
 
             is_osc = self.settings["is_osc"]
 
-            # These are deprecated, just holding onto it until a cleanup at some stage
-            interpolate_for_focus = False
-            bin_for_focus = False
-            focus_bin_value = 1
-            interpolate_for_sep = False
-            bin_for_sep = False
-            sep_bin_value = 1
             focus_jpeg_size = 500
 
             saturate=self.settings["saturate"]
@@ -4517,7 +4510,7 @@ class Camera:
                 pass
 
             try:
-                sep_config = {
+                SEPprocess_inputs = {
                     "file_info": {
                         "septhread_filename": septhread_filename,
                         "im_path": im_path,
@@ -4542,12 +4535,6 @@ class Camera:
                     "processing_options": {
                         "is_osc": is_osc,
                         "frame_type": frame_type,
-                        "interpolate_for_focus": interpolate_for_focus,
-                        "bin_for_focus": bin_for_focus,
-                        "focus_bin_value": focus_bin_value,
-                        "interpolate_for_sep": interpolate_for_sep,
-                        "bin_for_sep": bin_for_sep,
-                        "sep_bin_value": sep_bin_value,
                         "do_sep": do_sep,
                         "minimum_realistic_seeing": minimum_realistic_seeing
                     },
@@ -4563,9 +4550,9 @@ class Camera:
                 # Default is False, but can be manually set to True for code debugging
                 sep_debug = False
                 if sep_debug:
-                    pickle.dump(sep_config, open('subprocesses/testSEPpickle', 'wb'))
+                    pickle.dump(SEPprocess_inputs, open('subprocesses/testSEPpickle', 'wb'))
                 else:
-                    pickle.dump(sep_config, sep_subprocess.stdin)
+                    pickle.dump(SEPprocess_inputs, sep_subprocess.stdin)
             except:
                 plog.warn("Problem in the SEP pickle dump")
                 plog.warn(traceback.format_exc())
