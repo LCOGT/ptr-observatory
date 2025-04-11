@@ -39,7 +39,7 @@ from glob import glob
 import traceback
 from ptr_utility import plog
 import requests
-import glob
+#import glob
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
