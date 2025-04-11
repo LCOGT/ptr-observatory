@@ -69,6 +69,7 @@ rotate90_jpeg = inputs["image_transforms"]["rotate90_jpeg"]
 rotate270_jpeg = inputs["image_transforms"]["rotate270_jpeg"]
 pier_side = inputs["image_transforms"]["pier_side"]
 squash_on_x_axis = inputs["image_transforms"]["squash_on_x_axis"]
+zoom_factor = inputs["image_transformations"]["zoom_factor"].lower()
 
 # OSC settings
 osc_bayer = inputs["osc_settings"]["osc_bayer"]
@@ -77,14 +78,6 @@ osc_contrast_enhance = inputs["osc_settings"]["osc_contrast_enhance"]
 osc_colour_enhance = inputs["osc_settings"]["osc_colour_enhance"]
 osc_saturation_enhance = inputs["osc_settings"]["osc_saturation_enhance"]
 osc_sharpness_enhance = inputs["osc_settings"]["osc_sharpness_enhance"]
-
-# Crop settings
-crop_preview = inputs["crop_settings"]["crop_preview"]
-yb = inputs["crop_settings"]["ybottom"]
-yt = inputs["crop_settings"]["ytop"]
-xl = inputs["crop_settings"]["xleft"]
-xr = inputs["crop_settings"]["xright"]
-zoom_factor = inputs["crop_settings"]["zoom_factor"].lower()
 
 
 # Function for aligning the three colour layers

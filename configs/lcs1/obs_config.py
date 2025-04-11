@@ -608,11 +608,6 @@ site_config = {
                 # 'sep_image_crop_height': 0.1, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width
 
                 'osc_bayer' : 'RGGB',
-                'crop_preview': False,
-                'crop_preview_ybottom': 2,  #  2 needed if Bayer array
-                'crop_preview_ytop': 2,
-                'crop_preview_xleft': 2,
-                'crop_preview_xright': 2,
                 'temp_setpoint': 5,    #Verify we can go colder, this system has a chiller
 
                 'temp_setpoint_tolerance': 3.5,
