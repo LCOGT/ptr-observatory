@@ -4597,9 +4597,10 @@ class Camera:
                 try:
                     mainjpeg_subprocess_inputs = {
                         "mainjpegthread_filename": mainjpegthread_filename,
-                        "pier_side": pier_side,
-                        "is_osc": is_osc,
+                        "output_dir": jpeg_output_dir,
+                        "jpeg_filename": jpeg_name,
                         "osc_settings": {
+                            "is_osc": is_osc,
                             "bayer": osc_bayer,
                             "background_cut": osc_background_cut,
                             "brightness_enhance": osc_brightness_enhance,
@@ -4609,6 +4610,7 @@ class Camera:
                             "sharpness_enhance": osc_sharpness_enhance
                         },
                         "jpeg_transforms": {
+                            "pier_side": pier_side,
                             "transpose": transpose_jpeg,
                             "flipx": flipx_jpeg,
                             "flipy": flipy_jpeg,
@@ -4617,9 +4619,7 @@ class Camera:
                             "rotate270": rotate270_jpeg,
                             "squash_on_x_axis": squash_on_x_axis,
                             "zoom_factor": zoom_factor
-                        },
-                        "output_dir": jpeg_output_dir,
-                        "jpeg_filename": jpeg_name
+                        }
                     }
 
                     # Here is a manual debug area which makes a pickle for debug purposes.
@@ -5174,11 +5174,11 @@ class Camera:
                             "exposure_filter_offset": exposure_filter_offset,
                             "null_filterwheel": null_filterwheel,
                             "start_time_of_observation": start_time_of_observation,
-                            "solve_it": solve_it,
                             "number_of_exposures_requested": count,
+                            "manually_requested_calibration": manually_requested_calibration,
                             "next_seq": next_seq
                         },
-                        "mount_info": {
+                        "instrument_info": {
                             "pier_side": pier_side,
                             "avg_mnt": avg_mnt,
                             "avg_foc": avg_foc,
@@ -5201,14 +5201,12 @@ class Camera:
                         "observer_info": {
                             "observer_user_name": observer_user_name,
                             "observer_user_id": observer_user_id,
-                            "manually_requested_calibration": manually_requested_calibration,
                             "optional_params": optional_params
                         },
-                        "smart_stack": {
+                        "stack_info": {
                             "smartstackid": smartstackid,
                             "sskcounter": sskcounter,
                             "Nsmartstack": Nsmartstack,
-                            "longstack_deprecated": 'longstack_deprecated',
                             "zoom_factor": zoom_factor,
                             "substack": substack,
                             "expected_endpoint_of_substack_exposure": expected_endpoint_of_substack_exposure,
@@ -5217,8 +5215,6 @@ class Camera:
                         "config_settings": {
                             "site_config": self.site_config,
                             "wema_config": self.obs.wema_config,
-                            "reject_flat_by_known_gain": self.settings['reject_new_flat_by_known_gain'],
-                            "useastrometrynet": useastrometrynet,
                             "day_directory": self.obs.events.get('day_directory')
                         },
                         "thread_files": {
