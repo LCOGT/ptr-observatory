@@ -404,6 +404,7 @@ site_config = {
             'desc':  'Planewave Focuser',
             'driver': 'dummy',
 			'com_port':  'COM9',
+            'relative_focuser': False,
 
             'focuser_movement_settle_time': 10,
             'start_at_config_reference': False,

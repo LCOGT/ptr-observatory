@@ -600,8 +600,10 @@ class Mount:
         self.abort_slew_requested=False
         self.find_home_requested=False
         
-        
-        prev_tracking=copy.deepcopy(self.mount.Tracking)
+        if not self.dummy:
+            prev_tracking=copy.deepcopy(self.mount.Tracking)
+        else:
+            prev_tracking=True
         try:
             self.mount.Tracking = True
             self.can_set_tracking=True
