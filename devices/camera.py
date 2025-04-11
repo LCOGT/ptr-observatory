@@ -659,13 +659,19 @@ def fit_moffat_worker(args):
 
 # Note this is a thread!
 def dump_main_data_out_to_post_exposure_subprocess(payload, post_processing_subprocess):
-
+    """ Send the data to the post-processing subprocess."""
     try:
-        pickle.dump(payload, post_processing_subprocess.stdin)
-        post_processing_subprocess.stdin.close()  # Ensure the input stream is closed
+        # Manual debug flag
+        debug_post_processing_subprocess = False
+        if debug_post_processing_subprocess:
+            pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
+            breakpoint()
+        else:
+            pickle.dump(payload, post_processing_subprocess.stdin)
+            post_processing_subprocess.stdin.close()  # Ensure the input stream is closed
     except Exception as e:
-        plog(f"Problem in the post_processing_subprocess pickle dump: {e}")
-        plog(traceback.format_exc())
+        plog.warn(f"Problem in the post_processing_subprocess pickle dump: {e}")
+        plog.warn(traceback.format_exc())
 
 
 # Note this is a thread!
@@ -4420,11 +4426,11 @@ class Camera:
                         stdout=None,
                         bufsize=-1
                     )
-                except OSError:
-                    pass
+                except:
+                    plog.err('Smartstack subprocess failed to start')
 
                 try:
-                    smartstack_config = {
+                    smartstack_subprocess_inputs = {
                         "file_info": {
                             "smartstackthread_filename": smartstackthread_filename,
                             "smartstackid": smartstackid,
@@ -4473,9 +4479,9 @@ class Camera:
                     # Manual debugging flag
                     debug_smartstack = False
                     if debug_smartstack:
-                        pickle.dump(smartstack_config, open('subprocesses/testsmartstackpickle', 'wb'))
+                        pickle.dump(smartstack_subprocess_inputs, open('subprocesses/testsmartstackpickle', 'wb'))
                     else:
-                        pickle.dump(smartstack_config, smartstack_subprocess.stdin)
+                        pickle.dump(smartstack_subprocess_inputs, smartstack_subprocess.stdin)
                 except:
                     plog.warn("Problem in the smartstack pickle dump")
                     plog.warn(traceback.format_exc())
@@ -4485,6 +4491,7 @@ class Camera:
 
             else:
                 smartstackthread_filename='no'
+
 
             # SEP THREAD
             septhread_filename = f"{self.local_calibration_path}smartstacks/sep{time.time().replace('.', '')}.pickle"
@@ -4506,11 +4513,11 @@ class Camera:
                     stdout=None,
                     bufsize=-1
                 )
-            except OSError:
-                pass
+            except:
+                plog.err('SEP subprocess failed to start')
 
             try:
-                SEPprocess_inputs = {
+                sep_subprocess_inputs = {
                     "file_info": {
                         "septhread_filename": septhread_filename,
                         "im_path": im_path,
@@ -4550,9 +4557,9 @@ class Camera:
                 # Default is False, but can be manually set to True for code debugging
                 sep_debug = False
                 if sep_debug:
-                    pickle.dump(SEPprocess_inputs, open('subprocesses/testSEPpickle', 'wb'))
+                    pickle.dump(sep_subprocess_inputs, open('subprocesses/testSEPpickle', 'wb'))
                 else:
-                    pickle.dump(SEPprocess_inputs, sep_subprocess.stdin)
+                    pickle.dump(sep_subprocess_inputs, sep_subprocess.stdin)
             except:
                 plog.warn("Problem in the SEP pickle dump")
                 plog.warn(traceback.format_exc())
@@ -4607,13 +4614,13 @@ class Camera:
                         stdout=None,
                         bufsize=-1
                     )
-                except OSError:
+                except:
                     plog.err('JPEG subprocess failed to start')
                     plog.err(traceback.format_exc())
 
                 jpeg_output_dir = self.camera_path + g_dev['day'] + "/to_AWS/"
                 try:
-                    mainjpeg_config = {
+                    mainjpeg_subprocess_inputs = {
                         "mainjpegthread_filename": mainjpegthread_filename,
                         "smartstackid": smartstackid,
                         "pier_side": pier_side,
@@ -4653,9 +4660,9 @@ class Camera:
                     jpeg_debug = False
                     if jpeg_debug:
                         #NB set this path to create test pickle for makejpeg routine.
-                        pickle.dump(mainjpeg_config, open('testjpegpickle', 'wb'))
+                        pickle.dump(mainjpeg_subprocess_inputs, open('testjpegpickle', 'wb'))
                     else:
-                        pickle.dump(mainjpeg_config, jpeg_subprocess.stdin)
+                        pickle.dump(mainjpeg_subprocess_inputs, jpeg_subprocess.stdin)
                 except:
                     plog.warn("Problem in the jpeg pickle dump")
                     plog.warn(traceback.format_exc())
@@ -5171,77 +5178,97 @@ class Camera:
 
 
 
-                    payload=copy.deepcopy(
-                        (
-                            outputimg,
-                            pier_side,
-                            self.settings['is_osc'],
-                            frame_type,
-                            self.settings['reject_new_flat_by_known_gain'],
-                            avg_mnt,
-                            avg_foc,
-                            avg_rot,
-                            self.setpoint,
-                            self.tempccdtemp,
-                            self.ccd_humidity,
-                            self.ccd_pressure,
-                            self.darkslide_state,
-                            exposure_time,
-                            this_exposure_filter,
-                            exposure_filter_offset,
-                            optional_params,
-                            observer_user_name,
-                            azimuth_of_observation,
-                            altitude_of_observation,
-                            airmass_of_observation,
-                            self.pixscale,
-                            smartstackid,
-                            sskcounter,Nsmartstack,
-                            'longstack_deprecated',
-                            ra_at_time_of_exposure,
-                            dec_at_time_of_exposure,
-                            manually_requested_calibration,
-                            object_name,
-                            object_specf,
-                            ha_corr,
-                            dec_corr,
-                            focus_position,
-                            self.site_config,
-                            self.name,
-                            self.camera_known_gain,
-                            self.camera_known_readnoise,
-                            start_time_of_observation,
-                            observer_user_id,
-                            self.camera_path,
-                            solve_it,
-                            next_seq,
-                            zoom_factor,
-                            useastrometrynet,
-                            substack,
-                            expected_endpoint_of_substack_exposure,
-                            substack_start_time,
-                            0.0,
-                            self.readout_time,
-                            sub_stacker_midpoints,corrected_ra_for_header,corrected_dec_for_header,
-                            self.substacker_filenames,
-                            self.obs.events.get('day_directory'),
-                            exposure_filter_offset,
-                            null_filterwheel,
-                            self.obs.wema_config,
-                            smartstackthread_filename,
-                            septhread_filename,
-                            mainjpegthread_filename,
-                            platesolvethread_filename,
-                            count,
-                            unique_batch_code,
-                            exposure_in_nighttime
-                            )
-                        )
-
+                    post_exposure_subprocess_inputs = {
+                        "image_data": {
+                            "outputimg": outputimg,
+                            "substacker_filenames": self.substacker_filenames,
+                            "sub_stacker_midpoints": sub_stacker_midpoints,
+                            "unique_batch_code": unique_batch_code
+                        },
+                        "camera_settings": {
+                            "is_osc": self.settings['is_osc'],
+                            "pixscale": self.pixscale,
+                            "camera_device_name": self.name,
+                            "camera_known_gain": self.camera_known_gain,
+                            "camera_known_readnoise": self.camera_known_readnoise,
+                            "camera_path": self.camera_path,
+                            "setpoint": self.setpoint,
+                            "tempccdtemp": self.tempccdtemp,
+                            "ccd_humidity": self.ccd_humidity,
+                            "ccd_pressure": self.ccd_pressure,
+                            "darkslide_state": self.darkslide_state,
+                            "readout_time": self.readout_time,
+                            "readout_estimate": 0.0
+                        },
+                        "exposure_details": {
+                            "exposure_time": exposure_time,
+                            "frame_type": frame_type,
+                            "this_exposure_filter": this_exposure_filter,
+                            "exposure_filter_offset": exposure_filter_offset,
+                            "null_filterwheel": null_filterwheel,
+                            "start_time_of_observation": start_time_of_observation,
+                            "solve_it": solve_it,
+                            "number_of_exposures_requested": count,
+                            "next_seq": next_seq
+                        },
+                        "mount_info": {
+                            "pier_side": pier_side,
+                            "avg_mnt": avg_mnt,
+                            "avg_foc": avg_foc,
+                            "avg_rot": avg_rot,
+                            "focus_position": focus_position,
+                            "azimuth_of_observation": azimuth_of_observation,
+                            "altitude_of_observation": altitude_of_observation,
+                            "airmass_of_observation": airmass_of_observation,
+                            "ra_at_time_of_exposure": ra_at_time_of_exposure,
+                            "dec_at_time_of_exposure": dec_at_time_of_exposure,
+                            "corrected_ra_for_header": corrected_ra_for_header,
+                            "corrected_dec_for_header": corrected_dec_for_header,
+                            "ha_corr": ha_corr,
+                            "dec_corr": dec_corr
+                        },
+                        "target_info": {
+                            "object_name": object_name,
+                            "object_specf": object_specf
+                        },
+                        "observer_info": {
+                            "observer_user_name": observer_user_name,
+                            "observer_user_id": observer_user_id,
+                            "manually_requested_calibration": manually_requested_calibration,
+                            "optional_params": optional_params
+                        },
+                        "smart_stack": {
+                            "smartstackid": smartstackid,
+                            "sskcounter": sskcounter,
+                            "Nsmartstack": Nsmartstack,
+                            "longstack_deprecated": 'longstack_deprecated',
+                            "zoom_factor": zoom_factor,
+                            "substack": substack,
+                            "expected_endpoint_of_substack_exposure": expected_endpoint_of_substack_exposure,
+                            "substack_start_time": substack_start_time
+                        },
+                        "config_settings": {
+                            "site_config": self.site_config,
+                            "wema_config": self.obs.wema_config,
+                            "reject_flat_by_known_gain": self.settings['reject_new_flat_by_known_gain'],
+                            "useastrometrynet": useastrometrynet,
+                            "day_directory": self.obs.events.get('day_directory')
+                        },
+                        "thread_files": {
+                            "smartstackthread_filename": smartstackthread_filename,
+                            "septhread_filename": septhread_filename,
+                            "mainjpegthread_filename": mainjpegthread_filename,
+                            "platesolvethread_filename": platesolvethread_filename
+                        },
+                        "other": {
+                            "unique_batch_code",
+                            "exposure_in_nighttime"
+                        }
+                    }
 
                     # It actually takes a few seconds to spin up the main subprocess, so we farm this out to a thread
                     # So the code can continue more quickly to the next exposure.
-                    thread = threading.Thread(target=dump_main_data_out_to_post_exposure_subprocess, args=(payload,post_processing_subprocess,))
+                    thread = threading.Thread(target=dump_main_data_out_to_post_exposure_subprocess, args=(post_exposure_subprocess_inputs, post_processing_subprocess,))
                     thread.daemon = True
                     thread.start()
 

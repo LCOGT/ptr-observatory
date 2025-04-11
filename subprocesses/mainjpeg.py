@@ -27,50 +27,49 @@ plog = create_color_plog('mainjpg', log_color)
 # Pick up the pickled array
 debug = False
 if not debug:
-    config = pickle.load(sys.stdin.buffer)
+    inputs = pickle.load(sys.stdin.buffer)
 else:
-    #breakpoint()
     #NB Use this input file for debugging this code.
-    #input_jpeg_info=pickle.load(open('C:\\Users\\user\\Documents\\GitHub\\ptr-observatory\\testjpegpickle','rb'))
-    config = pickle.load(open('../testjpegpickle','rb'))
+    inputs = pickle.load(open('C:\\Users\\user\\Documents\\GitHub\\ptr-observatory\\testjpegpickle','rb'))
     plog("Starting mainjpeg.py in debug mode")
-    plog(config)
+    plog(inputs)
+    breakpoint()
 
 # Extract input values
-mainjpegthread_filename = config["mainjpegthread_filename"]
-smartstackid = config["smartstackid"]
-pier_side = config["pier_side"]
-is_osc = config["is_osc"]
+mainjpegthread_filename = inputs["mainjpegthread_filename"]
+smartstackid = inputs["smartstackid"]
+pier_side = inputs["pier_side"]
+is_osc = inputs["is_osc"]
 
 # OSC settings
-osc_bayer = config["osc_settings"]["bayer"]
-osc_background_cut = config["osc_settings"]["background_cut"]
-osc_brightness_enhance = config["osc_settings"]["brightness_enhance"]
-osc_contrast_enhance = config["osc_settings"]["contrast_enhance"]
-osc_colour_enhance = config["osc_settings"]["colour_enhance"]
-osc_saturation_enhance = config["osc_settings"]["saturation_enhance"]
-osc_sharpness_enhance = config["osc_settings"]["sharpness_enhance"]
+osc_bayer = inputs["osc_settings"]["bayer"]
+osc_background_cut = inputs["osc_settings"]["background_cut"]
+osc_brightness_enhance = inputs["osc_settings"]["brightness_enhance"]
+osc_contrast_enhance = inputs["osc_settings"]["contrast_enhance"]
+osc_colour_enhance = inputs["osc_settings"]["colour_enhance"]
+osc_saturation_enhance = inputs["osc_settings"]["saturation_enhance"]
+osc_sharpness_enhance = inputs["osc_settings"]["sharpness_enhance"]
 
 # JPEG transformation settings
-transpose_jpeg = config["jpeg_transforms"]["transpose"]
-flipx_jpeg = config["jpeg_transforms"]["flipx"]
-flipy_jpeg = config["jpeg_transforms"]["flipy"]
-rotate180_jpeg = config["jpeg_transforms"]["rotate180"]
-rotate90_jpeg = config["jpeg_transforms"]["rotate90"]
-rotate270_jpeg = config["jpeg_transforms"]["rotate270"]
+transpose_jpeg = inputs["jpeg_transforms"]["transpose"]
+flipx_jpeg = inputs["jpeg_transforms"]["flipx"]
+flipy_jpeg = inputs["jpeg_transforms"]["flipy"]
+rotate180_jpeg = inputs["jpeg_transforms"]["rotate180"]
+rotate90_jpeg = inputs["jpeg_transforms"]["rotate90"]
+rotate270_jpeg = inputs["jpeg_transforms"]["rotate270"]
 
 # Crop settings
-crop_preview = config["crop"]["enabled"]
-yb = config["crop"]["ybottom"]
-yt = config["crop"]["ytop"]
-xl = config["crop"]["xleft"]
-xr = config["crop"]["xright"]
+crop_preview = inputs["crop"]["enabled"]
+yb = inputs["crop"]["ybottom"]
+yt = inputs["crop"]["ytop"]
+xl = inputs["crop"]["xleft"]
+xr = inputs["crop"]["xright"]
 
 # Other settings
-squash_on_x_axis = config["squash_on_x_axis"]
-zoom_factor = config["zoom_factor"].lower()
-output_dir = config["output_dir"]
-jpeg_filename = config["jpeg_filename"]
+squash_on_x_axis = inputs["squash_on_x_axis"]
+zoom_factor = inputs["zoom_factor"].lower()
+output_dir = inputs["output_dir"]
+jpeg_filename = inputs["jpeg_filename"]
 
 
 # This process is set to spin up early, so it loads
