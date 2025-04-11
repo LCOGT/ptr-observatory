@@ -67,52 +67,47 @@ def radial_profile(data, center):
     radialprofile = tbin / nr
     return radialprofile
 
-try:
-    config = pickle.load(sys.stdin.buffer)
-except:
-    plog("No input to the SEP Process.")
-#   config=pickle.load(open('testSEPpickle','rb'))
+use_test_inputs = False
+if use_test_inputs:
+    plog("Using test inputs for the SEP process")
+    inputs = pickle.load(open('testSEPpickle','rb'))
+else:
+    inputs = pickle.load(sys.stdin.buffer)
 
 
 # Extract values from the structured dictionary
 # File info
-septhread_filename = config["file_info"]["septhread_filename"]
-im_path = config["file_info"]["im_path"]
-text_name = config["file_info"]["text_name"]
-cal_path = config["file_info"]["cal_path"]
-cal_name = config["file_info"]["cal_name"]
+septhread_filename = inputs["file_info"]["septhread_filename"]
+im_path = inputs["file_info"]["im_path"]
+text_name = inputs["file_info"]["text_name"]
+cal_path = inputs["file_info"]["cal_path"]
+cal_name = inputs["file_info"]["cal_name"]
 
 # Camera settings
-pixscale = config["camera_settings"]["pixscale"]
-readnoise = config["camera_settings"]["readnoise"]
-native_bin = config["camera_settings"]["native_bin"]
-saturate = config["camera_settings"]["saturate"]
+pixscale = inputs["camera_settings"]["pixscale"]
+readnoise = inputs["camera_settings"]["readnoise"]
+native_bin = inputs["camera_settings"]["native_bin"]
+saturate = inputs["camera_settings"]["saturate"]
 
 # Focus data
-avg_foc = config["focus_data"]["avg_foc"]
-focus_image = config["focus_data"]["focus_image"]
-focus_position = config["focus_data"]["focus_position"]
-focus_crop_width = config["focus_data"]["focus_crop_width"]
-focus_crop_height = config["focus_data"]["focus_crop_height"]
-focus_jpeg_size = config["focus_data"]["focus_jpeg_size"]
+avg_foc = inputs["focus_data"]["avg_foc"]
+focus_image = inputs["focus_data"]["focus_image"]
+focus_position = inputs["focus_data"]["focus_position"]
+focus_crop_width = inputs["focus_data"]["focus_crop_width"]
+focus_crop_height = inputs["focus_data"]["focus_crop_height"]
+focus_jpeg_size = inputs["focus_data"]["focus_jpeg_size"]
 
 # Processing options
-is_osc = config["processing_options"]["is_osc"]
-frame_type = config["processing_options"]["frame_type"]
-interpolate_for_focus = config["processing_options"]["interpolate_for_focus"]
-bin_for_focus = config["processing_options"]["bin_for_focus"]
-focus_bin_value = config["processing_options"]["focus_bin_value"]
-interpolate_for_sep = config["processing_options"]["interpolate_for_sep"]
-bin_for_sep = config["processing_options"]["bin_for_sep"]
-sep_bin_value = config["processing_options"]["sep_bin_value"]
-do_sep = config["processing_options"]["do_sep"]
-minimum_realistic_seeing = config["processing_options"]["minimum_realistic_seeing"]
+is_osc = inputs["processing_options"]["is_osc"]
+frame_type = inputs["processing_options"]["frame_type"]
+do_sep = inputs["processing_options"]["do_sep"]
+minimum_realistic_seeing = inputs["processing_options"]["minimum_realistic_seeing"]
 
 # Metadata
-hduheader = config["metadata"]["hduheader"]
-gdevevents = config["metadata"]["events"]
-ephemnow = config["metadata"]["ephem_now"]
-exposure_time = config["metadata"]["exposure_time"]
+hduheader = inputs["metadata"]["hduheader"]
+gdevevents = inputs["metadata"]["events"]
+ephemnow = inputs["metadata"]["ephem_now"]
+exposure_time = inputs["metadata"]["exposure_time"]
 
 
 ############ WAITER FOR
