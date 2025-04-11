@@ -846,14 +846,6 @@ site_config = {
                 'rotate90_jpeg': False,
                 'rotate270_jpeg': False,
 
-                # This is purely to crop the preview jpeg for the UI
-                'crop_preview': True,
-                'crop_preview_ybottom': 20,  # 2 needed if Bayer array
-                'crop_preview_ytop': 20,
-                'crop_preview_xleft': 20,
-                'crop_preview_xright': 20,
-
-
 
                # # For large fields of view, crop the images down to solve faster.
                # # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
@@ -1138,15 +1130,6 @@ site_config = {
  #             'rotate180_jpeg': False,
  #             'rotate90_jpeg': False,
  #             'rotate270_jpeg': False,
-
- #             # This is purely to crop the preview jpeg for the UI
- #             'crop_preview': True,
- #             'crop_preview_ybottom': 20,  # 2 needed if Bayer array
- #             'crop_preview_ytop': 20,
- #             'crop_preview_xleft': 20,
- #             'crop_preview_xright': 20,
-
-
 
  #            # For large fields of view, crop the images down to solve faster.
  #            # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
