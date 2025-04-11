@@ -575,13 +575,6 @@ site_config = {
 
 
                 'osc_bayer' : 'RGGB',
-                'crop_preview': False,
-                'crop_preview_ybottom': 1,
-                'crop_preview_ytop': 1,
-                'crop_preview_xleft': 1,
-                'crop_preview_xright': 1,
-
-
 
                 # This is the yearly range of temperatures.
                 # Based on New Mexico and Melbourne's variation... sorta similar.

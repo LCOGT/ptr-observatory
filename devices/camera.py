@@ -4022,19 +4022,6 @@ class Camera:
                     "smartstacks/smartstack" + \
                     str(time.time()).replace('.', '') + '.pickle'
 
-                crop_preview=self.settings["crop_preview"]
-                yb=self.settings["crop_preview_ybottom"]
-                yt = self.settings["crop_preview_ytop"]
-                xl = self.settings["crop_preview_xleft"]
-                xr = self.settings["crop_preview_xright"]
-
-                if self.dither_enabled:
-                    crop_preview = True
-                    yb = yb+50
-                    yt = yt+50
-                    xl = xl+50
-                    xr = xr+50
-
                 def clean_object_name(name):
                     """Convert object name to filename-safe format."""
                     return str(name).replace(':', 'd').replace('@', 'at').replace('.', 'd').replace(' ', '').replace('-', '')
@@ -4086,7 +4073,8 @@ class Camera:
                             "rotate90_jpeg": self.settings['rotate90_jpeg'],
                             "rotate270_jpeg": self.settings['rotate270_jpeg'],
                             "pier_side": g_dev["mnt"].pier_side,
-                            "squash_on_x_axis": self.settings["squash_on_x_axis"]
+                            "squash_on_x_axis": self.settings["squash_on_x_axis"],
+                            "zoom_factor": zoom_factor
                         },
                         "osc_settings": {
                             "osc_bayer": self.settings["osc_bayer"] if self.settings["is_osc"] else None,
@@ -4095,14 +4083,6 @@ class Camera:
                             "osc_colour_enhance": self.settings['osc_colour_enhance'] if self.settings["is_osc"] else 0,
                             "osc_saturation_enhance": self.settings['osc_saturation_enhance'] if self.settings["is_osc"] else 0,
                             "osc_sharpness_enhance": self.settings['osc_sharpness_enhance'] if self.settings["is_osc"] else 0
-                        },
-                        "crop_settings": {
-                            "crop_preview": crop_preview,
-                            "ybottom": yb,
-                            "ytop": yt,
-                            "xleft": xl,
-                            "xright": xr,
-                            "zoom_factor": zoom_factor
                         }
                     }
 
@@ -4226,11 +4206,6 @@ class Camera:
                 rotate180_jpeg = self.settings['rotate180_jpeg']
                 rotate90_jpeg = self.settings['rotate90_jpeg']
                 rotate270_jpeg = self.settings['rotate270_jpeg']
-                crop_preview = self.settings["crop_preview"]
-                yb = self.settings[ "crop_preview_ybottom" ]
-                yt = self.settings[ "crop_preview_ytop" ]
-                xl = self.settings[ "crop_preview_xleft" ]
-                xr = self.settings[ "crop_preview_xright" ]
                 squash_on_x_axis = self.settings["squash_on_x_axis"]
                 if g_dev['obs'].mountless_operation:
                     pier_side=0
@@ -4252,7 +4227,6 @@ class Camera:
                 try:
                     mainjpeg_subprocess_inputs = {
                         "mainjpegthread_filename": mainjpegthread_filename,
-                        "smartstackid": smartstackid,
                         "pier_side": pier_side,
                         "is_osc": is_osc,
                         "osc_settings": {
@@ -4270,17 +4244,10 @@ class Camera:
                             "flipy": flipy_jpeg,
                             "rotate180": rotate180_jpeg,
                             "rotate90": rotate90_jpeg,
-                            "rotate270": rotate270_jpeg
+                            "rotate270": rotate270_jpeg,
+                            "squash_on_x_axis": squash_on_x_axis,
+                            "zoom_factor": zoom_factor
                         },
-                        "crop": {
-                            "enabled": crop_preview,
-                            "ybottom": yb,
-                            "ytop": yt,
-                            "xleft": xl,
-                            "xright": xr
-                        },
-                        "squash_on_x_axis": squash_on_x_axis,
-                        "zoom_factor": zoom_factor,
                         "output_dir": jpeg_output_dir,
                         "jpeg_filename": jpeg_name
                     }
