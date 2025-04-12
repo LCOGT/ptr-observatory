@@ -5764,10 +5764,10 @@ class Camera:
                             
                             
                             catalog = catalog[mask]
-                            
+                            #breakpoint()
                             # remove unrealistic estimates that are too small
                             if not self.pixscale == None:
-                                mask = (catalog['flux_radius']*self.pixscale) > 1.2
+                                mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
                                 catalog = catalog[mask]
                             
                             # Median half flux radius

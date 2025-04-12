@@ -301,7 +301,7 @@ class Sequencer:
         #copy_failed_pipe_files_thread
         
         # Copy over the fits files
-        tempfilelist= glob.glob(failsafe_directory +'/*.fits.fz')
+        tempfilelist= glob(failsafe_directory +'/*.fits.fz')
         for tempfile in tempfilelist:
             
             cameraname= tempfile.split('\\')[-1].split('-')[1].split('_')[0]
@@ -331,7 +331,7 @@ class Sequencer:
 
         
         # Copy over the token files
-        tempfilelist= glob.glob(failsafe_directory +'/tokens/*')
+        tempfilelist= glob(failsafe_directory +'/tokens/*')
         for tempfile in tempfilelist:
             try:
                 shutil.move(tempfile, pipetokenfolder)
@@ -348,13 +348,13 @@ class Sequencer:
             plog ("Clearing archive of old files")
             #plog (g_dev['obs'].obsid_path + 'archive/')
             dir_path=g_dev['obs'].obsid_path + 'archive/'
-            cameras=glob.glob(dir_path + "*/")
+            cameras=glob(dir_path + "*/")
             #plog (cameras)
             for camera in cameras:  # Go through each camera directory
                 #plog ("*****************************************")
                 #plog ("Camera: " + str(camera))
                 timenow_cull=time.time()
-                directories=glob.glob(camera + "*/")
+                directories=glob(camera + "*/")
                 deleteDirectories=[]
                 deleteTimes=[]
                 for q in range(len(directories)):
