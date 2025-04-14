@@ -4068,9 +4068,6 @@ class Camera:
             # Photometry Thread
             photometry_thread_filename = f"{self.local_calibration_path}smartstacks/sep{time.time().replace('.', '')}.pickle"
 
-            # Enable SEP between civil dusk and dawn
-            do_sep = g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']
-
             is_osc = self.settings["is_osc"]
             saturate=self.settings["saturate"]
             minimum_realistic_seeing=self.site_config['minimum_realistic_seeing']
@@ -4103,7 +4100,6 @@ class Camera:
                     "processing_options": {
                         "is_osc": is_osc,
                         "frame_type": frame_type,
-                        "do_sep": do_sep,
                         "minimum_realistic_seeing": minimum_realistic_seeing
                     },
                     "metadata": {
