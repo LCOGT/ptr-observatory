@@ -89,14 +89,6 @@ readnoise = inputs["camera_settings"]["readnoise"]
 native_bin = inputs["camera_settings"]["native_bin"]
 saturate = inputs["camera_settings"]["saturate"]
 
-# Focus data
-avg_foc = inputs["focus_data"]["avg_foc"]
-focus_image = inputs["focus_data"]["focus_image"]
-focus_position = inputs["focus_data"]["focus_position"]
-focus_crop_width = inputs["focus_data"]["focus_crop_width"]
-focus_crop_height = inputs["focus_data"]["focus_crop_height"]
-focus_jpeg_size = inputs["focus_data"]["focus_jpeg_size"]
-
 # Processing options
 is_osc = inputs["processing_options"]["is_osc"]
 frame_type = inputs["processing_options"]["frame_type"]
@@ -796,65 +788,3 @@ if not frame_type == 'focus' and False: # The False is here because we don't act
     with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
         json.dump(starinspection_json_snippets, f)
     plog ("Writing out star inspection: " + str(time.time()-googtime))
-
-
-
-# If it is a focus image then it will get sent in a different manner to the UI for a jpeg
-# In this case, the image needs to be the 0.2 degree field that the focus field is made up of
-
-if frame_type == 'focus':
-    hdusmalldata = np.array(hdufocusdata)
-    fx, fy = hdusmalldata.shape
-    aspect_ratio= fx/fy
-
-    focus_jpeg_size=0.2/(pixscale/3600)
-
-    if focus_jpeg_size < fx:
-        crop_width = (fx - focus_jpeg_size) / 2
-    else:
-        crop_width =2
-
-    if focus_jpeg_size < fy:
-        crop_height = (fy - (focus_jpeg_size / aspect_ratio) ) / 2
-    else:
-        crop_height = 2
-
-    # Make sure it is an even number for OSCs
-    if (crop_width % 2) != 0:
-        crop_width = crop_width+1
-    if (crop_height % 2) != 0:
-        crop_height = crop_height+1
-
-    crop_width = int(crop_width)
-    crop_height = int(crop_height)
-
-    if crop_width > 0 or crop_height > 0:
-        hdusmalldata = hdusmalldata[crop_width:-crop_width, crop_height:-crop_height]
-
-    hdusmalldata = hdusmalldata - np.min(hdusmalldata)
-
-    stretched_data_float = Stretch().stretch(hdusmalldata+1000)
-    stretched_256 = 255 * stretched_data_float
-    hot = np.where(stretched_256 > 255)
-    cold = np.where(stretched_256 < 0)
-    stretched_256[hot] = 255
-    stretched_256[cold] = 0
-    stretched_data_uint8 = stretched_256.astype("uint8")
-    hot = np.where(stretched_data_uint8 > 255)
-    cold = np.where(stretched_data_uint8 < 0)
-    stretched_data_uint8[hot] = 255
-    stretched_data_uint8[cold] = 0
-
-    iy, ix = stretched_data_uint8.shape
-    final_image = Image.fromarray(stretched_data_uint8)
-    draw = ImageDraw.Draw(final_image)
-
-    draw.text((0, 0), str(focus_position), (255))
-    try:
-        final_image.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-    except:
-        pass
-
-    del hdusmalldata
-    del stretched_data_float
-    del final_image

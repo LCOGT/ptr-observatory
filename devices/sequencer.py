@@ -557,7 +557,7 @@ class Sequencer:
         opt = {'count': count, 'filter': 'dk'}
 
         g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False,
-                                    do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+                                    quick=False, skip_open_check=True, skip_daytime_check=True)
         g_dev['obs'].request_scan_requests()
 
         if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or (
@@ -681,7 +681,7 @@ class Sequencer:
 
         self.night_focus_ready=False
         self.clock_focus_latch = False
-        
+
         g_dev['obs'].report_to_nightlog("Focus and Resync routine ended.")
 
 
@@ -1114,7 +1114,7 @@ class Sequencer:
                                                    'filter': 'dk'}
                                             self.nightime_bias_counter = self.nightime_bias_counter + 1
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                                quick=False, skip_open_check=True,skip_daytime_check=True)
                                             # these exposures shouldn't reset these timers
                                             g_dev['obs'].time_of_last_exposure = time.time() - 840
                                             g_dev['obs'].time_of_last_slew = time.time() - 840
@@ -1592,7 +1592,7 @@ class Sequencer:
             or g_dev['events']['Civil Dawn'] < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")
-            return block_specification     
+            return block_specification
 
         self.block_guard = True
         self.total_sequencer_control=True
@@ -1603,7 +1603,7 @@ class Sequencer:
         calendar_event_id=block_specification['event_id']
 
         block = copy.deepcopy(block_specification)
-        
+
         g_dev['obs'].report_to_nightlog("Executing Calendar Block: " + str(block))
 
         # this variable is what we check to see if the calendar
@@ -2190,7 +2190,7 @@ class Sequencer:
 
         # Trigger exposure
         g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system',
-                                    no_AWS=False, do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+                                    no_AWS=False, quick=False, skip_open_check=True, skip_daytime_check=True)
 
         # Handle cancellation or timeout
         if self.stop_script_called:
@@ -2214,7 +2214,7 @@ class Sequencer:
             g_dev['mnt'].park_command({}, {})
 
         g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system',
-                                    no_AWS=False, do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+                                    no_AWS=False, quick=False, skip_open_check=True, skip_daytime_check=True)
 
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -2243,7 +2243,7 @@ class Sequencer:
         # Set a timer. It is possible to ask for bias darks and it takes until the end of time. So we should put a limit on it for manually
         # requested collection. Auto-collection is limited by the events schedule.
         bias_darks_started=time.time()
-        
+
         g_dev['obs'].report_to_nightlog("Starting Bias Darks")
 
         while ephem.now() < ending :   #Do not overrun the window end
@@ -2559,7 +2559,7 @@ class Sequencer:
     def nightly_reset_script(self):
         # UNDERTAKING END OF NIGHT ROUTINES
         # Never hurts to make sure the telescope is parked for the night
-        
+
         g_dev['obs'].report_to_nightlog("Nightly Reset")
         self.park_and_close()
 
@@ -2721,7 +2721,7 @@ class Sequencer:
 
             plog ("But didn't get here")
         return
-    
+
         g_dev['obs'].report_to_nightlog("Completed Nightly Reset")
 
 
@@ -4292,7 +4292,7 @@ class Sequencer:
             else:
                 plog ("Moon is in the sky but far enough way to take flats.")
 
-        
+
         g_dev['obs'].report_to_nightlog("Starting Sky Flats")
 
         g_dev['foc'].set_initial_best_guess_for_focus()
@@ -4755,7 +4755,7 @@ class Sequencer:
                                 else:
                                     self.next_filter_in_flat_run = pop_list[1]
 
-                                fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
+                                fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, skip_daytime_check=True)
                                 number_of_exposures_so_far=number_of_exposures_so_far+1
 
                                 try:
@@ -5080,7 +5080,7 @@ class Sequencer:
         self.total_sequencer_control=True
 
         self.measuring_focus_offsets=True
-        
+
         g_dev['obs'].report_to_nightlog("Focus offset estimator script triggerred.")
         plog ("Determining offsets between filters")
         plog ("First doing a normal run on the 'focus' filter first")
@@ -5277,23 +5277,23 @@ class Sequencer:
             focus_start = begin_at  #In this case we start at a place close to a 3 point minimum.
         else:
             focus_start=g_dev['foc'].current_focus_position
-        
+
         # Check that the focus_start position is a reasonable way
         # way away from the edges of the focus limits
         if focus_start < (g_dev['foc'].minimum_allowed_focus + 3 * throw):
             focus_start=g_dev['foc'].minimum_allowed_focus + 3 * throw
         elif focus_start > (g_dev['foc'].maximum_allowed_focus - 3 * throw):
             focus_start=g_dev['foc'].minimum_allowed_focus - 3 * throw
-        
+
         foc_pos0 = focus_start
-        
-        
+
+
 # =============================================================================
 # =============================================================================
 # =============================================================================
         plog("Saved  *mounting* ra, dec, focus:  ", start_ra, start_dec, focus_start)
-        
-        
+
+
         g_dev['obs'].report_to_nightlog("Autofocus process started.")
 
         if not skip_pointing:
@@ -5801,7 +5801,7 @@ class Sequencer:
                             g_dev['obs'].report_to_nightlog("Autofocus process ended.")
 
                             return
-                       
+
 
                         # First check if the minimum is too close to the edge
                         # As long as you haven't hit the limits
@@ -6114,16 +6114,16 @@ class Sequencer:
 
 
                                     # Store estimated conversion factor between half-light approach and actual measured gaussian FWHM
-                                    
+
                                     if not np.isnan(new_blob_vs_gaussian_factor):
-                                    
+
                                         blobvsgauss_shelf = shelve.open(
                                             g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'blobvsgauss' + g_dev['cam'].alias + str(g_dev['obs'].name))
                                         try:
-    
+
                                             try:
                                                 blobvsgauss_list = blobvsgauss_shelf['blobvsgauss_list']
-    
+
                                             except:
                                                 blobvsgauss_list = []
                                             blobvsgauss_list.append(
@@ -6136,13 +6136,13 @@ class Sequencer:
                                                 else:
                                                     too_long = False
                                             blobvsgauss_shelf['blobvsgauss_list'] = blobvsgauss_list
-    
+
                                             #self.pixscale = bn.nanmedian(pixelscale_list)
                                             #plog('1x1 pixel scale: ' + str(self.pixscale))
                                         except:
                                             plog ("blob issue")
                                             plog(traceback.format_exc())
-    
+
                                         blobvsgauss_shelf.close()
 
                                     #breakpoint()
@@ -6170,7 +6170,7 @@ class Sequencer:
                                         plog ("Now we are in focus but we don't have a pixelscale, attempting a platesolve to get that value")
                                         g_dev["obs"].send_to_user("Now we are in focus but we don't have a pixelscale, attempting a platesolve to get that value")
                                         self.centering_exposure(no_confirmation=True, try_hard=True)
-                                    
+
                                     g_dev['obs'].report_to_nightlog("Autofocus process successful: Position: " + str(fitted_focus_position) + ' FWHM: ' + str(fitted_focus_fwhm))
                                     return fitted_focus_position,fitted_focus_fwhm
 
@@ -6240,7 +6240,7 @@ class Sequencer:
             return
 
         g_dev['obs'].report_to_nightlog("Started Equatorial Pointing Run.")
-        
+
 
         previous_mount_reference_model_off = copy.deepcopy(g_dev['obs'].mount_reference_model_off)
         g_dev['obs'].mount_reference_model_off = True
@@ -6483,9 +6483,9 @@ class Sequencer:
 
         self.total_sequencer_control = False
         g_dev['obs'].stop_processing_command_requests = False
-        
+
         g_dev['obs'].report_to_nightlog("Ended Equatorial Pointing Run.")
-        
+
         return
 
 
