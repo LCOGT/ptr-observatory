@@ -14,13 +14,11 @@ import numpy as np
 import os
 import time
 from astropy.nddata import block_reduce
-from image_registration import cross_correlation_shifts  # chi2_shift,
-
+from image_registration import cross_correlation_shifts
 from auto_stretch.stretch import Stretch
 from PIL import Image, ImageEnhance
 import subprocess
 from math import sqrt
-import traceback
 import copy
 import bottleneck as bn
 
@@ -48,14 +46,6 @@ jpeg_name = inputs["file_info"]["jpeg_name"]
 red_path = inputs["file_info"]["red_path"]
 red_name01 = inputs["file_info"]["red_name01"]
 
-# Camera settings
-is_osc = inputs["camera_settings"]["is_osc"]
-pixscale = inputs["camera_settings"]["pixscale"]
-nativebin = inputs["camera_settings"]["native_bin"]
-readnoise = inputs["camera_settings"]["readnoise"]
-image_saturation_level = inputs["camera_settings"]["image_saturation_level"]
-minimum_realistic_seeing = inputs["camera_settings"]["minimum_realistic_seeing"]
-
 # Image transforms
 transpose_jpeg = inputs["image_transforms"]["transpose_jpeg"]
 flipx_jpeg = inputs["image_transforms"]["flipx_jpeg"]
@@ -68,6 +58,7 @@ squash_on_x_axis = inputs["image_transforms"]["squash_on_x_axis"]
 zoom_factor = inputs["image_transformations"]["zoom_factor"].lower()
 
 # OSC settings
+is_osc = inputs["osc_settings"]["is_osc"]
 osc_bayer = inputs["osc_settings"]["osc_bayer"]
 osc_brightness_enhance = inputs["osc_settings"]["osc_brightness_enhance"]
 osc_contrast_enhance = inputs["osc_settings"]["osc_contrast_enhance"]
@@ -386,10 +377,6 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                 newhdublue = imgdata[1::2, 1::2]
             else:
                 pass
-
-            # HERE is where to do a simultaneous red, green, blue
-            # multithreaded sep.
-            pixscale = pixscale
 
             im_path=jpeg_path
             text_name=jpeg_name.replace('.jpg','.txt')

@@ -3182,7 +3182,6 @@ class Camera:
             user_name='None',
             user_roles='None',
             gather_status=True,
-            do_sep=True,
             no_AWS=False,
             quick=False,
             solve_it=False,
@@ -3968,21 +3967,14 @@ class Camera:
                             exposure_time,
                             frame_type,
                             count - seq,
-                            gather_status,
-                            do_sep,
-                            no_AWS,
                             None,
                             None,
-                            quick=quick,
-                            low=ldr_handle_time,
-                            high=ldr_handle_high_time,
                             optional_params=optional_params,
                             solve_it=solve_it,
                             smartstackid=SmartStackID,
                             # longstackid=LongStackID,
                             sskcounter=sskcounter,
                             Nsmartstack=Nsmartstack,
-                            this_exposure_filter=this_exposure_filter,
                             start_time_of_observation=start_time_of_observation,
                             exposure_filter_offset=exposure_filter_offset,
                             ra_at_time_of_exposure=ra_at_time_of_exposure,
@@ -4195,20 +4187,13 @@ class Camera:
         frame_type,
         counter,
         seq,
-        gather_status=True,
-        do_sep=False,
-        no_AWS=False,
         start_x=None,
         start_y=None,
-        quick=False,
-        low=0,
-        high=0,
         optional_params=None,
         solve_it=False,
         smartstackid='no',
         sskcounter=0,
         Nsmartstack=1,
-        this_exposure_filter=None,
         start_time_of_observation=None,
         exposure_filter_offset=None,
         ra_at_time_of_exposure=None,
@@ -4231,40 +4216,24 @@ class Camera:
         count=1,
         observation_metadata={}
     ):
-
-        obs_id = self.site_config['obs_id']
-
-
-        if fw_device == None:
-            fw_device = self.obs.devices['main_fw']
-
-        #breakpoint()
-        try:
-            this_exposure_filter = fw_device.current_filter_name
-        except:
-            this_exposure_filter = 'RGGB'
-
         plog(f"Exposure Started: {exposure_time}s {frame_type}")
 
         # Simulate timing of exposure for dummy camera
         if self.dummy:
             time.sleep(exposure_time)
 
-        try:
-            if optional_params["object_name"] == '':
-                optional_params["object_name"] = 'Unknown'
-        except:
-            optional_params["object_name"] = 'Unknown'
+        obs_id = self.site_config['obs_id']
+
+        if fw_device == None:
+            fw_device = self.obs.devices['main_fw']
 
         try:
-            optional_params["object_name"]
+            this_exposure_filter = fw_device.current_filter_name
         except:
-            optional_params["object_name"] = 'Unknown'
+            this_exposure_filter = 'RGGB'
 
-        try:
-            filter_ui_info = this_exposure_filter
-        except:
-            filter_ui_info = 'filterless'
+        if 'object_name' not in optional_params or optional_params['object_name'] == '':
+            optional_params['object_name'] = 'Unknown'
 
         count = int(optional_params['count'])
 
@@ -4295,7 +4264,7 @@ class Camera:
             g_dev["obs"].send_to_user(message, p_level="INFO")
         else:
             message = (
-                f"Starting {exposure_time}s {filter_ui_info} exposure "
+                f"Starting {exposure_time}s {this_exposure_filter or 'filterless'} exposure "
                 f"of {optional_params['object_name']} by user: {observer_user_name}. "
                 f"{count - int(counter) + 1} of {count}"
             )
@@ -4506,7 +4475,7 @@ class Camera:
             ######### Trigger off threads to wait for their respective files
 
             ## Spin up tha main post_processing_thread
-            post_processing_subprocess=subprocess.Popen(
+            post_processing_subprocess = subprocess.Popen(
                 ['python','subprocesses/post_exposure_subprocess.py'],
                 stdin=subprocess.PIPE,
                 stdout=None,
@@ -4569,14 +4538,6 @@ class Camera:
                             "red_path": im_path_r + g_dev['day'] + "/reduced/",
                             "red_name01": red_name01
                         },
-                        "camera_settings": {
-                            "is_osc": self.settings["is_osc"],
-                            "pixscale": self.pixscale,
-                            "native_bin": self.native_bin,
-                            "readnoise": self.camera_known_readnoise,
-                            "image_saturation_level": self.settings["saturate"],
-                            "minimum_realistic_seeing": self.site_config['minimum_realistic_seeing']
-                        },
                         "image_transforms": {
                             "transpose_jpeg": self.settings["transpose_jpeg"],
                             "flipx_jpeg": self.settings['flipx_jpeg'],
@@ -4589,6 +4550,7 @@ class Camera:
                             "zoom_factor": zoom_factor
                         },
                         "osc_settings": {
+                            "is_osc": self.settings["is_osc"],
                             "osc_bayer": self.settings["osc_bayer"] if self.settings["is_osc"] else None,
                             "osc_brightness_enhance": self.settings['osc_brightness_enhance'] if self.settings["is_osc"] else 0,
                             "osc_contrast_enhance": self.settings['osc_contrast_enhance'] if self.settings["is_osc"] else 0,
@@ -4622,7 +4584,6 @@ class Camera:
             do_sep = g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']
 
             is_osc = self.settings["is_osc"]
-            focus_jpeg_size = 500
             saturate=self.settings["saturate"]
             minimum_realistic_seeing=self.site_config['minimum_realistic_seeing']
 
@@ -4650,14 +4611,6 @@ class Camera:
                         "readnoise": self.camera_known_readnoise,
                         "native_bin": self.native_bin,
                         "saturate": saturate
-                    },
-                    "focus_data": {
-                        "avg_foc": avg_foc,
-                        "focus_image": focus_image,
-                        "focus_position": focus_position,
-                        "focus_crop_width": 0.0,
-                        "focus_crop_height": 0.0,
-                        "focus_jpeg_size": focus_jpeg_size
                     },
                     "processing_options": {
                         "is_osc": is_osc,

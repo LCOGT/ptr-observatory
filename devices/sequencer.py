@@ -489,7 +489,7 @@ class Sequencer:
         opt = {'count': count, 'filter': 'dk'}
 
         g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False,
-                                    do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+                                    quick=False, skip_open_check=True, skip_daytime_check=True)
         g_dev['obs'].request_scan_requests()
 
         if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or (
@@ -1039,7 +1039,7 @@ class Sequencer:
                                                    'filter': 'dk'}
                                             self.nightime_bias_counter = self.nightime_bias_counter + 1
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                                                quick=False, skip_open_check=True,skip_daytime_check=True)
                                             # these exposures shouldn't reset these timers
                                             g_dev['obs'].time_of_last_exposure = time.time() - 840
                                             g_dev['obs'].time_of_last_slew = time.time() - 840
@@ -2098,7 +2098,7 @@ class Sequencer:
 
         # Trigger exposure
         g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system',
-                                    no_AWS=False, do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+                                    no_AWS=False, quick=False, skip_open_check=True, skip_daytime_check=True)
 
         # Handle cancellation or timeout
         if self.stop_script_called:
@@ -2122,7 +2122,7 @@ class Sequencer:
             g_dev['mnt'].park_command({}, {})
 
         g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system',
-                                    no_AWS=False, do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+                                    no_AWS=False, quick=False, skip_open_check=True, skip_daytime_check=True)
 
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -2910,7 +2910,7 @@ class Sequencer:
             os.system("taskkill /IM Aladin.exe /F")
         except:
             pass
-        
+
         if self.currently_regenerating_masters:
             plog("Already in the process of regenerating masters. Will need to wait until the current cycle is done.")
             g_dev["obs"].send_to_user("Already in the process of regenerating masters. Will need to wait until the current cycle is done.")
@@ -2925,7 +2925,7 @@ class Sequencer:
                 pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
                 if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path']+'/calibrations'):
                     os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] + '/calibrations')
-    
+
                 if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias):
                     os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias)
             except:
@@ -4659,7 +4659,7 @@ class Sequencer:
                                 else:
                                     self.next_filter_in_flat_run = pop_list[1]
 
-                                fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
+                                fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, skip_daytime_check=True)
                                 number_of_exposures_so_far=number_of_exposures_so_far+1
 
                                 try:
@@ -4957,12 +4957,12 @@ class Sequencer:
         # # need to restack the calibrations straight away
         # # so this triggers off the stacking process to happen in a thread.
         # if g_dev['cam'].pixscale == None:
-        #     
-        
+        #
+
         # We should always restack after getting new flats
         self.master_restack_queue.put( 'justflatsreally', block=False)
 
-        
+
 
         self.total_sequencer_control = False
 
