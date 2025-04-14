@@ -76,9 +76,9 @@ if time.time()-file_wait_timeout_timer > 599:
 hdusmalldata=np.load(image_filename)
 
 if is_osc:
-    # Only separate colours if needed for colour jpeg
-    # Only use one green channel, otherwise the green channel will have half the noise of other channels
-    # and won't make a relatively balanced image (in terms of noise anyway)
+        # Only separate colours if needed for colour jpeg
+        # Only use one green channel, otherwise the green channel will have half the noise of other channels
+        # and won't make a relatively balanced image (in terms of noise anyway)
     if osc_bayer == 'RGGB':
         hdured = np.array(hdusmalldata[::2, ::2])
         hdugreen = np.array(hdusmalldata[::2, 1::2])

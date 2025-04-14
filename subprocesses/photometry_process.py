@@ -92,7 +92,6 @@ saturate = inputs["camera_settings"]["saturate"]
 # Processing options
 is_osc = inputs["processing_options"]["is_osc"]
 frame_type = inputs["processing_options"]["frame_type"]
-do_sep = inputs["processing_options"]["do_sep"]
 minimum_realistic_seeing = inputs["processing_options"]["minimum_realistic_seeing"]
 
 # Metadata
@@ -166,7 +165,7 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
 if float(readnoise) < 0.1:
     readnoise = 0.1
 
-if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
+if float(hduheader["EXPTIME"]) < 1.0:
     rfp = np.nan
     rfr = np.nan
     rfs = np.nan
@@ -677,8 +676,8 @@ try:
     plog ("Writing out Photometry: " + str(time.time()-googtime))
 except:
     pass
-if do_sep and (not frame_type=='focus') and False: # The False is here because we don't actually use this yet, but it is working
 
+if not frame_type=='focus':
     # Constructing the slices and dices
     try:
         googtime=time.time()

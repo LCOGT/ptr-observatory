@@ -4500,7 +4500,6 @@ class Camera:
                     "processing_options": {
                         "is_osc": is_osc,
                         "frame_type": frame_type,
-                        "do_sep": do_sep,
                         "minimum_realistic_seeing": minimum_realistic_seeing
                     },
                     "metadata": {
