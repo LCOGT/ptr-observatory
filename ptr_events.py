@@ -462,8 +462,8 @@ class Events:
                      ('Civil Dusk         ', ephem.Date(self.civilDusk)),
                      #('End Eve Sky Flats  ', ephem.Date(self.civilDusk + self.config['end_eve_sky_flats_offset']/1440)),
                      # MTF HARDCODING THIS on 31 Mar 25. There is no reason this shouldn't just end at clock and autofocus
-                     ('End Eve Sky Flats  ', ephem.Date(self.observing_begins - 16/1440)),
-                     
+                     ('End Eve Sky Flats  ', ephem.Date(self.observing_begins - 17/1440)),
+
                      #('Clock & Auto Focus ', ephem.Date(self.observing_begins - self.config['clock_and_auto_focus_offset']/1440)),
                      ('Clock & Auto Focus ', ephem.Date(self.observing_begins - 15/1440)), # 15 minutes before observing.
                      ('Observing Begins   ', ephem.Date(self.observing_begins)),
