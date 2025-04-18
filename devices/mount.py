@@ -599,7 +599,7 @@ class Mount:
         self.currently_slewing= False
         self.abort_slew_requested=False
         self.find_home_requested=False
-        
+
         if not self.dummy:
             prev_tracking=copy.deepcopy(self.mount.Tracking)
         else:
@@ -610,6 +610,7 @@ class Mount:
         except:
             self.can_set_tracking=False
         if self.can_set_tracking:
+            prev_tracking=copy.deepcopy(self.mount.Tracking)
             self.mount.Tracking= prev_tracking
 
         self.sync_mount_requested=False
@@ -1188,10 +1189,10 @@ class Mount:
                                 if self.slewtoAsyncRequested:
                                     self.slewtoAsyncRequested=False
 
-                                    # Don't slew while exposing!                                    
+                                    # Don't slew while exposing!
                                     # although we need SOME reasonable timeout!
                                     camera_wait_timeout=time.time()
-                                    
+
                                     try:
                                         while g_dev['cam'].shutter_open and (time.time() - camera_wait_timeout < 120):
                                             plog ("mount thread waiting for camera")
@@ -1449,16 +1450,16 @@ class Mount:
                 dome_timeout_timer=time.time()
                 #dome_open_or_opening=True
 
-                dome_is_slewing=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_slewing']['val'] 
-                
+                dome_is_slewing=wema_enclosure_status.json()['status']['enclosure']['enclosure1']['dome_slewing']['val']
+
                 # silly 360 degrees. who invented it.
                 actual_deviation=abs(obs_azimuth - dome_azimuth)
                 if actual_deviation > 180:
                     actual_deviation = actual_deviation - 360
                 print (actual_deviation)
-                
+
                 while (actual_deviation > 30 or dome_is_slewing) and time.time() - dome_timeout_timer < 180 and not self.rapid_park_indicator: # and dome_open_or_opening:
-                    
+
 
                     #plog ("making sure dome is positioned correct.")
                     rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
@@ -1476,13 +1477,13 @@ class Mount:
                     except:
                         plog ("Some error in getting the wema_enclosure")
 
-                    
+
                     # silly 360 degrees. who invented it.
                     actual_deviation=abs(obs_azimuth - dome_azimuth)
                     if actual_deviation > 180:
                         actual_deviation = actual_deviation - 360
                     print (actual_deviation)
-                        
+
 
                 #plog ("Dome Arrived")
             else:

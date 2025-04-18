@@ -147,7 +147,7 @@ def send_status(obsy, column, status_to_send):
         data = json.dumps(payload)
         #print(data)
     except Exception as e:
-        plog("Failed to create status payload. Usually not fatal:  ", e)
+        plog.warn("Failed to create status payload. Usually not fatal:  ", e)
 
     try:
         reqs.post(uri_status, data=data, timeout=20)
@@ -603,7 +603,7 @@ class Observatory:
             ).json()
 
         except:
-            plog ("getnewjobs connection glitch on startup")
+            plog.warn("getnewjobs connection glitch on startup")
 
         # On startup, collect orphaned fits files that may have been dropped from the queue
         # when the site crashed or was rebooted.
@@ -693,7 +693,7 @@ class Observatory:
                     else:
                         self.open_and_enabled_to_observe = False
         except:
-            plog("FAIL ON OPENING ROOF CHECK")
+            plog.warn("FAIL ON OPENING ROOF CHECK")
             self.open_and_enabled_to_observe = False
 
         # AND one for safety checks
@@ -755,11 +755,11 @@ class Observatory:
         }
         # Validate to make sure that the roles in the config match the roles defined here
         if set(self.devices.keys()) != set(self.config["device_roles"].keys()):
-            plog("ERROR: Device roles in Observatory class do not match device roles in config.")
-            plog(f"Config roles: {set(self.config['device_roles'].keys())}")
-            plog(f"Roles in obs.py Observatory.create_devices: {set(self.devices.keys())}")
-            plog("Please update config.device_roles so that they match the roles in Observatory.devices.")
-            plog('Fatal error, exiting...')
+            plog.err("ERROR: Device roles in Observatory class do not match device roles in config.")
+            plog.err(f"Config roles: {set(self.config['device_roles'].keys())}")
+            plog.err(f"Roles in obs.py Observatory.create_devices: {set(self.devices.keys())}")
+            plog.err("Please update config.device_roles so that they match the roles in Observatory.devices.")
+            plog.err('Fatal error, exiting...')
             sys.exit()
 
         # Make a dict we can use to lookup the roles for a device
@@ -839,7 +839,7 @@ class Observatory:
             wema_last_recorded_day_dir = wema_config['events'].get('day_directory', '<missing>')
             plog(f"Retrieved wema config, lastest version is from day_directory {wema_last_recorded_day_dir}")
         except Exception as e:
-            plog("WARNING: failed to get wema config!", e)
+            plog.warn("WARNING: failed to get wema config!", e)
         return wema_config
 
 
@@ -860,19 +860,19 @@ class Observatory:
                 response = authenticated_request("PUT", uri, self.config)
                 retryapi = False
             except:
-                plog("connection glitch in update config. Waiting 5 seconds.")
+                plog.warn("connection glitch in update config. Waiting 5 seconds.")
                 time.sleep(5)
         if "message" in response:
             if response["message"] == "Missing Authentication Token":
-                plog(
+                plog.err(
                     "Missing Authentication Token. Config unable to be uploaded. Please fix this now."
                 )
                 sys.exit()
             else:
-                plog(
+                plog.warn(
                     "There may be a problem in the config upload? Here is the response."
                 )
-                plog(response)
+                plog.warn(response)
         elif "ResponseMetadata" in response:
             if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                 plog("Config uploaded successfully.")
@@ -938,7 +938,7 @@ class Observatory:
                 "POST", url_job, data=json.dumps(body), timeout=20
             ).json()
         except:
-            plog("problem gathering scan requests. Likely just a connection glitch.")
+            plog.warn("problem gathering scan requests. Likely just a connection glitch.")
             unread_commands = []
 
         # Make sure the list is sorted in the order the jobs were issued
@@ -1132,7 +1132,7 @@ class Observatory:
                                     )
 
                                 else:
-                                    plog("Unknown command: " + str(cmd))
+                                    plog.warn("Unknown command: " + str(cmd))
 
                                 self.obs_settings_upload_timer = (
                                     time.time() - 2 * self.obs_settings_upload_period
@@ -1242,14 +1242,12 @@ class Observatory:
                         )
             except:
                 if "Internal server error" in str(unread_commands):
-                    plog("AWS server glitch reading unread_commands")
+                    plog.err("AWS server glitch reading unread_commands")
                 else:
-                    plog(traceback.format_exc())
-                    plog("unread commands")
-                    plog(unread_commands)
-                    plog(
-                        "MF trying to find whats happening with this relatively rare bug!"
-                    )
+                    plog.err(traceback.format_exc())
+                    plog.err("unread commands")
+                    plog.err(unread_commands)
+                    plog.err("MF trying to find whats happening with this relatively rare bug!")
         return
 
     def update_status(self, cancel_check=False, mount_only=False, dont_wait=False):
@@ -1345,7 +1343,7 @@ class Observatory:
                         pass
                         #plog('Lighting is > 10 km away,')
                 except:
-                    plog('Lightning distance test did not work')
+                    plog.err('Lightning distance test did not work')
 
         except:
             pass
@@ -1448,18 +1446,15 @@ class Observatory:
                                     self.currently_updating_status = False
                                     return
                         except Exception as e:
-                            plog(traceback.format_exc())
-                            plog("Sun check didn't work for some reason")
+                            plog.err(traceback.format_exc())
+                            plog.err("Sun check didn't work for some reason")
                             if (
                                 "Object reference not set" in str(e)
                                 and self.devices["mount"].theskyx
                             ):
-                                plog("The SkyX had an error.")
-                                plog(
-                                    "Usually this is because of a broken connection.")
-                                plog(
-                                    "Killing then waiting 60 seconds then reconnecting"
-                                )
+                                plog.err("The SkyX had an error.")
+                                plog.err("Usually this is because of a broken connection.")
+                                plog.err("Killing then waiting 60 seconds then reconnecting")
                                 self.kill_and_reboot_theskyx(
                                     self.devices["mount"].current_icrs_ra,
                                     self.devices["mount"].current_icrs_dec,
@@ -1589,8 +1584,8 @@ class Observatory:
 
                                             self.time_of_last_pulse = time.time()
                     except:
-                        plog("perhaps theskyx is restarting????")
-                        plog(traceback.format_exc())
+                        plog.warn("perhaps theskyx is restarting????")
+                        plog.warn(traceback.format_exc())
 
                 # Send up the obs settings status - basically the current safety settings
                 if (
@@ -1643,8 +1638,8 @@ class Observatory:
                     try:
                         send_status(self.name, lane, status)
                     except:
-                        plog("could not send obs_settings status")
-                        plog(traceback.format_exc())
+                        plog.warn("could not send obs_settings status")
+                        plog.warn(traceback.format_exc())
 
                 # An important check to make sure equatorial telescopes are pointed appropriately
                 # above the horizon. SRO and ECO have shown that it is possible to get entirely
@@ -1741,7 +1736,7 @@ class Observatory:
                                 "Software Fault"
                                 in self.enc_status["shutter_status"]
                             ):
-                                plog(
+                                plog.err(
                                     "Software Fault Detected."
                                 )  # " Will alert the authorities!")
                                 plog("Parking Scope in the meantime.")
@@ -1776,9 +1771,7 @@ class Observatory:
                                     self.devices["mount"].park_command()
 
                             if "Error" in self.enc_status["shutter_status"]:
-                                plog(
-                                    "Detected an Error in the Roof Status. Packing up for safety."
-                                )
+                                plog.err("Detected an Error in the Roof Status. Packing up for safety.")
                                 if (
                                     not self.devices["sequencer"].morn_bias_dark_latch
                                     and not self.devices["sequencer"].bias_dark_latch
@@ -1791,9 +1784,7 @@ class Observatory:
                                     self.devices["mount"].park_command()
 
                         else:
-                            plog(
-                                "Enclosure roof status probably not reporting correctly. WEMA down?"
-                            )
+                            plog.err("Enclosure roof status probably not reporting correctly. WEMA down?")
 
                         roof_should_be_shut = False
 
@@ -1834,9 +1825,7 @@ class Observatory:
 
                         if "Open" in self.enc_status["shutter_status"]:
                             if roof_should_be_shut == True:
-                                plog(
-                                    "Safety check notices that the roof was open outside of the normal observing period"
-                                )
+                                plog.warn("Safety check notices that the roof was open outside of the normal observing period")
 
                         if (
                             not self.scope_in_manual_mode
@@ -1846,9 +1835,7 @@ class Observatory:
                             # If the roof should be shut, then the telescope should be parked.
                             if roof_should_be_shut == True:
                                 if not self.devices["mount"].rapid_park_indicator:
-                                    plog(
-                                        "Parking telescope as it is during the period that the roof is meant to be shut."
-                                    )
+                                    plog("Parking telescope as it is during the period that the roof is meant to be shut.")
                                     self.open_and_enabled_to_observe = False
                                     if (
                                         not self.devices["sequencer"].morn_bias_dark_latch
@@ -1866,9 +1853,7 @@ class Observatory:
                                     in self.enc_status["shutter_status"]
                                 ):
                                     if not self.devices["mount"].rapid_park_indicator:
-                                        plog(
-                                            "Telescope found not parked when the observatory roof is shut. Parking scope."
-                                        )
+                                        plog.warn("Telescope found not parked when the observatory roof is shut. Parking scope.")
                                         self.open_and_enabled_to_observe = False
                                         if (
                                             not self.devices["sequencer"].morn_bias_dark_latch
@@ -1898,8 +1883,7 @@ class Observatory:
                                     self.open_and_enabled_to_observe = False
 
                             else:
-                                plog(
-                                    "self.enc_status not reporting correctly")
+                                plog.err("self.enc_status not reporting correctly")
 
                 if not self.mountless_operation:
                     # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
@@ -1914,8 +1898,8 @@ class Observatory:
                             ]
                             if mount_altitude < lowest_acceptable_altitude:
 
-                                plog ("previous status while not slewing reports a low altitude")
-                                plog ("waiting for a new mount update to double-check this")
+                                plog("previous status while not slewing reports a low altitude")
+                                plog("waiting for a new mount update to double-check this")
                                 self.devices["mount"].wait_for_mount_update()
                                 self.devices["mount"].get_status()
                                 time.sleep(2)
@@ -1924,13 +1908,13 @@ class Observatory:
                                 self.devices["mount"].previous_status["altitude"]
                             )
                                 if mount_altitude < lowest_acceptable_altitude:
-                                    plog(
+                                    plog.warn(
                                         "Altitude too low! "
                                         + str(mount_altitude)
                                         + ". Parking scope for safety!"
                                     )
-                                    
-                                    
+
+
                                     if not self.devices["mount"].rapid_park_indicator:
                                         if (
                                             not self.devices["sequencer"].morn_bias_dark_latch
@@ -1941,16 +1925,13 @@ class Observatory:
                                             self.devices["mount"].home_command()
                                         self.devices["mount"].park_command()
                         except Exception as e:
-                            plog(traceback.format_exc())
-                            plog(e)
+                            plog.err(traceback.format_exc())
+                            plog.err(e)
 
                             if self.devices["mount"].theskyx:
-                                plog("The SkyX had an error.")
-                                plog(
-                                    "Usually this is because of a broken connection.")
-                                plog(
-                                    "Killing then waiting 60 seconds then reconnecting"
-                                )
+                                plog.err("The SkyX had an error.")
+                                plog.err("Usually this is because of a broken connection.")
+                                plog.err("Killing then waiting 60 seconds then reconnecting")
                                 self.kill_and_reboot_theskyx(-1, -1)
                             else:
                                 pass
@@ -2007,32 +1988,24 @@ class Observatory:
                                 self.devices["main_cam"]._connect(True)
                                 self.devices["main_cam"]._set_cooler_on()
                             except:
-                                plog("Camera cooler reconnect failed.")
+                                plog.err("Camera cooler reconnect failed.")
                     except Exception as e:
-                        plog(
-                            "\n\nCamera was not connected @ expose entry:  ", e, "\n\n"
-                        )
+                        plog.err("\n\nCamera was not connected @ expose entry:  ", e, "\n\n")
                         try:
                             self.devices["main_cam"]._connect(False)
                             self.devices["main_cam"]._connect(True)
                             self.devices["main_cam"]._set_cooler_on()
                         except:
-                            plog("Camera cooler reconnect failed 2nd time.")
+                            plog.err("Camera cooler reconnect failed 2nd time.")
 
                 # Things that only rarely have to be reported go in this block.
                 if (time.time() - self.last_time_report_to_console) > 180:   #NB NB This should be a config item WER
                     #plog(ephem.now())
                     if self.camera_sufficiently_cooled_for_calibrations == False:
                         if (time.time() - self.last_time_camera_was_warm) < 180:  # Temporary NB WER 2024_04-13
-                            plog(
-                                "Camera was recently out of the temperature range for calibrations"
-                            )
-                            plog(
-                                "Waiting for a 3 minute period where camera has been cooled to the right temperature"
-                            )
-                            plog(
-                                "Before continuing calibrations to ensure cooler is evenly cooled"
-                            )
+                            plog("Camera was recently out of the temperature range for calibrations")
+                            plog("Waiting for a 3 minute period where camera has been cooled to the right temperature")
+                            plog("Before continuing calibrations to ensure cooler is evenly cooled")
                             plog(
                                 str(
                                     int(
@@ -2102,9 +2075,7 @@ class Observatory:
                     if self.camera_overheat_safety_warm_on:
                         #plog(time.time() - self.camera_overheat_safety_timer)
                         if (time.time() - self.camera_overheat_safety_timer) > 1201:
-                            plog(
-                                "Camera OverHeating Safety Warm Cycle Complete. Resetting to normal temperature."
-                            )
+                            plog("Camera OverHeating Safety Warm Cycle Complete. Resetting to normal temperature.")
                             self.devices["main_cam"]._set_setpoint(self.devices["main_cam"].setpoint)
                             # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
                             self.devices["main_cam"]._set_cooler_on()
@@ -2158,7 +2129,7 @@ class Observatory:
                         ):  # This should be a per obsy config item
                             self.too_hot_in_observatory = True
                     except:
-                        plog("observatory temperature probe failed.")
+                        plog.err("observatory temperature probe failed.")
 
                     if (
                         self.devices["main_cam"].day_warm
@@ -2388,25 +2359,25 @@ class Observatory:
                         self.time_of_last_live_net_connection = time.time()
                         self.net_connection_dead = False
                     if (time.time() - self.time_of_last_live_net_connection) > 600:
-                        plog(
+                        plog.warn(
                             "Warning, last live net connection was over ten minutes ago"
                         )
                     if (time.time() - self.time_of_last_live_net_connection) > 1200:
-                        plog(
+                        plog.warn(
                             "Last connection was over twenty minutes ago. Running a further test or two"
                         )
                         if test_connect(host="http://dev.photonranch.org"):
-                            plog(
+                            plog.warn(
                                 "Connected to photonranch.org, so it must be that Google is down. Connection is live."
                             )
                             self.time_of_last_live_net_connection = time.time()
                         elif test_connect(host="http://aws.amazon.com"):
-                            plog(
+                            plog.warn(
                                 "Connected to aws.amazon.com. Can't connect to Google or photonranch.org though."
                             )
                             self.time_of_last_live_net_connection = time.time()
                         else:
-                            plog(
+                            plog.err(
                                 "Looks like the net is down, closing up and parking the observatory"
                             )
                             self.open_and_enabled_to_observe = False
@@ -2426,11 +2397,9 @@ class Observatory:
                 time.sleep(self.safety_check_period)
 
             except:
-                plog(
-                    "Something went wrong in safety check loop. It is ok.... it is a try/except"
-                )
-                plog("But we should prevent any crashes.")
-                plog(traceback.format_exc())
+                plog.err("Something went wrong in safety check loop. It is ok.... it is a try/except")
+                plog.err("But we should prevent any crashes.")
+                plog.err(traceback.format_exc())
 
                 # If theskyx is rebooting wait
                 while self.rebooting_theskyx:
@@ -2474,16 +2443,14 @@ class Observatory:
                     device_type = cmd["deviceType"]
 
                     if device_type == "enclosure":
-                        plog(
-                            "An OBS has mistakenly received an enclosure command! Ignoring."
-                        )
+                        plog("An OBS has mistakenly received an enclosure command! Ignoring.")
                     else:
                         device = self.all_devices[device_type][device_instance]
                         try:
                             device.parse_command(cmd)
                         except Exception as e:
-                            plog(traceback.format_exc())
-                            plog("Exception in obs.scan_requests:  ",
+                            plog.err(traceback.format_exc())
+                            plog.err("Exception in obs.scan_requests:  ",
                                  e, "cmd:  ", cmd)
 
                     self.stop_processing_command_requests = False
@@ -2524,12 +2491,10 @@ class Observatory:
             if not os.path.exists(filepath):
                 if (time.time() - time_put_in_queue) < 43200:
                     if (time.time() - time_put_in_queue) > 600:
-                        plog(
-                            filepath + " not there yet, chucking it back in the queue."
-                        )
+                        plog(filepath + " not there yet, chucking it back in the queue.")
                     self.enqueue_for_PTRarchive(26000000, "", filepath)
                 else:
-                    plog("WAITED TOO LONG! " + filepath + " never turned up!")
+                    plog.warn("WAITED TOO LONG! " + filepath + " never turned up!")
                 return ""
 
             # Check it is no small
@@ -2542,7 +2507,7 @@ class Observatory:
                         )
                     self.enqueue_for_PTRarchive(26000000, "", filepath)
                 else:
-                    plog("WAITED TOO LONG! " + filepath + " never turned up!")
+                    plog.warn("WAITED TOO LONG! " + filepath + " never turned up!")
                 return ""
 
             # Only ingest fits.fz files to the PTR archive.
@@ -2576,11 +2541,11 @@ class Observatory:
                                         )
                                     return "Nightly token uploaded."
                                 else:
-                                    plog("Not successful, attempting token again.")
+                                    plog.warn("Not successful, attempting token again.")
                             except:
-                                plog("Non-fatal connection glitch for a file posted.")
-                                plog(files)
-                                plog(traceback.format_exc())
+                                plog.warn("Non-fatal connection glitch for a file posted.")
+                                plog.warn(files)
+                                plog.warn(traceback.format_exc())
                                 time.sleep(5)
 
                     # and (not frame_exists(fileobj)):
@@ -2623,23 +2588,23 @@ class Observatory:
                             broken = 1
 
                         except ocs_ingester.exceptions.DoNotRetryError:
-                            plog("Couldn't upload to PTR archive: " + str(filepath))
-                            plog(traceback.format_exc())
+                            plog.err("Couldn't upload to PTR archive: " + str(filepath))
+                            plog.err(traceback.format_exc())
                             #breakpoint()
                             broken = 1
                         except Exception as e:
                             if "urllib3.exceptions.ConnectTimeoutError" in str(
                                 traceback.format_exc()
                             ):
-                                plog("timeout in ingester")
+                                plog.warn("timeout in ingester")
 
                             elif "requests.exceptions.ConnectTimeout" in str(
                                 traceback.format_exc()
                             ):
-                                plog("timeout in ingester")
+                                plog.warn("timeout in ingester")
 
                             elif "TimeoutError" in str(traceback.format_exc()):
-                                plog("timeout in ingester")
+                                plog.warn("timeout in ingester")
 
                             elif "list index out of range" in str(e):
                                 # This error is thrown when there is a corrupt file
@@ -2647,7 +2612,7 @@ class Observatory:
 
                             elif "timed out." in str(e) or "TimeoutError" in str(e):
                                 # Not broken, just bung it back in the queue for later
-                                plog("Timeout glitch, trying again later: ", e)
+                                plog.warn("Timeout glitch, trying again later: ", e)
                                 time.sleep(10)
                                 self.ptrarchive_queue.put(
                                     pri_image, block=False)
@@ -2657,9 +2622,7 @@ class Observatory:
                             elif "credential_provider" in str(
                                 e
                             ) or "endpoint_resolver" in str(e):
-                                plog(
-                                    "Credential provider error for the ptrarchive, bunging a file back in the queue."
-                                )
+                                plog.err("Credential provider error for the ptrarchive, bunging a file back in the queue.")
                                 time.sleep(10)
                                 self.ptrarchive_queue.put(
                                     pri_image, block=False)
@@ -2669,11 +2632,9 @@ class Observatory:
                                 )
 
                             else:
-                                plog(filepath)
-                                plog(
-                                    "couldn't send to PTR archive for some reason: ", e
-                                )
-                                plog(traceback.format_exc())
+                                plog.err("couldn't send to PTR archive for some reason: ", e)
+                                plog.err(filepath)
+                                plog.err(traceback.format_exc())
                                 # And give it a little sleep
                                 time.sleep(10)
                                 broken = 1
@@ -2682,13 +2643,13 @@ class Observatory:
                     try:
                         shutil.move(filepath, self.broken_path + filename)
                     except:
-                        plog("Couldn't move " + str(filepath) +
+                        plog.err("Couldn't move " + str(filepath) +
                              " to broken folder.")
                         self.laterdelete_queue.put(filepath, block=False)
                     return str(filepath.split("/")[-1]) + " broken."
 
             except Exception as e:
-                plog("something strange in the ptrarchive uploader", e)
+                plog.err("something strange in the ptrarchive uploader", e)
                 return "something strange in the ptrarchive uploader"
 
             upload_timer = time.time() - upload_timer
@@ -2795,14 +2756,14 @@ class Observatory:
         while True:
             if not self.ptrarchive_queue.empty():
                 items = []
-                for q in range(
+                for _ in range(
                     min(number_of_simultaneous_uploads,
                         self.ptrarchive_queue.qsize())
                 ):
                     items.append(self.ptrarchive_queue.get(block=False))
 
                 with ThreadPool(processes=number_of_simultaneous_uploads) as pool:
-                    for result in pool.map(self.ptrarchive_uploader, items):
+                    for _ in pool.map(self.ptrarchive_uploader, items):
                         self.ptrarchive_queue.task_done()
             else:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
@@ -2886,7 +2847,7 @@ class Observatory:
                     try:
                         reqs.post(url_log, body, timeout=5)
                     except:
-                        plog("Log did not send, usually not fatal.")
+                        plog.err("Log did not send, usually not fatal.")
                         # plog(traceback.format_exc())
                     self.sendtouser_queue.task_done()
             else:
@@ -2902,7 +2863,7 @@ class Observatory:
         the platesolving process and completing it.
 
         """
-        
+
         platesolve_subprocess=None
 
         while True:
@@ -2946,7 +2907,7 @@ class Observatory:
                         time.sleep(0.5)
 
                 if (time.time() - platesolve_timeout_timer) > timeout_time:
-                    plog("waiting for platesolve token timed out")
+                    plog.warn("waiting for platesolve token timed out")
                     solve = "error"
 
                     # try:
@@ -2980,11 +2941,11 @@ class Observatory:
                     if not (
                         g_dev["events"]["Civil Dusk"] < ephem.now() < g_dev["events"]["Civil Dawn"]
                     ):
-                        plog("Too bright to consider platesolving!")
+                        plog.warn("Too bright to consider platesolving!")
                     else:
                         try:
                             try:
-                                
+
                                 os.remove(
                                     self.local_calibration_path + "platesolve.pickle"
                                 )
@@ -3076,7 +3037,7 @@ class Observatory:
                                     timeout_time,
                                 ]
                             )
-                            
+
                             platesolve_subprocess = subprocess.run(
                                 ["python", "subprocesses/Platesolveprocess.py"],
                                 input=pickledata,
@@ -3124,7 +3085,7 @@ class Observatory:
                                 time.sleep(0.5)
 
                             if (time.time() - platesolve_timeout_timer) > timeout_time:
-                                plog("platesolve timed out")
+                                plog.warn("platesolve timed out")
                                 solve = "error"
                                 # Make sure any existing subprocess is ended
                                 try:
@@ -3151,7 +3112,7 @@ class Observatory:
                                     self.local_calibration_path + "platesolve.pickle"
                                 )
                             except:
-                                plog("Could not remove platesolve pickle. ")
+                                plog.warn("Could not remove platesolve pickle. ")
 
                             if solve == "error":
                                 # send up the platesolve image
@@ -3160,7 +3121,7 @@ class Observatory:
                                     path_to_jpeg, jpeg_filename, exposure_time, info_image_channel
                                 )
 
-                                plog("Platesolve solve came back as error")
+                                plog.err("Platesolve solve came back as error")
                                 self.last_platesolved_ra = np.nan
                                 self.last_platesolved_dec = np.nan
                                 self.last_platesolved_ra_err = np.nan
@@ -3184,8 +3145,8 @@ class Observatory:
                                         round(solve["dec_j2000_degrees"], 4),
                                     )
                                 except:
-                                    plog("couldn't print PW solves.... why?")
-                                    plog(solve)
+                                    plog.warn("couldn't print PW solves.... why?")
+                                    plog.warn(solve)
 
                                 solved_ra = solve["ra_j2000_hours"]
                                 solved_dec = solve["dec_j2000_degrees"]
@@ -3258,12 +3219,12 @@ class Observatory:
                                     )
 
                                     if abs(mount_deviation_ha) > 10:
-                                        plog(
+                                        plog.warn(
                                             "BIG deviation in HA... whats going on?")
-                                        plog(mount_deviation_ha)
-                                        plog(corrected_pointing_ra)
-                                        plog(solved_ra)
-                                        plog(pointing_ra)
+                                        plog.warn(mount_deviation_ha)
+                                        plog.warn(corrected_pointing_ra)
+                                        plog.warn(solved_ra)
+                                        plog.warn(pointing_ra)
                                     else:
                                         plog("Reasonable ha deviation")
 
@@ -3356,12 +3317,12 @@ class Observatory:
                                     ):
                                         err_ha = 0
                                         err_dec = 0
-                                        plog(
+                                        plog.warn(
                                             "Platesolve has found that the current suggested pointing is way off!"
                                         )
-                                        plog(
+                                        plog.warn(
                                             "This may be a poor pointing estimate.")
-                                        plog(
+                                        plog.warn(
                                             "This is more than a simple nudge, so not nudging the scope."
                                         )
                                         # self.send_to_user(
@@ -3375,7 +3336,7 @@ class Observatory:
                                         self.time_of_last_slew
                                         > time_platesolve_requested
                                     ):
-                                        plog(
+                                        plog.warn(
                                             "detected a slew since beginning platesolve... bailing out of platesolve."
                                         )
 
@@ -3477,7 +3438,7 @@ class Observatory:
                                                                 )
 
                                                             except Exception as e:
-                                                                plog(
+                                                                plog.err(
                                                                     "Something is up in the mount reference adjustment code ",
                                                                     e,
                                                                 )
@@ -3498,22 +3459,22 @@ class Observatory:
                                                                     pointing_dec,
                                                                 )
                                                             except Exception as e:
-                                                                plog(
+                                                                plog.err(
                                                                     "Something is up in the mount reference adjustment code ",
                                                                     e,
                                                                 )
 
                                                     except:
-                                                        plog(
+                                                        plog.err(
                                                             "This mount doesn't report pierside"
                                                         )
-                                                        plog(
+                                                        plog.err(
                                                             traceback.format_exc())
 
                                 self.platesolve_is_processing = False
                         except:
-                            plog("glitch in the platesolving dimension")
-                            plog(traceback.format_exc())
+                            plog.err("glitch in the platesolving dimension")
+                            plog.err(traceback.format_exc())
 
                 self.platesolve_is_processing = False
                 self.platesolve_queue.task_done()
@@ -3576,8 +3537,8 @@ class Observatory:
                         try:
                             np.save(slow_process[1], slow_process[2])
                         except:
-                            plog ("numpy file save issue")
-                            plog(traceback.format_exc())
+                            plog.err("numpy file save issue")
+                            plog.err(traceback.format_exc())
 
                     if slow_process[0] == "fits_file_save":
                         fits.writeto(
@@ -3765,7 +3726,7 @@ class Observatory:
                                     )
                                 else:
                                     plog("Odd median: " + str(tempmedian))
-                                    plog(
+                                    plog.warn(
                                         "Not saving this calibration file: "
                                         + str(tempfilename)
                                     )
@@ -3773,15 +3734,15 @@ class Observatory:
                                 saver = 1
 
                             except Exception as e:
-                                plog("Failed to write raw file: ", e)
+                                plog.err("Failed to write raw file: ", e)
                                 if "requested" in str(e) and "written" in str(e):
                                     plog(check_download_cache())
-                                plog(traceback.format_exc())
+                                plog.err(traceback.format_exc())
                                 time.sleep(10)
                                 saverretries = saverretries + 1
                 except:
-                    plog("Something up in the slow process")
-                    plog(traceback.format_exc())
+                    plog.err("Something up in the slow process")
+                    plog.err(traceback.format_exc())
                 self.slow_camera_queue.task_done()
                 time.sleep(1)
 
@@ -3823,8 +3784,8 @@ class Observatory:
                                     self.fwhmresult["filter"] = packet[2]
                                     self.fwhmresult["airmass"] = packet[3]
                                 except:
-                                    plog("something funky in the fwhm area ")
-                                    plog(traceback.format_exc())
+                                    plog.err("something funky in the fwhm area ")
+                                    plog.err(traceback.format_exc())
 
                                 if not np.isnan(self.fwhmresult["FWHM"]):
                                     # Focus tracker code. This keeps track of the focus and if it drifts
@@ -3879,14 +3840,14 @@ class Observatory:
                             (filename, timesubmitted, packet), block=False
                         )
                     else:
-                        plog(
+                        plog.warn(
                             str(filename)
                             + " seemed to never turn up... not putting back in the queue"
                         )
 
                 except:
-                    plog("something strange in the UI uploader")
-                    plog((traceback.format_exc()))
+                    plog.err("something strange in the UI uploader")
+                    plog.err((traceback.format_exc()))
                 self.file_wait_and_act_queue.task_done()
                 time.sleep(1)
 
@@ -3922,49 +3883,49 @@ class Observatory:
 
                     filepath = f"{path_to_file_directory}{filename}" # Full path to the file on disk
                 except Exception as e:
-                    plog("Error in fast_to_aws: problem parsing the arguments")
-                    plog(e)
-                    plog("This is what was recieved: ", pri_image)
-                    plog("fast_to_aws did not upload an image.")
+                    plog.err("Error in fast_to_aws: problem parsing the arguments")
+                    plog.err(e)
+                    plog.err("This is what was recieved: ", pri_image)
+                    plog.err("fast_to_aws did not upload an image.")
                     continue
-                                
+
                 # Here we parse the file, set up and send to AWS
                 try:
                     if filepath == "":
-                        plog("The fast_queue contained an entry with no path to the image. ") #? Why? MTF finding out.
+                        plog.err("The fast_queue contained an entry with no path to the image. ") #? Why? MTF finding out.
                         continue
 
                     # If the file is there now
                     if os.path.exists(filepath) and not "EX20" in filename:
-                        
+
                         # First check it isn't a pipeline file to go up to the pipe queue
                         if 'pipes3_' in filename:
-                            
+
                             # re-open the text files and parse into a list
                             with open(filepath, 'r') as file:
                                 image_filenames_for_pipe = file.read().splitlines()
-                            image_filenames_for_pipe=[item.strip('[]"').replace('"', '').replace(' ', '') for item in image_filenames_for_pipe if item not in ['[', ']']] 
-                        
+                            image_filenames_for_pipe=[item.strip('[]"').replace('"', '').replace(' ', '') for item in image_filenames_for_pipe if item not in ['[', ']']]
+
                             # formulate the enqueuement request to the pipe
                             pipe_request={}
                             pipe_request["queue_name"] = self.name
-                            
+
                             payload={}
                             payload['request'] = 'EVA_process_files'
                             payload['request_content'] = image_filenames_for_pipe
-                            
+
                             pipe_request["payload"] = payload
                             pipe_request["sender"] = self.name
-                            
+
                             uri_status = "https://api.photonranch.org/api/pipe/enqueue"
                             try:
-            
+
                                 response = requests.post(uri_status,json=pipe_request, timeout=20)# allow_redirects=False, headers=close_headers)
                                 # print (response)
                                 # print (response.content)
-                                            
-                                # print ('404' in str(response))  
-                                  
+
+                                # print ('404' in str(response))
+
                                 if not '200' in str(response):
                                 #     print ("WE GOT SOMETHING!")
                                 # else:
@@ -3973,15 +3934,15 @@ class Observatory:
                                     print (response.content)
                                     print ("putting it back in the queue")
                                     self.fast_queue.put(pri_image, block=False)
-                                    
-                                    
+
+
                             except:
-                                print ("blahblahblah. broken broken broken")
-                                plog((traceback.format_exc()))
-                            
+                                plog.err("blahblahblah. broken broken broken")
+                                plog.err((traceback.format_exc()))
+
                             #breakpoint()
-                        
-                        
+
+
                         # To the extent it has a size
                         elif os.stat(filepath).st_size > 0:
 
@@ -4009,22 +3970,22 @@ class Observatory:
                                         or "SSLWantWriteError"
                                         or "RemoteDisconnected" in str(e)
                                     ):
-                                        plog(
+                                        plog.warn(
                                             "Seems to have been a timeout on the file posted: "
                                             + str(e)
                                             + "Putting it back in the queue."
                                         )
-                                        plog(filename)
+                                        plog.warn(filename)
                                         self.fast_queue.put(pri_image, block=False)
                                     else:
-                                        plog(
+                                        plog.err(
                                             "Fatal connection glitch for a file posted: "
                                             + str(e)
                                         )
-                                        plog(files)
-                                        plog((traceback.format_exc()))
+                                        plog.err(files)
+                                        plog.err((traceback.format_exc()))
                         else:
-                            plog(
+                            plog.warn(
                                 str(filepath)
                                 + " is there but has a zero file size so is probably still being written to, putting back in queue."
                             )
@@ -4033,13 +3994,13 @@ class Observatory:
                     elif time.time() - time_submitted < 1200 + float(exposure_time):
                         self.fast_queue.put(pri_image, block=False)
                     else:
-                        plog(
+                        plog.err(
                             str(filepath)
                             + " seemed to never turn up... not putting back in the queue"
                         )
                 except:
-                    plog("something strange in the UI uploader")
-                    plog((traceback.format_exc()))
+                    plog.err("something strange in the UI uploader")
+                    plog.err((traceback.format_exc()))
                 self.fast_queue.task_done()
                 time.sleep(0.05)
             else:
@@ -4093,25 +4054,25 @@ class Observatory:
                                 or "SSLWantWriteError"
                                 or "RemoteDisconnected" in str(e)
                             ):
-                                plog(
+                                plog.warn(
                                     "Seems to have been a timeout on the file posted: "
                                     + str(e)
                                     + "Putting it back in the queue."
                                 )
-                                plog(filename)
+                                plog.warn(filename)
                                 self.calibrationui_queue.put(
                                     (100, pri_image[1]), block=False
                                 )
                             else:
-                                plog(
+                                plog.err(
                                     "Fatal connection glitch for a file posted: "
                                     + str(e)
                                 )
-                                plog(files)
-                                plog((traceback.format_exc()))
+                                plog.err(files)
+                                plog.err((traceback.format_exc()))
                 except:
-                    plog("something strange in the calibration uploader")
-                    plog((traceback.format_exc()))
+                    plog.err("something strange in the calibration uploader")
+                    plog.err((traceback.format_exc()))
                 self.calibrationui_queue.task_done()
                 time.sleep(10)
             else:
@@ -4144,7 +4105,7 @@ class Observatory:
                     timesubmitted = pri_image[1][2]
 
                     if filepath == "":
-                        plog(
+                        plog.warn(
                             "found an empty thing in the medium_queue."  #"? Why? MTF finding out."
                         )
                     else:
@@ -4170,24 +4131,24 @@ class Observatory:
                                             or "SSLWantWriteError"
                                             or "RemoteDisconnected" in str(e)
                                         ):
-                                            plog(
+                                            plog.warn(
                                                 "Seems to have been a timeout on the file posted: "
                                                 + str(e)
                                                 + "Putting it back in the queue."
                                             )
-                                            plog(filename)
+                                            plog.warn(filename)
                                             self.mediumui_queue.put(
                                                 (100, pri_image[1]), block=False
                                             )
                                         else:
-                                            plog(
+                                            plog.err(
                                                 "Fatal connection glitch for a file posted: "
                                                 + str(e)
                                             )
-                                            plog(files)
-                                            plog((traceback.format_exc()))
+                                            plog.err(files)
+                                            plog.err((traceback.format_exc()))
                             else:
-                                plog(
+                                plog.warn(
                                     str(filepath)
                                     + " is there but has a zero file size so is probably still being written to, putting back in queue."
                                 )
@@ -4199,14 +4160,14 @@ class Observatory:
                             self.mediumui_queue.put(
                                 (100, pri_image[1]), block=False)
                         else:
-                            plog(
+                            plog.err(
                                 str(filepath)
                                 + " seemed to never turn up... not putting back in the queue"
                             )
 
                 except:
-                    plog("something strange in the medium-UI uploader")
-                    plog((traceback.format_exc()))
+                    plog.err("something strange in the medium-UI uploader")
+                    plog.err((traceback.format_exc()))
                 self.mediumui_queue.task_done()
                 time.sleep(0.5)
             else:
@@ -4293,14 +4254,12 @@ class Observatory:
                         ranudge = ranudge - 24
                     self.time_of_last_slew = time.time()
                     try:
-
                         g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
                         g_dev["mnt"].slew_async_directly(
                             ra=ranudge, dec=decnudge)
                         g_dev['mnt'].wait_for_slew(wait_after_slew=False, wait_for_dome=False)
-
                     except:
-                        plog(traceback.format_exc())
+                        plog.err(traceback.format_exc())
                     if (
                         not self.devices["mount"].previous_pier_side
                         == self.devices["mount"].return_side_of_pier()
@@ -4367,14 +4326,14 @@ class Observatory:
                     )
 
             except Exception as e:
-                plog("aws enclosure send failed ", e)
+                plog.err("aws enclosure send failed ", e)
 
             aws_enclosure_status = aws_enclosure_status["status"]["enclosure"][
                 "enclosure1"
             ]
 
         except Exception as e:
-            plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
+            plog.err("Failed to get aws enclosure status. Usually not fatal:  ", e)
 
         try:
             if self.devices["sequencer"].last_roof_status == "Closed" and aws_enclosure_status[
@@ -4389,7 +4348,7 @@ class Observatory:
             ] in ["Closed", "closed"]:
                 self.devices["sequencer"].last_roof_status = "Closed"
         except:
-            plog("Glitch on getting shutter status in aws call.")
+            plog.err("Glitch on getting shutter status in aws call.")
 
         try:
             status = {
@@ -4406,7 +4365,7 @@ class Observatory:
                 status = {
                     "shutter_status": aws_enclosure_status["shutter_status"]}
             except:
-                plog("failed enclosure status!")
+                plog.err("failed enclosure status!")
                 status = {"shutter_status": "Unknown"}
 
         if self.assume_roof_open:
@@ -4428,7 +4387,7 @@ class Observatory:
 
             aws_weather_status["site"] = self.name
         except Exception as e:
-            plog("Failed to get aws weather status. Usually not fatal:  ", e)
+            plog.warn("Failed to get aws weather status. Usually not fatal:  ", e)
             aws_weather_status = {}
             aws_weather_status["status"] = {}
             aws_weather_status["status"]["observing_conditions"] = {}
@@ -4462,7 +4421,7 @@ class Observatory:
                         "val"
                     ]
         except:
-            plog("bit of a glitch in weather status")
+            plog.warn("bit of a glitch in weather status")
             aws_weather_status = {}
             aws_weather_status["status"] = {}
             aws_weather_status["status"]["observing_conditions"] = {}
@@ -4479,7 +4438,7 @@ class Observatory:
                 )
 
         except Exception as e:
-            plog("aws enclosure send failed ", e)
+            plog.err("aws enclosure send failed ", e)
 
         aws_weather_status = aws_weather_status["status"]["observing_conditions"][
             "observing_conditions1"
@@ -4512,10 +4471,10 @@ class Observatory:
                 if not info_image_channel in {1, 2, 3}:
                     raise Exception()
             except:
-                plog(f"Error while attempting to upload {filename} as an info image")
-                plog(f"enqueue_for_fatsUI recieved a misformed value for the info image channel")
-                plog(f"Info image channel must be 1, 2, or 3. Recieved <{info_image_channel}> instead.")
-                plog("Falling back to sending as a normal image.")
+                plog.err(f"Error while attempting to upload {filename} as an info image")
+                plog.err(f"enqueue_for_fatsUI recieved a misformed value for the info image channel")
+                plog.err(f"Info image channel must be 1, 2, or 3. Recieved <{info_image_channel}> instead.")
+                plog.err("Falling back to sending as a normal image.")
                 info_image_channel = None
 
         payload = (
@@ -4593,8 +4552,8 @@ class Observatory:
             self.devices['mount'].wait_for_mount_update()
             #self.devices['mount'].mount_update_paused=False
         except:
-            plog(traceback.format_exc())
-            plog ("Failed rebooting, needs to be debugged")
+            plog.err(traceback.format_exc())
+            plog.err("Failed rebooting, needs to be debugged")
             breakpoint()
 
         while retries <5:
@@ -4657,8 +4616,8 @@ class Observatory:
                 retries=retries+1
                 time.sleep(60)
                 if retries == 4:
-                    plog(traceback.format_exc())
-                    plog ("Failed rebooting, needs to be debugged")
+                    plog.err(traceback.format_exc())
+                    plog.err("Failed rebooting, needs to be debugged")
                     breakpoint()
 
 

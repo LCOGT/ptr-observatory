@@ -143,7 +143,7 @@ site_config = {
 
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': True,   #which archive? I assume not the datalab / ptrarchive , but 'injest' implies LCO archive  WER
+    'ingest_raws_directly_to_archive': False,   #which archive? I assume not the datalab / ptrarchive , but 'injest' implies LCO archive  WER
     'save_calib_and_misc_files': True,
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
@@ -156,7 +156,7 @@ site_config = {
     'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'D:/ptr/aro2/',  # place where night logs can be found.
     'save_to_alt_path': 'no',
-    'archive_age': 3,  # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age': 2,  # Number of days to keep files in the local archive before deletion. Negative means never delete
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
@@ -529,7 +529,7 @@ site_config = {
             # When the focusser has no previous best focus values
             # start from this reference position
 
-            'reference': 3850,  #20250321 Run after adjusting collar
+            'reference': 4875,  #20250326 @ 10.7C Run after adjusting collar
             'z_compression': 0, #Not used as of 20250111
             'z_coef_date':  '20250325',
             'relative_focuser': False,
