@@ -78,6 +78,51 @@ mpl.rcParams['path.simplify_threshold'] = 1.0
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
 
+def create_gaussian_psf(fwhm, size=11):
+    """
+    Create a 2D Gaussian kernel with a given FWHM.
+
+    Parameters:
+    - fwhm: Full Width at Half Maximum of the Gaussian PSF.
+    - size: Size of the kernel (should be large enough to capture most of the PSF).
+
+    Returns:
+    - psf: 2D numpy array representing the Gaussian PSF.
+    """
+    sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))  # Convert FWHM to sigma
+    center = size // 2
+    y, x = np.mgrid[0:size, 0:size]
+    psf = np.exp(-((x - center)**2 + (y - center)**2) / (2 * sigma**2))
+    psf /= psf.sum()  # Normalize to ensure total flux is 1
+    return psf
+
+def add_star_with_psf(image_array, x, y, flux, psf):
+    """
+    Add a single star with a Gaussian PSF to the image array.
+
+    Parameters:
+    - image_array: 2D numpy array representing the image.
+    - x, y: Pixel coordinates of the star.
+    - flux: Total flux of the star.
+    - psf: 2D numpy array representing the normalized PSF.
+    """
+    psf_size = psf.shape[0]
+    psf_center = psf_size // 2
+    x_start = max(0, x - psf_center)
+    x_end = min(image_array.shape[1], x + psf_center + 1)
+    y_start = max(0, y - psf_center)
+    y_end = min(image_array.shape[0], y + psf_center + 1)
+
+    psf_x_start = psf_center - (x - x_start)
+    psf_x_end = psf_center + (x_end - x)
+    psf_y_start = psf_center - (y - y_start)
+    psf_y_end = psf_center + (y_end - y)
+
+    # Add scaled PSF to the image
+    image_array[y_start:y_end, x_start:x_end] += flux * psf[
+        psf_y_start:psf_y_end, psf_x_start:psf_x_end
+    ]
+
 #This function computes the factor of the argument passed
 def print_factors(x):
    print("The factors of",x,"are:")
@@ -2043,19 +2088,10 @@ class Camera:
         ra_center = ra  # RA of the image center in degrees
         dec_center = dec   # Dec of the image center in degrees
 
-        # # List of RA and Dec positions of stars
-        # star_positions = [
-        #     (180.01, 0.01),  # Example: RA=180.01, Dec=0.01
-        #     (179.99, -0.01), # Example: RA=179.99, Dec=-0.01
-        #     # Add more positions as needed
-        # ]
-
         star_positions=[]
         for star in stars:
             if '-' not in str(star[2]):
                 star_positions.append((star[0],star[1],star[2]))
-
-
 
         # Convert star positions to SkyCoord
         center_coord = SkyCoord(ra=ra_center, dec=dec_center, unit=(u.deg, u.deg))
@@ -2075,112 +2111,25 @@ class Camera:
         pixel_positions = np.column_stack((x_pixels, y_pixels, np.asarray(star_positions)[:,2]))
 
         # Print results
-        print("Star positions in pixel coordinates (x, y):")
-        print(pixel_positions)
-
+        # print("Star positions in pixel coordinates (x, y):")
+        # print(pixel_positions)
 
         xpixelsize = 2400
         ypixelsize = 2400
-        #shape = (xpixelsize, ypixelsize)
-
+        
         # Make blank synthetic image with a sky background
         synthetic_image = np.zeros([xpixelsize, ypixelsize]) + 100
-        # Add in noise to background as well
-        #synthetic_image = synthetic_image + np.random.uniform(low=-15, high=15, size=(xpixelsize, ypixelsize)) + 100
-
+        
+        # Add in noise to background as well        
         synthetic_image = synthetic_image + np.random.normal(loc=100,
                                         scale=10,
                                         size=synthetic_image.shape)
-
-        # #Bullseye Star Shape
-        # modelstar = [
-        #             [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01],
-        #             [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
-        #             [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
-        #             [ 0.2 , 0.4 , 0.8 , 1.2,  0.8, 0.4, 0.2],
-        #             [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
-        #             [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
-        #             [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01]
-
-        #             ]
-
-        # modelstar=np.array(modelstar)
-
-        # # Add bullseye stars to blank image
-        # for addingstar in pixel_positions:
-
-        #     if addingstar[0] > 50 and addingstar[0] < 2350:
-        #         if addingstar[1] > 50 and addingstar[1] < 2350:
-
-        #             x = round(addingstar[1] -1)
-        #             y = round(addingstar[0] -1)
-        #             #peak = int(addingstar[2])
-        #             peak = int(pow(10,-0.4 * (addingstar[2] -23)))
-        #             # Add star to numpy array as a slice
-        #             try:
-        #                 synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
-        #             except Exception as e:
-        #                 print (e)
-        # #breakpoint()
-
-
-        def create_gaussian_psf(fwhm, size=11):
-            """
-            Create a 2D Gaussian kernel with a given FWHM.
-
-            Parameters:
-            - fwhm: Full Width at Half Maximum of the Gaussian PSF.
-            - size: Size of the kernel (should be large enough to capture most of the PSF).
-
-            Returns:
-            - psf: 2D numpy array representing the Gaussian PSF.
-            """
-            sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))  # Convert FWHM to sigma
-            center = size // 2
-            y, x = np.mgrid[0:size, 0:size]
-            psf = np.exp(-((x - center)**2 + (y - center)**2) / (2 * sigma**2))
-            psf /= psf.sum()  # Normalize to ensure total flux is 1
-            return psf
-
-        def add_star_with_psf(image_array, x, y, flux, psf):
-            """
-            Add a single star with a Gaussian PSF to the image array.
-
-            Parameters:
-            - image_array: 2D numpy array representing the image.
-            - x, y: Pixel coordinates of the star.
-            - flux: Total flux of the star.
-            - psf: 2D numpy array representing the normalized PSF.
-            """
-            psf_size = psf.shape[0]
-            psf_center = psf_size // 2
-            x_start = max(0, x - psf_center)
-            x_end = min(image_array.shape[1], x + psf_center + 1)
-            y_start = max(0, y - psf_center)
-            y_end = min(image_array.shape[0], y + psf_center + 1)
-
-            psf_x_start = psf_center - (x - x_start)
-            psf_x_end = psf_center + (x_end - x)
-            psf_y_start = psf_center - (y - y_start)
-            psf_y_end = psf_center + (y_end - y)
-
-            # Add scaled PSF to the image
-            image_array[y_start:y_end, x_start:x_end] += flux * psf[
-                psf_y_start:psf_y_end, psf_x_start:psf_x_end
-            ]
-
-        # Example usage
-        # image_array = np.zeros((100, 100))  # Initialize a 2D image array
-        # x_pixels = pixel_positions[:,0]   # x coordinates of stars
-        # y_pixels = pixel_positions[:,1]   # y coordinates of stars
-        # fluxes = pixel_positions[:,2]  # Flux values of the stars
 
         # Create the PSF kernel
         fwhm = 5
         psf = create_gaussian_psf(fwhm, size=21)
 
         # Add each star to the image
-        #for x, y, flux in zip(x_pixels, y_pixels, fluxes):
         for starstat in pixel_positions:
             if starstat[0] > 50 and starstat[0] < 2350:
                 if starstat[1] > 50 and starstat[1] < 2350:
@@ -2193,9 +2142,6 @@ class Camera:
 
         return synthetic_image
 
-        #return np.random.randint(0, 65536, size=(2400, 2400), dtype=np.uint16)
-
-
     def _zwo_connected(self):
         return True
 
@@ -2204,18 +2150,11 @@ class Camera:
         return True
 
     def _zwo_temperature(self):
-        # print(zwocamera.get_control_value(asi.ASI_TEMPERATURE))
-        # zwocamera.get_control_value(asi.ASI_COOLER_ON)
-        # print(zwocamera.get_control_value(asi.ASI_TEMPERATURE))
 
-        #return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)/10)
         return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)[0])/10, 0,0, zwocamera.get_control_value(asi.ASI_COOLER_POWER_PERC)[0]
 
     def _zwo_cooler_power(self):
         return float(zwocamera.get_control_value(asi.ASI_COOLER_POWER_PERC)[0])
-
-    # def _zwo_heatsink_temp(self):
-    #     return self.camera.HeatSinkTemperature
 
     def _zwo_cooler_on(self):
         zwocamera.set_control_value(asi.ASI_COOLER_ON, True)
@@ -2232,16 +2171,6 @@ class Camera:
 
     def _zwo_setpoint(self):
         return self.camera.TemperatureSetpoint
-
-    # def _zwo_expose(self, exposure_time, bias_dark_or_light_type_frame):
-    #     # if bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark':
-    #     #     imtypeb = 0
-    #     # else:
-    #     #     imtypeb = 1
-    #     # self.camera.Expose(exposure_time, imtypeb)
-
-    #     zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
-    #     zwocamera.start_exposure()
 
     def _zwo_stop_expose(self):
         # self.camera.AbortExposure()
@@ -2262,12 +2191,7 @@ class Camera:
         if bias_dark_or_light_type_frame == 'bias':
             exposure_time = 40 / 1000/1000  # shortest requestable exposure time
 
-        if not self.substacker:
-            # qhycam.so.SetQHYCCDParam(
-            #     qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
-            # qhycam.so.ExpQHYCCDSingleFrame(
-            #     qhycam.camera_params[qhycam_id]['handle'])
-
+        if not self.substacker:            
             zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
             zwocamera.start_exposure()
 
@@ -2315,9 +2239,6 @@ class Camera:
 
             plog("Collecting subexposure " + str(subexposure+1))
 
-            # qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(
-            #     exp_of_substacks*1000*1000))
-
             zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
 
 
@@ -2325,24 +2246,16 @@ class Camera:
                 self.substack_start_time = time.time()
             self.expected_endpoint_of_substack_exposure = time.time() + exp_of_substacks
             self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
-            # qhycam.so.ExpQHYCCDSingleFrame(
-            #     qhycam.camera_params[qhycam_id]['handle'])
             zwocamera.start_exposure()
             exposure_timer = time.time()
 
             # save out previous array to disk during exposure
             if subexposure > 0:
-                # tempsend = np.reshape(
-                #     image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-
-                #tempsend=tempsend[ 0:6384, 32:9600]
                 if not (self.overscan_down == 0 and self.overscan_up == 0 and self.overscan_left == 0 and self.overscan_right==0):
                     try:
                         image = image[self.overscan_left: self.imagesize_x-self.overscan_right,self.overscan_up: self.imagesize_y - self.overscan_down]
                     except:
                         plog(traceback.format_exc())
-                #    breakpoint()
-                #breakpoint()
                 np.save(substacker_filenames[subexposure-1], image)
 
             while (time.time() - exposure_timer) < exp_of_substacks:
@@ -2352,29 +2265,7 @@ class Camera:
             if subexposure == (N_of_substacks-1):
                 self.shutter_open = False
 
-            # # READOUT FROM THE QHY
-            # image_width_byref = c_uint32()
-            # image_height_byref = c_uint32()
-            # bits_per_pixel_byref = c_uint32()
-            #
-            # success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
-            #                                          byref(image_width_byref),
-            #                                          byref(image_height_byref),
-            #                                          byref(
-            #                                              bits_per_pixel_byref),
-            #                                          byref(
-            #                                              qhycam.camera_params[qhycam_id]['channels']),
-            #                                          byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-
-            # image = np.ctypeslib.as_array(
-            #     qhycam.camera_params[qhycam_id]['prev_img_data'])
-
-
-
-            #breakpoint()
-
             while zwocamera.get_exposure_status() == 1:
-                #print ('waitingforzeo')
                 time.sleep(0.05)
 
             time_before_last_substack_readout = time.time()
@@ -2382,10 +2273,6 @@ class Camera:
                 image = zwocamera.get_data_after_exposure()
 
                 image=np.frombuffer(image, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
-
-            #breakpoint()
-
-
 
                 time_after_last_substack_readout = time.time()
 
@@ -2423,11 +2310,6 @@ class Camera:
                 plog ("ZWO READOUT ERROR. Probably a timeout?")
                 plog(traceback.format_exc())
                 return np.asarray([])
-
-
-
-
-
 
     def _maxim_connected(self):
         return self.camera.LinkEnabled

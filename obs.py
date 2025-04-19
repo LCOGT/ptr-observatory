@@ -709,6 +709,9 @@ class Observatory:
         self.drift_tracker_timer = time.time()
         self.drift_tracker_counter = 0
 
+        self.most_recent_seeing=None
+        self.most_recent_seeing_time=time.time()-10000
+
         self.currently_scan_requesting = False
 
         # Sometimes we update the status in a thread. This variable prevents multiple status updates occuring simultaneously
@@ -1305,6 +1308,29 @@ class Observatory:
 
             status["timestamp"] = round((time.time()) / 2.0, 3)
             status["send_heartbeat"] = False
+            
+            ## Add recent seeing information to obs status            
+            # Get current time and cutoff time for 15 minutes ago
+            now = time.time()
+            cutoff = now - (15 * 60)
+            
+            # Extract rfr values for timestamps within the last 15 minutes
+            recent_rfrs = []
+            for entry in self.devices["main_focuser"].focus_tracker:
+                if not np.isnan(entry):
+                    if entry[6] >= cutoff:  # entry[6] is the timestamp
+                        recent_rfrs.append(entry[5])  # entry[5] is the rfr
+            
+            # Calculate the median
+            if recent_rfrs:
+                median_rfr = np.median(recent_rfrs)
+                self.most_recent_seeing=median_rfr
+                self.most_recent_seeing_time=time.time()
+            else:
+                self.most_recent_seeing=None
+                self.most_recent_seeing_time=time.time()-10000
+            
+            status["current_fwhm_seeing"] = self.most_recent_seeing
 
             if status is not None:
                 lane = "device"
@@ -3823,8 +3849,32 @@ class Observatory:
                                             self.fwhmresult["filter"],
                                             self.fwhmresult["airmass"],
                                             round(rfr, 3),
+                                            time.time()
                                         )
                                     )
+                                    
+                                    # Get current time and cutoff time for 15 minutes ago
+                                    now = time.time()
+                                    cutoff = now - (15 * 60)
+                                    
+                                    # Extract rfr values for timestamps within the last 15 minutes
+                                    recent_rfrs = []
+                                    for entry in self.devices["main_focuser"].focus_tracker:
+                                        if not np.isnan(entry):
+                                            if entry[6] >= cutoff:  # entry[6] is the timestamp
+                                                recent_rfrs.append(entry[5])  # entry[5] is the rfr
+                                    
+                                    # Calculate the median
+                                    if recent_rfrs:
+                                        median_rfr = np.median(recent_rfrs)
+                                        self.most_recent_seeing=median_rfr
+                                        self.most_recent_seeing_time=time.time()
+                                    else:
+                                        self.most_recent_seeing=None
+                                        self.most_recent_seeing_time=time.time()-10000
+                                    
+                                    
+                                    
                                     plog(
                                         "Last ten FWHM (pixels): "
                                         + str(self.devices["main_focuser"].focus_tracker)
