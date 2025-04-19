@@ -5857,7 +5857,7 @@ class Sequencer:
                                             ratio = 40/result[idx,0]       
                                             new_estimated_exposure_time= ratio * closest_group
                                             
-                                            g_dev['cam'].focus_exposure=int(min(new_estimated_exposure_time,60))
+                                            g_dev['cam'].focus_exposure=int(max(min(new_estimated_exposure_time,60),10))
                                             
                                             print ("Updated Exposure time: " + str(g_dev['cam'].focus_exposure))
                                             
@@ -5873,10 +5873,10 @@ class Sequencer:
                                             # Having a crack at a first exposure time
                                             # Try to linearly scale to 50 sources, but don't go over 60 seconds.
                                             #breakpoint()
-                                            g_dev['cam'].focus_exposure=int(min((50/minimum_sources_in_bordering_focus_spot)*g_dev['cam'].focus_exposure, 60))
+                                            g_dev['cam'].focus_exposure=int(max(min((50/minimum_sources_in_bordering_focus_spot)*g_dev['cam'].focus_exposure, 60),10))
                                             print ("Updated Exposure time: " + str(g_dev['cam'].focus_exposure))
                                             
-                                            focusexposure_shelf.close()
+                                        focusexposure_shelf.close()
                                     
                                     #breakpoint()
 

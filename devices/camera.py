@@ -1503,7 +1503,7 @@ class Camera:
                 ratio = 40/result[idx,0]       
                 new_estimated_exposure_time= ratio * closest_group
                 
-                g_dev['cam'].focus_exposure=int(min(new_estimated_exposure_time,60))
+                g_dev['cam'].focus_exposure=int(max(min(new_estimated_exposure_time,60),10))
                 
                 print ("Updated Focus Exposure time: " + str(self.focus_exposure))
                 
