@@ -574,6 +574,16 @@ class Observatory:
         self.sendtouser_queue_thread.start()
 
 
+        self.reporttonightlog_queue = queue.Queue(maxsize=0)
+        self.reporttonightlog_queue_thread = threading.Thread(
+            target=self.reporttonightlog_process, args=()
+        )
+        self.reporttonightlog_queue_thread.daemon = True
+        self.reporttonightlog_queue_thread.start()
+
+
+        
+
         self.queue_reporting_period = 60
         self.queue_reporting_timer = time.time() - (2 * self.queue_reporting_period)
 
@@ -719,6 +729,10 @@ class Observatory:
             target=self.update_status_thread)
         self.update_status_thread.daemon = True
         self.update_status_thread.start()
+        
+        
+        
+        self.report_to_nightlog("Observatory Rebooted.")
 
         # # Initialisation complete!
         # bias_timer=time.time()
@@ -2826,9 +2840,9 @@ class Observatory:
                 time.sleep(2)
 
     def sendtouser_process(self):
-        """This is a thread where things that fail to get
-        deleted from the filesystem go to get deleted later on.
-        Usually due to slow or network I/O
+        """This is a thread where reports to the UI are sent up.
+        They are done in a separate thread as they take significant
+        time to upload sometimes.
         """
 
         while True:
@@ -2852,6 +2866,48 @@ class Observatory:
                     self.sendtouser_queue.task_done()
             else:
                 time.sleep(0.25)
+    
+    def reporttonightlog_process(self):
+        """This is a thread where reports stored for the nightlog are written out to disk.
+        They are done in a separate thread as they take significant
+        time to upload sometimes.
+        """
+
+        while True:
+            if not self.reporttonightlog_queue.empty():
+                while not self.reporttonightlog_queue.empty():
+                    try:
+                        (log, timestamp) = self.reporttonightlog_queue.get(block=False)
+                        
+                        
+                        # Directories for broken and orphaned upload files
+                        self.nightlylog_path = (
+                            self.config["archive_path"] + "/" + self.name + "/" + "nightlylogs/"
+                        )
+                        if not os.path.exists(self.nightlylog_path):
+                            os.makedirs(self.nightlylog_path, mode=0o777)
+                        
+                        
+                        
+                        
+                        nightlogfilename = g_dev['day'] + '_nightlyreport.txt'
+                        
+                        full_log_path = self.nightlylog_path + nightlogfilename
+                        
+                        readable = datetime.datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')
+                        
+                        with open(full_log_path, "a") as f:
+                            f.write(readable + ' '+log +'\n')
+                        
+                    except:
+                        plog("Night Log did not write, usually not fatal.")
+                        plog(traceback.format_exc())
+
+                    self.reporttonightlog_queue.task_done()
+            else:
+                time.sleep(0.25)
+    
+    
 
 
     def platesolve_process(self):
@@ -4178,6 +4234,11 @@ class Observatory:
         # This is now a queue--- it was actually slowing
         # everything down each time this was called!
         self.sendtouser_queue.put((p_log, p_level), block=False)
+
+    def report_to_nightlog(self, log):
+        # This is now a queue--- it was actually slowing
+        # everything down each time this was called!
+        self.reporttonightlog_queue.put((log, time.time()), block=False)
 
     def check_platesolve_and_nudge(self, no_confirmation=True):
         """
