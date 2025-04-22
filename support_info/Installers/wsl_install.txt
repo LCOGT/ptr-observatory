@@ -15,7 +15,7 @@ sudo apt install psfex
 sudo apt install htpdate # This package allows time syncs using http for those clocks behind school firewalls
 
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh # conda is the most straightforward way to get source-extractor++
-sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+sh Miniconda3-latest-Linux-x86_64.sh
 
 restart the terminal and reboot back into terminal
 
