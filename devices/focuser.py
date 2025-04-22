@@ -47,6 +47,7 @@ import copy
 from global_yard import g_dev
 from ptr_utility import plog
 from dateutil import parser
+import os
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
@@ -75,7 +76,7 @@ class Focuser:
         self.camera_name = site_config['device_roles']['main_cam']
 
         self.config = site_config["focuser"][name]
-        self.throw = int(site_config["focuser"][name]["throw"])
+        
         self.relative_focuser = site_config["focuser"][name]['relative_focuser']
         self.driver = driver
         
@@ -211,7 +212,50 @@ class Focuser:
             self.last_filter_offset= 0
 
         self.focuser_settle_time=self.config['focuser_movement_settle_time']
+        
 
+        # Load up the throw list unless we don't have one.
+        if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name) + '.dat'):
+            plog ("loading throw from throw shelf")
+            self.throw_shelf = shelve.open(
+                g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name))
+            try:
+                self.throw_list = self.throw_shelf['throw_list']
+                self.throw = np.nanmedian(self.throw_list)
+                plog('current throw: ' + str(self.throw))
+            except:
+                self.throw_list=None
+                self.throw = None
+        else:
+            plog ("loading throw from config")
+            self.throw = int(site_config["focuser"][name]["throw"])
+            self.throw_list=[self.throw]
+        
+        plog ("used throw: " + str(self.throw))
+
+
+    def report_optimal_throw(self,curve_step_length):
+        
+        self.throw_shelf = shelve.open(
+            g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name))
+        
+        self.throw_list.append(
+            float(abs(curve_step_length))
+        )
+        
+        #update the throw itself
+        self.throw = np.nanmedian(self.throw_list)
+        
+        too_long = True
+        while too_long:
+            if len(self.throw_list) > 100:
+                self.throw_list.pop(0)
+            else:
+                too_long = False
+        self.throw_shelf[
+            "throw_list"
+        ] = self.throw_list
+        self.throw_shelf.close()
 
     # Note this is a thread!
     def focuser_update_thread(self):
