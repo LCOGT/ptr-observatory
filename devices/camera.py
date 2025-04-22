@@ -2857,6 +2857,7 @@ class Camera:
         # And it is likely because it takes a non-zero time to get to Phase II
         # So even in the setup phase the "exposure" is "busy"
         self.running_an_exposure_set = True
+        
 
         # Parse inputs from required_params and optional_params
         #
@@ -2981,8 +2982,8 @@ class Camera:
                 bias_dark_or_light_type_frame = 'light'
                 lamps = None
 
-        self.native_bin = self.settings["native_bin"]
-        self.ccd_sum = str(1) + ' ' + str(1)
+        # self.native_bin = self.settings["native_bin"]
+        # self.ccd_sum = str(1) + ' ' + str(1)
 
         self.estimated_readtime = (
             exposure_time + self.readout_time
@@ -2998,7 +2999,7 @@ class Camera:
             null_filterwheel = fw_device.null_filterwheel
         except:
             null_filterwheel =True
-        #breakpoint()
+            
         try:
             if not null_filterwheel:
                 if imtype in ['bias', 'dark'] or a_dark_exposure:
@@ -3175,7 +3176,6 @@ class Camera:
                 self.initial_smartstack_dec = None
                 self.currently_in_smartstack_loop = False
 
-            #breakpoint()
 
             # Repeat camera acquisition loop to collect all smartstacks necessary
             # The variable Nsmartstacks defaults to 1 - e.g. normal functioning
