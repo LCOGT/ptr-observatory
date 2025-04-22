@@ -3887,6 +3887,10 @@ class Camera:
         unique_batch_code='blah',
         count=1
     ):
+
+        obs_id = self.site_config['obs_id']
+
+
         if fw_device == None:
             fw_device = self.obs.devices['main_fw']
 
@@ -3896,10 +3900,11 @@ class Camera:
         except:
             this_exposure_filter = 'RGGB'
 
-        plog(
-            "Exposure Started:  " + str(exposure_time) + "s ",
-            frame_type
-        )
+        plog(f"Exposure Started: {exposure_time}s {frame_type}")
+
+        # Simulate timing of exposure for dummy camera
+        if self.dummy:
+            time.sleep(exposure_time)
 
         try:
             if optional_params["object_name"] == '':
@@ -3917,77 +3922,40 @@ class Camera:
         except:
             filter_ui_info = 'filterless'
 
-        if frame_type in (
-
-            "dark",
-                "bias") or a_dark_exposure:
-            g_dev["obs"].send_to_user(
-                "Starting "
-                + str(exposure_time)
-                + "s "
-                + str(frame_type)
-                + " calibration exposure.",
-                p_level="INFO",
-            )
-        elif frame_type in (
-            "flat",
-            "screenflat",
-                "skyflat"):
-            g_dev["obs"].send_to_user(
-                "Taking "
-                + str(exposure_time)
-                + "s "
-                + " flat exposure.",
-                p_level="INFO",
-            )
-
-        elif frame_type in ("focus", "auto_focus"):
-            g_dev["obs"].send_to_user(
-                "Starting "
-                + str(exposure_time)
-                + "s "
-                + str(frame_type)
-                + "  exposure.",
-                p_level="INFO",
-            )
-        elif frame_type in ("pointing"):
-            g_dev["obs"].send_to_user(
-                "Starting "
-                + str(exposure_time)
-                + "s "
-                + str(frame_type)
-                + "  exposure.",
-                p_level="INFO",
-            )
-
-        # , 'y', 'up', 'u']:   NB NB we should create a code-wide list of Narrow bands, broadbands and widebands so we do not have mulitiple lists to manage.
-        elif Nsmartstack > 1 and this_exposure_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr', 'su', 'sv', 'sb', 'sy', 'hd', 'hg']:
-            plog("Starting narrowband " + str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
-                 + str(optional_params["object_name"])
-                 + " by user: " + str(observer_user_name))
-            g_dev["obs"].send_to_user("Starting narrowband " + str(exposure_time) + "s smartstack " + str(
-                sskcounter+1) + " out of " + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
-        elif Nsmartstack > 1:
-            plog("Starting broadband " + str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
-                 + str(optional_params["object_name"])
-                 + " by user: " + str(observer_user_name))
-            g_dev["obs"].send_to_user("Starting broadband " + str(exposure_time) + "s smartstack " + str(
-                sskcounter+1) + " out of " + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
-        else:
-            if "object_name" in optional_params:
-                g_dev["obs"].send_to_user(
-                    "Starting "
-                    + str(exposure_time)
-                    + "s " + str(filter_ui_info) + " exposure of "
-                    + str(optional_params["object_name"])
-                    + " by user: "
-                    + str(observer_user_name) + '. ' +
-                    str(int(optional_params['count']) - int(counter) + 1) +
-                    " of " + str(optional_params['count']),
-                    p_level="INFO",
-                )
-
         count = int(optional_params['count'])
+
+        #NB NB we should create a code-wide list of Narrow bands, broadbands and widebands so we do not have mulitiple lists to manage.
+        narrowband_filters = ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr', 'su', 'sv', 'sb', 'sy', 'hd', 'hg']
+        # Send image info to the UI (observatory logs section)
+        if frame_type in ("dark", "bias") or a_dark_exposure:
+            g_dev["obs"].send_to_user(f"Starting {exposure_time}s calibration exposure.", p_level="INFO")
+        elif frame_type in ("flat", "screenflat", "skyflat"):
+            g_dev["obs"].send_to_user(f"Taking {exposure_time}s flat exposure.", p_level="INFO")
+        elif frame_type in ("focus", "auto_focus", "pointing"):
+            g_dev["obs"].send_to_user(f"Starting {exposure_time}s {frame_type} exposure.", p_level="INFO")
+        elif Nsmartstack > 1 and this_exposure_filter.lower() in narrowband_filters:
+            message = (
+                f"Starting narrowband {exposure_time}s "
+                f"smartstack {sskcounter + 1} out of {int(Nsmartstack)} "
+                f"of {optional_params['object_name']} by user: {observer_user_name}"
+            )
+            plog(message)
+            g_dev["obs"].send_to_user(message, p_level="INFO")
+        elif Nsmartstack > 1:
+            message = (
+                f"Starting broadband {exposure_time}s "
+                f"smartstack {sskcounter + 1} out of {int(Nsmartstack)} "
+                f"of {optional_params['object_name']} by user: {observer_user_name}"
+            )
+            plog(message)
+            g_dev["obs"].send_to_user(message, p_level="INFO")
+        else:
+            message = (
+                f"Starting {exposure_time}s {filter_ui_info} exposure "
+                f"of {optional_params['object_name']} by user: {observer_user_name}. "
+                f"{count - int(counter) + 1} of {count}"
+            )
+            g_dev["obs"].send_to_user(message, p_level="INFO")
 
         self.status_time = time.time() + 10
         self.post_mnt = []
@@ -4002,7 +3970,7 @@ class Camera:
             # As the readouts are all done in the substack thread.
             #stacking_overhead= 0.0005*pow(exposure_time,2) + 0.0334*exposure_time
             # , 'y', 'up', 'u']
-            if this_exposure_filter.lower() in ['ha', 'hac', 'o3', 's2', 'n2', 'hb', 'hbc', 'hd', 'hga', 'cr', 'su', 'sv', 'sb', 'sy', 'hd', 'hg']:
+            if this_exposure_filter.lower() in narrowband_filters:
                 cycle_time = exposure_time + \
                     ((exposure_time / 30)) * \
                     self.readout_time  # + stacking_overhead
@@ -4116,68 +4084,14 @@ class Camera:
         im_type = "EX"
         f_ext = "-"
         try:
-            cal_name = (
-                self.site_config["obs_id"]
-                + "-"
-                + self.alias
-                + "-"
-                + g_dev["day"]
-                + "-"
-                + next_seq
-                + f_ext
-                + "-"
-                + im_type
-                + "00.fits"
-            )
+            cal_name   = f"{obs_id}-{self.alias}-{g_dev['day']}-{next_seq}{f_ext}-{im_type}00.fits"
+            jpeg_name  = f"{obs_id}-{self.alias}-{g_dev['day']}-{next_seq}-{im_type}10.jpg"
+            raw_name00 = f"{obs_id}-{self.alias}_{frame_type}_{this_exposure_filter}-{g_dev['day']}-{next_seq}-{im_type}00.fits"
+            text_name  = f"{obs_id}-{self.alias}-{g_dev['day']}-{next_seq}-{im_type}00.txt"
+            cal_path = im_path_r + g_dev["day"] + "/calib/"
+            raw_path = im_path_r + g_dev['day'] + "/raw/"
         except:
             plog(traceback.format_exc())
-            #breakpoint()
-        cal_path = im_path_r + g_dev["day"] + "/calib/"
-
-        jpeg_name = (
-            self.site_config["obs_id"]
-            + "-"
-            + self.alias
-            + "-"
-            + g_dev["day"]
-            + "-"
-            + next_seq
-            + "-"
-            + im_type
-            + "10.jpg"
-        )
-
-        raw_name00 = (
-            self.site_config["obs_id"]
-            + "-"
-            + self.alias
-            + '_'
-            + str(frame_type)
-            + '_'
-            + str(this_exposure_filter)
-            + "-"
-            + g_dev["day"]
-            + "-"
-            + next_seq
-            + "-"
-            + im_type
-            + "00.fits"
-        )
-
-        text_name = (
-            self.site_config["obs_id"]
-            + "-"
-            + self.alias
-            + "-"
-            + g_dev["day"]
-            + "-"
-            + next_seq
-            + "-"
-            + im_type
-            + "00.txt"
-        )
-
-        cal_path = im_path_r + g_dev["day"] + "/calib/"
 
         if not os.path.exists(im_path_r):
             os.makedirs(im_path_r, mode=0o777)
@@ -4189,23 +4103,11 @@ class Camera:
             os.makedirs(im_path_r + g_dev["day"] + "/to_AWS", mode=0o777)
 
         if self.site_config["save_to_alt_path"] == "yes":
-            self.alt_path = self.site_config[
-                "alt_path"
-            ] + '/' + self.site_config['obs_id'] + '/'  # NB NB this should come from config file, it is site dependent.
+            self.alt_path = self.site_config["alt_path"] + '/' + obs_id + '/'  # NB NB this should come from config file, it is site dependent.
+            os.makedirs(self.alt_path, exist_ok=True, mode=0o777)
+            os.makedirs(self.alt_path + g_dev["day"], exist_ok=True, mode=0o777)
+            os.makedirs(self.alt_path + g_dev["day"] + "/raw/", exist_ok=True, mode=0o777)
 
-            os.makedirs(
-                self.alt_path, exist_ok=True, mode=0o777
-            )
-
-            os.makedirs(
-                self.alt_path + g_dev["day"], exist_ok=True, mode=0o777
-            )
-
-            os.makedirs(
-                self.alt_path + g_dev["day"] + "/raw/", exist_ok=True, mode=0o777
-            )
-
-        raw_path = im_path_r + g_dev['day'] + "/raw/"
 
         # FOR POINTING AND FOCUS EXPOSURES, CONSTRUCT THE SCALED MASTERDARK WHILE
         # THE EXPOSURE IS RUNNING
@@ -4251,7 +4153,11 @@ class Camera:
                 #breakpoint()
                 intermediate_tempflat = None
         ## For traditional exposures, spin up all the subprocesses ready to collect and process the files once they arrive
-        if (not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing'):
+        if (not frame_type[-4:] == "flat" and
+            not frame_type in ["bias", "dark"] and
+            not frame_type == 'pointing' and
+            not a_dark_exposure and
+            not focus_image):
 
             ######### Trigger off threads to wait for their respective files
 
@@ -4277,7 +4183,8 @@ class Camera:
                 "auto_focus",
                 "focus",
                 "pointing"
-            ]) and smartstackid != 'no' and not a_dark_exposure:
+            ] and
+                smartstackid != 'no' and not a_dark_exposure):
 
                 smartstackthread_filename = self.local_calibration_path + \
                     "smartstacks/smartstack" + \
@@ -4296,11 +4203,18 @@ class Camera:
                     xl = xl+50
                     xr = xr+50
 
+                def clean_object_name(name):
+                    """Convert object name to filename-safe format."""
+                    return str(name).replace(':', 'd').replace('@', 'at').replace('.', 'd').replace(' ', '').replace('-', '')
+
                 if self.site_config['save_reduced_file_numberid_first']:
-                    red_name01 = (next_seq + "-" + self.site_config["obs_id"] + "-" + str(object_name).replace(':', 'd').replace('@', 'at').replace('.', 'd').replace(
-                        ' ', '').replace('-', '') + '-'+str(this_exposure_filter) + "-" + str(exposure_time).replace('.', 'd') + "-" + im_type + "01.fits")
+                    clean_name = clean_object_name(object_name)
+                    clean_exposure_time = str(exposure_time).replace('.', 'd')
+                    red_name01 = f"{next_seq}-{obs_id}-{clean_name}-{this_exposure_filter}-{clean_exposure_time}-{im_type}01.fits"
                 else:
-                    red_name01 = (self.site_config["obs_id"] + "-" + str(object_name).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(this_exposure_filter) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")
+                    clean_name = clean_object_name(object_name)
+                    clean_exposure_time = str(exposure_time).replace('.', 'd')
+                    red_name01 = f"{obs_id}-{clean_name}-{str(this_exposure_filter)}-{next_seq}-{clean_exposure_time}-{im_type}01.fits"
 
                 if self.settings["is_osc"]:
                     picklepayload = [
@@ -4418,8 +4332,6 @@ class Camera:
             # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
             if False:
                 pickle.dump([septhread_filename, self.pixscale, self.camera_known_readnoise, avg_foc, focus_image, im_path, text_name, 'hduheader', cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,self.native_bin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
-
-
             #breakpoint()
 
             try:
@@ -4433,9 +4345,36 @@ class Camera:
                 pass
 
             try:
-
-                pickle.dump([septhread_filename, self.pixscale, self.camera_known_readnoise, avg_foc, focus_image, im_path, text_name, 'hduheader', cal_path, cal_name, frame_type, focus_position, g_dev['events'], ephem.now(
-                ), 0.0, 0.0, is_osc, interpolate_for_focus, bin_for_focus, focus_bin_value, interpolate_for_sep, bin_for_sep, sep_bin_value, focus_jpeg_size, saturate, minimum_realistic_seeing, self.native_bin, do_sep, exposure_time], sep_subprocess.stdin)
+                pickle.dump([
+                    septhread_filename,
+                    self.pixscale,
+                    self.camera_known_readnoise,
+                    avg_foc,
+                    focus_image,
+                    im_path,
+                    text_name,
+                    'hduheader',
+                    cal_path,
+                    cal_name,
+                    frame_type,
+                    focus_position,
+                    g_dev['events'],
+                    ephem.now(),
+                    0.0,
+                    0.0,
+                    is_osc,
+                    interpolate_for_focus,
+                    bin_for_focus,
+                    focus_bin_value,
+                    interpolate_for_sep,
+                    bin_for_sep,
+                    sep_bin_value,
+                    focus_jpeg_size,
+                    saturate,
+                    minimum_realistic_seeing,
+                    self.native_bin,
+                    do_sep,
+                    exposure_time], sep_subprocess.stdin)
             except:
                 plog("Problem in the SEP pickle dump")
                 plog(traceback.format_exc())
@@ -4499,9 +4438,37 @@ class Camera:
                 except OSError:
                     pass
                 try:
-                    pickle.dump([mainjpegthread_filename, smartstackid, 'paths', pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                          osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                              rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor,self.camera_path + g_dev['day'] + "/to_AWS/", jpeg_name], jpeg_subprocess.stdin)
+                    pickle.dump(
+                        [
+                            mainjpegthread_filename,
+                            smartstackid,
+                            'paths',
+                            pier_side,
+                            is_osc,
+                            osc_bayer,
+                            osc_background_cut,
+                            osc_brightness_enhance,
+                            osc_contrast_enhance,
+                            osc_colour_enhance,
+                            osc_saturation_enhance,
+                            osc_sharpness_enhance,
+                            transpose_jpeg,
+                            flipx_jpeg,
+                            flipy_jpeg,
+                            rotate180_jpeg,
+                            rotate90_jpeg,
+                            rotate270_jpeg,
+                            crop_preview,
+                            yb,
+                            yt,
+                            xl,
+                            xr,
+                            squash_on_x_axis,
+                            zoom_factor,
+                            self.camera_path + g_dev['day'] + "/to_AWS/",
+                            jpeg_name
+                        ],
+                        jpeg_subprocess.stdin)
                 except:
                     plog("Problem in the jpeg pickle dump")
                     plog(traceback.format_exc())
@@ -4518,59 +4485,44 @@ class Camera:
 
             # Report files to the queues
             if not self.settings["is_osc"]:
-
                 # Send this file up to ptrarchive
                 if self.site_config['send_files_at_end_of_night'] == 'no' and self.site_config['ingest_raws_directly_to_archive']:
                     g_dev['obs'].enqueue_for_PTRarchive(
                         26000000, '', raw_path + raw_name00 + '.fz'
                     )
-
             else:  # Is an OSC
-
                 if self.settings["osc_bayer"] == 'RGGB':
                     tempfilename = raw_path + raw_name00
-
                     if self.site_config['send_files_at_end_of_night'] == 'no' and self.site_config['ingest_raws_directly_to_archive']:
-
-                        g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', tempfilename.replace(
-                                '-EX', 'R1-EX') + '.fz'
-                        )
-
-                    if self.site_config['send_files_at_end_of_night'] == 'no' and self.site_config['ingest_raws_directly_to_archive']:
-
-                        g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', tempfilename.replace(
-                                '-EX', 'G1-EX') + '.fz'
-                        )
-
-                    if self.site_config['send_files_at_end_of_night'] == 'no' and self.site_config['ingest_raws_directly_to_archive']:
-
-                        g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', tempfilename.replace(
-                                '-EX', 'G2-EX') + '.fz'
-                        )
-
-                    if self.site_config['send_files_at_end_of_night'] == 'no' and self.site_config['ingest_raws_directly_to_archive']:
-
-                        g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', tempfilename.replace(
-                                '-EX', 'B1-EX') + '.fz'
-                        )
-
-                    if self.site_config['send_files_at_end_of_night'] == 'no' and self.site_config['ingest_raws_directly_to_archive']:
-
-                        g_dev['obs'].enqueue_for_PTRarchive(
-                            26000000, '', tempfilename.replace(
-                                '-EX', 'CV-EX') + '.fz'
-                        )
+                        for channel in ['R1', 'G1', 'G2', 'B1', 'CV']:
+                            g_dev['obs'].enqueue_for_PTRarchive(
+                                26000000, '',
+                                tempfilename.replace('-EX', f'{channel}-EX') + '.fz'
+                            )
                 else:
                     print("this bayer grid not implemented yet")
 
             platesolvethread_filename='no'
-            if solve_it == True or (not manually_requested_calibration or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
-                                       or g_dev['obs'].images_since_last_solve > self.site_config["solve_nth_image"] or (datetime.datetime.utcnow() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=self.site_config["solve_timer"])):
 
+            should_solve = (
+                # Always solve if explicitly requested
+                solve_it or
+
+                # Otherwise, solve if any of these conditions are met:
+                (not manually_requested_calibration and (
+                    # Last image in a smartstack sequence (except single images)
+                    ((Nsmartstack == sskcounter + 1) and Nsmartstack > 1) or
+
+                    # Too many images since last solve
+                    g_dev['obs'].images_since_last_solve > self.site_config["solve_nth_image"] or
+
+                    # Too much time passed since last solve
+                    (datetime.datetime.utcnow() - g_dev['obs'].last_solve_time) >
+                        datetime.timedelta(minutes=self.site_config["solve_timer"])
+                ))
+            )
+
+            if should_solve:
                 cal_name = (
                     cal_name[:-9] + "F012" + cal_name[-7:]
                 )
@@ -4581,9 +4533,16 @@ class Camera:
                 if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or sskcounter == 0):
                     image_during_smartstack = True
                 if exposure_time < 1.0:
-                    print("Not doing Platesolve for sub-second exposures.")
+                    plog("Not doing Platesolve for sub-second exposures.")
                 else:
-                    if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
+                    if  (
+                        solve_it or
+                        (not image_during_smartstack and
+                        not g_dev['seq'].currently_mosaicing and
+                        not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and
+                        g_dev['obs'].platesolve_queue.empty() and
+                        not g_dev['obs'].platesolve_is_processing)
+                    ):
 
                         # # Make sure any dither or return nudge has finished before platesolution
                         if sskcounter == 0 and Nsmartstack > 1:
@@ -4617,11 +4576,10 @@ class Camera:
 
                     else:
                         platesolvethread_filename='no'
-        while True:
 
-            if (
-                time.time() < self.completion_time or self.async_exposure_lock == True
-            ):
+        # The rest of this function is contained in this infinite loop
+        while True:
+            if time.time() < self.completion_time or self.async_exposure_lock:
 
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
                 # and (time.time() - self.completion_time) > 4:
@@ -5085,7 +5043,6 @@ class Camera:
                     thread = threading.Thread(target=dump_main_data_out_to_post_exposure_subprocess, args=(payload,post_processing_subprocess,))
                     thread.daemon = True
                     thread.start()
-                    # dump_main_data_out_to_post_exposure_subprocess(payload)
 
 
 ################################################# HERE IS WHERE IN-LINE STUFF HAPPENS.
@@ -5206,7 +5163,7 @@ class Camera:
                     raw_path = im_path_r + g_dev["day"] + "/raw/"
 
                     raw_name00 = (
-                        self.site_config["obs_id"]
+                        obs_id
                         + "-"
                         + self.alias + '_' +
                         str(frame_type.replace('_', '')) +
@@ -5277,7 +5234,7 @@ class Camera:
                     if self.site_config["save_to_alt_path"] == "yes":
                         self.alt_path = self.site_config[
                             "alt_path"
-                        ] + '/' + self.site_config['obs_id'] + '/'
+                        ] + '/' + obs_id + '/'
 
                         os.makedirs(
                             self.alt_path, exist_ok=True, mode=0o777
@@ -6051,7 +6008,7 @@ class Camera:
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"] and not a_dark_exposure and not focus_image and not frame_type == 'pointing':
                     try:
                         im_type = "EX"
-                        expresult["real_time_filename"] = self.site_config["obs_id"] + "-" + self.alias + '_' + str(frame_type) + '_' + str(
+                        expresult["real_time_filename"] = obs_id + "-" + self.alias + '_' + str(frame_type) + '_' + str(
                             this_exposure_filter) + "-" + g_dev["day"] + "-" + next_seq + "-" + im_type + "00.fits.fz"
                     except:
                         plog(traceback.format_exc())

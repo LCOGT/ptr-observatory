@@ -16,21 +16,15 @@ sandbox/
 CLAUDE.md
 
 .DS_Store
-support_info/Installers/WCSIndexFiles/Kepler.zip
+testjpegpickle
 support_info/Installers/WCSIndexFiles/Kepler.zip
 support_info/Installers/.wget-hsts
 subprocesses/testplatesolvepickle
-subprocesses/testSEPpickle
 subprocesses/testsmartstackpickle
-testjpegpickle
-subprocesses/testSEPpickle
-subprocesses/testSEPpickle
-subprocesses/testSEPpickle
 subprocesses/testSEPpickle
 subprocesses/testpostprocess.pickle
 subprocesses/crosscorrelprocess.pickle
 subprocesses/Platesolveprocess - Copy (3).py
 subprocesses/testsingleimageplatesolvepickle
-output.txt
-output.txt
+subprocesses/subprocessplog_*
 output.txt

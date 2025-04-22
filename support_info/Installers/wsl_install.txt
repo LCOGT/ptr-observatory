@@ -14,6 +14,7 @@ sudo apt install source-extractor
 sudo apt install psfex
 sudo apt install htpdate # This package allows time syncs using http for those clocks behind school firewalls
 
+
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh # conda is the most straightforward way to get source-extractor++
 sh Miniconda3-latest-Linux-x86_64.sh
 
@@ -33,6 +34,7 @@ sourcextractor++ --version # Just to test it is installed
 
 wget -r --no-parent http://data.astrometry.net/4100/
 wget -r --no-parent https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/
+
 
 if space allows (This is UCAC5 and 2MASS. 2MASS is quite useful for crowded reddened fields):
 

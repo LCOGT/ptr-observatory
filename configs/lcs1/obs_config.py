@@ -25,6 +25,7 @@ obs_id = 'lcs1' # THIS IS THE NAME OF THIS OBSERVATORY if it is an obs
 site_config = {
     # Instance type specifies whether this is an obs or a wema
     'instance_type' : 'obs',
+    'instance_is_private': False,
     # If this is not a wema, this specifies the wema that this obs is connected to
     'wema_name' : 'lcs',
     # The unique identifier for this obs
