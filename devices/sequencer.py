@@ -34,12 +34,12 @@ import matplotlib.pyplot as plt
 plt.ioff()
 import queue
 import threading
-
+from scipy.integrate import quad
 from glob import glob
 import traceback
 from ptr_utility import plog
 import requests
-
+#import glob
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
@@ -275,7 +275,75 @@ class Sequencer:
 
         # Clear archive drive on initialisation
         self.clear_archive_drive_of_old_files()
+        
+        # Copy previous failed pipe fails if they can
+        self.attempt_to_copy_failed_pipe_files()
 
+
+    def attempt_to_copy_failed_pipe_files(self):
+        
+        plog ("BOO")
+        
+        
+
+        thread = threading.Thread(target=self.copy_failed_pipe_files_thread, args=())
+        thread.daemon = True
+        thread.start()
+
+    def copy_failed_pipe_files_thread(self):       
+        
+        
+        failsafe_directory=self.config['archive_path'] + 'failsafe'
+        if not os.path.exists(failsafe_directory):
+            os.umask(0)
+            os.makedirs(failsafe_directory)
+            
+            
+        failsafetokenfolder=failsafe_directory+ '/tokens'
+        if not os.path.exists(failsafe_directory+ '/tokens'):
+            os.umask(0)
+            os.makedirs(failsafe_directory+ '/tokens')
+        #copy_failed_pipe_files_thread
+        
+        # Copy over the fits files
+        tempfilelist= glob(failsafe_directory +'/*.fits.fz')
+        for tempfile in tempfilelist:
+            
+            cameraname= tempfile.split('\\')[-1].split('-')[1].split('_')[0]
+            
+            if not os.path.exists(self.config['pipe_archive_folder_path'] +'/'+cameraname):
+                os.umask(0)
+                os.makedirs(self.config['pipe_archive_folder_path'] +'/'+cameraname)
+                
+            dayobs= tempfile.split('\\')[-1].split('-')[2]
+            
+            if not os.path.exists(self.config['pipe_archive_folder_path'] +'/'+cameraname+'/'+dayobs):
+                os.umask(0)
+                os.makedirs(self.config['pipe_archive_folder_path'] +'/'+cameraname+'/'+dayobs)
+            
+            pipefolder = self.config['pipe_archive_folder_path'] +'/'+cameraname+'/'+dayobs
+    
+            
+            try:
+                shutil.move(tempfile, pipefolder)
+            except:
+                plog(traceback.format_exc())
+                
+        pipetokenfolder = self.config['pipe_archive_folder_path'] + '/tokens'
+        if not os.path.exists(self.config['pipe_archive_folder_path'] + '/tokens'):
+            os.umask(0)
+            os.makedirs(self.config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
+
+        
+        # Copy over the token files
+        tempfilelist= glob(failsafe_directory +'/tokens/*')
+        for tempfile in tempfilelist:
+            try:
+                shutil.move(tempfile, pipetokenfolder)
+            except:
+                plog(traceback.format_exc())
+                
+        #breakpoint()
 
     def run_archive_clearing_thread(self):
 
@@ -782,13 +850,17 @@ class Sequencer:
                 self.sync_and_refocus()
 
             # This is where we find observations/projects to run
-            if self.obs.scope_in_manual_mode or (
-                (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and    # it's during observing hours
-                 not self.block_guard and                           # there aren't any blocks running currently
-                 not g_dev["cam"].running_an_exposure_set and       # the camera isn't exposing
-                 (time.time() - self.project_call_timer > 10) and   # it's been at least 10 seconds since the last project call
-                 g_dev['obs'].open_and_enabled_to_observe and       # the observatory is open and enabled to observe
-                 self.clock_focus_latch == False):                  # ??
+            #if self.obs.scope_in_manual_mode or (
+                          # If telescope is not in manual mode. 
+            if (
+                (not g_dev['obs'].scope_in_manual_mode) and # Telescope not in manual mode
+                (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and  # it's during observing hours
+                not self.block_guard and  # there aren't any blocks running currently
+                not g_dev["cam"].running_an_exposure_set and  # the camera isn't exposing
+                (time.time() - self.project_call_timer > 10) and  # it's been at least 10 seconds since the last project call
+                g_dev['obs'].open_and_enabled_to_observe and  # the observatory is open and enabled to observe
+                self.clock_focus_latch == False  # ??
+            ):
 
                 if not self.reported_on_observing_period_beginning:
                     self.reported_on_observing_period_beginning=True
@@ -2612,6 +2684,9 @@ class Sequencer:
 
         # Now time to regenerate the local masters
         self.master_restack_queue.put( 'g0', block=False)
+        
+        # Copy previous failed pipe fails if they can
+        self.attempt_to_copy_failed_pipe_files()
 
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
@@ -5216,7 +5291,7 @@ class Sequencer:
                 plog ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
                 plog(traceback.format_exc())
 
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(g_dev['cam'].name), 'image_type': 'focus'}
+            req = {'time': g_dev['cam'].focus_exposure,  'alias':  str(g_dev['cam'].name), 'image_type': 'focus'}
             opt = { 'count': 1, 'filter': 'focus'}
 
             if self.stop_script_called:
@@ -5323,7 +5398,7 @@ class Sequencer:
 
         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
 
-        focus_exposure_time=self.config['focus_exposure_time']
+        focus_exposure_time=g_dev['cam'].focus_exposure
 
         # Boost broadband
         if filter_choice.lower() in [ "blue", "b", "jb", "bb", "pb","green", "jv", "bv", "pg","red", "r", "br", "r", "pr", "rc", "rp","i", "ic", "ip", "bi","gp", "g"]:
@@ -5345,6 +5420,7 @@ class Sequencer:
         spots_tried=[]
         extra_tries=0
         new_focus_position_to_attempt = central_starting_focus # Initialise this variable
+        n_of_sources=[] # to track good exposure time
         while True:
 
             im_path_r = g_dev['cam'].camera_path
@@ -5455,11 +5531,33 @@ class Sequencer:
                     time.sleep(1)
 
                 # Take the shot
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
-                spot = g_dev['obs'].fwhmresult['FWHM']
+                result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+                
+
+                if result == 'roofshut':
+                    plog ("Roof Shut, Site bailing out of Centering")
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+                    self.total_sequencer_control = False
+                    self.focussing=False
+                    return
+
+                if result == 'outsideofnighttime':
+                    plog ("Outside of Night Time. Site bailing out of Centering")
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+                    self.total_sequencer_control = False
+                    self.focussing=False
+                    return
+                
+                spot = g_dev['obs'].fwhmresult['FWHM']                
                 foc_pos=g_dev['foc'].current_focus_position
 
                 g_dev['obs'].send_to_user("Focus at test position: " + str(foc_pos) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
+
+                # Store the number of sources with the position to later estimate the optimal exposure time.
+                
+                #breakpoint()
+                n_of_sources.append([foc_pos,g_dev['obs'].fwhmresult['No_of_sources']])
+
 
                 if not np.isnan(spot):
                     if spot < 30.0:
@@ -5604,20 +5702,10 @@ class Sequencer:
                             g_dev['obs'].enqueue_for_fastAWS( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
 
-                        # If the parabola is not centered roughly on the minimum point, then get another dot on
-                        # The necessary side
-                        # elif True:
-                            # I've hit a point where it tries to solve, but it is the wrong point at the moment!
-                            # breakpoint()
-
-
                         # Otherwise if it seems vaguely plausible to get a fit... give it a shot
                         else:
                             # If you can fit a parabola, then you've got the focus
                             # If fit, then break
-
-
-
                             fit_failed=False
                             try:
                                 fit = np.polyfit(x, y, 2)
@@ -5633,8 +5721,6 @@ class Sequencer:
                                 plog ("crit points didn't work dunno y yet.")
                                 plog(traceback.format_exc())
                                 fit_failed=True
-
-                            #breakpoint()
 
                             if fit_failed:
                                 plog ("Fit failed. Usually due to a lack of data on one side of the curve. Grabbing another dot on the smaller side of the curve")
@@ -5693,6 +5779,111 @@ class Sequencer:
 
                                     g_dev['foc'].last_known_focus = fitted_focus_position
                                     g_dev['foc'].previous_focus_temperature = copy.deepcopy(g_dev['foc'].current_focus_temperature)
+                                    
+                                    
+                                    
+                                    #Here calculate the throw
+                                    f_prime = np.polyder(f)  # Derivative of the polynomial
+
+                                    # Define the integrand for arc length calculation
+                                    integrand = lambda x: np.sqrt(1 + (f_prime(x))**2)
+                                    
+                                    # Calculate the arc length over the entire range of x
+                                    arc_length, _ = quad(integrand, np.min(x), np.max(x))
+                                    
+                                    # Decide how many points you want (similar to your original plot)
+                                    #num_points = len(x)
+                                    num_points = 6
+                                    
+                                    # Calculate step length along the curve
+                                    curve_step_length = arc_length / (num_points - 1)
+                                    
+                                    plog("Estimated Optimal Throw:", curve_step_length)
+                                                                        
+                                    g_dev['foc'].report_optimal_throw(curve_step_length)
+                                    
+                                    
+                                    
+                                    # NOW calculate how many sources we get near the best focus
+                                    # Sort by key value
+                                    sorted_data = sorted(n_of_sources, key=lambda x: x[0])
+                                    
+                                    # Find the immediate next lower and next higher
+                                    lower = [x for x in sorted_data if x[0] < fitted_focus_position]
+                                    higher = [x for x in sorted_data if x[0] > fitted_focus_position]
+                                    
+                                    next_lower = lower[-1] if lower else None
+                                    next_higher = higher[0] if higher else None
+                                    
+                                    # Choose either or both
+                                    filtered = [entry for entry in [next_lower, next_higher] if entry is not None]
+                                    
+                                    #print(filtered)
+                                    
+                                    minimum_sources_in_bordering_focus_spot=min(filtered[0][1],filtered[1][1])
+                                    
+                                    
+                                    if not g_dev['cam'].dummy:
+                                        focusexposure_shelf = shelve.open(
+                                            g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'focusexposure' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                                        try:
+                                            focusexposure_list = focusexposure_shelf['focusexposure_list']
+                                            focusexposure_list.append([minimum_sources_in_bordering_focus_spot,g_dev['cam'].focus_exposure])
+                                            
+                                            print (focusexposure_list)
+                                            focusarray=np.asarray(focusexposure_list)
+                                            
+                                            
+                                            # Get unique exposure times
+                                            # Extract the unique values from the second column
+                                            unique_groups = np.unique(focusarray[:, 1])
+                                            
+                                            # For each group, compute the median of the corresponding values from column 0
+                                            result = []
+                                            for group in unique_groups:
+                                                values = focusarray[focusarray[:, 1] == group, 0]
+                                                median = np.median(values)
+                                                result.append([median, group])
+                                            
+                                            result = np.array(result)
+                                            print(result)
+                                            
+                                            # Update exposure time.
+                                            
+                                            # Find the index where the median (column 0) is closest to 40
+                                            target = 40
+                                            idx = np.argmin(np.abs(result[:, 0] - target))
+                                            
+                                            # Report the corresponding group (column 1)
+                                            closest_group = result[idx, 1]
+                                            print(closest_group)
+                                            
+                                            # Then linearly extrapolate to actually getting 40 targets
+                                            ratio = 40/result[idx,0]       
+                                            new_estimated_exposure_time= ratio * closest_group
+                                            
+                                            g_dev['cam'].focus_exposure=int(max(min(new_estimated_exposure_time,60),10))
+                                            
+                                            print ("Updated Exposure time: " + str(g_dev['cam'].focus_exposure))
+                                            
+                                            #breakpoint()
+                                            focusexposure_shelf['focusexposure_list'] = focusexposure_list
+                                            
+                                            #self.focus_exposure = bn.nanmedian(pixelscale_list)
+                                            plog('Focus Exposure time: ' + str(g_dev['cam'].focus_exposure))
+                                        except:
+                                            plog ("No focus exposure shelf yet so just storing this one.")
+                                            plog(traceback.format_exc())
+                                            focusexposure_shelf['focusexposure_list']=[[minimum_sources_in_bordering_focus_spot,g_dev['cam'].focus_exposure]]
+                                            # Having a crack at a first exposure time
+                                            # Try to linearly scale to 50 sources, but don't go over 60 seconds.
+                                            #breakpoint()
+                                            g_dev['cam'].focus_exposure=int(max(min((50/minimum_sources_in_bordering_focus_spot)*g_dev['cam'].focus_exposure, 60),10))
+                                            print ("Updated Exposure time: " + str(g_dev['cam'].focus_exposure))
+                                            
+                                        focusexposure_shelf.close()
+                                    
+                                    #breakpoint()
 
                                     # We don't take a confirming exposure because there is no point actually and just wastes time.
                                     # You can see if it is focussed with the first target shot.

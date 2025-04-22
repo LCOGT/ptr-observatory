@@ -8,7 +8,7 @@ import os
 import threading
 from devices.sequencer_helpers import is_valid_utc_iso
 from ptr_utility import plog
-
+import traceback
 
 class NightlyScheduleManager:
     def __init__(self,
@@ -441,6 +441,8 @@ class NightlyScheduleManager:
                 self.update_lco_schedule()
             except Exception as e:
                 plog(f"Error in LCO schedule update thread: {str(e)}")
+                
+                #plog(traceback.format_exc())
 
             # Sleep until next update interval or until stopped
             self._stop_threads.wait(self.lco_update_interval)
