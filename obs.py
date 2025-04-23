@@ -582,7 +582,7 @@ class Observatory:
         self.reporttonightlog_queue_thread.start()
 
 
-        
+
 
         self.queue_reporting_period = 60
         self.queue_reporting_timer = time.time() - (2 * self.queue_reporting_period)
@@ -732,9 +732,9 @@ class Observatory:
             target=self.update_status_thread)
         self.update_status_thread.daemon = True
         self.update_status_thread.start()
-        
-        
-        
+
+
+
         self.report_to_nightlog("Observatory Rebooted.")
 
         # # # Initialisation complete!
@@ -1320,19 +1320,19 @@ class Observatory:
 
             status["timestamp"] = round((time.time()) / 2.0, 3)
             status["send_heartbeat"] = False
-            
-            ## Add recent seeing information to obs status            
+
+            ## Add recent seeing information to obs status
             # Get current time and cutoff time for 15 minutes ago
             now = time.time()
             cutoff = now - (15 * 60)
-            
+
             # Extract rfr values for timestamps within the last 15 minutes
             recent_rfrs = []
             for entry in self.devices["main_focuser"].focus_tracker:
                 if not np.isnan(entry):
                     if entry[6] >= cutoff:  # entry[6] is the timestamp
                         recent_rfrs.append(entry[5])  # entry[5] is the rfr
-            
+
             # Calculate the median
             if recent_rfrs:
                 median_rfr = np.median(recent_rfrs)
@@ -1341,7 +1341,7 @@ class Observatory:
             else:
                 self.most_recent_seeing=None
                 self.most_recent_seeing_time=time.time()-10000
-            
+
             status["current_fwhm_seeing"] = self.most_recent_seeing
 
             if status is not None:
@@ -2894,7 +2894,7 @@ class Observatory:
                     self.sendtouser_queue.task_done()
             else:
                 time.sleep(0.25)
-    
+
     def reporttonightlog_process(self):
         """This is a thread where reports stored for the nightlog are written out to disk.
         They are done in a separate thread as they take significant
@@ -2906,27 +2906,27 @@ class Observatory:
                 while not self.reporttonightlog_queue.empty():
                     try:
                         (log, timestamp) = self.reporttonightlog_queue.get(block=False)
-                        
-                        
+
+
                         # Directories for broken and orphaned upload files
                         self.nightlylog_path = (
                             self.config["archive_path"] + "/" + self.name + "/" + "nightlylogs/"
                         )
                         if not os.path.exists(self.nightlylog_path):
                             os.makedirs(self.nightlylog_path, mode=0o777)
-                        
-                        
-                        
-                        
+
+
+
+
                         nightlogfilename = g_dev['day'] + '_nightlyreport.txt'
-                        
+
                         full_log_path = self.nightlylog_path + nightlogfilename
-                        
+
                         readable = datetime.datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')
-                        
+
                         with open(full_log_path, "a") as f:
                             f.write(readable + ' '+log +'\n')
-                        
+
                     except:
                         plog("Night Log did not write, usually not fatal.")
                         plog(traceback.format_exc())
@@ -2934,8 +2934,8 @@ class Observatory:
                     self.reporttonightlog_queue.task_done()
             else:
                 time.sleep(0.25)
-    
-    
+
+
 
 
     def platesolve_process(self):
@@ -3869,18 +3869,22 @@ class Observatory:
                                             time.time()
                                         )
                                     )
-                                    
+
                                     # Get current time and cutoff time for 15 minutes ago
                                     now = time.time()
                                     cutoff = now - (15 * 60)
-                                    
+
                                     # Extract rfr values for timestamps within the last 15 minutes
                                     recent_rfrs = []
                                     for entry in self.devices["main_focuser"].focus_tracker:
-                                        if not np.isnan(entry):
-                                            if entry[6] >= cutoff:  # entry[6] is the timestamp
-                                                recent_rfrs.append(entry[5])  # entry[5] is the rfr
-                                    
+                                        try:
+                                            if not np.isnan(entry[5]):
+                                                if entry[6] >= cutoff:  # entry[6] is the timestamp
+                                                    recent_rfrs.append(entry[5])  # entry[5] is the rfr
+                                        except:
+                                            plog.err((traceback.format_exc()))
+                                            #breakpoint()
+
                                     # Calculate the median
                                     if recent_rfrs:
                                         median_rfr = np.median(recent_rfrs)
@@ -3889,9 +3893,9 @@ class Observatory:
                                     else:
                                         self.most_recent_seeing=None
                                         self.most_recent_seeing_time=time.time()-10000
-                                    
-                                    
-                                    
+
+
+
                                     plog(
                                         "Last ten FWHM (pixels): "
                                         + str(self.devices["main_focuser"].focus_tracker)
