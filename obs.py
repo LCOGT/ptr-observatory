@@ -1329,7 +1329,7 @@ class Observatory:
             # Extract rfr values for timestamps within the last 15 minutes
             recent_rfrs = []
             for entry in self.devices["main_focuser"].focus_tracker:
-                if not np.isnan(entry):
+                if not np.isnan(entry[5]):
                     if entry[6] >= cutoff:  # entry[6] is the timestamp
                         recent_rfrs.append(entry[5])  # entry[5] is the rfr
 
