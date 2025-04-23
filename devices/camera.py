@@ -1471,43 +1471,43 @@ class Camera:
                 focusexposure_list = self.focusexposure_shelf['focusexposure_list']
                 print ("Focusexposurelist")
                 print (focusexposure_list)
-                
+
                 focusarray=np.asarray(focusexposure_list)
-                
-                
+
+
                 # Get unique exposure times
                 # Extract the unique values from the second column
                 unique_groups = np.unique(focusarray[:, 1])
-                
+
                 # For each group, compute the median of the corresponding values from column 0
                 result = []
                 for group in unique_groups:
                     values = focusarray[focusarray[:, 1] == group, 0]
                     median = np.median(values)
                     result.append([median, group])
-                
+
                 result = np.array(result)
                 print(result)
-                
+
                 # Update exposure time.
-                
+
                 # Find the index where the median (column 0) is closest to 40
                 target = 40
                 idx = np.argmin(np.abs(result[:, 0] - target))
-                
+
                 # Report the corresponding group (column 1)
                 closest_group = result[idx, 1]
                 print(closest_group)
-                
+
                 # Then linearly extrapolate to actually getting 40 targets
-                ratio = 40/result[idx,0]       
+                ratio = 40/result[idx,0]
                 new_estimated_exposure_time= ratio * closest_group
-                
+
                 g_dev['cam'].focus_exposure=int(max(min(new_estimated_exposure_time,60),10))
-                
+
                 print ("Updated Focus Exposure time: " + str(self.focus_exposure))
-                
-                
+
+
                 #self.focus_exposure = int(self.site_config['focus_exposure_time'])
                 # self.focus_exposure = bn.nanmedian(pixelscale_list)
                 # plog('Focus Exposure time: ' + str(self.focus_exposure))
@@ -2116,11 +2116,11 @@ class Camera:
 
         xpixelsize = 2400
         ypixelsize = 2400
-        
+
         # Make blank synthetic image with a sky background
         synthetic_image = np.zeros([xpixelsize, ypixelsize]) + 100
-        
-        # Add in noise to background as well        
+
+        # Add in noise to background as well
         synthetic_image = synthetic_image + np.random.normal(loc=100,
                                         scale=10,
                                         size=synthetic_image.shape)
@@ -2191,7 +2191,7 @@ class Camera:
         if bias_dark_or_light_type_frame == 'bias':
             exposure_time = 40 / 1000/1000  # shortest requestable exposure time
 
-        if not self.substacker:            
+        if not self.substacker:
             zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
             zwocamera.start_exposure()
 
@@ -2857,7 +2857,7 @@ class Camera:
         # And it is likely because it takes a non-zero time to get to Phase II
         # So even in the setup phase the "exposure" is "busy"
         self.running_an_exposure_set = True
-        
+
 
         # Parse inputs from required_params and optional_params
         #
@@ -2982,7 +2982,7 @@ class Camera:
                 bias_dark_or_light_type_frame = 'light'
                 lamps = None
 
-        # self.native_bin = self.settings["native_bin"]
+        self.native_bin = self.settings["native_bin"]
         # self.ccd_sum = str(1) + ' ' + str(1)
 
         self.estimated_readtime = (
@@ -2999,7 +2999,7 @@ class Camera:
             null_filterwheel = fw_device.null_filterwheel
         except:
             null_filterwheel =True
-            
+
         try:
             if not null_filterwheel:
                 if imtype in ['bias', 'dark'] or a_dark_exposure:
@@ -5549,15 +5549,15 @@ class Camera:
                                 temp_focus_bin=1
 
                             #breakpoint()
-                            # Utilise smartstacks directory as it is a temp directory that gets cleared out                            
+                            # Utilise smartstacks directory as it is a temp directory that gets cleared out
                             tempdir=self.local_calibration_path + "smartstacks/"
                             tempdir_in_wsl=tempdir.split(':')
                             tempdir_in_wsl[0]=tempdir_in_wsl[0].lower()
                             tempdir_in_wsl='/mnt/'+ tempdir_in_wsl[0] + tempdir_in_wsl[1]
                             tempdir_in_wsl=tempdir_in_wsl.replace('\\','/')
-                            
+
                             tempfitsname=str(time.time()).replace('.','d') + '.fits'
-                            
+
                             # Save an image to the disk to use with source-extractor++
                             # We don't need accurate photometry, so integer is fine.
                             hdufocus = fits.PrimaryHDU()
@@ -5566,27 +5566,27 @@ class Camera:
                             hdufocus.header["NAXIS1"] = outputimg.shape[0]
                             hdufocus.header["NAXIS2"] = outputimg.shape[1]
                             hdufocus.writeto(tempdir + tempfitsname, overwrite=True, output_verify='silentfix')
-                            
-                            
+
+
                             #astoptions = '-c '+str(cwd_in_wsl)+'/subprocesses/photometryparams/default.sexfull -PARAMETERS_NAME ' + str(cwd_in_wsl)+'/subprocesses/photometryparams/default.paramastrom -CATALOG_NAME '+ str(tempdir_in_wsl + '/test.cat') + ' -SATUR_LEVEL 65535 -GAIN 1 -BACKPHOTO_TYPE LOCAL -DETECT_THRESH 1.5 -ANALYSIS_THRESH 1.5 -SEEING_FWHM 2.0 -FILTER_NAME ' + str(cwd_in_wsl)+'/subprocesses/photometryparams/sourceex_convs/gauss_2.0_5x5.conv'
 
                             if self.camera_known_gain < 1000:
                                 segain=self.camera_known_gain
                             else:
                                 segain=0
-                                
+
                             if self.pixscale == None:
                                 minarea=5
                             else:
                                 minarea= ((-9.2421 * self.pixscale) + 16.553)/ temp_focus_bin
                             if minarea < 5:  # There has to be a min minarea though!
                                 minarea = 5
-                                
-                                
-                                                        
+
+
+
 
                             os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3  --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties FluxRadius --flux-fraction 0.5"')
-                            
+
                             #sourcextractor++ --detection-image eco1-ec003zwo_expose_lum-20250401-00052726-EX00.fits --output-catalog-filename goog.txt --output-catalog-format ASCII --output-properties FluxRadius --flux-fraction 0.5
 
                             # catalog = Table.read(str(tempdir_in_wsl+ tempfitsname.replace('.fits','.txt'), format="ascii")
@@ -5595,36 +5595,36 @@ class Camera:
 
 
                             #breakpoint()
-                            
-                            
+
+
                             catalog=Table.read(tempdir+ tempfitsname.replace('.fits','cat.fits'))
                             # Remove rows where FLUX_RADIUS is 0 or NaN
                             mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)
-                            
-                            
+
+
                             catalog = catalog[mask]
                             #breakpoint()
                             # remove unrealistic estimates that are too small
                             if not self.pixscale == None:
                                 mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
                                 catalog = catalog[mask]
-                            
+
                             # Median half flux radius
                             #median_half_flux_radius=np.median(catalog['flux_radius'])
                             #fwhm_this_time=median_half_flux_radius*2
-                            
+
                             fwhm_values=sigma_clip(np.asarray(catalog['flux_radius']),sigma=3, maxiters=5)
                             fwhm_values=fwhm_values.data[~fwhm_values.mask]
-                            
+
                             # The HFR and the fwhm are roughly twice
                             fwhm_values=fwhm_values *2
 
                         except:
                             print ("couldn't do blob photometry: ")
                             print(traceback.format_exc())
-                            
-                            
-                            
+
+
+
                         plog("No. of detections:  ", len(fwhm_values))
 
                         fwhm_dict = {}
