@@ -159,7 +159,7 @@ class Observatory:
     """
 
     Observatory is the central organising part of a given observatory system.
-
+            
     It deals with connecting all the devices together and deals with decisions that
     involve multiple devices and fundamental operations of the OBS.
 
