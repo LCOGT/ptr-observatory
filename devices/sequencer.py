@@ -5211,8 +5211,12 @@ class Sequencer:
         plog (self.config['periodic_focus_time'])
 
         if skip_timer_check == False:
+            # If it has been too long since the last autofocus
             if ((datetime.datetime.utcnow() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
                 plog ("Sufficient time has passed since last focus to do auto_focus")
+            # Or if the roof has been shute since the last autofocus
+            elif self.time_roof_last_opened < (datetime.datetime.utcnow() - g_dev['foc'].time_of_last_focus):
+                plog ("Roof has been shut since last focus. Redoing focus")
             else:
                 plog ("too soon since last autofocus")
                 self.focussing=False
