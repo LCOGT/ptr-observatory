@@ -1159,7 +1159,7 @@ class Sequencer:
                                                     break
 
                                                 # chekcheckc that the roof hasn't opened while this is happening!
-                                                if self.open_and_enabled_to_observe:
+                                                if g_dev['obs'].open_and_enabled_to_observe:
                                                     plog ("noticed that we are able to observe now, bailing out of midnight biasdarks!")
                                                     break
 
