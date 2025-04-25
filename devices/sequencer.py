@@ -294,44 +294,44 @@ class Sequencer:
                 if not os.path.exists(failsafe_directory):
                     os.umask(0)
                     os.makedirs(failsafe_directory)
-        
-        
+
+
                 failsafetokenfolder=failsafe_directory+ '/tokens'
                 if not os.path.exists(failsafe_directory+ '/tokens'):
                     os.umask(0)
                     os.makedirs(failsafe_directory+ '/tokens')
                 #copy_failed_pipe_files_thread
-        
+
                 # Copy over the fits files
                 tempfilelist= glob(failsafe_directory +'/*.fits.fz')
                 for tempfile in tempfilelist:
-        
+
                     cameraname= tempfile.split('\\')[-1].split('-')[1].split('_')[0]
-        
+
                     if not os.path.exists(self.config['pipe_archive_folder_path'] +'/'+cameraname):
                         os.umask(0)
                         os.makedirs(self.config['pipe_archive_folder_path'] +'/'+cameraname)
-        
+
                     dayobs= tempfile.split('\\')[-1].split('-')[2]
-        
+
                     if not os.path.exists(self.config['pipe_archive_folder_path'] +'/'+cameraname+'/'+dayobs):
                         os.umask(0)
                         os.makedirs(self.config['pipe_archive_folder_path'] +'/'+cameraname+'/'+dayobs)
-        
+
                     pipefolder = self.config['pipe_archive_folder_path'] +'/'+cameraname+'/'+dayobs
-        
-        
+
+
                     try:
                         shutil.move(tempfile, pipefolder)
                     except:
                         plog(traceback.format_exc())
-        
+
                 pipetokenfolder = self.config['pipe_archive_folder_path'] + '/tokens'
                 if not os.path.exists(self.config['pipe_archive_folder_path'] + '/tokens'):
                     os.umask(0)
                     os.makedirs(self.config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
-        
-        
+
+
                 # Copy over the token files
                 tempfilelist= glob(failsafe_directory +'/tokens/*')
                 for tempfile in tempfilelist:
@@ -342,7 +342,7 @@ class Sequencer:
             except:
                 plog(traceback.format_exc())
                 plog("odd thing in the pipe archive restorer.")
-        
+
 
     def run_archive_clearing_thread(self):
 
@@ -392,7 +392,7 @@ class Sequencer:
                     except:
                         plog ("Could not remove: " + str(deleteDirectories[entry]) + ". Usually a file is open in that directory.")
             plog ("Finished clearing archive of old files")
-        
+
 
     def clear_archive_drive_of_old_files(self):
 
@@ -5218,7 +5218,7 @@ class Sequencer:
             if ((datetime.datetime.utcnow() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
                 plog ("Sufficient time has passed since last focus to do auto_focus")
             # Or if the roof has been shute since the last autofocus
-            elif self.time_roof_last_opened < (datetime.datetime.utcnow() - g_dev['foc'].time_of_last_focus):
+            elif datetime.datetime.utcfromtimestamp(self.time_roof_last_opened) < (datetime.datetime.utcnow() - g_dev['foc'].time_of_last_focus):
                 plog ("Roof has been shut since last focus. Redoing focus")
             else:
                 plog ("too soon since last autofocus")
