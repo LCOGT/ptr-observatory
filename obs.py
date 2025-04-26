@@ -1428,8 +1428,13 @@ class Observatory:
                                 not "NoObs" in self.enc_status["shutter_status"]
                                 and not self.net_connection_dead
                             ) or self.assume_roof_open:
+                                # If previously it was not open, report an opening event.
+                                if self.open_and_enabled_to_observe == False:
+                                    self.report_to_nightlog("Roof Opening Event.")
                                 self.open_and_enabled_to_observe = True
                             else:
+                                if self.open_and_enabled_to_observe == True:
+                                    self.report_to_nightlog("Roof Closing Event.")
                                 self.open_and_enabled_to_observe = False
 
                     # Check that the mount hasn't slewed too close to the sun
