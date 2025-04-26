@@ -386,6 +386,9 @@ class Observatory:
         self.obs_settings_upload_timer = time.time() - 20
         self.obs_settings_upload_period = 60
 
+        # Timer to track Alive status
+        self.alive_status_timer=time.time() - 1800
+
         self.last_time_report_to_console = time.time() - 180  #NB changed fro
 
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -699,11 +702,15 @@ class Observatory:
                         not "NoObs" in self.enc_status["shutter_status"]
                         and not self.net_connection_dead
                     ) or self.assume_roof_open:
+                        
+                        self.report_to_nightlog("Roof Opening Event. (Roof Open on bootup)")
                         self.open_and_enabled_to_observe = True
                     else:
+                        self.report_to_nightlog("Roof Closing Event. (Roof Closed on bootup)")
                         self.open_and_enabled_to_observe = False
         except:
             plog.warn("FAIL ON OPENING ROOF CHECK")
+            self.report_to_nightlog("Roof Closing Event. (Roof Check failed on bootup)")
             self.open_and_enabled_to_observe = False
 
         # AND one for safety checks
@@ -1084,6 +1091,8 @@ class Observatory:
 
                                 elif cmd["action"] == "start_simulating_open_roof":
                                     self.assume_roof_open = True
+                                    if self.open_and_enabled_to_observe == False:
+                                        self.report_to_nightlog("Roof Opening Event (Simulating Open Roof).")
                                     self.open_and_enabled_to_observe = True
                                     self.enc_status = g_dev[
                                         "obs"
@@ -1690,6 +1699,12 @@ class Observatory:
                     except:
                         plog.warn("could not send obs_settings status")
                         plog.warn(traceback.format_exc())
+                        
+                # Report aliveness to the night log
+                if time.time() - self.alive_status_timer > 600:
+                    self.report_to_nightlog("Observatory Alive.")
+                    self.alive_status_timer=time.time()
+                    
 
                 # An important check to make sure equatorial telescopes are pointed appropriately
                 # above the horizon. SRO and ECO have shown that it is possible to get entirely
@@ -1790,8 +1805,10 @@ class Observatory:
                                     "Software Fault Detected."
                                 )  # " Will alert the authorities!")
                                 plog("Parking Scope in the meantime.")
-
+                                if self.open_and_enabled_to_observe == True:
+                                    self.report_to_nightlog("Roof Closing Event.")
                                 self.open_and_enabled_to_observe = False
+                                
                                 if (
                                     not self.devices["sequencer"].morn_bias_dark_latch
                                     and not self.devices["sequencer"].bias_dark_latch
@@ -1809,6 +1826,8 @@ class Observatory:
                                 in self.enc_status["shutter_status"]
                             ):
                                 plog("Detected Roof Movement.")
+                                if self.open_and_enabled_to_observe == True:
+                                    self.report_to_nightlog("Roof Closing Event.")
                                 self.open_and_enabled_to_observe = False
                                 if (
                                     not self.devices["sequencer"].morn_bias_dark_latch
@@ -1827,6 +1846,8 @@ class Observatory:
                                     and not self.devices["sequencer"].bias_dark_latch
                                 ):
                                     self.cancel_all_activity()  # NB Kills bias dark
+                                if self.open_and_enabled_to_observe == True:
+                                    self.report_to_nightlog("Roof Closing Event.")
                                 self.open_and_enabled_to_observe = False
                                 if not self.devices["mount"].rapid_park_indicator:
                                     if self.devices["mount"].home_before_park:
@@ -1849,6 +1870,8 @@ class Observatory:
                                 < g_dev["events"]["End Morn Bias Dark"]
                             ):
                                 roof_should_be_shut = True
+                                if self.open_and_enabled_to_observe == True:
+                                    self.report_to_nightlog("Roof Closing Event.")
                                 self.open_and_enabled_to_observe = False
                             if not self.config["auto_morn_sky_flat"]:
                                 if (
@@ -1857,6 +1880,8 @@ class Observatory:
                                     < g_dev["events"]["End Morn Bias Dark"]
                                 ):
                                     roof_should_be_shut = True
+                                    if self.open_and_enabled_to_observe == True:
+                                        self.report_to_nightlog("Roof Closing Event.")
                                     self.open_and_enabled_to_observe = False
                                 if (
                                     g_dev["events"]["Naut Dawn"]
@@ -1864,6 +1889,8 @@ class Observatory:
                                     < g_dev["events"]["Morn Bias Dark"]
                                 ):
                                     roof_should_be_shut = True
+                                    if self.open_and_enabled_to_observe == True:
+                                        self.report_to_nightlog("Roof Closing Event.")
                                     self.open_and_enabled_to_observe = False
                             if not (
                                 g_dev["events"]["Cool Down, Open"]
@@ -1871,6 +1898,8 @@ class Observatory:
                                 < g_dev["events"]["Close and Park"]
                             ):
                                 roof_should_be_shut = True
+                                if self.open_and_enabled_to_observe == True:
+                                    self.report_to_nightlog("Roof Closing Event.")
                                 self.open_and_enabled_to_observe = False
 
                         if "Open" in self.enc_status["shutter_status"]:
@@ -1886,6 +1915,8 @@ class Observatory:
                             if roof_should_be_shut == True:
                                 if not self.devices["mount"].rapid_park_indicator:
                                     plog("Parking telescope as it is during the period that the roof is meant to be shut.")
+                                    if self.open_and_enabled_to_observe == True:
+                                        self.report_to_nightlog("Roof Closing Event.")
                                     self.open_and_enabled_to_observe = False
                                     if (
                                         not self.devices["sequencer"].morn_bias_dark_latch
@@ -1904,6 +1935,8 @@ class Observatory:
                                 ):
                                     if not self.devices["mount"].rapid_park_indicator:
                                         plog.warn("Telescope found not parked when the observatory roof is shut. Parking scope.")
+                                        if self.open_and_enabled_to_observe == True:
+                                            self.report_to_nightlog("Roof Closing Event.")
                                         self.open_and_enabled_to_observe = False
                                         if (
                                             not self.devices["sequencer"].morn_bias_dark_latch
@@ -1924,12 +1957,20 @@ class Observatory:
                                         in self.enc_status["shutter_status"]
                                         and not self.net_connection_dead
                                     ):
+                                        if self.open_and_enabled_to_observe == False:
+                                            self.report_to_nightlog("Roof Opening Event.")
                                         self.open_and_enabled_to_observe = True
                                     elif self.assume_roof_open:
+                                        if self.open_and_enabled_to_observe == False:
+                                            self.report_to_nightlog("Roof Opening Event. (Assumed Open)")
                                         self.open_and_enabled_to_observe = True
                                     else:
+                                        if self.open_and_enabled_to_observe == True:
+                                            self.report_to_nightlog("Roof Closing Event.")
                                         self.open_and_enabled_to_observe = False
                                 else:
+                                    if self.open_and_enabled_to_observe == True:
+                                        self.report_to_nightlog("Roof Closing Event.")
                                     self.open_and_enabled_to_observe = False
 
                             else:
@@ -2430,6 +2471,8 @@ class Observatory:
                             plog.err(
                                 "Looks like the net is down, closing up and parking the observatory"
                             )
+                            if self.open_and_enabled_to_observe == True:
+                                self.report_to_nightlog("Roof Closing Event. (Lack of Net Connection)")
                             self.open_and_enabled_to_observe = False
                             self.net_connection_dead = True
                             if (
@@ -2933,7 +2976,7 @@ class Observatory:
                         readable = datetime.datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')
 
                         with open(full_log_path, "a") as f:
-                            f.write(readable + ' '+log +'\n')
+                            f.write(readable + ',' + str(timestamp) + ',' +log +'\n')
 
                     except:
                         plog("Night Log did not write, usually not fatal.")
