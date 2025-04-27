@@ -5925,7 +5925,13 @@ class Sequencer:
                                     
                                     
                                     
-                                    
+                                    # Take the shot
+                                    # Here we take a further shot to measure the FWHM accurately
+                                    # With a gaussian method, now that it is (probably) not a donut.
+                                    req = {'time': focus_exposure_time,  'alias':  str(g_dev['cam'].name), 'image_type': 'focus_confirmation'}   #  NB Should pick up filter and constats from config
+                                    opt = { 'count': 1, 'filter': filter_choice}
+                                    result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+
                                     breakpoint()
 
                                    
