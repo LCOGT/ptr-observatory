@@ -5429,6 +5429,15 @@ class Sequencer:
         extra_tries=0
         new_focus_position_to_attempt = central_starting_focus # Initialise this variable
         n_of_sources=[] # to track good exposure time
+        
+        
+        # In poor conditions we might find that there are too many attempts
+        # to find a better point that will never succeed.
+        # so we keep track of the number of points and bail out if there are too many
+        # but perhaps not on early focusses or on filter offset focusses.
+        extra_steps_to_the_left=0
+        extra_steps_to_the_right=0
+        
         while True:
 
             im_path_r = g_dev['cam'].camera_path
@@ -5506,15 +5515,24 @@ class Sequencer:
                     g_dev['mnt'].park_command({}, {})
                     self.total_sequencer_control = False
                     self.focussing=False
-
+                    g_dev['foc'].set_initial_best_guess_for_focus()
                     return
 
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev['mnt'].park_command({}, {})
                     self.total_sequencer_control = False
                     self.focussing=False
+                    g_dev['foc'].set_initial_best_guess_for_focus()
                     return
 
+                # If there has been too many attempts
+                if extra_steps_to_the_left > 10 or extra_steps_to_the_right > 10:
+                    plog ("Too many extra steps too far away from the known focus point. Giving up.")
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+                    self.total_sequencer_control = False
+                    self.focussing=False
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+                    return
 
                 # Insert overtavelling at strategic points
                 if position_counter == 1 or position_counter ==6:
@@ -5547,6 +5565,7 @@ class Sequencer:
                     g_dev['foc'].set_initial_best_guess_for_focus()
                     self.total_sequencer_control = False
                     self.focussing=False
+                    g_dev['foc'].set_initial_best_guess_for_focus()
                     return
 
                 if result == 'outsideofnighttime':
@@ -5554,6 +5573,7 @@ class Sequencer:
                     g_dev['foc'].set_initial_best_guess_for_focus()
                     self.total_sequencer_control = False
                     self.focussing=False
+                    g_dev['foc'].set_initial_best_guess_for_focus()
                     return
 
                 spot = g_dev['obs'].fwhmresult['FWHM']
@@ -5658,12 +5678,14 @@ class Sequencer:
                             g_dev['foc'].set_initial_best_guess_for_focus()
                             self.total_sequencer_control = False
                             self.focussing=False
+                            g_dev['foc'].set_initial_best_guess_for_focus()
                             return
 
                         # First check if the minimum is too close to the edge
                         if minimum_index == 0 or minimum_index == 1:
                             plog ('minimum index: ', minimum_index)
                             plog ("Minimum too close to the sampling edge, getting another dot")
+                            extra_steps_to_the_left=extra_steps_to_the_left+1
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
@@ -5675,7 +5697,7 @@ class Sequencer:
                         elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
                             plog ('minimum index: ', minimum_index)
                             plog ('minimum find: ', minimumfind)
-
+                            extra_steps_to_the_right=extra_steps_to_the_left+1
                             plog ("Minimum too close to the sampling edge, getting another dot")
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
@@ -5692,6 +5714,7 @@ class Sequencer:
                         elif focus_spots[0][1] < (minimum_value +1): #(minimum_value * 1.3)
 
                             plog ("Left hand side of curve is too low for a good fit, getting another dot")
+                            extra_steps_to_the_left=extra_steps_to_the_left+1
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
@@ -5702,6 +5725,7 @@ class Sequencer:
                         # If right hand side is too low get another dot
                         elif focus_spots[-1][1] < (minimum_value +1 ): #(minimum_value * 1.3)
                             plog ("Right hand side of curve is too low for a good fit, getting another dot")
+                            extra_steps_to_the_right=extra_steps_to_the_right + 1
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
@@ -5738,6 +5762,7 @@ class Sequencer:
                                 minimum_index=minimumfind.index(min(minimumfind))
                                 if minimum_index == 0 or minimum_index == 1:
                                     plog ("Minimum too close to the sampling edge, getting another dot")
+                                    extra_steps_to_the_left=extra_steps_to_the_left+1
                                     new_focus_position_to_attempt=focus_spots[0][0] - throw
                                     thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                                     thread.daemon = True
@@ -5748,6 +5773,7 @@ class Sequencer:
                                 elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
 
                                     plog ("Minimum too close to the sampling edge, getting another dot")
+                                    extra_steps_to_the_right=extra_steps_to_the_right+1
                                     new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                                     thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                                     thread.daemon = True
@@ -5891,9 +5917,18 @@ class Sequencer:
 
                                         focusexposure_shelf.close()
 
-                                    #breakpoint()
+                                    # Because the actual focus routine doesn't use a gaussian FWHM,
+                                    # but we need a proper measurement of the gaussian FWHM
+                                    # We need to move to that focus and take an image
+                                    # To measure the true FWHM. We can't use any of the focus images
+                                    # because none of them would be quite on the focus spot.
+                                    
+                                    
+                                    
+                                    
+                                    breakpoint()
 
-                                    # We don't take a confirming exposure because there is no point actually and just wastes time.
+                                   
                                     # You can see if it is focussed with the first target shot.
                                     if not dont_return_scope:
                                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
