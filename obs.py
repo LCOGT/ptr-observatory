@@ -849,8 +849,8 @@ class Observatory:
                 print("\n")
                 print(f"\tWARNING: the device role <{role}> should be assigned to device {device_name}, but that device was never initialized.")
                 print(f"This will result in errors if the observatory tries to access <{role}>. Please check the device roles in the config.")
-                print(f"This error is probably because the device name in config.device_roles doesn't match any device in the config.")
-                print(f"It might also be because the role is for a type of device that is not included in config.device_types.")
+                print("This error is probably because the device name in config.device_roles doesn't match any device in the config.")
+                print("It might also be because the role is for a type of device that is not included in config.device_types.")
                 print("\n")
 
         print("--- Finished Initializing Devices ---\n")
@@ -1030,12 +1030,15 @@ class Observatory:
                                         self.send_to_user(
                                             "Manual Mode Engaged."
                                         )
+                                        self.report_to_nightlog("Manual Mode Engaged.")
+                                        
                                     else:
                                         self.scope_in_manual_mode = False
                                         plog("Manual Mode Turned Off.")
                                         self.send_to_user(
                                             "Manual Mode Turned Off."
                                         )
+                                        self.report_to_nightlog("Manual Mode Off.")
 
                                 elif cmd["action"] == "configure_moon_safety":
                                     if cmd["required_params"]["mode"] == "on":
@@ -1055,11 +1058,13 @@ class Observatory:
                                         plog("Sun Safety On")
                                         self.send_to_user(
                                             "Sun Safety On")
+                                        self.report_to_nightlog("Sun Safety On. " +str(cmd))
                                     else:
                                         self.sun_checks_on = False
                                         plog("Sun Safety Off")
                                         self.send_to_user(
                                             "Sun Safety Off")
+                                        self.report_to_nightlog("Sun Safety Off. " +str(cmd))
 
                                 elif cmd["action"] == "configure_altitude_safety":
                                     if cmd["required_params"]["mode"] == "on":
@@ -1082,12 +1087,14 @@ class Observatory:
                                         self.send_to_user(
                                             "Daytime Exposure Safety On"
                                         )
+                                        self.report_to_nightlog("Daytime Exposure Safety On. " +str(cmd))
                                     else:
                                         self.daytime_exposure_time_safety_on = False
                                         plog("Daytime Exposure Safety Off")
                                         self.send_to_user(
                                             "Daytime Exposure Safety Off"
                                         )
+                                        self.report_to_nightlog("Daytime Exposure Safety Off. " +str(cmd))
 
                                 elif cmd["action"] == "start_simulating_open_roof":
                                     self.assume_roof_open = True
@@ -1109,6 +1116,7 @@ class Observatory:
 
                                 elif cmd["action"] == "stop_simulating_open_roof":
                                     self.assume_roof_open = False
+                                    self.report_to_nightlog("Roof Open Simulation Turned Off.")
                                     self.enc_status = g_dev[
                                         "obs"
                                     ].get_enclosure_status_from_aws()
@@ -1488,6 +1496,12 @@ class Observatory:
                                         + str(sun_dist.degree)
                                         + " degrees."
                                     )
+                                    
+                                    self.report_to_nightlog("Found telescope pointing too close to the sun: "
+                                    + str(sun_dist.degree)
+                                    + " degrees.")
+                                    
+                                    
                                     self.send_to_user(
                                         "Parking scope and cancelling all activity"
                                     )
@@ -1789,7 +1803,6 @@ class Observatory:
                                 self.currently_updating_FULL = False
                                 return
 
-                    # Roof Checks only if not in debug mode
                     # And only check if the scope thinks everything is open and hunky dory
                     if (
                         self.open_and_enabled_to_observe
@@ -2005,7 +2018,7 @@ class Observatory:
                                         + ". Parking scope for safety!"
                                     )
 
-
+                                    self.report_to_nightlog("Altitude Too Low. Telescope Parked for Safety.")
                                     if not self.devices["mount"].rapid_park_indicator:
                                         if (
                                             not self.devices["sequencer"].morn_bias_dark_latch
@@ -2039,6 +2052,7 @@ class Observatory:
                             > self.devices['mount'].config['time_inactive_until_park']
                         ):
                             if not self.devices["mount"].rapid_park_indicator:
+                                self.report_to_nightlog("Telescope Parked due to inactivity.")
                                 plog("Parking scope due to inactivity")
                                 if self.devices["mount"].home_before_park:
                                     self.devices["mount"].home_command()
@@ -3045,10 +3059,6 @@ class Observatory:
                     plog.warn("waiting for platesolve token timed out")
                     solve = "error"
 
-                    # try:
-                    #     os.system("taskkill /IM ps3cli.exe /F")
-                    # except:
-                    #     pass
                 else:
                     if image_or_reference == "reference":
                         (imagefilename, imageMode) = pickle.load(
@@ -3133,19 +3143,6 @@ class Observatory:
                                 )
 
 
-                            #breakpoint()
-
-                            # try:
-                            #     platesolve_subprocess = subprocess.Popen(
-                            #         ["python", "subprocesses/Platesolveprocess.py"],
-                            #         stdin=subprocess.PIPE,
-                            #         #stdout=subprocess.PIPE,
-                            #         stdout=None,
-                            #         #bufsize=0,
-                            #     )
-                            # except OSError:
-                            #     plog(traceback.format_exc())
-                            #     pass
                             pickledata=pickle.dumps(
                                 [
                                     hdufocusdata,
@@ -3180,38 +3177,6 @@ class Observatory:
                                 stderr=subprocess.PIPE,
                                 text=False  # MUST be False for binary data
                             )
-
-                            # try:
-                            #     pickle.dump(
-                            #         [
-                            #             hdufocusdata,
-                            #             hduheader,
-                            #             self.local_calibration_path,
-                            #             cal_name,
-                            #             frame_type,
-                            #             time_platesolve_requested,
-                            #             pixscale,
-                            #             pointing_ra,
-                            #             pointing_dec,
-                            #             platesolve_crop,
-                            #             False,
-                            #             1,
-                            #             self.devices["main_cam"].settings["saturate"],
-                            #             self.devices["main_cam"].camera_known_readnoise,
-                            #             self.config["minimum_realistic_seeing"],
-                            #             is_osc,
-                            #             useastronometrynet,
-                            #             pointing_exposure,
-                            #             f'{path_to_jpeg}{jpeg_filename}',
-                            #             target_ra,
-                            #             target_dec,
-                            #             timeout_time,
-                            #         ],
-                            #         platesolve_subprocess.stdin,
-                            #     )
-                            # except:
-                            #     plog("Problem in the platesolve pickle dump")
-                            #     plog(traceback.format_exc())
 
                             del hdufocusdata
 
@@ -3460,12 +3425,7 @@ class Observatory:
                                         plog.warn(
                                             "This is more than a simple nudge, so not nudging the scope."
                                         )
-                                        # self.send_to_user(
-                                        #     "Platesolve detects pointing far out, RA: "
-                                        #     + str(round(err_ha * 15 * 3600, 2))
-                                        #     + " DEC: "
-                                        #     + str(round(err_dec * 3600, 2))
-                                        # )
+
 
                                     elif (
                                         self.time_of_last_slew
@@ -4622,7 +4582,7 @@ class Observatory:
                     raise Exception()
             except:
                 plog.err(f"Error while attempting to upload {filename} as an info image")
-                plog.err(f"enqueue_for_fatsUI recieved a misformed value for the info image channel")
+                plog.err("enqueue_for_fatsUI recieved a misformed value for the info image channel")
                 plog.err(f"Info image channel must be 1, 2, or 3. Recieved <{info_image_channel}> instead.")
                 plog.err("Falling back to sending as a normal image.")
                 info_image_channel = None
@@ -4708,19 +4668,7 @@ class Observatory:
 
         while retries <5:
             try:
-                ## Recreate the mount
-                #rebooted_mount = Mount(self.devices['mount'].config['driver'],
-#
-#                        g_dev['mnt'].name,
-#                        self.devices['mount'].settings,##
-#
-#                        self.config,
-#                        self,
-#                        self.astro_events,
-#                        tel=True)
-#                self.all_devices['mount'][self.devices['mount'].name] = rebooted_mount
-#                self.devices['mount'] = rebooted_mount # update the 'mount' role to point to the new mount
-
+               
                 # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
                 for camera in self.all_devices['camera']:
                     if g_dev['cam'].theskyx:
