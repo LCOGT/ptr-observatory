@@ -5218,7 +5218,7 @@ class Sequencer:
             if ((datetime.datetime.utcnow() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
                 plog ("Sufficient time has passed since last focus to do auto_focus")
             # Or if the roof has been shute since the last autofocus
-            elif datetime.datetime.utcfromtimestamp(self.time_roof_last_opened) < (datetime.datetime.utcnow() - g_dev['foc'].time_of_last_focus):
+            elif datetime.datetime.utcfromtimestamp(self.time_roof_last_opened) < g_dev['foc'].time_of_last_focus:
                 plog ("Roof has been shut since last focus. Redoing focus")
             else:
                 plog ("too soon since last autofocus")
@@ -5429,15 +5429,41 @@ class Sequencer:
         extra_tries=0
         new_focus_position_to_attempt = central_starting_focus # Initialise this variable
         n_of_sources=[] # to track good exposure time
-        
-        
+
+
         # In poor conditions we might find that there are too many attempts
         # to find a better point that will never succeed.
         # so we keep track of the number of points and bail out if there are too many
         # but perhaps not on early focusses or on filter offset focusses.
         extra_steps_to_the_left=0
         extra_steps_to_the_right=0
-        
+
+        # We need to load in the estimated correction factor to make the
+        # half-light radius fwhm estimates be comparable to a gaussian
+        # fwhm estimate
+
+        # Store estimated conversion factor between half-light approach and actual measured gaussian FWHM
+        blobvsgauss_shelf = shelve.open(
+            g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'blobvsgauss' + g_dev['cam'].alias + str(g_dev['obs'].name))
+        try:
+
+            try:
+                blobvsgauss_list = blobvsgauss_shelf['blobvsgauss_list']
+
+            except:
+                blobvsgauss_list = [1.0]
+
+
+            stored_blob_to_gaussian_factor = bn.nanmedian(blobvsgauss_list)
+            plog ("Stored blob to gaussian factor: " + str(stored_blob_to_gaussian_factor))
+            #plog('1x1 pixel scale: ' + str(self.pixscale))
+        except:
+            plog ("blob issue")
+            plog(traceback.format_exc())
+
+        blobvsgauss_shelf.close()
+
+        # Now start the main focus loop
         while True:
 
             im_path_r = g_dev['cam'].camera_path
@@ -5576,7 +5602,7 @@ class Sequencer:
                     g_dev['foc'].set_initial_best_guess_for_focus()
                     return
 
-                spot = g_dev['obs'].fwhmresult['FWHM']
+                spot = g_dev['obs'].fwhmresult['FWHM'] * stored_blob_to_gaussian_factor
                 foc_pos=g_dev['foc'].current_focus_position
 
                 g_dev['obs'].send_to_user("Focus at test position: " + str(foc_pos) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
@@ -5922,9 +5948,9 @@ class Sequencer:
                                     # We need to move to that focus and take an image
                                     # To measure the true FWHM. We can't use any of the focus images
                                     # because none of them would be quite on the focus spot.
-                                    
-                                    
-                                    
+
+
+
                                     # Take the shot
                                     # Here we take a further shot to measure the FWHM accurately
                                     # With a gaussian method, now that it is (probably) not a donut.
@@ -5932,9 +5958,49 @@ class Sequencer:
                                     opt = { 'count': 1, 'filter': filter_choice}
                                     result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
 
-                                    breakpoint()
 
-                                   
+                                    print (g_dev['obs'].fwhmresult)
+                                    #breakpoint()
+
+                                    if not dont_log_focus:
+                                        g_dev['foc'].af_log(fitted_focus_position, g_dev['obs'].fwhmresult['FWHM'], g_dev['obs'].fwhmresult['FWHM'])
+
+                                    new_blob_vs_gaussian_factor = (g_dev['obs'].fwhmresult["FWHM"] / fitted_focus_fwhm) * stored_blob_to_gaussian_factor
+
+                                    plog ("Calculated Blob to Gaussian Factor: " +str(new_blob_vs_gaussian_factor))
+
+                                    # Store estimated conversion factor between half-light approach and actual measured gaussian FWHM
+                                    blobvsgauss_shelf = shelve.open(
+                                        g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'blobvsgauss' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                                    try:
+
+                                        try:
+                                            blobvsgauss_list = blobvsgauss_shelf['blobvsgauss_list']
+
+                                        except:
+                                            blobvsgauss_list = []
+                                        blobvsgauss_list.append(
+                                            float(new_blob_vs_gaussian_factor)
+                                        )
+                                        too_long = True
+                                        while too_long:
+                                            if len(blobvsgauss_list) > 100:
+                                                blobvsgauss_list.pop(0)
+                                            else:
+                                                too_long = False
+                                        blobvsgauss_shelf['blobvsgauss_list'] = blobvsgauss_list
+
+                                        #self.pixscale = bn.nanmedian(pixelscale_list)
+                                        #plog('1x1 pixel scale: ' + str(self.pixscale))
+                                    except:
+                                        plog ("blob issue")
+                                        plog(traceback.format_exc())
+
+                                    blobvsgauss_shelf.close()
+
+                                    #breakpoint()
+
+
                                     # You can see if it is focussed with the first target shot.
                                     if not dont_return_scope:
                                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -5944,13 +6010,12 @@ class Sequencer:
 
                                     self.af_guard = False
                                     self.focussing=False
-                                    if not dont_log_focus:
-                                        g_dev['foc'].af_log(fitted_focus_position, fitted_focus_fwhm, spot)
+
 
                                     # Store fitted focus as last result
-                                    g_dev['obs'].fwhmresult={}
-                                    g_dev['obs'].fwhmresult["FWHM"] = fitted_focus_fwhm
-                                    g_dev['obs'].fwhmresult["mean_focus"] = fitted_focus_position
+                                    # g_dev['obs'].fwhmresult={}
+                                    # g_dev['obs'].fwhmresult["FWHM"] = fitted_focus_fwhm
+                                    # g_dev['obs'].fwhmresult["mean_focus"] = fitted_focus_position
                                     self.total_sequencer_control = False
 
 

@@ -9,7 +9,7 @@ Created on Tue Apr 20 22:19:25 2021
 
 from PIL import Image  # , ImageDraw
 from astropy.coordinates import SkyCoord , AltAz, get_sun
-from scipy.stats import binned_statistic
+#from scipy.stats import binned_statistic
 from ctypes import *
 from ptr_utility import plog
 from global_yard import g_dev
@@ -21,6 +21,12 @@ import warnings
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.table import Table
 from astropy.nddata import block_reduce
+from astropy.modeling import models, fitting
+from astropy.nddata import Cutout2D
+from astropy import units as u
+#from astropy.coordinates import SkyCoord
+from photutils.detection import DAOStarFinder
+from astropy.stats import mad_std
 import threading
 import sep
 import math
@@ -30,7 +36,7 @@ import win32com.client
 import bottleneck as bn
 import numpy as np
 import glob
-from astropy.nddata import block_reduce
+#from astropy.nddata import block_reduce
 from astropy.time import Time
 from astropy.io import fits
 import datetime
@@ -44,6 +50,9 @@ import json
 import random
 from astropy import log
 import zwoasi as asi
+from scipy import ndimage
+from multiprocessing import Pool
+import multiprocessing
 log.setLevel('ERROR')
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
@@ -255,6 +264,61 @@ def mid_stretch_jpeg(data):
 
     return data
 
+
+# def fit_moffat_worker(args):
+#     cutout, position = args
+#     x_center, y_center = position
+#     try:
+#         amplitude = np.max(cutout)
+#         y, x = np.mgrid[:cutout.shape[0], :cutout.shape[1]]
+
+#         moffat_init = models.Moffat2D(
+#             amplitude=amplitude,
+#             x_0=cutout.shape[1] / 2,
+#             y_0=cutout.shape[0] / 2,
+#             gamma=2,
+#             alpha=1.5
+#         )
+
+#         fitter = fitting.LevMarLSQFitter()
+#         moffat_fit = fitter(moffat_init, x, y, cutout)
+
+#         gamma = moffat_fit.gamma.value
+#         alpha = moffat_fit.alpha.value
+
+#         fwhm = 2 * gamma * np.sqrt(2**(1/alpha) - 1)
+#         return fwhm
+#     except Exception:
+#         return None  # Fit failed
+
+
+def fit_moffat_worker(args):
+    cutout, position = args
+    x_center, y_center = position
+    try:
+        amplitude = np.max(cutout)
+        y, x = np.mgrid[:cutout.shape[0], :cutout.shape[1]]
+
+        moffat_init = models.Moffat2D(
+            amplitude=amplitude,
+            x_0=cutout.shape[1] / 2,
+            y_0=cutout.shape[0] / 2,
+            gamma=2,
+            alpha=1.5
+        )
+
+        fitter = fitting.LevMarLSQFitter()
+        moffat_fit = fitter(moffat_init, x, y, cutout)
+
+        gamma = moffat_fit.gamma.value
+        alpha = moffat_fit.alpha.value
+
+        fwhm = 2 * gamma * np.sqrt(2**(1/alpha) - 1)
+        return fwhm
+    except Exception as e:
+        print(f"[Worker Error] Problem fitting cutout at position ({x_center}, {y_center}): {e}")
+        print(traceback.format_exc())
+        return None
 
 # Note this is a thread!
 def dump_main_data_out_to_post_exposure_subprocess(payload, post_processing_subprocess):
@@ -2960,8 +3024,13 @@ class Camera:
             frame_type = imtype.replace(
                 " ", ""
             )  # note banzai doesn't appear to include screen or solar flat keywords.
-        elif imtype.lower() == "focus":
+        elif imtype.lower() == "focus" :
             frame_type = "focus"
+            bias_dark_or_light_type_frame = 'light'
+            smartstack = False
+            lamps = None
+        elif  imtype.lower() == "focus_confirmation":
+            frame_type = "focus_confirmation"
             bias_dark_or_light_type_frame = 'light'
             smartstack = False
             lamps = None
@@ -3931,7 +4000,7 @@ class Camera:
             g_dev["obs"].send_to_user(f"Starting {exposure_time}s calibration exposure.", p_level="INFO")
         elif frame_type in ("flat", "screenflat", "skyflat"):
             g_dev["obs"].send_to_user(f"Taking {exposure_time}s flat exposure.", p_level="INFO")
-        elif frame_type in ("focus", "auto_focus", "pointing"):
+        elif frame_type in ("focus", "auto_focus", "pointing", "focus_confirmation"):
             g_dev["obs"].send_to_user(f"Starting {exposure_time}s {frame_type} exposure.", p_level="INFO")
         elif Nsmartstack > 1 and this_exposure_filter.lower() in narrowband_filters:
             message = (
@@ -5553,7 +5622,7 @@ class Camera:
                         # to blobs and donuts or whether we are using the gaussian method
                         # which gives a quite accurate estimate of the true fwhm
                         # from this scope
-                        
+
                         do_source_extractor=True
                         if frame_type == 'focus_confirmation':
                             do_source_extractor=False
@@ -5566,9 +5635,9 @@ class Camera:
                                 tempdir_in_wsl[0]=tempdir_in_wsl[0].lower()
                                 tempdir_in_wsl='/mnt/'+ tempdir_in_wsl[0] + tempdir_in_wsl[1]
                                 tempdir_in_wsl=tempdir_in_wsl.replace('\\','/')
-        
+
                                 tempfitsname=str(time.time()).replace('.','d') + '.fits'
-        
+
                                 # Save an image to the disk to use with source-extractor++
                                 # We don't need accurate photometry, so integer is fine.
                                 hdufocus = fits.PrimaryHDU()
@@ -5576,39 +5645,41 @@ class Camera:
                                 hdufocus.header["NAXIS1"] = outputimg.shape[0]
                                 hdufocus.header["NAXIS2"] = outputimg.shape[1]
                                 hdufocus.writeto(tempdir + tempfitsname, overwrite=True, output_verify='silentfix')
-        
+
                                 if self.camera_known_gain < 1000:
                                     segain=self.camera_known_gain
                                 else:
                                     segain=0
-        
+
                                 if self.pixscale == None:
                                     minarea=5
                                 else:
                                     minarea= ((-9.2421 * self.pixscale) + 16.553)/ temp_focus_bin
                                 if minarea < 5:  # There has to be a min minarea though!
                                     minarea = 5
-           
-                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3  --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties FluxRadius --flux-fraction 0.5"')
-      
+
+
+
+                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties FluxRadius --flux-fraction 0.5"')
+
                                 catalog=Table.read(tempdir+ tempfitsname.replace('.fits','cat.fits'))
                                 # Remove rows where FLUX_RADIUS is 0 or NaN
                                 mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)
-            
+
                                 catalog = catalog[mask]
-                                
+
                                 # remove unrealistic estimates that are too small
                                 if not self.pixscale == None:
                                     mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
                                     catalog = catalog[mask]
-        
-    
+
+
                                 fwhm_values=sigma_clip(np.asarray(catalog['flux_radius']),sigma=3, maxiters=5)
                                 fwhm_values=fwhm_values.data[~fwhm_values.mask]
-        
+
                                 # The HFR and the fwhm are roughly twice
                                 fwhm_values=fwhm_values *2
-                                
+
                                 plog("No. of detections:  ", len(fwhm_values))
 
                                 fwhm_dict = {}
@@ -5624,341 +5695,471 @@ class Camera:
                                 fwhm_dict['sources'] = str(len(fwhm_values))
 
                                 plog ("FWHM: " + str(fwhm_dict['rfr']))
-        
+
                             except:
                                 print ("couldn't do blob photometry: ")
                                 print(traceback.format_exc())
                         else: # Do confirmation_gaussian photometry
-                        
-                            time_limit=20
+
+                            #time_limit=20
                             try:
 
-                                fx, fy = outputimg.shape        #
+                                fx, fy = outputimg.shape
+
+                                # Make a mask of NaNs
+                                nan_mask = np.isnan(outputimg)
+
+                                # Replace NaNs with 0 temporarily
+                                filled = np.copy(outputimg)
+                                filled[nan_mask] = 0
+
+                                # Create a distance map to the nearest non-NaN
+                                distance, indices = ndimage.distance_transform_edt(nan_mask, return_indices=True)
+
+                                # Map the original non-NaN values into the NaN locations
+                                filled[nan_mask] = outputimg[tuple(indices[:, nan_mask])]#
+
+                                outputimg=filled
 
                                 bkg = sep.Background(outputimg, bw=32, bh=32, fw=3, fh=3)
                                 bkg.subfrom(outputimg)
 
-                                tempstd=np.std(outputimg)
-                                #hduheader["IMGSTDEV"] = ( tempstd, "Median Value of Image Array" )
-                                try:
-                                    threshold=max(3* np.std(outputimg[outputimg < (5*tempstd)]),(200*self.pixscale)) # Don't bother with stars with peaks smaller than 100 counts per arcsecond
-                                except:
-                                    threshold=max(3* np.std(outputimg[outputimg < (5*tempstd)]),(200*0.1)) # Don't bother with stars with peaks smaller than 100 counts per arcsecond
-
-                                googtime=time.time()
-                                list_of_local_maxima=localMax(outputimg, threshold=threshold)
-                                plog ("Finding Local Maxima: " + str(time.time()-googtime))
-
-                                # Assess each point
-                                pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
-                                counter=0
-                                googtime=time.time()
-                                for point in list_of_local_maxima:
-
-                                    pointvalues[counter][0]=point[0]
-                                    pointvalues[counter][1]=point[1]
-                                    pointvalues[counter][2]=np.nan
-                                    in_range=False
-                                    if (point[0] > fx*0.1) and (point[1] > fy*0.1) and (point[0] < fx*0.9) and (point[1] < fy*0.9):
-                                        in_range=True
-
-                                    if in_range:
-                                        value_at_point=outputimg[point[0],point[1]]
-                                        try:
-                                            value_at_neighbours=(outputimg[point[0]-1,point[1]]+outputimg[point[0]+1,point[1]]+outputimg[point[0],point[1]-1]+outputimg[point[0],point[1]+1])/4
-                                        except:
-                                            plog(traceback.format_exc())
-                                            #breakpoint()
-
-                                        # Check it isn't just a dot
-                                        if value_at_neighbours < (0.4*value_at_point):
-                                            #plog ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
-                                            pointvalues[counter][2]=np.nan
-
-                                        # If not saturated and far away from the edge
-                                        elif value_at_point < 0.8*saturate:
-                                            pointvalues[counter][2]=value_at_point
-
-                                        else:
-                                            pointvalues[counter][2]=np.nan
-
-                                    counter=counter+1
-
-                                plog ("Sorting out bad pixels from the mix: " + str(time.time()-googtime))
+                                #tempstd=bn.nanstd(outputimg)
 
 
-                                # Trim list to remove things that have too many other things close to them.
+                                # Assume image is your 2D numpy array
+                                # Estimate a noise level (even if background subtracted, the noise remains)
+                                noise = mad_std(outputimg)
 
-                                googtime=time.time()
-                                # remove nan rows
-                                pointvalues=pointvalues[~np.isnan(pointvalues).any(axis=1)]
+                                # Set a detection threshold (5 sigma above noise, for example)
+                                daofind = DAOStarFinder(fwhm=3.0, threshold=5.*noise)
 
-                                # reverse sort by brightness
-                                pointvalues=pointvalues[pointvalues[:,2].argsort()[::-1]]
+                                # Find sources
+                                sources = daofind(outputimg)
+                                # Size of the cutouts
+                                stamp_size = max(10 * (1/self.pixscale),25)  # pixels
 
-                                #From...... NOW
-                                timer_for_bailing=time.time()
+                                cutouts = []
+                                positions = []
 
-                                # radial profile
-                                fwhmlist=[]
-                                sources=[]
-                                photometry=[]
+                                # Step 1: Sort by 'flux' in descending order
+                                sources.sort('flux')
+                                sources.reverse()  # Because astropy sorts ascending by default
 
-                                # The radius should be related to arcseconds on sky
-                                # And a reasonable amount - 12'
-                                try:
-                                    radius_of_radialprofile=int(24/self.pixscale)
-                                except:
-                                    radius_of_radialprofile=int(24/0.1)
-                                # Round up to nearest odd number to make a symmetrical array
-                                radius_of_radialprofile=int(radius_of_radialprofile // 2 *2 +1)
-                                halfradius_of_radialprofile=math.ceil(0.5*radius_of_radialprofile)
-                                #centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
-                                googtime=time.time()
+                                # Step 2: Trim to top 50 rows (or all if fewer)
+                                top_sources = sources[:50]
 
-                                number_of_good_radials_to_get = 50
-                                good_radials=0
-
-                                # Construct testing array
-                                # Initially on pixelscale then convert to pixels
-                                testvalue=0.1
-                                testvalues=[]
-                                while testvalue < 12:
-                                    if testvalue > 1 and testvalue < 6:
-                                        testvalues.append(testvalue)
-                                        testvalues.append(testvalue+0.05)
-                                    elif testvalue > 6:
-                                        if (int(testvalue * 10) % 3) == 0 :
-                                            testvalues.append(testvalue)
-                                    else:
-                                        testvalues.append(testvalue)
-                                    testvalue=testvalue+0.1
-                                # convert pixelscales into pixels
-                                try:
-                                    pixel_testvalues=np.array(testvalues) / self.pixscale
-                                except:
-                                    pixel_testvalues=np.array(testvalues) / 0.5
-
-                                for i in range(len(pointvalues)):
-                                    # Don't take too long!
-                                    if ((time.time() - timer_for_bailing) > time_limit):# and good_radials > 20:
-                                        plog ("Time limit reached! Bailout!")
-                                        break
-
-                                    cx= int(pointvalues[i][0])
-                                    cy= int(pointvalues[i][1])
-                                    cvalue=outputimg[int(cx)][int(cy)]
+                                for source in top_sources:
+                                    x, y = source['xcentroid'], source['ycentroid']
                                     try:
-                                        temp_array=outputimg[cx-halfradius_of_radialprofile:cx+halfradius_of_radialprofile,cy-halfradius_of_radialprofile:cy+halfradius_of_radialprofile]
+                                        cutout = Cutout2D(outputimg, (x, y), (stamp_size, stamp_size))
+                                        cutouts.append(cutout.data)
+                                        positions.append((x, y))
+                                    except Exception:
+                                        pass  # Skip sources near edges
 
-                                    except:
-                                        plog(traceback.format_exc())
+                                # Set up the fitter
+                                # fitter = fitting.LevMarLSQFitter()
 
-                                    #construct radial profile
-                                    cut_x,cut_y=temp_array.shape
-                                    cut_x_center=(cut_x/2)-1
-                                    cut_y_center=(cut_y/2)-1
-                                    radprofile=np.zeros([cut_x*cut_y,2],dtype=float)
-                                    counter=0
-                                    brightest_pixel_rdist=0
-                                    brightest_pixel_value=0
-                                    bailout=False
-                                    for q in range(cut_x):
-                                        if bailout==True:
-                                            break
-                                        for t in range(cut_y):
-                                            r_dist=pow(pow((q-cut_x_center),2) + pow((t-cut_y_center),2),0.5)
-                                            if q-cut_x_center < 0:# or t-cut_y_center < 0:
-                                                r_dist=r_dist*-1
-                                            radprofile[counter][0]=r_dist
-                                            radprofile[counter][1]=temp_array[q][t]
-                                            if temp_array[q][t] > brightest_pixel_value:
-                                                brightest_pixel_rdist=r_dist
-                                                brightest_pixel_value=temp_array[q][t]
-                                            counter=counter+1
+                                fwhms = []
 
-                                    # If the brightest pixel is in the center-ish
-                                    # then attempt a fit
-                                    try:
-                                        maxvalue=max(3, 3/self.pixscale)
-                                    except:
-                                        maxvalue=20
-                                    if abs(brightest_pixel_rdist) < max(3, maxvalue):
-                                        try:
-                                            # Reduce data down to make faster solvinging
-                                            upperbin=math.floor(max(radprofile[:,0]))
-                                            lowerbin=math.ceil(min(radprofile[:,0]))
-                                            # Only need a quarter of an arcsecond bin.
-                                            arcsecond_length_radial_profile = (upperbin-lowerbin)*self.pixscale
-                                            number_of_bins=int(arcsecond_length_radial_profile/0.25)
-                                            s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
+                                # for cutout, (x_center, y_center) in zip(cutouts, positions):
+                                #     # Estimate initial parameters
+                                #     amplitude = np.max(cutout)
+                                #     y, x = np.mgrid[:cutout.shape[0], :cutout.shape[1]]
 
-                                            max_value=np.nanmax(s)
-                                            min_value=np.nanmin(s)
-                                            threshold_value=(0.05*(max_value-min_value)) + min_value
+                                #     moffat_init = models.Moffat2D(
+                                #         amplitude=amplitude,
+                                #         x_0=cutout.shape[1] / 2,
+                                #         y_0=cutout.shape[0] / 2,
+                                #         gamma=2,
+                                #         alpha=1.5
+                                #     )
 
-                                            actualprofile=[]
-                                            for q in range(len(s)):
-                                                if not np.isnan(s[q]):
-                                                    if s[q] > threshold_value:
-                                                        actualprofile.append([(edges[q]+edges[q+1])/2,s[q]])
+                                #     try:
+                                #         moffat_fit = fitter(moffat_init, x, y, cutout)
 
-                                            actualprofile=np.asarray(actualprofile)
+                                #         # Derive FWHM from Moffat parameters
+                                #         gamma = moffat_fit.gamma.value
+                                #         alpha = moffat_fit.alpha.value
 
-                                            edgevalue_left=actualprofile[0][1]
-                                            edgevalue_right=actualprofile[-1][1]
+                                #         # FWHM formula for Moffat: FWHM = 2 * gamma * sqrt(2^(1/alpha) - 1)
+                                #         fwhm = 2 * gamma * np.sqrt(2**(1/alpha) - 1)
+                                #         fwhms.append(fwhm)
+                                #     except Exception:
+                                #         pass  # Fit failed
 
-                                            # Also remove any things that don't have many pixels above 20
-                                            # DO THIS SOON
-                                            if edgevalue_left < 0.6*cvalue and  edgevalue_right < 0.6*cvalue:
+                                # def fit_moffat_worker(args):
+                                #     cutout, position = args
+                                #     x_center, y_center = position
+                                #     try:
+                                #         amplitude = np.max(cutout)
+                                #         y, x = np.mgrid[:cutout.shape[0], :cutout.shape[1]]
 
-                                                # Different faster fitter to consider
-                                                peak_value_index=np.argmax(actualprofile[:,1])
-                                                peak_value=actualprofile[peak_value_index][1]
-                                                #x_axis_of_peak_value=actualprofile[peak_value_index][0]
+                                #         moffat_init = models.Moffat2D(
+                                #             amplitude=amplitude,
+                                #             x_0=cutout.shape[1] / 2,
+                                #             y_0=cutout.shape[0] / 2,
+                                #             gamma=2,
+                                #             alpha=1.5
+                                #         )
 
-                                                # Get the mean of the 5 pixels around the max
-                                                # and use the mean of those values and the peak value
-                                                # to use as the amplitude
-                                                temp_amplitude=actualprofile[peak_value_index-2][1]+actualprofile[peak_value_index-1][1]+actualprofile[peak_value_index][1]+actualprofile[peak_value_index+1][1]+actualprofile[peak_value_index+2][1]
-                                                temp_amplitude=temp_amplitude/5
-                                                # Check that the mean of the temp_amplitude here is at least 0.6 * cvalue
-                                                if temp_amplitude > 0.5*peak_value:
+                                #         fitter = fitting.LevMarLSQFitter()
+                                #         moffat_fit = fitter(moffat_init, x, y, cutout)
 
-                                                    # Get the center of mass peak value
-                                                    sum_of_positions_times_values=0
-                                                    sum_of_values=0
-                                                    number_of_positions_to_test=7 # odd value
-                                                    poswidth=int(number_of_positions_to_test/2)
+                                #         gamma = moffat_fit.gamma.value
+                                #         alpha = moffat_fit.alpha.value
 
-                                                    for spotty in range(number_of_positions_to_test):
-                                                        sum_of_positions_times_values=sum_of_positions_times_values+(actualprofile[peak_value_index-poswidth+spotty][1]*actualprofile[peak_value_index-poswidth+spotty][0])
-                                                        sum_of_values=sum_of_values+actualprofile[peak_value_index-poswidth+spotty][1]
-                                                    peak_position=(sum_of_positions_times_values / sum_of_values)
-                                                    temppos=abs(actualprofile[:,0] - peak_position).argmin()
-                                                    tempvalue=actualprofile[temppos,1]
-                                                    temppeakvalue=copy.deepcopy(tempvalue)
-                                                    # Get lefthand quarter percentiles
-                                                    counter=1
-                                                    while tempvalue > 0.25*temppeakvalue:
-                                                        tempvalue=actualprofile[temppos-counter,1]
-                                                        if tempvalue > 0.75:
-                                                            threequartertemp=temppos-counter
-                                                        counter=counter+1
+                                #         fwhm = 2 * gamma * np.sqrt(2**(1/alpha) - 1)
+                                #         return fwhm
+                                #     except Exception:
+                                #         return None  # Fit failed
 
-                                                    lefthand_quarter_spot=actualprofile[temppos-counter][0]
-                                                    lefthand_threequarter_spot=actualprofile[threequartertemp][0]
+                                def multiprocess_fwhm(cutouts, positions, processes=4):
+                                    with Pool(processes=processes) as pool:
+                                        results = pool.map(fit_moffat_worker, zip(cutouts, positions))
+                                    # Filter out failed fits
+                                    return [r for r in results if r is not None]
 
-                                                    # Get righthand quarter percentile
-                                                    counter=1
-                                                    while tempvalue > 0.25*temppeakvalue:
-                                                        tempvalue=actualprofile[temppos+counter,1]
-                                                        #plog (tempvalue)
-                                                        if tempvalue > 0.75:
-                                                            threequartertemp=temppos+counter
-                                                        counter=counter+1
+                                # Get number of CPUs
+                                num_cpus = multiprocessing.cpu_count()
 
-                                                    righthand_quarter_spot=actualprofile[temppos+counter][0]
-                                                    righthand_threequarter_spot=actualprofile[threequartertemp][0]
+                                fwhms = multiprocess_fwhm(cutouts, positions, processes=max(1, num_cpus - 1))
 
-                                                    largest_reasonable_position_deviation_in_pixels=1.25*max(abs(peak_position - righthand_quarter_spot),abs(peak_position - lefthand_quarter_spot))
-                                                    largest_reasonable_position_deviation_in_arcseconds=largest_reasonable_position_deviation_in_pixels *self.pixscale
+                                #breakpoint()
 
-                                                    smallest_reasonable_position_deviation_in_pixels=0.7*min(abs(peak_position - righthand_threequarter_spot),abs(peak_position - lefthand_threequarter_spot))
-                                                    smallest_reasonable_position_deviation_in_arcseconds=smallest_reasonable_position_deviation_in_pixels *self.pixscale
-
-                                                    # If peak reasonably in the center
-                                                    # And the largest reasonable position deviation isn't absurdly small
-                                                    if abs(peak_position) < max(3, 3/self.pixscale) and largest_reasonable_position_deviation_in_arcseconds > 1.0:
-                                                        # Construct testing array
-                                                        # Initially on pixelscale then convert to pixels
-                                                        testvalue=0.1
-                                                        testvalues=[]
-                                                        while testvalue < 12:
-                                                            if testvalue > smallest_reasonable_position_deviation_in_arcseconds and testvalue < largest_reasonable_position_deviation_in_arcseconds:
-                                                                if testvalue > 1 and testvalue <= 7:
-                                                                    testvalues.append(testvalue)
-                                                                    testvalues.append(testvalue+0.05)
-                                                                elif testvalue > 7:
-                                                                    if (int(testvalue * 10) % 3) == 0 :
-                                                                        testvalues.append(testvalue)
-                                                                else:
-                                                                    testvalues.append(testvalue)
-                                                            testvalue=testvalue+0.1
-                                                        # convert pixelscales into pixels
-                                                        pixel_testvalues=np.array(testvalues) / self.pixscale
-                                                        # convert fwhm into appropriate stdev
-                                                        pixel_testvalues=(pixel_testvalues/2.355) /2
-
-                                                        smallest_value=999999999999999.9
-                                                        for pixeltestvalue in pixel_testvalues:
-
-                                                            test_fpopt= [peak_value, peak_position, pixeltestvalue]
-
-                                                            # differences between gaussian and data
-                                                            difference=(np.sum(abs(actualprofile[:,1] - gaussian(actualprofile[:,0], *test_fpopt))))
-
-                                                            if difference < smallest_value:
-                                                                smallest_value=copy.deepcopy(difference)
-                                                                smallest_fpopt=copy.deepcopy(test_fpopt)
-
-                                                            # if difference < 1.25 * smallest_value:
-                                                            #     if False:
-                                                            #         # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                                                            #         # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
-                                                            #         # # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                                                            #         # plt.show()
-                                                            #         pass
-                                                            #     pass
-                                                            # else:
-                                                            #     #plog ("gone through and sampled range enough")
-                                                            #     break
+                                fwhms=np.array(fwhms)
 
 
-                                                        # if it isn't a unreasonably small fwhm then measure it.
-                                                        if (2.355 * smallest_fpopt[2]) > (0.8 / self.pixscale) :
 
-                                                            # FWHM is 2.355 * std for a gaussian
-                                                            fwhmlist.append(smallest_fpopt[2])
-                                                            # Area under a 1D gaussian is (amplitude * Stdev / 0.3989)
+                                fwhms=fwhms[~np.isnan(fwhms)]
+                                fwhms = fwhms[fwhms >= 0.5]
 
-                                                            # Volume under the 2D-Gaussian is computed as: 2 * pi * sqrt(abs(X_sig)) * sqrt(abs(Y_sig)) * amplitude
-                                                            # But our sigma in both dimensions are the same so sqrt times sqrt of something is equal to the something
-                                                            countsphot= 2 * math.pi * smallest_fpopt[2] * smallest_fpopt[0]
+                                # #hduheader["IMGSTDEV"] = ( tempstd, "Median Value of Image Array" )
+                                # try:
+                                #     threshold=3* bn.nanstd(outputimg[outputimg < (5*tempstd)])#,(200*self.pixscale)) # Don't bother with stars with peaks smaller than 100 counts per arcsecond
+                                # except:
+                                #     threshold=3* bn.nanstd(outputimg[outputimg < (5*tempstd)])#,(200*0.1)) # Don't bother with stars with peaks smaller than 100 counts per arcsecond
 
-                                                            if good_radials < number_of_good_radials_to_get:
-                                                                sources.append([cx,cy,radprofile,temp_array,cvalue, countsphot,smallest_fpopt[0],smallest_fpopt[1],smallest_fpopt[2],'r'])
-                                                                good_radials=good_radials+1
-                                                            else:
-                                                                sources.append([cx,cy,0,0,cvalue, countsphot,smallest_fpopt[0],smallest_fpopt[1],smallest_fpopt[2],'n'])
-                                                            photometry.append([cx,cy,cvalue,smallest_fpopt[0],smallest_fpopt[2]*4.710,countsphot])
-                                        except:
-                                            pass
+                                # googtime=time.time()
+                                # list_of_local_maxima=localMax(outputimg, threshold=threshold)
+                                # plog ("Finding Local Maxima: " + str(time.time()-googtime))
 
-                                plog ("Extracting and Gaussianingx: " + str(time.time()-googtime))
+                                # # Assess each point
+                                # pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
+                                # counter=0
+                                # googtime=time.time()
+                                # for point in list_of_local_maxima:
+
+                                #     pointvalues[counter][0]=point[0]
+                                #     pointvalues[counter][1]=point[1]
+                                #     pointvalues[counter][2]=np.nan
+                                #     in_range=False
+                                #     if (point[0] > fx*0.1) and (point[1] > fy*0.1) and (point[0] < fx*0.9) and (point[1] < fy*0.9):
+                                #         in_range=True
+
+                                #     if in_range:
+                                #         value_at_point=outputimg[point[0],point[1]]
+                                #         try:
+                                #             value_at_neighbours=(outputimg[point[0]-1,point[1]]+outputimg[point[0]+1,point[1]]+outputimg[point[0],point[1]-1]+outputimg[point[0],point[1]+1])/4
+                                #         except:
+                                #             plog(traceback.format_exc())
+                                #             #breakpoint()
+
+                                #         # Check it isn't just a dot
+                                #         if value_at_neighbours < (0.4*value_at_point):
+                                #             #plog ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
+                                #             pointvalues[counter][2]=np.nan
+
+                                #         # If not saturated and far away from the edge
+                                #         elif value_at_point < 0.8*self.settings["saturate"]:
+                                #             pointvalues[counter][2]=value_at_point
+
+                                #         else:
+                                #             pointvalues[counter][2]=np.nan
+
+                                #     counter=counter+1
+
+                                # plog ("Sorting out bad pixels from the mix: " + str(time.time()-googtime))
+
+
+                                # # Trim list to remove things that have too many other things close to them.
+
+                                # googtime=time.time()
+                                # # remove nan rows
+                                # pointvalues=pointvalues[~np.isnan(pointvalues).any(axis=1)]
+
+                                # # reverse sort by brightness
+                                # pointvalues=pointvalues[pointvalues[:,2].argsort()[::-1]]
+
+                                # #From...... NOW
+                                # timer_for_bailing=time.time()
+
+                                # # radial profile
+                                # fwhmlist=[]
+                                # sources=[]
+                                # photometry=[]
+
+                                # # The radius should be related to arcseconds on sky
+                                # # And a reasonable amount - 12'
+                                # try:
+                                #     radius_of_radialprofile=int(24/self.pixscale)
+                                # except:
+                                #     radius_of_radialprofile=int(24/0.1)
+                                # # Round up to nearest odd number to make a symmetrical array
+                                # radius_of_radialprofile=int(radius_of_radialprofile // 2 *2 +1)
+                                # halfradius_of_radialprofile=math.ceil(0.5*radius_of_radialprofile)
+                                # #centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
+                                # googtime=time.time()
+
+                                # number_of_good_radials_to_get = 50
+                                # good_radials=0
+
+                                # # Construct testing array
+                                # # Initially on pixelscale then convert to pixels
+                                # testvalue=0.1
+                                # testvalues=[]
+                                # while testvalue < 12:
+                                #     if testvalue > 1 and testvalue < 6:
+                                #         testvalues.append(testvalue)
+                                #         testvalues.append(testvalue+0.05)
+                                #     elif testvalue > 6:
+                                #         if (int(testvalue * 10) % 3) == 0 :
+                                #             testvalues.append(testvalue)
+                                #     else:
+                                #         testvalues.append(testvalue)
+                                #     testvalue=testvalue+0.1
+                                # # convert pixelscales into pixels
+                                # try:
+                                #     pixel_testvalues=np.array(testvalues) / self.pixscale
+                                # except:
+                                #     pixel_testvalues=np.array(testvalues) / 0.5
+
+                                # for i in range(len(pointvalues)):
+                                #     # Don't take too long!
+                                #     if ((time.time() - timer_for_bailing) > time_limit):# and good_radials > 20:
+                                #         plog ("Time limit reached! Bailout!")
+                                #         break
+
+                                #     cx= int(pointvalues[i][0])
+                                #     cy= int(pointvalues[i][1])
+                                #     cvalue=outputimg[int(cx)][int(cy)]
+                                #     try:
+                                #         temp_array=outputimg[cx-halfradius_of_radialprofile:cx+halfradius_of_radialprofile,cy-halfradius_of_radialprofile:cy+halfradius_of_radialprofile]
+
+                                #     except:
+                                #         plog(traceback.format_exc())
+
+                                #     #construct radial profile
+                                #     cut_x,cut_y=temp_array.shape
+                                #     cut_x_center=(cut_x/2)-1
+                                #     cut_y_center=(cut_y/2)-1
+                                #     radprofile=np.zeros([cut_x*cut_y,2],dtype=float)
+                                #     counter=0
+                                #     brightest_pixel_rdist=0
+                                #     brightest_pixel_value=0
+                                #     bailout=False
+                                #     for q in range(cut_x):
+                                #         if bailout==True:
+                                #             break
+                                #         for t in range(cut_y):
+                                #             r_dist=pow(pow((q-cut_x_center),2) + pow((t-cut_y_center),2),0.5)
+                                #             if q-cut_x_center < 0:# or t-cut_y_center < 0:
+                                #                 r_dist=r_dist*-1
+                                #             radprofile[counter][0]=r_dist
+                                #             radprofile[counter][1]=temp_array[q][t]
+                                #             if temp_array[q][t] > brightest_pixel_value:
+                                #                 brightest_pixel_rdist=r_dist
+                                #                 brightest_pixel_value=temp_array[q][t]
+                                #             counter=counter+1
+
+                                #     # If the brightest pixel is in the center-ish
+                                #     # then attempt a fit
+                                #     try:
+                                #         maxvalue=max(3, 3/self.pixscale)
+                                #     except:
+                                #         maxvalue=20
+                                #     if abs(brightest_pixel_rdist) < max(3, maxvalue):
+                                #         try:
+                                #             # Reduce data down to make faster solvinging
+                                #             upperbin=math.floor(max(radprofile[:,0]))
+                                #             lowerbin=math.ceil(min(radprofile[:,0]))
+                                #             # Only need a quarter of an arcsecond bin.
+                                #             arcsecond_length_radial_profile = (upperbin-lowerbin)*self.pixscale
+                                #             number_of_bins=int(arcsecond_length_radial_profile/0.25)
+                                #             s, edges, _ = binned_statistic(radprofile[:,0],radprofile[:,1], statistic='mean', bins=np.linspace(lowerbin,upperbin,number_of_bins))
+
+                                #             max_value=np.nanmax(s)
+                                #             min_value=np.nanmin(s)
+                                #             threshold_value=(0.05*(max_value-min_value)) + min_value
+
+                                #             actualprofile=[]
+                                #             for q in range(len(s)):
+                                #                 if not np.isnan(s[q]):
+                                #                     if s[q] > threshold_value:
+                                #                         actualprofile.append([(edges[q]+edges[q+1])/2,s[q]])
+
+                                #             actualprofile=np.asarray(actualprofile)
+
+                                #             edgevalue_left=actualprofile[0][1]
+                                #             edgevalue_right=actualprofile[-1][1]
+
+                                #             # Also remove any things that don't have many pixels above 20
+                                #             # DO THIS SOON
+                                #             if edgevalue_left < 0.6*cvalue and  edgevalue_right < 0.6*cvalue:
+
+                                #                 # Different faster fitter to consider
+                                #                 peak_value_index=np.argmax(actualprofile[:,1])
+                                #                 peak_value=actualprofile[peak_value_index][1]
+                                #                 #x_axis_of_peak_value=actualprofile[peak_value_index][0]
+
+                                #                 # Get the mean of the 5 pixels around the max
+                                #                 # and use the mean of those values and the peak value
+                                #                 # to use as the amplitude
+                                #                 temp_amplitude=actualprofile[peak_value_index-2][1]+actualprofile[peak_value_index-1][1]+actualprofile[peak_value_index][1]+actualprofile[peak_value_index+1][1]+actualprofile[peak_value_index+2][1]
+                                #                 temp_amplitude=temp_amplitude/5
+                                #                 # Check that the mean of the temp_amplitude here is at least 0.6 * cvalue
+                                #                 if temp_amplitude > 0.5*peak_value:
+
+                                #                     # Get the center of mass peak value
+                                #                     sum_of_positions_times_values=0
+                                #                     sum_of_values=0
+                                #                     number_of_positions_to_test=7 # odd value
+                                #                     poswidth=int(number_of_positions_to_test/2)
+
+                                #                     for spotty in range(number_of_positions_to_test):
+                                #                         sum_of_positions_times_values=sum_of_positions_times_values+(actualprofile[peak_value_index-poswidth+spotty][1]*actualprofile[peak_value_index-poswidth+spotty][0])
+                                #                         sum_of_values=sum_of_values+actualprofile[peak_value_index-poswidth+spotty][1]
+                                #                     peak_position=(sum_of_positions_times_values / sum_of_values)
+                                #                     temppos=abs(actualprofile[:,0] - peak_position).argmin()
+                                #                     tempvalue=actualprofile[temppos,1]
+                                #                     temppeakvalue=copy.deepcopy(tempvalue)
+                                #                     # Get lefthand quarter percentiles
+                                #                     counter=1
+                                #                     while tempvalue > 0.25*temppeakvalue:
+                                #                         tempvalue=actualprofile[temppos-counter,1]
+                                #                         if tempvalue > 0.75:
+                                #                             threequartertemp=temppos-counter
+                                #                         counter=counter+1
+
+                                #                     lefthand_quarter_spot=actualprofile[temppos-counter][0]
+                                #                     lefthand_threequarter_spot=actualprofile[threequartertemp][0]
+
+                                #                     # Get righthand quarter percentile
+                                #                     counter=1
+                                #                     while tempvalue > 0.25*temppeakvalue:
+                                #                         tempvalue=actualprofile[temppos+counter,1]
+                                #                         #plog (tempvalue)
+                                #                         if tempvalue > 0.75:
+                                #                             threequartertemp=temppos+counter
+                                #                         counter=counter+1
+
+                                #                     righthand_quarter_spot=actualprofile[temppos+counter][0]
+                                #                     righthand_threequarter_spot=actualprofile[threequartertemp][0]
+
+                                #                     largest_reasonable_position_deviation_in_pixels=1.25*max(abs(peak_position - righthand_quarter_spot),abs(peak_position - lefthand_quarter_spot))
+                                #                     largest_reasonable_position_deviation_in_arcseconds=largest_reasonable_position_deviation_in_pixels *self.pixscale
+
+                                #                     smallest_reasonable_position_deviation_in_pixels=0.7*min(abs(peak_position - righthand_threequarter_spot),abs(peak_position - lefthand_threequarter_spot))
+                                #                     smallest_reasonable_position_deviation_in_arcseconds=smallest_reasonable_position_deviation_in_pixels *self.pixscale
+
+                                #                     # If peak reasonably in the center
+                                #                     # And the largest reasonable position deviation isn't absurdly small
+                                #                     if abs(peak_position) < max(3, 3/self.pixscale) and largest_reasonable_position_deviation_in_arcseconds > 1.0:
+                                #                         # Construct testing array
+                                #                         # Initially on pixelscale then convert to pixels
+                                #                         testvalue=0.1
+                                #                         testvalues=[]
+                                #                         while testvalue < 12:
+                                #                             if testvalue > smallest_reasonable_position_deviation_in_arcseconds and testvalue < largest_reasonable_position_deviation_in_arcseconds:
+                                #                                 if testvalue > 1 and testvalue <= 7:
+                                #                                     testvalues.append(testvalue)
+                                #                                     testvalues.append(testvalue+0.05)
+                                #                                 elif testvalue > 7:
+                                #                                     if (int(testvalue * 10) % 3) == 0 :
+                                #                                         testvalues.append(testvalue)
+                                #                                 else:
+                                #                                     testvalues.append(testvalue)
+                                #                             testvalue=testvalue+0.1
+                                #                         # convert pixelscales into pixels
+                                #                         pixel_testvalues=np.array(testvalues) / self.pixscale
+                                #                         # convert fwhm into appropriate stdev
+                                #                         pixel_testvalues=(pixel_testvalues/2.355) /2
+
+                                #                         smallest_value=999999999999999.9
+                                #                         for pixeltestvalue in pixel_testvalues:
+
+                                #                             test_fpopt= [peak_value, peak_position, pixeltestvalue]
+
+                                #                             # differences between gaussian and data
+                                #                             difference=(np.sum(abs(actualprofile[:,1] - gaussian(actualprofile[:,0], *test_fpopt))))
+
+                                #                             if difference < smallest_value:
+                                #                                 smallest_value=copy.deepcopy(difference)
+                                #                                 smallest_fpopt=copy.deepcopy(test_fpopt)
+
+                                #                             # if difference < 1.25 * smallest_value:
+                                #                             #     if False:
+                                #                             #         # plt.scatter(actualprofile[:,0],actualprofile[:,1])
+                                #                             #         # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
+                                #                             #         # # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                                #                             #         # plt.show()
+                                #                             #         pass
+                                #                             #     pass
+                                #                             # else:
+                                #                             #     #plog ("gone through and sampled range enough")
+                                #                             #     break
+
+
+                                #                         # if it isn't a unreasonably small fwhm then measure it.
+                                #                         if (2.355 * smallest_fpopt[2]) > (0.8 / self.pixscale) :
+
+                                #                             # FWHM is 2.355 * std for a gaussian
+                                #                             fwhmlist.append(smallest_fpopt[2])
+                                #                             # Area under a 1D gaussian is (amplitude * Stdev / 0.3989)
+
+                                #                             # Volume under the 2D-Gaussian is computed as: 2 * pi * sqrt(abs(X_sig)) * sqrt(abs(Y_sig)) * amplitude
+                                #                             # But our sigma in both dimensions are the same so sqrt times sqrt of something is equal to the something
+                                #                             countsphot= 2 * math.pi * smallest_fpopt[2] * smallest_fpopt[0]
+
+                                #                             if good_radials < number_of_good_radials_to_get:
+                                #                                 sources.append([cx,cy,radprofile,temp_array,cvalue, countsphot,smallest_fpopt[0],smallest_fpopt[1],smallest_fpopt[2],'r'])
+                                #                                 good_radials=good_radials+1
+                                #                             else:
+                                #                                 sources.append([cx,cy,0,0,cvalue, countsphot,smallest_fpopt[0],smallest_fpopt[1],smallest_fpopt[2],'n'])
+                                #                             photometry.append([cx,cy,cvalue,smallest_fpopt[0],smallest_fpopt[2]*4.710,countsphot])
+                                #         except:
+                                #             print ("couldn't do focus photometry: ")
+                                #             print(traceback.format_exc())
+                                #             breakpoint()
+
+                                #plog ("Extracting and Gaussianingx: " + str(time.time()-googtime))
                                 plog ("N of sources processed: " + str(len(sources)))
 
-                                rfp = abs(bn.nanmedian(fwhmlist)) * 4.710
+
+                                rfp = bn.nanmedian(fwhms) * temp_focus_bin
                                 rfr = rfp * self.pixscale
-                                rfs = bn.nanstd(fwhmlist) * self.pixscale
-                                if rfr < 1.0 or rfr > 12:
+                                rfs = bn.nanstd(fwhms) * self.pixscale * temp_focus_bin
+                                if rfr < 1.0 or rfr  > 12:
                                     rfr= np.nan
                                     rfp= np.nan
                                     #rfs= np.nan
 
                                 fwhm_dict = {}
-                                fwhm_dict['rfp'] = rfp * temp_focus_bin
-                                if self.pixscale == None:
-                                    fwhm_dict['rfr'] = rfr  * temp_focus_bin
-                                    fwhm_dict['rfs'] = rfs  * temp_focus_bin
+                                fwhm_dict['rfp'] = rfp
+                                #if self.pixscale == None:
+                                fwhm_dict['rfr'] = rfr
+                                fwhm_dict['rfs'] = rfs
 
-                                else:
-                                    fwhm_dict['rfr'] = rfr * self.pixscale * temp_focus_bin
-                                    fwhm_dict['rfs'] = rfs * self.pixscale  * temp_focus_bin
+                                # else:
+                                #     fwhm_dict['rfr'] = rfr * self.pixscale * temp_focus_bin
+                                #     fwhm_dict['rfs'] = rfs * self.pixscale  * temp_focus_bin
                                 fwhm_dict['sky'] = 200 #str(imageMedian)
                                 fwhm_dict['sources'] = str(len(sources))
 
                                 plog ("FWHM: " + str(fwhm_dict['rfr']))
+
+                                #breakpoint()
 
 
                             except:
@@ -5967,21 +6168,27 @@ class Camera:
                     except:
                         print ("couldn't do focus photometry: ")
                         print(traceback.format_exc())
-                        
-                    
+
+
 
                     ########################################################################################
 
                     g_dev['obs'].fwhmresult['FWHM'] = float(fwhm_dict['rfr'])
                     g_dev['obs'].fwhmresult['No_of_sources'] = float(
                         fwhm_dict['sources'])
+                    g_dev['obs'].fwhmresult["mean_focus"] = focus_position
+
+                    g_dev['obs'].fwhmresult['error'] = False
 
                     expresult['FWHM'] = g_dev['obs'].fwhmresult['FWHM']
                     expresult["mean_focus"] = focus_position
                     expresult['No_of_sources'] = fwhm_dict['sources']
 
+
                     plog("Focus at " + str(focus_position) + " is " +
                          str(round(float(g_dev['obs'].fwhmresult['FWHM']), 2)))
+
+                    plog ("Stored")
 
                     try:
                         hdusmallheader["SEPSKY"] = str(fwhm_dict['sky'])

@@ -20,5 +20,6 @@ pip install -U pyserial
 pip install -U xmltodict
 pip install -U image_registration
 pip install -U joblib
+pip install -U photutils
 
 pip install git+https://github.com/python-zwoasi/python-zwoasi
