@@ -4255,7 +4255,7 @@ class Sequencer:
             self.total_sequencer_control = False
             return
 
-        if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']) :
+        if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Morn Sky Flats']) :
             plog ("NOT DOING FLATS -- IT IS THE NIGHTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")
             self.flats_being_collected = False
