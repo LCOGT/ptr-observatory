@@ -223,7 +223,7 @@ site_config = {
 
     'defaults': {
         'mount': 'mount1',
-        #'telescope': 'telescope1',
+        'telescope': 'telescope1',
         'focuser': 'focuser1',
         'rotator': 'rotator1',
         'selector':  'selector1',
@@ -239,10 +239,10 @@ site_config = {
     # Also important to note: these must match the roles in obs.py create_devices().
     # Roles are standardized across all sites even if not all roles are used at each site.
     'device_roles': {
-        'mount': 'mrcpier2',
-        'main_rotator': 'rotator',
-        'main_focuser': 'focuser',
-        'main_fw': 'Dual filter wheel',
+        'mount': 'mount1',
+        'main_rotator': 'rotator1',
+        'main_focuser': 'focuser1',
+        'main_fw': 'filter_wheel1',
 
         # Cameras
         'main_cam': 'camera_1_1',
