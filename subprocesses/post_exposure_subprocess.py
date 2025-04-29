@@ -2044,7 +2044,12 @@ try:
                 altpath='no'
 
 
-            picklepayload=(reduced_hdusmallheader,copy.deepcopy(selfconfig),cam_alias, slow_process, altpath)
+            if selfconfig['fully_platesolve_images_at_site_rather_than_pipe']:
+                wcsfilename=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq)) +'/' + selfconfig["obs_id"]+ "-" + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter) + "-" + dayobs+ "-"+ next_seq+ "-" + 'EX'+ "00.fits"
+            else:
+                wcsfilename='none'
+
+            picklepayload=(reduced_hdusmallheader,copy.deepcopy(selfconfig),cam_alias, slow_process, altpath, wcsfilename)
 
             picklefilename='testred'+str(time.time()).replace('.','')
             pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))

@@ -21,6 +21,9 @@ import warnings
 import datetime
 from astropy.nddata import block_reduce
 warnings.simplefilter('ignore', category=AstropyUserWarning)
+from astropy import wcs
+from astropy.coordinates import SkyCoord
+import re
 
 def print(*args):
     rgb = lambda r, g, b: f'\033[38;2;{r};{g};{b}m'
@@ -40,6 +43,7 @@ temphduheader=input_sep_info[0]
 selfconfig=input_sep_info[1]
 camname=input_sep_info[2]
 slow_process=input_sep_info[3]
+wcsfilename=input_sep_info[5]
 
 googtime=time.time()
 
@@ -155,16 +159,125 @@ for nancoord in nan_coords:
 hdureduced.data[np.isnan(hdureduced.data)] =edgefillvalue
 
 
+# Wait here for potential wcs solution
+
+print ("Waiting for: " +wcsfilename.replace('.fits','.wcs'))
+
+wcs_timeout_timer=time.time()
+while True:
+    if os.path.exists (wcsfilename.replace('.fits','.wcs')):
+        print ("success!")
+
+
+        #if os.path.exists(wcsname):
+        print ("wcs exists: " + str(wcsfilename.replace('.fits','.wcs')))
+        wcsheader = fits.open(wcsfilename.replace('.fits','.wcs'))[0].header
+        temphduheader.update(wcs.WCS(wcsheader).to_header(relax=True))
+
+        # # Create a WCS instance from your header
+        # wcstrue = wcs.WCS(temphduheader)
+
+        # Get the RA/DEC at the reference pixel (CRPIX1, CRPIX2)
+        ra_ref = temphduheader['CRVAL1']
+        dec_ref = temphduheader['CRVAL2']
+
+        tempointing = SkyCoord(ra_ref, dec_ref, unit='deg')
+        tempointing=tempointing.to_string("hmsdms").split(' ')
+
+        temphduheader["RA"] = (
+            tempointing[0],
+            "[hms] Telescope right ascension",
+        )
+        temphduheader["DEC"] = (
+            tempointing[1],
+            "[dms] Telescope declination",
+        )
+
+        temphduheader["RA-HMS"] = temphduheader["RA"]
+        temphduheader["DEC-DMS"] = temphduheader["DEC"]
+
+        temphduheader["ORIGRA"] = temphduheader["RA"]
+        temphduheader["ORIGDEC"] = temphduheader["DEC"]
+        temphduheader["RAhrs"] = (
+            round(ra_ref / 15,8),
+            "[hrs] Telescope right ascension",
+        )
+        temphduheader["RADEG"] = round(ra_ref,8)
+        temphduheader["DECDEG"] = round(dec_ref,8)
+
+        temphduheader["TARG-CHK"] = (
+            (ra_ref)
+            + dec_ref,
+            "[deg] Sum of RA and dec",
+        )
+
+
+        del wcsheader
+
+        break
+    if os.path.exists (wcsfilename.replace('.fits','.failed')):
+        print ("failure!")
+        break
+    if (time.time() - wcs_timeout_timer) > 240:
+        print ("took too long")
+        break
+    time.sleep(2)
+
+binning=1
+
 if hdureduced.header["PIXSCALE"] < 0.3:
     hdureduced.data=block_reduce(hdureduced.data,3)
     hdureduced.header["PIXSCALE"]=hdureduced.header["PIXSCALE"]*3
-    hdureduced.header["CDELT1"]=hdureduced.header["CDELT1"]*3
-    hdureduced.header["CDELT2"]=hdureduced.header["CDELT2"]*3
+    binning=3
+    # hdureduced.header["CDELT1"]=hdureduced.header["CDELT1"]*3
+    # hdureduced.header["CDELT2"]=hdureduced.header["CDELT2"]*3
+    # hdureduced.header["CRPIX1"]=(hdureduced.header["CRPIX1"]-1)/(3+1)
+    # hdureduced.header["CRPIX2"]=(hdureduced.header["CRPIX2"]-1)/(3+1)
 elif hdureduced.header["PIXSCALE"] < 0.6:
     hdureduced.data=block_reduce(hdureduced.data,2)
     hdureduced.header["PIXSCALE"]=hdureduced.header["PIXSCALE"]*2
-    hdureduced.header["CDELT1"]=hdureduced.header["CDELT1"]*2
-    hdureduced.header["CDELT2"]=hdureduced.header["CDELT2"]*2
+    binning=2
+    # hdureduced.header["CDELT1"]=hdureduced.header["CDELT1"]*2
+    # hdureduced.header["CDELT2"]=hdureduced.header["CDELT2"]*2
+    # hdureduced.header["CRPIX1"]=(hdureduced.header["CRPIX1"]-1)/(2+1)
+    # hdureduced.header["CRPIX2"]=(hdureduced.header["CRPIX2"]-1)/(2+1)
+
+# bin the wcs
+if binning > 1:
+    N=binning
+
+    # 1) Adjust CRPIX, CDELT/CD as before
+    for ax in (1,2):
+        hdureduced.header[f'CRPIX{ax}'] = (hdureduced.header[f'CRPIX{ax}'] - 1)/N + 1
+        if f'CDELT{ax}' in hdureduced.header:
+            hdureduced.header[f'CDELT{ax}'] *= N
+    for i in (1,2):
+        for j in (1,2):
+            key = f'CD{i}_{j}'
+            if key in hdureduced.header:
+                hdureduced.header[key] *= N
+
+    # 2) Rescale SIP forward-distortion coefficients A_ij and B_ij
+    sip_pat = re.compile(r'([AB])_(\d+)_(\d+)')
+    for key in list(hdureduced.header.keys()):
+        m = sip_pat.match(key)
+        if m:
+            kind, i, j = m.group(1), int(m.group(2)), int(m.group(3))
+            n = i + j
+            if n >= 2:  # linear terms (n=1) stay unchanged
+                hdureduced.header[key] *= N**(n-1)
+
+    # 3) Do the same for the inverse SIP terms AP_ij and BP_ij
+    inv_pat = re.compile(r'(AP|BP)_(\d+)_(\d+)')
+    for key in list(hdureduced.header.keys()):
+        m = inv_pat.match(key)
+        if m:
+            prefix, i, j = m.group(1), int(m.group(2)), int(m.group(3))
+            n = i + j
+            if n >= 2:
+                hdureduced.header[key] *= N**(n-1)
+
+
 
 hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
 hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
@@ -174,6 +287,7 @@ hdureduced.header["DATE"] = (
     ),
     "Date FITS file was written",
 )
+
 
 
 hdureduced.writeto(
