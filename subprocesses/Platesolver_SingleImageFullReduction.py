@@ -336,7 +336,7 @@ if len(acatalog) > 5:
 
     plog (astoptions)
 
-    os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename) + ' > output.txt')
+    os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename)) # + ' > output.txt')
 
     plog (wslfilename)
     # Remove temporary fits file
@@ -344,7 +344,7 @@ if len(acatalog) > 5:
     #     os.remove(wslfilename)
     # except:
     #     pass
-    
+
     if os.path.exists (wslfilename.replace('.fits','.wcs')):
         plog ("successfully made wcs!")
     else:
@@ -354,7 +354,7 @@ if len(acatalog) > 5:
         os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
 
         plog (wslfilename)
-        
+
         if os.path.exists (wslfilename.replace('.fits','.wcs')):
             plog ("successfully made wcs!")
         else:
@@ -364,7 +364,7 @@ if len(acatalog) > 5:
 else:
     with open(wslfilename.replace('.fits','.failed'), 'w') as file:
         file.write('failed')
-            
+
 
 sys.exit()
 

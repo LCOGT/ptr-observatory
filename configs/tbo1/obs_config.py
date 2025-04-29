@@ -21,7 +21,7 @@ obs_id = 'tbo1' # THIS IS THE NAME OF THIS OBSERVATORY
 site_config = {
     # Instance type specifies whether this is an obs or a wema
     'instance_type' : 'obs',
-    'instance_is_private': False,
+    'instance_is_private': True,
     # If this is not a wema, this specifies the wema that this obs is connected to
     'wema_name' : 'tbo',
     # The unique identifier for this obs
@@ -404,6 +404,7 @@ site_config = {
             'desc':  'Planewave Focuser',
             'driver': 'dummy',
 			'com_port':  'COM9',
+            'relative_focuser': False,
 
             'focuser_movement_settle_time': 10,
             'start_at_config_reference': False,

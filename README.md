@@ -13,6 +13,8 @@ cd ptr-observatory
 
 Install the Python dependencies with `$ pip install -r requirements.txt`, preferably in a virtual environment.
 
+Create a file called `.env`, and fill out the values listed in `.env.example`.
+
 Currently, this project does not run on Mac or Linux systems.
 
 ## Config Files
@@ -30,7 +32,7 @@ config = {
     "ec00zwo": {
       # configuration or this camera
     },
-    "widefield cam": { 
+    "widefield cam": {
       # configuration for a second camera...
     },
     "random camera": {
@@ -63,7 +65,7 @@ config = {
   'device_roles': {
       'mount': None, # there will only ever be one mount, so its role is simply "mount"
       'main_focuser': None,
-      'main_fw': None, 
+      'main_fw': None,
       'main_rotator': None,
 
       # Cameras
