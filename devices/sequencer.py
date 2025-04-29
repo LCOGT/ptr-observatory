@@ -2833,7 +2833,7 @@ class Sequencer:
                     # # breakpoint()
 
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
-                g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
+                #g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
 
             return masterDark
 
@@ -2972,7 +2972,7 @@ class Sequencer:
                     #breakpoint()
 
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
-                g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
+                #g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
 
             return masterDark
 
