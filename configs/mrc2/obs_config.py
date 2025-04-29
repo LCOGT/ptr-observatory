@@ -55,6 +55,7 @@ Paddle is a HID, not a COM or USB port. *
 
 Park 207.3, 5.285.
 '''
+import json
 
 obs_id = 'mrc2'
 
@@ -128,15 +129,14 @@ site_config = {
     'save_to_alt_path':  'yes',
     'local_calibration_path': 'C:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'archive_age' : 4, # Number of days to keep files in the local archive before deletion. Negative means never delete
-    'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
-    
+   
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
     # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
     'save_raw_to_disk': True,
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': True,
-    'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.   
+    'keep_focus_images_on_disk': True,  # To save space, the focus files may not be saved.   
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,   
    # Number of files to send up to the ptrarchive simultaneously.
@@ -159,25 +159,27 @@ site_config = {
      
 
     
-    # TIMING FOR CALENDAR EVENTS
+ 
     
+    # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
     
-    'bias_dark interval':  105.,   #minutes
-    'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
+    'bias_dark interval':  120.,   #minutes
+    'eve_sky_flat_sunset_offset': -30.,  # 40 before Minutes  neg means before, + after.
+    #'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
-    'end_eve_sky_flats_offset': 5 , 
-    'clock_and_auto_focus_offset': 8,
+    'end_eve_sky_flats_offset': 15 ,
+    'clock_and_auto_focus_offset': -10,
     
-    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
-    #'morn_flat_start_offset': -10,       #min from Sunrise
-    'morn_flat_start_offset': -15,       #min from Sunrise
-    'morn_flat_end_offset':  +45,        #min from Sunrise
+    'astro_dark_buffer': 10,   #Min before and after AD to extend observing window
+    #'morn_flat_start_offset': -5,       #min from Sunrise
+    'morn_flat_start_offset': -10,       #min from Sunrise
+    'morn_flat_end_offset':  +40,        #min from Sunrise
     'end_night_processing_time':  90,   #  A guess
-    'observing_begins_offset': 18,    
-    # How many minutes before civilDawn to do ....
-    'observing_ends_offset': 18,   
-    
+    'observing_begins_offset': 18,
+    # How many minutes before Nautical Dawn to observe ....
+    'observing_ends_offset': 18,
+        
     
     # Exposure times for standard system exposures
     'focus_exposure_time': 15,  # Exposure time in seconds for exposure image
@@ -205,7 +207,19 @@ site_config = {
     'solve_nth_image': 1,  # Only solve every nth image
     'solve_timer': 0.05,  # Only solve every X minutes
     'threshold_mount_update': 45,  # only update mount when X arcseconds away
-    
+    'push_file_list_to_pipe_queue': False,
+
+   # The site can fully platesolve each image before it is sent off to s3 or a PIPE
+   # If there are spare enough cycles at the site, this saves time for the PIPE
+   # to concentrate on more resource heavy reductions.
+   # Also leads to fully platesolved reduced images on the local site computer
+   # Usually set this to True
+   # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
+   'fully_platesolve_images_at_site_rather_than_pipe' : False,  #TEMP for mrc2 for bringup WER 20250408
+
+
+
+   "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer   
 
     'defaults': {
         'mount': 'mount1',
@@ -218,6 +232,25 @@ site_config = {
         'camera': 'camera_1_1',
         'sequencer': 'sequencer1'
         },
+    # Initial roles are assigned here. These may change during runtime.
+    # Value is the device display name
+    # This is where to configure a second device of the same type if you want to control it in the site code.
+    # Devices are referenced in obs with self.devices['device_role']
+    # Also important to note: these must match the roles in obs.py create_devices().
+    # Roles are standardized across all sites even if not all roles are used at each site.
+    'device_roles': {
+        'mount': 'mrcpier2',
+        'main_rotator': 'rotator',
+        'main_focuser': 'focuser',
+        'main_fw': 'Dual filter wheel',
+
+        # Cameras
+        'main_cam': 'camera_1_1',
+        # Cameras below aren't currently used, but here as an example.
+        'guide_cam': None,
+        'widefield_cam': None,
+        'allsky_cam': None,
+    },
     'device_types': [
         'mount',
         #'telescope',
@@ -258,7 +291,7 @@ site_config = {
             'alignment': 'Alt-Az',
             'default_zenith_avoid': 5.0,   #degrees floating
             'wait_after_slew_time': 0.0, # Some mounts report they have finished slewing but are still vibrating. This adds in some buffer time to a wait for slew.
-            
+            'needs_to_wait_for_dome' : False,
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             #'has_ascom_altaz': False,
             'pointing_tel': 'tel1',  
@@ -323,7 +356,7 @@ site_config = {
                       '360': 32,  #  We use a dict because of fragmented azimuth mesurements.
                       },
                 'refraction_on': True,
-                'model_on': True,
+                'model_on': False,
                 'rates_on': True,
                 'model': {
                     'IH': 0,
@@ -462,6 +495,7 @@ site_config = {
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20240210',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  False,
+            'relative_focuser': False,   #MFITZ added this for ECO
             'minimum': 0,    #NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
             'throw': 300,
@@ -602,15 +636,7 @@ site_config = {
                 'focus_filter' : 'w',
 
                 
-                
-                # 'filter_screen_sort':  ['0', '1', '2', '10', '7', '6', '18', '12', '11', '13', '8',  '3', \
-                #                         '14', '15', '4', '16'],   #  '9', '21'],  # '5', '17'], #Most to least throughput, \
-                #                 #so screen brightens, skipping u and zs which really need sky.
-                # #'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'Red', 'JV',\
-                # #                        'Green','JB', 'gp',   'Blue', 'EXO',  'w','Lum',  'air']  #Least to most throughput
-                # 'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'JB',\
-                #                         'JV', 'gp', 'EXO', 'Lum', 'w', 'air'],
-                #  #Least to most throughput
+
 
             },
         },
@@ -825,6 +851,7 @@ site_config = {
                 'temp_setpoint': 2,  # Verify we can go colder
                 'rated_max_delta': -20, # Rated capacity for TEC to go below ambient.
                 "temp_setpoint_tolarance": 2.0,   # Centigrade
+                "temp_setpoint_tolerance": 2.5, 
                 'has_chiller': True,
                 'ambient_water_cooler':  False,  #QHY sells these.           
                 'chiller_com_port': 'COM1',
@@ -938,434 +965,7 @@ site_config = {
             },
         },
 
- # 'camera': {
- #     'camera_1_1': {
- #         'parent': 'telescope1',
- #         'name': 'sq005ms',      #Important because this points to a server file structure by that name.
- #         'desc':  'QHY 600Pro Monochrome',
- #         'service_date': '20230301',
- #         #'driver':  'ASCOM.QHYCCD.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
- #         'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
-         
-        
-
-         
- #         'startup_script':  None,
- #         'recover_script':  None,
- #         'shutdown_script':  None,
- #         'detector':  'Sony IMX455',
- #         'manufacturer':  'QHY',
- #         'use_file_mode':  False,
- #         'file_mode_path':  'Q:/000ptr_saf/archive/kf01/autosaves/',
- #         'settings': {
-             
- #             # These are the offsets in degrees of the actual telescope from the latitude and longitude of the WEMA settings
- #             'north_offset': 0.0,  # These three are normally 0.0 for the primary telescope
- #             'east_offset': 0.0,
-                             
-
- #             # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
- #             'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
-
- #             # Simple Camera Properties
- #             'is_cmos':  True,
- #             'is_osc': False,
- #             'is_color': False,  # NB we also have a is_osc key.
- #             'osc_bayer': 'RGGB',
-
-
- #             # For direct QHY usage we need to set the appropriate gain.
- #             # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
- #             # Sky quality is also important, the worse the sky quality, the higher tha gain needs to be
- #             # Default for QHY600 is GAIN: 26, OFFSET: 60, readout mode 3. 
- #             # Random tips from the internet:
- #             # After the exposure, the background in the image should not be above 10% saturation of 16Bit while the brightest bits of the image should not be overexposed
- #             # The offset should be set so that there is at least 300ADU for the background
- #             # I guess try this out on the standard smartstack exposure time.        
- #             # https://www.baader-planetarium.com/en/blog/gain-and-offset-darks-flats-and-bias-at-cooled-cmos-cameras/
- #             #
- #             # Also the "Readout Mode" is really important also
- #             # Readout Mode #0 (Photographic DSO Mode)
- #             # Readout Mode #1 (High Gain Mode)
- #             # Readout Mode #2 (Extended Fullwell Mode)
- #             # Readout Mode #3 (Extended Fullwell Mode-2CMS)
- #             #
- #             # With the powers invested in me, I have decided that readout mode 3 is the best. We can only pick one standard one
- #             # and 0 is also debatably better for colour images, but 3 is way better for dynamic range....
- #             # We can't swip and swap because the biases and darks and flats will change, so we are sticking with 3 until
- #             # something bad happens with 3 for some reason
- #             #
- #             # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
- #             # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
- #             # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
- #             'direct_qhy_readout_mode' : 3,        
- #             'direct_qhy_gain' : 26,
- #             'direct_qhy_offset' : 60,
-             
- #             'direct_qhy_usb_traffic' : 60,
-             
- #             'set_qhy_usb_speed': False,
- #             'direct_qhy_usb_speed' : 0,
-             
-             
- #             # These options set whether an OSC gets binned or interpolated for different functions
- #             # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
- #             # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
- #             # then binning for focus is recommended. SEP and Platesolve can generally always be binned.
- #             'interpolate_for_focus': False,
- #             # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
- #             'bin_for_focus': False,
- #             'focus_bin_value' : 1,
- #             'interpolate_for_sep': False,
- #             'bin_for_sep': False,  # This setting will bin the image for SEP photometry rather than interpolating.
- #             'sep_bin_value' : 1,
- #             # This setting will bin the image for platesolving rather than interpolating.
- #             'bin_for_platesolve': True,
- #             'platesolve_bin_value' : 2,
-             
-             
- #             # Colour image tweaks.
- #             'osc_brightness_enhance': 1.0,
- #             'osc_contrast_enhance': 1.2,
- #             'osc_saturation_enhance': 1.5,
- #             'osc_colour_enhance': 1.2,
- #             'osc_sharpness_enhance': 1.2,
- #             'osc_background_cut': 15.0,
-             
- #             # ONLY TRANSFORM THE FITS IF YOU HAVE
- #             # A DATA-BASED REASON TO DO SO.....
- #             # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
- #             # ***** ONLY ONE OF THESE SHOULD BE ON! *********
- #             'transpose_fits': False,
- #             'flipx_fits': False,
- #             'flipy_fits': False,
- #             'rotate180_fits': False,  # This also should be flipxy!
- #             'rotate90_fits': False,
- #             'rotate270_fits': False,
- #             'squash_on_x_axis': False,
-             
-             
- #             # What number of pixels to crop around the edges of a REDUCED image
- #             # This is primarily to get rid of overscan areas and also all images
- #             # Do tend to be a bit dodgy around the edges, so perhaps a standard
- #             # value of 30 is good. Increase this if your camera has particularly bad
- #             # edges.
- #             'reduced_image_edge_crop': 50,
-
- #             # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
- #             # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
- #             # RECOMMENDED DEFAULT DESIRE OF PTR
- #             'transpose_jpeg': False,
- #             'flipx_jpeg': False,
- #             'flipy_jpeg': False,
- #             'rotate180_jpeg': False,
- #             'rotate90_jpeg': False,
- #             'rotate270_jpeg': False,
-
- #             # This is purely to crop the preview jpeg for the UI                
- #             'crop_preview': True,
- #             'crop_preview_ybottom': 20,  # 2 needed if Bayer array
- #             'crop_preview_ytop': 20,
- #             'crop_preview_xleft': 20,
- #             'crop_preview_xright': 20,
-             
-
-             
- #            # For large fields of view, crop the images down to solve faster.
- #            # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
- #            # Probably also similar for platesolving.
- #            # for either pointing or platesolving even on more modest size fields of view.
- #            # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
- #            # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless
- #            # you clearly need to.
- #            'focus_image_crop_width': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full width
- #            'focus_image_crop_height': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full height                
- #            'focus_jpeg_size': 1500, # How many pixels square to crop the focus image for the UI Jpeg
-
- #            # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE
- #            'platesolve_image_crop': 0.0,  # Platesolve crops have to be symmetrical
-            
- #            # Really, the SEP image should not be cropped unless your field of view and number of sources
- #            # Are taking chunks out of the processing time.
- #            # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width
- #            'sep_image_crop_width': 0.0,
- #            # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width
- #            'sep_image_crop_height': 0.0,
-
-
- #             # This is the area for cooling related settings
- #             'cooler_on': True,
- #             'temp_setpoint': -3,  # Verify we can go colder
- #             'has_chiller': True,                
- #             'chiller_com_port': 'COM1',
- #             'chiller_ref_temp':  15.0,  # C
- #             'day_warm': False,
- #             'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
- #             'protect_camera_from_overheating' : False,
-
- #             # These are the physical values for the camera
- #             # related to pixelscale. Binning only applies to single
- #             # images. Stacks will always be drizzled to to drizzle value from 1x1.
- #             'onebyone_pix_scale': 0.198,    #  This is the 1x1 binning pixelscale
- #             'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
- #             'x_pixel':  3.76, # pixel size in microns
- #             'y_pixel':  3.76, # pixel size in microns
- #             # The drizzle_value is by the new pixelscale
- #             # for the new resolution when stacking in the EVA pipeline
- #             # Realistically you want a resolution of about 0.5 arcseconds per pixel
- #             # Unless you are at a very poor quality site.
- #             # If you have a higher resolution pixelscale it will use that instead.
- #             # Generally leave this at 0.5 - the optimal value for ground based
- #             # observatories.... unless you have a large field of view.                
- #             'drizzle_value_for_later_stacking': 0.5,
-
- #             # This is the absolute minimum and maximum exposure for the camera
- #             'min_exposure': 0.0001,
- #             'max_exposure': 600.,
- #             # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
- #             'min_flat_exposure': 0.0001,                
- #             # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
- #             'max_flat_exposure': 20.0,
- #             # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
- #             'max_daytime_exposure': 0.5,
-
- #             # One of the best cloud detections is to estimate the gain of the camera from the image
- #             # If the variation, and hence gain, is too high according to gain + stdev, the flat can be easily rejected.
- #             # Should be off for new observatories coming online until a real gain is known.
- #             'reject_new_flat_by_known_gain' : True,
- #             # These values are just the STARTING values. Once the software has been
- #             # through a few nights of calibration images, it should automatically calculate these gains.
- #             'camera_gain':   2.48, #[10., 10., 10., 10.],     #  One val for each binning.
- #             'camera_gain_stdev':   0.04, #[10., 10., 10., 10.],     #  One val for each binning.
- #             'read_noise':  10.615, #[9, 9, 9, 9],    #  All SWAGs right now
- #             'read_noise_stdev':   0.012, #[10., 10., 10., 10.],     #  One val for each binning.              
- #             # Saturate is the important one. Others are informational only.
- #             'fullwell_capacity': 80000,  # NB Guess
- #             'saturate':   65535,
- #             'max_linearity':  60000,   # Guess
- #             # How long does it take to readout an image after exposure
- #             'cycle_time':            0.5,
- #             # What is the base smartstack exposure time?
- #             # It will vary from scope to scope and computer to computer.
- #             # 30s is a good default.
- #             'smart_stack_exposure_time': 30,
-             
-
- #             # As simple as it states, how many calibration frames to collect and how many to store.                
- #             'number_of_bias_to_collect': 33,
- #             'number_of_dark_to_collect': 17,
- #             'number_of_flat_to_collect': 11,
- #             'number_of_bias_to_store': 63,
- #             'number_of_dark_to_store': 33,
- #             'number_of_flat_to_store': 31,
- #             # Default dark exposure time.
- #             'dark_exposure': 180,
-            
-             
- #             # In the EVA Pipeline, whether to run cosmic ray detection on individual images
- #             'do_cosmics': False,
-
- #             # Does this camera have a darkslide, if so, what are the settings?
- #             'has_darkslide':  False,
- #             'darkslide_com':  'COM15',
- #             'shutter_type': "Electronic",
-            
- #             # 'has_screen': True,
- #             # 'screen_settings':  {
- #             #     'screen_saturation':  157.0,
- #             #     'screen_x4':  -4E-12,  #'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
- #             #     'screen_x3':  3E-08,
- #             #     'screen_x2':  -9E-05,
- #             #     'screen_x1':  .1258,
- #             #     'screen_x0':  8.683,
- #             #     },
- #             },
-
- #         },
- #     },
-     
-        # 'camera_2': {
-        #     'parent': 'telescope1',
-        #     'name': 'sq02',      #Important because this points to a server file structure by that name.
-        #     'desc':  'QHY 268M',
-        #     'driver':  'ASCOM.QHYCCD.Camera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
-        #     'startup_script':  None,
-        #     'recover_script':  None,
-        #     'shutdown_script':  None,
-        #     'detector':  'Sony IMX571',
-        #     'manufacturer':  'QHY -- http://QHYCCD.COM',
-        #     'use_file_mode':  False,
-        #     'file_mode_path':  'D:/000ptr_saf/archive/sq02/autosaves/',
-        #     'settings': {    #NB Need to add specification for chiller and its control
-        #         'temp_setpoint': -10,
-        #         'cooler_on': True,
-        #         'darkslide_com': None,
-        #         'north_offset': 0.0,
-        #         'east_offset': 0.0,
-        #         'rotation': 0.0,
-        #         'min_exposure': 0.00003,  #Need to check this setting out
-        #         'max_exposure': 3600.0,
-        #         'can_subframe':  True,
-        #         'min_subframe':  '16:16',
-        #         'is_cmos':  False,
-        #         'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
-        #         'can_set_gain':  False,
-        #         'reference_gain': [10., 10., 10., 10.],     #  One val for each binning.
-        #         'reference_noise': [1.1, 1.1, 1.1, 1.1],    #  All SWAGs right now
-        #         'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
-        #         'saturate':  55000,
-        #         'max_linearity':  55000.,
-        #         'fullwell_capacity': 85000,
-        #         'read_mode':  'Normal',
-        #         'readout_mode': 'Normal',
-        #         'readout_speed':  0.4,
-        #         'square_detector': True,
-        #         'areas_implemented': [ "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
-        #         'default_area':  "Full",
-        #         'bin_modes':  [[1, 1], [2, 2], [3, 3], [4, 4]],     #Meaning no binning if list has only one entry
-        #         'default_bin':  [2, 2],    #Always square and matched to seeing situation by owner
-        #         'cycle_time':  [18, 15, 12, 9],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
-        #         'has_darkslide':  False,
-        #         'has_screen': True,
-        #         'screen_settings':  {
-        #             'screen_saturation':  157.0,
-        #             'screen_x4':  -4E-12,  #'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
-        #             'screen_x3':  3E-08,
-        #             'screen_x2':  -9E-05,
-        #             'screen_x1':  .1258,
-        #             'screen_x0':  8.683
-        #         },
-        #     },
-        # },
-
-
-
-
-        # 'ag_1_2': {
-        #     'parent': 'telescope1',
-        #     'name': 'ag02',      #Important because this points to a server file structure by that name.
-        #     'desc':  'QHY Uncooled Guider',
-        #     'driver':  'ASCOM.QHYCCD_GUIDER.Camera',   #'OM.FLI.Camera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
-        #     'startup_script':  None,
-        #     'recover_script':  None,
-        #     'shutdown_script':  None,
-        #     'detector':  'Sony',
-        #     'manufacturer':  'QHY -- Finger Lakes Instrumentation',
-        #     'use_file_mode':  False,
-        #     'file_mode_path':  'D:/000ptr_saf/archive/ag02/autosaves/',
-        #     'settings': {
-        #         'temp_setpoint': 10,
-        #         'cooler_on': False,
-        #         'x_start':  0,
-        #         'y_start':  0,
-        #         'x_width':  4096,
-        #         'y_width':  4096,
-        #         'x_chip':   4096,
-        #         'y_chip':   4096,
-        #         'x_pixel':  9,
-        #         'y_pixel':  9,
-        #         'overscan_x': 0,
-        #         'overscan_y': 0,
-        #         'north_offset': 0.0,
-        #         'east_offset': 0.0,
-        #         'rotation': 0.0,
-        #         'min_exposure': 0.001,  #Need to check this setting out
-        #         'max_exposure': 360.0,
-        #         'can_subframe':  True,
-        #         'min_subframe':  '16:16',
-        #         'is_cmos':  True,
-        #         'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
-        #         'can_set_gain':  False,
-        #         'reference_gain': [10., 10., 10., 10.],     #  One val for each binning.
-        #         'reference_noise': [1.1, 1.1, 1.1, 1.1],    #  All SWAGs right now
-        #         'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
-        #         'saturate':  55000,
-        #         'max_linearity':  55000.,
-        #         'fullwell_capacity': 85000,
-        #         'read_mode':  'Normal',
-        #         'readout_mode': 'Normal',
-        #         'readout_speed':  0.4,
-        #         'square_detector': False,
-        #         'areas_implemented': ["Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
-        #         'default_area':  "Full",
-        #         'bin_modes':  [[1, 1], [2, 2]],     #Meaning no binning if list has only one entry
-        #         'default_bin':  [2, 2],    #Always square and matched to seeing situation by owner
-        #         'cycle_time':  [18, 15, 12, 9],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
-        #         'has_darkslide':  False,
-        #         'has_screen': True,
-        #         'screen_settings':  {
-        #             'screen_saturation':  157.0,
-        #             'screen_x4':  -4E-12,  #'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
-        #             'screen_x3':  3E-08,
-        #             'screen_x2':  -9E-05,
-        #             'screen_x1':  .1258,
-        #             'screen_x0':  8.683
-        #         },
-        #     },
-        # },
-
-        # 'ag_1_4': {
-        #     'parent': 'telescope1',
-        #     'name': 'ag04',      #Important because this points to a server file structure by that name.
-        #     'desc':  'QHY 174M',
-        #     'driver':  'ASCOM.QHYCCD_CAM2.Camera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
-        #     'startup_script':  None,
-        #     'recover_script':  None,
-        #     'shutdown_script':  None,
-        #     'detector':  'Sony',
-        #     'manufacturer':  'QHY --  ',
-        #     'use_file_mode':  False,
-        #     'file_mode_path':  'D:/000ptr_saf/archive/ag04/autosaves/',
-        #     'settings': {
-        #         'temp_setpoint': -15,
-        #         'cooler_on': True,
-        #         'x_start':  0,
-        #         'y_start':  0,
-        #         'x_width':  4096,
-        #         'y_width':  4096,
-        #         'x_chip':   4096,
-        #         'y_chip':   4096,
-        #         'x_pixel':  9,
-        #         'y_pixel':  9,
-        #         'overscan_x': 0,
-        #         'overscan_y': 0,
-        #         'north_offset': 0.0,
-        #         'east_offset': 0.0,
-        #         'rotation': 0.0,
-        #         'min_exposure': 0.25,  #Need to check this setting out
-        #         'max_exposure': 360.0,
-        #         'can_subframe':  True,
-        #         'min_subframe':  '16:16',
-        #         'is_cmos':  True,
-        #         'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
-        #         'can_set_gain':  True,
-        #         'reference_gain': [10., 10., 10., 10.],     #  One val for each binning.
-        #         'reference_noise': [1.1, 1.1, 1.1, 1.1],    #  All SWAGs right now
-        #         'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
-        #         'saturate':  55000,
-        #         'max_linearity':  55000.,
-        #         'fullwell_capacity': 85000,
-        #         'read_mode':  'Normal',
-        #         'readout_mode': 'Normal',
-        #         'readout_speed':  0.4,
-        #         'square_detector': False,
-        #         'areas_implemented': [ "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
-        #         'default_area':  "Full",
-        #         'bin_modes':  [[1, 1], [2, 2]],     #Meaning no binning if list has only one entry
-        #         'default_bin':  [2, 2],    #Always square and matched to seeing situation by owner
-        #         'cycle_time':  [18, 15, 12, 9],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
-        #         'has_darkslide':  False,
-        #         'has_screen': True,
-        #         'screen_settings':  {
-        #             'screen_saturation':  157.0,
-        #             'screen_x4':  -4E-12,  #'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
-        #             'screen_x3':  3E-08,
-        #             'screen_x2':  -9E-05,
-        #             'screen_x1':  .1258,
-        #             'screen_x0':  8.683
-        #         },
-        #     },
-        # },
+ 
 
 
     'sequencer': {
@@ -1395,14 +995,14 @@ site_config = {
     },
 }
 
-# if __name__ == '__main__':
-#     '''
-#     This is a simple test to send and receive via json.
-#     '''
+if __name__ == '__main__':
+    '''
+    This is a simple test to send and receive via json.
+    '''
 
-#     j_dump = json.dumps(site_config)
-#     site_unjasoned = json.loads(j_dump)
-#     if str(site_config)  == str(site_unjasoned):
-#         print('Strings matched.')
-#     if site_config == site_unjasoned:
-#         print('Dictionaries matched.')
+    j_dump = json.dumps(site_config)
+    site_unjasoned = json.loads(j_dump)
+    if str(site_config)  == str(site_unjasoned):
+        print('Strings matched.')
+    if site_config == site_unjasoned:
+        print('Dictionaries matched.')
