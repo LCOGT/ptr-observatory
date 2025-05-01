@@ -4378,7 +4378,7 @@ class Sequencer:
 
         exp_time = 0
         scale = 1.0
-        collecting_area = self.config['telescope']['Main OTA']['collecting_area']/31808.  #Ratio to ARO Ceravolo 300mm
+        collecting_area = self.config['telescope']['telescope_1']['collecting_area']/31808.  #Ratio to ARO Ceravolo 300mm
 
 
         # First pointing towards flatspot
