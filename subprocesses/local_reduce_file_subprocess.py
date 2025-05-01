@@ -19,12 +19,11 @@ from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 import datetime
-from astropy.nddata import block_reduce
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 from astropy import wcs
 from astropy.coordinates import SkyCoord
-import re
 from astropy.wcs import WCS
+from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
 
 def print(*args):
     rgb = lambda r, g, b: f'\033[38;2;{r};{g};{b}m'
@@ -94,7 +93,13 @@ while (breaker != 0):
 
 hdureduced.data[hdureduced.data < zeroValue] = np.nan
 
-# Remove nans
+# Interpolate image nans
+kernel = Gaussian2DKernel(x_stddev=1)
+hdureduced.data = interpolate_replace_nans(hdureduced.data, kernel)
+
+
+
+# Remove remaining nans
 x_size=hdureduced.data.shape[0]
 y_size=hdureduced.data.shape[1]
 # this is actually faster than np.nanmean
@@ -169,14 +174,10 @@ while True:
     if os.path.exists (wcsfilename.replace('.fits','.wcs')):
         print ("success!")
 
-
         #if os.path.exists(wcsname):
         print ("wcs exists: " + str(wcsfilename.replace('.fits','.wcs')))
         wcsheader = fits.open(wcsfilename.replace('.fits','.wcs'))[0].header
         temphduheader.update(wcs.WCS(wcsheader).to_header(relax=True))
-
-        # # Create a WCS instance from your header
-        # wcstrue = wcs.WCS(temphduheader)
 
         # Get the RA/DEC at the reference pixel (CRPIX1, CRPIX2)
         ra_ref = temphduheader['CRVAL1']
@@ -215,7 +216,7 @@ while True:
 
         del wcsheader
 
-
+        # Alter header appropriately if the image has been binned.
         binning= hdureduced.header["XBINING"]
         if binning > 1:
             w_orig = WCS(temphduheader)
@@ -232,146 +233,12 @@ while True:
         break
     time.sleep(2)
 
-# binning=1
-
-# if hdureduced.header["PIXSCALE"] < 0.3:
-#     hdureduced.data=block_reduce(hdureduced.data,3)
-#     hdureduced.header["PIXSCALE"]=hdureduced.header["PIXSCALE"]*3
-#     binning=3
-#     # hdureduced.header["CDELT1"]=hdureduced.header["CDELT1"]*3
-#     # hdureduced.header["CDELT2"]=hdureduced.header["CDELT2"]*3
-#     # hdureduced.header["CRPIX1"]=(hdureduced.header["CRPIX1"]-1)/(3+1)
-#     # hdureduced.header["CRPIX2"]=(hdureduced.header["CRPIX2"]-1)/(3+1)
-# elif hdureduced.header["PIXSCALE"] < 0.6:
-#     hdureduced.data=block_reduce(hdureduced.data,2)
-#     hdureduced.header["PIXSCALE"]=hdureduced.header["PIXSCALE"]*2
-#     binning=2
-    # hdureduced.header["CDELT1"]=hdureduced.header["CDELT1"]*2
-    # hdureduced.header["CDELT2"]=hdureduced.header["CDELT2"]*2
-    # hdureduced.header["CRPIX1"]=(hdureduced.header["CRPIX1"]-1)/(2+1)
-    # hdureduced.header["CRPIX2"]=(hdureduced.header["CRPIX2"]-1)/(2+1)
-
-
-# # right after your block_reduce (and before the 'if binning>1:' block)
-# ny, nx = hdureduced.data.shape
-# hdureduced.header = hdureduced.header
-
-# # 1) update the header dims so slice() sees the true size
-# hdureduced.header['NAXIS1'] = nx
-# hdureduced.header['NAXIS2'] = ny
-
-# # # 2) if you're going to inject a PC/CDELT solution, drop the old CD
-# # for key in list(hdureduced.header.keys()):
-# #     if key.startswith('CD') or key.startswith('PC') or key.startswith('CDELT'):
-# #         hdureduced.header.pop(key)
-
-
-
-# # # bin the wcs
-# if binning > 1:
-
-#     # hdureduced.header['CRPIX1']=hdureduced.header['CRPIX1']/binning
-#     # hdureduced.header['CRPIX2']=hdureduced.header['CRPIX2']/binning
-#     # hdureduced.header['CDELT1']=hdureduced.header['CDELT1']*binning
-#     # hdureduced.header['CDELT2']=hdureduced.header['CDELT2']*binning
-
-#     # for i in (1,2):
-#     #     for j in (1,2):
-#     #         key = f'CD{i}_{j}'
-#     #         if key in hdureduced.header:
-#     #             hdureduced.header[key] *= N
-
-#     # # 2) Rescale SIP forward-distortion coefficients A_ij and B_ij
-#     # sip_pat = re.compile(r'([AB])_(\d+)_(\d+)')
-#     # for key in list(hdureduced.header.keys()):
-#     #     m = sip_pat.match(key)
-#     #     if m:
-#     #         kind, i, j = m.group(1), int(m.group(2)), int(m.group(3))
-#     #         n = i + j
-#     #         if n >= 2:  # linear terms (n=1) stay unchanged
-#     #             hdureduced.header[key] *= N**(n-1)
-
-#     # # 3) Do the same for the inverse SIP terms AP_ij and BP_ij
-#     # inv_pat = re.compile(r'(AP|BP)_(\d+)_(\d+)')
-#     # for key in list(hdureduced.header.keys()):
-#     #     m = inv_pat.match(key)
-#     #     if m:
-#     #         prefix, i, j = m.group(1), int(m.group(2)), int(m.group(3))
-#     #         n = i + j
-#     #         if n >= 2:
-#     #             hdureduced.header[key] *= N**(n-1)
-
-#     # # read your original WCS
-#     # wcs_in = WCS(hdureduced.header)
-
-#     # # slice with the same stepping you used to bin the data
-#     # wcs_binned = wcs_in.slice((np.s_[::N], np.s_[::N]))
-
-#     # # write back into the header (this pulls in CD, SIP, CRPIX, etc.)
-#     # new_hdureduced.header = wcs_binned.to_header(relax=True)
-#     # for card in new_hdureduced.header.cards:
-#     #     hdureduced.header[card.keyword] = card.value
-
-#     # wcs_in     = WCS(hdureduced.header)
-#     # wcs_binned = wcs_in.slice(
-#     #     (slice(None, None, N), slice(None, None, N)),
-#     #     numpy_order=True
-#     # )
-#     # new_hdr = wcs_binned.to_header(relax=True)
-#     # for card in new_hdr.cards:
-#     #     hdureduced.header[card.keyword] = card.value
-
-#     # # construct WCS
-#     # wcs = WCS(hdureduced.header)
-
-#     # #binning = 2   # or 3
-
-#     # shift the reference pixel
-#     wcs.wcs.crpix = (wcs.wcs.crpix - 1.)/binning + 1.
-
-#     # stretch the scale (or CD matrix)
-#     if wcs.wcs.has_cd():
-#         # if CD matrix is used
-#         wcs.wcs.cd = wcs.wcs.cd * binning
-#     else:
-#         # if you use CDELT + PC
-#         wcs.wcs.cdelt = wcs.wcs.cdelt * binning
-
-#     # write the new header
-#     new_hdr = wcs.to_header(relax=True)
-#     # copy across any other non‐WCS keywords you need
-#     for k in hdureduced.header:
-#         if k not in new_hdr and not k.startswith('WCS'):
-#             new_hdr[k] = hdureduced.header[k]
-
-#     hdureduced.header = new_hdr
-
-
-
-# hdureduced.header["NAXIS1"] = hdureduced.data.shape[1]
-# hdureduced.header["NAXIS2"] = hdureduced.data.shape[0]
-
-
-# hdureduced.header["CRPIX1"]=hdureduced.header["CRPIX1"]/binning
-# hdureduced.header["CRPIX2"]=hdureduced.header["CRPIX2"]/binning
-
-# hdureduced.header["CDELT1"]=hdureduced.header["CDELT1"]*binning
-# hdureduced.header["CDELT2"]=hdureduced.header["CDELT2"]*binning
-
-# hdureduced.header["PC1_1"]=hdureduced.header["PC1_1"]*binning
-# hdureduced.header["PC1_2"]=hdureduced.header["PC1_2"]*binning
-# hdureduced.header["PC2_1"]=hdureduced.header["PC2_1"]*binning
-# hdureduced.header["PC2_2"]=hdureduced.header["PC2_2"]*binning
-
-
 hdureduced.header["DATE"] = (
     datetime.date.strftime(
         datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
     ),
     "Date FITS file was written",
 )
-
-
 
 hdureduced.writeto(
     slow_process[1], overwrite=True, output_verify='silentfix'
