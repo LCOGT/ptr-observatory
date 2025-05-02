@@ -264,34 +264,6 @@ def mid_stretch_jpeg(data):
 
     return data
 
-
-# def fit_moffat_worker(args):
-#     cutout, position = args
-#     x_center, y_center = position
-#     try:
-#         amplitude = np.max(cutout)
-#         y, x = np.mgrid[:cutout.shape[0], :cutout.shape[1]]
-
-#         moffat_init = models.Moffat2D(
-#             amplitude=amplitude,
-#             x_0=cutout.shape[1] / 2,
-#             y_0=cutout.shape[0] / 2,
-#             gamma=2,
-#             alpha=1.5
-#         )
-
-#         fitter = fitting.LevMarLSQFitter()
-#         moffat_fit = fitter(moffat_init, x, y, cutout)
-
-#         gamma = moffat_fit.gamma.value
-#         alpha = moffat_fit.alpha.value
-
-#         fwhm = 2 * gamma * np.sqrt(2**(1/alpha) - 1)
-#         return fwhm
-#     except Exception:
-#         return None  # Fit failed
-
-
 def fit_moffat_worker(args):
     cutout, position = args
     x_center, y_center = position
@@ -322,20 +294,6 @@ def fit_moffat_worker(args):
 
 # Note this is a thread!
 def dump_main_data_out_to_post_exposure_subprocess(payload, post_processing_subprocess):
-
-    # Here is a manual debug area which makes a pickle for debug purposes
-    # Here is the test pickle that gets created for debugging (if commented)
-    #pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
-    #breakpoint()
-
-
-    # post_processing_subprocess=subprocess.Popen(
-    #     ['python','subprocesses/post_exposure_subprocess.py'],
-    #     stdin=subprocess.PIPE,
-    #     stdout=None,
-    #     stderr=None,
-    #     bufsize=-1
-    # )
 
     try:
         pickle.dump(payload, post_processing_subprocess.stdin)
@@ -645,195 +603,6 @@ def reset_sequence(pCamera):
         #breakpoint()
         plog("Nothing on the cam shelf in reset_sequence")
         return None
-
-
-# def multiprocess_fast_gaussian_photometry(package):
-#     try:
-
-#         (cvalue, cx, cy, radprofile, pixscale) = package
-
-#         # Reduce data down to make faster solving
-#         upperbin = math.floor(max(radprofile[:, 0]))
-#         lowerbin = math.ceil(min(radprofile[:, 0]))
-#         # Only need a quarter of an arcsecond bin.
-#         if np.isnan(pixscale) or pixscale == None:
-#             arcsecond_length_radial_profile = (upperbin-lowerbin)*8
-#         else:
-#             arcsecond_length_radial_profile = (upperbin-lowerbin)*pixscale
-#         number_of_bins = int(arcsecond_length_radial_profile/0.25)
-
-#         s, edges, _ = binned_statistic(radprofile[:, 0], radprofile[:, 1], statistic='mean', bins=np.linspace(
-#             lowerbin, upperbin, number_of_bins))
-
-#         max_value = np.nanmax(s)
-#         min_value = np.nanmin(s)
-
-#         threshold_value = (0.05*(max_value-min_value)) + min_value
-
-#         actualprofile = []
-#         for q in range(len(s)):
-#             if not np.isnan(s[q]):
-#                 if s[q] > threshold_value:
-#                     actualprofile.append([(edges[q]+edges[q+1])/2, s[q]])
-
-#         actualprofile = np.asarray(actualprofile)
-
-#         # Don't consider things that are clearly not stars but extended objects or blended stars).
-#         edgevalue_left = actualprofile[0][1]
-#         edgevalue_right = actualprofile[-1][1]
-
-#         if edgevalue_left < 0.6*cvalue and edgevalue_right < 0.6*cvalue:
-
-#             # Different faster fitter to consider
-#             peak_value_index = np.argmax(actualprofile[:, 1])
-#             peak_value = actualprofile[peak_value_index][1]
-
-#             # Get the mean of the 5 pixels around the max
-#             # and use the mean of those values and the peak value
-#             # to use as the amplitude
-#             temp_amplitude = actualprofile[peak_value_index-2][1]+actualprofile[peak_value_index-1][1] + \
-#                 actualprofile[peak_value_index][1]+actualprofile[peak_value_index +
-#                                                                  1][1]+actualprofile[peak_value_index+2][1]
-#             temp_amplitude = temp_amplitude/5
-
-#             # Check that the mean of the temp_amplitude here is at least 0.5 * cvalue
-#             if temp_amplitude > 0.5*peak_value:
-
-#                 # Get the center of mass peak value
-#                 sum_of_positions_times_values = 0
-#                 sum_of_values = 0
-#                 number_of_positions_to_test = 7  # odd value
-#                 poswidth = int(number_of_positions_to_test/2)
-
-#                 for spotty in range(number_of_positions_to_test):
-#                     sum_of_positions_times_values = sum_of_positions_times_values + \
-#                         (actualprofile[peak_value_index-poswidth+spotty][1]
-#                          * actualprofile[peak_value_index-poswidth+spotty][0])
-#                     sum_of_values = sum_of_values + \
-#                         actualprofile[peak_value_index-poswidth+spotty][1]
-#                 peak_position = (sum_of_positions_times_values / sum_of_values)
-
-#                 temppos = abs(actualprofile[:, 0] - peak_position).argmin()
-#                 tempvalue = actualprofile[temppos, 1]
-#                 temppeakvalue = copy.deepcopy(tempvalue)
-
-#                 # Get lefthand quarter percentiles
-#                 counter = 1
-#                 while tempvalue > 0.25*temppeakvalue:
-
-#                     tempvalue = actualprofile[temppos-counter, 1]
-#                     if tempvalue > 0.75:
-
-#                         threequartertemp=temppos-counter
-#                     counter=counter+1
-
-
-#                 lefthand_quarter_spot = actualprofile[temppos-counter][0]
-#                 lefthand_threequarter_spot = actualprofile[threequartertemp][0]
-
-#                 # Get righthand quarter percentile
-#                 counter = 1
-#                 while tempvalue > 0.25*temppeakvalue:
-
-#                     tempvalue=actualprofile[temppos+counter,1]
-
-#                     if tempvalue > 0.75:
-#                         threequartertemp = temppos+counter
-#                     counter = counter+1
-
-#                 righthand_quarter_spot = actualprofile[temppos+counter][0]
-#                 righthand_threequarter_spot = actualprofile[threequartertemp][0]
-
-#                 largest_reasonable_position_deviation_in_pixels = 1.25 * \
-#                     max(abs(peak_position - righthand_quarter_spot),
-#                         abs(peak_position - lefthand_quarter_spot))
-#                 largest_reasonable_position_deviation_in_arcseconds = largest_reasonable_position_deviation_in_pixels * pixscale
-
-#                 smallest_reasonable_position_deviation_in_pixels = 0.7 * \
-#                     min(abs(peak_position - righthand_threequarter_spot),
-#                         abs(peak_position - lefthand_threequarter_spot))
-#                 smallest_reasonable_position_deviation_in_arcseconds = smallest_reasonable_position_deviation_in_pixels * pixscale
-
-#                 # If peak reasonably in the center
-#                 # And the largest reasonable position deviation isn't absurdly small
-#                 if abs(peak_position) < max(3, 3/pixscale) and largest_reasonable_position_deviation_in_arcseconds > 1.0:
-#                     # Construct testing array
-#                     # Initially on pixelscale then convert to pixels
-#                     testvalue = 0.1
-#                     testvalues = []
-#                     while testvalue < 12:
-#                         if testvalue > smallest_reasonable_position_deviation_in_arcseconds and testvalue < largest_reasonable_position_deviation_in_arcseconds:
-#                             if testvalue > 1 and testvalue <= 7:
-#                                 testvalues.append(testvalue)
-#                                 testvalues.append(testvalue+0.05)
-#                             elif testvalue > 7:
-#                                 if (int(testvalue * 10) % 3) == 0:
-#                                     testvalues.append(testvalue)
-#                             else:
-#                                 testvalues.append(testvalue)
-#                         testvalue = testvalue+0.1
-#                     # convert pixelscales into pixels
-#                     pixel_testvalues = np.array(testvalues) / pixscale
-#                     # convert fwhm into appropriate stdev
-#                     pixel_testvalues = (pixel_testvalues/2.355) / 2
-
-#                     smallest_value = 999999999999999.9
-#                     for pixeltestvalue in pixel_testvalues:
-#                         test_fpopt = [peak_value,
-#                                       peak_position, pixeltestvalue]
-#                         # differences between gaussian and data
-#                         difference = (
-#                             np.sum(abs(actualprofile[:, 1] - gaussian(actualprofile[:, 0], *test_fpopt))))
-
-#                         if difference < smallest_value:
-#                             smallest_value = copy.deepcopy(difference)
-#                             smallest_fpopt = copy.deepcopy(test_fpopt)
-
-#                         if difference < 1.25 * smallest_value:
-#                             # This commented code allows you see PSF plots as they come in for debugging.
-#                             if False:
-#                                 pass
-#                                 # Need to resinstitute plt.
-#                                 # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-#                                 # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
-#                                 # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-#                                 # plt.show()
-#                             pass
-#                         else:
-#                             break
-
-#                     # Amplitude has to be a substantial fraction of the peak value
-#                     # and the center of the gaussian needs to be near the center
-#                     # and the FWHM has to be above 0.8 arcseconds.
-#                     # if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, 3/pixscale):# and (2.355 * popt[2]) > (0.8 / pixscale) :
-
-#                     # if it isn't a unreasonably small fwhm then measure it.
-#                     try:
-
-#                         if (2.355 * smallest_fpopt[2]) > (0.8 / pixscale) :
-#                             # This commented code allows you see PSF plots as they come in for debugging.
-#                             if False:
-#                                 # Need to resinstitute plt.
-#                                 # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-#                                 # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
-#                                 # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
-#                                 # #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-#                                 # plt.show()
-#                                 pass
-
-
-#                             return smallest_fpopt[2]
-#                         else:
-#                             return np.nan
-#                     except:
-#                         return np.nan
-
-#         # If rejected by some if statement, return nan
-#         return np.nan
-#     except:
-#         plog(traceback.format_exc())
-#         return np.nan
-
 
 class Camera:
     """A camera instrument.
@@ -1502,12 +1271,6 @@ class Camera:
                 self.pixelscale_shelf.close()
 
 
-            # self.pixelscale_shelf.close()
-            # if len(pixelscale_list) > 0:
-            #     self.pixscale = bn.nanmedian(pixelscale_list)
-            #     plog('1x1 pixel scale: ' + str(self.pixscale))
-            # else:
-            #     self.pixscale = None   #Yes a hack
         except:
             plog("ALERT: PIXELSCALE SHELF CORRUPTED. WIPING AND STARTING AGAIN")
             self.pixscale = None
@@ -1572,9 +1335,6 @@ class Camera:
                 print ("Updated Focus Exposure time: " + str(self.focus_exposure))
 
 
-                #self.focus_exposure = int(self.site_config['focus_exposure_time'])
-                # self.focus_exposure = bn.nanmedian(pixelscale_list)
-                # plog('Focus Exposure time: ' + str(self.focus_exposure))
             except:
                 plog ("No focus exposure shelf so using the config value.")
                 plog(traceback.format_exc())
@@ -1788,14 +1548,6 @@ class Camera:
         self.overscan_up=self.overscan_values[site_config["camera"][self.name]['overscan_trim']][2]
         self.overscan_down=self.overscan_values[site_config["camera"][self.name]['overscan_trim']][3]
 
-        # self.overscan_left = self.overscan_values[site_config["camera"]
-        #                                           [self.name]['overscan_trim']][0]
-        # self.overscan_right = self.overscan_values[site_config["camera"]
-        #                                            [self.name]['overscan_trim']][1]
-        # self.overscan_up = self.overscan_values[site_config["camera"]
-        #                                         [self.name]['overscan_trim']][2]
-        # self.overscan_down = self.overscan_values[site_config["camera"]
-        #                                           [self.name]['overscan_trim']][3]
 
         # The skyx needs its own separate camera update thread to do with some theskyx
         # curiosities and also the win32com sorta connection it makes.
@@ -5462,15 +5214,6 @@ class Camera:
                     hdusmallheader = copy.deepcopy(hdu.header)
                     del hdu
                     focus_position = g_dev['foc'].current_focus_position
-
-                    # pixfoc=False
-                    # if self.pixscale == None:
-                    #     pixfoc=True
-                    # elif self.pixscale > 1.0:
-                    #     pixfoc=True
-
-
-                    # if True: # pixfoc or not (g_dev['foc'].focus_commissioned):
 
                     try:
 
