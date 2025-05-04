@@ -1801,6 +1801,9 @@ class Mount:
         plog("Action for mount is:  ", action)
 
         if action == "go":
+            
+            g_dev['obs'].report_to_nightlog("Individual Slew Commanded: " + str(command))
+            
             object_name = opt['object']
             if 'ra' in req:
                 result = self.go_command(ra=req['ra'], dec=req['dec'],objectname=object_name)   #  Entered from Target Explorer or Telescope tabs.
@@ -1908,9 +1911,10 @@ class Mount:
             dec = 0.0
             self.go_command(ra=ra, dec=dec, offset=False)
         elif action == "park":
+            g_dev['obs'].report_to_nightlog("Individual Park Commanded: " + str(command))
             self.park_command(req, opt)
-        elif action == "unpark":
-            #breakpoint()
+        elif action == "unpark":            
+            g_dev['obs'].report_to_nightlog("Individual Unpark Commanded: " + str(command))
             self.unpark_command(req, opt)
         elif action == 'sky_flat_position':
             self.go_command(skyflatspot=True)

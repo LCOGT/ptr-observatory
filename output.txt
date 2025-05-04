@@ -1,4 +1,4 @@
-Reading input file 1 of 1: "/mnt/f/ptr/aro1/archive/sq003ms/20250425/wcs/89817/aro1-sq003ms_expose_pl-20250425-00089817-EX00.fits"...
+Reading input file 1 of 1: "/mnt/f/ptr/aro1/archive/sq003ms/20250426/wcs/91326/aro1-sq003ms_expose_pl-20250426-00091326-EX00.fits"...
 Extracting sources...
 Sorting brightness using MAG_AUTO and BACKGROUND columns failed; falling back to MAG_AUTO.
 Reading sort column "MAG_AUTO"
@@ -8,7 +8,7 @@ Copying table header.
 Writing row 0
 Done
 Solving...
-Reading file "/mnt/f/ptr/aro1/archive/sq003ms/20250425/wcs/89817/aro1-sq003ms_expose_pl-20250425-00089817-EX00.axy"...
+Reading file "/mnt/f/ptr/aro1/archive/sq003ms/20250426/wcs/91326/aro1-sq003ms_expose_pl-20250426-00091326-EX00.axy"...
 Only searching for solutions within 20 degrees of RA,Dec (194.183,21.6827)
 Field 1 did not solve (index index-5206-27.fits, field objects 1-10).
 Field 1 did not solve (index index-5206-26.fits, field objects 1-10).
@@ -35,19 +35,15 @@ Field 1 did not solve (index index-4110.fits, field objects 1-10).
 Field 1 did not solve (index index-4109.fits, field objects 1-10).
 Field 1 did not solve (index index-4108.fits, field objects 1-10).
 Field 1 did not solve (index index-4107.fits, field objects 1-10).
-Field 1 did not solve (index index-5206-27.fits, field objects 11-20).
-Field 1 did not solve (index index-5206-26.fits, field objects 11-20).
-Field 1 did not solve (index index-5206-09.fits, field objects 11-20).
-Field 1 did not solve (index index-5206-08.fits, field objects 11-20).
-  log-odds ratio 490.943 (1.63544e+213), 189 match, 2 conflict, 86 distractors, 367 index.
-  RA,Dec = (194.169,21.6781), pixel scale 0.525781 arcsec/pix.
-  Hit/miss:   Hit/miss: +++++++++---+++++-++++++++++++++++++---++++---+++-+--++++++++++++++++++++--+++----++++--+++++-++++++
-Field 1: solved with index index-5205-27.fits.
-Field 1 solved: writing to file /mnt/f/ptr/aro1/archive/sq003ms/20250425/wcs/89817/aro1-sq003ms_expose_pl-20250425-00089817-EX00.solved to indicate this.
-Field: /mnt/f/ptr/aro1/archive/sq003ms/20250425/wcs/89817/aro1-sq003ms_expose_pl-20250425-00089817-EX00.fits
-Field center: (RA,Dec) = (194.170872, 21.679790) deg.
-Field center: (RA H:M:S, Dec D:M:S) = (12:56:41.009, +21:40:47.244).
-Field size: 83.9125 x 56.0997 arcminutes
-Field rotation angle: up is -177.797 degrees E of N
+  log-odds ratio 895.223 (inf), 146 match, 1 conflict, 82 distractors, 181 index.
+  RA,Dec = (194.15,21.6786), pixel scale 0.528394 arcsec/pix.
+  Hit/miss:   Hit/miss: ++++++++++++++++++++++++-++++++++++-++++-+++-+++++-++++-++++++++-++++-++++---+++++++-++-+++++++-+++-
+Field 1: solved with index index-5206-27.fits.
+Field 1 solved: writing to file /mnt/f/ptr/aro1/archive/sq003ms/20250426/wcs/91326/aro1-sq003ms_expose_pl-20250426-00091326-EX00.solved to indicate this.
+Field: /mnt/f/ptr/aro1/archive/sq003ms/20250426/wcs/91326/aro1-sq003ms_expose_pl-20250426-00091326-EX00.fits
+Field center: (RA,Dec) = (194.149910, 21.678419) deg.
+Field center: (RA H:M:S, Dec D:M:S) = (12:56:35.978, +21:40:42.310).
+Field size: 83.9072 x 56.0926 arcminutes
+Field rotation angle: up is -177.786 degrees E of N
 Field parity: neg
 

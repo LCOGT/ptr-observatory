@@ -296,7 +296,7 @@ class Sequencer:
                     os.makedirs(failsafe_directory)
 
 
-                failsafetokenfolder=failsafe_directory+ '/tokens'
+                #failsafetokenfolder=failsafe_directory+ '/tokens'
                 if not os.path.exists(failsafe_directory+ '/tokens'):
                     os.umask(0)
                     os.makedirs(failsafe_directory+ '/tokens')
@@ -583,7 +583,7 @@ class Sequencer:
         self.clear_archive_drive_of_old_files()
 
 
-
+        g_dev['obs'].report_to_nightlog("Focus and Resync routine started.")
         g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
         g_dev['mnt'].go_command(alt=70,az= 90)
         g_dev['mnt'].set_tracking_on()
@@ -680,6 +680,8 @@ class Sequencer:
 
         self.night_focus_ready=False
         self.clock_focus_latch = False
+        
+        g_dev['obs'].report_to_nightlog("Focus and Resync routine ended.")
 
 
     def manager(self):
@@ -886,9 +888,10 @@ class Sequencer:
                         self.total_sequencer_control= True
                         self.lco_block=True
 
-                        #breakpoint()
                         # Run the observation
+                        g_dev['obs'].report_to_nightlog("Executing LCO Block: " + str(observation))
                         SchedulerObservation(observation, self.obs).run()
+                        g_dev['obs'].report_to_nightlog("Executing LCO Block: " + str(observation))
 
                         # Allow manual commands now that the project has completed
                         self.block_guard = False
@@ -900,7 +903,7 @@ class Sequencer:
                         plog(f'Starting to observe PTR observation {current_observation["event"]["project"]["project_name"]}')
                         block = current_observation['event']
                         if pointing_is_ok(block, self.config):
-                            result = self.execute_block(block)  # In this we need to ultimately watch for weather holds.
+                            self.execute_block(block)  # In this we need to ultimately watch for weather holds.
                             self.schedule_manager.add_completed_id(current_observation['id'])
                         else:
                             plog(f'Tried to observe PTR project {block["project_id"]} but pointing check failed')
@@ -1001,7 +1004,7 @@ class Sequencer:
                                     # If the moon is way below the horizon
                                     if g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
 
-
+                                        g_dev['obs'].report_to_nightlog("Stated taking Nightime Biasdarks")
                                         # When we are getting darks, we are collecting darks for the NEXT night's temperature
                                         # not tonights. So if tomrorow night the season changes and the camera temperature changes
                                         # We need to have the bias/darks already.
@@ -1175,6 +1178,7 @@ class Sequencer:
                                             # these exposures shouldn't reset these timers
                                             g_dev['obs'].time_of_last_exposure = time.time() - 840
                                             g_dev['obs'].time_of_last_slew = time.time() - 840
+                                        g_dev['obs'].report_to_nightlog("Stopped taking Nightime Biasdarks")
 
             ###########################################################################
             # While in this part of the sequencer, we need to have manual UI commands turned back on
@@ -1587,7 +1591,7 @@ class Sequencer:
             or g_dev['events']['Civil Dawn'] < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")
-            return block_specification     #Added wer 20231103
+            return block_specification     
 
         self.block_guard = True
         self.total_sequencer_control=True
@@ -1598,6 +1602,8 @@ class Sequencer:
         calendar_event_id=block_specification['event_id']
 
         block = copy.deepcopy(block_specification)
+        
+        g_dev['obs'].report_to_nightlog("Executing Calendar Block: " + str(block))
 
         # this variable is what we check to see if the calendar
         # event still exists on AWS. If not, we assume it has been
@@ -1753,6 +1759,7 @@ class Sequencer:
                         g_dev["obs"].send_to_user("Calendar Block Ended. Stopping project run.")
                         self.blockend = None
                         self.total_sequencer_control = False
+                        g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                         return block_specification
 
                     if self.check_for_external_block_ending_signals():
@@ -1764,12 +1771,14 @@ class Sequencer:
                         plog('stop_all_activity cancelling out of exposure loop in seq:blk execute')
                         self.blockend = None
                         self.total_sequencer_control=False
+                        g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                         return block_specification
 
                     if g_dev['obs'].open_and_enabled_to_observe == False:
                         plog ("Obs not longer open and enabled to observe. Cancelling out.")
                         self.blockend = None
                         self.total_sequencer_control=False
+                        g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                         return block_specification
 
                     plog ("Observing " + str(block['project']['project_targets'][0]['name']))
@@ -1920,6 +1929,7 @@ class Sequencer:
                             self.blockend = None
                             self.currently_mosaicing = False
                             self.total_sequencer_control=False
+                            g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                             return block_specification
 
                         if result == 'calendarend':
@@ -1928,6 +1938,7 @@ class Sequencer:
                             self.blockend = None
                             self.currently_mosaicing = False
                             self.total_sequencer_control=False
+                            g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                             return block_specification
 
                         if result == 'roofshut':
@@ -1935,6 +1946,7 @@ class Sequencer:
                             self.blockend = None
                             self.currently_mosaicing = False
                             self.total_sequencer_control=False
+                            g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                             return block_specification
 
                         if result == 'outsideofnighttime':
@@ -1942,6 +1954,7 @@ class Sequencer:
                             self.blockend = None
                             self.currently_mosaicing = False
                             self.total_sequencer_control=False
+                            g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                             return block_specification
 
                     if g_dev["obs"].stop_all_activity:
@@ -1949,6 +1962,7 @@ class Sequencer:
                         self.blockend = None
                         self.currently_mosaicing = False
                         self.total_sequencer_control=False
+                        g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                         return block_specification
 
                     for displacement in offset:     #NB it would be convenient for odd panel mosaics
@@ -1987,42 +2001,6 @@ class Sequencer:
 
 
                             g_dev['mnt'].wait_for_slew(wait_after_slew=False)
-                            # try:
-                            # if result == 'blockend':
-                            #     plog ("End of Block, exiting project block.")
-                            #     self.blockend = None
-                            #     self.currently_mosaicing = False
-                            #     self.total_sequencer_control=False
-                            #     return block_specification
-
-                            # if result == 'calendarend':
-                            #     plog ("Calendar Item containing block removed from calendar")
-                            #     plog ("Site bailing out of running project")
-                            #     self.blockend = None
-                            #     self.currently_mosaicing = False
-                            #     self.total_sequencer_control=False
-                            #     return block_specification
-
-                            # if result == 'roofshut':
-                            #     plog ("Roof Shut, Site bailing out of Project")
-                            #     self.blockend = None
-                            #     self.currently_mosaicing = False
-                            #     self.total_sequencer_control=False
-                            #     return block_specification
-
-                            # if result == 'outsideofnighttime':
-                            #     plog ("Outside of Night Time. Site bailing out of Project")
-                            #     self.blockend = None
-                            #     self.currently_mosaicing = False
-                            #     self.total_sequencer_control=False
-                            #     return block_specification
-
-                            # if g_dev["obs"].stop_all_activity:
-                            #     plog('stop_all_activity cancelling out of Project')
-                            #     self.blockend = None
-                            #     self.currently_mosaicing = False
-                            #     self.total_sequencer_control=False
-                            #     return block_specification
 
                         if imtype in ['light']:
 
@@ -2053,7 +2031,8 @@ class Sequencer:
                                     self.blockend = None
                                     self.currently_mosaicing = False
                                     self.total_sequencer_control=False
-                                    return
+                                    g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
+                                    return block_specification
                             result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id) #, zoom_factor=zoom_factor)
 
                             try:
@@ -2062,6 +2041,7 @@ class Sequencer:
                                     self.blockend = None
                                     self.currently_mosaicing = False
                                     self.total_sequencer_control=False
+                                    g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                     return block_specification
 
                                 if result == 'calendarend':
@@ -2070,6 +2050,7 @@ class Sequencer:
                                     self.blockend = None
                                     self.currently_mosaicing = False
                                     self.total_sequencer_control=False
+                                    g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                     return block_specification
 
                                 if result == 'roofshut':
@@ -2077,6 +2058,7 @@ class Sequencer:
                                     self.blockend = None
                                     self.currently_mosaicing = False
                                     self.total_sequencer_control=False
+                                    g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                     return block_specification
 
                                 if result == 'outsideofnighttime':
@@ -2084,6 +2066,7 @@ class Sequencer:
                                     self.blockend = None
                                     self.currently_mosaicing = False
                                     self.total_sequencer_control=False
+                                    g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                     return block_specification
 
                                 if g_dev["obs"].stop_all_activity:
@@ -2091,6 +2074,7 @@ class Sequencer:
                                     self.blockend = None
                                     self.currently_mosaicing = False
                                     self.total_sequencer_control=False
+                                    g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                     return block_specification
 
                             except:
@@ -2109,36 +2093,42 @@ class Sequencer:
                                 self.blockend = None
                                 self.currently_mosaicing = False
                                 self.total_sequencer_control=False
+                                g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                 return block_specification
 
                             if result == 'blockend':
                                 self.blockend = None
                                 self.currently_mosaicing = False
                                 self.total_sequencer_control=False
+                                g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                 return block_specification
 
                             if blockended:
                                 self.blockend = None
                                 self.currently_mosaicing = False
                                 self.total_sequencer_control=False
+                                g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                 return block_specification
 
                             if result == 'calendarend':
                                 self.blockend = None
                                 self.currently_mosaicing = False
                                 self.total_sequencer_control=False
+                                g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                 return block_specification
 
                             if result == 'roofshut':
                                 self.blockend = None
                                 self.currently_mosaicing = False
                                 self.total_sequencer_control=False
+                                g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                 return block_specification
 
                             if result == 'outsideofnighttime':
                                 self.blockend = None
                                 self.currently_mosaicing = False
                                 self.total_sequencer_control=False
+                                g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                 return block_specification
 
                             if g_dev["obs"].stop_all_activity:
@@ -2146,6 +2136,7 @@ class Sequencer:
                                 self.blockend = None
                                 self.currently_mosaicing = False
                                 self.total_sequencer_control=False
+                                g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                 return block_specification
 
                         pane += 1
@@ -2160,6 +2151,7 @@ class Sequencer:
 
         g_dev['obs'].flush_command_queue()
         self.total_sequencer_control=False
+        g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
         return block_specification
 
 
@@ -2227,6 +2219,8 @@ class Sequencer:
         # Set a timer. It is possible to ask for bias darks and it takes until the end of time. So we should put a limit on it for manually
         # requested collection. Auto-collection is limited by the events schedule.
         bias_darks_started=time.time()
+        
+        g_dev['obs'].report_to_nightlog("Starting Bias Darks")
 
         while ephem.now() < ending :   #Do not overrun the window end
 
@@ -2399,7 +2393,7 @@ class Sequencer:
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                     self.bias_dark_latch = False
-                    return
+                    break
                 if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                     self.bias_dark_latch = False
                     break
@@ -2496,6 +2490,7 @@ class Sequencer:
 
         g_dev['obs'].flush_command_queue()
         self.total_sequencer_control=False
+        g_dev['obs'].report_to_nightlog("Finished Bias Darks")
         return
 
 
@@ -2540,6 +2535,8 @@ class Sequencer:
     def nightly_reset_script(self):
         # UNDERTAKING END OF NIGHT ROUTINES
         # Never hurts to make sure the telescope is parked for the night
+        
+        g_dev['obs'].report_to_nightlog("Nightly Reset")
         self.park_and_close()
 
         if g_dev['cam'].has_darkslide:
@@ -2700,6 +2697,8 @@ class Sequencer:
 
             plog ("But didn't get here")
         return
+    
+        g_dev['obs'].report_to_nightlog("Completed Nightly Reset")
 
 
     def make_scaled_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder, requesttype, temp_bias_level_min, calibhduheader):
@@ -2995,9 +2994,11 @@ class Sequencer:
             g_dev["obs"].send_to_user("Already in the process of regenerating masters. Will need to wait until the current cycle is done.")
             return
 
+
         self.currently_regenerating_masters = True
 
-        g_dev["obs"].send_to_user("Currently regenerating local masters.")
+        #g_dev["obs"].send_to_user("Currently regenerating local masters.")
+        g_dev['obs'].report_to_nightlog("Started regenerating calibrations")
 
         if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
             try:
@@ -3188,7 +3189,7 @@ class Sequencer:
 
                 plog ("Bias reconstructed: " +str(time.time()-calibration_timer))
                 calibration_timer=time.time()
-                g_dev["obs"].send_to_user("Bias calibration frame created.")
+                #g_dev["obs"].send_to_user("Bias calibration frame created.")
 
             # A theskyx reboot catch
             while True:
@@ -3203,25 +3204,6 @@ class Sequencer:
             # Now that we have the master bias, we can estimate the readnoise actually
             # by comparing the standard deviations between the bias and the masterbias
             if g_dev['cam'].camera_known_gain <1000:
-                # readnoise_array=[]
-                # post_readnoise_array=[]
-                # i=0
-                # for file in inputList:
-
-                #     hdu1data=np.load(file)-masterBias
-                #     hdu1data = hdu1data[500:-500,500:-500]
-                #     stddiffimage=bn.nanstd(pow(pow(hdu1data,2),0.5))
-
-                #     est_read_noise= (stddiffimage * g_dev['cam'].camera_known_gain) / 1.414
-                #     readnoise_array.append(est_read_noise)
-                #     post_readnoise_array.append(stddiffimage)
-                #     i=i+1
-
-                # readnoise_array=np.array(readnoise_array)
-
-                # #breakpoint()
-
-
 
                 def estimate_read_noise_chunked(bias_frames, frame_shape, gain=1.0, chunk_size=10, masterBias=None):
                     """
@@ -3271,8 +3253,8 @@ class Sequencer:
 
                 del bias_frames
 
-                print(f"Estimated Read Noise: {read_noise_electrons:.2f} e- (electrons), stdev: "+ str(read_noise_electrons_stdev))
-                print(f"Estimated Read Noise: {read_noise_adu:.2f} ADU, stdev: " + str(read_noise_adu_stdev))
+                plog(f"Estimated Read Noise: {read_noise_electrons:.2f} e- (electrons), stdev: "+ str(read_noise_electrons_stdev))
+                plog(f"Estimated Read Noise: {read_noise_adu:.2f} ADU, stdev: " + str(read_noise_adu_stdev))
 
                 # Write out the variance array
                 try:
@@ -3291,9 +3273,6 @@ class Sequencer:
 
                 except Exception as e:
                     plog ("Could not save variance frame: ",e)
-
-
-
 
 
             # Bad pixel accumulator for the bias frame
@@ -3940,13 +3919,9 @@ class Sequencer:
 
                             g_dev['cam'].flatFiles.update({filtercode: g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy'})
 
-                            g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
+                            #g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
                             plog (str(filtercode) + " flat calibration frame created: " +str(time.time()-calibration_timer))
                             calibration_timer=time.time()
-
-
-
-
 
                 plog ("Regenerated Flat Masters and Re-loaded them into memory.")
 
@@ -4114,8 +4089,9 @@ class Sequencer:
         plog ("Used Readnoise  : "+ str(g_dev['cam'].camera_known_readnoise))
 
         self.currently_regenerating_masters = False
-        g_dev["obs"].send_to_user("All calibration frames completed.")
+        #g_dev["obs"].send_to_user("All calibration frames completed.")
 
+        g_dev['obs'].report_to_nightlog("Finished regenerating calibrations")
         return
 
 
@@ -4292,6 +4268,8 @@ class Sequencer:
             else:
                 plog ("Moon is in the sky but far enough way to take flats.")
 
+        
+        g_dev['obs'].report_to_nightlog("Starting Sky Flats")
 
         g_dev['foc'].set_initial_best_guess_for_focus()
         g_dev['mnt'].set_tracking_on()
@@ -4378,7 +4356,7 @@ class Sequencer:
 
         exp_time = 0
         scale = 1.0
-        collecting_area = self.config['telescope']['Main OTA']['collecting_area']/31808.  #Ratio to ARO Ceravolo 300mm
+        collecting_area = self.config['telescope']['telescope_1']['collecting_area']/31808.  #Ratio to ARO Ceravolo 300mm
 
 
         # First pointing towards flatspot
@@ -4524,6 +4502,7 @@ class Sequencer:
                         self.eve_sky_flat_latch = False
                         self.morn_sky_flat_latch = False
                         self.total_sequencer_control = False
+                        g_dev['obs'].report_to_nightlog("Cancelled Sky Flats. Roof Shut.")
                         return
 
                     # Check that Flat time hasn't ended
@@ -4535,6 +4514,7 @@ class Sequencer:
                         self.eve_sky_flat_latch = False
                         self.morn_sky_flat_latch = False
                         self.total_sequencer_control = False
+                        g_dev['obs'].report_to_nightlog("Finished Sky Flats. Out of time.")
                         return
 
                     if self.next_flat_observe < time.time():
@@ -4595,6 +4575,7 @@ class Sequencer:
                             self.eve_sky_flat_latch = False
                             self.morn_sky_flat_latch = False
                             self.total_sequencer_control = False
+                            g_dev['obs'].report_to_nightlog("Cancelled Sky Flats. Stop Script called.")
                             return
 
                         if not g_dev['obs'].open_and_enabled_to_observe:
@@ -4605,6 +4586,7 @@ class Sequencer:
                             self.eve_sky_flat_latch = False
                             self.morn_sky_flat_latch = False
                             self.total_sequencer_control = False
+                            g_dev['obs'].report_to_nightlog("Cancelled Sky Flats. Roof Closed.")
                             return
 
                         # Here it makes four tests and if it doesn't match those tests, then it will attempt a flat.
@@ -4679,6 +4661,7 @@ class Sequencer:
                                 self.eve_sky_flat_latch = False
                                 self.morn_sky_flat_latch = False
                                 self.total_sequencer_control = False
+                                g_dev['obs'].report_to_nightlog("Cancelled Sky Flats. Stop Script Called.")
                                 return
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
@@ -4688,6 +4671,7 @@ class Sequencer:
                                 self.eve_sky_flat_latch = False
                                 self.morn_sky_flat_latch = False
                                 self.total_sequencer_control = False
+                                g_dev['obs'].report_to_nightlog("Cancelled Sky Flats. Roof Closed.")
                                 return
 
                             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'skyflat', 'script': 'On'}
@@ -4708,6 +4692,7 @@ class Sequencer:
                                 self.eve_sky_flat_latch = False
                                 self.morn_sky_flat_latch = False
                                 self.total_sequencer_control = False
+                                g_dev['obs'].report_to_nightlog("Finished Sky Flats. Out of Time.")
                                 return
                             try:
                                 # Particularly for AltAz, the slew and rotator rotation must have ended before exposing.
@@ -4750,6 +4735,7 @@ class Sequencer:
                                         self.eve_sky_flat_latch = False
                                         self.morn_sky_flat_latch = False
                                         self.total_sequencer_control = False
+                                        g_dev['obs'].report_to_nightlog("Cancelled Sky Flats. Stop Script Called.")
                                         return
 
                                     if not g_dev['obs'].open_and_enabled_to_observe:
@@ -4760,6 +4746,7 @@ class Sequencer:
                                         self.eve_sky_flat_latch = False
                                         self.morn_sky_flat_latch = False
                                         self.total_sequencer_control = False
+                                        g_dev['obs'].report_to_nightlog("Cancelled Sky Flats. Roof Closed.")
                                         return
 
                                 except Exception as e:
@@ -4774,6 +4761,7 @@ class Sequencer:
                                     self.eve_sky_flat_latch = False
                                     self.morn_sky_flat_latch = False
                                     self.total_sequencer_control = False
+                                    g_dev['obs'].report_to_nightlog("Cancelled Sky Flats. Roof Shut.")
                                     return
 
                                 if fred == 'blockend':
@@ -4785,6 +4773,7 @@ class Sequencer:
                                     self.eve_sky_flat_latch = False
                                     self.morn_sky_flat_latch = False
                                     self.total_sequencer_control = False
+                                    g_dev['obs'].report_to_nightlog("Finished Sky Flats. Block Ended.")
                                     return
 
                                 if g_dev["obs"].stop_all_activity:
@@ -4795,6 +4784,7 @@ class Sequencer:
                                     self.eve_sky_flat_latch = False
                                     self.morn_sky_flat_latch = False
                                     self.total_sequencer_control = False
+                                    g_dev['obs'].report_to_nightlog("Cancelled Sky Flats. Stop All Activity Called.")
                                     return
 
                                 try:
@@ -4823,6 +4813,7 @@ class Sequencer:
                                 self.eve_sky_flat_latch = False
                                 self.morn_sky_flat_latch = False
                                 self.total_sequencer_control = False
+                                g_dev['obs'].report_to_nightlog("Cancelled Sky Flats. Stop Script Called.")
                                 return
 
                             if not g_dev['obs'].open_and_enabled_to_observe:
@@ -4833,6 +4824,7 @@ class Sequencer:
                                 self.eve_sky_flat_latch = False
                                 self.morn_sky_flat_latch = False
                                 self.total_sequencer_control = False
+                                g_dev['obs'].report_to_nightlog("Cancelled Sky Flats. Roof Closed.")
                                 return
 
                             self.got_a_flat_this_round=False
@@ -5042,7 +5034,7 @@ class Sequencer:
         self.master_restack_queue.put( 'justflatsreally', block=False)
 
 
-
+        g_dev['obs'].report_to_nightlog("Finished Sky Flats.")
         self.total_sequencer_control = False
 
 
@@ -5056,6 +5048,8 @@ class Sequencer:
         self.total_sequencer_control=True
 
         self.measuring_focus_offsets=True
+        
+        g_dev['obs'].report_to_nightlog("Focus offset estimator script triggerred.")
         plog ("Determining offsets between filters")
         plog ("First doing a normal run on the 'focus' filter first")
 
@@ -5218,7 +5212,9 @@ class Sequencer:
             if ((datetime.datetime.utcnow() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
                 plog ("Sufficient time has passed since last focus to do auto_focus")
             # Or if the roof has been shute since the last autofocus
+
             elif datetime.datetime.utcfromtimestamp(self.time_roof_last_opened) > g_dev['foc'].time_of_last_focus:
+
                 plog ("Roof has been shut since last focus. Redoing focus")
             else:
                 plog ("too soon since last autofocus")
@@ -5259,6 +5255,9 @@ class Sequencer:
 # =============================================================================
 # =============================================================================
         plog("Saved  *mounting* ra, dec, focus:  ", start_ra, start_dec, focus_start)
+        
+        
+        g_dev['obs'].report_to_nightlog("Autofocus process started.")
 
         if not skip_pointing:
             # Trim catalogue so that only fields 45 degrees altitude are in there.
@@ -5306,12 +5305,14 @@ class Sequencer:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                 self.focussing=False
                 self.total_sequencer_control = False
+                g_dev['obs'].report_to_nightlog("Autofocus process ended.")
                 return np.nan, np.nan
 
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                 self.focussing=False
                 self.total_sequencer_control = False
+                g_dev['obs'].report_to_nightlog("Autofocus process ended.")
                 return np.nan, np.nan
 
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -5338,11 +5339,13 @@ class Sequencer:
                             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                             self.focussing=False
                             self.total_sequencer_control = False
+                            g_dev['obs'].report_to_nightlog("Autofocus process ended.")
                             return np.nan, np.nan
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                             self.focussing=False
                             self.total_sequencer_control = False
+                            g_dev['obs'].report_to_nightlog("Autofocus process ended.")
                             return np.nan, np.nan
                         pass
 
@@ -5381,11 +5384,13 @@ class Sequencer:
                             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                             self.focussing=False
                             self.total_sequencer_control = False
+                            g_dev['obs'].report_to_nightlog("Autofocus process ended.")
                             return np.nan, np.nan
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                             self.focussing=False
                             self.total_sequencer_control = False
+                            g_dev['obs'].report_to_nightlog("Autofocus process ended.")
                             return np.nan, np.nan
                         pass
 
@@ -5395,11 +5400,13 @@ class Sequencer:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
             self.focussing=False
             self.total_sequencer_control = False
+            g_dev['obs'].report_to_nightlog("Autofocus process ended.")
             return np.nan, np.nan
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
             self.focussing=False
             self.total_sequencer_control = False
+            g_dev['obs'].report_to_nightlog("Autofocus process ended.")
             return np.nan, np.nan
 
         g_dev['obs'].request_scan_requests()
@@ -5490,11 +5497,13 @@ class Sequencer:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                     self.focussing=False
                     self.total_sequencer_control = False
+                    g_dev['obs'].report_to_nightlog("Autofocus process ended.")
                     return np.nan, np.nan
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                 self.focussing=False
                 self.total_sequencer_control = False
+                g_dev['obs'].report_to_nightlog("Autofocus process ended.")
                 return np.nan, np.nan
 
             # What focus position should i be using?
@@ -5526,6 +5535,7 @@ class Sequencer:
 
                 self.focussing=False
                 self.total_sequencer_control = False
+                g_dev['obs'].report_to_nightlog("Autofocus process ended.")
                 return np.nan, np.nan
 
             spot=np.nan
@@ -5541,14 +5551,22 @@ class Sequencer:
                     g_dev['mnt'].park_command({}, {})
                     self.total_sequencer_control = False
                     self.focussing=False
+
                     g_dev['foc'].set_initial_best_guess_for_focus()
+
+                    g_dev['obs'].report_to_nightlog("Autofocus process ended.")
+
                     return
 
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev['mnt'].park_command({}, {})
                     self.total_sequencer_control = False
                     self.focussing=False
+
                     g_dev['foc'].set_initial_best_guess_for_focus()
+
+                    g_dev['obs'].report_to_nightlog("Autofocus process ended.")
+
                     return
 
                 # If there has been too many attempts
@@ -5591,7 +5609,11 @@ class Sequencer:
                     g_dev['foc'].set_initial_best_guess_for_focus()
                     self.total_sequencer_control = False
                     self.focussing=False
+
                     g_dev['foc'].set_initial_best_guess_for_focus()
+
+                    g_dev['obs'].report_to_nightlog("Autofocus process ended.")
+
                     return
 
                 if result == 'outsideofnighttime':
@@ -5599,7 +5621,11 @@ class Sequencer:
                     g_dev['foc'].set_initial_best_guess_for_focus()
                     self.total_sequencer_control = False
                     self.focussing=False
+
                     g_dev['foc'].set_initial_best_guess_for_focus()
+
+                    g_dev['obs'].report_to_nightlog("Autofocus process ended.")
+
                     return
 
                 spot = g_dev['obs'].fwhmresult['FWHM'] * stored_blob_to_gaussian_factor
@@ -5704,7 +5730,11 @@ class Sequencer:
                             g_dev['foc'].set_initial_best_guess_for_focus()
                             self.total_sequencer_control = False
                             self.focussing=False
+
                             g_dev['foc'].set_initial_best_guess_for_focus()
+
+                            g_dev['obs'].report_to_nightlog("Autofocus process ended.")
+
                             return
 
                         # First check if the minimum is too close to the edge
@@ -6023,7 +6053,8 @@ class Sequencer:
                                         plog ("Now we are in focus but we don't have a pixelscale, attempting a platesolve to get that value")
                                         g_dev["obs"].send_to_user("Now we are in focus but we don't have a pixelscale, attempting a platesolve to get that value")
                                         self.centering_exposure(no_confirmation=True, try_hard=True)
-
+                                    
+                                    g_dev['obs'].report_to_nightlog("Autofocus process successful: Position: " + str(fitted_focus_position) + ' FWHM: ' + str(fitted_focus_fwhm))
                                     return fitted_focus_position,fitted_focus_fwhm
 
                                 else:
@@ -6085,6 +6116,8 @@ class Sequencer:
             g_dev["obs"].send_to_user('Roof is shut, so cannot do requested pointing run.')
             return
 
+        g_dev['obs'].report_to_nightlog("Started Equatorial Pointing Run.")
+        
 
         previous_mount_reference_model_off = copy.deepcopy(g_dev['obs'].mount_reference_model_off)
         g_dev['obs'].mount_reference_model_off = True
@@ -6214,12 +6247,14 @@ class Sequencer:
                         g_dev['obs'].flush_command_queue()
                         self.total_sequencer_control = False
                         g_dev['obs'].stop_processing_command_requests = False
+                        g_dev['obs'].report_to_nightlog("Ended Equatorial Pointing Run.")
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                         g_dev['obs'].flush_command_queue()
                         self.total_sequencer_control = False
                         g_dev['obs'].stop_processing_command_requests = False
+                        g_dev['obs'].report_to_nightlog("Ended Equatorial Pointing Run.")
                         return
                     pass
 
@@ -6325,7 +6360,9 @@ class Sequencer:
 
         self.total_sequencer_control = False
         g_dev['obs'].stop_processing_command_requests = False
-
+        
+        g_dev['obs'].report_to_nightlog("Ended Equatorial Pointing Run.")
+        
         return
 
 
@@ -6336,6 +6373,8 @@ class Sequencer:
             plog('Roof is shut, so cannot do requested pointing run.')
             g_dev["obs"].send_to_user('Roof is shut, so cannot do requested pointing run.')
             return
+
+        g_dev['obs'].report_to_nightlog("Started SkyGrid Pointing Run.")
 
         self.total_sequencer_control = True
         g_dev['obs'].stop_processing_command_requests = True
@@ -6403,6 +6442,7 @@ class Sequencer:
                 g_dev['obs'].flush_command_queue()
                 self.total_sequencer_control = False
                 g_dev['obs'].stop_processing_command_requests = False
+                g_dev['obs'].report_to_nightlog("Ended SkyGrid Pointing Run.")
                 return
             if not g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
@@ -6410,6 +6450,7 @@ class Sequencer:
                 g_dev['obs'].flush_command_queue()
                 self.total_sequencer_control = False
                 g_dev['obs'].stop_processing_command_requests = False
+                g_dev['obs'].report_to_nightlog("Ended SkyGrid Pointing Run.")
                 return
 
             if len(finalCatalogue) > max_pointings:
@@ -6587,6 +6628,7 @@ class Sequencer:
         self.total_sequencer_control = False
 
         g_dev['obs'].stop_processing_command_requests = False
+        g_dev['obs'].report_to_nightlog("Ended SkyGrid Pointing Run.")
         return
 
 
