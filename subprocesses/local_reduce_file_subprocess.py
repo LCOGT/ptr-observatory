@@ -168,7 +168,7 @@ print ("Waiting for: " +wcsfilename.replace('.fits','.wcs'))
 
 
 # While waiting, dump out image to disk temporarily to be picked up later.
-np.save(out_file_name.replace('.fits','.tempnpy'), hdureduced.data.astype(np.float32))
+np.save(out_file_name.replace('.fits','.tempnpyred'), hdureduced.data.astype(np.float32))
 temphduheader=copy.deepcopy(hdureduced.header)
 del hdureduced
 
@@ -245,11 +245,11 @@ temphduheader["DATE"] = (
 
 
 hdureduced = fits.PrimaryHDU()
-hdureduced.data = copy.deepcopy(np.load(out_file_name.replace('.fits','.tempnpy.npy')))
+hdureduced.data = copy.deepcopy(np.load(out_file_name.replace('.fits','.tempnpyred.npy')))
 hdureduced.header = temphduheader
 
 try:
-    os.remove(out_file_name.replace('.fits','.tempnpy'))
+    os.remove(out_file_name.replace('.fits','.tempnpyred.npy'))
 except:
     pass
 
