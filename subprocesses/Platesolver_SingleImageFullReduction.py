@@ -8,40 +8,18 @@ import sys
 
 import pickle
 import numpy as np
-#import sep
-#import glob
-import shutil
-#from astropy.nddata.utils import extract_array
 from astropy.io import fits
-#from subprocess import Popen, PIPE
 import os
-#from pathlib import Path
-#from os import getcwd
 import time
 from astropy.utils.exceptions import AstropyUserWarning
-#from astropy.table import Table
 import warnings
 import traceback
-#import bottleneck as bn
-#from math import cos, radians
-# from colour_demosaicing import (
-#     demosaicing_CFA_Bayer_bilinear,  # )#,
-#     # demosaicing_CFA_Bayer_Malvar2004,
-#     demosaicing_CFA_Bayer_Menon2007)
-#import matplotlib.pyplot as plt
-#import math
-#from PIL import Image#, ImageOps
-#from scipy.stats import binned_statistic
-#from astropy.wcs import WCS
-#from astropy import units as u
-#from astropy.visualization.wcsaxes import Quadrangle
+
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
 import bottleneck as bn
 from astropy.stats import sigma_clip
-
-import subprocess
 from astropy.table import Table
 
 # # Add the parent directory to the Python path
@@ -117,12 +95,6 @@ DECest=input_psolve_info[6]
 nextseq=input_psolve_info[7]
 cpu_limit=90
 
-## Check we are working in unit16
-#if not hdufocusdata.dtype == np.uint16:
-#    raised_array=hdufocusdata - np.nanmin(hdufocusdata)
-##    hdufocusdata = np.maximum(raised_array,0).astype(np.uint16)
-#    del raised_array
-
 
 googtime=time.time()
 
@@ -169,11 +141,18 @@ plog ("Just before solving: " +str(time.time()-googtime))
 # Save an image to the disk to use with source-extractor
 # We don't need accurate photometry, so integer is fine.
 hdufocus = fits.PrimaryHDU()
-hdufocus.data = hdufocusdata#.astype(np.uint16)#.astype(np.float32)
-#hdufocus.header = hduheader
+hdufocus.data = hdufocusdata
 hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
 hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
 hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
+
+imageh=hdufocusdata.shape[0]
+imagew=hdufocusdata.shape[1]
+skylevel=bn.nanmedian(hdufocusdata)
+
+# Remove hdufocusdata to free up RAM
+del hdufocus
+del hdufocusdata
 
 
 ########## SETUP TEMPDIR AND CODEDIR HERE
@@ -251,7 +230,7 @@ picklefwhm={}
 try:
 
     # try:
-    picklefwhm["SKYLEVEL"] = (bn.nanmedian(hdufocusdata), "Sky Level without pedestal")
+    picklefwhm["SKYLEVEL"] = (skylevel, "Sky Level without pedestal")
     # except:
     #     picklefwhm["SKYLEVEL"] = -9999
     # try:
@@ -283,7 +262,7 @@ try:
 except:
     plog(traceback.format_exc())
 
-    picklefwhm["SKYLEVEL"] = (bn.nanmedian(hdufocusdata), "Sky Level without pedestal")
+    picklefwhm["SKYLEVEL"] = (skylevel, "Sky Level without pedestal")
 
     picklefwhm["FWHM"] = (-99, 'FWHM in pixels')
     picklefwhm["FWHMpix"] = (-99, 'FWHM in pixels')
@@ -296,8 +275,7 @@ except:
 with open(fwhmfilename, 'wb') as fp: # os.getcwd() + '/' + file.replace('.fits', '.wcs').replace('.fit', '.fwhm')
     pickle.dump(picklefwhm, fp)
 
-imageh=hdufocusdata.shape[0]
-imagew=hdufocusdata.shape[1]
+
 
 # Use tweak order 2 in smaller fields of view and tweak order 3 in larger fields.
 sizewidest= max(imageh*pixscale, imagew*pixscale) / 3600

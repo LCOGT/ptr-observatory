@@ -88,9 +88,10 @@ if is_osc:
         # Only use one green channel, otherwise the green channel will have half the noise of other channels
         # and won't make a relatively balanced image (in terms of noise anyway)
         if smartstackid == 'no':
-            hdured = hdusmalldata[::2, ::2]
-            hdugreen = hdusmalldata[::2, 1::2]
-            hdublue = hdusmalldata[1::2, 1::2]
+            hdured = np.array(hdusmalldata[::2, ::2])
+            hdugreen = np.array(hdusmalldata[::2, 1::2])
+            hdublue = np.array(hdusmalldata[1::2, 1::2])
+            del hdusmalldata
 
     else:
         plog("this bayer grid not implemented yet")
@@ -274,6 +275,7 @@ if smartstackid == 'no':
         hdusmalldata = hdusmalldata - np.min(hdusmalldata)
 
         stretched_data_float = Stretch().stretch(hdusmalldata+1000)
+        del hdusmalldata
         stretched_256 = 255 * stretched_data_float
         hot = np.where(stretched_256 > 255)
         cold = np.where(stretched_256 < 0)
