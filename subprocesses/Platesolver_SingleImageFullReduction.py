@@ -7,8 +7,6 @@ import sys
 
 
 import pickle
-# import copy
-# from astropy.nddata import block_reduce
 import numpy as np
 #import sep
 #import glob

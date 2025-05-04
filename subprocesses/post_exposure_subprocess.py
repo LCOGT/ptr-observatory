@@ -664,7 +664,13 @@ try:
         )
     del img
 
-    selfnative_bin = cam_settings["native_bin"]
+    #selfnative_bin = cam_settings["native_bin"]
+    if pixscale < 0.3:
+        selfnative_bin=3
+    elif pixscale < 0.6:
+        selfnative_bin=2
+    else:
+        selfnative_bin=1
 
     broadband_ss_biasdark_exp_time = cam_config['settings']['smart_stack_exposure_time']
     narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * cam_config['settings']['smart_stack_exposure_NB_multiplier']
@@ -1886,14 +1892,14 @@ try:
         #From the reduced data, crop around the edges of the
         #raw 1x1 image to get rid of overscan and crusty edge bits
         #edge_crop=selfconfig["camera"][selfname]["settings"]['reduced_image_edge_crop']
-        edge_crop=100
-        if edge_crop > 0:
-            hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
+        # edge_crop=100
+        # if edge_crop > 0:
+        #     hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
 
-            hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
-            hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
-            hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
-            hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
+        #     hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
+        #     hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
+        #     hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
+        #     hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
         # bin to native binning
         if selfnative_bin != 1 and (not pixscale == None) and not hdu.header['PIXSCALE'] == 'Unknown':
@@ -1919,7 +1925,7 @@ try:
             reduced_hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
             reduced_hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
 
-            reduced_hdusmalldata=hdusmalldata+200.0
+            reduced_hdusmalldata=reduced_hdusmalldata+200.0
             reduced_hdusmallheader['PEDESTAL']=200
         else:
             reduced_hdusmalldata=copy.deepcopy(hdusmalldata)
@@ -2044,7 +2050,12 @@ try:
                 altpath='no'
 
 
-            picklepayload=(reduced_hdusmallheader,copy.deepcopy(selfconfig),cam_alias, slow_process, altpath)
+            if selfconfig['fully_platesolve_images_at_site_rather_than_pipe']:
+                wcsfilename=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq)) +'/' + selfconfig["obs_id"]+ "-" + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter) + "-" + dayobs+ "-"+ next_seq+ "-" + 'EX'+ "00.fits"
+            else:
+                wcsfilename='none'
+
+            picklepayload=(reduced_hdusmallheader,copy.deepcopy(selfconfig),cam_alias, slow_process, altpath, wcsfilename)
 
             picklefilename='testred'+str(time.time()).replace('.','')
             pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
