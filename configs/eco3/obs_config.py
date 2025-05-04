@@ -182,7 +182,7 @@ site_config = {
     'defaults': {
         'screen': 'screen',
         'mount': 'ecomeade',
-        #'telescope': 'Main OTA',     #How do we handle selector here, if at all?
+        'telescope': 'Main OTA',     #How do we handle selector here, if at all?
         'focuser': 'focuser',
         'rotator': 'rotator',
         'selector': None,
@@ -211,7 +211,7 @@ site_config = {
     },
     'device_types': [
             'mount',
-            #'telescope',
+            'telescope',
             #'screen',
             #'rotator',
             'focuser',
@@ -223,7 +223,7 @@ site_config = {
 
     'short_status_devices': [
             'mount',
-            #'telescope',
+            'telescope',
             'screen',
             'rotator',
             'focuser',
@@ -307,7 +307,7 @@ site_config = {
             'ptrtel': 'CDK17',
             'desc':  'CDK17',
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 100000,
+            'collecting_area': 31808,
             'obscuration':  23.7,   #  %
             'aperture': 432,
             'focal_length': 2939,
