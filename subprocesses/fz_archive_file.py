@@ -33,7 +33,7 @@ def print(*args):
     r = '\033[0m' # reset
     builtins.print(f"{c}[fz_archive]{r} {' '.join([str(x) for x in args])}")
 
-print("Starting fz_archive_file.py")
+#print("Starting fz_archive_file.py")
 # print(input_sep_info)
 
 
@@ -95,6 +95,12 @@ if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
 
 print ("Waiting for: " +wcsfilename.replace('.fits','.wcs'))
 
+# While waiting, dump out image to disk temporarily to be picked up later.
+np.save(tempfilename.replace('.fits','.tempnpy'), actual_data)
+#temphduheader=copy.deepcopy(hdureduced.header)
+del actual_data
+
+
 wcs_timeout_timer=time.time()
 while True:
     if os.path.exists (wcsfilename.replace('.fits','.wcs')):
@@ -155,6 +161,13 @@ while True:
         break
     time.sleep(2)
     
+
+actual_data=np.load(tempfilename.replace('.fits','.tempnpy'))
+
+try:
+    os.remove(tempfilename.replace('.fits','.tempnpy'))
+except:
+    pass
 
 if not camera_config["settings"]["is_osc"]:
 
