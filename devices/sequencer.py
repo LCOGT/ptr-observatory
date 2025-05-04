@@ -2832,7 +2832,7 @@ class Sequencer:
                     # # breakpoint()
 
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
-                g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
+                #g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
 
             return masterDark
 
@@ -2971,7 +2971,7 @@ class Sequencer:
                     #breakpoint()
 
                 plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
-                g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
+                #g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
 
             return masterDark
 
@@ -4231,7 +4231,7 @@ class Sequencer:
             self.total_sequencer_control = False
             return
 
-        if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']) :
+        if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Morn Sky Flats']) :
             plog ("NOT DOING FLATS -- IT IS THE NIGHTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")
             self.flats_being_collected = False
@@ -5212,7 +5212,9 @@ class Sequencer:
             if ((datetime.datetime.utcnow() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
                 plog ("Sufficient time has passed since last focus to do auto_focus")
             # Or if the roof has been shute since the last autofocus
-            elif datetime.datetime.utcfromtimestamp(self.time_roof_last_opened) < g_dev['foc'].time_of_last_focus:
+
+            elif datetime.datetime.utcfromtimestamp(self.time_roof_last_opened) > g_dev['foc'].time_of_last_focus:
+
                 plog ("Roof has been shut since last focus. Redoing focus")
             else:
                 plog ("too soon since last autofocus")
@@ -5434,6 +5436,41 @@ class Sequencer:
         extra_tries=0
         new_focus_position_to_attempt = central_starting_focus # Initialise this variable
         n_of_sources=[] # to track good exposure time
+
+
+        # In poor conditions we might find that there are too many attempts
+        # to find a better point that will never succeed.
+        # so we keep track of the number of points and bail out if there are too many
+        # but perhaps not on early focusses or on filter offset focusses.
+        extra_steps_to_the_left=0
+        extra_steps_to_the_right=0
+
+        # We need to load in the estimated correction factor to make the
+        # half-light radius fwhm estimates be comparable to a gaussian
+        # fwhm estimate
+
+        # Store estimated conversion factor between half-light approach and actual measured gaussian FWHM
+        blobvsgauss_shelf = shelve.open(
+            g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'blobvsgauss' + g_dev['cam'].alias + str(g_dev['obs'].name))
+        try:
+
+            try:
+                blobvsgauss_list = blobvsgauss_shelf['blobvsgauss_list']
+
+            except:
+                blobvsgauss_list = [1.0]
+
+
+            stored_blob_to_gaussian_factor = bn.nanmedian(blobvsgauss_list)
+            plog ("Stored blob to gaussian factor: " + str(stored_blob_to_gaussian_factor))
+            #plog('1x1 pixel scale: ' + str(self.pixscale))
+        except:
+            plog ("blob issue")
+            plog(traceback.format_exc())
+
+        blobvsgauss_shelf.close()
+
+        # Now start the main focus loop
         while True:
 
             im_path_r = g_dev['cam'].camera_path
@@ -5514,16 +5551,32 @@ class Sequencer:
                     g_dev['mnt'].park_command({}, {})
                     self.total_sequencer_control = False
                     self.focussing=False
+
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+
                     g_dev['obs'].report_to_nightlog("Autofocus process ended.")
+
                     return
 
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev['mnt'].park_command({}, {})
                     self.total_sequencer_control = False
                     self.focussing=False
+
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+
                     g_dev['obs'].report_to_nightlog("Autofocus process ended.")
+
                     return
 
+                # If there has been too many attempts
+                if extra_steps_to_the_left > 10 or extra_steps_to_the_right > 10:
+                    plog ("Too many extra steps too far away from the known focus point. Giving up.")
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+                    self.total_sequencer_control = False
+                    self.focussing=False
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+                    return
 
                 # Insert overtavelling at strategic points
                 if position_counter == 1 or position_counter ==6:
@@ -5556,7 +5609,11 @@ class Sequencer:
                     g_dev['foc'].set_initial_best_guess_for_focus()
                     self.total_sequencer_control = False
                     self.focussing=False
+
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+
                     g_dev['obs'].report_to_nightlog("Autofocus process ended.")
+
                     return
 
                 if result == 'outsideofnighttime':
@@ -5564,10 +5621,14 @@ class Sequencer:
                     g_dev['foc'].set_initial_best_guess_for_focus()
                     self.total_sequencer_control = False
                     self.focussing=False
+
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+
                     g_dev['obs'].report_to_nightlog("Autofocus process ended.")
+
                     return
 
-                spot = g_dev['obs'].fwhmresult['FWHM']
+                spot = g_dev['obs'].fwhmresult['FWHM'] * stored_blob_to_gaussian_factor
                 foc_pos=g_dev['foc'].current_focus_position
 
                 g_dev['obs'].send_to_user("Focus at test position: " + str(foc_pos) + " is FWHM: " + str(round(spot,2)), p_level='INFO')
@@ -5669,13 +5730,18 @@ class Sequencer:
                             g_dev['foc'].set_initial_best_guess_for_focus()
                             self.total_sequencer_control = False
                             self.focussing=False
+
+                            g_dev['foc'].set_initial_best_guess_for_focus()
+
                             g_dev['obs'].report_to_nightlog("Autofocus process ended.")
+
                             return
 
                         # First check if the minimum is too close to the edge
                         if minimum_index == 0 or minimum_index == 1:
                             plog ('minimum index: ', minimum_index)
                             plog ("Minimum too close to the sampling edge, getting another dot")
+                            extra_steps_to_the_left=extra_steps_to_the_left+1
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
@@ -5687,7 +5753,7 @@ class Sequencer:
                         elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
                             plog ('minimum index: ', minimum_index)
                             plog ('minimum find: ', minimumfind)
-
+                            extra_steps_to_the_right=extra_steps_to_the_left+1
                             plog ("Minimum too close to the sampling edge, getting another dot")
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
@@ -5704,6 +5770,7 @@ class Sequencer:
                         elif focus_spots[0][1] < (minimum_value +1): #(minimum_value * 1.3)
 
                             plog ("Left hand side of curve is too low for a good fit, getting another dot")
+                            extra_steps_to_the_left=extra_steps_to_the_left+1
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
@@ -5714,6 +5781,7 @@ class Sequencer:
                         # If right hand side is too low get another dot
                         elif focus_spots[-1][1] < (minimum_value +1 ): #(minimum_value * 1.3)
                             plog ("Right hand side of curve is too low for a good fit, getting another dot")
+                            extra_steps_to_the_right=extra_steps_to_the_right + 1
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
@@ -5750,6 +5818,7 @@ class Sequencer:
                                 minimum_index=minimumfind.index(min(minimumfind))
                                 if minimum_index == 0 or minimum_index == 1:
                                     plog ("Minimum too close to the sampling edge, getting another dot")
+                                    extra_steps_to_the_left=extra_steps_to_the_left+1
                                     new_focus_position_to_attempt=focus_spots[0][0] - throw
                                     thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                                     thread.daemon = True
@@ -5760,6 +5829,7 @@ class Sequencer:
                                 elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
 
                                     plog ("Minimum too close to the sampling edge, getting another dot")
+                                    extra_steps_to_the_right=extra_steps_to_the_right+1
                                     new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
                                     thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                                     thread.daemon = True
@@ -5903,9 +5973,64 @@ class Sequencer:
 
                                         focusexposure_shelf.close()
 
+                                    # Because the actual focus routine doesn't use a gaussian FWHM,
+                                    # but we need a proper measurement of the gaussian FWHM
+                                    # We need to move to that focus and take an image
+                                    # To measure the true FWHM. We can't use any of the focus images
+                                    # because none of them would be quite on the focus spot.
+
+
+
+                                    # Take the shot
+                                    # Here we take a further shot to measure the FWHM accurately
+                                    # With a gaussian method, now that it is (probably) not a donut.
+                                    req = {'time': focus_exposure_time,  'alias':  str(g_dev['cam'].name), 'image_type': 'focus_confirmation'}   #  NB Should pick up filter and constats from config
+                                    opt = { 'count': 1, 'filter': filter_choice}
+                                    result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+
+
+                                    print (g_dev['obs'].fwhmresult)
                                     #breakpoint()
 
-                                    # We don't take a confirming exposure because there is no point actually and just wastes time.
+                                    if not dont_log_focus:
+                                        g_dev['foc'].af_log(fitted_focus_position, g_dev['obs'].fwhmresult['FWHM'], g_dev['obs'].fwhmresult['FWHM'])
+
+                                    new_blob_vs_gaussian_factor = (g_dev['obs'].fwhmresult["FWHM"] / fitted_focus_fwhm) * stored_blob_to_gaussian_factor
+
+                                    plog ("Calculated Blob to Gaussian Factor: " +str(new_blob_vs_gaussian_factor))
+
+                                    # Store estimated conversion factor between half-light approach and actual measured gaussian FWHM
+                                    blobvsgauss_shelf = shelve.open(
+                                        g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'blobvsgauss' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                                    try:
+
+                                        try:
+                                            blobvsgauss_list = blobvsgauss_shelf['blobvsgauss_list']
+
+                                        except:
+                                            blobvsgauss_list = []
+                                        blobvsgauss_list.append(
+                                            float(new_blob_vs_gaussian_factor)
+                                        )
+                                        too_long = True
+                                        while too_long:
+                                            if len(blobvsgauss_list) > 100:
+                                                blobvsgauss_list.pop(0)
+                                            else:
+                                                too_long = False
+                                        blobvsgauss_shelf['blobvsgauss_list'] = blobvsgauss_list
+
+                                        #self.pixscale = bn.nanmedian(pixelscale_list)
+                                        #plog('1x1 pixel scale: ' + str(self.pixscale))
+                                    except:
+                                        plog ("blob issue")
+                                        plog(traceback.format_exc())
+
+                                    blobvsgauss_shelf.close()
+
+                                    #breakpoint()
+
+
                                     # You can see if it is focussed with the first target shot.
                                     if not dont_return_scope:
                                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -5915,13 +6040,12 @@ class Sequencer:
 
                                     self.af_guard = False
                                     self.focussing=False
-                                    if not dont_log_focus:
-                                        g_dev['foc'].af_log(fitted_focus_position, fitted_focus_fwhm, spot)
+
 
                                     # Store fitted focus as last result
-                                    g_dev['obs'].fwhmresult={}
-                                    g_dev['obs'].fwhmresult["FWHM"] = fitted_focus_fwhm
-                                    g_dev['obs'].fwhmresult["mean_focus"] = fitted_focus_position
+                                    # g_dev['obs'].fwhmresult={}
+                                    # g_dev['obs'].fwhmresult["FWHM"] = fitted_focus_fwhm
+                                    # g_dev['obs'].fwhmresult["mean_focus"] = fitted_focus_position
                                     self.total_sequencer_control = False
 
 
