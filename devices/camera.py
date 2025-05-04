@@ -2779,6 +2779,8 @@ class Camera:
             else:
                 manually_requested_calibration = False
 
+            g_dev['obs'].report_to_nightlog("Individual Exposure Commanded: " + str(command))
+
             self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'],
                                 user_roles=command['user_roles'], quick=False, manually_requested_calibration=manually_requested_calibration)
 
