@@ -24,6 +24,7 @@ from astropy import wcs
 from astropy.coordinates import SkyCoord
 from astropy.wcs import WCS
 from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
+import copy
 
 def print(*args):
     rgb = lambda r, g, b: f'\033[38;2;{r};{g};{b}m'
@@ -165,6 +166,12 @@ hdureduced.data[np.isnan(hdureduced.data)] =edgefillvalue
 
 print ("Waiting for: " +wcsfilename.replace('.fits','.wcs'))
 
+
+# While waiting, dump out image to disk temporarily to be picked up later.
+np.save(out_file_name.replace('.fits','.tempnpy'), hdureduced.data.astype(np.float32))
+temphduheader=copy.deepcopy(hdureduced.header)
+del hdureduced
+
 wcs_timeout_timer=time.time()
 while True:
     if os.path.exists (wcsfilename.replace('.fits','.wcs')):
@@ -213,7 +220,7 @@ while True:
         del wcsheader
 
         # Alter header appropriately if the image has been binned.
-        binning= hdureduced.header["XBINING"]
+        binning= temphduheader["XBINING"]
         if binning > 1:
             w_orig = WCS(temphduheader)
             w_binned = w_orig.slice((slice(None, None, binning), slice(None, None, binning)))
@@ -229,12 +236,22 @@ while True:
         break
     time.sleep(2)
 
-hdureduced.header["DATE"] = (
+temphduheader["DATE"] = (
     datetime.date.strftime(
         datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
     ),
     "Date FITS file was written",
 )
+
+
+hdureduced = fits.PrimaryHDU()
+hdureduced.data = copy.deepcopy(np.load(out_file_name.replace('.fits','.tempnpy')))
+hdureduced.header = temphduheader
+
+try:
+    os.remove(out_file_name.replace('.fits','.tempnpy'))
+except:
+    pass
 
 hdureduced.writeto(
     out_file_name, overwrite=True, output_verify='silentfix'
@@ -248,5 +265,7 @@ try:
     os.remove(sys.argv[1])
 except:
     pass
+
+
 
 sys.exit()

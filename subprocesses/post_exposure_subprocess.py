@@ -507,38 +507,10 @@ if substack:
 
             crosscorrel_filename_waiter.append(temporary_substack_directory + output_filename)
 
-
-            # try:
-            #     crosscorrelation_subprocess_array.append(
-            #         subprocess.Popen(
-            #             ['python','subprocesses/crosscorrelation_subprocess.py'],
-            #             stdin=subprocess.PIPE,
-            #             stdout=subprocess.PIPE,
-            #             stderr=None,
-            #             bufsize=-1
-            #         )
-            #     )
-
-            # except:
-            #     plog ("failed on subprocess directoty, trying current directory")
-            #     crosscorrelation_subprocess_array.append(
-            #         subprocess.Popen(
-            #             ['python','crosscorrelation_subprocess.py'],
-            #             stdin=subprocess.PIPE,
-            #             stdout=subprocess.PIPE,
-            #             stderr=None,
-            #             bufsize=-1
-            #         )
-            #     )
-
-            # Original
-
             if normal_operation:
                 crosscorrelation_subprocess_array.append(subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
             else:
                 crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
-
-            #crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
             plog (counter-1)
 
 
@@ -551,13 +523,9 @@ if substack:
         counter=counter+1
 
 
-   # breakpoint()
-
     counter=1
 
     for waitfile in crosscorrel_filename_waiter:
-
-
 
         file_wait_timeout_timer=time.time()
         while (not os.path.exists(waitfile)) and (time.time()-file_wait_timeout_timer < 600) :
@@ -570,18 +538,8 @@ if substack:
         sub_stacker_array[:,:,counter] = np.load(waitfile)
         counter=counter+1
 
-
-    # for waiting_for_subprocesses in crosscorrelation_subprocess_array:
-    #     waiting_for_subprocesses.communicate()
-
-    #     sub_stacker_array[:,:,counter] = copy.deepcopy(np.load(temporary_substack_directory + output_filename))
-    #     counter=counter+1
-
     # Once collected and done, nanmedian the array into the single image
 
-    #plog (bn.nanmax(sub_stacker_array[0]))
-    #plog (bn.nanmax(sub_stacker_array[1]))
-    #plog (bn.nanmax(sub_stacker_array[2]))
     img=bn.nanmedian(sub_stacker_array, axis=2) * len(substacker_filenames)
 
     #plog (bn.nanmax(img))

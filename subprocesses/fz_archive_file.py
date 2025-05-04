@@ -51,6 +51,10 @@ wcsfilename=slow_process[7]
 actual_data=np.array(slow_process[2],dtype=np.float32)
 actual_data=np.nan_to_num(actual_data, nan=-251.2345733642578)
 
+# Dump the original array from memory
+tempfilename=slow_process[1]
+del slow_process
+
 
 googtime=time.time()
 
@@ -159,6 +163,7 @@ if not camera_config["settings"]["is_osc"]:
     hdufz = fits.CompImageHDU(
         np.array(actual_data, dtype=np.float32), temphduheader
     )
+    del actual_data
 
     if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
         try:
@@ -174,28 +179,30 @@ if not camera_config["settings"]["is_osc"]:
             )
             os.rename(failsafe_directory + '/' +str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'),failsafe_directory  + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').replace('.tempfits.fz','.fits.fz'))
 
-            
+    
 
     if selfconfig['ingest_raws_directly_to_archive']:
 
         hdufz.writeto(
-            slow_process[1].replace('.fits','.tempfits'), overwrite=True
+            tempfilename.replace('.fits','.tempfits'), overwrite=True
         )  # Save full fz file locally
 
         del hdufz  # remove file from memory now that we are done with it
 
-        os.rename(slow_process[1].replace('.fits','.tempfits'), slow_process[1])
+        os.rename(tempfilename.replace('.fits','.tempfits'), tempfilename)
 
 else:  # Is an OSC
 
     # If it is an OSC, split out the components and save them individually.
     if camera_config["settings"]["osc_bayer"] == 'RGGB':
 
-        newhdured = actual_data[::2, ::2]
-        GTRonly = actual_data[::2, 1::2]
-        GBLonly = actual_data[1::2, ::2]
-        newhdublue = actual_data[1::2, 1::2]
+        newhdured = np.array(actual_data[::2, ::2])
+        GTRonly = np.array(actual_data[::2, 1::2])
+        GBLonly = np.array(actual_data[1::2, ::2])
+        newhdublue = np.array(actual_data[1::2, 1::2])
         clearV = (block_reduce(actual_data,2))
+        
+        del actual_data
 
         oscmatchcode = (datetime.datetime.now().strftime("%d%m%y%H%M%S"))
 
@@ -212,7 +219,7 @@ else:  # Is an OSC
         temphduheader['CDELT1'] = float(temphduheader['CDELT1'])*2
         temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
         tempfilter = temphduheader['FILTER']
-        tempfilename = slow_process[1]
+        #tempfilename = slow_process[1]
 
         # Save and send R1
         temphduheader['FILTER'] = tempfilter + '_R1'
