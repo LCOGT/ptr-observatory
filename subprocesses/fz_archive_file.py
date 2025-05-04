@@ -96,7 +96,7 @@ if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
 print ("Waiting for: " +wcsfilename.replace('.fits','.wcs'))
 
 # While waiting, dump out image to disk temporarily to be picked up later.
-np.save(tempfilename.replace('.fits','.tempnpy'), actual_data)
+np.save(tempfilename.replace('.fits.fz','.tempnpy'), actual_data)
 #temphduheader=copy.deepcopy(hdureduced.header)
 del actual_data
 
@@ -162,10 +162,10 @@ while True:
     time.sleep(2)
     
 
-actual_data=np.load(tempfilename.replace('.fits','.tempnpy'))
+actual_data=np.load(tempfilename.replace('.fits.fz','.tempnpy.npy'))
 
 try:
-    os.remove(tempfilename.replace('.fits','.tempnpy'))
+    os.remove(tempfilename.replace('.fits.fz','.tempnpy.npy'))
 except:
     pass
 

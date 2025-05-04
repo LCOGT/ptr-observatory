@@ -245,7 +245,7 @@ temphduheader["DATE"] = (
 
 
 hdureduced = fits.PrimaryHDU()
-hdureduced.data = copy.deepcopy(np.load(out_file_name.replace('.fits','.tempnpy')))
+hdureduced.data = copy.deepcopy(np.load(out_file_name.replace('.fits','.tempnpy.npy')))
 hdureduced.header = temphduheader
 
 try:
