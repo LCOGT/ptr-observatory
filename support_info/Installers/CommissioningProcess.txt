@@ -1,0 +1,4 @@
+realistically it is the focus that all the future dominoes rely upon.
+
+(1) Find a rough focus point and record it as the 'reference' in the config
+(2) Actually find the limits of the focusser... the lowest and highest value it can be set to. 

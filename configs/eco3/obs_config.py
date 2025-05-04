@@ -401,13 +401,13 @@ site_config = {
             'focuser_movement_settle_time': 6,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
-            'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
-            'reference': 2500,    #  20210313  Nominal at 10C Primary temperature
+            'maximum_good_focus_in_arcsecond': 8.0, # highest value to consider as being in "good focus". Used to select last good focus value
+            'reference': 1250,    #  20210313  Nominal at 10C Primary temperature
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
-            'maximum': 50000,   #12672 actually
+            'maximum': 3500,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 150,
+            'throw' : 50,
             'unit': 'counts',
             'unit_conversion': 1.0,
             'has_dial_indicator': False

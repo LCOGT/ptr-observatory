@@ -232,6 +232,10 @@ class Focuser:
             self.throw_list=[self.throw]
         
         plog ("used throw: " + str(self.throw))
+        
+        
+        self.minimum_allowed_focus=self.config['minimum']
+        self.maximum_allowed_focus=self.config['maximum']
 
 
     def report_optimal_throw(self,curve_step_length):

@@ -5241,16 +5241,21 @@ class Sequencer:
         start_dec = g_dev['mnt'].return_declination()
 
 
-        #breakpoint()
-
         if not begin_at is None:
             focus_start = begin_at  #In this case we start at a place close to a 3 point minimum.
-        # elif not extensive_focus == None:
-        #     focus_start=extensive_focus
         else:
             focus_start=g_dev['foc'].current_focus_position
+        
+        # Check that the focus_start position is a reasonable way
+        # way away from the edges of the focus limits
+        if focus_start < (g_dev['foc'].minimum_allowed_focus + 3 * throw):
+            focus_start=g_dev['foc'].minimum_allowed_focus + 3 * throw
+        elif focus_start > (g_dev['foc'].maximum_allowed_focus - 3 * throw):
+            focus_start=g_dev['foc'].minimum_allowed_focus - 3 * throw
+        
         foc_pos0 = focus_start
-
+        
+        
 # =============================================================================
 # =============================================================================
 # =============================================================================
@@ -5736,9 +5741,11 @@ class Sequencer:
                             g_dev['obs'].report_to_nightlog("Autofocus process ended.")
 
                             return
+                       
 
                         # First check if the minimum is too close to the edge
-                        if minimum_index == 0 or minimum_index == 1:
+                        # As long as you haven't hit the limits
+                        if (minimum_index == 0 or minimum_index == 1) and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus) :
                             plog ('minimum index: ', minimum_index)
                             plog ("Minimum too close to the sampling edge, getting another dot")
                             extra_steps_to_the_left=extra_steps_to_the_left+1
@@ -5750,7 +5757,7 @@ class Sequencer:
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastAWS( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
-                        elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
+                        elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2 and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus):
                             plog ('minimum index: ', minimum_index)
                             plog ('minimum find: ', minimumfind)
                             extra_steps_to_the_right=extra_steps_to_the_left+1
@@ -5767,7 +5774,7 @@ class Sequencer:
                         # Then check whether the values on the edge are high enough.
 
                         # If left side is too low get another dot
-                        elif focus_spots[0][1] < (minimum_value +1): #(minimum_value * 1.3)
+                        elif focus_spots[0][1] < (minimum_value +1)  and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus): #(minimum_value * 1.3)
 
                             plog ("Left hand side of curve is too low for a good fit, getting another dot")
                             extra_steps_to_the_left=extra_steps_to_the_left+1
@@ -5779,7 +5786,7 @@ class Sequencer:
                             g_dev['obs'].enqueue_for_fastAWS( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
                         # If right hand side is too low get another dot
-                        elif focus_spots[-1][1] < (minimum_value +1 ): #(minimum_value * 1.3)
+                        elif focus_spots[-1][1] < (minimum_value +1 ) and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus): #(minimum_value * 1.3)
                             plog ("Right hand side of curve is too low for a good fit, getting another dot")
                             extra_steps_to_the_right=extra_steps_to_the_right + 1
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
@@ -5816,7 +5823,7 @@ class Sequencer:
                                 for entry in focus_spots:
                                     minimumfind.append(entry[1])
                                 minimum_index=minimumfind.index(min(minimumfind))
-                                if minimum_index == 0 or minimum_index == 1:
+                                if (minimum_index == 0 or minimum_index == 1) and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
                                     plog ("Minimum too close to the sampling edge, getting another dot")
                                     extra_steps_to_the_left=extra_steps_to_the_left+1
                                     new_focus_position_to_attempt=focus_spots[0][0] - throw
@@ -5826,7 +5833,7 @@ class Sequencer:
                                     # Fling the jpeg up
                                     g_dev['obs'].enqueue_for_fastAWS(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
-                                elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2:
+                                elif (minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2)  and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus):
 
                                     plog ("Minimum too close to the sampling edge, getting another dot")
                                     extra_steps_to_the_right=extra_steps_to_the_right+1
