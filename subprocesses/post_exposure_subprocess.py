@@ -28,6 +28,8 @@ import traceback
 #from astropy.stats import sigma_clip
 from joblib import Parallel, delayed
 
+from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
+
 # Add the parent directory to the Python path
 # This allows importing modules from the root directory
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -1805,7 +1807,13 @@ try:
         hdufocus.header["NAXIS2"] = hdu.data.shape[1]
         hdufocus.writeto(cal_path + 'prenan.fits', overwrite=True, output_verify='silentfix')
 
-    # Fast next-door-neighbour in-fill algorithm
+
+    # Need to get rid of nans
+    # Interpolate image nans
+    kernel = Gaussian2DKernel(x_stddev=1)
+    hdu.data = interpolate_replace_nans(hdu.data, kernel)
+
+    # Fast next-door-neighbour in-fill algorithm to mop up any left over
     x_size=hdu.data.shape[0]
     y_size=hdu.data.shape[1]
 
@@ -1903,6 +1911,10 @@ try:
 
         # bin to native binning
         if selfnative_bin != 1 and (not pixscale == None) and not hdu.header['PIXSCALE'] == 'Unknown':
+
+
+
+
             reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
             reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
             reduced_hdusmallheader['XBINING']=selfnative_bin
