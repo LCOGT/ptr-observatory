@@ -52,13 +52,9 @@ hdureduced.data = slow_process[2]
 hdureduced.header = temphduheader
 hdureduced.data = hdureduced.data.astype("float32")
 
+out_file_name=slow_process[1]
+del slow_process
 
-
-
-
-# int_array_flattened=hdureduced.data.astype(int).ravel()
-# int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-# unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
 unique,counts=np.unique(hdureduced.data.ravel()[~np.isnan(hdureduced.data.ravel())].astype(int), return_counts=True)
 m=counts.argmax()
 imageMode=unique[m]
@@ -241,11 +237,11 @@ hdureduced.header["DATE"] = (
 )
 
 hdureduced.writeto(
-    slow_process[1], overwrite=True, output_verify='silentfix'
+    out_file_name, overwrite=True, output_verify='silentfix'
 )  # Save flash reduced file locally
 
 if selfconfig["save_to_alt_path"] == "yes":
-    hdureduced.writeto( selfconfig['alt_path'] +'/' +temphduheader['OBSID'] +'/' +temphduheader['DAY-OBS'] + "/reduced/" + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+    hdureduced.writeto( selfconfig['alt_path'] +'/' +temphduheader['OBSID'] +'/' +temphduheader['DAY-OBS'] + "/reduced/" + out_file_name.split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
     )  # Save full raw file locally
 
 try:
