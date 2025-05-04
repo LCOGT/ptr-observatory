@@ -5361,8 +5361,7 @@ class Camera:
                             outputimg=block_reduce(outputimg,2)
                         else:
                             temp_focus_bin=1
-
-                        # Here we decide if we are using source-extractor++
+                        # Here we decide if Fwe are using source-extractor++
                         # Which is great for actual focussing as it is quite robust
                         # to blobs and donuts or whether we are using the gaussian method
                         # which gives a quite accurate estimate of the true fwhm
@@ -5523,7 +5522,8 @@ class Camera:
                                 rfp = bn.nanmedian(fwhms) * temp_focus_bin
                                 rfr = rfp * self.pixscale
                                 rfs = bn.nanstd(fwhms) * self.pixscale * temp_focus_bin
-                                if rfr < 1.0 or rfr  > 12:
+                                if rfr < 1.0 or rfr  > 16:
+                                    print (rfr)
                                     rfr= np.nan
                                     rfp= np.nan
 

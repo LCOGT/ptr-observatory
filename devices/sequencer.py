@@ -5638,7 +5638,6 @@ class Sequencer:
                 #breakpoint()
                 n_of_sources.append([foc_pos,g_dev['obs'].fwhmresult['No_of_sources']])
 
-
                 if not np.isnan(spot):
                     if spot < 30.0:
                         focus_spots.append((foc_pos,spot))
@@ -6000,33 +5999,36 @@ class Sequencer:
                                     plog ("Calculated Blob to Gaussian Factor: " +str(new_blob_vs_gaussian_factor))
 
                                     # Store estimated conversion factor between half-light approach and actual measured gaussian FWHM
-                                    blobvsgauss_shelf = shelve.open(
-                                        g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'blobvsgauss' + g_dev['cam'].alias + str(g_dev['obs'].name))
-                                    try:
-
+                                    
+                                    if not np.isnan(new_blob_vs_gaussian_factor):
+                                    
+                                        blobvsgauss_shelf = shelve.open(
+                                            g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'blobvsgauss' + g_dev['cam'].alias + str(g_dev['obs'].name))
                                         try:
-                                            blobvsgauss_list = blobvsgauss_shelf['blobvsgauss_list']
-
+    
+                                            try:
+                                                blobvsgauss_list = blobvsgauss_shelf['blobvsgauss_list']
+    
+                                            except:
+                                                blobvsgauss_list = []
+                                            blobvsgauss_list.append(
+                                                float(new_blob_vs_gaussian_factor)
+                                            )
+                                            too_long = True
+                                            while too_long:
+                                                if len(blobvsgauss_list) > 100:
+                                                    blobvsgauss_list.pop(0)
+                                                else:
+                                                    too_long = False
+                                            blobvsgauss_shelf['blobvsgauss_list'] = blobvsgauss_list
+    
+                                            #self.pixscale = bn.nanmedian(pixelscale_list)
+                                            #plog('1x1 pixel scale: ' + str(self.pixscale))
                                         except:
-                                            blobvsgauss_list = []
-                                        blobvsgauss_list.append(
-                                            float(new_blob_vs_gaussian_factor)
-                                        )
-                                        too_long = True
-                                        while too_long:
-                                            if len(blobvsgauss_list) > 100:
-                                                blobvsgauss_list.pop(0)
-                                            else:
-                                                too_long = False
-                                        blobvsgauss_shelf['blobvsgauss_list'] = blobvsgauss_list
-
-                                        #self.pixscale = bn.nanmedian(pixelscale_list)
-                                        #plog('1x1 pixel scale: ' + str(self.pixscale))
-                                    except:
-                                        plog ("blob issue")
-                                        plog(traceback.format_exc())
-
-                                    blobvsgauss_shelf.close()
+                                            plog ("blob issue")
+                                            plog(traceback.format_exc())
+    
+                                        blobvsgauss_shelf.close()
 
                                     #breakpoint()
 
