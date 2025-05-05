@@ -879,7 +879,7 @@ try:
 
 
         # yet another pickle debugger.
-        if True:
+        if False:
             pickle.dump(
                 [
                     np.asarray(hdu.data,dtype=np.float32),

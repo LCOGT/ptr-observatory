@@ -17,7 +17,7 @@ import traceback
 
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
-
+from astropy.nddata import block_reduce
 import bottleneck as bn
 from astropy.stats import sigma_clip
 from astropy.table import Table
@@ -101,8 +101,9 @@ googtime=time.time()
 # If this is an osc image, then interpolate so it is just the green filter image of the same size.
 if is_osc:
     ########## Need to split the file into four
-    plog ("do osc stuff")
-
+    #plog ("Binning for osc")
+    hdufocusdata = block_reduce(hdufocusdata, block_size=(2, 2), func=np.mean)
+    pixscale=pixscale*2
 
 # Check that the wcs directory is constructed
 #plog ("HERE WE ARE")
@@ -343,6 +344,19 @@ else:
 
 
 sys.exit()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 wslfilename.replace('.fits','.wcs')
 
