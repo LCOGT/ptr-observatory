@@ -1703,6 +1703,14 @@ class Sequencer:
             req = {'target': 'near_tycho_star'}
 
             g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
+            
+            # Sometimes there isn't a zoom in the exposure
+            # If there isn't, just go with full zoom
+            try:
+                plog (exposure['zoom'])
+            except:
+                exposure['zoom']='full'
+
 
             # If you are just doing single frames, then the initial pointing isn't
             # too stringent. But if you are doing a giant mosaic, then you need
