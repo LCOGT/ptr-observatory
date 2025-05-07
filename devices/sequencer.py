@@ -5894,21 +5894,39 @@ class Sequencer:
 
 
 
-                                    #Here calculate the throw
-                                    f_prime = np.polyder(f)  # Derivative of the polynomial
+                                    # #Here calculate the throw
+                                    # f_prime = np.polyder(f)  # Derivative of the polynomial
 
-                                    # Define the integrand for arc length calculation
-                                    integrand = lambda x: np.sqrt(1 + (f_prime(x))**2)
+                                    # # Define the integrand for arc length calculation
+                                    # integrand = lambda x: np.sqrt(1 + (f_prime(x))**2)
 
-                                    # Calculate the arc length over the entire range of x
-                                    arc_length, _ = quad(integrand, np.min(x), np.max(x))
+                                    # # Calculate the arc length over the entire range of x
+                                    # arc_length, _ = quad(integrand, np.min(x), np.max(x))
 
                                     # Decide how many points you want (similar to your original plot)
                                     #num_points = len(x)
                                     num_points = 6
 
                                     # Calculate step length along the curve
-                                    curve_step_length = arc_length / (num_points - 1)
+                                    # curve_step_length = arc_length / (num_points - 1)
+                                    
+                                    a, b, c = fit
+                                    
+                                    # Find the vertex (minimum point)
+                                    x_min = -b / (2 * a)
+                                    y_min = f(x_min)
+                                    
+                                    # Set the target y-value 1.75 above the minimum
+                                    target_y = y_min + 1.75
+                                    
+                                    # Solve for x where the parabola equals the target y
+                                    coeffs = [a, b, c - target_y]
+                                    roots = np.roots(coeffs)
+                                    x_left, x_right = min(roots), max(roots)
+                                    
+                                    # Compute step size between 5 evenly spaced points
+                                    curve_step_length = (x_right - x_left) / (num_points-1)
+                                    #x_values = np.linspace(x_left, x_right, 5)
 
                                     plog("Estimated Optimal Throw:", curve_step_length)
 
