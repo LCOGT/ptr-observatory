@@ -412,7 +412,7 @@ site_config = {
             'maximum': 10000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 75,
+            'throw' : 50,
             'unit': 'counts',
             'unit_conversion': 1.0,
             'has_dial_indicator': False
