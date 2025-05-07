@@ -402,7 +402,7 @@ site_config = {
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 8.0, # highest value to consider as being in "good focus". Used to select last good focus value
-            'reference': 1250,    #  20210313  Nominal at 10C Primary temperature
+            'reference': 1750,    #  20210313  Nominal at 10C Primary temperature
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 3500,   #12672 actually
             'step_size': 1,
@@ -625,7 +625,7 @@ site_config = {
                 'readout_speed': 0.08,
                 'readout_seconds': 1.0,
                 'smart_stack_exposure_time' : 30,
-                'substack': False, # Substack with this camera
+                'substack': True, # Substack with this camera
 
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.

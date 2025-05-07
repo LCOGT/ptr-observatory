@@ -311,17 +311,19 @@ class Focuser:
                             except:
                                 difference_in_position=self.focuser_update_wincom.focPosition - requestedPosition
                                 absdifference_in_position=abs(self.focuser_update_wincom.focPosition - requestedPosition)
+                                
+                            #breakpoint()
                             print (difference_in_position)
                             print (absdifference_in_position)
                             if difference_in_position < 0 :
                                 self.focuser_update_wincom.focMoveOut(absdifference_in_position)
                             else:
                                 self.focuser_update_wincom.focMoveIn(absdifference_in_position)
-                            try:
-                                print (self.focuser_update_wincom.focPosition())
-                            except:
-                                print ("failed")
-                                print (self.focuser_update_wincom.focPosition)
+                            # try:
+                            #     print (self.focuser_update_wincom.focPosition())
+                            # except:
+                            #     #print ("failed")
+                            #     print (self.focuser_update_wincom.focPosition)
      
                             time.sleep(self.config['focuser_movement_settle_time'])
                             try:
