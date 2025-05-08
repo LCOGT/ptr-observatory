@@ -159,6 +159,7 @@ class Sequencer:
                 self.config['obs_id'],
                 schedule_start,
                 schedule_end,
+                self.obs.siteproxy,
                 include_lco_scheduler=include_lco_scheduler,
                 configdb_telescope=configdb_telescope,
                 configdb_enclosure=configdb_enclosure,
@@ -556,8 +557,7 @@ class Sequencer:
         req = {'time': time, 'script': 'True', 'image_type': image_type}
         opt = {'count': count, 'filter': 'dk'}
 
-        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False,
-                                    quick=False, skip_open_check=True, skip_daytime_check=True)
+        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', skip_open_check=True, skip_daytime_check=True)
         g_dev['obs'].request_scan_requests()
 
         if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or (
@@ -1113,8 +1113,7 @@ class Sequencer:
                                             opt = { 'count': 1,  \
                                                    'filter': 'dk'}
                                             self.nightime_bias_counter = self.nightime_bias_counter + 1
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                quick=False, skip_open_check=True,skip_daytime_check=True)
+                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', skip_open_check=True,skip_daytime_check=True)
                                             # these exposures shouldn't reset these timers
                                             g_dev['obs'].time_of_last_exposure = time.time() - 840
                                             g_dev['obs'].time_of_last_slew = time.time() - 840
@@ -1541,8 +1540,6 @@ class Sequencer:
                                     optional_params,
                                     user_name=user_name,
                                     user_id=user_id,
-                                    user_roles=user_roles,
-                                    no_AWS=False,
                                     solve_it=False,
                                     calendar_event_id=calendar_event_id
                                 ) #, zoom_factor=zoom_factor)
@@ -2057,7 +2054,7 @@ class Sequencer:
                                     self.total_sequencer_control=False
                                     g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                     return block_specification
-                            result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id) #, zoom_factor=zoom_factor)
+                            result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, solve_it=False, calendar_event_id=calendar_event_id) #, zoom_factor=zoom_factor)
 
                             try:
                                 if result == 'blockend':
@@ -2189,8 +2186,7 @@ class Sequencer:
             g_dev['mnt'].park_command({}, {})
 
         # Trigger exposure
-        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system',
-                                    no_AWS=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', skip_open_check=True, skip_daytime_check=True)
 
         # Handle cancellation or timeout
         if self.stop_script_called:
@@ -2213,8 +2209,7 @@ class Sequencer:
         if not g_dev['obs'].mountless_operation:
             g_dev['mnt'].park_command({}, {})
 
-        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system',
-                                    no_AWS=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', skip_open_check=True, skip_daytime_check=True)
 
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -4755,7 +4750,7 @@ class Sequencer:
                                 else:
                                     self.next_filter_in_flat_run = pop_list[1]
 
-                                fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, skip_daytime_check=True)
+                                fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', skip_daytime_check=True)
                                 number_of_exposures_so_far=number_of_exposures_so_far+1
 
                                 try:
@@ -5645,7 +5640,7 @@ class Sequencer:
                     time.sleep(1)
 
                 # Take the shot
-                result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
 
 
                 if result == 'roofshut':
@@ -6860,7 +6855,7 @@ class Sequencer:
             p_level="INFO",
         )
         # Take a pointing shot to reposition
-        result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=False)
+        result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', solve_it=True, useastrometrynet=False)
 
         if result == 'blockend':
             plog ("End of Block, exiting Centering.")
@@ -6961,7 +6956,7 @@ class Sequencer:
                 req = {'time': float(self.config['pointing_exposure_time']) * 2,  'alias':  str(g_dev['cam'].name), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'pointing'}
 
-            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
+            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', solve_it=True, useastrometrynet=True)
 
             if result == 'blockend':
                 plog ("End of Block, exiting Centering.")
@@ -7035,7 +7030,7 @@ class Sequencer:
                 req = {'time': float(self.config['pointing_exposure_time']) * 2.5,  'alias':  str(g_dev['cam'].name), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'Lum'}
 
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
+                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', solve_it=True, useastrometrynet=True)
 
                 if result == 'blockend':
                     plog ("End of Block, exiting Centering.")
@@ -7190,7 +7185,7 @@ class Sequencer:
 
                 req = {'time': float(self.config['pointing_exposure_time']) * 3,  'alias':  str(g_dev['cam'].name), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'pointing'}
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
+                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', solve_it=True, useastrometrynet=True)
 
                 # test for blockend
                 if self.blockend != None:
@@ -7335,7 +7330,7 @@ class Sequencer:
             # Taking a confirming shot.
             req = {'time': self.config['pointing_exposure_time'],  'alias':  str(g_dev['cam'].name), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'count': 1, 'filter': 'pointing'}
-            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', solve_it=True)
 
             if result == 'blockend':
                 plog ("End of Block, exiting Centering.")

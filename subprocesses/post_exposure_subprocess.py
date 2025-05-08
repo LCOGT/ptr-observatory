@@ -15,7 +15,7 @@ import shelve
 from astropy.io import fits
 import numpy as np
 import bottleneck as bn
-import datetime
+from datetime import datetime, timezone, timedelta
 from astropy.time import Time
 import copy
 import threading
@@ -267,9 +267,7 @@ def write_raw_file_out(packet):
     hdu.header = hduheader
 
     hdu.header["DATE"] = (
-        datetime.date.strftime(
-            datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
-        ),
+        datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"),
         "Date FITS file was written",
     )
 
@@ -375,6 +373,13 @@ platesolvethread_filename = inputs["thread_files"]["platesolvethread_filename"]
 # Other
 unique_batch_code = inputs["other"]["unique_batch_code"]
 exposure_in_nighttime = inputs["other"]["exposure_in_nighttime"]
+
+# LCO header info
+# For images taken via LCO scheduler, this should contain header values for
+# DATE-OBS, DAY-OBS, INSTRUME, SITEID, TELID, PROPID, BLKUID, REQNUM, OBSTYPE
+# These are used to populate the header of the FITS file, with the PTR versions used as fallbacks
+lco_header_data = inputs["lco_header_data"]
+plog(f"lco_header_data: {lco_header_data}")
 
 pane = opt.get('pane')
 
@@ -1041,15 +1046,19 @@ try:
         selfconfig["obs_id"].replace("-", "").replace("_", "")
     )
     hdu.header["SITEID"] = (
-        selfconfig["wema_name"].replace("-", "").replace("_", "")
+        'mrc', # TEMPORARY, REMOVE THIS
+        # lco_header_data.get('SITEID', selfconfig["wema_name"].replace("-", "").replace("_", ""))
     )
-    hdu.header["TELID"] =selfconfig["obs_id"].replace("-", "").replace("_", "")
+    hdu.header["TELID"] = lco_header_data.get('TELID', selfconfig["obs_id"].replace("-", "").replace("_", ""))
     hdu.header["TELESCOP"] = selfconfig["obs_id"].replace("-", "").replace("_", "")
     hdu.header["PTRTEL"] = selfconfig["obs_id"].replace("-", "").replace("_", "")
-    hdu.header["PROPID"] = "ptr-" + selfconfig["obs_id"] + "-001-0001"
+    hdu.header["PROPID"] = (
+        lco_header_data.get('PROPID', 'na'),
+        'LCO Proposal ID'
+    )
     hdu.header["BLKUID"] = (
-        "1234567890",
-        "Just a placeholder right now. WER",
+        int(lco_header_data.get('BLKUID', -1)),
+        'LCO scheduled block ID'
     )
     hdu.header["INSTRUME"] = (cam_config["name"], "Name of camera")
     hdu.header["CAMNAME"] = (cam_config["desc"], "Instrument used")
@@ -1125,8 +1134,8 @@ try:
     hdu.header["READOUTE"]= (readout_estimate, "Readout time estimated from this exposure")
     hdu.header["READOUTU"] = (readout_time, "Readout time used for this exposure")
     hdu.header["OBSTYPE"] = (
-        frame_type.upper(),
-        "Observation type",
+        lco_header_data.get('OBSTYPE', frame_type.upper()),
+        "Configuration type",
     )  # This report is fixed and it should vary...NEEDS FIXING!
     if frame_type.upper() == "SKY FLAT":
        frame_type =="skyflat"
@@ -1139,10 +1148,8 @@ try:
         dayobs,
         "Date at start of observing night"
     )
-    yesterday = datetime.datetime.now() - datetime.timedelta(1)
-    hdu.header["L1PUBDAT"] = datetime.datetime.strftime(
-        yesterday, "%Y-%m-%dT%H:%M:%S.%fZ"
-    )  # IF THIS DOESN"T WORK, subtract the extra datetime ...
+    yesterday = datetime.now(tz=timezone.utc) - timedelta(1)
+    hdu.header["L1PUBDAT"] = datetime.strftime(yesterday, "%Y-%m-%dT%H:%M:%S.%fZ")  # IF THIS DOESN"T WORK, subtract the extra datetime ...
 
     # There is a significant difference between substack timing and "normal" exposure timing
     # Also it has impacts on the actual "exposure time" as well.... the exposure time is "longer" but has LESS effective exposure time
@@ -1153,15 +1160,14 @@ try:
         substack_midexposure=np.mean(np.array(sub_stacker_midpoints))
 
         hdu.header["DATE"] = (
-            datetime.datetime.isoformat(
-                datetime.datetime.utcfromtimestamp(substack_start_time)
-            ),
+            datetime.isoformat(datetime.fromtimestamp(substack_start_time, tz=timezone.utc)),
             "Start date and time of observation"
         )
 
         hdu.header["DATE-OBS"] = (
-            datetime.datetime.isoformat(
-                datetime.datetime.utcfromtimestamp(substack_start_time)
+            lco_header_data.get(
+                'DATE-OBS',
+                datetime.isoformat(datetime.fromtimestamp(substack_start_time, tz=timezone.utc))
             ),
             "Start date and time of observation"
         )
@@ -1229,15 +1235,14 @@ try:
     else:
 
         hdu.header["DATE"] = (
-            datetime.datetime.isoformat(
-                datetime.datetime.utcfromtimestamp(start_time_of_observation)
-            ),
+            datetime.isoformat(datetime.fromtimestamp(start_time_of_observation, tz=timezone.utc)),
             "Start date and time of observation"
         )
 
         hdu.header["DATE-OBS"] = (
-            datetime.datetime.isoformat(
-                datetime.datetime.utcfromtimestamp(start_time_of_observation)
+            lco_header_data.get(
+                'DATE-OBS',
+                datetime.isoformat(datetime.fromtimestamp(start_time_of_observation, tz=timezone.utc))
             ),
             "Start date and time of observation"
         )
@@ -1534,7 +1539,10 @@ try:
 
     hdu.header["DRZPIXSC"] = (cam_settings['drizzle_value_for_later_stacking'], 'Target drizzle scale')
 
-    hdu.header["REQNUM"] = ("00000001", "Request number")
+    hdu.header["REQNUM"] = (
+        int(lco_header_data.get('REQNUM', '-1')),
+        'LCO Request number'
+    )
     hdu.header["ISMASTER"] = (False, "Is master image")
 
 
@@ -1784,11 +1792,25 @@ try:
         ]) and not a_dark_exposure:
 
         if selfconfig['fully_platesolve_images_at_site_rather_than_pipe']:
-            wcsfilename=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq)) +'/' + selfconfig["obs_id"]+ "-" + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter) + "-" + dayobs+ "-"+ next_seq+ "-" + 'EX'+ "00.fits"
+            wcsfilename = f"{localcalibrationdirectory}archive/{cam_alias}/{dayobs}/wcs/{int(next_seq)}/{selfconfig['obs_id']}-{cam_alias}_{frame_type}_{this_exposure_filter}-{dayobs}-{next_seq}-EX00.fits"
         else:
             wcsfilename='none'
 
-        picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),cam_alias, ('fz_and_send', (raw_path + raw_name00 + ".fz").replace('.fz.fz','.fz'), copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure, wcsfilename))
+        picklepayload = (
+            copy.deepcopy(hdu.header),
+            copy.deepcopy(selfconfig),
+            cam_alias,
+            (
+                'fz_and_send',
+                (raw_path + raw_name00 + ".fz").replace('.fz.fz', '.fz'),
+                copy.deepcopy(hdu.data),
+                copy.deepcopy(hdu.header),
+                frame_type,
+                ra_at_time_of_exposure,
+                dec_at_time_of_exposure,
+                wcsfilename
+            )
+        )
 
         #plog (bn.nanmin(hdu.data))
 
