@@ -381,4 +381,4 @@ if smartstackid == 'no':
         )
         del final_image
 
-del hdusmalldata
+#del hdusmalldata

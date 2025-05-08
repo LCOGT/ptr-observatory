@@ -878,53 +878,76 @@ try:
             os.makedirs(wcsfilepath, mode=0o777)
 
 
-        # yet another pickle debugger.
-        if False:
-            pickle.dump(
-                [
-                    np.asarray(hdu.data,dtype=np.float32),
-                    pixscale,
-                    is_osc,
-                    wcsfilepath,
-                    wcsfilebase,
-                    corrected_ra_for_header * 15,
-                    corrected_dec_for_header,
-                    next_seq
-                ],
-                open('subprocesses/testsingleimageplatesolvepickle','wb')
-            )
-
-        try:
-            platesolve_subprocess = subprocess.Popen(
-                ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                bufsize=0,
-            )
-        except OSError:
-            plog(traceback.format_exc())
-            pass
-
-        try:
-            pickle.dump(
-                [
-                    np.asarray(hdu.data,dtype=np.float32),
-                    pixscale,
-                    is_osc,
-                    wcsfilepath,
-                    wcsfilebase,
-                    corrected_ra_for_header * 15,
-                    corrected_dec_for_header,
-                    next_seq
-
-                ],
-                platesolve_subprocess.stdin,
-            )
-        except:
-            plog("Problem in the platesolve pickle dump")
-            plog(traceback.format_exc())
+        # # yet another pickle debugger.
+        # if True:
+        #     pickle.dump(
+        #         [
+        #             np.asarray(hdu.data,dtype=np.float32),
+        #             pixscale,
+        #             is_osc,
+        #             wcsfilepath,
+        #             wcsfilebase,
+        #             corrected_ra_for_header * 15,
+        #             corrected_dec_for_header,
+        #             next_seq
+        #         ],
+        #         open('subprocesses/testsingleimageplatesolvepickle','wb')
+        #     )
 
 
+        
+
+
+        # try:
+        #     platesolve_subprocess = subprocess.Popen(
+        #         ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
+        #         stdin=subprocess.PIPE,
+        #         stdout=subprocess.PIPE,
+        #         bufsize=0,
+        #     )
+        # except OSError:
+        #     plog(traceback.format_exc())
+        #     pass
+
+        # try:
+        #     pickle.dump(
+        #         [
+        #             np.asarray(hdu.data,dtype=np.float32),
+        #             pixscale,
+        #             is_osc,
+        #             wcsfilepath,
+        #             wcsfilebase,
+        #             corrected_ra_for_header * 15,
+        #             corrected_dec_for_header,
+        #             next_seq
+
+        #         ],
+        #         platesolve_subprocess.stdin,
+        #     )
+        # except:
+        #     plog("Problem in the platesolve pickle dump")
+        #     plog(traceback.format_exc())
+
+        pickledata=pickle.dumps(
+            [
+                np.asarray(hdu.data,dtype=np.float32),
+                pixscale,
+                is_osc,
+                wcsfilepath,
+                wcsfilebase,
+                corrected_ra_for_header * 15,
+                corrected_dec_for_header,
+                next_seq
+            ]
+        )
+
+        platesolve_subprocess = subprocess.run(
+            ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
+            input=pickledata,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=False  # MUST be False for binary data
+        )
 
     # While we wait for the platesolving to happen we do all the other stuff
     # And we will pick up the solution towards the end.

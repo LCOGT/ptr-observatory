@@ -200,6 +200,10 @@ acatalog = Table.read(tempdir+"/test.cat", format='ascii')
 # Reject poor  ( <10 SNR) sources
 acatalog=acatalog[acatalog['FLUX_AUTO']/acatalog['FLUXERR_AUTO'] > 10]
 
+print ("actalog")
+print (len(acatalog))
+print (acatalog)
+
 #breakpoint()
 # Write out to fits
 #ascii_catalog.write(tempdir+ "/test.fits", format="fits", overwrite=True)
@@ -310,7 +314,7 @@ else:
 print ()
 if len(acatalog) > 5:
     astoptions = '--crpix-center --tweak-order ' + str(tweakorder[0]) +' --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(pixlow) + ' --scale-high ' + str(pixhigh) + ' --ra ' + str(RAest) + ' --dec ' + str(DECest) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots --new-fits none'
-
+    print (astoptions)
     plog (astoptions)
 
     os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename)) # + ' > output.txt')
