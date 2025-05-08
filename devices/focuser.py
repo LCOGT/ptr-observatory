@@ -555,11 +555,27 @@ class Focuser:
         self.focus_commissioned=True
 
         try:
-            self.best_previous_focus_point, last_successful_focus_time, self.focus_temp_slope, self.focus_temp_intercept=self.get_af_log()
+            # try:
+            self.best_previous_focus_point, last_successful_focus_time, self.focus_temp_slope, self.focus_temp_intercept, number_of_previous_focusses=self.get_af_log()
+            # except:
+            #     plog (traceback.format_exc())
+            #     breakpoint()
+                
+            plog("Number of previous focusses: " + str(number_of_previous_focusses))
+            
+            #breakpoint()
 
             if last_successful_focus_time != None:
 
                 self.time_of_last_focus=parser.parse(last_successful_focus_time)
+                
+                # if throw empty or exposure empty or list shorter than x, commissioned is yet not true.
+                if number_of_previous_focusses < 10:
+                    self.focus_commissioned=False
+                # print(number_of_previous_focusses)
+                
+                # breakpoint()
+                
             else:
                 self.focus_commissioned=False
 
@@ -848,7 +864,13 @@ class Focuser:
                     plog ("Best previous focus is at: " +str(item))
                     return item[1], item[4], focus_temp_slope, focus_temp_intercept
 
-            return None, None, focus_temp_slope, focus_temp_intercept
+            try:
+                print (len(previous_focus))
+            except:
+                plog (traceback.format_exc())
+                breakpoint()
+
+            return None, None, focus_temp_slope, focus_temp_intercept, len(previous_focus)
 
         except:
             plog("There is no focus log on the night shelf.")

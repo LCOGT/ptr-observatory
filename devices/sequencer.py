@@ -5590,8 +5590,8 @@ class Sequencer:
 
                     return
 
-                # If there has been too many attempts
-                if extra_steps_to_the_left > 10 or extra_steps_to_the_right > 10:
+                # If there has been too many attempts after focus has been commissioned
+                if (extra_steps_to_the_left > 10 or extra_steps_to_the_right > 10) and g_dev['foc'].focus_commissioned:
                     plog ("Too many extra steps too far away from the known focus point. Giving up.")
                     g_dev['foc'].set_initial_best_guess_for_focus()
                     self.total_sequencer_control = False
