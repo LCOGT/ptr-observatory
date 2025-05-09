@@ -279,6 +279,9 @@ def write_raw_file_out(packet):
         pass
     del hdu
 
+def timestamp_to_LCO_datestring(t):
+    """ Takes a Unix timestamp and converts to YYYY-mm-ddThh-mm-ss.sss in UTC """
+    return datetime.fromtimestamp(t, tz=timezone.utc).isoformat(timespec='milliseconds').split('+')[0]
 
 
 # set this to True to set this subprocess to normal everyday mode
@@ -378,8 +381,12 @@ exposure_in_nighttime = inputs["other"]["exposure_in_nighttime"]
 # For images taken via LCO scheduler, this should contain header values for
 # DATE-OBS, DAY-OBS, INSTRUME, SITEID, TELID, PROPID, BLKUID, REQNUM, OBSTYPE
 # These are used to populate the header of the FITS file, with the PTR versions used as fallbacks
-lco_header_data = inputs["lco_header_data"]
+lco_header_data = inputs["lco_header_data"] or dict()
 plog(f"lco_header_data: {lco_header_data}")
+
+# These fallbacks must be ints to pass upload validation
+BLKUID_PLACEHOLDER = 1
+REQNUM_PLACEHOLDER = 1
 
 pane = opt.get('pane')
 
@@ -1057,7 +1064,7 @@ try:
         'LCO Proposal ID'
     )
     hdu.header["BLKUID"] = (
-        int(lco_header_data.get('BLKUID', -1)),
+        int(lco_header_data.get('BLKUID', BLKUID_PLACEHOLDER)),
         'LCO scheduled block ID'
     )
     hdu.header["INSTRUME"] = (
@@ -1163,14 +1170,14 @@ try:
         substack_midexposure=np.mean(np.array(sub_stacker_midpoints))
 
         hdu.header["DATE"] = (
-            datetime.isoformat(datetime.fromtimestamp(substack_start_time, tz=timezone.utc)),
+            timestamp_to_LCO_datestring(substack_start_time),
             "Start date and time of observation"
         )
 
         hdu.header["DATE-OBS"] = (
             lco_header_data.get(
                 'DATE-OBS',
-                datetime.isoformat(datetime.fromtimestamp(substack_start_time, tz=timezone.utc))
+                timestamp_to_LCO_datestring(substack_start_time)
             ),
             "Start date and time of observation"
         )
@@ -1238,14 +1245,14 @@ try:
     else:
 
         hdu.header["DATE"] = (
-            datetime.isoformat(datetime.fromtimestamp(start_time_of_observation, tz=timezone.utc)),
+            timestamp_to_LCO_datestring(start_time_of_observation),
             "Start date and time of observation"
         )
 
         hdu.header["DATE-OBS"] = (
             lco_header_data.get(
                 'DATE-OBS',
-                datetime.isoformat(datetime.fromtimestamp(start_time_of_observation, tz=timezone.utc))
+                timestamp_to_LCO_datestring(start_time_of_observation)
             ),
             "Start date and time of observation"
         )
@@ -1543,7 +1550,7 @@ try:
     hdu.header["DRZPIXSC"] = (cam_settings['drizzle_value_for_later_stacking'], 'Target drizzle scale')
 
     hdu.header["REQNUM"] = (
-        int(lco_header_data.get('REQNUM', -1)),
+        int(lco_header_data.get('REQNUM', REQNUM_PLACEHOLDER)),
         'LCO Observation Request number'
     )
     hdu.header["ISMASTER"] = (False, "Is master image")

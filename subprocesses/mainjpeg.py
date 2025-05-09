@@ -362,5 +362,3 @@ else:
         output_dir + jpeg_filename
     )
     del final_image
-
-#del hdusmalldata
