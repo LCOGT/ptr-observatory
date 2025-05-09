@@ -2701,10 +2701,9 @@ class Observatory:
                             )
                             broken = 1
 
-                        except ocs_ingester.exceptions.DoNotRetryError:
+                        except ocs_ingester.exceptions.DoNotRetryError as e:
                             plog.err("Couldn't upload to PTR archive: " + str(filepath))
-                            plog.err(traceback.format_exc())
-                            #breakpoint()
+                            plog.err(e)
                             broken = 1
                         except Exception as e:
                             if "urllib3.exceptions.ConnectTimeoutError" in str(
