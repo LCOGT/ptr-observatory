@@ -2689,12 +2689,9 @@ class Observatory:
                             headerdict = {}
                             for entry in tempheader.keys():
                                 headerdict[entry] = tempheader[entry]
-                            #20250112  Deleting below.   WER
-                            #plog("obs line 2563, header;  ", headerdict)   #NB try to debug missing value
-                            # 'frame_basename,size,DATE-OBS,DAY-OBS,INSTRUME,SITEID,TELID')  20250112 WER
-                            upload_file_and_ingest_to_archive(
-                                fileobj, file_metadata=headerdict
-                            )
+
+                            # this is the actual upload
+                            upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)
 
                             # Only remove file if successfully uploaded
                             if ("calibmasters" not in filepath) or (

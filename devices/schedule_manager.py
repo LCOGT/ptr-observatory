@@ -471,8 +471,10 @@ class NightlyScheduleManager:
         if request is None:
             request = self.generate_fake_request(lat, lng)
 
-        # Create a unique ID for this fake observation
-        fake_id = f"{int(-time.time())}"
+        # Set the ID for the fake observation
+        # We use the largest number allowed for an observation ID in the archive
+        # as a simple way of avoiding collisions with a real observation ID
+        fake_id = 2147483646
 
         # Create the fake event with the structure expected by the scheduler
         fake_event = {

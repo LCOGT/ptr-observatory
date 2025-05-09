@@ -4061,6 +4061,24 @@ class Camera:
     ):
         plog(f"Exposure Started: {exposure_time}s {frame_type}")
 
+        # Uncomment the below as a way of forcing ALL camera images
+        # to upload to the LCO archive. Only use for testing!
+        # upload_metadata = {
+        #     'image_metadata': {
+        #         'size': 'large',
+        #         'INSTRUME': 'main_camera',
+        #         'SITEID': 'mrc',
+        #         'TELID': '0m31',
+        #         'PROPID': 'PTR_integration_test_proposal',
+        #         'BLKUID': 1746729556,
+        #         'REQNUM': 2147483646,
+        #         'OBSTYPE': 'EXPOSE',
+        #         'frame_basename': 'tbo2-ec003zwo_expose_lum-20250508-00000039-EX00'
+        #     },
+        #     'is_lco_observation': True
+        # }
+
+
         # Set the observation dates
         # Format for DATE-OBS needs to be YYYY-MM-DDTHH:mm:ss.sss
         if substack:

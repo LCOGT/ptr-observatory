@@ -1046,8 +1046,8 @@ try:
         selfconfig["obs_id"].replace("-", "").replace("_", "")
     )
     hdu.header["SITEID"] = (
-        'mrc', # TEMPORARY, REMOVE THIS
-        # lco_header_data.get('SITEID', selfconfig["wema_name"].replace("-", "").replace("_", ""))
+        lco_header_data.get('SITEID', selfconfig["wema_name"].replace("-", "").replace("_", "")),
+        'The WEMA ID. Required for LCO archive'
     )
     hdu.header["TELID"] = lco_header_data.get('TELID', selfconfig["obs_id"].replace("-", "").replace("_", ""))
     hdu.header["TELESCOP"] = selfconfig["obs_id"].replace("-", "").replace("_", "")
@@ -1060,7 +1060,10 @@ try:
         int(lco_header_data.get('BLKUID', -1)),
         'LCO scheduled block ID'
     )
-    hdu.header["INSTRUME"] = (cam_config["name"], "Name of camera")
+    hdu.header["INSTRUME"] = (
+        lco_header_data.get('INSTRUME', cam_config["name"]),
+        "Name of instrument according to LCO configdb; fallback is PTR cam name"
+    )
     hdu.header["CAMNAME"] = (cam_config["desc"], "Instrument used")
     hdu.header["DETECTOR"] = (
         cam_config["detector"],
@@ -1540,8 +1543,8 @@ try:
     hdu.header["DRZPIXSC"] = (cam_settings['drizzle_value_for_later_stacking'], 'Target drizzle scale')
 
     hdu.header["REQNUM"] = (
-        int(lco_header_data.get('REQNUM', '-1')),
-        'LCO Request number'
+        int(lco_header_data.get('REQNUM', -1)),
+        'LCO Observation Request number'
     )
     hdu.header["ISMASTER"] = (False, "Is master image")
 
