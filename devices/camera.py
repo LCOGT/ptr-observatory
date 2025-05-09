@@ -4081,12 +4081,17 @@ class Camera:
 
         # Set the observation dates
         # Format for DATE-OBS needs to be YYYY-MM-DDTHH:mm:ss.sss
-        if substack:
-            upload_metadata['image_metadata']['DATE-OBS'] = datetime.fromtimestamp(self.substack_start_time, tz=timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', '')
-            upload_metadata['image_metadata']['DAY-OBS']  = datetime.fromtimestamp(self.substack_start_time, tz=timezone.utc).strftime("%Y%m%d")
-        else:
-            upload_metadata['image_metadata']['DATE-OBS'] = datetime.fromtimestamp(self.start_time_of_observation, tz=timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', '')
-            upload_metadata['image_metadata']['DAY-OBS']  = datetime.fromtimestamp(self.start_time_of_observation, tz=timezone.utc).strftime("%Y%m%d")
+        try:
+            if substack:
+                upload_metadata['image_metadata']['DATE-OBS'] = datetime.fromtimestamp(self.substack_start_time, tz=timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', '')
+                upload_metadata['image_metadata']['DAY-OBS']  = datetime.fromtimestamp(self.substack_start_time, tz=timezone.utc).strftime("%Y%m%d")
+            else:
+                upload_metadata['image_metadata']['DATE-OBS'] = datetime.fromtimestamp(self.start_time_of_observation, tz=timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', '')
+                upload_metadata['image_metadata']['DAY-OBS']  = datetime.fromtimestamp(self.start_time_of_observation, tz=timezone.utc).strftime("%Y%m%d")
+        except KeyError:
+            pass # assume upload metadata was not included
+        except Exception as e:
+            plog.err('Problem setting DATE-OBS and DAY-OBS in finish_exposure upload_metadata')
 
         # Simulate timing of exposure for dummy camera
         if self.dummy:
