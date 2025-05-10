@@ -159,7 +159,7 @@ class Observatory:
     """
 
     Observatory is the central organising part of a given observatory system.
-            
+
     It deals with connecting all the devices together and deals with decisions that
     involve multiple devices and fundamental operations of the OBS.
 
@@ -702,7 +702,7 @@ class Observatory:
                         not "NoObs" in self.enc_status["shutter_status"]
                         and not self.net_connection_dead
                     ) or self.assume_roof_open:
-                        
+
                         self.report_to_nightlog("Roof Opening Event. (Roof Open on bootup)")
                         self.open_and_enabled_to_observe = True
                     else:
@@ -1031,7 +1031,7 @@ class Observatory:
                                             "Manual Mode Engaged."
                                         )
                                         self.report_to_nightlog("Manual Mode Engaged.")
-                                        
+
                                     else:
                                         self.scope_in_manual_mode = False
                                         plog("Manual Mode Turned Off.")
@@ -1385,6 +1385,7 @@ class Observatory:
 
                 try:
                     with open("C:/Astrogenic/NexStorm/reports/TRACReport.txt", 'r') as light_rec:
+
                         r_date, r_time = light_rec.readline().split()[-2:]
                         #plog(r_date, r_time)
                         d_string = r_date + 'T' +r_time
@@ -1496,12 +1497,12 @@ class Observatory:
                                         + str(sun_dist.degree)
                                         + " degrees."
                                     )
-                                    
+
                                     self.report_to_nightlog("Found telescope pointing too close to the sun: "
                                     + str(sun_dist.degree)
                                     + " degrees.")
-                                    
-                                    
+
+
                                     self.send_to_user(
                                         "Parking scope and cancelling all activity"
                                     )
@@ -1713,12 +1714,12 @@ class Observatory:
                     except:
                         plog.warn("could not send obs_settings status")
                         plog.warn(traceback.format_exc())
-                        
+
                 # Report aliveness to the night log
                 if time.time() - self.alive_status_timer > 600:
                     self.report_to_nightlog("Observatory Alive.")
                     self.alive_status_timer=time.time()
-                    
+
 
                 # An important check to make sure equatorial telescopes are pointed appropriately
                 # above the horizon. SRO and ECO have shown that it is possible to get entirely
@@ -1821,7 +1822,7 @@ class Observatory:
                                 if self.open_and_enabled_to_observe == True:
                                     self.report_to_nightlog("Roof Closing Event.")
                                 self.open_and_enabled_to_observe = False
-                                
+
                                 if (
                                     not self.devices["sequencer"].morn_bias_dark_latch
                                     and not self.devices["sequencer"].bias_dark_latch
@@ -4668,7 +4669,7 @@ class Observatory:
 
         while retries <5:
             try:
-               
+
                 # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
                 for camera in self.all_devices['camera']:
                     if g_dev['cam'].theskyx:
