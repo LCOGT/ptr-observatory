@@ -137,6 +137,9 @@ site_config = {
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': True,
     'keep_focus_images_on_disk': True,  # To save space, the focus files may not be saved.   
+    # These are options to minimise diskspace for calibrations
+    'produce_fits_file_for_final_calibrations': True,
+    'save_archive_versions_of_final_calibrations' : False,
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,   
    # Number of files to send up to the ptrarchive simultaneously.
@@ -182,7 +185,7 @@ site_config = {
         
     
     # Exposure times for standard system exposures
-    'focus_exposure_time': 15,  # Exposure time in seconds for exposure image
+    'focus_exposure_time': 45,  # Exposure time in seconds for exposure image
     'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
@@ -391,7 +394,7 @@ site_config = {
 
 
     'telescope': {                 #Better called OTA or "Optics
-        'telescope1': {
+        'telescope_1': {
             'parent': 'mount2',
             'name': 'Main OTA',
             'desc':  'Planewave CDK 600 F6.8',   #i seem to use desc, an alias more or less for the same thing.
@@ -491,14 +494,14 @@ site_config = {
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 3.0, # highest value to consider as being in "good focus". Used to select last good focus value
 
-            'reference':  6063,    #Nominal at 20C Primary temperature, in microns not steps.            
+            'reference':  4600,    #Nominal at 20C Primary temperature, in microns not steps.            
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20240210',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  False,
             'relative_focuser': False,   #MFITZ added this for ECO
             'minimum': 0,    #NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
-            'throw': 300,
+            'throw': 64,
             'depth_of_focus': 102.7, # +/- 2*focal-ratio^2(0.555) -- unit is microns, result is +/-2 = 4x or 0.1 mm for this telescope
             'step_size': 1,
             'backlash':  0,
@@ -947,7 +950,11 @@ site_config = {
                
                 
                 # In the EVA Pipeline, whether to run cosmic ray detection on individual images
-                'do_cosmics': False,
+                'do_cosmics': True,
+                # Simialrly for Salt and Pepper
+                'do_saltandpepper' : True,
+                # And debanding
+                'do_debanding' : False,
 
 
                

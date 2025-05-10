@@ -736,7 +736,7 @@ class Focuser:
         #
         self.focuser_is_moving=True
         position = int(float(req["position"])) * self.micron_to_steps
-        self.guarded_move(position)
+        self.guarded_move(position )
         self.last_known_focus = position
         #plog("Forces last known focus to be new position Line 551 in focuser WER 20400917")
 

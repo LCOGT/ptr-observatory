@@ -5998,20 +5998,25 @@ class Sequencer:
                                     # Take the shot
                                     # Here we take a further shot to measure the FWHM accurately
                                     # With a gaussian method, now that it is (probably) not a donut.
-                                    req = {'time': focus_exposure_time,  'alias':  str(g_dev['cam'].name), 'image_type': 'focus_confirmation'}   #  NB Should pick up filter and constats from config
-                                    opt = { 'count': 1, 'filter': filter_choice}
-                                    result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+                                    # But no point if we don't have a pixelscale:
+                                    new_blob_vs_gaussian_factor = np.nan
+                                    if not self.pixscale == None:
+                                        req = {'time': focus_exposure_time,  'alias':  str(g_dev['cam'].name), 'image_type': 'focus_confirmation'}   #  NB Should pick up filter and constats from config
+                                        opt = { 'count': 1, 'filter': filter_choice}
+                                        result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+    
+    
+                                        print (g_dev['obs'].fwhmresult)
+                                        #breakpoint()
 
-
-                                    print (g_dev['obs'].fwhmresult)
-                                    #breakpoint()
+                                    
+                                        new_blob_vs_gaussian_factor = (g_dev['obs'].fwhmresult["FWHM"] / fitted_focus_fwhm) * stored_blob_to_gaussian_factor
+    
+                                        plog ("Calculated Blob to Gaussian Factor: " +str(new_blob_vs_gaussian_factor))
 
                                     if not dont_log_focus:
                                         g_dev['foc'].af_log(fitted_focus_position, g_dev['obs'].fwhmresult['FWHM'], g_dev['obs'].fwhmresult['FWHM'])
 
-                                    new_blob_vs_gaussian_factor = (g_dev['obs'].fwhmresult["FWHM"] / fitted_focus_fwhm) * stored_blob_to_gaussian_factor
-
-                                    plog ("Calculated Blob to Gaussian Factor: " +str(new_blob_vs_gaussian_factor))
 
                                     # Store estimated conversion factor between half-light approach and actual measured gaussian FWHM
                                     
