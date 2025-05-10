@@ -5501,7 +5501,10 @@ class Camera:
                                 # Find sources
                                 sources = daofind(outputimg)
                                 # Size of the cutouts
-                                stamp_size = max(10 * (1/self.pixscale),25)  # pixels
+                                if self.pixscale == None:
+                                    stamp_size = max(10 * (1/0.1),25)  # pixels
+                                else:                                    
+                                    stamp_size = max(10 * (1/self.pixscale),25)  # pixels
 
                                 cutouts = []
                                 positions = []
