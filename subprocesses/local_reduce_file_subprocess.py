@@ -258,6 +258,10 @@ hdureduced.writeto(
 )  # Save flash reduced file locally
 
 if selfconfig["save_to_alt_path"] == "yes":
+    
+    os.makedirs(selfconfig['alt_path'] +'/' +temphduheader['OBSID'] +'/' +temphduheader['DAY-OBS'], exist_ok=True)
+    os.makedirs(selfconfig['alt_path'] +'/' +temphduheader['OBSID'] +'/' +temphduheader['DAY-OBS'] + "/reduced/", exist_ok=True)
+    
     hdureduced.writeto( selfconfig['alt_path'] +'/' +temphduheader['OBSID'] +'/' +temphduheader['DAY-OBS'] + "/reduced/" + out_file_name.split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
     )  # Save full raw file locally
 

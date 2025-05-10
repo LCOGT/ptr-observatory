@@ -5233,8 +5233,8 @@ class Camera:
                             height, width = outputimg.shape[:2]
 
                             # Determine cropping bounds
-                            new_height = min(height, 1000)
-                            new_width = min(width, 1000)
+                            new_height = min(height, 3000)
+                            new_width = min(width, 3000)
 
                             # Calculate start indices to center-crop
                             start_y = (height - new_height) // 2
@@ -5354,14 +5354,16 @@ class Camera:
 
                         # Image is now a degree on a side or less, but now lets deal with
                         # unnecessary pixelscale
-                        if self.pixscale < 0.3:
-                            outputimg=block_reduce(outputimg,3)
-                            temp_focus_bin=3
-                        elif self.pixscale < 0.6:
-                            temp_focus_bin=2
-                            outputimg=block_reduce(outputimg,2)
-                        else:
-                            temp_focus_bin=1
+                        temp_focus_bin=1
+                        if not self.pixscale == None:
+                            if self.pixscale < 0.3:
+                                outputimg=block_reduce(outputimg,3)
+                                temp_focus_bin=3
+                            elif self.pixscale < 0.6:
+                                temp_focus_bin=2
+                                outputimg=block_reduce(outputimg,2)
+                            # else:
+                                
                         # Here we decide if Fwe are using source-extractor++
                         # Which is great for actual focussing as it is quite robust
                         # to blobs and donuts or whether we are using the gaussian method
@@ -5407,37 +5409,59 @@ class Camera:
 
                                 os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties FluxRadius --flux-fraction 0.5"')
 
-                                catalog=Table.read(tempdir+ tempfitsname.replace('.fits','cat.fits'))
-                                # Remove rows where FLUX_RADIUS is 0 or NaN
-                                mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)
+                                try:
 
-                                catalog = catalog[mask]
-
-                                # remove unrealistic estimates that are too small
-                                if not self.pixscale == None:
-                                    mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
+                                    catalog=Table.read(tempdir+ tempfitsname.replace('.fits','cat.fits'))
+                                    # Remove rows where FLUX_RADIUS is 0 or NaN
+                                    mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)
+    
                                     catalog = catalog[mask]
+    
+                                    # remove unrealistic estimates that are too small
+                                    if not self.pixscale == None:
+                                        mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
+                                        catalog = catalog[mask]
+                                    else:
+                                        mask = (catalog['flux_radius']) > 0.5
+                                        catalog =catalog[mask]
+    
+    
+                                    fwhm_values=sigma_clip(np.asarray(catalog['flux_radius']),sigma=3, maxiters=5)
+                                    fwhm_values=fwhm_values.data[~fwhm_values.mask]
+    
+                                    # The HFR and the fwhm are roughly twice
+                                    fwhm_values=fwhm_values *2
 
-
-                                fwhm_values=sigma_clip(np.asarray(catalog['flux_radius']),sigma=3, maxiters=5)
-                                fwhm_values=fwhm_values.data[~fwhm_values.mask]
-
-                                # The HFR and the fwhm are roughly twice
-                                fwhm_values=fwhm_values *2
+                                except:
+                                    plog ("problem with the fits table... probably not enough detections")
+                                    fwhm_values=[]
 
                                 plog("No. of detections:  ", len(fwhm_values))
 
-                                fwhm_dict = {}
-                                fwhm_dict['rfp'] = np.median(fwhm_values) * temp_focus_bin
-                                if self.pixscale == None:
-                                    fwhm_dict['rfr'] = np.median(fwhm_values)  * temp_focus_bin
-                                    fwhm_dict['rfs'] = np.median(fwhm_values)  * temp_focus_bin
+                                print (fwhm_values)
 
-                                else:
-                                    fwhm_dict['rfr'] = np.median(fwhm_values) * self.pixscale * temp_focus_bin
-                                    fwhm_dict['rfs'] = np.median(fwhm_values) * self.pixscale  * temp_focus_bin
-                                fwhm_dict['sky'] = 200 #str(imageMedian)
-                                fwhm_dict['sources'] = str(len(fwhm_values))
+                                if len(fwhm_values) < 10:
+                                    fwhm_dict = {}
+                                    fwhm_dict['rfp'] = np.nan
+
+                                    fwhm_dict['rfr'] = np.nan
+                                    fwhm_dict['rfs'] = np.nan
+                                    fwhm_dict['sky'] = 200 #str(imageMedian)
+                                    fwhm_dict['sources'] = str(len(fwhm_values))
+
+                                else:                                    
+
+                                    fwhm_dict = {}
+                                    fwhm_dict['rfp'] = np.median(fwhm_values) * temp_focus_bin
+                                    if self.pixscale == None:
+                                        fwhm_dict['rfr'] = np.median(fwhm_values)  * temp_focus_bin
+                                        fwhm_dict['rfs'] = np.median(fwhm_values)  * temp_focus_bin
+    
+                                    else:
+                                        fwhm_dict['rfr'] = np.median(fwhm_values) * self.pixscale * temp_focus_bin
+                                        fwhm_dict['rfs'] = np.median(fwhm_values) * self.pixscale  * temp_focus_bin
+                                    fwhm_dict['sky'] = 200 #str(imageMedian)
+                                    fwhm_dict['sources'] = str(len(fwhm_values))
 
                                 plog ("FWHM: " + str(fwhm_dict['rfr']))
 

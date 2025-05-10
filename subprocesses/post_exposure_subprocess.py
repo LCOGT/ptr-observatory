@@ -958,6 +958,7 @@ try:
         "Cosmic ray removal in EVA",
     )
 
+    
     hdu.header["DOSNP"] = (
         cam_settings['do_saltandpepper'],
         "Salt and Pepper removal in EVA",
