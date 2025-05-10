@@ -5407,7 +5407,7 @@ class Camera:
 
 
 
-                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties FluxRadius --flux-fraction 0.5"')
+                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 5 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties FluxRadius --flux-fraction 0.5"')
 
                                 try:
 
@@ -5416,7 +5416,7 @@ class Camera:
                                     mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)
     
                                     catalog = catalog[mask]
-    
+                                    
                                     # remove unrealistic estimates that are too small
                                     if not self.pixscale == None:
                                         mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
@@ -5425,9 +5425,33 @@ class Camera:
                                         mask = (catalog['flux_radius']) > 0.5
                                         catalog =catalog[mask]
     
-    
-                                    fwhm_values=sigma_clip(np.asarray(catalog['flux_radius']),sigma=3, maxiters=5)
+                                    print ("std")
+                                    print (np.nanstd(np.asarray(catalog['flux_radius'])))
+                                    print ((np.asarray(catalog['flux_radius'])))
+                                    
+                                    # def iterative_sigma_clip(data, sigma=3, maxiters=5):
+                                    #     data = np.asarray(data)
+                                    #     mask = np.zeros(data.shape, dtype=bool)
+                                    
+                                    #     for i in range(maxiters):
+                                    #         good = data[~mask]
+                                    #         m, s = good.mean(), good.std()
+                                    #         #new_mask = np.abs(data - m) > sigma * s
+                                    #         new_mask = (data - m) > sigma * s
+                                    #         # if nothing new is masked, break
+                                    #         if np.all(new_mask == mask):
+                                    #             break
+                                    #         mask = new_mask
+                                    
+                                    #     return data[~mask]
+                                    
+                                    # clean = iterative_sigma_clip(my_list, sigma=3, maxiters=5)
+                                    # print("Iteratively clipped data:", clean)
+                                    
+                                    fwhm_values=sigma_clip(np.asarray(catalog['flux_radius']),sigma_lower=2,sigma_upper=np.inf, maxiters=5)
                                     fwhm_values=fwhm_values.data[~fwhm_values.mask]
+                                    
+                                    print (np.nanstd(fwhm_values))
     
                                     # The HFR and the fwhm are roughly twice
                                     fwhm_values=fwhm_values *2
@@ -5548,12 +5572,17 @@ class Camera:
 
 
                                 rfp = bn.nanmedian(fwhms) * temp_focus_bin
-                                rfr = rfp * self.pixscale
-                                rfs = bn.nanstd(fwhms) * self.pixscale * temp_focus_bin
-                                if rfr < 1.0 or rfr  > 16:
-                                    print (rfr)
-                                    rfr= np.nan
-                                    rfp= np.nan
+                                if self.pixscale == None:
+                                    rfr = None
+                                    rfs = None
+                                
+                                else:
+                                    rfr = rfp * self.pixscale
+                                    rfs = bn.nanstd(fwhms) * self.pixscale * temp_focus_bin
+                                    if rfr < 1.0 or rfr  > 16:
+                                        print (rfr)
+                                        rfr= np.nan
+                                        rfp= np.nan
 
                                 fwhm_dict = {}
                                 fwhm_dict['rfp'] = rfp

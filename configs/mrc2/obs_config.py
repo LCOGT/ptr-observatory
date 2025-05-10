@@ -494,14 +494,14 @@ site_config = {
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 3.0, # highest value to consider as being in "good focus". Used to select last good focus value
 
-            'reference':  6063,    #Nominal at 20C Primary temperature, in microns not steps.            
+            'reference':  4600,    #Nominal at 20C Primary temperature, in microns not steps.            
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20240210',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  False,
             'relative_focuser': False,   #MFITZ added this for ECO
             'minimum': 0,    #NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
-            'throw': 300,
+            'throw': 64,
             'depth_of_focus': 102.7, # +/- 2*focal-ratio^2(0.555) -- unit is microns, result is +/-2 = 4x or 0.1 mm for this telescope
             'step_size': 1,
             'backlash':  0,

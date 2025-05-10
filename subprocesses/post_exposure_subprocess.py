@@ -625,12 +625,14 @@ try:
     del img
 
     #selfnative_bin = cam_settings["native_bin"]
-    if pixscale < 0.3:
-        selfnative_bin=3
-    elif pixscale < 0.6:
-        selfnative_bin=2
-    else:
-        selfnative_bin=1
+    selfnative_bin=1
+    if not pixscale == None:
+        if pixscale < 0.3:
+            selfnative_bin=3
+        elif pixscale < 0.6:
+            selfnative_bin=2
+    # else:
+    
 
     broadband_ss_biasdark_exp_time = cam_config['settings']['smart_stack_exposure_time']
     narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * cam_config['settings']['smart_stack_exposure_NB_multiplier']
