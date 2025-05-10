@@ -2009,9 +2009,23 @@ class Mount:
 
                 if self.site_config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                     if (90-alt) < self.site_config['degrees_to_avoid_zenith_area_for_calibrations']:
-                        g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
-                        plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
-                        return 'refused'
+                        # g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
+                        # plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
+                        plog ("Flat spot is in the zenith danger area, shifting a bit forward to avoid this area.")
+                        # Shift the scope just beyond the edge of the danger zone
+                        alt=90-self.site_config['degrees_to_avoid_zenith_area_for_calibrations']-0.01
+                        # Then pick the azimuth such that it will track away not towards the zone
+                        # if in eastern half, rotate 180°; else leave as-is
+                        if 0 <= az < 180:
+                            az = (az + 180) % 360
+                        else:
+                            az = az
+                        temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
+                        altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
+                        ra = altazskycoord.icrs.ra.deg /15
+                        dec = altazskycoord.icrs.dec.deg
+                        #return 'refused'
+                        
             #NB the following code needs to deal with other reference frames...
             elif ra != None:   #implying RA and Dec are supplied. Compute resulting altitude
                 ra = float(ra)

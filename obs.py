@@ -2497,8 +2497,8 @@ class Observatory:
                                 self.cancel_all_activity()
                             if not self.devices["mount"].rapid_park_indicator:
                                 plog("Parking scope due to inactivity")
-                                if self.devices["mount"].home_before_park:
-                                    self.devices["mount"].home_command()
+                                # if self.devices["mount"].home_before_park:
+                                #     self.devices["mount"].home_command()
                                 self.devices["mount"].park_command()
                                 self.time_of_last_slew = time.time()
                 # wait for safety_check_period
