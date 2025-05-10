@@ -298,66 +298,77 @@ class Focuser:
                     print ("Exposure focuser wait failed. ")
 
                 self.focuser_is_moving=True
+                
+                
+                self.minimum_allowed_focus=self.config['minimum']
+                self.maximum_allowed_focus=self.config['maximum']
+                
+                requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
+                if requestedPosition < self.minimum_allowed_focus or requestedPosition > self.maximum_allowed_focus :
+                    plog ("Requested focuser position outside limits set in config!")
+                    plog (requestedPosition)
+                else:
+                
 
-                try:
-                    if not self.dummy:
-                    
-                        if self.theskyx:
-                            
-                            requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
-                            try:
-                                difference_in_position=self.focuser_update_wincom.focPosition() - requestedPosition
-                                absdifference_in_position=abs(self.focuser_update_wincom.focPosition() - requestedPosition)
-                            except:
-                                difference_in_position=self.focuser_update_wincom.focPosition - requestedPosition
-                                absdifference_in_position=abs(self.focuser_update_wincom.focPosition - requestedPosition)
+                    try:
+                        if not self.dummy:
+                        
+                            if self.theskyx:
                                 
-                            #breakpoint()
-                            print (difference_in_position)
-                            print (absdifference_in_position)
-                            if difference_in_position < 0 :
-                                self.focuser_update_wincom.focMoveOut(absdifference_in_position)
-                            else:
-                                self.focuser_update_wincom.focMoveIn(absdifference_in_position)
-                            # try:
-                            #     print (self.focuser_update_wincom.focPosition())
-                            # except:
-                            #     #print ("failed")
-                            #     print (self.focuser_update_wincom.focPosition)
-     
-                            time.sleep(self.config['focuser_movement_settle_time'])
-                            try:
-                                self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
-                            except:
-                                self.current_focus_position=int(self.focuser_update_wincom.focPosition * self.steps_to_micron)
-                            
-                        else:
-                            if not self.relative_focuser:
-                                self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))
-                                time.sleep(0.1)
-                                movement_report=0
-         
-                                while self.focuser_update_wincom.IsMoving:
-                                    if movement_report==0:
-                                        plog("Focuser is moving.....")
-                                        movement_report=1
-                                    self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
-         
-                                    time.sleep(0.3)
+                                requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
+                                try:
+                                    difference_in_position=self.focuser_update_wincom.focPosition() - requestedPosition
+                                    absdifference_in_position=abs(self.focuser_update_wincom.focPosition() - requestedPosition)
+                                except:
+                                    difference_in_position=self.focuser_update_wincom.focPosition - requestedPosition
+                                    absdifference_in_position=abs(self.focuser_update_wincom.focPosition - requestedPosition)
+                                    
+                                #breakpoint()
+                                print (difference_in_position)
+                                print (absdifference_in_position)
+                                if difference_in_position < 0 :
+                                    self.focuser_update_wincom.focMoveOut(absdifference_in_position)
+                                else:
+                                    self.focuser_update_wincom.focMoveIn(absdifference_in_position)
+                                # try:
+                                #     print (self.focuser_update_wincom.focPosition())
+                                # except:
+                                #     #print ("failed")
+                                #     print (self.focuser_update_wincom.focPosition)
          
                                 time.sleep(self.config['focuser_movement_settle_time'])
-         
-                                self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
-                            else:
-                                plog ("at a focus move point here")
+                                try:
+                                    self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
+                                except:
+                                    self.current_focus_position=int(self.focuser_update_wincom.focPosition * self.steps_to_micron)
                                 
-                    else:
-                        # Currently just a fummy focuser report
-                        self.current_focus_position=2000
-
-                except:
-                    plog("AF Guarded move failed.")
-                    plog (traceback.format_exc())
+                            else:
+                                if not self.relative_focuser:
+                                    self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))
+                                    time.sleep(0.1)
+                                    movement_report=0
+             
+                                    while self.focuser_update_wincom.IsMoving:
+                                        if movement_report==0:
+                                            plog("Focuser is moving.....")
+                                            movement_report=1
+                                        self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
+             
+                                        time.sleep(0.3)
+             
+                                    time.sleep(self.config['focuser_movement_settle_time'])
+             
+                                    self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
+                                else:
+                                    plog ("at a focus move point here")
+                                    
+                        else:
+                            # Currently just a fummy focuser report
+                            self.current_focus_position=2000
+    
+                    except:
+                        plog("AF Guarded move failed.")
+                        plog (traceback.format_exc())
 
                 time.sleep(self.focuser_settle_time)
 
