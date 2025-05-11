@@ -5872,7 +5872,9 @@ class Sequencer:
                                 for entry in focus_spots:
                                     minimumfind.append(entry[1])
                                 minimum_index=minimumfind.index(min(minimumfind))
-                                if (minimum_index == 0 or minimum_index == 1) and not hit_focus_limit_lower:# and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
+                                #if (minimum_index == 0 or minimum_index == 1) and not hit_focus_limit_lower:# and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
+                                if minimum_index <= (0.5*float(len(minimumfind))) and not hit_focus_limit_lower:# and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
+                                 
                                     plog ("Minimum too close to the sampling edge, getting another dot")
                                     extra_steps_to_the_left=extra_steps_to_the_left+1
                                     new_focus_position_to_attempt=focus_spots[0][0] - throw
@@ -5885,7 +5887,8 @@ class Sequencer:
                                     # Fling the jpeg up
                                     g_dev['obs'].enqueue_for_fastAWS(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
-                                elif (minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2) and not hit_focus_limit_upper:#  and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus):
+                                #elif (minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2) and not hit_focus_limit_upper:#  and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus):
+                                elif minimum_index >= (0.5*float(len(minimumfind))) and not hit_focus_limit_upper:#  and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus):
 
                                     plog ("Minimum too close to the sampling edge, getting another dot")
                                     extra_steps_to_the_right=extra_steps_to_the_right+1
