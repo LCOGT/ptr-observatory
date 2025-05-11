@@ -3289,7 +3289,7 @@ class Camera:
                                 broadband_ss_biasdark_exp_time = self.settings['smart_stack_exposure_time']
                                 narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * \
                                     self.settings['smart_stack_exposure_NB_multiplier']
-                                if self.settings['substack']:
+                                if self.settings['substack'] and not g_dev['seq'].focussing: # Don't substack while focussing
                                     if not imtype in ['bias', 'dark'] and not a_dark_exposure and not frame_type[-4:] == "flat" and not frame_type == 'pointing':
                                         if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
                                             self.substacker = True
