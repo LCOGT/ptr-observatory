@@ -172,6 +172,8 @@ np.save(out_file_name.replace('.fits','.tempnpyred'), hdureduced.data.astype(np.
 temphduheader=copy.deepcopy(hdureduced.header)
 del hdureduced
 
+
+
 wcs_timeout_timer=time.time()
 while True:
     if os.path.exists (wcsfilename.replace('.fits','.wcs')):
@@ -180,7 +182,28 @@ while True:
         #if os.path.exists(wcsname):
         print ("wcs exists: " + str(wcsfilename.replace('.fits','.wcs')))
         wcsheader = fits.open(wcsfilename.replace('.fits','.wcs'))[0].header
-        temphduheader.update(wcs.WCS(wcsheader).to_header(relax=True))
+        
+
+        # If it is an OSC image, then the wcs was done on a binned image
+        # which now needs doubling.
+        if temphduheader['OSCCAM']:
+            w_unbinned = wcs.WCS(wcsheader).deepcopy()
+
+            # Step 1: Double CRPIX (reference pixel position in pixel units)
+            w_unbinned.wcs.crpix *= 2.0
+            
+            # Step 2: Halve CDELT (pixel scale in degrees/pixel)
+            w_unbinned.wcs.cdelt /= 2.0
+            
+            # Step 3: if using a CD matrix or PC+CDELT, apply the same scale
+            if w_unbinned.wcs.has_cd():
+                w_unbinned.wcs.cd /= 2.0
+            elif w_unbinned.wcs.has_pc():
+                w_unbinned.wcs.cdelt /= 2.0 
+            
+            temphduheader.update(w_unbinned.to_header(relax=True))
+        else:
+            temphduheader.update(wcs.WCS(wcsheader).to_header(relax=True))
 
         # Get the RA/DEC at the reference pixel (CRPIX1, CRPIX2)
         ra_ref = temphduheader['CRVAL1']

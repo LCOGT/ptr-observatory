@@ -1703,6 +1703,14 @@ class Sequencer:
             req = {'target': 'near_tycho_star'}
 
             g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
+            
+            # Sometimes there isn't a zoom in the exposure
+            # If there isn't, just go with full zoom
+            try:
+                plog (exposure['zoom'])
+            except:
+                exposure['zoom']='full'
+
 
             # If you are just doing single frames, then the initial pointing isn't
             # too stringent. But if you are doing a giant mosaic, then you need
@@ -5482,6 +5490,9 @@ class Sequencer:
             plog(traceback.format_exc())
 
         blobvsgauss_shelf.close()
+        
+        hit_focus_limit_upper=False
+        hit_focus_limit_lower=False
 
         # Now start the main focus loop
         while True:
@@ -5582,8 +5593,8 @@ class Sequencer:
 
                     return
 
-                # If there has been too many attempts
-                if extra_steps_to_the_left > 10 or extra_steps_to_the_right > 10:
+                # If there has been too many attempts after focus has been commissioned
+                if (extra_steps_to_the_left > 10 or extra_steps_to_the_right > 10) and g_dev['foc'].focus_commissioned:
                     plog ("Too many extra steps too far away from the known focus point. Giving up.")
                     g_dev['foc'].set_initial_best_guess_for_focus()
                     self.total_sequencer_control = False
@@ -5687,11 +5698,18 @@ class Sequencer:
                 else:
                     plog ("Haven't found a starting point yet..... travelling left and right to find a good starting point ")
                     #if position_counter & 1:
-                    if len(spots_tried) & 1:
+                    if len(spots_tried) & 1 and not hit_focus_limit_lower:
                         new_focus_position_to_attempt=min(spots_tried) - int(position_counter/2) * throw
+                        if new_focus_position_to_attempt < g_dev['foc'].minimum_allowed_focus:
+                            hit_focus_limit_lower=True
+                            new_focus_position_to_attempt=g_dev['foc'].minimum_allowed_focus
+                            
 
-                    else:
+                    elif not hit_focus_limit_upper:
                         new_focus_position_to_attempt=max(spots_tried) + int(position_counter/2) * throw
+                        if new_focus_position_to_attempt > g_dev['foc'].maximum_allowed_focus:
+                            hit_focus_limit_upper=True
+                            new_focus_position_to_attempt=g_dev['foc'].maximum_allowed_focus
 
 
                     print ("trying fwhm point: " + str(new_focus_position_to_attempt))
@@ -5702,10 +5720,16 @@ class Sequencer:
                 if len(focus_spots) == 0 or len(focus_spots) == 1:
                     plog ("Sheesh, not one spot found yet!")
                     plog ("Having a crack at a further spot")
-                    if position_counter & 1:
+                    if position_counter & 1 and not hit_focus_limit_lower:
                         new_focus_position_to_attempt=min(spots_tried) - throw
-                    else:
+                        if new_focus_position_to_attempt < g_dev['foc'].minimum_allowed_focus:
+                            hit_focus_limit_lower=True
+                            new_focus_position_to_attempt=g_dev['foc'].minimum_allowed_focus
+                    elif not hit_focus_limit_upper:
                         new_focus_position_to_attempt=max(spots_tried) + throw
+                        if new_focus_position_to_attempt > g_dev['foc'].maximum_allowed_focus:
+                            hit_focus_limit_upper=True
+                            new_focus_position_to_attempt=g_dev['foc'].maximum_allowed_focus
                 else:
                     # Check that from the minimum value, each of the points always increases in both directions.
                     # If not, we don't have a parabola shaped data-set
@@ -5721,12 +5745,18 @@ class Sequencer:
                     # If the seeing is too bad, just run with the expected
                     # If there is only two or three throw out from the lowest edge
                     if len(focus_spots) == 2 or len(focus_spots) == 3:
-                        if focus_spots[0][1] < focus_spots[-1][1]:
+                        if focus_spots[0][1] < focus_spots[-1][1] and not hit_focus_limit_lower:
                             plog ("smaller focus spot has lower fwhm value, trying out a spot out there")
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
-                        else:
+                            if new_focus_position_to_attempt < g_dev['foc'].minimum_allowed_focus:
+                                hit_focus_limit_lower=True
+                                new_focus_position_to_attempt=g_dev['foc'].minimum_allowed_focus
+                        elif not hit_focus_limit_upper:
                             plog ("higher focus spot has lower fwhm value, trying out a spot out there")
                             new_focus_position_to_attempt=focus_spots[-1][0] + throw
+                            if new_focus_position_to_attempt > g_dev['foc'].maximum_allowed_focus:
+                                hit_focus_limit_upper=True
+                                new_focus_position_to_attempt=g_dev['foc'].maximum_allowed_focus
 
                     else:
                         # If the seeing is too poor to bother focussing, bail o ut
@@ -5752,11 +5782,14 @@ class Sequencer:
 
                         # First check if the minimum is too close to the edge
                         # As long as you haven't hit the limits
-                        if (minimum_index == 0 or minimum_index == 1) and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus) :
+                        if (minimum_index == 0 or minimum_index == 1) and not hit_focus_limit_lower: # and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus) :
                             plog ('minimum index: ', minimum_index)
                             plog ("Minimum too close to the sampling edge, getting another dot")
                             extra_steps_to_the_left=extra_steps_to_the_left+1
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
+                            if new_focus_position_to_attempt < g_dev['foc'].minimum_allowed_focus:
+                                hit_focus_limit_lower=True
+                                new_focus_position_to_attempt=g_dev['foc'].minimum_allowed_focus
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
                             thread.start()
@@ -5764,12 +5797,15 @@ class Sequencer:
                             # Fling the jpeg up
                             g_dev['obs'].enqueue_for_fastAWS( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
-                        elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2 and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus):
+                        elif minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2 and not hit_focus_limit_upper: #(focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus):
                             plog ('minimum index: ', minimum_index)
                             plog ('minimum find: ', minimumfind)
                             extra_steps_to_the_right=extra_steps_to_the_left+1
                             plog ("Minimum too close to the sampling edge, getting another dot")
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
+                            if new_focus_position_to_attempt > g_dev['foc'].maximum_allowed_focus:
+                                hit_focus_limit_upper=True
+                                new_focus_position_to_attempt=g_dev['foc'].maximum_allowed_focus
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
                             thread.start()
@@ -5781,11 +5817,14 @@ class Sequencer:
                         # Then check whether the values on the edge are high enough.
 
                         # If left side is too low get another dot
-                        elif focus_spots[0][1] < (minimum_value +1)  and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus): #(minimum_value * 1.3)
+                        elif focus_spots[0][1] < (minimum_value +1) and not hit_focus_limit_lower:#  and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus): #(minimum_value * 1.3)
 
                             plog ("Left hand side of curve is too low for a good fit, getting another dot")
                             extra_steps_to_the_left=extra_steps_to_the_left+1
                             new_focus_position_to_attempt=focus_spots[0][0] - throw
+                            if new_focus_position_to_attempt < g_dev['foc'].minimum_allowed_focus:
+                                hit_focus_limit_lower=True
+                                new_focus_position_to_attempt=g_dev['foc'].minimum_allowed_focus
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
                             thread.start()
@@ -5793,10 +5832,13 @@ class Sequencer:
                             g_dev['obs'].enqueue_for_fastAWS( im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
                         # If right hand side is too low get another dot
-                        elif focus_spots[-1][1] < (minimum_value +1 ) and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus): #(minimum_value * 1.3)
+                        elif focus_spots[-1][1] < (minimum_value +1 ) and not hit_focus_limit_upper:# and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus): #(minimum_value * 1.3)
                             plog ("Right hand side of curve is too low for a good fit, getting another dot")
                             extra_steps_to_the_right=extra_steps_to_the_right + 1
                             new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
+                            if new_focus_position_to_attempt > g_dev['foc'].maximum_allowed_focus:
+                                hit_focus_limit_upper=True
+                                new_focus_position_to_attempt=g_dev['foc'].maximum_allowed_focus
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
                             thread.start()
@@ -5830,21 +5872,27 @@ class Sequencer:
                                 for entry in focus_spots:
                                     minimumfind.append(entry[1])
                                 minimum_index=minimumfind.index(min(minimumfind))
-                                if (minimum_index == 0 or minimum_index == 1) and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
+                                if (minimum_index == 0 or minimum_index == 1) and not hit_focus_limit_lower:# and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
                                     plog ("Minimum too close to the sampling edge, getting another dot")
                                     extra_steps_to_the_left=extra_steps_to_the_left+1
                                     new_focus_position_to_attempt=focus_spots[0][0] - throw
+                                    if new_focus_position_to_attempt < g_dev['foc'].minimum_allowed_focus:
+                                        hit_focus_limit_lower=True
+                                        new_focus_position_to_attempt=g_dev['foc'].minimum_allowed_focus
                                     thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                                     thread.daemon = True
                                     thread.start()
                                     # Fling the jpeg up
                                     g_dev['obs'].enqueue_for_fastAWS(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
-                                elif (minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2)  and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus):
+                                elif (minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2) and not hit_focus_limit_upper:#  and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus):
 
                                     plog ("Minimum too close to the sampling edge, getting another dot")
                                     extra_steps_to_the_right=extra_steps_to_the_right+1
                                     new_focus_position_to_attempt=focus_spots[len(minimumfind)-1][0] + throw
+                                    if new_focus_position_to_attempt > g_dev['foc'].maximum_allowed_focus:
+                                        hit_focus_limit_upper=True
+                                        new_focus_position_to_attempt=g_dev['foc'].maximum_allowed_focus
                                     thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                                     thread.daemon = True
                                     thread.start()
@@ -5886,21 +5934,39 @@ class Sequencer:
 
 
 
-                                    #Here calculate the throw
-                                    f_prime = np.polyder(f)  # Derivative of the polynomial
+                                    # #Here calculate the throw
+                                    # f_prime = np.polyder(f)  # Derivative of the polynomial
 
-                                    # Define the integrand for arc length calculation
-                                    integrand = lambda x: np.sqrt(1 + (f_prime(x))**2)
+                                    # # Define the integrand for arc length calculation
+                                    # integrand = lambda x: np.sqrt(1 + (f_prime(x))**2)
 
-                                    # Calculate the arc length over the entire range of x
-                                    arc_length, _ = quad(integrand, np.min(x), np.max(x))
+                                    # # Calculate the arc length over the entire range of x
+                                    # arc_length, _ = quad(integrand, np.min(x), np.max(x))
 
                                     # Decide how many points you want (similar to your original plot)
                                     #num_points = len(x)
                                     num_points = 6
 
                                     # Calculate step length along the curve
-                                    curve_step_length = arc_length / (num_points - 1)
+                                    # curve_step_length = arc_length / (num_points - 1)
+                                    
+                                    a, b, c = fit
+                                    
+                                    # Find the vertex (minimum point)
+                                    x_min = -b / (2 * a)
+                                    y_min = f(x_min)
+                                    
+                                    # Set the target y-value 1.75 above the minimum
+                                    target_y = y_min + 1.75
+                                    
+                                    # Solve for x where the parabola equals the target y
+                                    coeffs = [a, b, c - target_y]
+                                    roots = np.roots(coeffs)
+                                    x_left, x_right = min(roots), max(roots)
+                                    
+                                    # Compute step size between 5 evenly spaced points
+                                    curve_step_length = (x_right - x_left) / (num_points-1)
+                                    #x_values = np.linspace(x_left, x_right, 5)
 
                                     plog("Estimated Optimal Throw:", curve_step_length)
 
@@ -6122,12 +6188,18 @@ class Sequencer:
                                         plog ("Attempting this spot again: " + str(new_focus_position_to_attempt))
                                     else:
                                         plog ("Couldn't find a problem spot, attempting another point on the smaller end of the curve")
-                                        if focus_spots[0][1] < focus_spots[-1][1]:
+                                        if focus_spots[0][1] < focus_spots[-1][1] and not hit_focus_limit_lower:
                                             plog ("smaller focus spot has lower fwhm value, trying out a spot out there")
                                             new_focus_position_to_attempt=focus_spots[0][0] - throw
-                                        else:
+                                            if new_focus_position_to_attempt < g_dev['foc'].minimum_allowed_focus:
+                                                hit_focus_limit_lower=True
+                                                new_focus_position_to_attempt=g_dev['foc'].minimum_allowed_focus
+                                        elif not hit_focus_limit_upper:
                                             plog ("higher focus spot has lower fwhm value, trying out a spot out there")
                                             new_focus_position_to_attempt=focus_spots[-1][0] + throw
+                                            if new_focus_position_to_attempt > g_dev['foc'].maximum_allowed_focus:
+                                                hit_focus_limit_upper=True
+                                                new_focus_position_to_attempt=g_dev['foc'].maximum_allowed_focus
 
 
     def equatorial_pointing_run(self, max_pointings=16, alt_minimum=22.5):

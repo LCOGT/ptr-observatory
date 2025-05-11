@@ -17,7 +17,7 @@ import traceback
 
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
-
+from astropy.nddata import block_reduce
 import bottleneck as bn
 from astropy.stats import sigma_clip
 from astropy.table import Table
@@ -101,8 +101,9 @@ googtime=time.time()
 # If this is an osc image, then interpolate so it is just the green filter image of the same size.
 if is_osc:
     ########## Need to split the file into four
-    plog ("do osc stuff")
-
+    #plog ("Binning for osc")
+    hdufocusdata = block_reduce(hdufocusdata, block_size=(2, 2), func=np.mean)
+    pixscale=pixscale*2
 
 # Check that the wcs directory is constructed
 #plog ("HERE WE ARE")
@@ -198,6 +199,10 @@ acatalog = Table.read(tempdir+"/test.cat", format='ascii')
 # acatalog=acatalog[acatalog['FWHM_IMAGE'] > fwhmlimit]
 # Reject poor  ( <10 SNR) sources
 acatalog=acatalog[acatalog['FLUX_AUTO']/acatalog['FLUXERR_AUTO'] > 10]
+
+print ("actalog")
+print (len(acatalog))
+print (acatalog)
 
 #breakpoint()
 # Write out to fits
@@ -309,7 +314,7 @@ else:
 print ()
 if len(acatalog) > 5:
     astoptions = '--crpix-center --tweak-order ' + str(tweakorder[0]) +' --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(pixlow) + ' --scale-high ' + str(pixhigh) + ' --ra ' + str(RAest) + ' --dec ' + str(DECest) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots --new-fits none'
-
+    print (astoptions)
     plog (astoptions)
 
     os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename)) # + ' > output.txt')
@@ -343,6 +348,19 @@ else:
 
 
 sys.exit()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 wslfilename.replace('.fits','.wcs')
 

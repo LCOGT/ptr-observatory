@@ -88,7 +88,7 @@ site_config = {
     # Also leads to fully platesolved reduced images on the local site computer
     # Usually set this to True
     # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
-    'fully_platesolve_images_at_site_rather_than_pipe' : False,
+    'fully_platesolve_images_at_site_rather_than_pipe' : True,
 
 
     # Setup of folders on local and network drives.
@@ -444,7 +444,7 @@ site_config = {
             'focuser_movement_settle_time': 6,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
-            'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
+            'maximum_good_focus_in_arcsecond': 10.0, # highest value to consider as being in "good focus". Used to select last good focus value
             'reference': 7000,    #  20210313  Nominal at 10C Primary temperature
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 10000,   #12672 actually
