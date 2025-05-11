@@ -5363,7 +5363,7 @@ class Camera:
                                 temp_focus_bin=2
                                 outputimg=block_reduce(outputimg,2)
                             # else:
-                                
+
                         # Here we decide if Fwe are using source-extractor++
                         # Which is great for actual focussing as it is quite robust
                         # to blobs and donuts or whether we are using the gaussian method
@@ -5414,9 +5414,9 @@ class Camera:
                                     catalog=Table.read(tempdir+ tempfitsname.replace('.fits','cat.fits'))
                                     # Remove rows where FLUX_RADIUS is 0 or NaN
                                     mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)
-    
+
                                     catalog = catalog[mask]
-                                    
+
                                     # remove unrealistic estimates that are too small
                                     if not self.pixscale == None:
                                         mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
@@ -5424,15 +5424,15 @@ class Camera:
                                     else:
                                         mask = (catalog['flux_radius']) > 0.5
                                         catalog =catalog[mask]
-    
+
                                     print ("std")
                                     print (np.nanstd(np.asarray(catalog['flux_radius'])))
                                     print ((np.asarray(catalog['flux_radius'])))
-                                    
+
                                     # def iterative_sigma_clip(data, sigma=3, maxiters=5):
                                     #     data = np.asarray(data)
                                     #     mask = np.zeros(data.shape, dtype=bool)
-                                    
+
                                     #     for i in range(maxiters):
                                     #         good = data[~mask]
                                     #         m, s = good.mean(), good.std()
@@ -5442,17 +5442,17 @@ class Camera:
                                     #         if np.all(new_mask == mask):
                                     #             break
                                     #         mask = new_mask
-                                    
+
                                     #     return data[~mask]
-                                    
+
                                     # clean = iterative_sigma_clip(my_list, sigma=3, maxiters=5)
                                     # print("Iteratively clipped data:", clean)
-                                    
+
                                     fwhm_values=sigma_clip(np.asarray(catalog['flux_radius']),sigma_lower=2,sigma_upper=np.inf, maxiters=5)
                                     fwhm_values=fwhm_values.data[~fwhm_values.mask]
-                                    
+
                                     print (np.nanstd(fwhm_values))
-    
+
                                     # The HFR and the fwhm are roughly twice
                                     fwhm_values=fwhm_values *2
 
@@ -5473,17 +5473,26 @@ class Camera:
                                     fwhm_dict['sky'] = 200 #str(imageMedian)
                                     fwhm_dict['sources'] = str(len(fwhm_values))
 
-                                else:                                    
+                                else:
 
                                     fwhm_dict = {}
                                     fwhm_dict['rfp'] = np.median(fwhm_values) * temp_focus_bin
                                     if self.pixscale == None:
                                         fwhm_dict['rfr'] = np.median(fwhm_values)  * temp_focus_bin
                                         fwhm_dict['rfs'] = np.median(fwhm_values)  * temp_focus_bin
-    
+
                                     else:
                                         fwhm_dict['rfr'] = np.median(fwhm_values) * self.pixscale * temp_focus_bin
                                         fwhm_dict['rfs'] = np.median(fwhm_values) * self.pixscale  * temp_focus_bin
+                                    fwhm_dict['sky'] = 200 #str(imageMedian)
+                                    fwhm_dict['sources'] = str(len(fwhm_values))
+
+                                if fwhm_dict['rfr'] < 1.0:
+                                    plog ("Unreasonable RFR value, setting focus to nan")
+                                    fwhm_dict['rfp'] = np.nan
+
+                                    fwhm_dict['rfr'] = np.nan
+                                    fwhm_dict['rfs'] = np.nan
                                     fwhm_dict['sky'] = 200 #str(imageMedian)
                                     fwhm_dict['sources'] = str(len(fwhm_values))
 
@@ -5527,7 +5536,7 @@ class Camera:
                                 # Size of the cutouts
                                 if self.pixscale == None:
                                     stamp_size = max(10 * (1/0.1),25)  # pixels
-                                else:                                    
+                                else:
                                     stamp_size = max(10 * (1/self.pixscale),25)  # pixels
 
                                 cutouts = []
@@ -5575,7 +5584,7 @@ class Camera:
                                 if self.pixscale == None:
                                     rfr = None
                                     rfs = None
-                                
+
                                 else:
                                     rfr = rfp * self.pixscale
                                     rfs = bn.nanstd(fwhms) * self.pixscale * temp_focus_bin
