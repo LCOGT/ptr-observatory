@@ -5866,7 +5866,7 @@ class Sequencer:
                                 plog(traceback.format_exc())
                                 fit_failed=True
 
-                            if fit_failed:
+                            if fit_failed or f(fitted_focus_position) >15:
                                 plog ("Fit failed. Usually due to a lack of data on one side of the curve. Grabbing another dot on the smaller side of the curve")
                                 minimumfind=[]
                                 for entry in focus_spots:
