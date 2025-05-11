@@ -59,7 +59,7 @@ rotate90_jpeg = inputs["image_transforms"]["rotate90_jpeg"]
 rotate270_jpeg = inputs["image_transforms"]["rotate270_jpeg"]
 pier_side = inputs["image_transforms"]["pier_side"]
 squash_on_x_axis = inputs["image_transforms"]["squash_on_x_axis"]
-zoom_factor = inputs["image_transformations"]["zoom_factor"].lower()
+zoom_factor = inputs["image_transforms"]["zoom_factor"].lower()
 
 # OSC settings
 is_osc = inputs["osc_settings"]["is_osc"]
