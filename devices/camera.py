@@ -5406,7 +5406,7 @@ class Camera:
                             frac_donuts = mask.sum() / len(euler_nums)
                             
                             print(f"{frac_donuts*100:.1f}% of detections have holes (i.e. donuts).")
-                            if frac_donuts > 0.5:
+                            if frac_donuts > 0.85:
                                 print("Image is dominated by donuts.")
                                 detected_donuts=True
                             else:
