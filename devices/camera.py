@@ -60,6 +60,10 @@ if TYPE_CHECKING:
     from obs import Observatory
 
 
+from skimage.filters import threshold_local
+from skimage.morphology import remove_small_objects
+from skimage.measure import label, regionprops, regionprops_table
+
 from astroquery.vizier import Vizier
 #from astropy.coordinates import SkyCoord
 import astropy.units as u
@@ -5363,7 +5367,128 @@ class Camera:
                                 temp_focus_bin=2
                                 outputimg=block_reduce(outputimg,2)
                             # else:
+                        
+                        # Lets see if we can detect the donuttyness of an image                        
+                        
+                        detected_donuts=False
+                        
+                        if not frame_type == 'focus_confirmation':
+                        
+                            # 1) compute a local threshold
+                            block_size = 51
+                            local_thresh = threshold_local(outputimg, block_size, offset=5)
+                            bw = outputimg > local_thresh
+                            
+                            # 2) clean up small speckles
+                            bw_clean = remove_small_objects(bw, min_size=50)
+                            
+                            # 3) label connected regions
+                            labels = label(bw_clean)
+                            
+                            # # 4) measure properties
+                            # props = regionprops(labels)            
+                            
+                            # # 5) classify rings by Euler number ≤ 0
+                            # donut_props = [p for p in props if p.euler_number <= 0]                      
+                            # frac_donuts = len(donut_props) / len(props)
+                            
+                            # this returns a dict of numpy arrays
+                            props = regionprops_table(
+                                labels,
+                                properties=('label', 'euler_number', 'area')
+                            )
+                            
+                            euler_nums = props['euler_number']
+                            areas      = props['area']
+                            
+                            # apply your area‐and‐hole filter
+                            mask = (areas > 50) & (euler_nums <= 0)
+                            frac_donuts = mask.sum() / len(euler_nums)
+                            
+                            print(f"{frac_donuts*100:.1f}% of detections have holes (i.e. donuts).")
+                            if frac_donuts > 0.5:
+                                print("Image is dominated by donuts.")
+                                detected_donuts=True
+                            else:
+                                print("Image is mostly Gaussian PSFs.")
+                            
+                        if detected_donuts:
+                        
+                            # If a donut lets measure... although initially I will just measure every image
+                            props = regionprops(labels, intensity_image=bw_clean)
+                            donut_props = [p for p in props if p.euler_number <= 0 and p.area>50]
+                            
+                            # 1) Compute a “brightness” for each donut region (total flux in its intensity_image)
+                            brightness = [p.intensity_image.sum() for p in donut_props]
+                            
+                            # 2) Get the indices that would sort that list descending
+                            idx_desc = np.argsort(brightness)[::-1]
+                            
+                            # 3) Pick the top 50
+                            top50_idx = idx_desc[:50]
+                            brightest_donuts = [donut_props[i] for i in top50_idx]
+                            
+                            def half_flux_diameter(stamp, x0, y0, dr=0.5):
+                                """
+                                stamp : 2D numpy array of background‐subtracted pixel values
+                                (x0,y0) : centroid in stamp‐coordinates (floats)
+                                dr : radial sampling step (pixels)
+                                returns : HFD in pixels
+                                """
+                                # flatten arrays of distances and fluxes
+                                yy, xx = np.indices(stamp.shape)
+                                r = np.hypot(xx - x0, yy - y0).ravel()
+                                f = stamp.ravel()
+                                
+                                # sort by ascending radius
+                                order = np.argsort(r)
+                                r_sorted = r[order]
+                                f_sorted = f[order]
+                                
+                                # cumulative flux
+                                cumf = np.cumsum(f_sorted)
+                                total = cumf[-1]
+                                
+                                # find the radius where cumf >= 0.5*total
+                                idx50 = np.searchsorted(cumf, 0.5*total)
+                                r50 = r_sorted[idx50]
+                                
+                                return 2*r50  # diameter = 2×radius
+                            
+                            hfd_list = []
+                            
+                            for p in brightest_donuts:
+                                # cut out the stamp
+                                minr, minc, maxr, maxc = p.bbox
+                                stamp = bw_clean[minr:maxr, minc:maxc]
+                                
+                                # convert global centroid to stamp coords
+                                y0, x0 = p.weighted_centroid
+                                x0_rel = x0 - minc
+                                y0_rel = y0 - minr
+                                
+                                # measure HFD
+                                hfd = half_flux_diameter(stamp, x0_rel, y0_rel)
+                                hfd_list.append(hfd)
+                            
+                            print(f"Measured HFDs (px): {hfd_list}")
+                            print(f"Median HFD = {np.median(hfd_list):.2f} px")
+                            
+                            fwhm_dict = {}
+                            fwhm_dict['rfp'] = np.median(hfd_list) * temp_focus_bin
+                            if self.pixscale == None:
+                                fwhm_dict['rfr'] = np.median(hfd_list)  * temp_focus_bin
+                                fwhm_dict['rfs'] = np.median(hfd_list)  * temp_focus_bin
 
+                            else:
+                                fwhm_dict['rfr'] = np.median(hfd_list) * self.pixscale * temp_focus_bin
+                                fwhm_dict['rfs'] = np.median(hfd_list) * self.pixscale  * temp_focus_bin
+                            fwhm_dict['sky'] = 200 #str(imageMedian)
+                            fwhm_dict['sources'] = str(len(hfd_list))
+                        
+                        del bw
+                        del bw_clean
+                        
                         # Here we decide if Fwe are using source-extractor++
                         # Which is great for actual focussing as it is quite robust
                         # to blobs and donuts or whether we are using the gaussian method
@@ -5374,7 +5499,7 @@ class Camera:
                         if frame_type == 'focus_confirmation':
                             do_source_extractor=False
 
-                        if do_source_extractor:
+                        if do_source_extractor and not detected_donuts:
                             try:
                                 # Utilise smartstacks directory as it is a temp directory that gets cleared out
                                 tempdir=self.local_calibration_path + "smartstacks/"
@@ -5501,7 +5626,7 @@ class Camera:
                             except:
                                 print ("couldn't do blob photometry: ")
                                 print(traceback.format_exc())
-                        else: # Do confirmation moffet photometry
+                        elif not detected_donuts: # Do confirmation moffet photometry
 
                             try:
 
