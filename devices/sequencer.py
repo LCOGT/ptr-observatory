@@ -5663,9 +5663,9 @@ class Sequencer:
                 n_of_sources.append([foc_pos,g_dev['obs'].fwhmresult['No_of_sources']])
 
                 if not np.isnan(spot):
-                    if spot < 30.0:
-                        focus_spots.append((foc_pos,spot))
-                        break
+                    #if spot < 30.0:
+                    focus_spots.append((foc_pos,spot))
+                    break
                 elif g_dev['foc'].focus_commissioned:
                     plog ("retrying this position - could not get a FWHM ")
 
