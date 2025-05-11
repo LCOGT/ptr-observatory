@@ -5589,7 +5589,7 @@ class Camera:
 
                                 print (fwhm_values)
 
-                                if len(fwhm_values) < 10:
+                                if len(fwhm_values) < 5:
                                     fwhm_dict = {}
                                     fwhm_dict['rfp'] = np.nan
 
