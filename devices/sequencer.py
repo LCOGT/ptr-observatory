@@ -5548,6 +5548,7 @@ class Sequencer:
 
             #  If more than 15 attempts, fail and bail out.
             # But don't bail out if the scope isn't commissioned yet, keep on finding.
+            
             if position_counter > 15 and g_dev['foc'].focus_commissioned:
                 g_dev['foc'].set_initial_best_guess_for_focus()
                 if not dont_return_scope:
@@ -5663,9 +5664,9 @@ class Sequencer:
                 n_of_sources.append([foc_pos,g_dev['obs'].fwhmresult['No_of_sources']])
 
                 if not np.isnan(spot):
-                    if spot < 30.0:
-                        focus_spots.append((foc_pos,spot))
-                        break
+                    #if spot < 30.0:
+                    focus_spots.append((foc_pos,spot))
+                    break
                 elif g_dev['foc'].focus_commissioned:
                     plog ("retrying this position - could not get a FWHM ")
 
@@ -5763,7 +5764,10 @@ class Sequencer:
                         # But ONLY if the focus is commissioned. If the focus is not
                         # commissioned then it is highly likely just to be in the wrong
                         # focus region
-                        if (minimum_value > focuser.config['maximum_good_focus_in_arcsecond']) and focuser.focus_commissioned:
+                        print ("foc comissed?")
+                        print (g_dev['foc'].focus_commissioned)
+                        g_dev['foc'].focuss_commissioned = False
+                        if (minimum_value > focuser.config['maximum_good_focus_in_arcsecond']) and g_dev['foc'].focus_commissioned:
                             plog ("Minimum value: " + str(minimum_value) + " is too high to bother focussing, just going with the estimated value from previous focus")
                             thread = threading.Thread(target=self.construct_focus_jpeg_and_save, args=(((x, y, False, copy.deepcopy(g_dev['cam'].current_focus_jpg), copy.deepcopy(im_path + text_name.replace('EX00.txt', 'EX10.jpg')),False,False),)))
                             thread.daemon = True
@@ -5872,8 +5876,11 @@ class Sequencer:
                                 for entry in focus_spots:
                                     minimumfind.append(entry[1])
                                 minimum_index=minimumfind.index(min(minimumfind))
+                                print ("gooog")
+                                print ( minimum_index)
+                                print (0.5*float(len(minimumfind)-1))
                                 #if (minimum_index == 0 or minimum_index == 1) and not hit_focus_limit_lower:# and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
-                                if minimum_index <= (0.5*float(len(minimumfind))) and not hit_focus_limit_lower:# and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
+                                if minimum_index <= (0.5*float(len(minimumfind)-1)) and not hit_focus_limit_lower:# and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
                                  
                                     plog ("Minimum too close to the sampling edge, getting another dot")
                                     extra_steps_to_the_left=extra_steps_to_the_left+1
@@ -5888,7 +5895,7 @@ class Sequencer:
                                     g_dev['obs'].enqueue_for_fastAWS(im_path, text_name.replace('EX00.txt', 'EX10.jpg'), g_dev['cam'].current_exposure_time, info_image_channel=2)
 
                                 #elif (minimum_index == len(minimumfind)-1 or  minimum_index == len(minimumfind)-2) and not hit_focus_limit_upper:#  and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus):
-                                elif minimum_index >= (0.5*float(len(minimumfind))) and not hit_focus_limit_upper:#  and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus):
+                                elif minimum_index >= (0.5*float(len(minimumfind)-1)) and not hit_focus_limit_upper:#  and not (focus_spots[len(minimumfind)-1][0] + throw > g_dev['foc'].maximum_allowed_focus):
 
                                     plog ("Minimum too close to the sampling edge, getting another dot")
                                     extra_steps_to_the_right=extra_steps_to_the_right+1
@@ -6035,7 +6042,7 @@ class Sequencer:
                                             ratio = 40/result[idx,0]
                                             new_estimated_exposure_time= ratio * closest_group
 
-                                            g_dev['cam'].focus_exposure=int(max(min(new_estimated_exposure_time,60),10))
+                                            g_dev['cam'].focus_exposure=int(max(min(new_estimated_exposure_time,30),10))
 
                                             print ("Updated Exposure time: " + str(g_dev['cam'].focus_exposure))
 
