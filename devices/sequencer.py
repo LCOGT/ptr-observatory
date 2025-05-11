@@ -6066,7 +6066,7 @@ class Sequencer:
                                     # With a gaussian method, now that it is (probably) not a donut.
                                     # But no point if we don't have a pixelscale:
                                     new_blob_vs_gaussian_factor = np.nan
-                                    if not self.pixscale == None:
+                                    if not g_dev['cam'].pixscale == None:
                                         req = {'time': focus_exposure_time,  'alias':  str(g_dev['cam'].name), 'image_type': 'focus_confirmation'}   #  NB Should pick up filter and constats from config
                                         opt = { 'count': 1, 'filter': filter_choice}
                                         result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
