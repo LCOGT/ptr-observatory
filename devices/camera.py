@@ -5414,77 +5414,259 @@ class Camera:
                             
                         if detected_donuts:
                         
-                            # If a donut lets measure... although initially I will just measure every image
-                            props = regionprops(labels, intensity_image=bw_clean)
-                            donut_props = [p for p in props if p.euler_number <= 0 and p.area>50]
+                            # # If a donut lets measure... although initially I will just measure every image
+                            # props = regionprops(labels, intensity_image=bw_clean)
+                            # donut_props = [p for p in props if p.euler_number <= 0 and p.area>50]
                             
-                            # 1) Compute a “brightness” for each donut region (total flux in its intensity_image)
-                            brightness = [p.intensity_image.sum() for p in donut_props]
+                            # # # 1) Compute a “brightness” for each donut region (total flux in its intensity_image)
+                            # # brightness = [p.intensity_image.sum() for p in donut_props]
                             
-                            # 2) Get the indices that would sort that list descending
-                            idx_desc = np.argsort(brightness)[::-1]
+                            # # # 2) Get the indices that would sort that list descending
+                            # # idx_desc = np.argsort(brightness)[::-1]
                             
-                            # 3) Pick the top 50
-                            top50_idx = idx_desc[:50]
-                            brightest_donuts = [donut_props[i] for i in top50_idx]
+                            # # # 3) Pick the top 50
+                            # # top50_idx = idx_desc[:50]
+                            # # brightest_donuts = [donut_props[i] for i in top50_idx]
                             
-                            def half_flux_diameter(stamp, x0, y0, dr=0.5):
-                                """
-                                stamp : 2D numpy array of background‐subtracted pixel values
-                                (x0,y0) : centroid in stamp‐coordinates (floats)
-                                dr : radial sampling step (pixels)
-                                returns : HFD in pixels
-                                """
-                                # flatten arrays of distances and fluxes
-                                yy, xx = np.indices(stamp.shape)
-                                r = np.hypot(xx - x0, yy - y0).ravel()
-                                f = stamp.ravel()
+                            # # # 2) Sort by area descending
+                            # # areas    = np.array([p.area for p in donuts])
+                            # # idxs     = np.argsort(areas)[::-1]  # largest first
+                            # # top50    = idxs[:50]
+                            # # largest  = [donuts[i] for i in top50]
+                            
+                            # # 2) Sort by area descending
+                            # areas    = np.array([p.area for p in donut_props])
+                            # idxs     = np.argsort(areas)[::-1]  # largest first
+                            # top50    = idxs[:50]
+                            # largest  = [donut_props[i] for i in top50]
+                            
+                            
+                            # def half_flux_diameter(stamp, x0, y0, dr=0.5):
+                            #     """
+                            #     stamp : 2D numpy array of background‐subtracted pixel values
+                            #     (x0,y0) : centroid in stamp‐coordinates (floats)
+                            #     dr : radial sampling step (pixels)
+                            #     returns : HFD in pixels
+                            #     """
+                            #     # flatten arrays of distances and fluxes
+                            #     yy, xx = np.indices(stamp.shape)
+                            #     r = np.hypot(xx - x0, yy - y0).ravel()
+                            #     f = stamp.ravel()
                                 
-                                # sort by ascending radius
-                                order = np.argsort(r)
-                                r_sorted = r[order]
-                                f_sorted = f[order]
+                            #     # sort by ascending radius
+                            #     order = np.argsort(r)
+                            #     r_sorted = r[order]
+                            #     f_sorted = f[order]
                                 
-                                # cumulative flux
-                                cumf = np.cumsum(f_sorted)
-                                total = cumf[-1]
+                            #     # cumulative flux
+                            #     cumf = np.cumsum(f_sorted)
+                            #     total = cumf[-1]
                                 
-                                # find the radius where cumf >= 0.5*total
-                                idx50 = np.searchsorted(cumf, 0.5*total)
-                                r50 = r_sorted[idx50]
+                            #     # find the radius where cumf >= 0.5*total
+                            #     idx50 = np.searchsorted(cumf, 0.5*total)
+                            #     r50 = r_sorted[idx50]
                                 
-                                return 2*r50  # diameter = 2×radius
+                            #     return 2*r50  # diameter = 2×radius
                             
-                            hfd_list = []
+                            # hfd_list = []
                             
-                            for p in brightest_donuts:
-                                # cut out the stamp
-                                minr, minc, maxr, maxc = p.bbox
-                                stamp = bw_clean[minr:maxr, minc:maxc]
+                            # for p in brightest_donuts:
+                            #     # cut out the stamp
+                            #     minr, minc, maxr, maxc = p.bbox
+                            #     stamp = bw_clean[minr:maxr, minc:maxc]
                                 
-                                # convert global centroid to stamp coords
+                            #     # convert global centroid to stamp coords
+                            #     y0, x0 = p.weighted_centroid
+                            #     x0_rel = x0 - minc
+                            #     y0_rel = y0 - minr
+                                
+                            #     # # measure HFD
+                            #     # hfd = half_flux_diameter(stamp, x0_rel, y0_rel)
+                            #     # hfd_list.append(hfd)
+                                
+                            #     # within your loop, after stamp & centroid:
+                            #     yy, xx = np.indices(stamp.shape)
+                            #     r      = np.hypot(xx - x0_rel, yy - y0_rel)
+                            #     # bin into integer radii
+                            #     maxr   = int(r.max())
+                            #     bins   = np.arange(maxr+1)
+                            #     inds   = np.floor(r).astype(int)
+                            #     rad_prof = np.bincount(inds.ravel(), stamp.ravel()) / np.bincount(inds.ravel())
+                            #     # find radius of peak brightness
+                            #     r_peak = np.argmax(rad_prof)
+                            #     diameter_peak = 2 * r_peak
+                            
+                            # print(f"Measured HFDs (px): {hfd_list}")
+                            # print(f"Median HFD = {np.median(hfd_list):.2f} px")
+                            
+                            # diameter_peaks = []
+                            
+                            # for p in largest:
+                            #     # 1) cut out the stamp & get centroid
+                            #     minr, minc, maxr, maxc = p.bbox
+                            #     stamp = bw_clean[minr:maxr, minc:maxc]
+                            #     y0, x0 = p.weighted_centroid
+                            #     x0_rel, y0_rel = x0 - minc, y0 - minr
+                            
+                            #     # 2) compute radial profile
+                            #     yy, xx = np.indices(stamp.shape)
+                            #     r = np.hypot(xx - x0_rel, yy - y0_rel)
+                            #     maxr = int(r.max())
+                            #     inds = np.floor(r).astype(int)
+                            #     # mean flux in each integer‐radius bin
+                            #     rad_prof = np.bincount(inds.ravel(), stamp.ravel()) \
+                            #                / np.bincount(inds.ravel())
+                            
+                            #     # 3) find ring peak & diameter
+                            #     r_peak = np.argmax(rad_prof)
+                            #     diameter_peak = 2 * r_peak
+                            
+                            #     # 4) append to your list
+                            #     diameter_peaks.append(diameter_peak)
+                            
+                            # print(f"Ring‐peak diameters (px): {diameter_peaks}")
+                            # print(f"Median ring diameter = {np.median(diameter_peaks):.2f} px")
+                            
+                            # diameter_peaks = []
+
+                            # for p in largest:
+                            #     # --- 1) get the region‐masked intensity stamp & mask ---
+                            #     stamp_int = p.intensity_image        # shape = (h, w), zeros outside region
+                            #     mask      = p.image                  # bool array, True only on the ring pixels
+                            
+                            #     # --- 2) centroid in local (stamp) coords ---
+                            #     # regionprops gives local_centroid as (row, col)
+                            #     y0_rel, x0_rel = p.local_centroid  
+                            
+                            #     # --- 3) compute radii only once ---
+                            #     yy, xx = np.indices(mask.shape)
+                            #     r_all   = np.hypot(xx - x0_rel, yy - y0_rel)
+                            
+                            #     # --- 4) flatten just the masked pixels ---
+                            #     r_mask = r_all[mask]
+                            #     f_mask = stamp_int[mask]
+                            
+                            #     # --- 5) bin to integer radii and build the profile ---
+                            #     bins    = np.floor(r_mask).astype(int)
+                            #     num     = np.bincount(bins, weights=f_mask)
+                            #     den     = np.bincount(bins)
+                            #     rad_prof = num / den
+                            
+                            #     # --- 6) zero out the trivial bins at 0 and at the max radius ---
+                            #     rad_prof[0] = 0
+                            #     rad_prof[-1] = 0
+                            
+                            #     # --- 7) find the peak & convert to diameter ---
+                            #     r_peak = np.argmax(rad_prof)
+                            #     diameter_peaks.append(2 * r_peak)
+                            
+                            # print("Corrected ring‐peak diameters:", diameter_peaks)
+                            # print(f"Median ring diameter = {np.median(diameter_peaks):.2f} px")
+                            
+                            # --- 1) recompute props with the *real* image ---
+                            props = regionprops(labels, intensity_image=outputimg)
+                            donut_props = [p for p in props if p.euler_number <= 0 and p.area > 50]
+                            
+                            # --- 2) choose the 50 largest donuts ---
+                            areas = np.array([p.area for p in donut_props])
+                            top50 = np.argsort(areas)[::-1][:50]
+                            largest = [donut_props[i] for i in top50]
+                            
+                            # --- 3) measure diameter_peak properly ---
+                            diameter_peaks = []
+                            
+                            # for p in largest:
+                            #     # real centroid (in full‐image coords):
+                            #     y0, x0 = p.weighted_centroid
+                            
+                            #     # pixel‐coords of every region pixel:
+                            #     coords = p.coords                  # shape = (N, 2): (row, col)
+                            #     ys, xs = coords[:,0], coords[:,1]
+                            
+                            #     # radial distances of each pixel from centroid:
+                            #     r = np.hypot(xs - x0, ys - y0)
+                            
+                            #     # integer bins:
+                            #     bins = np.floor(r).astype(int)
+                            
+                            #     # pull the true fluxes from the original image:
+                            #     fluxes = outputimg[ys, xs]
+                            
+                            #     # build the mean‐flux profile:
+                            #     num = np.bincount(bins, weights=fluxes)
+                            #     den = np.bincount(bins)
+                            #     rad_prof = num / den
+                            
+                            #     # ignore the center bin (r=0) in case it’s noisy:
+                            #     if len(rad_prof) > 1:
+                            #         rad_prof[0] = 0
+                            
+                            #     # pick the radius of maximum mean flux:
+                            #     r_peak = np.argmax(rad_prof)
+                            
+                            #     diameter_peaks.append(2 * r_peak)
+                            
+                            from scipy.ndimage import gaussian_filter1d
+                            
+                            for p in largest:
+                                # real centroid (in full‐image coords):
                                 y0, x0 = p.weighted_centroid
-                                x0_rel = x0 - minc
-                                y0_rel = y0 - minr
-                                
-                                # measure HFD
-                                hfd = half_flux_diameter(stamp, x0_rel, y0_rel)
-                                hfd_list.append(hfd)
                             
-                            print(f"Measured HFDs (px): {hfd_list}")
-                            print(f"Median HFD = {np.median(hfd_list):.2f} px")
+                                # pixel‐coords of every region pixel:
+                                coords = p.coords                  # shape = (N, 2): (row, col)
+                                ys, xs = coords[:,0], coords[:,1]
+                            
+                                # radial distances of each pixel from centroid:
+                                r = np.hypot(xs - x0, ys - y0)
+                            
+                                # integer bins:
+                                bins = np.floor(r).astype(int)
+                            
+                                # pull the true fluxes from the original image:
+                                fluxes = outputimg[ys, xs]
+                                
+                                coords = p.coords
+                                ys, xs = coords[:,0], coords[:,1]
+                                r = np.hypot(xs - x0, ys - y0)
+                                bins = np.floor(r).astype(int)
+                                fluxes = outputimg[ys, xs]
+                            
+                                # build the raw mean‐flux profile
+                                num = np.bincount(bins, weights=fluxes)
+                                den = np.bincount(bins)
+                                rad_prof = num / den
+                            
+                                # 1) zero out the center and small radii
+                                min_r = 5
+                                rad_prof[:min_r+1] = 0      # remove bins [0…5]
+                            
+                                # 2) smooth the profile to suppress spiky noise
+                                rad_smooth = gaussian_filter1d(rad_prof, sigma=1.5)
+                            
+                                # 3) find the peak ring radius
+                                r_peak = np.argmax(rad_smooth)
+                                diameter = 2 * r_peak
+                            
+                                # 4) sanity‐check size
+                                if diameter >= 10:
+                                    diameter_peaks.append(diameter)
+                                # else: drop tiny spurious donuts
+                            
+                            # 4) summarize
+                            print("Ring‐peak diameters (px):", diameter_peaks)
+                            print(f"Median ring diameter = {np.median(diameter_peaks):.2f} px")
                             
                             fwhm_dict = {}
-                            fwhm_dict['rfp'] = np.median(hfd_list) * temp_focus_bin
+                            fwhm_dict['rfp'] = np.median(diameter_peaks) * temp_focus_bin
                             if self.pixscale == None:
-                                fwhm_dict['rfr'] = np.median(hfd_list)  * temp_focus_bin
-                                fwhm_dict['rfs'] = np.median(hfd_list)  * temp_focus_bin
+                                fwhm_dict['rfr'] = np.median(diameter_peaks)  * temp_focus_bin
+                                fwhm_dict['rfs'] = np.median(diameter_peaks)  * temp_focus_bin
 
                             else:
-                                fwhm_dict['rfr'] = np.median(hfd_list) * self.pixscale * temp_focus_bin
-                                fwhm_dict['rfs'] = np.median(hfd_list) * self.pixscale  * temp_focus_bin
+                                fwhm_dict['rfr'] = np.median(diameter_peaks) * self.pixscale * temp_focus_bin
+                                fwhm_dict['rfs'] = np.median(diameter_peaks) * self.pixscale  * temp_focus_bin
                             fwhm_dict['sky'] = 200 #str(imageMedian)
-                            fwhm_dict['sources'] = str(len(hfd_list))
+                            fwhm_dict['sources'] = str(len(diameter_peaks))
                         
                         del bw
                         del bw_clean
