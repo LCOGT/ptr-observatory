@@ -5418,11 +5418,10 @@ class Camera:
 
                                     catalog=Table.read(tempdir+ tempfitsname.replace('.fits','cat.fits'))
                                     
-                                    breakpoint()
                                     
                                     
                                     # Remove rows where FLUX_RADIUS is 0 or NaN
-                                    mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0) & (catalog['kron_radius'] > 0)
+                                    mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)# & (catalog['kron_radius'] > 0)
 
                                     catalog = catalog[mask]
                                     
@@ -5432,7 +5431,7 @@ class Camera:
                                     import matplotlib.pyplot as plt
                                     from matplotlib.patches import Circle
                                     from matplotlib.patches import Ellipse
-                                    from astropy.nddata import Cutout2D
+                                    #from astropy.nddata import Cutout2D
                                     
                                     fig, ax = plt.subplots(figsize=(8, 8))
                                     ax.imshow(outputimg, origin='lower', cmap='gray')
@@ -5598,6 +5597,9 @@ class Camera:
 
                                     # clean = iterative_sigma_clip(my_list, sigma=3, maxiters=5)
                                     # print("Iteratively clipped data:", clean)
+
+                                    breakpoint()
+                                    
 
                                     fwhm_values=sigma_clip(np.asarray(catalog['flux_radius']),sigma_lower=2,sigma_upper=np.inf, maxiters=5)
                                     fwhm_values=fwhm_values.data[~fwhm_values.mask]
