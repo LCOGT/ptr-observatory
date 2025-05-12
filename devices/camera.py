@@ -5418,7 +5418,32 @@ class Camera:
 
                                     catalog=Table.read(tempdir+ tempfitsname.replace('.fits','cat.fits'))
                                     
+                                    # First remove edge sources
+                                    h, w = outputimg.shape
+                                    margin = 1.2
                                     
+                                    # 1) compute per‐source half‐size in pixels
+                                    a     = catalog['ellipse_a'] * catalog['kron_radius']
+                                    b     = catalog['ellipse_b'] * catalog['kron_radius']
+                                    r_pix = np.ceil(np.maximum(a, b) * margin).astype(int)
+                                    
+                                    # 2) convert FITS (1-based) → NumPy (0-based) positions
+                                    x0 = catalog['pixel_centroid_x'] - 1
+                                    y0 = catalog['pixel_centroid_y'] - 1
+                                    
+                                    # 3) build a boolean mask for “fully on‐image”
+                                    mask = (
+                                        (x0 >= r_pix) &
+                                        (x0 <= (w - 1 - r_pix)) &
+                                        (y0 >= r_pix) &
+                                        (y0 <= (h - 1 - r_pix))
+                                    )
+                                    
+                                    # 4) filter your table in one go
+                                    filtered_catalog = catalog[mask]
+                                    
+                                    # replace your old catalog if you like
+                                    catalog = filtered_catalog
                                     
                                     # Remove rows where FLUX_RADIUS is 0 or NaN
                                     mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)# & (catalog['kron_radius'] > 0)
