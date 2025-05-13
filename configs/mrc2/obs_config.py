@@ -185,7 +185,7 @@ site_config = {
         
     
     # Exposure times for standard system exposures
-    'focus_exposure_time': 45,  # Exposure time in seconds for exposure image
+    'focus_exposure_time': 30,  # Exposure time in seconds for exposure image
     'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
