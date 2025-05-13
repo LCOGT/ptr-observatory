@@ -20,10 +20,17 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh # con
 sh Miniconda3-latest-Linux-x86_64.sh
 
 echo 'export PATH=~/miniconda3/bin:$PATH' >> ~/.bashrc
+echo 'export PYTHONWARNINGS=ignore'  >> ~/.bashrc
+echo 'export OMP_NUM_THREADS=$(nproc)'  >> ~/.bashrc
+
 source ~/.bashrc
 
 conda config --add channels conda-forge
 conda config --add channels astrorama
+
+conda install -c conda-forge libgomp
+conda install -c conda-forge llvm-openmp
+
 
 conda install python=3.11 # Need to downgrade
 conda install -c conda-forge -c astrorama sourcextractor
