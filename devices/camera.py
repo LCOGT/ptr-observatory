@@ -3280,7 +3280,9 @@ class Camera:
                                     Nsmartstack = 1
                                     sskcounter = 2
                                     self.currently_in_smartstack_loop = False
-                                    break
+                                    self.running_an_exposure_set = False
+                                    return 'outsideofnighttime'
+                                    #break
 
                             # Sort out if it is a substack
                             # If request actually requested a substack
@@ -5394,7 +5396,7 @@ class Camera:
                                 # Save an image to the disk to use with source-extractor++
                                 # We don't need accurate photometry, so integer is fine.
                                 hdufocus = fits.PrimaryHDU()
-                                hdufocus.data = outputimg
+                                hdufocus.data = outputimg.astype(np.float32)
                                 hdufocus.header["NAXIS1"] = outputimg.shape[0]
                                 hdufocus.header["NAXIS2"] = outputimg.shape[1]
                                 hdufocus.writeto(tempdir + tempfitsname, overwrite=True, output_verify='silentfix')
@@ -5406,10 +5408,15 @@ class Camera:
 
                                 if self.pixscale == None:
                                     minarea=10
+                                elif self.pixscale > 1.0:
+                                    minarea=3
                                 else:
                                     minarea= ((-9.2421 * self.pixscale) + 16.553)/ temp_focus_bin
-                                if minarea < 5:  # There has to be a min minarea though!
-                                    minarea = 5
+                                # if minarea < 5:  # There has to be a min minarea though!
+                                #     minarea = 5
+                                
+                                print ("minarea")
+                                print (minarea)
 
                                 # dump out a variance array to be used
 
@@ -5417,7 +5424,7 @@ class Camera:
                                 # hdu_var.header['BUNIT'] = 'e-2'       # units: electrons^2
                                 # hdu_var.writeto('variance.fits', overwrite=True)
 
-                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(minarea) + ' --tile-memory-limit 4096"')
+                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(minarea) + ' --grouping-algorithm none --tile-size 10000 --tile-memory-limit 16384"')
 
                                 try:
 
@@ -5798,28 +5805,35 @@ class Camera:
                                             r_search = int(np.ceil(kr * search_radius_factor))
                                             size = (2 * r_search + 1, 2 * r_search + 1)
                                     
-                                            # Cutout centered on centroid
-                                            cutout = Cutout2D(outputimg, position=(x0, y0), size=size, mode='partial', fill_value=np.nan)
-                                    
-                                            # Find brightest pixel in the cutout
-                                            if np.all(np.isnan(cutout.data)):
-                                                # No valid data; skip or set distance to NaN
-                                                x_dists.append(np.nan)
-                                                y_dists.append(np.nan)
-                                                total_dists.append(np.nan)
-                                                continue
-                                    
-                                            local_max_pos = np.unravel_index(np.nanargmax(cutout.data), cutout.data.shape)
-                                            y_peak_local, x_peak_local = local_max_pos
-                                    
-                                            # Calculate offset relative to cutout center
-                                            dx = x_peak_local - r_search
-                                            dy = y_peak_local - r_search
-                                            dist = np.hypot(dx, dy)
-                                    
-                                            x_dists.append(abs(dx))
-                                            y_dists.append(abs(dy))
-                                            total_dists.append(dist)
+                                            try:
+                                                # Cutout centered on centroid
+                                                cutout = Cutout2D(outputimg, position=(x0, y0), size=size, mode='partial', fill_value=np.nan)
+                                        
+                                                # Find brightest pixel in the cutout
+                                                if np.all(np.isnan(cutout.data)):
+                                                    # No valid data; skip or set distance to NaN
+                                                    x_dists.append(np.nan)
+                                                    y_dists.append(np.nan)
+                                                    total_dists.append(np.nan)
+                                                    continue
+                                        
+                                                local_max_pos = np.unravel_index(np.nanargmax(cutout.data), cutout.data.shape)
+                                                y_peak_local, x_peak_local = local_max_pos
+                                        
+                                                # Calculate offset relative to cutout center
+                                                dx = x_peak_local - r_search
+                                                dy = y_peak_local - r_search
+                                                dist = np.hypot(dx, dy)
+                                        
+                                                x_dists.append(abs(dx))
+                                                y_dists.append(abs(dy))
+                                                total_dists.append(dist)
+                                            except:
+                                                plog ("there is an occasional cutout area but to find....")
+                                                plog(traceback.format_exc())
+                                                plog (size)
+                                                plog (x0)
+                                                plog (y0)
                                     
                                         catalog['x_donut_distance'] = x_dists
                                         catalog['y_donut_distance'] = y_dists
@@ -5859,7 +5873,7 @@ class Camera:
                                     fwhm_values=[]
                                     
                                     print(traceback.format_exc())
-                                    #breakpoint()
+                                    breakpoint()
 
                                 plog("No. of detections:  ", len(fwhm_values))
 
