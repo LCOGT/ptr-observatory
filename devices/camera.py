@@ -177,7 +177,7 @@ def plot_bright_star_cutouts(outputimg, catalog, n=9, margin=1.2):
     plt.close()
 
 
-def plot_sourcextractor_pp(catalog,
+def plot_sourcextractor_pp(outputimg,catalog,
                             centroid_x='pixel_centroid_x', centroid_y='pixel_centroid_y',
                             flux_radius='flux_radius', kron_radius='kron_radius',
                             peak_x='peak_value_x', peak_y='peak_value_y', peak_value='peak_value'):
@@ -5726,7 +5726,7 @@ class Camera:
                                         googtime=time.time()
                                         #plot_sourcextractor_pp(ax, catalog)
 
-                                        threading.Thread(target=plot_sourcextractor_pp, args=(copy.deepcopy(catalog),)).start()
+                                        threading.Thread(target=plot_sourcextractor_pp, args=(copy.deepcopy(outputimg),copy.deepcopy(catalog),)).start()
                                         #threadpp.start()
 
                                         print ("aftersource: " + str(time.time()-googtime))
