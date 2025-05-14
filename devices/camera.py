@@ -177,7 +177,7 @@ def plot_bright_star_cutouts(outputimg, catalog, n=9, margin=1.2):
     plt.close()
 
 
-def plot_sourcextractor_pp(ax, catalog,
+def plot_sourcextractor_pp(catalog,
                             centroid_x='pixel_centroid_x', centroid_y='pixel_centroid_y',
                             flux_radius='flux_radius', kron_radius='kron_radius',
                             peak_x='peak_value_x', peak_y='peak_value_y', peak_value='peak_value'):
@@ -201,6 +201,11 @@ def plot_sourcextractor_pp(ax, catalog,
     peak_value : str
         Column name for peak intensity (used to size markers).
     """
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.imshow(outputimg, origin='lower', cmap='gray')
+    ax.set_xlabel('X pixel')
+    ax.set_ylabel('Y pixel')
+    ax.set_title('SourceXtractor++ detections')
     # 1) plot pixel centroids (hollow cyan circles)
     ax.scatter(catalog[centroid_x], catalog[centroid_y],
                s=50, facecolors='none', edgecolors='cyan', label='Centroids')
@@ -5647,11 +5652,11 @@ class Camera:
 
                                     print ("catalog1: " + str(time.time()-googtime))
                                     googtime=time.time()
-                                    fig, ax = plt.subplots(figsize=(8, 8))
-                                    ax.imshow(outputimg, origin='lower', cmap='gray')
-                                    ax.set_xlabel('X pixel')
-                                    ax.set_ylabel('Y pixel')
-                                    ax.set_title('SourceXtractor++ detections')
+                                    # fig, ax = plt.subplots(figsize=(8, 8))
+                                    # ax.imshow(outputimg, origin='lower', cmap='gray')
+                                    # ax.set_xlabel('X pixel')
+                                    # ax.set_ylabel('Y pixel')
+                                    # ax.set_title('SourceXtractor++ detections')
 
                                     # plot_sourcextractor_pp(ax, catalog)
                                     # plt.tight_layout()
@@ -5707,8 +5712,8 @@ class Camera:
                                     if len(catalog) > 0 :
                                         googtime=time.time()
                                        # plot_bright_star_cutouts(outputimg, catalog, n=9, margin=8.0)
-                                        threadcutouts = threading.Thread(target=plot_bright_star_cutouts, args=(outputimg, catalog, 9, 8.0,))
-                                        threadcutouts.start()
+                                        threading.Thread(target=plot_bright_star_cutouts, args=(copy.deepcopy(outputimg), copy.deepcopy(catalog), 9, 8.0,)).start()
+                                        #threadcutouts.start()
                                         # fig, ax = plt.subplots(figsize=(8, 8))
                                         # ax.imshow(outputimg, origin='lower', cmap='gray')
                                         # ax.set_xlabel('X pixel')
@@ -5721,8 +5726,8 @@ class Camera:
                                         googtime=time.time()
                                         #plot_sourcextractor_pp(ax, catalog)
 
-                                        threadpp = threading.Thread(target=plot_sourcextractor_pp, args=(ax, catalog,))
-                                        threadpp.start()
+                                        threading.Thread(target=xxtractor_pp, args=(copy.deepcopy(catalog),)).start()
+                                        #threadpp.start()
 
                                         print ("aftersource: " + str(time.time()-googtime))
 
