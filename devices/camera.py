@@ -173,7 +173,7 @@ def plot_bright_star_cutouts(outputimg, catalog, n=9, margin=1.2):
         ax.axis('off')
 
     plt.tight_layout()
-    plt.savefig('brightstarplots.png', dpi=300, bbox_inches='tight')
+    plt.savefig(str(time.time())+'brightstarplots.png', dpi=300, bbox_inches='tight')
     plt.close()
 
 
@@ -230,6 +230,9 @@ def plot_sourcextractor_pp(ax, catalog,
 
     # legend
     ax.legend(loc='upper right')
+    plt.tight_layout()
+    plt.savefig(str(time.time())+'aftersourceplots.png', dpi=300, bbox_inches='tight')
+    plt.close()
 
 def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
     x_cent = catalog['pixel_centroid_x'] - 1  # FITS to NumPy
@@ -5629,7 +5632,7 @@ class Camera:
                                 # hdu_var.header['BUNIT'] = 'e-2'       # units: electrons^2
                                 # hdu_var.writeto('variance.fits', overwrite=True)
                                 googtime=time.time()
-                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm none --segmentation-use-filtering 0 --tile-size 10000 --tile-memory-limit 16384"')
+                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm none --tile-size 10000 --tile-memory-limit 16384"')
                                 print ("s++: " + str(time.time()-googtime))
                                 try:
                                     googtime=time.time()
@@ -5650,11 +5653,11 @@ class Camera:
                                     ax.set_ylabel('Y pixel')
                                     ax.set_title('SourceXtractor++ detections')
 
-                                    plot_sourcextractor_pp(ax, catalog)
-                                    plt.tight_layout()
-                                    plt.savefig('beforesourceplots.png', dpi=300, bbox_inches='tight')
-                                    plt.close()
-                                    print ("plot1: " + str(time.time()-googtime))
+                                    # plot_sourcextractor_pp(ax, catalog)
+                                    # plt.tight_layout()
+                                    # plt.savefig('beforesourceplots.png', dpi=300, bbox_inches='tight')
+                                    # plt.close()
+                                    # print ("plot1: " + str(time.time()-googtime))
 
                                     googtime=time.time()
                                     # remove unrealistic estimates that are too small
@@ -5703,22 +5706,24 @@ class Camera:
 
                                     if len(catalog) > 0 :
                                         googtime=time.time()
-                                        plot_bright_star_cutouts(outputimg, catalog, n=9, margin=8.0)
-
-                                        fig, ax = plt.subplots(figsize=(8, 8))
-                                        ax.imshow(outputimg, origin='lower', cmap='gray')
-                                        ax.set_xlabel('X pixel')
-                                        ax.set_ylabel('Y pixel')
-                                        ax.set_title('SourceXtractor++ detections')
+                                       # plot_bright_star_cutouts(outputimg, catalog, n=9, margin=8.0)
+                                        threadcutouts = threading.Thread(target=plot_bright_star_cutouts, args=(outputimg, catalog, 9, 8.0,))
+                                        threadcutouts.start()
+                                        # fig, ax = plt.subplots(figsize=(8, 8))
+                                        # ax.imshow(outputimg, origin='lower', cmap='gray')
+                                        # ax.set_xlabel('X pixel')
+                                        # ax.set_ylabel('Y pixel')
+                                        # ax.set_title('SourceXtractor++ detections')
                                         print ("cutouts: " + str(time.time()-googtime))
 
                                     if len(catalog) > 0 :
 
                                         googtime=time.time()
-                                        plot_sourcextractor_pp(ax, catalog)
-                                        plt.tight_layout()
-                                        plt.savefig('aftersourceplots.png', dpi=300, bbox_inches='tight')
-                                        plt.close()
+                                        #plot_sourcextractor_pp(ax, catalog)
+
+                                        threadpp = threading.Thread(target=plot_sourcextractor_pp, args=(ax, catalog,))
+                                        threadpp.start()
+
                                         print ("aftersource: " + str(time.time()-googtime))
 
 
