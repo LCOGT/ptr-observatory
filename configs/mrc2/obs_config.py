@@ -756,8 +756,8 @@ site_config = {
 
                 #HERE IS THE POTENTIAL MODE 1 SETTINGS
                 'direct_qhy_readout_mode' : 1,
-                'direct_qhy_gain' : 26,
-                'direct_qhy_offset' : 10,
+                'direct_qhy_gain' : 60,
+                'direct_qhy_offset' : 30,
                 #'direct_qhy_usb_speed' : 50,
                 'set_qhy_usb_speed': True,
                 'direct_qhy_usb_traffic' : 50, 
