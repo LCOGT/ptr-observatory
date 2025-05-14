@@ -114,7 +114,7 @@ def plot_bright_star_cutouts(outputimg, catalog, n=9, margin=1.2):
     # # pick top-n brightest
     # idx    = np.argsort(catalog['auto_flux'])[-n:][::-1]
     # bright = catalog[idx]
-    
+
     # pick the 9 lowest-ellipticity objects
     idx = np.argsort(catalog['ellipticity'])[:9]
     bright = catalog[idx]
@@ -173,7 +173,8 @@ def plot_bright_star_cutouts(outputimg, catalog, n=9, margin=1.2):
         ax.axis('off')
 
     plt.tight_layout()
-    plt.show()
+    plt.savefig('brightstarplots.png', dpi=300, bbox_inches='tight')
+    plt.close()
 
 
 def plot_sourcextractor_pp(ax, catalog,
@@ -246,7 +247,7 @@ def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
         try:
             # Cutout centered on centroid
             cutout = Cutout2D(outputimg, position=(x0, y0), size=size, mode='partial', fill_value=np.nan)
-    
+
             # Find brightest pixel in the cutout
             if np.all(np.isnan(cutout.data)):
                 # No valid data; skip or set distance to NaN
@@ -254,15 +255,15 @@ def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
                 y_dists.append(np.nan)
                 total_dists.append(np.nan)
                 continue
-    
+
             local_max_pos = np.unravel_index(np.nanargmax(cutout.data), cutout.data.shape)
             y_peak_local, x_peak_local = local_max_pos
-    
+
             # Calculate offset relative to cutout center
             dx = x_peak_local - r_search
             dy = y_peak_local - r_search
             dist = np.hypot(dx, dy)
-    
+
             x_dists.append(abs(dx))
             y_dists.append(abs(dy))
             total_dists.append(dist)
@@ -5558,8 +5559,8 @@ class Camera:
                                 temp_focus_bin=2
                                 outputimg=block_reduce(outputimg,2)
                             # else:
-                        
-                        
+
+
                         # Here we decide if Fwe are using source-extractor++
                         # Which is great for actual focussing as it is quite robust
                         # to blobs and donuts or whether we are using the gaussian method
@@ -5602,7 +5603,7 @@ class Camera:
                                     minarea= ((-9.2421 * self.pixscale) + 16.553)/ temp_focus_bin
                                 # if minarea < 5:  # There has to be a min minarea though!
                                 #     minarea = 5
-                                
+
                                 print ("minarea")
                                 print (minarea)
 
@@ -5612,28 +5613,29 @@ class Camera:
                                 # hdu_var.header['BUNIT'] = 'e-2'       # units: electrons^2
                                 # hdu_var.writeto('variance.fits', overwrite=True)
 
-                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(minarea) + ' --grouping-algorithm none --tile-size 10000 --tile-memory-limit 16384"')
+                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm none --tile-size 10000 --tile-memory-limit 16384"')
 
                                 try:
 
                                     catalog=Table.read(tempdir+ tempfitsname.replace('.fits','cat.fits'))
-                                    
+
                                     original_catalog=copy.deepcopy(catalog)
-                                    
+
                                     # Remove rows where FLUX_RADIUS is 0 or NaN
                                     mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)# & (catalog['kron_radius'] > 0)
 
                                     catalog = catalog[mask]
-                                    
+
                                     fig, ax = plt.subplots(figsize=(8, 8))
                                     ax.imshow(outputimg, origin='lower', cmap='gray')
                                     ax.set_xlabel('X pixel')
                                     ax.set_ylabel('Y pixel')
                                     ax.set_title('SourceXtractor++ detections')
-                                    
+
                                     plot_sourcextractor_pp(ax, catalog)
                                     plt.tight_layout()
-                                    plt.show()
+                                    plt.savefig('beforesourceplots.png', dpi=300, bbox_inches='tight')
+                                    plt.close()
 
 
                                     # remove unrealistic estimates that are too small
@@ -5644,7 +5646,7 @@ class Camera:
                                     # else:
                                     mask = (catalog['flux_radius']) > 1.0
                                     catalog =catalog[mask]
-                                        
+
                                     # # remove unrealistic estimates that are too small
                                     # if not self.pixscale == None:
                                     #     mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
@@ -5653,12 +5655,12 @@ class Camera:
                                     # mask = (catalog['area']) > minarea
                                     # catalog =catalog[mask]
 
-                                    
-                                    
-                                    
+
+
+
                                     # get rid of things that are clearly near the edge
                                     ymax, xmax = outputimg.shape
-                                    
+
                                     #breakpoint()
                                     mask = (catalog['pixel_centroid_x']) > 100
                                     catalog =catalog[mask]
@@ -5668,60 +5670,61 @@ class Camera:
                                     catalog =catalog[mask]
                                     mask = (catalog['pixel_centroid_y']) < (ymax-100)
                                     catalog =catalog[mask]
-                                    
-                                    
+
+
                                     mask = (catalog['area']) > minarea
                                     catalog =catalog[mask]
-                                    
+
                                     # Get rid of things that are clearly not particularly circular
                                     #min_ellipticity=min(catalog['ellipticity'])
                                     mask = (catalog['ellipticity']) < 0.4#(min_ellipticity + 0.5)
                                     catalog =catalog[mask]
-                                    
-                                    
+
+
                                     if len(catalog) > 0 :
                                         plot_bright_star_cutouts(outputimg, catalog, n=9, margin=8.0)
-                                    
+
                                         fig, ax = plt.subplots(figsize=(8, 8))
                                         ax.imshow(outputimg, origin='lower', cmap='gray')
                                         ax.set_xlabel('X pixel')
                                         ax.set_ylabel('Y pixel')
                                         ax.set_title('SourceXtractor++ detections')
-                                    
+
                                     if len(catalog) > 0 :
-                                        
-                                    
+
+
                                         plot_sourcextractor_pp(ax, catalog)
                                         plt.tight_layout()
-                                        plt.show()
-                                    
-                                    
+                                        plt.savefig('aftersourceplots.png', dpi=300, bbox_inches='tight')
+                                        plt.close()
+
+
                                     if len(catalog) > 0 :
-                                        
+
                                         catalog=calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0)
-                                        
+
                                         print ("Median donut distance = " + str(np.median(catalog['total_donut_distance'])))
                                         print ("Median Flux Radius    = " + str(np.nanmedian(np.asarray(catalog['flux_radius']))))
                                         # print (np.nanstd(np.asarray(catalog['flux_radius'])))
                                         print ((np.asarray(catalog['total_donut_distance'])))
                                         print ((np.asarray(catalog['flux_radius'])))
                                         #breakpoint()
-                                        
+
                                         total_mean_donut_distance=sigma_clip(np.asarray(catalog['total_donut_distance']),sigma_lower=2,sigma_upper=4, maxiters=5)
-                                        total_mean_donut_distance=total_mean_donut_distance.data[~total_mean_donut_distance.mask]       
+                                        total_mean_donut_distance=total_mean_donut_distance.data[~total_mean_donut_distance.mask]
                                         total_mean_flux_radius=sigma_clip(np.asarray(catalog['flux_radius']),sigma_lower=2,sigma_upper=4, maxiters=5)
                                         total_mean_flux_radius=total_mean_flux_radius.data[~total_mean_flux_radius.mask]
-    
+
                                         print ("Median donut distance = " + str(total_mean_donut_distance))
                                         print ("Median Flux Radius    = " + str(total_mean_flux_radius))
-                                        
+
                                         if np.median(total_mean_donut_distance) > np.median(total_mean_flux_radius):
                                             fwhm_values=total_mean_donut_distance
                                         else:
                                             fwhm_values=total_mean_flux_radius
-    
+
                                         print (np.nanstd(fwhm_values))
-    
+
                                         # The HFR and the fwhm are roughly twice
                                         fwhm_values=fwhm_values *2
                                     else:
@@ -5730,14 +5733,14 @@ class Camera:
                                 except:
                                     plog ("problem with the fits table... probably not enough detections")
                                     fwhm_values=[]
-                                    
+
                                     print(traceback.format_exc())
                                     breakpoint()
 
                                 plog("No. of detections:  ", len(fwhm_values))
 
                                 print (fwhm_values)
-                                
+
                                 if len(fwhm_values) < 5:
                                     fwhm_dict = {}
                                     fwhm_dict['rfp'] = np.nan
