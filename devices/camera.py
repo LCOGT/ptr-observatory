@@ -5586,35 +5586,21 @@ class Camera:
                                 # Save an image to the disk to use with source-extractor++
                                 # We don't need accurate photometry, so integer is fine.
                                 hdufocus = fits.PrimaryHDU()
-                                #hdufocus.data = outputimg.astype(np.float32)
+                                hdufocus.data = outputimg.astype(np.float32)
 
 
-                                from scipy.ndimage import median_filter
+                                # from scipy.ndimage import uniform_filter
 
-                                def remove_background_fast(image, filter_size=256):
-                                    """
-                                    Fast rough background removal using a large median filter.
 
-                                    Parameters:
-                                    - image: 2D numpy array (your image)
-                                    - filter_size: Size of the median filter (should be large to capture background trends)
 
-                                    Returns:
-                                    - background_subtracted: Image with background removed
-                                    - background_model: The estimated background model
-                                    """
-                                    # Compute background model
-                                    background_model = median_filter(image, size=filter_size)
+                                # def remove_background_mean(image, filter_size=256):
+                                #     background_model = uniform_filter(image, size=filter_size)
+                                #     return image - background_model
 
-                                    # Subtract background
-                                    background_subtracted = image - background_model
-                                    del background_model
-
-                                    return background_subtracted
-
+                                googtime=time.time()
                                 # Example usage:
-                                hdufocus.data = remove_background_fast(outputimg.astype(np.float32), filter_size=256)
-
+                                # hdufocus.data = remove_background_mean(outputimg.astype(np.float32), filter_size=256)
+                                print ("background: " + str(time.time()-googtime))
 
                                 hdufocus.header["NAXIS1"] = outputimg.shape[0]
                                 hdufocus.header["NAXIS2"] = outputimg.shape[1]
@@ -5642,11 +5628,11 @@ class Camera:
                                 # hdu_var = fits.PrimaryHDU(var_image, header=hdr)
                                 # hdu_var.header['BUNIT'] = 'e-2'       # units: electrons^2
                                 # hdu_var.writeto('variance.fits', overwrite=True)
-
-                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm none --background-mode NONE --tile-size 10000 --tile-memory-limit 16384"')
-
+                                googtime=time.time()
+                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm none --segmentation-use-filtering 0 --tile-size 10000 --tile-memory-limit 16384"')
+                                print ("s++: " + str(time.time()-googtime))
                                 try:
-
+                                    googtime=time.time()
                                     catalog=Table.read(tempdir+ tempfitsname.replace('.fits','cat.fits'))
 
                                     original_catalog=copy.deepcopy(catalog)
@@ -5656,6 +5642,8 @@ class Camera:
 
                                     catalog = catalog[mask]
 
+                                    print ("catalog1: " + str(time.time()-googtime))
+                                    googtime=time.time()
                                     fig, ax = plt.subplots(figsize=(8, 8))
                                     ax.imshow(outputimg, origin='lower', cmap='gray')
                                     ax.set_xlabel('X pixel')
@@ -5666,8 +5654,9 @@ class Camera:
                                     plt.tight_layout()
                                     plt.savefig('beforesourceplots.png', dpi=300, bbox_inches='tight')
                                     plt.close()
+                                    print ("plot1: " + str(time.time()-googtime))
 
-
+                                    googtime=time.time()
                                     # remove unrealistic estimates that are too small
                                     # if not self.pixscale == None:
                                     #     if self.pixscale < 1.0:
@@ -5709,9 +5698,11 @@ class Camera:
                                     #min_ellipticity=min(catalog['ellipticity'])
                                     mask = (catalog['ellipticity']) < 0.4#(min_ellipticity + 0.5)
                                     catalog =catalog[mask]
+                                    print ("catalog2: " + str(time.time()-googtime))
 
 
                                     if len(catalog) > 0 :
+                                        googtime=time.time()
                                         plot_bright_star_cutouts(outputimg, catalog, n=9, margin=8.0)
 
                                         fig, ax = plt.subplots(figsize=(8, 8))
@@ -5719,19 +5710,22 @@ class Camera:
                                         ax.set_xlabel('X pixel')
                                         ax.set_ylabel('Y pixel')
                                         ax.set_title('SourceXtractor++ detections')
+                                        print ("cutouts: " + str(time.time()-googtime))
 
                                     if len(catalog) > 0 :
 
-
+                                        googtime=time.time()
                                         plot_sourcextractor_pp(ax, catalog)
                                         plt.tight_layout()
                                         plt.savefig('aftersourceplots.png', dpi=300, bbox_inches='tight')
                                         plt.close()
+                                        print ("aftersource: " + str(time.time()-googtime))
 
 
                                     if len(catalog) > 0 :
-
+                                        googtime=time.time()
                                         catalog=calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0)
+                                        print ("donuts: " + str(time.time()-googtime))
 
                                         print ("Median donut distance = " + str(np.median(catalog['total_donut_distance'])))
                                         print ("Median Flux Radius    = " + str(np.nanmedian(np.asarray(catalog['flux_radius']))))
