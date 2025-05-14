@@ -6,7 +6,7 @@ Created on Tue Apr 20 22:19:25 2021
 @author: obs, wer, dhunt
 
 """
-
+matplotlib.use('Agg')
 from PIL import Image  # , ImageDraw
 from astropy.coordinates import SkyCoord , AltAz, get_sun
 #from scipy.stats import binned_statistic
