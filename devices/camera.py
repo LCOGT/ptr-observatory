@@ -5582,10 +5582,40 @@ class Camera:
 
                                 tempfitsname=str(time.time()).replace('.','d') + '.fits'
 
+
                                 # Save an image to the disk to use with source-extractor++
                                 # We don't need accurate photometry, so integer is fine.
                                 hdufocus = fits.PrimaryHDU()
-                                hdufocus.data = outputimg.astype(np.float32)
+                                #hdufocus.data = outputimg.astype(np.float32)
+
+
+                                from scipy.ndimage import median_filter
+
+                                def remove_background_fast(image, filter_size=256):
+                                    """
+                                    Fast rough background removal using a large median filter.
+
+                                    Parameters:
+                                    - image: 2D numpy array (your image)
+                                    - filter_size: Size of the median filter (should be large to capture background trends)
+
+                                    Returns:
+                                    - background_subtracted: Image with background removed
+                                    - background_model: The estimated background model
+                                    """
+                                    # Compute background model
+                                    background_model = median_filter(image, size=filter_size)
+
+                                    # Subtract background
+                                    background_subtracted = image - background_model
+                                    del background_model
+
+                                    return background_subtracted
+
+                                # Example usage:
+                                hdufocus.data = remove_background_fast(outputimg.astype(np.float32), filter_size=256)
+
+
                                 hdufocus.header["NAXIS1"] = outputimg.shape[0]
                                 hdufocus.header["NAXIS2"] = outputimg.shape[1]
                                 hdufocus.writeto(tempdir + tempfitsname, overwrite=True, output_verify='silentfix')
@@ -5613,7 +5643,7 @@ class Camera:
                                 # hdu_var.header['BUNIT'] = 'e-2'       # units: electrons^2
                                 # hdu_var.writeto('variance.fits', overwrite=True)
 
-                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm none --tile-size 10000 --tile-memory-limit 16384"')
+                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm none --background-mode NONE --tile-size 10000 --tile-memory-limit 16384"')
 
                                 try:
 
