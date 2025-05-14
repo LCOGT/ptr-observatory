@@ -494,7 +494,7 @@ site_config = {
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 3.0, # highest value to consider as being in "good focus". Used to select last good focus value
 
-            'reference':  6500,    #Nominal at 20C Primary temperature, in microns not steps.            
+            'reference':  6750,    #Nominal at 20C Primary temperature, in microns not steps.            
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20240210',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  False,

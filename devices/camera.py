@@ -5726,7 +5726,7 @@ class Camera:
                                         googtime=time.time()
                                         #plot_sourcextractor_pp(ax, catalog)
 
-                                        threading.Thread(target=xxtractor_pp, args=(copy.deepcopy(catalog),)).start()
+                                        threading.Thread(target=plot_sourcextractor_pp, args=(copy.deepcopy(catalog),)).start()
                                         #threadpp.start()
 
                                         print ("aftersource: " + str(time.time()-googtime))
