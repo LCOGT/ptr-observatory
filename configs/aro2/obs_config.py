@@ -645,7 +645,7 @@ site_config = {
                 #                 ['S2',      [0, 8],   's2'],  # 17
                 #                 ['dk',      [5 ,8],   'dk']], # 18
 
-                'filter_data': [['air',     [0, 0],   'ai'],  # 1
+                'filter_data': [['air',     [0, 0],   'ai'],  # 1  #Fitz swapped 20250513
                                 ['V',       [0, 1],   'V '],  # 2  Wheel closest to camera
                                 ['B',       [0, 2],   "B "],  # 3
                                 ['zs',      [0, 3],   "zs"],  # 4
@@ -663,9 +663,12 @@ site_config = {
                                 ['Hb',      [6, 0],   'hb'],  # 15
                                 ['Ha',      [7, 0],   "ha"],  # 16
                                 ['S2',      [8, 0],   's2'],  # 17
-                                ['dk',      [8, 5],   'dk']], # 18
 
-                'focus_filter' : 'ip',
+                                ['dk',      [8, 5],   'dk']], # 18 #Note Dark is a 2-filter combination
+
+                'focus_filter': 'ip',
+                'pointing_filter': 'ip',  #Added but not plumbed yet WER 20250514
+                'dark_filter':  'dk',
 
                 # # Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 # 'filter_screen_sort':  ['air', 'w', 'PL', 'gp', 'PB', 'rp', 'PG', 'PR', 'ip', 'O3', 'N2', 'CR', 'S2', 'HA'],  # 9, 21],  # 5, 17], #Most to least throughput, \
