@@ -6,7 +6,7 @@ Created on Tue Apr 20 22:19:25 2021
 @author: obs, wer, dhunt
 
 """
-matplotlib.use('Agg')
+
 from PIL import Image  # , ImageDraw
 from astropy.coordinates import SkyCoord , AltAz, get_sun
 #from scipy.stats import binned_statistic
@@ -14,6 +14,8 @@ from ctypes import *
 from ptr_utility import plog
 from global_yard import g_dev
 from devices.darkslide import Darkslide
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.style as mplstyle
 import matplotlib as mpl
 import subprocess
