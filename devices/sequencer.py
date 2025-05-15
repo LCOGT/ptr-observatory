@@ -5380,42 +5380,45 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
 
 
-            # To get a good pixelscale, we need to be in focus,
-            # So if we haven't got a good pixelscale yet, then we likely
-            # haven't got a good focus yet anyway.
-            if g_dev['cam'].pixscale == None:
-                plog ("skipping centering exposure as we don't even have a pixelscale yet")
-            else:
-                self.centering_exposure(no_confirmation=True, try_hard=True)
+            # # To get a good pixelscale, we need to be in focus,
+            # # So if we haven't got a good pixelscale yet, then we likely
+            # # haven't got a good focus yet anyway.
+            # if g_dev['cam'].pixscale == None:
+            #     plog ("skipping centering exposure as we don't even have a pixelscale yet")
+            # else:
+                
+            # We always platesolve first.... platesolving gives us the pixelscale if we don't have it
+            # which makes initial focus much easier
+            self.centering_exposure(no_confirmation=True, try_hard=True)
 
-                # Wait for platesolve
-                reported=0
-                temptimer=time.time()
-                while True:
-                    if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                        break
-                    else:
-                        if reported ==0:
-                            plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
-                            reported=1
-                        if (time.time() - temptimer) > 20:
-                            #g_dev["obs"].request_full_update()
-                            temptimer=time.time()
-                        if self.stop_script_called:
-                            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                            self.focussing=False
-                            self.total_sequencer_control = False
-                            g_dev['obs'].report_to_nightlog("Autofocus process ended.")
-                            return np.nan, np.nan
-                        if not g_dev['obs'].open_and_enabled_to_observe:
-                            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                            self.focussing=False
-                            self.total_sequencer_control = False
-                            g_dev['obs'].report_to_nightlog("Autofocus process ended.")
-                            return np.nan, np.nan
-                        pass
+            # Wait for platesolve
+            reported=0
+            temptimer=time.time()
+            while True:
+                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                    break
+                else:
+                    if reported ==0:
+                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                        reported=1
+                    if (time.time() - temptimer) > 20:
+                        #g_dev["obs"].request_full_update()
+                        temptimer=time.time()
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                        self.focussing=False
+                        self.total_sequencer_control = False
+                        g_dev['obs'].report_to_nightlog("Autofocus process ended.")
+                        return np.nan, np.nan
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                        self.focussing=False
+                        self.total_sequencer_control = False
+                        g_dev['obs'].report_to_nightlog("Autofocus process ended.")
+                        return np.nan, np.nan
+                    pass
 
-                    g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+                g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
 
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
