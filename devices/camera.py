@@ -5737,7 +5737,26 @@ class Camera:
                                         # threading.Thread(target=plot_sourcextractor_pp, args=(copy.deepcopy(outputimg),copy.deepcopy(catalog),)).start()
                                         #threadpp.start()
                                         
+                                        # We only want to consider sources with no nearby other sources
+                                        # whether that is another star, part of a donut or diffraction spike
+                                        from scipy.spatial import cKDTree
+
+                                        # Extract positions
+                                        x = catalog['pixel_centroid_x']
+                                        y = catalog['pixel_centroid_y']
+                                        positions = np.vstack((x, y)).T
                                         
+                                        # Build KDTree for fast nearest-neighbor search
+                                        tree = cKDTree(positions)
+                                        
+                                        # Query for all neighbors within 30 pixels (including self)
+                                        neighbors = tree.query_ball_point(positions, r=30)
+                                        
+                                        # Determine which sources are isolated (only self in the neighbor list)
+                                        isolated_mask = np.array([len(n) == 1 for n in neighbors])
+                                        
+                                        # Filter table
+                                        catalog = catalog[isolated_mask]
                                         
                                         # plotpickle=(outputimg, original_catalog, catalog, 9, 8.0, filepath, filename)
                                         
@@ -5760,8 +5779,13 @@ class Camera:
 
                                         print ("aftersource: " + str(time.time()-googtime))
 
+                                    
 
-                                    if len(catalog) > 0 :
+
+                                    # if len(catalog) > 0 :
+                                        
+                                        
+                                        
                                         googtime=time.time()
                                         catalog=calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0)
                                         print ("donuts: " + str(time.time()-googtime))

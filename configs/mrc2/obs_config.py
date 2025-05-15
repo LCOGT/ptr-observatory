@@ -128,7 +128,7 @@ site_config = {
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path':  'yes',
     'local_calibration_path': 'C:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
-    'archive_age' : 4, # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age' : 2, # Number of days to keep files in the local archive before deletion. Negative means never delete
    
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
