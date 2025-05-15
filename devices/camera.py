@@ -21,6 +21,7 @@ import matplotlib as mpl
 import subprocess
 import warnings
 from astropy.utils.exceptions import AstropyUserWarning
+from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
 from astropy.table import Table
 from astropy.nddata import block_reduce
 from astropy.modeling import models, fitting
@@ -5496,6 +5497,115 @@ class Camera:
                             bilinearfill[np.isnan(bilinearfill)] = 0
                             outputimg = outputimg+bilinearfill
                             del bilinearfill
+                            
+                        # Really need a nice clean image to do this.
+                        googtime=time.time()
+                        unique,counts=np.unique(outputimg.ravel()[~np.isnan(outputimg.ravel())].astype(int), return_counts=True)
+                        m=counts.argmax()
+                        imageMode=unique[m]
+
+                        histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                        histogramdata[histogramdata[:,0] > -10000]
+                        #Do some fiddle faddling to figure out the value that goes to zero less
+                        zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+                        breaker=1
+                        counter=0
+                        while (breaker != 0):
+                            counter=counter+1
+                            if not (imageMode-counter) in zeroValueArray[:,0]:
+                                if not (imageMode-counter-1) in zeroValueArray[:,0]:
+                                    if not (imageMode-counter-2) in zeroValueArray[:,0]:
+                                        if not (imageMode-counter-3) in zeroValueArray[:,0]:
+                                            if not (imageMode-counter-4) in zeroValueArray[:,0]:
+                                                if not (imageMode-counter-5) in zeroValueArray[:,0]:
+                                                    if not (imageMode-counter-6) in zeroValueArray[:,0]:
+                                                        if not (imageMode-counter-7) in zeroValueArray[:,0]:
+                                                            if not (imageMode-counter-8) in zeroValueArray[:,0]:
+                                                                if not (imageMode-counter-9) in zeroValueArray[:,0]:
+                                                                    if not (imageMode-counter-10) in zeroValueArray[:,0]:
+                                                                        if not (imageMode-counter-11) in zeroValueArray[:,0]:
+                                                                            if not (imageMode-counter-12) in zeroValueArray[:,0]:
+                                                                                if not (imageMode-counter-13) in zeroValueArray[:,0]:
+                                                                                    if not (imageMode-counter-14) in zeroValueArray[:,0]:
+                                                                                        if not (imageMode-counter-15) in zeroValueArray[:,0]:
+                                                                                            if not (imageMode-counter-16) in zeroValueArray[:,0]:
+                                                                                                zeroValue=(imageMode-counter)
+                                                                                                breaker =0
+
+                        outputimg[outputimg < zeroValue] = np.nan
+
+                        # Interpolate image nans
+                        kernel = Gaussian2DKernel(x_stddev=1)
+                        
+                        outputimg = interpolate_replace_nans(outputimg, kernel)
+                        print ("nans: " + str( time.time()-googtime))
+
+
+                        # # Remove remaining nans
+                        # x_size=hdureduced.data.shape[0]
+                        # y_size=hdureduced.data.shape[1]
+                        # # this is actually faster than np.nanmean
+                        # edgefillvalue=imageMode
+                        # # List the coordinates that are nan in the array
+                        # nan_coords=np.argwhere(np.isnan(hdureduced.data))
+
+                        # # For each coordinate try and find a non-nan-neighbour and steal its value
+                        # for nancoord in nan_coords:
+                        #     x_nancoord=nancoord[0]
+                        #     y_nancoord=nancoord[1]
+                        #     done=False
+
+                        #     # Because edge pixels can tend to form in big clumps
+                        #     # Masking the array just with the mean at the edges
+                        #     # makes this MUCH faster to no visible effect for humans.
+                        #     # Also removes overscan
+                        #     if x_nancoord < 100:
+                        #         hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+                        #         done=True
+                        #     elif x_nancoord > (x_size-100):
+                        #         hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+
+                        #         done=True
+                        #     elif y_nancoord < 100:
+                        #         hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+
+                        #         done=True
+                        #     elif y_nancoord > (y_size-100):
+                        #         hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+                        #         done=True
+
+                        #     # left
+                        #     if not done:
+                        #         if x_nancoord != 0:
+                        #             value_here=hdureduced.data[x_nancoord-1,y_nancoord]
+                        #             if not np.isnan(value_here):
+                        #                 hdureduced.data[x_nancoord,y_nancoord]=value_here
+                        #                 done=True
+                        #     # right
+                        #     if not done:
+                        #         if x_nancoord != (x_size-1):
+                        #             value_here=hdureduced.data[x_nancoord+1,y_nancoord]
+                        #             if not np.isnan(value_here):
+                        #                 hdureduced.data[x_nancoord,y_nancoord]=value_here
+                        #                 done=True
+                        #     # below
+                        #     if not done:
+                        #         if y_nancoord != 0:
+                        #             value_here=hdureduced.data[x_nancoord,y_nancoord-1]
+                        #             if not np.isnan(value_here):
+                        #                 hdureduced.data[x_nancoord,y_nancoord]=value_here
+                        #                 done=True
+                        #     # above
+                        #     if not done:
+                        #         if y_nancoord != (y_size-1):
+                        #             value_here=hdureduced.data[x_nancoord,y_nancoord+1]
+                        #             if not np.isnan(value_here):
+                        #                 hdureduced.data[x_nancoord,y_nancoord]=value_here
+                        #                 done=True
+
+                        # # Mop up any remaining nans
+                        # hdureduced.data[np.isnan(hdureduced.data)] =edgefillvalue
+
 
                         #If it is a focus image then it will get sent in a different manner to the UI for a jpeg
                         # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
