@@ -5669,10 +5669,10 @@ class Camera:
 
                                     googtime=time.time()
                                     # remove unrealistic estimates that are too small
-                                    # if not self.pixscale == None:
-                                    #     if self.pixscale < 1.0:
-                                    #         mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
-                                    #         catalog = catalog[mask]
+                                    if not self.pixscale == None:
+                                        if self.pixscale < 1.0:
+                                            mask = (catalog['flux_radius']) > (1.5 * (self.pixscale * temp_focus_bin))
+                                            catalog = catalog[mask]
                                     # else:
                                     mask = (catalog['flux_radius']) > 1.0
                                     catalog =catalog[mask]
@@ -5690,6 +5690,10 @@ class Camera:
 
                                     # get rid of things that are clearly near the edge
                                     ymax, xmax = outputimg.shape
+
+
+                                    mask = (catalog['flux_radius']) > 1.0
+                                    catalog =catalog[mask]
 
                                     #breakpoint()
                                     mask = (catalog['pixel_centroid_x']) > 100
@@ -5761,7 +5765,7 @@ class Camera:
                                         googtime=time.time()
                                         catalog=calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0)
                                         print ("donuts: " + str(time.time()-googtime))
-
+                                        print ("before")
                                         print ("Median donut distance = " + str(np.median(catalog['total_donut_distance'])))
                                         print ("Median Flux Radius    = " + str(np.nanmedian(np.asarray(catalog['flux_radius']))))
                                         # print (np.nanstd(np.asarray(catalog['flux_radius'])))
@@ -5773,14 +5777,19 @@ class Camera:
                                         total_mean_donut_distance=total_mean_donut_distance.data[~total_mean_donut_distance.mask]
                                         total_mean_flux_radius=sigma_clip(np.asarray(catalog['flux_radius']),sigma_lower=2,sigma_upper=4, maxiters=5)
                                         total_mean_flux_radius=total_mean_flux_radius.data[~total_mean_flux_radius.mask]
-
+                                        print ("after")
                                         print ("Median donut distance = " + str(total_mean_donut_distance))
                                         print ("Median Flux Radius    = " + str(total_mean_flux_radius))
+                                        
+                                        print ((np.asarray(catalog['total_donut_distance'])))
+                                        print ((np.asarray(catalog['flux_radius'])))
+                                        
+                                        # breakpoint()
 
-                                        if np.median(total_mean_donut_distance) > np.median(total_mean_flux_radius):
-                                            fwhm_values=total_mean_donut_distance
-                                        else:
-                                            fwhm_values=total_mean_flux_radius
+                                        # if np.median(total_mean_donut_distance) > (np.median(total_mean_flux_radius) * 2) :
+                                        #     fwhm_values=total_mean_donut_distance
+                                        # else:
+                                        fwhm_values=total_mean_flux_radius
 
                                         print (np.nanstd(fwhm_values))
 
