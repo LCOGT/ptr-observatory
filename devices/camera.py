@@ -284,6 +284,10 @@ def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
             plog (size)
             plog (x0)
             plog (y0)
+            # Ensure placeholders are appended
+            x_dists.append(np.nan)
+            y_dists.append(np.nan)
+            total_dists.append(np.nan)
 
     catalog['x_donut_distance'] = x_dists
     catalog['y_donut_distance'] = y_dists
