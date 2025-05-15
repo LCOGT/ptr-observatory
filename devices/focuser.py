@@ -759,6 +759,9 @@ class Focuser:
         difference_in_position=int(position_string) * self.micron_to_steps
 
         self.guarded_move(self.current_focus_position + difference_in_position)
+        
+        
+        self.last_known_focus = req["position"]
 
 
     def move_absolute_command(self, req: dict, opt: dict):
@@ -767,7 +770,7 @@ class Focuser:
         self.focuser_is_moving=True
         position = int(float(req["position"])) * self.micron_to_steps
         self.guarded_move(position )
-        self.last_known_focus = position
+        self.last_known_focus = req["position"]
         #plog("Forces last known focus to be new position Line 551 in focuser WER 20400917")
 
     def stop_command(self, req: dict, opt: dict):
