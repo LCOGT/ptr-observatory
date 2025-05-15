@@ -5875,7 +5875,7 @@ class Camera:
                                         
 
                                         plotpickle=pickle.dumps(
-                                            (outputimg, original_catalog, catalog, 9, 8.0, g_dev['cam'].camera_path + g_dev["day"] + "/calib/", filename)
+                                            (outputimg, original_catalog, catalog, 9, 3.0, g_dev['cam'].camera_path + g_dev["day"] + "/calib/", filename)
                                         )
                                         
                                         # platesolve_subprocess = 
