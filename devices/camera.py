@@ -14,8 +14,8 @@ from ctypes import *
 from ptr_utility import plog
 from global_yard import g_dev
 from devices.darkslide import Darkslide
-import matplotlib
-matplotlib.use('Agg')
+#import matplotlib
+#matplotlib.use('Agg')
 import matplotlib.style as mplstyle
 import matplotlib as mpl
 import subprocess
@@ -60,10 +60,10 @@ log.setLevel('ERROR')
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from obs import Observatory
-import matplotlib.pyplot as plt
-from matplotlib.patches import Circle
-from matplotlib.patches import Ellipse
-from matplotlib.collections import PatchCollection
+# import matplotlib.pyplot as plt
+# from matplotlib.patches import Circle
+# from matplotlib.patches import Ellipse
+# from matplotlib.collections import PatchCollection
 from skimage.filters import threshold_local
 from skimage.morphology import remove_small_objects
 from skimage.measure import label, regionprops, regionprops_table
@@ -94,152 +94,152 @@ mpl.rcParams['path.simplify_threshold'] = 1.0
 
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
-def plot_bright_star_cutouts(outputimg, catalog, n=9, margin=1.2):
-    """
-    Plot a sqrt(n)x sqrt(n) grid of the n brightest sources from an SX++ catalog.
+# def plot_bright_star_cutouts(outputimg, catalog, n=9, margin=1.2):
+#     """
+#     Plot a sqrt(n)x sqrt(n) grid of the n brightest sources from an SX++ catalog.
 
-    Parameters
-    ----------
-    outputimg : 2D numpy.ndarray
-        The image array.
-    catalog : astropy.table.Table
-        SX++ catalog with columns:
-        'pixel_centroid_x', 'pixel_centroid_y',
-        'peak_value_x', 'peak_value_y',
-        'kron_radius', 'ellipse_a', 'ellipse_b', 'ellipse_theta',
-        'auto_flux', 'auto_mag', 'elongation', 'ellipticity'.
-    n : int, optional
-        Number of brightest stars to plot (default=9).
-    margin : float, optional
-        Factor to pad around the Kron ellipse (default=1.2).
-    """
-    # # pick top-n brightest
-    # idx    = np.argsort(catalog['auto_flux'])[-n:][::-1]
-    # bright = catalog[idx]
+#     Parameters
+#     ----------
+#     outputimg : 2D numpy.ndarray
+#         The image array.
+#     catalog : astropy.table.Table
+#         SX++ catalog with columns:
+#         'pixel_centroid_x', 'pixel_centroid_y',
+#         'peak_value_x', 'peak_value_y',
+#         'kron_radius', 'ellipse_a', 'ellipse_b', 'ellipse_theta',
+#         'auto_flux', 'auto_mag', 'elongation', 'ellipticity'.
+#     n : int, optional
+#         Number of brightest stars to plot (default=9).
+#     margin : float, optional
+#         Factor to pad around the Kron ellipse (default=1.2).
+#     """
+#     # # pick top-n brightest
+#     # idx    = np.argsort(catalog['auto_flux'])[-n:][::-1]
+#     # bright = catalog[idx]
 
-    # pick the 9 lowest-ellipticity objects
-    idx = np.argsort(catalog['ellipticity'])[:9]
-    bright = catalog[idx]
+#     # pick the 9 lowest-ellipticity objects
+#     idx = np.argsort(catalog['ellipticity'])[:9]
+#     bright = catalog[idx]
 
-    # grid size
-    m = int(np.ceil(np.sqrt(n)))
-    fig, axes = plt.subplots(m, m, figsize=(m*3, m*3))
-    axes = axes.flatten()
+#     # grid size
+#     m = int(np.ceil(np.sqrt(n)))
+#     fig, axes = plt.subplots(m, m, figsize=(m*3, m*3))
+#     axes = axes.flatten()
 
-    for ax, src in zip(axes, bright):
-        # convert 1-based FITS → 0-based NumPy
-        x0 = src['pixel_centroid_x'] - 1
-        y0 = src['pixel_centroid_y'] - 1
+#     for ax, src in zip(axes, bright):
+#         # convert 1-based FITS → 0-based NumPy
+#         x0 = src['pixel_centroid_x'] - 1
+#         y0 = src['pixel_centroid_y'] - 1
 
-        # ellipse semi‐axes (in pixels)
-        a = src['ellipse_a'] * src['kron_radius']
-        b = src['ellipse_b'] * src['kron_radius']
-        # half‐size of cutout box (odd total size)
-        r_pix = int(np.ceil(max(a, b) * margin))
-        size  = (2*r_pix + 1, 2*r_pix + 1)
+#         # ellipse semi‐axes (in pixels)
+#         a = src['ellipse_a'] * src['kron_radius']
+#         b = src['ellipse_b'] * src['kron_radius']
+#         # half‐size of cutout box (odd total size)
+#         r_pix = int(np.ceil(max(a, b) * margin))
+#         size  = (2*r_pix + 1, 2*r_pix + 1)
 
-        # make the cutout
-        cut = Cutout2D(outputimg,
-                       position=(x0, y0),
-                       size=size,
-                       mode='partial',
-                       fill_value=np.nan)
+#         # make the cutout
+#         cut = Cutout2D(outputimg,
+#                        position=(x0, y0),
+#                        size=size,
+#                        mode='partial',
+#                        fill_value=np.nan)
 
-        ax.imshow(cut.data, origin='lower', cmap='gray')
+#         ax.imshow(cut.data, origin='lower', cmap='gray')
 
-        # draw the elliptical Kron aperture
-        ell = Ellipse(xy=(r_pix, r_pix),
-                      width=2*a,
-                      height=2*b,
-                      angle=np.degrees(src['ellipse_theta']),
-                      edgecolor='red',
-                      facecolor='none',
-                      linewidth=1)
-        ax.add_patch(ell)
+#         # draw the elliptical Kron aperture
+#         ell = Ellipse(xy=(r_pix, r_pix),
+#                       width=2*a,
+#                       height=2*b,
+#                       angle=np.degrees(src['ellipse_theta']),
+#                       edgecolor='red',
+#                       facecolor='none',
+#                       linewidth=1)
+#         ax.add_patch(ell)
 
-        # mark the peak pixel
-        xp = src['peak_value_x'] - 1
-        yp = src['peak_value_y'] - 1
-        dx = xp - x0
-        dy = yp - y0
-        ax.scatter(r_pix + dx,
-                   r_pix + dy,
-                   marker='+',
-                   s=50,
-                   c='yellow')
+#         # mark the peak pixel
+#         xp = src['peak_value_x'] - 1
+#         yp = src['peak_value_y'] - 1
+#         dx = xp - x0
+#         dy = yp - y0
+#         ax.scatter(r_pix + dx,
+#                    r_pix + dy,
+#                    marker='+',
+#                    s=50,
+#                    c='yellow')
 
-        # annotate flux & mag
-        ax.set_title(f"flux={src['auto_flux']:.0f},  mag={src['auto_mag']:.2f}",
-                     fontsize=8, color='white',
-                     backgroundcolor='black')
-        ax.axis('off')
+#         # annotate flux & mag
+#         ax.set_title(f"flux={src['auto_flux']:.0f},  mag={src['auto_mag']:.2f}",
+#                      fontsize=8, color='white',
+#                      backgroundcolor='black')
+#         ax.axis('off')
 
-    plt.tight_layout()
-    plt.savefig(str(time.time())+'brightstarplots.png', dpi=300, bbox_inches='tight')
-    plt.close()
+#     plt.tight_layout()
+#     plt.savefig(str(time.time())+'brightstarplots.png', dpi=300, bbox_inches='tight')
+#     plt.close()
 
 
-def plot_sourcextractor_pp(outputimg,catalog,
-                            centroid_x='pixel_centroid_x', centroid_y='pixel_centroid_y',
-                            flux_radius='flux_radius', kron_radius='kron_radius',
-                            peak_x='peak_value_x', peak_y='peak_value_y', peak_value='peak_value'):
-    """
-    Overlay SourceXtractor++ detections on an Axes using PatchCollections for circles.
+# def plot_sourcextractor_pp(outputimg,catalog,
+#                             centroid_x='pixel_centroid_x', centroid_y='pixel_centroid_y',
+#                             flux_radius='flux_radius', kron_radius='kron_radius',
+#                             peak_x='peak_value_x', peak_y='peak_value_y', peak_value='peak_value'):
+#     """
+#     Overlay SourceXtractor++ detections on an Axes using PatchCollections for circles.
 
-    Parameters
-    ----------
-    ax : matplotlib.axes.Axes
-        The Axes to draw on (should already have the image plotted).
-    catalog : astropy.table.Table or pandas.DataFrame
-        Table containing at least the centroid, peak, flux_radius, and kron_radius columns.
-    centroid_x, centroid_y : str
-        Column names for pixel centroids.
-    flux_radius : str
-        Column name for flux radius values.
-    kron_radius : str
-        Column name for Kron radius values.
-    peak_x, peak_y : str
-        Column names for peak positions.
-    peak_value : str
-        Column name for peak intensity (used to size markers).
-    """
-    fig, ax = plt.subplots(figsize=(8, 8))
-    ax.imshow(outputimg, origin='lower', cmap='gray')
-    ax.set_xlabel('X pixel')
-    ax.set_ylabel('Y pixel')
-    ax.set_title('SourceXtractor++ detections')
-    # 1) plot pixel centroids (hollow cyan circles)
-    ax.scatter(catalog[centroid_x], catalog[centroid_y],
-               s=50, facecolors='none', edgecolors='cyan', label='Centroids')
+#     Parameters
+#     ----------
+#     ax : matplotlib.axes.Axes
+#         The Axes to draw on (should already have the image plotted).
+#     catalog : astropy.table.Table or pandas.DataFrame
+#         Table containing at least the centroid, peak, flux_radius, and kron_radius columns.
+#     centroid_x, centroid_y : str
+#         Column names for pixel centroids.
+#     flux_radius : str
+#         Column name for flux radius values.
+#     kron_radius : str
+#         Column name for Kron radius values.
+#     peak_x, peak_y : str
+#         Column names for peak positions.
+#     peak_value : str
+#         Column name for peak intensity (used to size markers).
+#     """
+#     fig, ax = plt.subplots(figsize=(8, 8))
+#     ax.imshow(outputimg, origin='lower', cmap='gray')
+#     ax.set_xlabel('X pixel')
+#     ax.set_ylabel('Y pixel')
+#     ax.set_title('SourceXtractor++ detections')
+#     # 1) plot pixel centroids (hollow cyan circles)
+#     ax.scatter(catalog[centroid_x], catalog[centroid_y],
+#                s=50, facecolors='none', edgecolors='cyan', label='Centroids')
 
-    # 2) plot peak positions (yellow stars sized by peak value)
-    sizes = (catalog[peak_value] / catalog[peak_value].max()) * 100
-    ax.scatter(catalog[peak_x], catalog[peak_y],
-               s=sizes, c='yellow', marker='*', label='Peaks')
+#     # 2) plot peak positions (yellow stars sized by peak value)
+#     sizes = (catalog[peak_value] / catalog[peak_value].max()) * 100
+#     ax.scatter(catalog[peak_x], catalog[peak_y],
+#                s=sizes, c='yellow', marker='*', label='Peaks')
 
-    # 3) build Circle patches for radii
-    flux_circs = [Circle((x, y), r) for x, y, r in zip(
-        catalog[centroid_x], catalog[centroid_y], catalog[flux_radius]
-    )]
-    kron_circs = [Circle((x, y), r) for x, y, r in zip(
-        catalog[centroid_x], catalog[centroid_y], catalog[kron_radius]
-    )]
+#     # 3) build Circle patches for radii
+#     flux_circs = [Circle((x, y), r) for x, y, r in zip(
+#         catalog[centroid_x], catalog[centroid_y], catalog[flux_radius]
+#     )]
+#     kron_circs = [Circle((x, y), r) for x, y, r in zip(
+#         catalog[centroid_x], catalog[centroid_y], catalog[kron_radius]
+#     )]
 
-    # 4) create PatchCollections
-    flux_pc = PatchCollection(flux_circs,
-                              facecolor='none', edgecolor='red', linestyle='--', linewidths=1)
-    kron_pc = PatchCollection(kron_circs,
-                              facecolor='none', edgecolor='green', linestyle='-', linewidths=1)
+#     # 4) create PatchCollections
+#     flux_pc = PatchCollection(flux_circs,
+#                               facecolor='none', edgecolor='red', linestyle='--', linewidths=1)
+#     kron_pc = PatchCollection(kron_circs,
+#                               facecolor='none', edgecolor='green', linestyle='-', linewidths=1)
 
-    # 5) add collections to Axes
-    ax.add_collection(flux_pc)
-    ax.add_collection(kron_pc)
+#     # 5) add collections to Axes
+#     ax.add_collection(flux_pc)
+#     ax.add_collection(kron_pc)
 
-    # legend
-    ax.legend(loc='upper right')
-    plt.tight_layout()
-    plt.savefig(str(time.time())+'aftersourceplots.png', dpi=300, bbox_inches='tight')
-    plt.close()
+#     # legend
+#     ax.legend(loc='upper right')
+#     plt.tight_layout()
+#     plt.savefig(str(time.time())+'aftersourceplots.png', dpi=300, bbox_inches='tight')
+#     plt.close()
 
 def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
     x_cent = catalog['pixel_centroid_x'] - 1  # FITS to NumPy
@@ -5651,6 +5651,7 @@ class Camera:
                                     mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)# & (catalog['kron_radius'] > 0)
 
                                     catalog = catalog[mask]
+                                    
 
                                     print ("catalog1: " + str(time.time()-googtime))
                                     googtime=time.time()
@@ -5711,25 +5712,47 @@ class Camera:
                                     print ("catalog2: " + str(time.time()-googtime))
 
 
+                                    # Dump some data out to the plot function
                                     if len(catalog) > 0 :
                                         googtime=time.time()
                                        # plot_bright_star_cutouts(outputimg, catalog, n=9, margin=8.0)
-                                        threading.Thread(target=plot_bright_star_cutouts, args=(copy.deepcopy(outputimg), copy.deepcopy(catalog), 9, 8.0,)).start()
+                                        # threading.Thread(target=plot_bright_star_cutouts, args=(copy.deepcopy(outputimg), copy.deepcopy(catalog), 9, 8.0,)).start()
                                         #threadcutouts.start()
                                         # fig, ax = plt.subplots(figsize=(8, 8))
                                         # ax.imshow(outputimg, origin='lower', cmap='gray')
                                         # ax.set_xlabel('X pixel')
                                         # ax.set_ylabel('Y pixel')
                                         # ax.set_title('SourceXtractor++ detections')
-                                        print ("cutouts: " + str(time.time()-googtime))
+                                        # print ("cutouts: " + str(time.time()-googtime))
 
-                                    if len(catalog) > 0 :
+                                    #if len(catalog) > 0 :
 
-                                        googtime=time.time()
+                                        # googtime=time.time()
                                         #plot_sourcextractor_pp(ax, catalog)
 
-                                        threading.Thread(target=plot_sourcextractor_pp, args=(copy.deepcopy(outputimg),copy.deepcopy(catalog),)).start()
+                                        # threading.Thread(target=plot_sourcextractor_pp, args=(copy.deepcopy(outputimg),copy.deepcopy(catalog),)).start()
                                         #threadpp.start()
+                                        
+                                        
+                                        
+                                        # plotpickle=(outputimg, original_catalog, catalog, 9, 8.0, filepath, filename)
+                                        
+                                        
+                                        filename = str(time.time())
+                                        
+
+                                        plotpickle=pickle.dumps(
+                                            (outputimg, original_catalog, catalog, 9, 8.0, g_dev['cam'].camera_path + g_dev["day"] + "/calib/", filename)
+                                        )
+                                        
+                                        # platesolve_subprocess = 
+                                        subprocess.run(
+                                            ["python", "subprocesses/focusplots_subprocess.py"],
+                                            input=plotpickle,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE,
+                                            text=False  # MUST be False for binary data
+                                        )
 
                                         print ("aftersource: " + str(time.time()-googtime))
 
