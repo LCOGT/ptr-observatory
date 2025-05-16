@@ -397,8 +397,6 @@ class NightlyScheduleManager:
                 self.update_lco_schedule()
             except Exception as e:
                 plog(f"Error in LCO schedule update thread: {str(e)}")
-                
-                #plog(traceback.format_exc())
 
             # Sleep until next update interval or until stopped
             self._stop_threads.wait(self.lco_update_interval)
@@ -650,7 +648,7 @@ class NightlyScheduleManager:
                     "instrument_configs": [
                         {
                             "exposure_count": 5,
-                            "exposure_time": 10.0,
+                            "exposure_time": 60.0,
                             "extra_params": {
                                 "rotator_angle": 0,
                             },

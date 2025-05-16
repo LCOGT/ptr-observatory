@@ -4679,7 +4679,6 @@ class Camera:
                     g_dev['obs'].images_since_last_solve > self.site_config["solve_nth_image"] or
 
                     # Too much time passed since last solve
-                    #(datetime.now(tz=timezone.utc) - g_dev['obs'].last_solve_time) >
                     (datetime.utcnow() - g_dev['obs'].last_solve_time) >
                         timedelta(minutes=self.site_config["solve_timer"])
                 ))
