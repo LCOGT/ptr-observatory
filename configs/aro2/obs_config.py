@@ -624,47 +624,49 @@ site_config = {
                 # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
                 'mono_Narrowband_colour_filters': ['ha', 'o3', 's2'],  #these should implement basic Hubble or CFHT Pallets
                 'mono_Narrowband_relative_weights': [1.0, 2, 2.5],  #Consider adding CWL and BW to the table below
+                #Below is nor unswapped filter configuration 20250516 WER
 
-                # 'filter_data': [['air',     [0, 0],   'ai'],  # 1
-                #                 ['V',       [1, 0],   'V '],  # 2  Wheel closest to camera
-                #                 ['B',       [2, 0],   "B "],  # 3
-                #                 ['zs',      [3, 0],   "zs"],  # 4
-                #                 ['w',       [4, 0],   'w '],  # 5
-                #                 ['up',      [5, 0],   'up'],  # 6
-                #                 ['gp',      [6, 0],   'gp'],  # 7
-                #                 ['rp',      [7, 0],   'rp'],  # 8
-                #                 ['ip',      [8, 0],   'ip'],  # 9
+                'filter_data': [['air',     [0, 0],   'ai'],  # 1
+                                ['V',       [1, 0],   'V '],  # 2  Wheel closest to camera
+                                ['B',       [2, 0],   "B "],  # 3
+                                ['zs',      [3, 0],   "zs"],  # 4
+                                ['w',       [4, 0],   'w '],  # 5
+                                ['up',      [5, 0],   'up'],  # 6
+                                ['gp',      [6, 0],   'gp'],  # 7
+                                ['rp',      [7, 0],   'rp'],  # 8
+                                ['ip',      [8, 0],   'ip'],  # 9
 
-                #                 ['sy',      [0, 1],   'sy'],  # 10 Wheel closest to rotator
-                #                 ['sb',      [0, 2],   'sb'],  # 11
-                #                 ['sv',      [0, 3],   'sv'],  # 12
-                #                 ['su',      [0, 4],   'su'],  # 13
-                #                 ['O3',      [0, 5],   'o3'],  # 14
-                #                 ['Hb',      [0, 6],   'hb'],  # 15
-                #                 ['Ha',      [0, 7],   "ha"],  # 16
-                #                 ['S2',      [0, 8],   's2'],  # 17
-                #                 ['dk',      [5 ,8],   'dk']], # 18
+                                ['sy',      [0, 1],   'sy'],  # 10 Wheel closest to rotator
+                                ['sb',      [0, 2],   'sb'],  # 11
+                                ['sv',      [0, 3],   'sv'],  # 12
+                                ['su',      [0, 4],   'su'],  # 13
+                                ['O3',      [0, 5],   'o3'],  # 14
+                                ['Hb',      [0, 6],   'hb'],  # 15
+                                ['Ha',      [0, 7],   "ha"],  # 16
+                                ['S2',      [0, 8],   's2'],  # 17
+                                ['dk',      [5 ,8],   'dk']], # 18
 
-                'filter_data': [['air',     [0, 0],   'ai'],  # 1  #Fitz swapped 20250513
-                                ['V',       [0, 1],   'V '],  # 2  Wheel closest to camera
-                                ['B',       [0, 2],   "B "],  # 3
-                                ['zs',      [0, 3],   "zs"],  # 4
-                                ['w',       [0, 4],   'w '],  # 5
-                                ['up',      [0, 5],   'up'],  # 6
-                                ['gp',      [0, 6],   'gp'],  # 7
-                                ['rp',      [0, 7],   'rp'],  # 8
-                                ['ip',      [0, 8],   'ip'],  # 9
+                #Below is the Swapped filter configuration  20250516  WER
 
-                                ['sy',      [1, 0],   'sy'],  # 10 Wheel closest to rotator
-                                ['sb',      [2, 0],   'sb'],  # 11
-                                ['sv',      [3, 0],   'sv'],  # 12
-                                ['su',      [4, 0],   'su'],  # 13
-                                ['O3',      [5, 0],   'o3'],  # 14
-                                ['Hb',      [6, 0],   'hb'],  # 15
-                                ['Ha',      [7, 0],   "ha"],  # 16
-                                ['S2',      [8, 0],   's2'],  # 17
+                # 'filter_data': [['air',     [0, 0],   'ai'],  # 1  #Fitz swapped 20250513
+                #                 ['V',       [0, 1],   'V '],  # 2  Wheel closest to camera
+                #                 ['B',       [0, 2],   "B "],  # 3
+                #                 ['zs',      [0, 3],   "zs"],  # 4
+                #                 ['w',       [0, 4],   'w '],  # 5
+                #                 ['up',      [0, 5],   'up'],  # 6
+                #                 ['gp',      [0, 6],   'gp'],  # 7
+                #                 ['rp',      [0, 7],   'rp'],  # 8
+                #                 ['ip',      [0, 8],   'ip'],  # 9
 
-                                ['dk',      [8, 5],   'dk']], # 18 #Note Dark is a 2-filter combination
+                #                 ['sy',      [1, 0],   'sy'],  # 10 Wheel closest to rotator
+                #                 ['sb',      [2, 0],   'sb'],  # 11
+                #                 ['sv',      [3, 0],   'sv'],  # 12
+                #                 ['su',      [4, 0],   'su'],  # 13
+                #                 ['O3',      [5, 0],   'o3'],  # 14
+                #                 ['Hb',      [6, 0],   'hb'],  # 15
+                #                 ['Ha',      [7, 0],   "ha"],  # 16
+                #                 ['S2',      [8, 0],   's2'],  # 17
+                #                 ['dk',      [8, 5],   'dk']], # 18 #Note Dark is a 2-filter combination
 
                 'focus_filter': 'ip',
                 'pointing_filter': 'ip',  #Added but not plumbed yet WER 20250514
