@@ -2716,12 +2716,16 @@ class Camera:
         else:
             status["darkslide"] = "unknown"
 
-        cam_stat = self.alias + \
-            ", S " + self.spt_C + \
-            ", T " + self.temp_C + \
-            ", P " + self.pwm_percent + \
-            ", H " + self.hum_percent +\
-            ", A " + str(round(g_dev['foc'].current_focus_temperature, 1))
+
+        try:
+            cam_stat = self.alias + \
+                ", S " + self.spt_C + \
+                ", T " + self.temp_C + \
+                ", P " + self.pwm_percent + \
+                ", H " + self.hum_percent +\
+                ", A " + str(round(g_dev['foc'].current_focus_temperature, 1))
+        except:
+            cam_stat = 'status_failed'
         status[
             "status"
         ] = cam_stat  # The state could be expanded to be more meaningful. for instance report TEC % TEmp, temp setpoint...
