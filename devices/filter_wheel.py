@@ -103,7 +103,7 @@ class FilterWheel:
                 self.custom = False
                 self.dummy=False
                 self.filter.Connected = True
-            elif driver == "LCO.dual":
+            elif driver == "LCO.dual":  #This is the LCO designed dual Filter wheel on ARO1
                 # home the wheel and get responses, which indicates it is connected.
                 # set current_0 and _1 to [0, 0] position to default of w/L filter.
                 r0 = requests.get(self.ip + "/filterwheel/0/position", timeout=5)
@@ -153,7 +153,7 @@ class FilterWheel:
             elif driver == "ASCOM.FLI.FilterWheel" and self.dual_filter:
                 self.maxim = False
                 self.dual = True
-
+                breakpoint()  #We should not get here. WER 20250512
                 fw0 = win32com.client.Dispatch(driver)  # Closest to Camera
                 fw1 = win32com.client.Dispatch(driver)  # Closest to Telescope
                 plog(fw0, fw1)
@@ -235,6 +235,7 @@ class FilterWheel:
                 self.ascom = False
                 self.dual = True
                 self.custom = False
+
 
             elif "com" in driver.lower():
                 self.custom = True
@@ -319,7 +320,7 @@ class FilterWheel:
             try:
                 # update when a filter change is requested or every so often.
                 if self.filter_change_requested or (self.filterwheel_update_timer < time.time() - self.filterwheel_update_period):
-                 
+
 
                     if self.filter_change_requested:
                         self.filter_change_requested=False
@@ -377,9 +378,15 @@ class FilterWheel:
 
                         elif self.maxim and self.dual:
                             try:
+                                time.sleep(2)   #WER experiment
                                 self.filterwheel_update_wincom.Filter = self.filter_selections[0]
+                                #time.sleep(2)   #WER experiment
+
                                 if self.dual_filter:
+                                    time.sleep(2)   #WER experiment
                                     self.filterwheel_update_wincom.GuiderFilter = self.filter_selections[1]
+                                    #time.sleep(2)   #WER experiment
+                                plog("Filter Wheel delay Experiment Lines 381, 386   WER 20250512:  ", self.filter_selections[0],"  ", self.filter_selections[1])
 
                             except:
                                 plog(traceback.format_exc())
@@ -563,6 +570,14 @@ class FilterWheel:
             filter_name = str(req["filter"]).lower()
         except:
             filter_name = str(req["filter_name"]).lower()
+
+        if filter_name =='focus':
+            try:
+                filter_name=self.config['settings']['focus_filter']
+            except:
+                plog ("tried to set focus filter but it isn't set in the config so trying for a substitute.")
+
+        #breakpoint()
 
         # Try finding a filter with the requested name
         filter_number = self._get_filter_number(filter_name)

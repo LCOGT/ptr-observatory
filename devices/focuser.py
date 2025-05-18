@@ -116,7 +116,6 @@ class Focuser:
                         except:
                             plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
 
-        #breakpoint()
 
         self.micron_to_steps = float(
             self.config["unit_conversion"]
@@ -283,7 +282,6 @@ class Focuser:
                             plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
 
 
-            #breakpoint()
 
 
         # This stopping mechanism allows for threads to close cleanly.
@@ -303,8 +301,10 @@ class Focuser:
                 self.minimum_allowed_focus=self.config['minimum']
                 self.maximum_allowed_focus=self.config['maximum']
                 
-                requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
-                if requestedPosition < self.minimum_allowed_focus or requestedPosition > self.maximum_allowed_focus :
+                #breakpoint()
+                
+                requestedPosition=int(self.guarded_move_to_focus)
+                if requestedPosition < self.minimum_allowed_focus* self.micron_to_steps or requestedPosition > self.maximum_allowed_focus * self.micron_to_steps :
                     plog ("Requested focuser position outside limits set in config!")
                     plog (requestedPosition)
                 else:
@@ -315,7 +315,8 @@ class Focuser:
                         
                             if self.theskyx:
                                 
-                                requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
+                                #requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
+                                requestedPosition=int(self.guarded_move_to_focus)
                                 try:
                                     difference_in_position=self.focuser_update_wincom.focPosition() - requestedPosition
                                     absdifference_in_position=abs(self.focuser_update_wincom.focPosition() - requestedPosition)
@@ -338,9 +339,9 @@ class Focuser:
          
                                 time.sleep(self.config['focuser_movement_settle_time'])
                                 try:
-                                    self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
+                                    self.current_focus_position=int(self.focuser_update_wincom.focPosition())# * self.steps_to_micron)
                                 except:
-                                    self.current_focus_position=int(self.focuser_update_wincom.focPosition * self.steps_to_micron)
+                                    self.current_focus_position=int(self.focuser_update_wincom.focPosition)# * self.steps_to_micron)
                                 
                             else:
                                 if not self.relative_focuser:
@@ -758,6 +759,9 @@ class Focuser:
         difference_in_position=int(position_string) * self.micron_to_steps
 
         self.guarded_move(self.current_focus_position + difference_in_position)
+        
+        
+        self.last_known_focus = req["position"]
 
 
     def move_absolute_command(self, req: dict, opt: dict):
@@ -766,7 +770,7 @@ class Focuser:
         self.focuser_is_moving=True
         position = int(float(req["position"])) * self.micron_to_steps
         self.guarded_move(position )
-        self.last_known_focus = position
+        self.last_known_focus = req["position"]
         #plog("Forces last known focus to be new position Line 551 in focuser WER 20400917")
 
     def stop_command(self, req: dict, opt: dict):
@@ -879,7 +883,6 @@ class Focuser:
                 print (len(previous_focus))
             except:
                 plog (traceback.format_exc())
-                breakpoint()
 
             return None, None, focus_temp_slope, focus_temp_intercept, len(previous_focus)
 

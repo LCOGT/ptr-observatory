@@ -14,11 +14,14 @@ from ctypes import *
 from ptr_utility import plog
 from global_yard import g_dev
 from devices.darkslide import Darkslide
+#import matplotlib
+#matplotlib.use('Agg')
 import matplotlib.style as mplstyle
 import matplotlib as mpl
 import subprocess
 import warnings
 from astropy.utils.exceptions import AstropyUserWarning
+from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
 from astropy.table import Table
 from astropy.nddata import block_reduce
 from astropy.modeling import models, fitting
@@ -58,7 +61,13 @@ log.setLevel('ERROR')
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from obs import Observatory
-
+# import matplotlib.pyplot as plt
+# from matplotlib.patches import Circle
+# from matplotlib.patches import Ellipse
+# from matplotlib.collections import PatchCollection
+from skimage.filters import threshold_local
+from skimage.morphology import remove_small_objects
+from skimage.measure import label, regionprops, regionprops_table
 
 from astroquery.vizier import Vizier
 #from astropy.coordinates import SkyCoord
@@ -86,6 +95,205 @@ mpl.rcParams['path.simplify_threshold'] = 1.0
 
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
+# def plot_bright_star_cutouts(outputimg, catalog, n=9, margin=1.2):
+#     """
+#     Plot a sqrt(n)x sqrt(n) grid of the n brightest sources from an SX++ catalog.
+
+#     Parameters
+#     ----------
+#     outputimg : 2D numpy.ndarray
+#         The image array.
+#     catalog : astropy.table.Table
+#         SX++ catalog with columns:
+#         'pixel_centroid_x', 'pixel_centroid_y',
+#         'peak_value_x', 'peak_value_y',
+#         'kron_radius', 'ellipse_a', 'ellipse_b', 'ellipse_theta',
+#         'auto_flux', 'auto_mag', 'elongation', 'ellipticity'.
+#     n : int, optional
+#         Number of brightest stars to plot (default=9).
+#     margin : float, optional
+#         Factor to pad around the Kron ellipse (default=1.2).
+#     """
+#     # # pick top-n brightest
+#     # idx    = np.argsort(catalog['auto_flux'])[-n:][::-1]
+#     # bright = catalog[idx]
+
+#     # pick the 9 lowest-ellipticity objects
+#     idx = np.argsort(catalog['ellipticity'])[:9]
+#     bright = catalog[idx]
+
+#     # grid size
+#     m = int(np.ceil(np.sqrt(n)))
+#     fig, axes = plt.subplots(m, m, figsize=(m*3, m*3))
+#     axes = axes.flatten()
+
+#     for ax, src in zip(axes, bright):
+#         # convert 1-based FITS → 0-based NumPy
+#         x0 = src['pixel_centroid_x'] - 1
+#         y0 = src['pixel_centroid_y'] - 1
+
+#         # ellipse semi‐axes (in pixels)
+#         a = src['ellipse_a'] * src['kron_radius']
+#         b = src['ellipse_b'] * src['kron_radius']
+#         # half‐size of cutout box (odd total size)
+#         r_pix = int(np.ceil(max(a, b) * margin))
+#         size  = (2*r_pix + 1, 2*r_pix + 1)
+
+#         # make the cutout
+#         cut = Cutout2D(outputimg,
+#                        position=(x0, y0),
+#                        size=size,
+#                        mode='partial',
+#                        fill_value=np.nan)
+
+#         ax.imshow(cut.data, origin='lower', cmap='gray')
+
+#         # draw the elliptical Kron aperture
+#         ell = Ellipse(xy=(r_pix, r_pix),
+#                       width=2*a,
+#                       height=2*b,
+#                       angle=np.degrees(src['ellipse_theta']),
+#                       edgecolor='red',
+#                       facecolor='none',
+#                       linewidth=1)
+#         ax.add_patch(ell)
+
+#         # mark the peak pixel
+#         xp = src['peak_value_x'] - 1
+#         yp = src['peak_value_y'] - 1
+#         dx = xp - x0
+#         dy = yp - y0
+#         ax.scatter(r_pix + dx,
+#                    r_pix + dy,
+#                    marker='+',
+#                    s=50,
+#                    c='yellow')
+
+#         # annotate flux & mag
+#         ax.set_title(f"flux={src['auto_flux']:.0f},  mag={src['auto_mag']:.2f}",
+#                      fontsize=8, color='white',
+#                      backgroundcolor='black')
+#         ax.axis('off')
+
+#     plt.tight_layout()
+#     plt.savefig(str(time.time())+'brightstarplots.png', dpi=300, bbox_inches='tight')
+#     plt.close()
+
+
+# def plot_sourcextractor_pp(outputimg,catalog,
+#                             centroid_x='pixel_centroid_x', centroid_y='pixel_centroid_y',
+#                             flux_radius='flux_radius', kron_radius='kron_radius',
+#                             peak_x='peak_value_x', peak_y='peak_value_y', peak_value='peak_value'):
+#     """
+#     Overlay SourceXtractor++ detections on an Axes using PatchCollections for circles.
+
+#     Parameters
+#     ----------
+#     ax : matplotlib.axes.Axes
+#         The Axes to draw on (should already have the image plotted).
+#     catalog : astropy.table.Table or pandas.DataFrame
+#         Table containing at least the centroid, peak, flux_radius, and kron_radius columns.
+#     centroid_x, centroid_y : str
+#         Column names for pixel centroids.
+#     flux_radius : str
+#         Column name for flux radius values.
+#     kron_radius : str
+#         Column name for Kron radius values.
+#     peak_x, peak_y : str
+#         Column names for peak positions.
+#     peak_value : str
+#         Column name for peak intensity (used to size markers).
+#     """
+#     fig, ax = plt.subplots(figsize=(8, 8))
+#     ax.imshow(outputimg, origin='lower', cmap='gray')
+#     ax.set_xlabel('X pixel')
+#     ax.set_ylabel('Y pixel')
+#     ax.set_title('SourceXtractor++ detections')
+#     # 1) plot pixel centroids (hollow cyan circles)
+#     ax.scatter(catalog[centroid_x], catalog[centroid_y],
+#                s=50, facecolors='none', edgecolors='cyan', label='Centroids')
+
+#     # 2) plot peak positions (yellow stars sized by peak value)
+#     sizes = (catalog[peak_value] / catalog[peak_value].max()) * 100
+#     ax.scatter(catalog[peak_x], catalog[peak_y],
+#                s=sizes, c='yellow', marker='*', label='Peaks')
+
+#     # 3) build Circle patches for radii
+#     flux_circs = [Circle((x, y), r) for x, y, r in zip(
+#         catalog[centroid_x], catalog[centroid_y], catalog[flux_radius]
+#     )]
+#     kron_circs = [Circle((x, y), r) for x, y, r in zip(
+#         catalog[centroid_x], catalog[centroid_y], catalog[kron_radius]
+#     )]
+
+#     # 4) create PatchCollections
+#     flux_pc = PatchCollection(flux_circs,
+#                               facecolor='none', edgecolor='red', linestyle='--', linewidths=1)
+#     kron_pc = PatchCollection(kron_circs,
+#                               facecolor='none', edgecolor='green', linestyle='-', linewidths=1)
+
+#     # 5) add collections to Axes
+#     ax.add_collection(flux_pc)
+#     ax.add_collection(kron_pc)
+
+#     # legend
+#     ax.legend(loc='upper right')
+#     plt.tight_layout()
+#     plt.savefig(str(time.time())+'aftersourceplots.png', dpi=300, bbox_inches='tight')
+#     plt.close()
+
+def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
+    x_cent = catalog['pixel_centroid_x'] - 1  # FITS to NumPy
+    y_cent = catalog['pixel_centroid_y'] - 1
+    kron_r = catalog['kron_radius']
+
+    x_dists = []
+    y_dists = []
+    total_dists = []
+
+    for x0, y0, kr in zip(x_cent, y_cent, kron_r):
+        r_search = int(np.ceil(kr * search_radius_factor))
+        size = (2 * r_search + 1, 2 * r_search + 1)
+
+        try:
+            # Cutout centered on centroid
+            cutout = Cutout2D(outputimg, position=(x0, y0), size=size, mode='partial', fill_value=np.nan)
+
+            # Find brightest pixel in the cutout
+            if np.all(np.isnan(cutout.data)):
+                # No valid data; skip or set distance to NaN
+                x_dists.append(np.nan)
+                y_dists.append(np.nan)
+                total_dists.append(np.nan)
+                continue
+
+            local_max_pos = np.unravel_index(np.nanargmax(cutout.data), cutout.data.shape)
+            y_peak_local, x_peak_local = local_max_pos
+
+            # Calculate offset relative to cutout center
+            dx = x_peak_local - r_search
+            dy = y_peak_local - r_search
+            dist = np.hypot(dx, dy)
+
+            x_dists.append(abs(dx))
+            y_dists.append(abs(dy))
+            total_dists.append(dist)
+        except:
+            plog ("there is an occasional cutout area but to find....")
+            plog(traceback.format_exc())
+            plog (size)
+            plog (x0)
+            plog (y0)
+            # Ensure placeholders are appended
+            x_dists.append(np.nan)
+            y_dists.append(np.nan)
+            total_dists.append(np.nan)
+
+    catalog['x_donut_distance'] = x_dists
+    catalog['y_donut_distance'] = y_dists
+    catalog['total_donut_distance'] = total_dists
+
+    return catalog
 
 def create_gaussian_psf(fwhm, size=11):
     """
@@ -2508,12 +2716,16 @@ class Camera:
         else:
             status["darkslide"] = "unknown"
 
-        cam_stat = self.alias + \
-            ", S " + self.spt_C + \
-            ", T " + self.temp_C + \
-            ", P " + self.pwm_percent + \
-            ", H " + self.hum_percent +\
-            ", A " + str(round(g_dev['foc'].current_focus_temperature, 1))
+
+        try:
+            cam_stat = self.alias + \
+                ", S " + self.spt_C + \
+                ", T " + self.temp_C + \
+                ", P " + self.pwm_percent + \
+                ", H " + self.hum_percent +\
+                ", A " + str(round(g_dev['foc'].current_focus_temperature, 1))
+        except:
+            cam_stat = 'status_failed'
         status[
             "status"
         ] = cam_stat  # The state could be expanded to be more meaningful. for instance report TEC % TEmp, temp setpoint...
@@ -3276,7 +3488,9 @@ class Camera:
                                     Nsmartstack = 1
                                     sskcounter = 2
                                     self.currently_in_smartstack_loop = False
-                                    break
+                                    self.running_an_exposure_set = False
+                                    return 'outsideofnighttime'
+                                    #break
 
                             # Sort out if it is a substack
                             # If request actually requested a substack
@@ -3285,7 +3499,7 @@ class Camera:
                                 broadband_ss_biasdark_exp_time = self.settings['smart_stack_exposure_time']
                                 narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * \
                                     self.settings['smart_stack_exposure_NB_multiplier']
-                                if self.settings['substack']:
+                                if self.settings['substack'] and not g_dev['seq'].focussing: # Don't substack while focussing
                                     if not imtype in ['bias', 'dark'] and not a_dark_exposure and not frame_type[-4:] == "flat" and not frame_type == 'pointing':
                                         if exposure_time % 10 == 0 and exposure_time >= 30 and exposure_time < 1.25 * narrowband_ss_biasdark_exp_time:
                                             self.substacker = True
@@ -5228,20 +5442,21 @@ class Camera:
                         # So we chop the image down to a degree by a degree
                         # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
                         if self.pixscale == None:
-                            # If we don't know the pixelscale, we don't know the size, but 1000 x 1000 should be big enough!!
-                            # Get the current dimensions
-                            height, width = outputimg.shape[:2]
+                            # # If we don't know the pixelscale, we don't know the size, but 1000 x 1000 should be big enough!!
+                            # # Get the current dimensions
+                            # height, width = outputimg.shape[:2]
 
-                            # Determine cropping bounds
-                            new_height = min(height, 3000)
-                            new_width = min(width, 3000)
+                            # # Determine cropping bounds
+                            # new_height = min(height, 3000)
+                            # new_width = min(width, 3000)
 
-                            # Calculate start indices to center-crop
-                            start_y = (height - new_height) // 2
-                            start_x = (width - new_width) // 2
+                            # # Calculate start indices to center-crop
+                            # start_y = (height - new_height) // 2
+                            # start_x = (width - new_width) // 2
 
-                            # Crop the image
-                            outputimg = outputimg[start_y:start_y + new_height, start_x:start_x + new_width]
+                            # # Crop the image
+                            # outputimg = outputimg[start_y:start_y + new_height, start_x:start_x + new_width]
+                            pass
                         else:
 
                             fx_degrees = (fx * self.pixscale) / 3600
@@ -5290,6 +5505,115 @@ class Camera:
                             bilinearfill[np.isnan(bilinearfill)] = 0
                             outputimg = outputimg+bilinearfill
                             del bilinearfill
+                            
+                        # Really need a nice clean image to do this.
+                        googtime=time.time()
+                        unique,counts=np.unique(outputimg.ravel()[~np.isnan(outputimg.ravel())].astype(int), return_counts=True)
+                        m=counts.argmax()
+                        imageMode=unique[m]
+
+                        histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                        histogramdata[histogramdata[:,0] > -10000]
+                        #Do some fiddle faddling to figure out the value that goes to zero less
+                        zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+                        breaker=1
+                        counter=0
+                        while (breaker != 0):
+                            counter=counter+1
+                            if not (imageMode-counter) in zeroValueArray[:,0]:
+                                if not (imageMode-counter-1) in zeroValueArray[:,0]:
+                                    if not (imageMode-counter-2) in zeroValueArray[:,0]:
+                                        if not (imageMode-counter-3) in zeroValueArray[:,0]:
+                                            if not (imageMode-counter-4) in zeroValueArray[:,0]:
+                                                if not (imageMode-counter-5) in zeroValueArray[:,0]:
+                                                    if not (imageMode-counter-6) in zeroValueArray[:,0]:
+                                                        if not (imageMode-counter-7) in zeroValueArray[:,0]:
+                                                            if not (imageMode-counter-8) in zeroValueArray[:,0]:
+                                                                if not (imageMode-counter-9) in zeroValueArray[:,0]:
+                                                                    if not (imageMode-counter-10) in zeroValueArray[:,0]:
+                                                                        if not (imageMode-counter-11) in zeroValueArray[:,0]:
+                                                                            if not (imageMode-counter-12) in zeroValueArray[:,0]:
+                                                                                if not (imageMode-counter-13) in zeroValueArray[:,0]:
+                                                                                    if not (imageMode-counter-14) in zeroValueArray[:,0]:
+                                                                                        if not (imageMode-counter-15) in zeroValueArray[:,0]:
+                                                                                            if not (imageMode-counter-16) in zeroValueArray[:,0]:
+                                                                                                zeroValue=(imageMode-counter)
+                                                                                                breaker =0
+
+                        outputimg[outputimg < zeroValue] = np.nan
+
+                        # Interpolate image nans
+                        kernel = Gaussian2DKernel(x_stddev=1)
+                        
+                        outputimg = interpolate_replace_nans(outputimg, kernel)
+                        print ("nans: " + str( time.time()-googtime))
+
+
+                        # # Remove remaining nans
+                        # x_size=hdureduced.data.shape[0]
+                        # y_size=hdureduced.data.shape[1]
+                        # # this is actually faster than np.nanmean
+                        # edgefillvalue=imageMode
+                        # # List the coordinates that are nan in the array
+                        # nan_coords=np.argwhere(np.isnan(hdureduced.data))
+
+                        # # For each coordinate try and find a non-nan-neighbour and steal its value
+                        # for nancoord in nan_coords:
+                        #     x_nancoord=nancoord[0]
+                        #     y_nancoord=nancoord[1]
+                        #     done=False
+
+                        #     # Because edge pixels can tend to form in big clumps
+                        #     # Masking the array just with the mean at the edges
+                        #     # makes this MUCH faster to no visible effect for humans.
+                        #     # Also removes overscan
+                        #     if x_nancoord < 100:
+                        #         hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+                        #         done=True
+                        #     elif x_nancoord > (x_size-100):
+                        #         hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+
+                        #         done=True
+                        #     elif y_nancoord < 100:
+                        #         hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+
+                        #         done=True
+                        #     elif y_nancoord > (y_size-100):
+                        #         hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+                        #         done=True
+
+                        #     # left
+                        #     if not done:
+                        #         if x_nancoord != 0:
+                        #             value_here=hdureduced.data[x_nancoord-1,y_nancoord]
+                        #             if not np.isnan(value_here):
+                        #                 hdureduced.data[x_nancoord,y_nancoord]=value_here
+                        #                 done=True
+                        #     # right
+                        #     if not done:
+                        #         if x_nancoord != (x_size-1):
+                        #             value_here=hdureduced.data[x_nancoord+1,y_nancoord]
+                        #             if not np.isnan(value_here):
+                        #                 hdureduced.data[x_nancoord,y_nancoord]=value_here
+                        #                 done=True
+                        #     # below
+                        #     if not done:
+                        #         if y_nancoord != 0:
+                        #             value_here=hdureduced.data[x_nancoord,y_nancoord-1]
+                        #             if not np.isnan(value_here):
+                        #                 hdureduced.data[x_nancoord,y_nancoord]=value_here
+                        #                 done=True
+                        #     # above
+                        #     if not done:
+                        #         if y_nancoord != (y_size-1):
+                        #             value_here=hdureduced.data[x_nancoord,y_nancoord+1]
+                        #             if not np.isnan(value_here):
+                        #                 hdureduced.data[x_nancoord,y_nancoord]=value_here
+                        #                 done=True
+
+                        # # Mop up any remaining nans
+                        # hdureduced.data[np.isnan(hdureduced.data)] =edgefillvalue
+
 
                         #If it is a focus image then it will get sent in a different manner to the UI for a jpeg
                         # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
@@ -5364,6 +5688,7 @@ class Camera:
                                 outputimg=block_reduce(outputimg,2)
                             # else:
 
+
                         # Here we decide if Fwe are using source-extractor++
                         # Which is great for actual focussing as it is quite robust
                         # to blobs and donuts or whether we are using the gaussian method
@@ -5374,7 +5699,7 @@ class Camera:
                         if frame_type == 'focus_confirmation':
                             do_source_extractor=False
 
-                        if do_source_extractor:
+                        if do_source_extractor:# and not detected_donuts:
                             try:
                                 # Utilise smartstacks directory as it is a temp directory that gets cleared out
                                 tempdir=self.local_calibration_path + "smartstacks/"
@@ -5385,10 +5710,26 @@ class Camera:
 
                                 tempfitsname=str(time.time()).replace('.','d') + '.fits'
 
+
                                 # Save an image to the disk to use with source-extractor++
                                 # We don't need accurate photometry, so integer is fine.
                                 hdufocus = fits.PrimaryHDU()
-                                hdufocus.data = outputimg
+                                hdufocus.data = outputimg.astype(np.float32)
+
+
+                                # from scipy.ndimage import uniform_filter
+
+
+
+                                # def remove_background_mean(image, filter_size=256):
+                                #     background_model = uniform_filter(image, size=filter_size)
+                                #     return image - background_model
+
+                                googtime=time.time()
+                                # Example usage:
+                                # hdufocus.data = remove_background_mean(outputimg.astype(np.float32), filter_size=256)
+                                print ("background: " + str(time.time()-googtime))
+
                                 hdufocus.header["NAXIS1"] = outputimg.shape[0]
                                 hdufocus.header["NAXIS2"] = outputimg.shape[1]
                                 hdufocus.writeto(tempdir + tempfitsname, overwrite=True, output_verify='silentfix')
@@ -5399,72 +5740,218 @@ class Camera:
                                     segain=0
 
                                 if self.pixscale == None:
-                                    minarea=5
+                                    minarea=10
+                                elif self.pixscale > 1.0:
+                                    minarea=3
                                 else:
                                     minarea= ((-9.2421 * self.pixscale) + 16.553)/ temp_focus_bin
-                                if minarea < 5:  # There has to be a min minarea though!
-                                    minarea = 5
+                                # if minarea < 5:  # There has to be a min minarea though!
+                                #     minarea = 5
 
+                                print ("minarea")
+                                print (minarea)
 
+                                # dump out a variance array to be used
 
-                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 5 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties FluxRadius --flux-fraction 0.5"')
-
+                                # hdu_var = fits.PrimaryHDU(var_image, header=hdr)
+                                # hdu_var.header['BUNIT'] = 'e-2'       # units: electrons^2
+                                # hdu_var.writeto('variance.fits', overwrite=True)
+                                googtime=time.time()
+                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm none --tile-size 10000 --tile-memory-limit 16384"')
+                                print ("s++: " + str(time.time()-googtime))
                                 try:
-
+                                    googtime=time.time()
                                     catalog=Table.read(tempdir+ tempfitsname.replace('.fits','cat.fits'))
+
+                                    original_catalog=copy.deepcopy(catalog)
+
                                     # Remove rows where FLUX_RADIUS is 0 or NaN
-                                    mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)
+                                    mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)# & (catalog['kron_radius'] > 0)
 
                                     catalog = catalog[mask]
+                                    
 
+                                    print ("catalog1: " + str(time.time()-googtime))
+                                    googtime=time.time()
+                                    # fig, ax = plt.subplots(figsize=(8, 8))
+                                    # ax.imshow(outputimg, origin='lower', cmap='gray')
+                                    # ax.set_xlabel('X pixel')
+                                    # ax.set_ylabel('Y pixel')
+                                    # ax.set_title('SourceXtractor++ detections')
+
+                                    # plot_sourcextractor_pp(ax, catalog)
+                                    # plt.tight_layout()
+                                    # plt.savefig('beforesourceplots.png', dpi=300, bbox_inches='tight')
+                                    # plt.close()
+                                    # print ("plot1: " + str(time.time()-googtime))
+
+                                    googtime=time.time()
                                     # remove unrealistic estimates that are too small
                                     if not self.pixscale == None:
-                                        mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
-                                        catalog = catalog[mask]
+                                        if self.pixscale < 1.0:
+                                            mask = (catalog['flux_radius']) > (1.5 * (self.pixscale * temp_focus_bin))
+                                            catalog = catalog[mask]
+                                    # else:
+                                    mask = (catalog['flux_radius']) > 1.0
+                                    catalog =catalog[mask]
+
+                                    # # remove unrealistic estimates that are too small
+                                    # if not self.pixscale == None:
+                                    #     mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
+                                    #     catalog = catalog[mask]
+                                    # else:
+                                    # mask = (catalog['area']) > minarea
+                                    # catalog =catalog[mask]
+
+
+
+
+                                    # get rid of things that are clearly near the edge
+                                    ymax, xmax = outputimg.shape
+
+
+                                    mask = (catalog['flux_radius']) > 1.0
+                                    catalog =catalog[mask]
+
+                                    #breakpoint()
+                                    mask = (catalog['pixel_centroid_x']) > 100
+                                    catalog =catalog[mask]
+                                    mask = (catalog['pixel_centroid_x']) < (xmax-100)
+                                    catalog =catalog[mask]
+                                    mask = (catalog['pixel_centroid_y']) > 100
+                                    catalog =catalog[mask]
+                                    mask = (catalog['pixel_centroid_y']) < (ymax-100)
+                                    catalog =catalog[mask]
+
+
+                                    mask = (catalog['area']) > minarea
+                                    catalog =catalog[mask]
+
+                                    # Get rid of things that are clearly not particularly circular
+                                    #min_ellipticity=min(catalog['ellipticity'])
+                                    mask = (catalog['ellipticity']) < 0.4#(min_ellipticity + 0.5)
+                                    catalog =catalog[mask]
+                                    print ("catalog2: " + str(time.time()-googtime))
+
+
+                                    # Dump some data out to the plot function
+                                    if len(catalog) > 0 :
+                                        googtime=time.time()
+                                       # plot_bright_star_cutouts(outputimg, catalog, n=9, margin=8.0)
+                                        # threading.Thread(target=plot_bright_star_cutouts, args=(copy.deepcopy(outputimg), copy.deepcopy(catalog), 9, 8.0,)).start()
+                                        #threadcutouts.start()
+                                        # fig, ax = plt.subplots(figsize=(8, 8))
+                                        # ax.imshow(outputimg, origin='lower', cmap='gray')
+                                        # ax.set_xlabel('X pixel')
+                                        # ax.set_ylabel('Y pixel')
+                                        # ax.set_title('SourceXtractor++ detections')
+                                        # print ("cutouts: " + str(time.time()-googtime))
+
+                                    #if len(catalog) > 0 :
+
+                                        # googtime=time.time()
+                                        #plot_sourcextractor_pp(ax, catalog)
+
+                                        # threading.Thread(target=plot_sourcextractor_pp, args=(copy.deepcopy(outputimg),copy.deepcopy(catalog),)).start()
+                                        #threadpp.start()
+                                        
+                                        # We only want to consider sources with no nearby other sources
+                                        # whether that is another star, part of a donut or diffraction spike
+                                        from scipy.spatial import cKDTree
+
+                                        # Extract positions
+                                        x = catalog['pixel_centroid_x']
+                                        y = catalog['pixel_centroid_y']
+                                        positions = np.vstack((x, y)).T
+                                        
+                                        # Build KDTree for fast nearest-neighbor search
+                                        tree = cKDTree(positions)
+                                        
+                                        # Query for all neighbors within 30 pixels (including self)
+                                        neighbors = tree.query_ball_point(positions, r=30)
+                                        
+                                        # Determine which sources are isolated (only self in the neighbor list)
+                                        isolated_mask = np.array([len(n) == 1 for n in neighbors])
+                                        
+                                        # Filter table
+                                        catalog = catalog[isolated_mask]
+                                        
+                                        # plotpickle=(outputimg, original_catalog, catalog, 9, 8.0, filepath, filename)
+                                        
+                                        
+                                        filename = str(time.time())
+                                        
+
+                                        plotpickle=pickle.dumps(
+                                            (outputimg, original_catalog, catalog, 9, 3.0, g_dev['cam'].camera_path + g_dev["day"] + "/calib/", filename)
+                                        )
+                                        
+                                        # platesolve_subprocess = 
+                                        subprocess.run(
+                                            ["python", "subprocesses/focusplots_subprocess.py"],
+                                            input=plotpickle,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE,
+                                            text=False  # MUST be False for binary data
+                                        )
+
+                                        print ("aftersource: " + str(time.time()-googtime))
+
+                                    
+
+
+                                    # if len(catalog) > 0 :
+                                        
+                                        
+                                        
+                                        googtime=time.time()
+                                        catalog=calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0)
+                                        print ("donuts: " + str(time.time()-googtime))
+                                        print ("before")
+                                        print ("Median donut distance = " + str(np.median(catalog['total_donut_distance'])))
+                                        print ("Median Flux Radius    = " + str(np.nanmedian(np.asarray(catalog['flux_radius']))))
+                                        # print (np.nanstd(np.asarray(catalog['flux_radius'])))
+                                        print ((np.asarray(catalog['total_donut_distance'])))
+                                        print ((np.asarray(catalog['flux_radius'])))
+                                        #breakpoint()
+
+                                        total_mean_donut_distance=sigma_clip(np.asarray(catalog['total_donut_distance']),sigma_lower=2,sigma_upper=4, maxiters=5)
+                                        total_mean_donut_distance=total_mean_donut_distance.data[~total_mean_donut_distance.mask]
+                                        total_mean_flux_radius=sigma_clip(np.asarray(catalog['flux_radius']),sigma_lower=2,sigma_upper=4, maxiters=5)
+                                        total_mean_flux_radius=total_mean_flux_radius.data[~total_mean_flux_radius.mask]
+                                        print ("after")
+                                        print ("Median donut distance = " + str(total_mean_donut_distance))
+                                        print ("Median Flux Radius    = " + str(total_mean_flux_radius))
+                                        
+                                        print ((np.asarray(catalog['total_donut_distance'])))
+                                        print ((np.asarray(catalog['flux_radius'])))
+                                        
+                                        # breakpoint()
+
+                                        # if np.median(total_mean_donut_distance) > (np.median(total_mean_flux_radius) * 2) :
+                                        #     fwhm_values=total_mean_donut_distance
+                                        # else:
+                                        fwhm_values=total_mean_flux_radius
+
+                                        print (np.nanstd(fwhm_values))
+
+                                        # The HFR and the fwhm are roughly twice
+                                        fwhm_values=fwhm_values *2
                                     else:
-                                        mask = (catalog['flux_radius']) > 0.5
-                                        catalog =catalog[mask]
-
-                                    print ("std")
-                                    print (np.nanstd(np.asarray(catalog['flux_radius'])))
-                                    print ((np.asarray(catalog['flux_radius'])))
-
-                                    # def iterative_sigma_clip(data, sigma=3, maxiters=5):
-                                    #     data = np.asarray(data)
-                                    #     mask = np.zeros(data.shape, dtype=bool)
-
-                                    #     for i in range(maxiters):
-                                    #         good = data[~mask]
-                                    #         m, s = good.mean(), good.std()
-                                    #         #new_mask = np.abs(data - m) > sigma * s
-                                    #         new_mask = (data - m) > sigma * s
-                                    #         # if nothing new is masked, break
-                                    #         if np.all(new_mask == mask):
-                                    #             break
-                                    #         mask = new_mask
-
-                                    #     return data[~mask]
-
-                                    # clean = iterative_sigma_clip(my_list, sigma=3, maxiters=5)
-                                    # print("Iteratively clipped data:", clean)
-
-                                    fwhm_values=sigma_clip(np.asarray(catalog['flux_radius']),sigma_lower=2,sigma_upper=np.inf, maxiters=5)
-                                    fwhm_values=fwhm_values.data[~fwhm_values.mask]
-
-                                    print (np.nanstd(fwhm_values))
-
-                                    # The HFR and the fwhm are roughly twice
-                                    fwhm_values=fwhm_values *2
+                                        fwhm_values=[]
 
                                 except:
                                     plog ("problem with the fits table... probably not enough detections")
                                     fwhm_values=[]
 
+                                    print(traceback.format_exc())
+                                    breakpoint()
+
                                 plog("No. of detections:  ", len(fwhm_values))
 
                                 print (fwhm_values)
 
-                                if len(fwhm_values) < 10:
+                                if len(fwhm_values) < 5:
                                     fwhm_dict = {}
                                     fwhm_dict['rfp'] = np.nan
 
@@ -5501,7 +5988,7 @@ class Camera:
                             except:
                                 print ("couldn't do blob photometry: ")
                                 print(traceback.format_exc())
-                        else: # Do confirmation moffet photometry
+                        else: #if not detected_donuts: # Do confirmation moffet photometry
 
                             try:
 

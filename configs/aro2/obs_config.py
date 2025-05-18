@@ -529,7 +529,7 @@ site_config = {
             # When the focusser has no previous best focus values
             # start from this reference position
 
-            'reference': 4875,  #20250326 @ 10.7C Run after adjusting collar
+            'reference': 3875,  #20250326 @ 10.7C Run after adjusting collar
             'z_compression': 0, #Not used as of 20250111
             'z_coef_date':  '20250325',
             'relative_focuser': False,
@@ -624,6 +624,7 @@ site_config = {
                 # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
                 'mono_Narrowband_colour_filters': ['ha', 'o3', 's2'],  #these should implement basic Hubble or CFHT Pallets
                 'mono_Narrowband_relative_weights': [1.0, 2, 2.5],  #Consider adding CWL and BW to the table below
+                #Below is nor unswapped filter configuration 20250516 WER
 
                 'filter_data': [['air',     [0, 0],   'ai'],  # 1
                                 ['V',       [1, 0],   'V '],  # 2  Wheel closest to camera
@@ -645,11 +646,13 @@ site_config = {
                                 ['S2',      [0, 8],   's2'],  # 17
                                 ['dk',      [5 ,8],   'dk']], # 18
 
-                # 'filter_data': [['air',     [0, 0],   'ai'],  # 1
+                #Below is the Swapped filter configuration  20250516  WER
+
+                # 'filter_data': [['air',     [0, 0],   'ai'],  # 1  #Fitz swapped 20250513
                 #                 ['V',       [0, 1],   'V '],  # 2  Wheel closest to camera
                 #                 ['B',       [0, 2],   "B "],  # 3
                 #                 ['zs',      [0, 3],   "zs"],  # 4
-                #                 ['w',       [4, 0],   'w '],  # 5
+                #                 ['w',       [0, 4],   'w '],  # 5
                 #                 ['up',      [0, 5],   'up'],  # 6
                 #                 ['gp',      [0, 6],   'gp'],  # 7
                 #                 ['rp',      [0, 7],   'rp'],  # 8
@@ -663,9 +666,11 @@ site_config = {
                 #                 ['Hb',      [6, 0],   'hb'],  # 15
                 #                 ['Ha',      [7, 0],   "ha"],  # 16
                 #                 ['S2',      [8, 0],   's2'],  # 17
-                #                 ['dk',      [8, 5],   'dk']], # 18
+                #                 ['dk',      [8, 5],   'dk']], # 18 #Note Dark is a 2-filter combination
 
-                'focus_filter' : 'w',
+                'focus_filter': 'ip',
+                'pointing_filter': 'ip',  #Added but not plumbed yet WER 20250514
+                'dark_filter':  'dk',
 
                 # # Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 # 'filter_screen_sort':  ['air', 'w', 'PL', 'gp', 'PB', 'rp', 'PG', 'PR', 'ip', 'O3', 'N2', 'CR', 'S2', 'HA'],  # 9, 21],  # 5, 17], #Most to least throughput, \
