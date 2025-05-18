@@ -19,8 +19,12 @@ from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 import datetime
-from astropy.nddata import block_reduce
 warnings.simplefilter('ignore', category=AstropyUserWarning)
+from astropy import wcs
+from astropy.coordinates import SkyCoord
+from astropy.wcs import WCS
+from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
+import copy
 
 def print(*args):
     rgb = lambda r, g, b: f'\033[38;2;{r};{g};{b}m'
@@ -40,6 +44,7 @@ temphduheader=input_sep_info[0]
 selfconfig=input_sep_info[1]
 camname=input_sep_info[2]
 slow_process=input_sep_info[3]
+wcsfilename=input_sep_info[5]
 
 googtime=time.time()
 
@@ -48,13 +53,9 @@ hdureduced.data = slow_process[2]
 hdureduced.header = temphduheader
 hdureduced.data = hdureduced.data.astype("float32")
 
+out_file_name=slow_process[1]
+del slow_process
 
-
-
-
-# int_array_flattened=hdureduced.data.astype(int).ravel()
-# int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-# unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
 unique,counts=np.unique(hdureduced.data.ravel()[~np.isnan(hdureduced.data.ravel())].astype(int), return_counts=True)
 m=counts.argmax()
 imageMode=unique[m]
@@ -89,7 +90,13 @@ while (breaker != 0):
 
 hdureduced.data[hdureduced.data < zeroValue] = np.nan
 
-# Remove nans
+# Interpolate image nans
+kernel = Gaussian2DKernel(x_stddev=1)
+hdureduced.data = interpolate_replace_nans(hdureduced.data, kernel)
+
+
+
+# Remove remaining nans
 x_size=hdureduced.data.shape[0]
 y_size=hdureduced.data.shape[1]
 # this is actually faster than np.nanmean
@@ -155,20 +162,104 @@ for nancoord in nan_coords:
 hdureduced.data[np.isnan(hdureduced.data)] =edgefillvalue
 
 
-if hdureduced.header["PIXSCALE"] < 0.3:
-    hdureduced.data=block_reduce(hdureduced.data,3)
-    hdureduced.header["PIXSCALE"]=hdureduced.header["PIXSCALE"]*3
-    hdureduced.header["CDELT1"]=hdureduced.header["CDELT1"]*3
-    hdureduced.header["CDELT2"]=hdureduced.header["CDELT2"]*3
-elif hdureduced.header["PIXSCALE"] < 0.6:
-    hdureduced.data=block_reduce(hdureduced.data,2)
-    hdureduced.header["PIXSCALE"]=hdureduced.header["PIXSCALE"]*2
-    hdureduced.header["CDELT1"]=hdureduced.header["CDELT1"]*2
-    hdureduced.header["CDELT2"]=hdureduced.header["CDELT2"]*2
+# Wait here for potential wcs solution
 
-hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
-hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
-hdureduced.header["DATE"] = (
+print ("Waiting for: " +wcsfilename.replace('.fits','.wcs'))
+
+
+# While waiting, dump out image to disk temporarily to be picked up later.
+np.save(out_file_name.replace('.fits','.tempnpyred'), hdureduced.data.astype(np.float32))
+temphduheader=copy.deepcopy(hdureduced.header)
+del hdureduced
+
+
+
+wcs_timeout_timer=time.time()
+while True:
+    if os.path.exists (wcsfilename.replace('.fits','.wcs')):
+        print ("success!")
+
+        #if os.path.exists(wcsname):
+        print ("wcs exists: " + str(wcsfilename.replace('.fits','.wcs')))
+        wcsheader = fits.open(wcsfilename.replace('.fits','.wcs'))[0].header
+        
+
+        # If it is an OSC image, then the wcs was done on a binned image
+        # which now needs doubling.
+        if temphduheader['OSCCAM']:
+            w_unbinned = wcs.WCS(wcsheader).deepcopy()
+
+            # Step 1: Double CRPIX (reference pixel position in pixel units)
+            w_unbinned.wcs.crpix *= 2.0
+            
+            # Step 2: Halve CDELT (pixel scale in degrees/pixel)
+            w_unbinned.wcs.cdelt /= 2.0
+            
+            # Step 3: if using a CD matrix or PC+CDELT, apply the same scale
+            if w_unbinned.wcs.has_cd():
+                w_unbinned.wcs.cd /= 2.0
+            elif w_unbinned.wcs.has_pc():
+                w_unbinned.wcs.cdelt /= 2.0 
+            
+            temphduheader.update(w_unbinned.to_header(relax=True))
+        else:
+            temphduheader.update(wcs.WCS(wcsheader).to_header(relax=True))
+
+        # Get the RA/DEC at the reference pixel (CRPIX1, CRPIX2)
+        ra_ref = temphduheader['CRVAL1']
+        dec_ref = temphduheader['CRVAL2']
+
+        tempointing = SkyCoord(ra_ref, dec_ref, unit='deg')
+        tempointing=tempointing.to_string("hmsdms").split(' ')
+
+        temphduheader["RA"] = (
+            tempointing[0],
+            "[hms] Telescope right ascension",
+        )
+        temphduheader["DEC"] = (
+            tempointing[1],
+            "[dms] Telescope declination",
+        )
+
+        temphduheader["RA-HMS"] = temphduheader["RA"]
+        temphduheader["DEC-DMS"] = temphduheader["DEC"]
+
+        temphduheader["ORIGRA"] = temphduheader["RA"]
+        temphduheader["ORIGDEC"] = temphduheader["DEC"]
+        temphduheader["RAhrs"] = (
+            round(ra_ref / 15,8),
+            "[hrs] Telescope right ascension",
+        )
+        temphduheader["RADEG"] = round(ra_ref,8)
+        temphduheader["DECDEG"] = round(dec_ref,8)
+
+        temphduheader["TARG-CHK"] = (
+            (ra_ref)
+            + dec_ref,
+            "[deg] Sum of RA and dec",
+        )
+
+
+        del wcsheader
+
+        # Alter header appropriately if the image has been binned.
+        binning= temphduheader["XBINING"]
+        if binning > 1:
+            w_orig = WCS(temphduheader)
+            w_binned = w_orig.slice((slice(None, None, binning), slice(None, None, binning)))
+
+            temphduheader.update(w_binned.to_header(relax=True))
+
+        break
+    if os.path.exists (wcsfilename.replace('.fits','.failed')):
+        print ("failure!")
+        break
+    if (time.time() - wcs_timeout_timer) > 240:
+        print ("took too long")
+        break
+    time.sleep(2)
+
+temphduheader["DATE"] = (
     datetime.date.strftime(
         datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
     ),
@@ -176,17 +267,32 @@ hdureduced.header["DATE"] = (
 )
 
 
+hdureduced = fits.PrimaryHDU()
+hdureduced.data = copy.deepcopy(np.load(out_file_name.replace('.fits','.tempnpyred.npy')))
+hdureduced.header = temphduheader
+
+try:
+    os.remove(out_file_name.replace('.fits','.tempnpyred.npy'))
+except:
+    pass
+
 hdureduced.writeto(
-    slow_process[1], overwrite=True, output_verify='silentfix'
+    out_file_name, overwrite=True, output_verify='silentfix'
 )  # Save flash reduced file locally
 
 if selfconfig["save_to_alt_path"] == "yes":
-    hdureduced.writeto( selfconfig['alt_path'] +'/' +temphduheader['OBSID'] +'/' +temphduheader['DAY-OBS'] + "/reduced/" + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+    
+    os.makedirs(selfconfig['alt_path'] +'/' +temphduheader['OBSID'] +'/' +temphduheader['DAY-OBS'], exist_ok=True)
+    os.makedirs(selfconfig['alt_path'] +'/' +temphduheader['OBSID'] +'/' +temphduheader['DAY-OBS'] + "/reduced/", exist_ok=True)
+    
+    hdureduced.writeto( selfconfig['alt_path'] +'/' +temphduheader['OBSID'] +'/' +temphduheader['DAY-OBS'] + "/reduced/" + out_file_name.split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
     )  # Save full raw file locally
 
 try:
     os.remove(sys.argv[1])
 except:
     pass
+
+
 
 sys.exit()

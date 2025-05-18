@@ -23,6 +23,7 @@ from astropy.coordinates import SkyCoord
 #input_sep_info=pickle.load(open('testfz1714133591386061','rb'))
 input_sep_info=pickle.load(open(sys.argv[1],'rb'))
 
+import copy
 
 #input_sep_info=pickle.load(open('C:\ptr\eco1\smartstacks/testlocalred17424062603143346','rb'))
 
@@ -33,7 +34,7 @@ def print(*args):
     r = '\033[0m' # reset
     builtins.print(f"{c}[fz_archive]{r} {' '.join([str(x) for x in args])}")
 
-print("Starting fz_archive_file.py")
+#print("Starting fz_archive_file.py")
 # print(input_sep_info)
 
 
@@ -50,6 +51,10 @@ wcsfilename=slow_process[7]
 #### But not so low it is impossible to use fits browsers
 actual_data=np.array(slow_process[2],dtype=np.float32)
 actual_data=np.nan_to_num(actual_data, nan=-251.2345733642578)
+
+# Dump the original array from memory
+tempfilename=slow_process[1]
+del slow_process
 
 
 googtime=time.time()
@@ -91,6 +96,12 @@ if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
 
 print ("Waiting for: " +wcsfilename.replace('.fits','.wcs'))
 
+# While waiting, dump out image to disk temporarily to be picked up later.
+np.save(tempfilename.replace('.fits.fz','.tempnpyfz'), actual_data)
+#temphduheader=copy.deepcopy(hdureduced.header)
+del actual_data
+
+wcsfail=False
 wcs_timeout_timer=time.time()
 while True:
     if os.path.exists (wcsfilename.replace('.fits','.wcs')):
@@ -102,6 +113,8 @@ while True:
         wcsheader = fits.open(wcsfilename.replace('.fits','.wcs'))[0].header
         temphduheader.update(wcs.WCS(wcsheader).to_header(relax=True))
         
+        
+        wcs_object=wcs.WCS(wcsheader)
         # # Create a WCS instance from your header
         # wcstrue = wcs.WCS(temphduheader)
         
@@ -145,12 +158,21 @@ while True:
         break
     if os.path.exists (wcsfilename.replace('.fits','.failed')):
         print ("failure!")
+        wcsfail=True
         break
     if (time.time() - wcs_timeout_timer) > 120:
         print ("took too long")
+        wcsfail=True
         break
     time.sleep(2)
     
+
+actual_data=copy.deepcopy(np.load(tempfilename.replace('.fits.fz','.tempnpyfz.npy')))
+
+try:
+    os.remove(tempfilename.replace('.fits.fz','.tempnpyfz.npy'))
+except:
+    pass
 
 if not camera_config["settings"]["is_osc"]:
 
@@ -159,6 +181,7 @@ if not camera_config["settings"]["is_osc"]:
     hdufz = fits.CompImageHDU(
         np.array(actual_data, dtype=np.float32), temphduheader
     )
+    del actual_data
 
     if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
         try:
@@ -174,28 +197,30 @@ if not camera_config["settings"]["is_osc"]:
             )
             os.rename(failsafe_directory + '/' +str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'),failsafe_directory  + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz').replace('.tempfits.fz','.fits.fz'))
 
-            
+    
 
     if selfconfig['ingest_raws_directly_to_archive']:
 
         hdufz.writeto(
-            slow_process[1].replace('.fits','.tempfits'), overwrite=True
+            tempfilename.replace('.fits','.tempfits'), overwrite=True
         )  # Save full fz file locally
 
         del hdufz  # remove file from memory now that we are done with it
 
-        os.rename(slow_process[1].replace('.fits','.tempfits'), slow_process[1])
+        os.rename(tempfilename.replace('.fits','.tempfits'), tempfilename)
 
 else:  # Is an OSC
 
     # If it is an OSC, split out the components and save them individually.
     if camera_config["settings"]["osc_bayer"] == 'RGGB':
 
-        newhdured = actual_data[::2, ::2]
-        GTRonly = actual_data[::2, 1::2]
-        GBLonly = actual_data[1::2, ::2]
-        newhdublue = actual_data[1::2, 1::2]
+        newhdured = np.array(actual_data[::2, ::2])
+        GTRonly = np.array(actual_data[::2, 1::2])
+        GBLonly = np.array(actual_data[1::2, ::2])
+        newhdublue = np.array(actual_data[1::2, 1::2])
         clearV = (block_reduce(actual_data,2))
+        
+        del actual_data
 
         oscmatchcode = (datetime.datetime.now().strftime("%d%m%y%H%M%S"))
 
@@ -212,11 +237,16 @@ else:  # Is an OSC
         temphduheader['CDELT1'] = float(temphduheader['CDELT1'])*2
         temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
         tempfilter = temphduheader['FILTER']
-        tempfilename = slow_process[1]
+        #tempfilename = slow_process[1]
 
         # Save and send R1
         temphduheader['FILTER'] = tempfilter + '_R1'
         temphduheader['ORIGNAME'] = (temphduheader['ORIGNAME'].replace('-EX', 'R1-EX') + '.fz').replace('.fz.fz','.fz')
+
+        # embed the appropriate wcs into the single bayer image
+        # R1 stays the same
+        #temphduheader.update(wcs_object.to_header(relax=True))
+        
 
         hdufz = fits.CompImageHDU(
             np.array(newhdured, dtype=np.float32), temphduheader
@@ -253,6 +283,14 @@ else:  # Is an OSC
         temphduheader['FILTER'] = tempfilter + '_G1'
         temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('R1-EX', 'G1-EX')
 
+        # embed the appropriate wcs into the single bayer image
+        # G1 gets shifted slightly
+        if not wcsfail:
+            wcs_G1 = wcs_object.deepcopy()
+            wcs_G1.wcs.crpix[0] -= 0.5
+            temphduheader.update(wcs_G1.to_header(relax=True))
+        
+
         hdufz = fits.CompImageHDU(
             np.array(GTRonly, dtype=np.float32), temphduheader
         )
@@ -282,6 +320,13 @@ else:  # Is an OSC
         # Save and send G2
         temphduheader['FILTER'] = tempfilter + '_G2'
         temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('G1-EX', 'G2-EX')
+
+        # embed the appropriate wcs into the single bayer image
+        # G2 gets shifted slightly
+        if not wcsfail:
+            wcs_G2 = wcs_object.deepcopy()
+            wcs_G2.wcs.crpix[1] -= 0.5
+            temphduheader.update(wcs_G2.to_header(relax=True))
 
         hdufz = fits.CompImageHDU(
             np.array(GBLonly, dtype=np.float32), temphduheader
@@ -316,6 +361,13 @@ else:  # Is an OSC
         # Save and send B1
         temphduheader['FILTER'] = tempfilter + '_B1'
         temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('G2-EX', 'B1-EX')
+
+        # embed the appropriate wcs into the single bayer image
+        # B1 gets shifted slightly
+        if not wcsfail:        
+            wcs_B1 = wcs_object.deepcopy()
+            wcs_B1.wcs.crpix -= 0.5
+            temphduheader.update(wcs_B1.to_header(relax=True))
 
         hdufz = fits.CompImageHDU(
             np.array(newhdublue, dtype=np.float32), temphduheader

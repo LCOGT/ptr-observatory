@@ -525,7 +525,7 @@ else:
         rfp = abs(bn.nanmedian(fwhmlist)) * 4.710
         rfr = rfp * pixscale
         rfs = bn.nanstd(fwhmlist) * pixscale
-        if rfr < 1.0 or rfr > 6:
+        if rfr < 1.0 or rfr > 12:
             rfr= np.nan
             rfp= np.nan
             rfs= np.nan

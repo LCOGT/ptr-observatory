@@ -24,6 +24,9 @@ import traceback
 import copy
 import bottleneck as bn
 
+from skimage.registration import phase_cross_correlation
+from scipy.ndimage import shift as nd_shift
+
 # Add the parent directory to the Python path
 # This allows importing modules from the root directory
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -74,7 +77,76 @@ jpeg_name=input_sstk_info[30]
 red_path=input_sstk_info[31]
 red_name01=input_sstk_info[32]
 
+# Function for aligning the three colour layers
+# maybe later subprocess although maybe it isn't offensive in cycle usage... we shall see.
+def align_and_crop(images, upsample_factor=100, shift_order=1):
+    """
+    Align a list of 2D numpy arrays by translation and crop to their common overlap.
+    
+    Parameters
+    ----------
+    images : list of 2D ndarrays
+        All arrays must have the same shape.
+    upsample_factor : int
+        Precision for sub-pixel registration (higher = finer).
+    shift_order : int
+        Interpolation order for scipy.ndimage.shift.
+    
+    Returns
+    -------
+    aligned_cropped : list of 2D ndarrays
+        Each input image, aligned to the first and cropped to the common overlap.
+    shifts : list of (dy, dx) tuples
+        Estimated shifts applied to each image.
+    """
+    # 1) reference image
+    ref = images[0]
+    aligned = [ref.copy()]
+    shifts = [(0.0, 0.0)]
+    
+    # 2) register & shift others
+    for img in images[1:]:
+        shift_est, error, diffphase = phase_cross_correlation(
+            ref, img, upsample_factor=upsample_factor
+        )
+        shifts.append(tuple(shift_est))
+        img_shifted = nd_shift(
+            img, shift=shift_est, order=shift_order,
+            mode='constant', cval=np.nan
+        )
+        aligned.append(img_shifted)
+    
+    # 3) mask valid pixels in all images
+    mask = np.isfinite(aligned[0])
+    for im in aligned[1:]:
+        mask &= np.isfinite(im)
+    
+    # 4) compute bounding box of overlap
+    rows, cols = np.where(mask)
+    rmin, rmax = rows.min(), rows.max()
+    cmin, cmax = cols.min(), cols.max()
+    
+    # 5) crop each aligned image
+    aligned_cropped = [
+        im[rmin:rmax+1, cmin:cmax+1] for im in aligned
+    ]
+    
+    return aligned_cropped, shifts
 
+# for squishing down osc frames for a jpeg
+def auto_binning(img, max_side=2500, func=np.nanmedian):
+    ny, nx = img.shape
+    # compute the smallest integer factor that brings each dimension ≤ max_side
+    by = int(np.ceil(ny / max_side))
+    bx = int(np.ceil(nx / max_side))
+    # never bin by less than 1
+    by = max(by, 1)
+    bx = max(bx, 1)
+
+    binned = block_reduce(img,
+                          block_size=(by, bx),
+                          func=func)
+    return binned, (by, bx)
 
 file_wait_timeout_timer=time.time()
 
@@ -535,6 +607,29 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
             newhdugreen[np.isnan(newhdugreen)] =imageMode
             newhdured[np.isnan(newhdured)] =imageMode
             newhdublue[np.isnan(newhdublue)] =imageMode
+            
+                        
+            # These images now can be squished for speed to make the jpeg preview. 
+            newhdugreen, (block_y, block_x) = auto_binning(newhdugreen, max_side=2500)
+            newhdured, (block_y, block_x) = auto_binning(newhdured, max_side=2500)
+            newhdublue, (block_y, block_x) = auto_binning(newhdublue, max_side=2500)
+            
+            # Then aligned
+            googtime=time.time()
+            aligned_imgs, shifts = align_and_crop([newhdugreen, newhdured, newhdublue])
+                       
+            print("Applied shifts:", shifts)
+            print ("TIME: " + str(time.time() - googtime))
+
+            # crop off some crusty edges            
+            border = 50
+            final_images = [im[border:-border, border:-border] for im in aligned_imgs]
+            
+            
+            newhdugreen=copy.deepcopy(aligned_imgs[0])
+            newhdured=copy.deepcopy(aligned_imgs[1])
+            newhdublue=copy.deepcopy(aligned_imgs[2])
+            del aligned_imgs
 
             # NOW THAT WE HAVE THE INDIVIDUAL IMAGES THEN PUT THEM TOGETHER
             xshape = newhdugreen.shape[0]

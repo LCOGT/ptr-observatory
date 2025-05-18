@@ -1801,6 +1801,9 @@ class Mount:
         plog("Action for mount is:  ", action)
 
         if action == "go":
+            
+            g_dev['obs'].report_to_nightlog("Individual Slew Commanded: " + str(command))
+            
             object_name = opt['object']
             if 'ra' in req:
                 result = self.go_command(ra=req['ra'], dec=req['dec'],objectname=object_name)   #  Entered from Target Explorer or Telescope tabs.
@@ -1908,9 +1911,10 @@ class Mount:
             dec = 0.0
             self.go_command(ra=ra, dec=dec, offset=False)
         elif action == "park":
+            g_dev['obs'].report_to_nightlog("Individual Park Commanded: " + str(command))
             self.park_command(req, opt)
-        elif action == "unpark":
-            #breakpoint()
+        elif action == "unpark":            
+            g_dev['obs'].report_to_nightlog("Individual Unpark Commanded: " + str(command))
             self.unpark_command(req, opt)
         elif action == 'sky_flat_position':
             self.go_command(skyflatspot=True)
@@ -2005,9 +2009,23 @@ class Mount:
 
                 if self.site_config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                     if (90-alt) < self.site_config['degrees_to_avoid_zenith_area_for_calibrations']:
-                        g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
-                        plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
-                        return 'refused'
+                        # g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
+                        # plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
+                        plog ("Flat spot is in the zenith danger area, shifting a bit forward to avoid this area.")
+                        # Shift the scope just beyond the edge of the danger zone
+                        alt=90-self.site_config['degrees_to_avoid_zenith_area_for_calibrations']-0.01
+                        # Then pick the azimuth such that it will track away not towards the zone
+                        # if in eastern half, rotate 180°; else leave as-is
+                        if 0 <= az < 180:
+                            az = (az + 180) % 360
+                        else:
+                            az = az
+                        temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
+                        altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
+                        ra = altazskycoord.icrs.ra.deg /15
+                        dec = altazskycoord.icrs.dec.deg
+                        #return 'refused'
+                        
             #NB the following code needs to deal with other reference frames...
             elif ra != None:   #implying RA and Dec are supplied. Compute resulting altitude
                 ra = float(ra)

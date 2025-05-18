@@ -28,6 +28,8 @@ import traceback
 #from astropy.stats import sigma_clip
 from joblib import Parallel, delayed
 
+from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
+
 # Add the parent directory to the Python path
 # This allows importing modules from the root directory
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -507,38 +509,10 @@ if substack:
 
             crosscorrel_filename_waiter.append(temporary_substack_directory + output_filename)
 
-
-            # try:
-            #     crosscorrelation_subprocess_array.append(
-            #         subprocess.Popen(
-            #             ['python','subprocesses/crosscorrelation_subprocess.py'],
-            #             stdin=subprocess.PIPE,
-            #             stdout=subprocess.PIPE,
-            #             stderr=None,
-            #             bufsize=-1
-            #         )
-            #     )
-
-            # except:
-            #     plog ("failed on subprocess directoty, trying current directory")
-            #     crosscorrelation_subprocess_array.append(
-            #         subprocess.Popen(
-            #             ['python','crosscorrelation_subprocess.py'],
-            #             stdin=subprocess.PIPE,
-            #             stdout=subprocess.PIPE,
-            #             stderr=None,
-            #             bufsize=-1
-            #         )
-            #     )
-
-            # Original
-
             if normal_operation:
                 crosscorrelation_subprocess_array.append(subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
             else:
                 crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
-
-            #crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
             plog (counter-1)
 
 
@@ -551,13 +525,9 @@ if substack:
         counter=counter+1
 
 
-   # breakpoint()
-
     counter=1
 
     for waitfile in crosscorrel_filename_waiter:
-
-
 
         file_wait_timeout_timer=time.time()
         while (not os.path.exists(waitfile)) and (time.time()-file_wait_timeout_timer < 600) :
@@ -570,18 +540,8 @@ if substack:
         sub_stacker_array[:,:,counter] = np.load(waitfile)
         counter=counter+1
 
-
-    # for waiting_for_subprocesses in crosscorrelation_subprocess_array:
-    #     waiting_for_subprocesses.communicate()
-
-    #     sub_stacker_array[:,:,counter] = copy.deepcopy(np.load(temporary_substack_directory + output_filename))
-    #     counter=counter+1
-
     # Once collected and done, nanmedian the array into the single image
 
-    #plog (bn.nanmax(sub_stacker_array[0]))
-    #plog (bn.nanmax(sub_stacker_array[1]))
-    #plog (bn.nanmax(sub_stacker_array[2]))
     img=bn.nanmedian(sub_stacker_array, axis=2) * len(substacker_filenames)
 
     #plog (bn.nanmax(img))
@@ -664,7 +624,15 @@ try:
         )
     del img
 
-    selfnative_bin = cam_settings["native_bin"]
+    #selfnative_bin = cam_settings["native_bin"]
+    selfnative_bin=1
+    if not pixscale == None:
+        if pixscale < 0.3:
+            selfnative_bin=3
+        elif pixscale < 0.6:
+            selfnative_bin=2
+    # else:
+    
 
     broadband_ss_biasdark_exp_time = cam_config['settings']['smart_stack_exposure_time']
     narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * cam_config['settings']['smart_stack_exposure_NB_multiplier']
@@ -912,53 +880,76 @@ try:
             os.makedirs(wcsfilepath, mode=0o777)
 
 
-        # yet another pickle debugger.
-        if True:
-            pickle.dump(
-                [
-                    np.asarray(hdu.data,dtype=np.float32),
-                    pixscale,
-                    is_osc,
-                    wcsfilepath,
-                    wcsfilebase,
-                    corrected_ra_for_header * 15,
-                    corrected_dec_for_header,
-                    next_seq
-                ],
-                open('subprocesses/testsingleimageplatesolvepickle','wb')
-            )
-
-        try:
-            platesolve_subprocess = subprocess.Popen(
-                ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                bufsize=0,
-            )
-        except OSError:
-            plog(traceback.format_exc())
-            pass
-
-        try:
-            pickle.dump(
-                [
-                    np.asarray(hdu.data,dtype=np.float32),
-                    pixscale,
-                    is_osc,
-                    wcsfilepath,
-                    wcsfilebase,
-                    corrected_ra_for_header * 15,
-                    corrected_dec_for_header,
-                    next_seq
-
-                ],
-                platesolve_subprocess.stdin,
-            )
-        except:
-            plog("Problem in the platesolve pickle dump")
-            plog(traceback.format_exc())
+        # # yet another pickle debugger.
+        # if True:
+        #     pickle.dump(
+        #         [
+        #             np.asarray(hdu.data,dtype=np.float32),
+        #             pixscale,
+        #             is_osc,
+        #             wcsfilepath,
+        #             wcsfilebase,
+        #             corrected_ra_for_header * 15,
+        #             corrected_dec_for_header,
+        #             next_seq
+        #         ],
+        #         open('subprocesses/testsingleimageplatesolvepickle','wb')
+        #     )
 
 
+        
+
+
+        # try:
+        #     platesolve_subprocess = subprocess.Popen(
+        #         ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
+        #         stdin=subprocess.PIPE,
+        #         stdout=subprocess.PIPE,
+        #         bufsize=0,
+        #     )
+        # except OSError:
+        #     plog(traceback.format_exc())
+        #     pass
+
+        # try:
+        #     pickle.dump(
+        #         [
+        #             np.asarray(hdu.data,dtype=np.float32),
+        #             pixscale,
+        #             is_osc,
+        #             wcsfilepath,
+        #             wcsfilebase,
+        #             corrected_ra_for_header * 15,
+        #             corrected_dec_for_header,
+        #             next_seq
+
+        #         ],
+        #         platesolve_subprocess.stdin,
+        #     )
+        # except:
+        #     plog("Problem in the platesolve pickle dump")
+        #     plog(traceback.format_exc())
+
+        pickledata=pickle.dumps(
+            [
+                np.asarray(hdu.data,dtype=np.float32),
+                pixscale,
+                is_osc,
+                wcsfilepath,
+                wcsfilebase,
+                corrected_ra_for_header * 15,
+                corrected_dec_for_header,
+                next_seq
+            ]
+        )
+
+        platesolve_subprocess = subprocess.run(
+            ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
+            input=pickledata,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=False  # MUST be False for binary data
+        )
 
     # While we wait for the platesolving to happen we do all the other stuff
     # And we will pick up the solution towards the end.
@@ -992,6 +983,7 @@ try:
         "Cosmic ray removal in EVA",
     )
 
+    
     hdu.header["DOSNP"] = (
         cam_settings['do_saltandpepper'],
         "Salt and Pepper removal in EVA",
@@ -1799,7 +1791,13 @@ try:
         hdufocus.header["NAXIS2"] = hdu.data.shape[1]
         hdufocus.writeto(cal_path + 'prenan.fits', overwrite=True, output_verify='silentfix')
 
-    # Fast next-door-neighbour in-fill algorithm
+
+    # Need to get rid of nans
+    # Interpolate image nans
+    kernel = Gaussian2DKernel(x_stddev=1)
+    hdu.data = interpolate_replace_nans(hdu.data, kernel)
+
+    # Fast next-door-neighbour in-fill algorithm to mop up any left over
     x_size=hdu.data.shape[0]
     y_size=hdu.data.shape[1]
 
@@ -1886,17 +1884,21 @@ try:
         #From the reduced data, crop around the edges of the
         #raw 1x1 image to get rid of overscan and crusty edge bits
         #edge_crop=selfconfig["camera"][selfname]["settings"]['reduced_image_edge_crop']
-        edge_crop=100
-        if edge_crop > 0:
-            hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
+        # edge_crop=100
+        # if edge_crop > 0:
+        #     hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
 
-            hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
-            hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
-            hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
-            hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
+        #     hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
+        #     hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
+        #     hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
+        #     hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
         # bin to native binning
         if selfnative_bin != 1 and (not pixscale == None) and not hdu.header['PIXSCALE'] == 'Unknown':
+
+
+
+
             reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
             reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
             reduced_hdusmallheader['XBINING']=selfnative_bin
@@ -1919,7 +1921,7 @@ try:
             reduced_hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
             reduced_hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
 
-            reduced_hdusmalldata=hdusmalldata+200.0
+            reduced_hdusmalldata=reduced_hdusmalldata+200.0
             reduced_hdusmallheader['PEDESTAL']=200
         else:
             reduced_hdusmalldata=copy.deepcopy(hdusmalldata)
@@ -2044,7 +2046,12 @@ try:
                 altpath='no'
 
 
-            picklepayload=(reduced_hdusmallheader,copy.deepcopy(selfconfig),cam_alias, slow_process, altpath)
+            if selfconfig['fully_platesolve_images_at_site_rather_than_pipe']:
+                wcsfilename=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq)) +'/' + selfconfig["obs_id"]+ "-" + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter) + "-" + dayobs+ "-"+ next_seq+ "-" + 'EX'+ "00.fits"
+            else:
+                wcsfilename='none'
+
+            picklepayload=(reduced_hdusmallheader,copy.deepcopy(selfconfig),cam_alias, slow_process, altpath, wcsfilename)
 
             picklefilename='testred'+str(time.time()).replace('.','')
             pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))

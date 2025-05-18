@@ -182,7 +182,7 @@ site_config = {
     'defaults': {
         'screen': 'screen',
         'mount': 'ecomeade',
-        #'telescope': 'Main OTA',     #How do we handle selector here, if at all?
+        'telescope': 'Main OTA',     #How do we handle selector here, if at all?
         'focuser': 'focuser',
         'rotator': 'rotator',
         'selector': None,
@@ -211,7 +211,7 @@ site_config = {
     },
     'device_types': [
             'mount',
-            #'telescope',
+            'telescope',
             #'screen',
             #'rotator',
             'focuser',
@@ -223,7 +223,7 @@ site_config = {
 
     'short_status_devices': [
             'mount',
-            #'telescope',
+            'telescope',
             'screen',
             'rotator',
             'focuser',
@@ -307,7 +307,7 @@ site_config = {
             'ptrtel': 'CDK17',
             'desc':  'CDK17',
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 100000,
+            'collecting_area': 31808,
             'obscuration':  23.7,   #  %
             'aperture': 432,
             'focal_length': 2939,
@@ -401,13 +401,13 @@ site_config = {
             'focuser_movement_settle_time': 6,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
-            'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
-            'reference': 2500,    #  20210313  Nominal at 10C Primary temperature
+            'maximum_good_focus_in_arcsecond': 8.0, # highest value to consider as being in "good focus". Used to select last good focus value
+            'reference': 1750,    #  20210313  Nominal at 10C Primary temperature
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
-            'maximum': 50000,   #12672 actually
+            'maximum': 3500,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 150,
+            'throw' : 50,
             'unit': 'counts',
             'unit_conversion': 1.0,
             'has_dial_indicator': False
@@ -625,7 +625,7 @@ site_config = {
                 'readout_speed': 0.08,
                 'readout_seconds': 1.0,
                 'smart_stack_exposure_time' : 30,
-                'substack': False, # Substack with this camera
+                'substack': True, # Substack with this camera
 
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.

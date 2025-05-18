@@ -47,6 +47,7 @@ import copy
 from global_yard import g_dev
 from ptr_utility import plog
 from dateutil import parser
+import os
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
@@ -75,7 +76,7 @@ class Focuser:
         self.camera_name = site_config['device_roles']['main_cam']
 
         self.config = site_config["focuser"][name]
-        self.throw = int(site_config["focuser"][name]["throw"])
+        
         self.relative_focuser = site_config["focuser"][name]['relative_focuser']
         self.driver = driver
         
@@ -211,7 +212,54 @@ class Focuser:
             self.last_filter_offset= 0
 
         self.focuser_settle_time=self.config['focuser_movement_settle_time']
+        
 
+        # Load up the throw list unless we don't have one.
+        if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name) + '.dat'):
+            plog ("loading throw from throw shelf")
+            self.throw_shelf = shelve.open(
+                g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name))
+            try:
+                self.throw_list = self.throw_shelf['throw_list']
+                self.throw = np.nanmedian(self.throw_list)
+                plog('current throw: ' + str(self.throw))
+            except:
+                self.throw_list=None
+                self.throw = None
+        else:
+            plog ("loading throw from config")
+            self.throw = int(site_config["focuser"][name]["throw"])
+            self.throw_list=[self.throw]
+        
+        plog ("used throw: " + str(self.throw))
+        
+        
+        self.minimum_allowed_focus=self.config['minimum']
+        self.maximum_allowed_focus=self.config['maximum']
+
+
+    def report_optimal_throw(self,curve_step_length):
+        
+        self.throw_shelf = shelve.open(
+            g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name))
+        
+        self.throw_list.append(
+            float(abs(curve_step_length))
+        )
+        
+        #update the throw itself
+        self.throw = np.nanmedian(self.throw_list)
+        
+        too_long = True
+        while too_long:
+            if len(self.throw_list) > 100:
+                self.throw_list.pop(0)
+            else:
+                too_long = False
+        self.throw_shelf[
+            "throw_list"
+        ] = self.throw_list
+        self.throw_shelf.close()
 
     # Note this is a thread!
     def focuser_update_thread(self):
@@ -250,64 +298,77 @@ class Focuser:
                     print ("Exposure focuser wait failed. ")
 
                 self.focuser_is_moving=True
+                
+                
+                self.minimum_allowed_focus=self.config['minimum']
+                self.maximum_allowed_focus=self.config['maximum']
+                
+                requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
+                if requestedPosition < self.minimum_allowed_focus or requestedPosition > self.maximum_allowed_focus :
+                    plog ("Requested focuser position outside limits set in config!")
+                    plog (requestedPosition)
+                else:
+                
 
-                try:
-                    if not self.dummy:
-                    
-                        if self.theskyx:
-                            
-                            requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
-                            try:
-                                difference_in_position=self.focuser_update_wincom.focPosition() - requestedPosition
-                                absdifference_in_position=abs(self.focuser_update_wincom.focPosition() - requestedPosition)
-                            except:
-                                difference_in_position=self.focuser_update_wincom.focPosition - requestedPosition
-                                absdifference_in_position=abs(self.focuser_update_wincom.focPosition - requestedPosition)
-                            print (difference_in_position)
-                            print (absdifference_in_position)
-                            if difference_in_position < 0 :
-                                self.focuser_update_wincom.focMoveOut(absdifference_in_position)
-                            else:
-                                self.focuser_update_wincom.focMoveIn(absdifference_in_position)
-                            try:
-                                print (self.focuser_update_wincom.focPosition())
-                            except:
-                                print ("failed")
-                                print (self.focuser_update_wincom.focPosition)
-     
-                            time.sleep(self.config['focuser_movement_settle_time'])
-                            try:
-                                self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
-                            except:
-                                self.current_focus_position=int(self.focuser_update_wincom.focPosition * self.steps_to_micron)
-                            
-                        else:
-                            if not self.relative_focuser:
-                                self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))
-                                time.sleep(0.1)
-                                movement_report=0
-         
-                                while self.focuser_update_wincom.IsMoving:
-                                    if movement_report==0:
-                                        plog("Focuser is moving.....")
-                                        movement_report=1
-                                    self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
-         
-                                    time.sleep(0.3)
+                    try:
+                        if not self.dummy:
+                        
+                            if self.theskyx:
+                                
+                                requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
+                                try:
+                                    difference_in_position=self.focuser_update_wincom.focPosition() - requestedPosition
+                                    absdifference_in_position=abs(self.focuser_update_wincom.focPosition() - requestedPosition)
+                                except:
+                                    difference_in_position=self.focuser_update_wincom.focPosition - requestedPosition
+                                    absdifference_in_position=abs(self.focuser_update_wincom.focPosition - requestedPosition)
+                                    
+                                #breakpoint()
+                                print (difference_in_position)
+                                print (absdifference_in_position)
+                                if difference_in_position < 0 :
+                                    self.focuser_update_wincom.focMoveOut(absdifference_in_position)
+                                else:
+                                    self.focuser_update_wincom.focMoveIn(absdifference_in_position)
+                                # try:
+                                #     print (self.focuser_update_wincom.focPosition())
+                                # except:
+                                #     #print ("failed")
+                                #     print (self.focuser_update_wincom.focPosition)
          
                                 time.sleep(self.config['focuser_movement_settle_time'])
-         
-                                self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
-                            else:
-                                plog ("at a focus move point here")
+                                try:
+                                    self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
+                                except:
+                                    self.current_focus_position=int(self.focuser_update_wincom.focPosition * self.steps_to_micron)
                                 
-                    else:
-                        # Currently just a fummy focuser report
-                        self.current_focus_position=2000
-
-                except:
-                    plog("AF Guarded move failed.")
-                    plog (traceback.format_exc())
+                            else:
+                                if not self.relative_focuser:
+                                    self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))
+                                    time.sleep(0.1)
+                                    movement_report=0
+             
+                                    while self.focuser_update_wincom.IsMoving:
+                                        if movement_report==0:
+                                            plog("Focuser is moving.....")
+                                            movement_report=1
+                                        self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
+             
+                                        time.sleep(0.3)
+             
+                                    time.sleep(self.config['focuser_movement_settle_time'])
+             
+                                    self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
+                                else:
+                                    plog ("at a focus move point here")
+                                    
+                        else:
+                            # Currently just a fummy focuser report
+                            self.current_focus_position=2000
+    
+                    except:
+                        plog("AF Guarded move failed.")
+                        plog (traceback.format_exc())
 
                 time.sleep(self.focuser_settle_time)
 
@@ -505,11 +566,27 @@ class Focuser:
         self.focus_commissioned=True
 
         try:
-            self.best_previous_focus_point, last_successful_focus_time, self.focus_temp_slope, self.focus_temp_intercept=self.get_af_log()
+            # try:
+            self.best_previous_focus_point, last_successful_focus_time, self.focus_temp_slope, self.focus_temp_intercept, number_of_previous_focusses=self.get_af_log()
+            # except:
+            #     plog (traceback.format_exc())
+            #     breakpoint()
+                
+            plog("Number of previous focusses: " + str(number_of_previous_focusses))
+            
+            #breakpoint()
 
             if last_successful_focus_time != None:
 
                 self.time_of_last_focus=parser.parse(last_successful_focus_time)
+                
+                # if throw empty or exposure empty or list shorter than x, commissioned is yet not true.
+                if number_of_previous_focusses < 10:
+                    self.focus_commissioned=False
+                # print(number_of_previous_focusses)
+                
+                # breakpoint()
+                
             else:
                 self.focus_commissioned=False
 
@@ -688,7 +765,7 @@ class Focuser:
         #
         self.focuser_is_moving=True
         position = int(float(req["position"])) * self.micron_to_steps
-        self.guarded_move(position)
+        self.guarded_move(position )
         self.last_known_focus = position
         #plog("Forces last known focus to be new position Line 551 in focuser WER 20400917")
 
@@ -798,7 +875,13 @@ class Focuser:
                     plog ("Best previous focus is at: " +str(item))
                     return item[1], item[4], focus_temp_slope, focus_temp_intercept
 
-            return None, None, focus_temp_slope, focus_temp_intercept
+            try:
+                print (len(previous_focus))
+            except:
+                plog (traceback.format_exc())
+                breakpoint()
+
+            return None, None, focus_temp_slope, focus_temp_intercept, len(previous_focus)
 
         except:
             plog("There is no focus log on the night shelf.")

@@ -19,29 +19,16 @@ import pickle
 import copy
 from astropy.nddata import block_reduce
 import numpy as np
-#import sep
 import glob
-#from astropy.nddata.utils import extract_array
 from astropy.io import fits
-#from subprocess import Popen, PIPE
 import os
-#from pathlib import Path
-#from os import getcwd
 import time
 from astropy.utils.exceptions import AstropyUserWarning
-#from astropy.table import Table
 import warnings
 import traceback
-#import bottleneck as bn
 from math import cos, radians
-# from colour_demosaicing import (
-#     demosaicing_CFA_Bayer_bilinear,  # )#,
-#     # demosaicing_CFA_Bayer_Malvar2004,
-#     demosaicing_CFA_Bayer_Menon2007)
 import matplotlib.pyplot as plt
-#import math
-from PIL import Image, ImageDraw, ImageFont#, ImageOps
-#from scipy.stats import binned_statistic
+from PIL import Image, ImageDraw, ImageFont
 from astropy.wcs import WCS
 from astropy import units as u
 from astropy.visualization.wcsaxes import Quadrangle
@@ -387,6 +374,9 @@ hdufocus.header = hduheader
 hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
 hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
 hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
+
+del hdufocus
+del hdufocusdata
 
 # run again
 

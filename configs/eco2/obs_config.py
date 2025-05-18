@@ -88,7 +88,7 @@ site_config = {
     # Also leads to fully platesolved reduced images on the local site computer
     # Usually set this to True
     # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
-    'fully_platesolve_images_at_site_rather_than_pipe' : False,
+    'fully_platesolve_images_at_site_rather_than_pipe' : True,
 
 
     # Setup of folders on local and network drives.
@@ -151,7 +151,7 @@ site_config = {
 
 
     # Exposure times for standard system exposures
-    'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
+    'focus_exposure_time': 30,  # Exposure time in seconds for exposure image
     'pointing_exposure_time': 15,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
@@ -404,30 +404,58 @@ site_config = {
         },
     },
 
+#     'focuser': {
+#         'focuser': {
+#             'parent': 'Main OTA',
+#             'name': 'focuser',
+#             'desc':  'Planewave Focuser',
+#             #'driver': 'ASCOM.SeletekFocuser.Focuser',
+#             'driver': 'SeletekFocuser.Focuser',
+# 			'com_port':  'COM9',
+#             'relative_focuser': False,
+#             'focuser_movement_settle_time': 10,
+#             'start_at_config_reference': False,
+#             'correct_focus_for_temperature' : True,
+#             'maximum_good_focus_in_arcsecond': 4.0, # highest value to consider as being in "good focus". Used to select last good focus value
+#             'reference':24200,    #  20210313  Nominal at 10C Primary temperature
+#             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
+#             'maximum': 30000,   #12672 actually
+#             'step_size': 1,
+#             'backlash': 0,
+#             'throw' : 400,
+#             'unit': 'counts',
+#             'unit_conversion': 1.0,
+#             'has_dial_indicator': False
+#         },
+
+#     },
+
     'focuser': {
         'focuser': {
             'parent': 'Main OTA',
             'name': 'focuser',
             'desc':  'Planewave Focuser',
-            #'driver': 'ASCOM.SeletekFocuser.Focuser',
-            'driver': 'SeletekFocuser.Focuser',
-			'com_port':  'COM9',
+             'driver': "TheSky64.ccdsoftCamera",
+            #'driver': 'ASCOM.GeminiFocuserPro.Focuser',
+            'com_port':  'COM3',
+    
             'relative_focuser': False,
-            'focuser_movement_settle_time': 10,
+    
+            'focuser_movement_settle_time': 6,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
-            'maximum_good_focus_in_arcsecond': 4.0, # highest value to consider as being in "good focus". Used to select last good focus value
-            'reference':24200,    #  20210313  Nominal at 10C Primary temperature
+            'maximum_good_focus_in_arcsecond': 10.0, # highest value to consider as being in "good focus". Used to select last good focus value
+            'reference': 7000,    #  20210313  Nominal at 10C Primary temperature
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
-            'maximum': 30000,   #12672 actually
+            'maximum': 10000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 400,
+            'throw' : 50,
             'unit': 'counts',
             'unit_conversion': 1.0,
             'has_dial_indicator': False
         },
-
+    
     },
 
     'selector': {

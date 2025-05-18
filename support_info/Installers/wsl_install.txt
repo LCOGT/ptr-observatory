@@ -14,14 +14,31 @@ sudo apt install source-extractor
 sudo apt install psfex
 sudo apt install htpdate # This package allows time syncs using http for those clocks behind school firewalls
 
-wget -r --no-parent http://data.astrometry.net/4100/   # TYCHO
-wget -r --no-parent https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/   # GAIA
+(Go to wsl settings in windows and set maximum processors to 2* the cpus)
 
-wget https://users.castle.unc.edu/~vkoupr/ucac5_anet.zip # UCAC5
-unzip ucac5_anet.zip
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh # conda is the most straightforward way to get source-extractor++
+sh Miniconda3-latest-Linux-x86_64.sh
 
-wget -r --no-parent https://data.astrometry.net/4200/     # 2mass... good for the reddened galactic plane but quite big.
+echo 'export PATH=~/miniconda3/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
 
+conda config --add channels conda-forge
+conda config --add channels astrorama
+
+conda install python=3.11 # Need to downgrade
+conda install -c conda-forge -c astrorama sourcextractor
+
+sourcextractor++ --version # Just to test it is installed
+
+wget -r --no-parent http://data.astrometry.net/4100/
+wget -r --no-parent https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/
+
+
+if space allows (This is UCAC5 and 2MASS. 2MASS is quite useful for crowded reddened fields):
+
+wget https://users.castle.unc.edu/~vkoupr/ucac5_anet.zip
+unzip ucac5_anet.zip 
+wget -r --no-parent https://data.astrometry.net/4200/
 
 move the downloaded fits files to /usr/local/astrometry/data/  or  /usr/share/astrometry/
 

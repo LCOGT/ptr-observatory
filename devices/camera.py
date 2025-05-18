@@ -9,7 +9,7 @@ Created on Tue Apr 20 22:19:25 2021
 
 from PIL import Image  # , ImageDraw
 from astropy.coordinates import SkyCoord , AltAz, get_sun
-from scipy.stats import binned_statistic
+#from scipy.stats import binned_statistic
 from ctypes import *
 from ptr_utility import plog
 from global_yard import g_dev
@@ -21,6 +21,12 @@ import warnings
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.table import Table
 from astropy.nddata import block_reduce
+from astropy.modeling import models, fitting
+from astropy.nddata import Cutout2D
+from astropy import units as u
+#from astropy.coordinates import SkyCoord
+from photutils.detection import DAOStarFinder
+from astropy.stats import mad_std
 import threading
 import sep
 import math
@@ -30,7 +36,7 @@ import win32com.client
 import bottleneck as bn
 import numpy as np
 import glob
-from astropy.nddata import block_reduce
+#from astropy.nddata import block_reduce
 from astropy.time import Time
 from astropy.io import fits
 import datetime
@@ -44,8 +50,10 @@ import json
 import random
 from astropy import log
 import zwoasi as asi
+from scipy import ndimage
+from multiprocessing import Pool
+import multiprocessing
 log.setLevel('ERROR')
-
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -78,6 +86,51 @@ mpl.rcParams['path.simplify_threshold'] = 1.0
 
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
+
+def create_gaussian_psf(fwhm, size=11):
+    """
+    Create a 2D Gaussian kernel with a given FWHM.
+
+    Parameters:
+    - fwhm: Full Width at Half Maximum of the Gaussian PSF.
+    - size: Size of the kernel (should be large enough to capture most of the PSF).
+
+    Returns:
+    - psf: 2D numpy array representing the Gaussian PSF.
+    """
+    sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))  # Convert FWHM to sigma
+    center = size // 2
+    y, x = np.mgrid[0:size, 0:size]
+    psf = np.exp(-((x - center)**2 + (y - center)**2) / (2 * sigma**2))
+    psf /= psf.sum()  # Normalize to ensure total flux is 1
+    return psf
+
+def add_star_with_psf(image_array, x, y, flux, psf):
+    """
+    Add a single star with a Gaussian PSF to the image array.
+
+    Parameters:
+    - image_array: 2D numpy array representing the image.
+    - x, y: Pixel coordinates of the star.
+    - flux: Total flux of the star.
+    - psf: 2D numpy array representing the normalized PSF.
+    """
+    psf_size = psf.shape[0]
+    psf_center = psf_size // 2
+    x_start = max(0, x - psf_center)
+    x_end = min(image_array.shape[1], x + psf_center + 1)
+    y_start = max(0, y - psf_center)
+    y_end = min(image_array.shape[0], y + psf_center + 1)
+
+    psf_x_start = psf_center - (x - x_start)
+    psf_x_end = psf_center + (x_end - x)
+    psf_y_start = psf_center - (y - y_start)
+    psf_y_end = psf_center + (y_end - y)
+
+    # Add scaled PSF to the image
+    image_array[y_start:y_end, x_start:x_end] += flux * psf[
+        psf_y_start:psf_y_end, psf_x_start:psf_x_end
+    ]
 
 #This function computes the factor of the argument passed
 def print_factors(x):
@@ -211,23 +264,36 @@ def mid_stretch_jpeg(data):
 
     return data
 
+def fit_moffat_worker(args):
+    cutout, position = args
+    x_center, y_center = position
+    try:
+        amplitude = np.max(cutout)
+        y, x = np.mgrid[:cutout.shape[0], :cutout.shape[1]]
+
+        moffat_init = models.Moffat2D(
+            amplitude=amplitude,
+            x_0=cutout.shape[1] / 2,
+            y_0=cutout.shape[0] / 2,
+            gamma=2,
+            alpha=1.5
+        )
+
+        fitter = fitting.LevMarLSQFitter()
+        moffat_fit = fitter(moffat_init, x, y, cutout)
+
+        gamma = moffat_fit.gamma.value
+        alpha = moffat_fit.alpha.value
+
+        fwhm = 2 * gamma * np.sqrt(2**(1/alpha) - 1)
+        return fwhm
+    except Exception as e:
+        print(f"[Worker Error] Problem fitting cutout at position ({x_center}, {y_center}): {e}")
+        print(traceback.format_exc())
+        return None
 
 # Note this is a thread!
 def dump_main_data_out_to_post_exposure_subprocess(payload, post_processing_subprocess):
-
-    # Here is a manual debug area which makes a pickle for debug purposes
-    # Here is the test pickle that gets created for debugging (if commented)
-    #pickle.dump(payload, open('subprocesses/testpostprocess.pickle','wb'))
-    #breakpoint()
-
-
-    # post_processing_subprocess=subprocess.Popen(
-    #     ['python','subprocesses/post_exposure_subprocess.py'],
-    #     stdin=subprocess.PIPE,
-    #     stdout=None,
-    #     stderr=None,
-    #     bufsize=-1
-    # )
 
     try:
         pickle.dump(payload, post_processing_subprocess.stdin)
@@ -538,195 +604,6 @@ def reset_sequence(pCamera):
         plog("Nothing on the cam shelf in reset_sequence")
         return None
 
-
-def multiprocess_fast_gaussian_photometry(package):
-    try:
-
-        (cvalue, cx, cy, radprofile, pixscale) = package
-
-        # Reduce data down to make faster solving
-        upperbin = math.floor(max(radprofile[:, 0]))
-        lowerbin = math.ceil(min(radprofile[:, 0]))
-        # Only need a quarter of an arcsecond bin.
-        if np.isnan(pixscale) or pixscale == None:
-            arcsecond_length_radial_profile = (upperbin-lowerbin)*8
-        else:
-            arcsecond_length_radial_profile = (upperbin-lowerbin)*pixscale
-        number_of_bins = int(arcsecond_length_radial_profile/0.25)
-
-        s, edges, _ = binned_statistic(radprofile[:, 0], radprofile[:, 1], statistic='mean', bins=np.linspace(
-            lowerbin, upperbin, number_of_bins))
-
-        max_value = np.nanmax(s)
-        min_value = np.nanmin(s)
-
-        threshold_value = (0.05*(max_value-min_value)) + min_value
-
-        actualprofile = []
-        for q in range(len(s)):
-            if not np.isnan(s[q]):
-                if s[q] > threshold_value:
-                    actualprofile.append([(edges[q]+edges[q+1])/2, s[q]])
-
-        actualprofile = np.asarray(actualprofile)
-
-        # Don't consider things that are clearly not stars but extended objects or blended stars).
-        edgevalue_left = actualprofile[0][1]
-        edgevalue_right = actualprofile[-1][1]
-
-        if edgevalue_left < 0.6*cvalue and edgevalue_right < 0.6*cvalue:
-
-            # Different faster fitter to consider
-            peak_value_index = np.argmax(actualprofile[:, 1])
-            peak_value = actualprofile[peak_value_index][1]
-
-            # Get the mean of the 5 pixels around the max
-            # and use the mean of those values and the peak value
-            # to use as the amplitude
-            temp_amplitude = actualprofile[peak_value_index-2][1]+actualprofile[peak_value_index-1][1] + \
-                actualprofile[peak_value_index][1]+actualprofile[peak_value_index +
-                                                                 1][1]+actualprofile[peak_value_index+2][1]
-            temp_amplitude = temp_amplitude/5
-
-            # Check that the mean of the temp_amplitude here is at least 0.5 * cvalue
-            if temp_amplitude > 0.5*peak_value:
-
-                # Get the center of mass peak value
-                sum_of_positions_times_values = 0
-                sum_of_values = 0
-                number_of_positions_to_test = 7  # odd value
-                poswidth = int(number_of_positions_to_test/2)
-
-                for spotty in range(number_of_positions_to_test):
-                    sum_of_positions_times_values = sum_of_positions_times_values + \
-                        (actualprofile[peak_value_index-poswidth+spotty][1]
-                         * actualprofile[peak_value_index-poswidth+spotty][0])
-                    sum_of_values = sum_of_values + \
-                        actualprofile[peak_value_index-poswidth+spotty][1]
-                peak_position = (sum_of_positions_times_values / sum_of_values)
-
-                temppos = abs(actualprofile[:, 0] - peak_position).argmin()
-                tempvalue = actualprofile[temppos, 1]
-                temppeakvalue = copy.deepcopy(tempvalue)
-
-                # Get lefthand quarter percentiles
-                counter = 1
-                while tempvalue > 0.25*temppeakvalue:
-
-                    tempvalue = actualprofile[temppos-counter, 1]
-                    if tempvalue > 0.75:
-
-                        threequartertemp=temppos-counter
-                    counter=counter+1
-
-
-                lefthand_quarter_spot = actualprofile[temppos-counter][0]
-                lefthand_threequarter_spot = actualprofile[threequartertemp][0]
-
-                # Get righthand quarter percentile
-                counter = 1
-                while tempvalue > 0.25*temppeakvalue:
-
-                    tempvalue=actualprofile[temppos+counter,1]
-
-                    if tempvalue > 0.75:
-                        threequartertemp = temppos+counter
-                    counter = counter+1
-
-                righthand_quarter_spot = actualprofile[temppos+counter][0]
-                righthand_threequarter_spot = actualprofile[threequartertemp][0]
-
-                largest_reasonable_position_deviation_in_pixels = 1.25 * \
-                    max(abs(peak_position - righthand_quarter_spot),
-                        abs(peak_position - lefthand_quarter_spot))
-                largest_reasonable_position_deviation_in_arcseconds = largest_reasonable_position_deviation_in_pixels * pixscale
-
-                smallest_reasonable_position_deviation_in_pixels = 0.7 * \
-                    min(abs(peak_position - righthand_threequarter_spot),
-                        abs(peak_position - lefthand_threequarter_spot))
-                smallest_reasonable_position_deviation_in_arcseconds = smallest_reasonable_position_deviation_in_pixels * pixscale
-
-                # If peak reasonably in the center
-                # And the largest reasonable position deviation isn't absurdly small
-                if abs(peak_position) < max(3, 3/pixscale) and largest_reasonable_position_deviation_in_arcseconds > 1.0:
-                    # Construct testing array
-                    # Initially on pixelscale then convert to pixels
-                    testvalue = 0.1
-                    testvalues = []
-                    while testvalue < 12:
-                        if testvalue > smallest_reasonable_position_deviation_in_arcseconds and testvalue < largest_reasonable_position_deviation_in_arcseconds:
-                            if testvalue > 1 and testvalue <= 7:
-                                testvalues.append(testvalue)
-                                testvalues.append(testvalue+0.05)
-                            elif testvalue > 7:
-                                if (int(testvalue * 10) % 3) == 0:
-                                    testvalues.append(testvalue)
-                            else:
-                                testvalues.append(testvalue)
-                        testvalue = testvalue+0.1
-                    # convert pixelscales into pixels
-                    pixel_testvalues = np.array(testvalues) / pixscale
-                    # convert fwhm into appropriate stdev
-                    pixel_testvalues = (pixel_testvalues/2.355) / 2
-
-                    smallest_value = 999999999999999.9
-                    for pixeltestvalue in pixel_testvalues:
-                        test_fpopt = [peak_value,
-                                      peak_position, pixeltestvalue]
-                        # differences between gaussian and data
-                        difference = (
-                            np.sum(abs(actualprofile[:, 1] - gaussian(actualprofile[:, 0], *test_fpopt))))
-
-                        if difference < smallest_value:
-                            smallest_value = copy.deepcopy(difference)
-                            smallest_fpopt = copy.deepcopy(test_fpopt)
-
-                        if difference < 1.25 * smallest_value:
-                            # This commented code allows you see PSF plots as they come in for debugging.
-                            if False:
-                                pass
-                                # Need to resinstitute plt.
-                                # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                                # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *test_fpopt),color = 'r')
-                                # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                                # plt.show()
-                            pass
-                        else:
-                            break
-
-                    # Amplitude has to be a substantial fraction of the peak value
-                    # and the center of the gaussian needs to be near the center
-                    # and the FWHM has to be above 0.8 arcseconds.
-                    # if popt[0] > (0.5 * cvalue) and abs(popt[1]) < max(3, 3/pixscale):# and (2.355 * popt[2]) > (0.8 / pixscale) :
-
-                    # if it isn't a unreasonably small fwhm then measure it.
-                    try:
-
-                        if (2.355 * smallest_fpopt[2]) > (0.8 / pixscale) :
-                            # This commented code allows you see PSF plots as they come in for debugging.
-                            if False:
-                                # Need to resinstitute plt.
-                                # plt.scatter(actualprofile[:,0],actualprofile[:,1])
-                                # plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *smallest_fpopt),color = 'r')
-                                # #plt.plot(actualprofile[:,0], gaussian(actualprofile[:,0], *popt),color = 'g')
-                                # #plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                                # plt.show()
-                                pass
-
-
-                            return smallest_fpopt[2]
-                        else:
-                            return np.nan
-                    except:
-                        return np.nan
-
-        # If rejected by some if statement, return nan
-        return np.nan
-    except:
-        plog(traceback.format_exc())
-        return np.nan
-
-
 class Camera:
     """A camera instrument.
 
@@ -1002,7 +879,7 @@ class Camera:
         elif driver == "QHYCCD_Direct_Control":
             global qhycam
 
-            plog("TRYING TO cycle the QHY camera power via Ultimate Powerbox V2, if it exists.")
+            # plog("TRYING TO cycle the QHY camera power via Ultimate Powerbox V2, if it exists.")
 
 
 
@@ -1011,6 +888,7 @@ class Camera:
             try:
                 self.power_box_driver = self.config["switch_driver"]
                 pb = win32com.client.Dispatch(self.power_box_driver)
+                #breakpoint()
                 pb.connected = True
                 n_switches = pb.MaxSwitch
                 #To inspect, try:
@@ -1391,14 +1269,9 @@ class Camera:
                 except:
                     pixelscale_list=None
                     self.pixscale = None
+                self.pixelscale_shelf.close()
 
 
-            # self.pixelscale_shelf.close()
-            # if len(pixelscale_list) > 0:
-            #     self.pixscale = bn.nanmedian(pixelscale_list)
-            #     plog('1x1 pixel scale: ' + str(self.pixscale))
-            # else:
-            #     self.pixscale = None   #Yes a hack
         except:
             plog("ALERT: PIXELSCALE SHELF CORRUPTED. WIPING AND STARTING AGAIN")
             self.pixscale = None
@@ -1416,6 +1289,59 @@ class Camera:
 
             except:
                 plog(traceback.format_exc())
+
+
+        # Focus exposure time shelf self-adjustment
+        if not self.dummy:
+            self.focusexposure_shelf = shelve.open(
+                g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'focusexposure' + self.alias + str(g_dev['obs'].name))
+            try:
+                focusexposure_list = self.focusexposure_shelf['focusexposure_list']
+                print ("Focusexposurelist")
+                print (focusexposure_list)
+
+                focusarray=np.asarray(focusexposure_list)
+
+
+                # Get unique exposure times
+                # Extract the unique values from the second column
+                unique_groups = np.unique(focusarray[:, 1])
+
+                # For each group, compute the median of the corresponding values from column 0
+                result = []
+                for group in unique_groups:
+                    values = focusarray[focusarray[:, 1] == group, 0]
+                    median = np.median(values)
+                    result.append([median, group])
+
+                result = np.array(result)
+                print(result)
+
+                # Update exposure time.
+
+                # Find the index where the median (column 0) is closest to 40
+                target = 40
+                idx = np.argmin(np.abs(result[:, 0] - target))
+
+                # Report the corresponding group (column 1)
+                closest_group = result[idx, 1]
+                print(closest_group)
+
+                # Then linearly extrapolate to actually getting 40 targets
+                ratio = 40/result[idx,0]
+                new_estimated_exposure_time= ratio * closest_group
+
+                g_dev['cam'].focus_exposure=int(max(min(new_estimated_exposure_time,60),10))
+
+                print ("Updated Focus Exposure time: " + str(self.focus_exposure))
+
+
+            except:
+                plog ("No focus exposure shelf so using the config value.")
+                plog(traceback.format_exc())
+                focusexposure_list=None
+                self.focus_exposure = int(self.site_config['focus_exposure_time'])
+            self.focusexposure_shelf.close()
 
 
         """
@@ -1623,14 +1549,6 @@ class Camera:
         self.overscan_up=self.overscan_values[site_config["camera"][self.name]['overscan_trim']][2]
         self.overscan_down=self.overscan_values[site_config["camera"][self.name]['overscan_trim']][3]
 
-        # self.overscan_left = self.overscan_values[site_config["camera"]
-        #                                           [self.name]['overscan_trim']][0]
-        # self.overscan_right = self.overscan_values[site_config["camera"]
-        #                                            [self.name]['overscan_trim']][1]
-        # self.overscan_up = self.overscan_values[site_config["camera"]
-        #                                         [self.name]['overscan_trim']][2]
-        # self.overscan_down = self.overscan_values[site_config["camera"]
-        #                                           [self.name]['overscan_trim']][3]
 
         # The skyx needs its own separate camera update thread to do with some theskyx
         # curiosities and also the win32com sorta connection it makes.
@@ -1680,294 +1598,6 @@ class Camera:
                 return False
             else:
                 return True
-
-    # def in_line_quick_focus(self, hdufocusdata, im_path, text_name):
-
-    #     try:
-    #         bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-    #     except:
-    #         hdufocusdata = np.asarray(hdufocusdata, dtype=float)
-    #         bkg = sep.Background(hdufocusdata, bw=32, bh=32, fw=3, fh=3)
-    #     bkg.subfrom(hdufocusdata)
-
-    #     imageMedian = bn.nanmedian(hdufocusdata)
-    #     # Mop up any remaining nans
-    #     hdufocusdata[np.isnan(hdufocusdata)] = imageMedian
-
-    #     # Cut down focus image to central degree
-    #     fx, fy = hdufocusdata.shape
-
-    #     # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
-    #     # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
-    #     # So we chop the image down to a degree by a degree
-    #     # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
-
-    #     if self.pixscale == None:
-    #         # If we don't know the pixelscale, we don't know the size, but 1000 x 1000 should be big enough!!
-    #         # Get the current dimensions
-    #         height, width = hdufocusdata.shape[:2]
-
-    #         # Determine cropping bounds
-    #         new_height = min(height, 1000)
-    #         new_width = min(width, 1000)
-
-    #         # Calculate start indices to center-crop
-    #         start_y = (height - new_height) // 2
-    #         start_x = (width - new_width) // 2
-
-    #         # Crop the image
-    #         hdufocusdata = hdufocusdata[start_y:start_y + new_height, start_x:start_x + new_width]
-    #     else:
-    #         fx_degrees = (fx * self.pixscale) / 3600
-    #         fy_degrees = (fy * self.pixscale) / 3600
-    #         crop_x = 0
-    #         crop_y = 0
-    #         if fx_degrees > 1.0:
-    #             ratio_crop = 1/fx_degrees
-    #             crop_x = int((fx - (ratio_crop * fx))/2)
-    #         if fy_degrees > 1.0:
-    #             ratio_crop = 1/fy_degrees
-    #             crop_y = int((fy - (ratio_crop * fy))/2)
-    #         if crop_x > 0 or crop_y > 0:
-    #             if crop_x == 0:
-    #                 crop_x = 2
-    #             if crop_y == 0:
-    #                 crop_y = 2
-    #             # Make sure it is an even number for OSCs
-    #             if (crop_x % 2) != 0:
-    #                 crop_x = crop_x+1
-    #             if (crop_y % 2) != 0:
-    #                 crop_y = crop_y+1
-    #             hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
-
-    #     if self.is_osc:
-
-    #         # Rapidly interpolate so that it is all one channel
-    #         # Wipe out red channel
-    #         hdufocusdata[::2, ::2] = np.nan
-    #         # Wipe out blue channel
-    #         hdufocusdata[1::2, 1::2] = np.nan
-
-    #         # To fill the checker board, roll the array in all four directions and take the average
-    #         # Which is essentially the bilinear fill without excessive math or not using numpy
-    #         # It moves true values onto nans and vice versa, so makes an array of true values
-    #         # where the original has nans and we use that as the fill
-    #         bilinearfill = np.roll(hdufocusdata, 1, axis=0)
-    #         bilinearfill = np.add(
-    #             bilinearfill, np.roll(hdufocusdata, -1, axis=0))
-    #         bilinearfill = np.add(
-    #             bilinearfill, np.roll(hdufocusdata, 1, axis=1))
-    #         bilinearfill = np.add(
-    #             bilinearfill, np.roll(hdufocusdata, -1, axis=1))
-    #         bilinearfill = np.divide(bilinearfill, 4)
-    #         hdufocusdata[np.isnan(hdufocusdata)] = 0
-    #         bilinearfill[np.isnan(bilinearfill)] = 0
-    #         hdufocusdata = hdufocusdata+bilinearfill
-    #         del bilinearfill
-
-    #     fx, fy = hdufocusdata.shape
-    #     tempstd = np.std(hdufocusdata)
-    #     saturate = self.settings["saturate"]
-
-    #     # Don't bother with stars with peaks smaller than 100 counts per arcsecond
-    #     if self.pixscale == None:
-    #         threshold = max(
-    #             3 * np.std(hdufocusdata[hdufocusdata < (5*tempstd)]), (100))
-    #     else:
-    #         threshold = max(
-    #             3 * np.std(hdufocusdata[hdufocusdata < (5*tempstd)]), (200*self.pixscale))
-    #     googtime = time.time()
-    #     list_of_local_maxima = localMax(hdufocusdata, threshold=threshold)
-
-    #     # Assess each point
-    #     pointvalues = np.zeros([len(list_of_local_maxima), 3], dtype=float)
-    #     counter = 0
-    #     googtime = time.time()
-    #     for point in list_of_local_maxima:
-    #         pointvalues[counter][0] = point[0]
-    #         pointvalues[counter][1] = point[1]
-    #         pointvalues[counter][2] = np.nan
-    #         in_range = False
-    #         if (point[0] > fx*0.1) and (point[1] > fy*0.1) and (point[0] < fx*0.9) and (point[1] < fy*0.9):
-    #             in_range = True
-    #         if in_range:
-    #             value_at_point = hdufocusdata[point[0], point[1]]
-    #             try:
-    #                 value_at_neighbours = (hdufocusdata[point[0]-1, point[1]]+hdufocusdata[point[0]+1,
-    #                                        point[1]]+hdufocusdata[point[0], point[1]-1]+hdufocusdata[point[0], point[1]+1])/4
-    #             except:
-    #                 print(traceback.format_exc())
-    #             # Check it isn't just a dot
-    #             if value_at_neighbours < (0.6*value_at_point):
-    #                 pointvalues[counter][2] = np.nan
-    #             # If not saturated and far away from the edge
-    #             elif value_at_point < 0.8*saturate:
-    #                 pointvalues[counter][2] = value_at_point
-    #             else:
-    #                 pointvalues[counter][2]=np.nan
-    #         counter=counter+1
-    #     # Trim list to remove things that have too many other things close to them.
-
-    #     # remove nan rows
-    #     pointvalues = pointvalues[~np.isnan(pointvalues).any(axis=1)]
-    #     # reverse sort by brightness
-    #     pointvalues = pointvalues[pointvalues[:, 2].argsort()[::-1]]
-
-    #     # The radius should be related to arcseconds on sky
-    #     # And a reasonable amount - 24'
-    #     try:
-    #         radius_of_radialprofile = int(24/self.pixscale)
-    #     except:
-    #         # if pixelscale is not defined make it big
-    #         radius_of_radialprofile = int(24/0.2)
-
-    #     # Round up to nearest odd number to make a symmetrical array
-    #     radius_of_radialprofile = int(radius_of_radialprofile // 2 * 2 + 1)
-    #     halfradius_of_radialprofile = math.ceil(0.5*radius_of_radialprofile)
-
-    #     # Don't do them individually, set them up for multiprocessing
-    #     focus_multiprocess = []
-    #     for i in range(min(len(pointvalues), 200)):
-    #         cx = int(pointvalues[i][0])
-    #         cy = int(pointvalues[i][1])
-    #         cvalue = hdufocusdata[int(cx)][int(cy)]
-
-    #         try:
-    #             temp_array = hdufocusdata[cx-halfradius_of_radialprofile:cx+halfradius_of_radialprofile,
-    #                                       cy-halfradius_of_radialprofile:cy+halfradius_of_radialprofile]
-    #         except:
-    #             print(traceback.format_exc())
-    #         # construct radial profile
-    #         cut_x, cut_y = temp_array.shape
-    #         cut_x_center = (cut_x/2)-1
-    #         cut_y_center = (cut_y/2)-1
-    #         radprofile = np.zeros([cut_x*cut_y, 2], dtype=float)
-    #         counter = 0
-    #         brightest_pixel_rdist = 0
-    #         brightest_pixel_value = 0
-    #         for q in range(cut_x):
-    #             for t in range(cut_y):
-    #                 r_dist = pow(pow((q-cut_x_center), 2) +
-    #                              pow((t-cut_y_center), 2), 0.5)
-    #                 if q-cut_x_center < 0:  # or t-cut_y_center < 0:
-    #                     r_dist = r_dist*-1
-    #                 radprofile[counter][0] = r_dist
-    #                 radprofile[counter][1] = temp_array[q][t]
-    #                 if temp_array[q][t] > brightest_pixel_value:
-    #                     brightest_pixel_rdist = r_dist
-    #                     brightest_pixel_value = temp_array[q][t]
-    #                 counter = counter+1
-    #         # If the brightest pixel is in the center-ish
-    #         # then put it in contention
-    #         if self.pixscale == None:
-    #             if abs(brightest_pixel_rdist) < max(3, 3/0.2):
-    #                 focus_multiprocess.append(
-    #                     (cvalue, cx, cy, radprofile, 0.2))
-
-
-    #         else:
-    #             if abs(brightest_pixel_rdist) < max(3, 3/self.pixscale):
-    #                 focus_multiprocess.append(
-    #                     (cvalue, cx, cy, radprofile, self.pixscale))
-
-    #     # Temporary just fur testing
-    #     fwhm_results = []
-    #     number_to_collect = max(16, 2*os.cpu_count())
-    #     for i in range(len(focus_multiprocess)):
-    #         result = multiprocess_fast_gaussian_photometry(
-    #             focus_multiprocess[i])
-    #         if not np.isnan(result):
-    #             fwhm_results.append(result)
-    #             if len(fwhm_results) >= number_to_collect:
-    #                 break
-
-    #     rfp = abs(bn.nanmedian(fwhm_results)) * 4.710
-    #     if self.pixscale == None:
-    #         rfr= rfp
-    #         rfs = np.nanstd(fwhm_results)
-    #     else:
-    #         rfr = rfp * self.pixscale
-    #         rfs = np.nanstd(fwhm_results) * self.pixscale
-    #     if rfr < 1.0 or rfr > 12:
-    #         rfr = np.nan
-    #         rfp = np.nan
-    #         rfs = np.nan
-
-    #     fwhm_file = {}
-    #     fwhm_file['rfp'] = str(rfp)
-    #     fwhm_file['rfr'] = str(rfr)
-    #     fwhm_file['rfs'] = str(rfs)
-    #     fwhm_file['sky'] = str(imageMedian)
-    #     fwhm_file['sources'] = str(len(fwhm_results))
-
-    #     # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
-    #     # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
-    #     hdusmalldata = np.array(hdufocusdata)
-    #     fx, fy = hdusmalldata.shape
-
-    #     aspect_ratio= fx/fy
-    #     if self.pixscale == None:
-    #         focus_jpeg_size=500
-    #     else:
-    #         focus_jpeg_size=0.2/(self.pixscale/3600)
-    #     if focus_jpeg_size < fx:
-    #         crop_width = (fx - focus_jpeg_size) / 2
-    #     else:
-    #         crop_width =2
-
-    #     if focus_jpeg_size < fy:
-    #         crop_height = (fy - (focus_jpeg_size / aspect_ratio)) / 2
-    #     else:
-    #         crop_height = 2
-
-    #     # Make sure it is an even number for OSCs
-    #     if (crop_width % 2) != 0:
-    #         crop_width = crop_width+1
-    #     if (crop_height % 2) != 0:
-    #         crop_height = crop_height+1
-
-    #     crop_width = int(crop_width)
-    #     crop_height = int(crop_height)
-
-    #     if crop_width > 0 or crop_height > 0:
-    #         hdusmalldata = hdusmalldata[crop_width:-
-    #                                     crop_width, crop_height:-crop_height]
-
-    #     hdusmalldata = hdusmalldata - bn.nanmin(hdusmalldata)
-
-    #     stretched_data_float = mid_stretch_jpeg(hdusmalldata+1000)
-    #     stretched_256 = 255 * stretched_data_float
-    #     hot = np.where(stretched_256 > 255)
-    #     cold = np.where(stretched_256 < 0)
-    #     stretched_256[hot] = 255
-    #     stretched_256[cold] = 0
-    #     stretched_data_uint8 = stretched_256.astype("uint8")
-    #     hot = np.where(stretched_data_uint8 > 255)
-    #     cold = np.where(stretched_data_uint8 < 0)
-    #     stretched_data_uint8[hot] = 255
-    #     stretched_data_uint8[cold] = 0
-
-    #     iy, ix = stretched_data_uint8.shape
-    #     final_image = Image.fromarray(stretched_data_uint8)
-
-    #     if iy == ix:
-    #         final_image = final_image.resize(
-    #             (900, 900)
-    #         )
-    #     else:
-    #         final_image = final_image.resize(
-    #             (900, int(900 * iy / ix))
-    #         )
-
-    #     self.current_focus_jpg = copy.deepcopy(final_image)
-
-    #     del hdusmalldata
-    #     del stretched_data_float
-    #     del final_image
-
-    #     return fwhm_file
-
-    # Note this is a thread!
 
     def camera_update_thread(self):
 
@@ -2275,19 +1905,10 @@ class Camera:
         ra_center = ra  # RA of the image center in degrees
         dec_center = dec   # Dec of the image center in degrees
 
-        # # List of RA and Dec positions of stars
-        # star_positions = [
-        #     (180.01, 0.01),  # Example: RA=180.01, Dec=0.01
-        #     (179.99, -0.01), # Example: RA=179.99, Dec=-0.01
-        #     # Add more positions as needed
-        # ]
-
         star_positions=[]
         for star in stars:
             if '-' not in str(star[2]):
                 star_positions.append((star[0],star[1],star[2]))
-
-
 
         # Convert star positions to SkyCoord
         center_coord = SkyCoord(ra=ra_center, dec=dec_center, unit=(u.deg, u.deg))
@@ -2307,112 +1928,25 @@ class Camera:
         pixel_positions = np.column_stack((x_pixels, y_pixels, np.asarray(star_positions)[:,2]))
 
         # Print results
-        print("Star positions in pixel coordinates (x, y):")
-        print(pixel_positions)
-
+        # print("Star positions in pixel coordinates (x, y):")
+        # print(pixel_positions)
 
         xpixelsize = 2400
         ypixelsize = 2400
-        #shape = (xpixelsize, ypixelsize)
 
         # Make blank synthetic image with a sky background
         synthetic_image = np.zeros([xpixelsize, ypixelsize]) + 100
-        # Add in noise to background as well
-        #synthetic_image = synthetic_image + np.random.uniform(low=-15, high=15, size=(xpixelsize, ypixelsize)) + 100
 
+        # Add in noise to background as well
         synthetic_image = synthetic_image + np.random.normal(loc=100,
                                         scale=10,
                                         size=synthetic_image.shape)
-
-        # #Bullseye Star Shape
-        # modelstar = [
-        #             [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01],
-        #             [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
-        #             [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
-        #             [ 0.2 , 0.4 , 0.8 , 1.2,  0.8, 0.4, 0.2],
-        #             [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
-        #             [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
-        #             [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01]
-
-        #             ]
-
-        # modelstar=np.array(modelstar)
-
-        # # Add bullseye stars to blank image
-        # for addingstar in pixel_positions:
-
-        #     if addingstar[0] > 50 and addingstar[0] < 2350:
-        #         if addingstar[1] > 50 and addingstar[1] < 2350:
-
-        #             x = round(addingstar[1] -1)
-        #             y = round(addingstar[0] -1)
-        #             #peak = int(addingstar[2])
-        #             peak = int(pow(10,-0.4 * (addingstar[2] -23)))
-        #             # Add star to numpy array as a slice
-        #             try:
-        #                 synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
-        #             except Exception as e:
-        #                 print (e)
-        # #breakpoint()
-
-
-        def create_gaussian_psf(fwhm, size=11):
-            """
-            Create a 2D Gaussian kernel with a given FWHM.
-
-            Parameters:
-            - fwhm: Full Width at Half Maximum of the Gaussian PSF.
-            - size: Size of the kernel (should be large enough to capture most of the PSF).
-
-            Returns:
-            - psf: 2D numpy array representing the Gaussian PSF.
-            """
-            sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))  # Convert FWHM to sigma
-            center = size // 2
-            y, x = np.mgrid[0:size, 0:size]
-            psf = np.exp(-((x - center)**2 + (y - center)**2) / (2 * sigma**2))
-            psf /= psf.sum()  # Normalize to ensure total flux is 1
-            return psf
-
-        def add_star_with_psf(image_array, x, y, flux, psf):
-            """
-            Add a single star with a Gaussian PSF to the image array.
-
-            Parameters:
-            - image_array: 2D numpy array representing the image.
-            - x, y: Pixel coordinates of the star.
-            - flux: Total flux of the star.
-            - psf: 2D numpy array representing the normalized PSF.
-            """
-            psf_size = psf.shape[0]
-            psf_center = psf_size // 2
-            x_start = max(0, x - psf_center)
-            x_end = min(image_array.shape[1], x + psf_center + 1)
-            y_start = max(0, y - psf_center)
-            y_end = min(image_array.shape[0], y + psf_center + 1)
-
-            psf_x_start = psf_center - (x - x_start)
-            psf_x_end = psf_center + (x_end - x)
-            psf_y_start = psf_center - (y - y_start)
-            psf_y_end = psf_center + (y_end - y)
-
-            # Add scaled PSF to the image
-            image_array[y_start:y_end, x_start:x_end] += flux * psf[
-                psf_y_start:psf_y_end, psf_x_start:psf_x_end
-            ]
-
-        # Example usage
-        # image_array = np.zeros((100, 100))  # Initialize a 2D image array
-        # x_pixels = pixel_positions[:,0]   # x coordinates of stars
-        # y_pixels = pixel_positions[:,1]   # y coordinates of stars
-        # fluxes = pixel_positions[:,2]  # Flux values of the stars
 
         # Create the PSF kernel
         fwhm = 5
         psf = create_gaussian_psf(fwhm, size=21)
 
         # Add each star to the image
-        #for x, y, flux in zip(x_pixels, y_pixels, fluxes):
         for starstat in pixel_positions:
             if starstat[0] > 50 and starstat[0] < 2350:
                 if starstat[1] > 50 and starstat[1] < 2350:
@@ -2425,9 +1959,6 @@ class Camera:
 
         return synthetic_image
 
-        #return np.random.randint(0, 65536, size=(2400, 2400), dtype=np.uint16)
-
-
     def _zwo_connected(self):
         return True
 
@@ -2436,18 +1967,11 @@ class Camera:
         return True
 
     def _zwo_temperature(self):
-        # print(zwocamera.get_control_value(asi.ASI_TEMPERATURE))
-        # zwocamera.get_control_value(asi.ASI_COOLER_ON)
-        # print(zwocamera.get_control_value(asi.ASI_TEMPERATURE))
 
-        #return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)/10)
         return float(zwocamera.get_control_value(asi.ASI_TEMPERATURE)[0])/10, 0,0, zwocamera.get_control_value(asi.ASI_COOLER_POWER_PERC)[0]
 
     def _zwo_cooler_power(self):
         return float(zwocamera.get_control_value(asi.ASI_COOLER_POWER_PERC)[0])
-
-    # def _zwo_heatsink_temp(self):
-    #     return self.camera.HeatSinkTemperature
 
     def _zwo_cooler_on(self):
         zwocamera.set_control_value(asi.ASI_COOLER_ON, True)
@@ -2464,16 +1988,6 @@ class Camera:
 
     def _zwo_setpoint(self):
         return self.camera.TemperatureSetpoint
-
-    # def _zwo_expose(self, exposure_time, bias_dark_or_light_type_frame):
-    #     # if bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark':
-    #     #     imtypeb = 0
-    #     # else:
-    #     #     imtypeb = 1
-    #     # self.camera.Expose(exposure_time, imtypeb)
-
-    #     zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
-    #     zwocamera.start_exposure()
 
     def _zwo_stop_expose(self):
         # self.camera.AbortExposure()
@@ -2495,11 +2009,6 @@ class Camera:
             exposure_time = 40 / 1000/1000  # shortest requestable exposure time
 
         if not self.substacker:
-            # qhycam.so.SetQHYCCDParam(
-            #     qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
-            # qhycam.so.ExpQHYCCDSingleFrame(
-            #     qhycam.camera_params[qhycam_id]['handle'])
-
             zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
             zwocamera.start_exposure()
 
@@ -2547,9 +2056,6 @@ class Camera:
 
             plog("Collecting subexposure " + str(subexposure+1))
 
-            # qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(
-            #     exp_of_substacks*1000*1000))
-
             zwocamera.set_control_value(asi.ASI_EXPOSURE, int(exposure_time * 1000 * 1000))  # Convert to microseconds
 
 
@@ -2557,24 +2063,16 @@ class Camera:
                 self.substack_start_time = time.time()
             self.expected_endpoint_of_substack_exposure = time.time() + exp_of_substacks
             self.sub_stacker_midpoints.append(copy.deepcopy(time.time() + (0.5*exp_of_substacks)))
-            # qhycam.so.ExpQHYCCDSingleFrame(
-            #     qhycam.camera_params[qhycam_id]['handle'])
             zwocamera.start_exposure()
             exposure_timer = time.time()
 
             # save out previous array to disk during exposure
             if subexposure > 0:
-                # tempsend = np.reshape(
-                #     image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
-
-                #tempsend=tempsend[ 0:6384, 32:9600]
                 if not (self.overscan_down == 0 and self.overscan_up == 0 and self.overscan_left == 0 and self.overscan_right==0):
                     try:
                         image = image[self.overscan_left: self.imagesize_x-self.overscan_right,self.overscan_up: self.imagesize_y - self.overscan_down]
                     except:
                         plog(traceback.format_exc())
-                #    breakpoint()
-                #breakpoint()
                 np.save(substacker_filenames[subexposure-1], image)
 
             while (time.time() - exposure_timer) < exp_of_substacks:
@@ -2584,29 +2082,7 @@ class Camera:
             if subexposure == (N_of_substacks-1):
                 self.shutter_open = False
 
-            # # READOUT FROM THE QHY
-            # image_width_byref = c_uint32()
-            # image_height_byref = c_uint32()
-            # bits_per_pixel_byref = c_uint32()
-            #
-            # success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
-            #                                          byref(image_width_byref),
-            #                                          byref(image_height_byref),
-            #                                          byref(
-            #                                              bits_per_pixel_byref),
-            #                                          byref(
-            #                                              qhycam.camera_params[qhycam_id]['channels']),
-            #                                          byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-
-            # image = np.ctypeslib.as_array(
-            #     qhycam.camera_params[qhycam_id]['prev_img_data'])
-
-
-
-            #breakpoint()
-
             while zwocamera.get_exposure_status() == 1:
-                #print ('waitingforzeo')
                 time.sleep(0.05)
 
             time_before_last_substack_readout = time.time()
@@ -2614,10 +2090,6 @@ class Camera:
                 image = zwocamera.get_data_after_exposure()
 
                 image=np.frombuffer(image, dtype=np.uint16).reshape(self.imagesize_y,self.imagesize_x)
-
-            #breakpoint()
-
-
 
                 time_after_last_substack_readout = time.time()
 
@@ -2655,11 +2127,6 @@ class Camera:
                 plog ("ZWO READOUT ERROR. Probably a timeout?")
                 plog(traceback.format_exc())
                 return np.asarray([])
-
-
-
-
-
 
     def _maxim_connected(self):
         return self.camera.LinkEnabled
@@ -3129,6 +2596,8 @@ class Camera:
             else:
                 manually_requested_calibration = False
 
+            g_dev['obs'].report_to_nightlog("Individual Exposure Commanded: " + str(command))
+
             self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'],
                                 user_roles=command['user_roles'], quick=False, manually_requested_calibration=manually_requested_calibration)
 
@@ -3207,6 +2676,7 @@ class Camera:
         # And it is likely because it takes a non-zero time to get to Phase II
         # So even in the setup phase the "exposure" is "busy"
         self.running_an_exposure_set = True
+
 
         # Parse inputs from required_params and optional_params
         #
@@ -3309,8 +2779,13 @@ class Camera:
             frame_type = imtype.replace(
                 " ", ""
             )  # note banzai doesn't appear to include screen or solar flat keywords.
-        elif imtype.lower() == "focus":
+        elif imtype.lower() == "focus" :
             frame_type = "focus"
+            bias_dark_or_light_type_frame = 'light'
+            smartstack = False
+            lamps = None
+        elif  imtype.lower() == "focus_confirmation":
+            frame_type = "focus_confirmation"
             bias_dark_or_light_type_frame = 'light'
             smartstack = False
             lamps = None
@@ -3332,7 +2807,7 @@ class Camera:
                 lamps = None
 
         self.native_bin = self.settings["native_bin"]
-        self.ccd_sum = str(1) + ' ' + str(1)
+        # self.ccd_sum = str(1) + ' ' + str(1)
 
         self.estimated_readtime = (
             exposure_time + self.readout_time
@@ -3348,7 +2823,7 @@ class Camera:
             null_filterwheel = fw_device.null_filterwheel
         except:
             null_filterwheel =True
-        #breakpoint()
+
         try:
             if not null_filterwheel:
                 if imtype in ['bias', 'dark'] or a_dark_exposure:
@@ -3525,7 +3000,6 @@ class Camera:
                 self.initial_smartstack_dec = None
                 self.currently_in_smartstack_loop = False
 
-            #breakpoint()
 
             # Repeat camera acquisition loop to collect all smartstacks necessary
             # The variable Nsmartstacks defaults to 1 - e.g. normal functioning
@@ -4281,7 +3755,7 @@ class Camera:
             g_dev["obs"].send_to_user(f"Starting {exposure_time}s calibration exposure.", p_level="INFO")
         elif frame_type in ("flat", "screenflat", "skyflat"):
             g_dev["obs"].send_to_user(f"Taking {exposure_time}s flat exposure.", p_level="INFO")
-        elif frame_type in ("focus", "auto_focus", "pointing"):
+        elif frame_type in ("focus", "auto_focus", "pointing", "focus_confirmation"):
             g_dev["obs"].send_to_user(f"Starting {exposure_time}s {frame_type} exposure.", p_level="INFO")
         elif Nsmartstack > 1 and this_exposure_filter.lower() in narrowband_filters:
             message = (
@@ -4369,7 +3843,7 @@ class Camera:
 
         check_nudge_after_shutter_closed=False
 
-        if frame_type[-5:] in ["focus", "probe", "ental"]:
+        if frame_type[-5:] in ["focus", "probe", "ental"] or frame_type == "focus_confirmation":
             focus_image = True
         else:
             focus_image = False
@@ -4627,7 +4101,7 @@ class Camera:
                         red_name01
                     ]
 
-                # Another pickle debugger
+
                 if False :
                     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
@@ -5263,7 +4737,7 @@ class Camera:
                             outputimg = self._getImageArray()  # .astype(np.float32)
                             imageCollected = 1
 
-                            if False:
+                            if True:
                                height, width = outputimg.shape
                                patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
                                plog(">>>>  20% central image patch, std:  ", bn.nanmedian(patch), round(bn.nanstd(patch), 2), str(width)+'x'+str(height) )
@@ -5744,263 +5218,421 @@ class Camera:
                     del hdu
                     focus_position = g_dev['foc'].current_focus_position
 
-                    pixfoc=False
-                    if self.pixscale == None:
-                        pixfoc=True
-                    elif self.pixscale > 1.0:
-                        pixfoc=True
+                    try:
 
 
-                    if True: # pixfoc or not (g_dev['foc'].focus_commissioned):
+                        # Cut down focus image to central degree
+                        fx, fy = outputimg.shape
+                        # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
+                        # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
+                        # So we chop the image down to a degree by a degree
+                        # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
+                        if self.pixscale == None:
+                            # If we don't know the pixelscale, we don't know the size, but 1000 x 1000 should be big enough!!
+                            # Get the current dimensions
+                            height, width = outputimg.shape[:2]
 
-                        try:
+                            # Determine cropping bounds
+                            new_height = min(height, 3000)
+                            new_width = min(width, 3000)
 
+                            # Calculate start indices to center-crop
+                            start_y = (height - new_height) // 2
+                            start_x = (width - new_width) // 2
 
-                            # Cut down focus image to central degree
-                            fx, fy = outputimg.shape
-                            # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
-                            # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
-                            # So we chop the image down to a degree by a degree
-                            # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
-                            if self.pixscale == None:
-                                # If we don't know the pixelscale, we don't know the size, but 1000 x 1000 should be big enough!!
-                                # Get the current dimensions
-                                height, width = outputimg.shape[:2]
+                            # Crop the image
+                            outputimg = outputimg[start_y:start_y + new_height, start_x:start_x + new_width]
+                        else:
 
-                                # Determine cropping bounds
-                                new_height = min(height, 1000)
-                                new_width = min(width, 1000)
+                            fx_degrees = (fx * self.pixscale) / 3600
+                            fy_degrees = (fy * self.pixscale) / 3600
+                            crop_x = 0
+                            crop_y = 0
+                            if fx_degrees > 1.0:
+                                ratio_crop = 1/fx_degrees
+                                crop_x = int((fx - (ratio_crop * fx))/2)
+                            if fy_degrees > 1.0:
+                                ratio_crop = 1/fy_degrees
+                                crop_y = int((fy - (ratio_crop * fy))/2)
+                            if crop_x > 0 or crop_y > 0:
+                                if crop_x == 0:
+                                    crop_x = 2
+                                if crop_y == 0:
+                                    crop_y = 2
+                                # Make sure it is an even number for OSCs
+                                if (crop_x % 2) != 0:
+                                    crop_x = crop_x+1
+                                if (crop_y % 2) != 0:
+                                    crop_y = crop_y+1
+                                outputimg = outputimg[crop_x:-crop_x, crop_y:-crop_y]
 
-                                # Calculate start indices to center-crop
-                                start_y = (height - new_height) // 2
-                                start_x = (width - new_width) // 2
+                        if self.is_osc:
 
-                                # Crop the image
-                                outputimg = outputimg[start_y:start_y + new_height, start_x:start_x + new_width]
-                            else:
+                            # Rapidly interpolate so that it is all one channel
+                            # Wipe out red channel
+                            outputimg[::2, ::2] = np.nan
+                            # Wipe out blue channel
+                            outputimg[1::2, 1::2] = np.nan
 
-                                fx_degrees = (fx * self.pixscale) / 3600
-                                fy_degrees = (fy * self.pixscale) / 3600
-                                crop_x = 0
-                                crop_y = 0
-                                if fx_degrees > 1.0:
-                                    ratio_crop = 1/fx_degrees
-                                    crop_x = int((fx - (ratio_crop * fx))/2)
-                                if fy_degrees > 1.0:
-                                    ratio_crop = 1/fy_degrees
-                                    crop_y = int((fy - (ratio_crop * fy))/2)
-                                if crop_x > 0 or crop_y > 0:
-                                    if crop_x == 0:
-                                        crop_x = 2
-                                    if crop_y == 0:
-                                        crop_y = 2
-                                    # Make sure it is an even number for OSCs
-                                    if (crop_x % 2) != 0:
-                                        crop_x = crop_x+1
-                                    if (crop_y % 2) != 0:
-                                        crop_y = crop_y+1
-                                    outputimg = outputimg[crop_x:-crop_x, crop_y:-crop_y]
+                            # To fill the checker board, roll the array in all four directions and take the average
+                            # Which is essentially the bilinear fill without excessive math or not using numpy
+                            # It moves true values onto nans and vice versa, so makes an array of true values
+                            # where the original has nans and we use that as the fill
+                            bilinearfill = np.roll(outputimg, 1, axis=0)
+                            bilinearfill = np.add(
+                                bilinearfill, np.roll(outputimg, -1, axis=0))
+                            bilinearfill = np.add(
+                                bilinearfill, np.roll(outputimg, 1, axis=1))
+                            bilinearfill = np.add(
+                                bilinearfill, np.roll(outputimg, -1, axis=1))
+                            bilinearfill = np.divide(bilinearfill, 4)
+                            outputimg[np.isnan(outputimg)] = 0
+                            bilinearfill[np.isnan(bilinearfill)] = 0
+                            outputimg = outputimg+bilinearfill
+                            del bilinearfill
 
-                            if self.is_osc:
+                        #If it is a focus image then it will get sent in a different manner to the UI for a jpeg
+                        # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
+                        hdusmalldata = np.array(outputimg)
+                        fx, fy = hdusmalldata.shape
 
-                                # Rapidly interpolate so that it is all one channel
-                                # Wipe out red channel
-                                outputimg[::2, ::2] = np.nan
-                                # Wipe out blue channel
-                                outputimg[1::2, 1::2] = np.nan
+                        aspect_ratio= fx/fy
+                        if self.pixscale == None:
+                            focus_jpeg_size=500
+                        else:
+                            focus_jpeg_size=0.2/(self.pixscale/3600)
+                        if focus_jpeg_size < fx:
+                            crop_width = (fx - focus_jpeg_size) / 2
+                        else:
+                            crop_width =2
 
-                                # To fill the checker board, roll the array in all four directions and take the average
-                                # Which is essentially the bilinear fill without excessive math or not using numpy
-                                # It moves true values onto nans and vice versa, so makes an array of true values
-                                # where the original has nans and we use that as the fill
-                                bilinearfill = np.roll(outputimg, 1, axis=0)
-                                bilinearfill = np.add(
-                                    bilinearfill, np.roll(outputimg, -1, axis=0))
-                                bilinearfill = np.add(
-                                    bilinearfill, np.roll(outputimg, 1, axis=1))
-                                bilinearfill = np.add(
-                                    bilinearfill, np.roll(outputimg, -1, axis=1))
-                                bilinearfill = np.divide(bilinearfill, 4)
-                                outputimg[np.isnan(outputimg)] = 0
-                                bilinearfill[np.isnan(bilinearfill)] = 0
-                                outputimg = outputimg+bilinearfill
-                                del bilinearfill
+                        if focus_jpeg_size < fy:
+                            crop_height = (fy - (focus_jpeg_size / aspect_ratio)) / 2
+                        else:
+                            crop_height = 2
 
-                            #If it is a focus image then it will get sent in a different manner to the UI for a jpeg
-                            # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
-                            hdusmalldata = np.array(outputimg)
-                            fx, fy = hdusmalldata.shape
+                        # Make sure it is an even number for OSCs
+                        if (crop_width % 2) != 0:
+                            crop_width = crop_width+1
+                        if (crop_height % 2) != 0:
+                            crop_height = crop_height+1
 
-                            aspect_ratio= fx/fy
-                            if self.pixscale == None:
-                                focus_jpeg_size=500
-                            else:
-                                focus_jpeg_size=0.2/(self.pixscale/3600)
-                            if focus_jpeg_size < fx:
-                                crop_width = (fx - focus_jpeg_size) / 2
-                            else:
-                                crop_width =2
+                        crop_width = int(crop_width)
+                        crop_height = int(crop_height)
 
-                            if focus_jpeg_size < fy:
-                                crop_height = (fy - (focus_jpeg_size / aspect_ratio)) / 2
-                            else:
-                                crop_height = 2
+                        if crop_width > 0 or crop_height > 0:
+                            hdusmalldata = hdusmalldata[crop_width:-
+                                                        crop_width, crop_height:-crop_height]
 
-                            # Make sure it is an even number for OSCs
-                            if (crop_width % 2) != 0:
-                                crop_width = crop_width+1
-                            if (crop_height % 2) != 0:
-                                crop_height = crop_height+1
+                        hdusmalldata = hdusmalldata - bn.nanmin(hdusmalldata)
 
-                            crop_width = int(crop_width)
-                            crop_height = int(crop_height)
+                        stretched_data_float = mid_stretch_jpeg(hdusmalldata+1000)
+                        stretched_256 = 255 * stretched_data_float
+                        hot = np.where(stretched_256 > 255)
+                        cold = np.where(stretched_256 < 0)
+                        stretched_256[hot] = 255
+                        stretched_256[cold] = 0
+                        stretched_data_uint8 = stretched_256.astype("uint8")
+                        hot = np.where(stretched_data_uint8 > 255)
+                        cold = np.where(stretched_data_uint8 < 0)
+                        stretched_data_uint8[hot] = 255
+                        stretched_data_uint8[cold] = 0
 
-                            if crop_width > 0 or crop_height > 0:
-                                hdusmalldata = hdusmalldata[crop_width:-
-                                                            crop_width, crop_height:-crop_height]
+                        iy, ix = stretched_data_uint8.shape
+                        final_image = Image.fromarray(stretched_data_uint8)
 
-                            hdusmalldata = hdusmalldata - bn.nanmin(hdusmalldata)
+                        if iy == ix:
+                            final_image = final_image.resize(
+                                (900, 900)
+                            )
+                        else:
+                            final_image = final_image.resize(
+                                (900, int(900 * iy / ix))
+                            )
 
-                            stretched_data_float = mid_stretch_jpeg(hdusmalldata+1000)
-                            stretched_256 = 255 * stretched_data_float
-                            hot = np.where(stretched_256 > 255)
-                            cold = np.where(stretched_256 < 0)
-                            stretched_256[hot] = 255
-                            stretched_256[cold] = 0
-                            stretched_data_uint8 = stretched_256.astype("uint8")
-                            hot = np.where(stretched_data_uint8 > 255)
-                            cold = np.where(stretched_data_uint8 < 0)
-                            stretched_data_uint8[hot] = 255
-                            stretched_data_uint8[cold] = 0
+                        self.current_focus_jpg = copy.deepcopy(final_image)
 
-                            iy, ix = stretched_data_uint8.shape
-                            final_image = Image.fromarray(stretched_data_uint8)
-
-                            if iy == ix:
-                                final_image = final_image.resize(
-                                    (900, 900)
-                                )
-                            else:
-                                final_image = final_image.resize(
-                                    (900, int(900 * iy / ix))
-                                )
-
-                            self.current_focus_jpg = copy.deepcopy(final_image)
-
-                            # Image is now a degree on a side or less, but now lets deal with
-                            # unnecessary pixelscale
+                        # Image is now a degree on a side or less, but now lets deal with
+                        # unnecessary pixelscale
+                        temp_focus_bin=1
+                        if not self.pixscale == None:
                             if self.pixscale < 0.3:
                                 outputimg=block_reduce(outputimg,3)
                                 temp_focus_bin=3
                             elif self.pixscale < 0.6:
                                 temp_focus_bin=2
                                 outputimg=block_reduce(outputimg,2)
-                            else:
-                                temp_focus_bin=1
+                            # else:
 
+                        # Here we decide if Fwe are using source-extractor++
+                        # Which is great for actual focussing as it is quite robust
+                        # to blobs and donuts or whether we are using the gaussian method
+                        # which gives a quite accurate estimate of the true fwhm
+                        # from this scope
+
+                        do_source_extractor=True
+                        if frame_type == 'focus_confirmation':
+                            do_source_extractor=False
+
+                        if do_source_extractor:
                             try:
-                                sepbkg = sep.Background(outputimg, bw=32, bh=32, fw=3, fh=3)
-                            except:
-                                outputimg=outputimg.astype("float").copy(order="C")
-                                sepbkg = sep.Background(outputimg, bw=32, bh=32, fw=3, fh=3)
+                                # Utilise smartstacks directory as it is a temp directory that gets cleared out
+                                tempdir=self.local_calibration_path + "smartstacks/"
+                                tempdir_in_wsl=tempdir.split(':')
+                                tempdir_in_wsl[0]=tempdir_in_wsl[0].lower()
+                                tempdir_in_wsl='/mnt/'+ tempdir_in_wsl[0] + tempdir_in_wsl[1]
+                                tempdir_in_wsl=tempdir_in_wsl.replace('\\','/')
 
-                            sepbkg.subfrom(outputimg)
+                                tempfitsname=str(time.time()).replace('.','d') + '.fits'
 
-                            ix, iy = outputimg.shape
+                                # Save an image to the disk to use with source-extractor++
+                                # We don't need accurate photometry, so integer is fine.
+                                hdufocus = fits.PrimaryHDU()
+                                hdufocus.data = outputimg
+                                hdufocus.header["NAXIS1"] = outputimg.shape[0]
+                                hdufocus.header["NAXIS2"] = outputimg.shape[1]
+                                hdufocus.writeto(tempdir + tempfitsname, overwrite=True, output_verify='silentfix')
 
-                            if self.pixscale == None:
-                                minarea=5
-                            else:
-                                minarea= ((-9.2421 * self.pixscale) + 16.553)/ temp_focus_bin
-                            if minarea < 5:  # There has to be a min minarea though!
-                                minarea = 5
+                                if self.camera_known_gain < 1000:
+                                    segain=self.camera_known_gain
+                                else:
+                                    segain=0
 
-                            sep.set_extract_pixstack(int(ix*iy - 1))
+                                if self.pixscale == None:
+                                    minarea=5
+                                else:
+                                    minarea= ((-9.2421 * self.pixscale) + 16.553)/ temp_focus_bin
+                                if minarea < 5:  # There has to be a min minarea though!
+                                    minarea = 5
 
-                            sep.set_sub_object_limit(int(300000))
 
-                            sepbkgerr=sepbkg.globalrms
 
-                            try:
-                                sources = sep.extract(outputimg, 4.0, err=sepbkgerr, minarea=minarea)
-                            except:
+                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 5 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties FluxRadius --flux-fraction 0.5"')
+
                                 try:
-                                    print ("failed sep with background, trying without")
-                                    sources = sep.extract(outputimg, 4.0, minarea=minarea)
+
+                                    catalog=Table.read(tempdir+ tempfitsname.replace('.fits','cat.fits'))
+                                    # Remove rows where FLUX_RADIUS is 0 or NaN
+                                    mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)
+
+                                    catalog = catalog[mask]
+
+                                    # remove unrealistic estimates that are too small
+                                    if not self.pixscale == None:
+                                        mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
+                                        catalog = catalog[mask]
+                                    else:
+                                        mask = (catalog['flux_radius']) > 0.5
+                                        catalog =catalog[mask]
+
+                                    print ("std")
+                                    print (np.nanstd(np.asarray(catalog['flux_radius'])))
+                                    print ((np.asarray(catalog['flux_radius'])))
+
+                                    # def iterative_sigma_clip(data, sigma=3, maxiters=5):
+                                    #     data = np.asarray(data)
+                                    #     mask = np.zeros(data.shape, dtype=bool)
+
+                                    #     for i in range(maxiters):
+                                    #         good = data[~mask]
+                                    #         m, s = good.mean(), good.std()
+                                    #         #new_mask = np.abs(data - m) > sigma * s
+                                    #         new_mask = (data - m) > sigma * s
+                                    #         # if nothing new is masked, break
+                                    #         if np.all(new_mask == mask):
+                                    #             break
+                                    #         mask = new_mask
+
+                                    #     return data[~mask]
+
+                                    # clean = iterative_sigma_clip(my_list, sigma=3, maxiters=5)
+                                    # print("Iteratively clipped data:", clean)
+
+                                    fwhm_values=sigma_clip(np.asarray(catalog['flux_radius']),sigma_lower=2,sigma_upper=np.inf, maxiters=5)
+                                    fwhm_values=fwhm_values.data[~fwhm_values.mask]
+
+                                    print (np.nanstd(fwhm_values))
+
+                                    # The HFR and the fwhm are roughly twice
+                                    fwhm_values=fwhm_values *2
+
                                 except:
+                                    plog ("problem with the fits table... probably not enough detections")
+                                    fwhm_values=[]
 
-                                    print(traceback.format_exc())
-                                    sources=[]
+                                plog("No. of detections:  ", len(fwhm_values))
 
-                            sources = Table(sources)
-                            sources = sources[sources['flag'] < 8]
+                                print (fwhm_values)
 
-                            image_saturation_level = self.settings["saturate"]
+                                if len(fwhm_values) < 10:
+                                    fwhm_dict = {}
+                                    fwhm_dict['rfp'] = np.nan
 
-                            sources = sources[sources["peak"] < 0.8 * image_saturation_level ]
-                            sources = sources[sources["cpeak"] < 0.8 * image_saturation_level ]
-                            sources = sources[sources["flux"] > 750]
-                            # BANZAI prune nans from table
-                            nan_in_row = np.zeros(len(sources), dtype=bool)
-                            for col in sources.colnames:
-                                nan_in_row |= np.isnan(sources[col])
-                            sources = sources[~nan_in_row]
+                                    fwhm_dict['rfr'] = np.nan
+                                    fwhm_dict['rfs'] = np.nan
+                                    fwhm_dict['sky'] = 200 #str(imageMedian)
+                                    fwhm_dict['sources'] = str(len(fwhm_values))
 
+                                else:
 
-                            try:
+                                    fwhm_dict = {}
+                                    fwhm_dict['rfp'] = np.median(fwhm_values) * temp_focus_bin
+                                    if self.pixscale == None:
+                                        fwhm_dict['rfr'] = np.median(fwhm_values)  * temp_focus_bin
+                                        fwhm_dict['rfs'] = np.median(fwhm_values)  * temp_focus_bin
 
-                                sources['FWHM'], _ = sep.flux_radius(outputimg, sources['x'], sources['y'], sources['a'], 0.5,
-                                                                     subpix=5)
+                                    else:
+                                        fwhm_dict['rfr'] = np.median(fwhm_values) * self.pixscale * temp_focus_bin
+                                        fwhm_dict['rfs'] = np.median(fwhm_values) * self.pixscale  * temp_focus_bin
+                                    fwhm_dict['sky'] = 200 #str(imageMedian)
+                                    fwhm_dict['sources'] = str(len(fwhm_values))
 
-                                # Need to reject any stars that have FWHM that are less than a extremely
-                                # perfect night as artifacts
-                                if not (self.pixscale == None):
+                                if fwhm_dict['rfr'] < 1.0:
+                                    plog ("Unreasonable RFR value, setting focus to nan")
+                                    fwhm_dict['rfp'] = np.nan
 
-                                    sources = sources[sources['FWHM'] > (0.8 / (self.pixscale * temp_focus_bin))]
-                                sources = sources[sources['FWHM'] != 0]
+                                    fwhm_dict['rfr'] = np.nan
+                                    fwhm_dict['rfs'] = np.nan
+                                    fwhm_dict['sky'] = 200 #str(imageMedian)
+                                    fwhm_dict['sources'] = str(len(fwhm_values))
 
-                                # BANZAI prune nans from table
-                                nan_in_row = np.zeros(len(sources), dtype=bool)
-                                for col in sources.colnames:
-                                    nan_in_row |= np.isnan(sources[col])
-                                sources = sources[~nan_in_row]
+                                plog ("FWHM: " + str(fwhm_dict['rfr']))
 
                             except:
                                 print ("couldn't do blob photometry: ")
                                 print(traceback.format_exc())
+                        else: # Do confirmation moffet photometry
+
+                            try:
+
+                                fx, fy = outputimg.shape
+
+                                # Make a mask of NaNs
+                                nan_mask = np.isnan(outputimg)
+
+                                # Replace NaNs with 0 temporarily
+                                filled = np.copy(outputimg)
+                                filled[nan_mask] = 0
+
+                                # Create a distance map to the nearest non-NaN
+                                distance, indices = ndimage.distance_transform_edt(nan_mask, return_indices=True)
+
+                                # Map the original non-NaN values into the NaN locations
+                                filled[nan_mask] = outputimg[tuple(indices[:, nan_mask])]#
+
+                                outputimg=filled
+
+                                bkg = sep.Background(outputimg, bw=32, bh=32, fw=3, fh=3)
+                                bkg.subfrom(outputimg)
+
+                                # Estimate a noise level (even if background subtracted, the noise remains)
+                                noise = mad_std(outputimg)
+
+                                # Set a detection threshold (5 sigma above noise, for example)
+                                daofind = DAOStarFinder(fwhm=3.0, threshold=5.*noise)
+
+                                # Find sources
+                                sources = daofind(outputimg)
+                                # Size of the cutouts
+                                if self.pixscale == None:
+                                    stamp_size = max(10 * (1/0.1),25)  # pixels
+                                else:
+                                    stamp_size = max(10 * (1/self.pixscale),25)  # pixels
+
+                                cutouts = []
+                                positions = []
+
+                                # Step 1: Sort by 'flux' in descending order
+                                sources.sort('flux')
+                                sources.reverse()  # Because astropy sorts ascending by default
+
+                                # Step 2: Trim to top 50 rows (or all if fewer)
+                                top_sources = sources[:50]
+
+                                for source in top_sources:
+                                    x, y = source['xcentroid'], source['ycentroid']
+                                    try:
+                                        cutout = Cutout2D(outputimg, (x, y), (stamp_size, stamp_size))
+                                        cutouts.append(cutout.data)
+                                        positions.append((x, y))
+                                    except Exception:
+                                        pass
+
+                                fwhms = []
+
+                                def multiprocess_fwhm(cutouts, positions, processes=4):
+                                    with Pool(processes=processes) as pool:
+                                        results = pool.map(fit_moffat_worker, zip(cutouts, positions))
+                                    # Filter out failed fits
+                                    return [r for r in results if r is not None]
+
+                                # Get number of CPUs
+                                num_cpus = multiprocessing.cpu_count()
+
+                                fwhms = multiprocess_fwhm(cutouts, positions, processes=max(1, num_cpus - 1))
+
+                                fwhms=np.array(fwhms)
 
 
-                        except:
-                            print ("couldn't do blob photometry: ")
-                            print(traceback.format_exc())
-                        plog("No. of detections:  ", len(sources))
 
-                        fwhm_dict = {}
-                        fwhm_dict['rfp'] = np.median(sources['FWHM']) * 2 * 1.5 * temp_focus_bin
-                        if self.pixscale == None:
-                            fwhm_dict['rfr'] = np.median(sources['FWHM']) * 2 * 1.5 * temp_focus_bin
-                            fwhm_dict['rfs'] = np.std(sources['FWHM']) * 2 * 1.5 * temp_focus_bin
+                                fwhms=fwhms[~np.isnan(fwhms)]
+                                fwhms = fwhms[fwhms >= 0.5]
+                                plog ("N of sources processed: " + str(len(sources)))
 
-                        else:
-                            fwhm_dict['rfr'] = np.median(sources['FWHM']) * self.pixscale * 2 * 1.5 * temp_focus_bin
-                            fwhm_dict['rfs'] = np.std(sources['FWHM']) * self.pixscale * 2 * 1.5 * temp_focus_bin
-                        fwhm_dict['sky'] = 200 #str(imageMedian)
-                        fwhm_dict['sources'] = str(len(sources))
 
-                        plog ("FWHM: " + str(fwhm_dict['rfr']))
+                                rfp = bn.nanmedian(fwhms) * temp_focus_bin
+                                if self.pixscale == None:
+                                    rfr = None
+                                    rfs = None
+
+                                else:
+                                    rfr = rfp * self.pixscale
+                                    rfs = bn.nanstd(fwhms) * self.pixscale * temp_focus_bin
+                                    if rfr < 1.0 or rfr  > 16:
+                                        print (rfr)
+                                        rfr= np.nan
+                                        rfp= np.nan
+
+                                fwhm_dict = {}
+                                fwhm_dict['rfp'] = rfp
+                                fwhm_dict['rfr'] = rfr
+                                fwhm_dict['rfs'] = rfs
+
+                                fwhm_dict['sky'] = 200 #str(imageMedian)
+                                fwhm_dict['sources'] = str(len(sources))
+
+                                plog ("FWHM: " + str(fwhm_dict['rfr']))
+
+                                #breakpoint()
+
+
+                            except:
+                                print ("couldn't do gaussian photometry: ")
+                                print(traceback.format_exc())
+                    except:
+                        print ("couldn't do focus photometry: ")
+                        print(traceback.format_exc())
+
+
 
                     ########################################################################################
 
                     g_dev['obs'].fwhmresult['FWHM'] = float(fwhm_dict['rfr'])
                     g_dev['obs'].fwhmresult['No_of_sources'] = float(
                         fwhm_dict['sources'])
+                    g_dev['obs'].fwhmresult["mean_focus"] = focus_position
+
+                    g_dev['obs'].fwhmresult['error'] = False
 
                     expresult['FWHM'] = g_dev['obs'].fwhmresult['FWHM']
                     expresult["mean_focus"] = focus_position
                     expresult['No_of_sources'] = fwhm_dict['sources']
 
+
                     plog("Focus at " + str(focus_position) + " is " +
                          str(round(float(g_dev['obs'].fwhmresult['FWHM']), 2)))
+
+                    plog ("Stored")
 
                     try:
                         hdusmallheader["SEPSKY"] = str(fwhm_dict['sky'])

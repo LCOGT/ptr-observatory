@@ -713,7 +713,7 @@ site_config = {
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
             'service_date': '20250218',  #'20240801',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo.
-            'switch_driver':  'ASCOM.PegasusAstroUPBv2.Switch', #this is a temp hack, we should install the Powerbox as a first-class device.
+            'switch_driver':  'ASCOM.Device1.Switch', #this is a temp hack, we should install the Powerbox as a first-class device.
             #the camera is on " Output 4", whatever that ends up meaning.  Hopefull = Switch4.
 
             'detector':  'Sony IMX461 BSI Mono',  # It would be good to build out a table of chip characteristics  6280 x 4210  Inspect: 62:4102, 4:6076  Sony 6244X4168 Active Optical black Hor 16, rear 0, Vert 22, rear 0

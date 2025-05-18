@@ -7,43 +7,19 @@ import sys
 
 
 import pickle
-# import copy
-# from astropy.nddata import block_reduce
 import numpy as np
-#import sep
-#import glob
-import shutil
-#from astropy.nddata.utils import extract_array
 from astropy.io import fits
-#from subprocess import Popen, PIPE
 import os
-#from pathlib import Path
-#from os import getcwd
 import time
 from astropy.utils.exceptions import AstropyUserWarning
-#from astropy.table import Table
 import warnings
 import traceback
-#import bottleneck as bn
-#from math import cos, radians
-# from colour_demosaicing import (
-#     demosaicing_CFA_Bayer_bilinear,  # )#,
-#     # demosaicing_CFA_Bayer_Malvar2004,
-#     demosaicing_CFA_Bayer_Menon2007)
-#import matplotlib.pyplot as plt
-#import math
-#from PIL import Image#, ImageOps
-#from scipy.stats import binned_statistic
-#from astropy.wcs import WCS
-#from astropy import units as u
-#from astropy.visualization.wcsaxes import Quadrangle
+
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
-
+from astropy.nddata import block_reduce
 import bottleneck as bn
 from astropy.stats import sigma_clip
-
-import subprocess
 from astropy.table import Table
 
 # # Add the parent directory to the Python path
@@ -119,20 +95,15 @@ DECest=input_psolve_info[6]
 nextseq=input_psolve_info[7]
 cpu_limit=90
 
-## Check we are working in unit16
-#if not hdufocusdata.dtype == np.uint16:
-#    raised_array=hdufocusdata - np.nanmin(hdufocusdata)
-##    hdufocusdata = np.maximum(raised_array,0).astype(np.uint16)
-#    del raised_array
-
 
 googtime=time.time()
 
 # If this is an osc image, then interpolate so it is just the green filter image of the same size.
 if is_osc:
     ########## Need to split the file into four
-    plog ("do osc stuff")
-
+    #plog ("Binning for osc")
+    hdufocusdata = block_reduce(hdufocusdata, block_size=(2, 2), func=np.mean)
+    pixscale=pixscale*2
 
 # Check that the wcs directory is constructed
 #plog ("HERE WE ARE")
@@ -171,11 +142,18 @@ plog ("Just before solving: " +str(time.time()-googtime))
 # Save an image to the disk to use with source-extractor
 # We don't need accurate photometry, so integer is fine.
 hdufocus = fits.PrimaryHDU()
-hdufocus.data = hdufocusdata#.astype(np.uint16)#.astype(np.float32)
-#hdufocus.header = hduheader
+hdufocus.data = hdufocusdata
 hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
 hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
 hdufocus.writeto(wslfilename, overwrite=True, output_verify='silentfix')
+
+imageh=hdufocusdata.shape[0]
+imagew=hdufocusdata.shape[1]
+skylevel=bn.nanmedian(hdufocusdata)
+
+# Remove hdufocusdata to free up RAM
+del hdufocus
+del hdufocusdata
 
 
 ########## SETUP TEMPDIR AND CODEDIR HERE
@@ -222,6 +200,10 @@ acatalog = Table.read(tempdir+"/test.cat", format='ascii')
 # Reject poor  ( <10 SNR) sources
 acatalog=acatalog[acatalog['FLUX_AUTO']/acatalog['FLUXERR_AUTO'] > 10]
 
+print ("actalog")
+print (len(acatalog))
+print (acatalog)
+
 #breakpoint()
 # Write out to fits
 #ascii_catalog.write(tempdir+ "/test.fits", format="fits", overwrite=True)
@@ -253,7 +235,7 @@ picklefwhm={}
 try:
 
     # try:
-    picklefwhm["SKYLEVEL"] = (bn.nanmedian(hdufocusdata), "Sky Level without pedestal")
+    picklefwhm["SKYLEVEL"] = (skylevel, "Sky Level without pedestal")
     # except:
     #     picklefwhm["SKYLEVEL"] = -9999
     # try:
@@ -285,7 +267,7 @@ try:
 except:
     plog(traceback.format_exc())
 
-    picklefwhm["SKYLEVEL"] = (bn.nanmedian(hdufocusdata), "Sky Level without pedestal")
+    picklefwhm["SKYLEVEL"] = (skylevel, "Sky Level without pedestal")
 
     picklefwhm["FWHM"] = (-99, 'FWHM in pixels')
     picklefwhm["FWHMpix"] = (-99, 'FWHM in pixels')
@@ -298,8 +280,7 @@ except:
 with open(fwhmfilename, 'wb') as fp: # os.getcwd() + '/' + file.replace('.fits', '.wcs').replace('.fit', '.fwhm')
     pickle.dump(picklefwhm, fp)
 
-imageh=hdufocusdata.shape[0]
-imagew=hdufocusdata.shape[1]
+
 
 # Use tweak order 2 in smaller fields of view and tweak order 3 in larger fields.
 sizewidest= max(imageh*pixscale, imagew*pixscale) / 3600
@@ -333,10 +314,10 @@ else:
 print ()
 if len(acatalog) > 5:
     astoptions = '--crpix-center --tweak-order ' + str(tweakorder[0]) +' --use-source-extractor --scale-units arcsecperpix --scale-low ' + str(pixlow) + ' --scale-high ' + str(pixhigh) + ' --ra ' + str(RAest) + ' --dec ' + str(DECest) + ' --radius 20 --cpulimit ' +str(cpu_limit * 3) + ' --overwrite --no-verify --no-plots --new-fits none'
-
+    print (astoptions)
     plog (astoptions)
 
-    os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename) + ' > output.txt')
+    os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename)) # + ' > output.txt')
 
     plog (wslfilename)
     # Remove temporary fits file
@@ -344,7 +325,7 @@ if len(acatalog) > 5:
     #     os.remove(wslfilename)
     # except:
     #     pass
-    
+
     if os.path.exists (wslfilename.replace('.fits','.wcs')):
         plog ("successfully made wcs!")
     else:
@@ -354,7 +335,7 @@ if len(acatalog) > 5:
         os.system('wsl --exec solve-field ' + astoptions + ' ' + str(realwslfilename))
 
         plog (wslfilename)
-        
+
         if os.path.exists (wslfilename.replace('.fits','.wcs')):
             plog ("successfully made wcs!")
         else:
@@ -364,9 +345,22 @@ if len(acatalog) > 5:
 else:
     with open(wslfilename.replace('.fits','.failed'), 'w') as file:
         file.write('failed')
-            
+
 
 sys.exit()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 wslfilename.replace('.fits','.wcs')
 

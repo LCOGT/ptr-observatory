@@ -154,7 +154,7 @@ site_config = {
 
 
     # Exposure times for standard system exposures
-    'focus_exposure_time': 8,  # Exposure time in seconds for exposure image
+    'focus_exposure_time': 15,  # Exposure time in seconds for exposure image
     'pointing_exposure_time': 10,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
@@ -716,7 +716,7 @@ site_config = {
                 'readout_speed': 0.08,
                 'readout_seconds': 1.0,
                 'smart_stack_exposure_time' : 30,
-                'substack': True, # Substack with this camera
+                'substack': False, # Substack with this camera
 
                 'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
