@@ -569,7 +569,7 @@ site_config = {
             'start_at_config_reference': False,
             'correct_focus_for_temperature': True,
             # highest value to consider as being in "good focus". Used to select last good focus value
-            'maximum_good_focus_in_arcsecond': 5.0,
+            'maximum_good_focus_in_arcsecond': 10.0,
             'focuser_movement_settle_time': 3,
             # F4.9 setup
             'reference':  5221.2,    #  20241204
@@ -1030,7 +1030,7 @@ site_config = {
                 'has_darkslide':  True,
                 'darkslide_type': 'bistable',
                 'darkslide_can_report':  False,
-                'darkslide_com':  'COM17',
+                'darkslide_com':  'COM10',
                 'shutter_type': "Electronic",
 
 
