@@ -5553,6 +5553,8 @@ class Camera:
                                                                                                 breaker =0
 
                         outputimg[outputimg < zeroValue] = np.nan
+                        del unique
+                        del counts
 
                         # Interpolate image nans
                         #kernel = Gaussian2DKernel(x_stddev=1)
