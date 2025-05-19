@@ -943,13 +943,32 @@ try:
             ]
         )
 
-        platesolve_subprocess = subprocess.run(
+        # platesolve_subprocess = subprocess.run(
+        #     ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
+        #     input=pickledata,
+        #     stdout=subprocess.PIPE,
+        #     stderr=subprocess.PIPE,
+        #     text=False  # MUST be False for binary data
+        # )
+        
+        # On Windows you can detach the child completely if you like:
+        DETACHED_PROCESS = 0x00000008  # from the Win32 API
+        
+        p = subprocess.Popen(
             ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
-            input=pickledata,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=False  # MUST be False for binary data
+            stdin = subprocess.PIPE,             # so we can feed it our pickledata
+            stdout = subprocess.DEVNULL,         # drop its stdout
+            stderr = subprocess.DEVNULL,         # drop its stderr
+            creationflags = DETACHED_PROCESS     # optional: child won’t keep your console open
         )
+        
+        # send the pickle and close stdin so the child sees EOF
+        p.stdin.write(pickledata)
+        p.stdin.close()
+        
+        # at this point `p` is running in the background,
+        # and _your_ script continues immediately to the next line.
+        print("Platesolve subprocess launched (PID {})".format(p.pid))
 
     # While we wait for the platesolving to happen we do all the other stuff
     # And we will pick up the solution towards the end.

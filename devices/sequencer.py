@@ -1698,7 +1698,14 @@ class Sequencer:
                 exposure['substack'] = do_sub_stack
                 exposure['smartstack'] = do_smart_stack
                 left_to_do += int(exposure['count'])
-
+                
+            if g_dev["obs"].stop_all_activity:
+                plog('stop_all_activity cancelling out of exposure loop in seq:blk execute')
+                self.blockend = None
+                self.total_sequencer_control=False
+                g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
+                return block_specification
+            
             plog("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
 
@@ -1745,6 +1752,14 @@ class Sequencer:
                 if absolute_distance < absolute_distance_threshold and not self.config['always_do_a_centering_exposure_regardless_of_nearby_reference']:
                     plog ("reference close enough to requested position, skipping centering exposure")
                     skip_centering=True
+
+
+            if g_dev["obs"].stop_all_activity:
+                plog('stop_all_activity cancelling out of exposure loop in seq:blk execute')
+                self.blockend = None
+                self.total_sequencer_control=False
+                g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
+                return block_specification
 
             if not skip_centering:
                 plog ("Taking a quick pointing check and re_seek for new project block")
