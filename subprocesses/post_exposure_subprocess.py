@@ -280,8 +280,12 @@ try:
     payload=pickle.load(sys.stdin.buffer)
 
 except:
-    payload=pickle.load(open('testpostprocess.pickle','rb'))
-    plog ("ignoring exception")
+    try:
+        payload=pickle.load(open('testpostprocess.pickle','rb'))
+        plog ("ignoring exception")
+    except:
+        plog ("post_exposure couldn't get its' payload")
+        sys.exit()
 #expresult={}
 #A long tuple unpack of the payload
 (img, pier_side, is_osc, frame_type, reject_flat_by_known_gain, avg_mnt, avg_foc, avg_rot, \
