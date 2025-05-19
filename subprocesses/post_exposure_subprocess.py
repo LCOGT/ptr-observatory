@@ -300,7 +300,7 @@ except:
  substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header, \
  corrected_dec_for_header, substacker_filenames, dayobs, exposure_filter_offset,null_filterwheel, \
  wema_config, smartstackthread_filename, septhread_filename, mainjpegthread_filename,\
- platesolvethread_filename, number_of_exposures_requested, unique_batch_code) = payload
+ platesolvethread_filename, number_of_exposures_requested, unique_batch_code,exposure_in_nighttime) = payload
 
 pane = opt.get('pane')
 
@@ -869,43 +869,83 @@ try:
         googtime=time.time()
 
 
-        unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(np.int32), return_counts=True)
-        m=counts.argmax()
-        imageMode=unique[m]
+        # unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(np.int32), return_counts=True)
+        # m=counts.argmax()
+        # imageMode=unique[m]
         plog ("Calculated Mode: " + str(imageMode))
         plog ("Calculating Mode: " +str(time.time()-googtime))
 
 
-        # Zerothreshing image
-        googtime=time.time()
-        histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-        histogramdata[histogramdata[:,0] > -10000]
-        #Do some fiddle faddling to figure out the value that goes to zero less
-        zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-        breaker=1
-        counter=0
-        while (breaker != 0):
-            counter=counter+1
-            if not (imageMode-counter) in zeroValueArray[:,0]:
-                if not (imageMode-counter-1) in zeroValueArray[:,0]:
-                    if not (imageMode-counter-2) in zeroValueArray[:,0]:
-                        if not (imageMode-counter-3) in zeroValueArray[:,0]:
-                            if not (imageMode-counter-4) in zeroValueArray[:,0]:
-                                if not (imageMode-counter-5) in zeroValueArray[:,0]:
-                                    if not (imageMode-counter-6) in zeroValueArray[:,0]:
-                                        if not (imageMode-counter-7) in zeroValueArray[:,0]:
-                                            if not (imageMode-counter-8) in zeroValueArray[:,0]:
-                                                if not (imageMode-counter-9) in zeroValueArray[:,0]:
-                                                    if not (imageMode-counter-10) in zeroValueArray[:,0]:
-                                                        if not (imageMode-counter-11) in zeroValueArray[:,0]:
-                                                            if not (imageMode-counter-12) in zeroValueArray[:,0]:
-                                                                if not (imageMode-counter-13) in zeroValueArray[:,0]:
-                                                                    if not (imageMode-counter-14) in zeroValueArray[:,0]:
-                                                                        if not (imageMode-counter-15) in zeroValueArray[:,0]:
-                                                                            if not (imageMode-counter-16) in zeroValueArray[:,0]:
-                                                                                zeroValue=(imageMode-counter)
-                                                                                breaker =0
+        # # Zerothreshing image
+        # googtime=time.time()
+        # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+        # histogramdata[histogramdata[:,0] > -10000]
+        # #Do some fiddle faddling to figure out the value that goes to zero less
+        # zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+        # breaker=1
+        # counter=0
+        # while (breaker != 0):
+        #     counter=counter+1
+        #     if not (imageMode-counter) in zeroValueArray[:,0]:
+        #         if not (imageMode-counter-1) in zeroValueArray[:,0]:
+        #             if not (imageMode-counter-2) in zeroValueArray[:,0]:
+        #                 if not (imageMode-counter-3) in zeroValueArray[:,0]:
+        #                     if not (imageMode-counter-4) in zeroValueArray[:,0]:
+        #                         if not (imageMode-counter-5) in zeroValueArray[:,0]:
+        #                             if not (imageMode-counter-6) in zeroValueArray[:,0]:
+        #                                 if not (imageMode-counter-7) in zeroValueArray[:,0]:
+        #                                     if not (imageMode-counter-8) in zeroValueArray[:,0]:
+        #                                         if not (imageMode-counter-9) in zeroValueArray[:,0]:
+        #                                             if not (imageMode-counter-10) in zeroValueArray[:,0]:
+        #                                                 if not (imageMode-counter-11) in zeroValueArray[:,0]:
+        #                                                     if not (imageMode-counter-12) in zeroValueArray[:,0]:
+        #                                                         if not (imageMode-counter-13) in zeroValueArray[:,0]:
+        #                                                             if not (imageMode-counter-14) in zeroValueArray[:,0]:
+        #                                                                 if not (imageMode-counter-15) in zeroValueArray[:,0]:
+        #                                                                     if not (imageMode-counter-16) in zeroValueArray[:,0]:
+        #                                                                         zeroValue=(imageMode-counter)
+        #                                                                         breaker =0
 
+        # hdu.data[hdu.data < zeroValue] = np.nan
+        
+        # 1) pick your subsampling factor
+        ny, nx = hdu.data.shape
+        total_px = ny * nx
+        if total_px > 100_000_000:
+            subs = 10
+        elif total_px >  50_000_000:
+            subs = 5
+        else:
+            subs = 2
+
+        # 2) grab the strided‐subsample
+        sample = hdu.data[::subs, ::subs]
+
+        # 3) compute mode on the sample
+        vals = sample.ravel()
+        vals = vals[np.isfinite(vals)].astype(np.int32)
+        unique, counts = np.unique(vals, return_counts=True)
+        m = counts.argmax()
+        imageMode = unique[m]
+        plog(f"Calculating Mode (subs={subs}): {time.time()-googtime:.3f} s")
+
+        # 4) now build the histogramdata (so we still have unique & counts)
+        histogramdata = np.column_stack([unique, counts]).astype(np.int32)
+        # optional filter your histogram (you had this line, though it doesn't assign)
+        histogramdata = histogramdata[histogramdata[:,0] > -10000]
+
+        # 5) find the highest “gap” below imageMode
+        zeroValueArray = histogramdata[histogramdata[:,0] < imageMode, 0]
+        zerocounter = 0
+        while True:
+            zerocounter += 1
+            test = imageMode - zerocounter
+            # look for a run of 17 empty bins below the mode
+            if all(((test - offset) not in zeroValueArray) for offset in range(17)):
+                zeroValue = test
+                break
+
+        # 6) apply your zero‐threshold
         hdu.data[hdu.data < zeroValue] = np.nan
 
         plog ("Zero Threshing Image: " +str(time.time()-googtime))
@@ -1028,21 +1068,30 @@ try:
         # On Windows you can detach the child completely if you like:
         #DETACHED_PROCESS = 0x00000008  # from the Win32 API
 
-        p = subprocess.Popen(
-            ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
-            stdin = subprocess.PIPE,             # so we can feed it our pickledata
-            stdout = subprocess.DEVNULL,         # drop its stdout
-            stderr = subprocess.DEVNULL,         # drop its stderr
-            #creationflags = DETACHED_PROCESS     # optional: child won’t keep your console open
-        )
 
-        # send the pickle and close stdin so the child sees EOF
-        p.stdin.write(pickledata)
-        p.stdin.close()
+        # Here is where we trigger off the single image platesolve.
+        # Realistically we only need it for longer exposures and
+        # exposures that are at nighttime.
+        if exposure_time > 4.9 and exposure_in_nighttime:
+            # If we don't want to solve a single image we just immediately dump a false report.
+            wslfilename=wcsfilepath + '/' + wcsfilebase
+            with open(wslfilename.replace('.fits','.failed'), 'w') as file:
+                file.write('failed')
+        else:
 
-        # at this point `p` is running in the background,
-        # and _your_ script continues immediately to the next line.
-        print("Platesolve subprocess launched (PID {})".format(p.pid))
+            p = subprocess.Popen(
+                ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
+                stdin = subprocess.PIPE,             # so we can feed it our pickledata
+                stdout = subprocess.DEVNULL,         # drop its stdout
+                stderr = subprocess.DEVNULL,         # drop its stderr
+                #creationflags = DETACHED_PROCESS     # optional: child won’t keep your console open
+            )
+    
+            # send the pickle and close stdin so the child sees EOF
+            p.stdin.write(pickledata)
+            p.stdin.close()
+
+        
 
     # While we wait for the platesolving to happen we do all the other stuff
     # And we will pick up the solution towards the end.

@@ -5015,6 +5015,20 @@ class Camera:
                         dec_corr=g_dev["mnt"].dec_corr
 
 
+                    # Is exposure in nightime?
+                    now = ephem.Date(ephem.now())
+                    observing_ends = self.obs.events['Observing Ends']
+                    observing_begins = self.obs.events['Observing Begins']
+
+
+                    
+                    if  now < observing_begins or  now > observing_ends:
+                        exposure_in_nighttime=False
+                    else:
+                        exposure_in_nighttime=True
+                        
+
+
                     payload=copy.deepcopy(
                         (
                             outputimg,
@@ -5077,7 +5091,8 @@ class Camera:
                             mainjpegthread_filename,
                             platesolvethread_filename,
                             count,
-                            unique_batch_code
+                            unique_batch_code,
+                            exposure_in_nighttime
                             )
                         )
 
