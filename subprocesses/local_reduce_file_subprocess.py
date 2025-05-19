@@ -90,77 +90,102 @@ while (breaker != 0):
 
 hdureduced.data[hdureduced.data < zeroValue] = np.nan
 
-# Interpolate image nans
-kernel = Gaussian2DKernel(x_stddev=1)
-hdureduced.data = interpolate_replace_nans(hdureduced.data, kernel)
+# # Interpolate image nans
+# kernel = Gaussian2DKernel(x_stddev=1)
+# hdureduced.data = interpolate_replace_nans(hdureduced.data, kernel)
 
 
 
-# Remove remaining nans
-x_size=hdureduced.data.shape[0]
-y_size=hdureduced.data.shape[1]
-# this is actually faster than np.nanmean
-edgefillvalue=imageMode
-# List the coordinates that are nan in the array
-nan_coords=np.argwhere(np.isnan(hdureduced.data))
+# # Remove remaining nans
+# x_size=hdureduced.data.shape[0]
+# y_size=hdureduced.data.shape[1]
+# # this is actually faster than np.nanmean
+# edgefillvalue=imageMode
+# # List the coordinates that are nan in the array
+# nan_coords=np.argwhere(np.isnan(hdureduced.data))
 
-# For each coordinate try and find a non-nan-neighbour and steal its value
-for nancoord in nan_coords:
-    x_nancoord=nancoord[0]
-    y_nancoord=nancoord[1]
-    done=False
+# # For each coordinate try and find a non-nan-neighbour and steal its value
+# for nancoord in nan_coords:
+#     x_nancoord=nancoord[0]
+#     y_nancoord=nancoord[1]
+#     done=False
 
-    # Because edge pixels can tend to form in big clumps
-    # Masking the array just with the mean at the edges
-    # makes this MUCH faster to no visible effect for humans.
-    # Also removes overscan
-    if x_nancoord < 100:
-        hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
-        done=True
-    elif x_nancoord > (x_size-100):
-        hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+#     # Because edge pixels can tend to form in big clumps
+#     # Masking the array just with the mean at the edges
+#     # makes this MUCH faster to no visible effect for humans.
+#     # Also removes overscan
+#     if x_nancoord < 100:
+#         hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+#         done=True
+#     elif x_nancoord > (x_size-100):
+#         hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
 
-        done=True
-    elif y_nancoord < 100:
-        hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+#         done=True
+#     elif y_nancoord < 100:
+#         hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
 
-        done=True
-    elif y_nancoord > (y_size-100):
-        hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
-        done=True
+#         done=True
+#     elif y_nancoord > (y_size-100):
+#         hdureduced.data[x_nancoord,y_nancoord]=edgefillvalue
+#         done=True
 
-    # left
-    if not done:
-        if x_nancoord != 0:
-            value_here=hdureduced.data[x_nancoord-1,y_nancoord]
-            if not np.isnan(value_here):
-                hdureduced.data[x_nancoord,y_nancoord]=value_here
-                done=True
-    # right
-    if not done:
-        if x_nancoord != (x_size-1):
-            value_here=hdureduced.data[x_nancoord+1,y_nancoord]
-            if not np.isnan(value_here):
-                hdureduced.data[x_nancoord,y_nancoord]=value_here
-                done=True
-    # below
-    if not done:
-        if y_nancoord != 0:
-            value_here=hdureduced.data[x_nancoord,y_nancoord-1]
-            if not np.isnan(value_here):
-                hdureduced.data[x_nancoord,y_nancoord]=value_here
-                done=True
-    # above
-    if not done:
-        if y_nancoord != (y_size-1):
-            value_here=hdureduced.data[x_nancoord,y_nancoord+1]
-            if not np.isnan(value_here):
-                hdureduced.data[x_nancoord,y_nancoord]=value_here
-                done=True
+#     # left
+#     if not done:
+#         if x_nancoord != 0:
+#             value_here=hdureduced.data[x_nancoord-1,y_nancoord]
+#             if not np.isnan(value_here):
+#                 hdureduced.data[x_nancoord,y_nancoord]=value_here
+#                 done=True
+#     # right
+#     if not done:
+#         if x_nancoord != (x_size-1):
+#             value_here=hdureduced.data[x_nancoord+1,y_nancoord]
+#             if not np.isnan(value_here):
+#                 hdureduced.data[x_nancoord,y_nancoord]=value_here
+#                 done=True
+#     # below
+#     if not done:
+#         if y_nancoord != 0:
+#             value_here=hdureduced.data[x_nancoord,y_nancoord-1]
+#             if not np.isnan(value_here):
+#                 hdureduced.data[x_nancoord,y_nancoord]=value_here
+#                 done=True
+#     # above
+#     if not done:
+#         if y_nancoord != (y_size-1):
+#             value_here=hdureduced.data[x_nancoord,y_nancoord+1]
+#             if not np.isnan(value_here):
+#                 hdureduced.data[x_nancoord,y_nancoord]=value_here
+#                 done=True
 
-# Mop up any remaining nans
-hdureduced.data[np.isnan(hdureduced.data)] =edgefillvalue
+# # Mop up any remaining nans
+# hdureduced.data[np.isnan(hdureduced.data)] =edgefillvalue
 
+from scipy.ndimage import convolve
+def fill_nans_with_local_mean(data, footprint=None):
+    """
+    Replace NaNs by the mean of their neighboring pixels.
+    - data: 2D numpy array with NaNs.
+    - footprint: kernel array of 0/1 defining neighborhood (default 3×3).
+    """
+    mask = np.isnan(data)
+    # zero-fill NaNs for convolution
+    filled = np.nan_to_num(data, copy=True)
+    if footprint is None:
+        footprint = np.ones((3,3), dtype=int)
+
+    # sum of neighbors (NaNs contributed as 0)
+    neighbor_sum   = convolve(filled,   footprint, mode='mirror')
+    # count of valid neighbors
+    neighbor_count = convolve(~mask,    footprint, mode='mirror')
+
+    # only replace where count>0
+    replace_idxs = mask & (neighbor_count>0)
+    data_out = data.copy()
+    data_out[replace_idxs] = neighbor_sum[replace_idxs] / neighbor_count[replace_idxs]
+    return data_out
+
+hdureduced.data=fill_nans_with_local_mean(hdureduced.data)
 
 # Wait here for potential wcs solution
 

@@ -28,7 +28,7 @@ import traceback
 #from astropy.stats import sigma_clip
 from joblib import Parallel, delayed
 
-from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
+#from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
 
 # Add the parent directory to the Python path
 # This allows importing modules from the root directory
@@ -408,9 +408,33 @@ if substack:
             # Create a blank FITS header
             substackheader = fits.Header()
 
-            thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_path', raw_path  + raw_name00, copy.deepcopy(substackimage),substackheader, \
-                                               frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path)),))
-            thread.daemon = False # These need to be daemons because this parent thread will end imminently
+            # thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_path', raw_path  + raw_name00, copy.deepcopy(substackimage),substackheader, \
+            #                                    frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path)),))
+            # thread.daemon = False # These need to be daemons because this parent thread will end imminently
+            # thread.start()
+            
+            payload = (
+                'raw_path',
+                raw_path + raw_name00,
+                substackimage.copy(),          # a single array copy
+                # if you mutate substackheader elsewhere too, do:
+                # substackheader.copy()
+                substackheader,
+                frame_type,
+                ra_at_time_of_exposure,
+                dec_at_time_of_exposure,
+                'no',
+                'deprecated',
+                dayobs,
+                im_path_r,
+                selfalt_path
+            )
+            
+            thread = threading.Thread(
+                target=write_raw_file_out,
+                args=(payload,),
+                daemon=False            # These need to be daemons because this parent thread will end imminently       
+            )
             thread.start()
 
         #plog (substackimage.shape)
@@ -421,15 +445,18 @@ if substack:
                 #plog ("Dedarking 0")
                 #loadbias=np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy')
                 #plog (loadbias.shape)
-                substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
+                #substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
+                substackimage=substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy')# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
             else:
-                substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
+                #substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
+                substackimage=substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy')
         except:
             plog(traceback.format_exc())
             plog ("Couldn't biasdark substack")
             pass
         try:
-            substackimage = copy.deepcopy(np.divide(substackimage, np.load(localcalibrationdirectory  + 'archive/' + cam_alias + '/calibmasters/' + 'masterFlat_' + this_exposure_filter + "_bin" + str(1) +'.npy')))
+            #substackimage = copy.deepcopy(np.divide(substackimage, np.load(localcalibrationdirectory  + 'archive/' + cam_alias + '/calibmasters/' + 'masterFlat_' + this_exposure_filter + "_bin" + str(1) +'.npy')))
+            substackimage = np.divide(substackimage, np.load(localcalibrationdirectory  + 'archive/' + cam_alias + '/calibmasters/' + 'masterFlat_' + this_exposure_filter + "_bin" + str(1) +'.npy'))
         except:
             plog ("couldn't flat field substack")
             #breakpoint()
@@ -457,6 +484,8 @@ if substack:
             unique,counts=np.unique(substackimage.ravel()[~np.isnan(substackimage.ravel())].astype(np.int32), return_counts=True)
             m=counts.argmax()
             imageMode=unique[m]
+            del unique
+            del counts
             plog ("Calculating Mode: " +str(time.time()-googtime))
 
             #Zerothreshing image
@@ -498,7 +527,8 @@ if substack:
 
             #breakpoint()
 
-            sub_stacker_array[:,:,0] = copy.deepcopy(substackimage)
+            #sub_stacker_array[:,:,0] = copy.deepcopy(substackimage)
+            sub_stacker_array[:,:,0] = substackimage.copy()
 
         else:
 
@@ -514,17 +544,20 @@ if substack:
             crosscorrel_filename_waiter.append(temporary_substack_directory + output_filename)
 
             if normal_operation:
-                crosscorrelation_subprocess_array.append(subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
+                # crosscorrelation_subprocess_array.append(subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
+                cross_proc=subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
             else:
-                crosscorrelation_subprocess_array.append(subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
-            plog (counter-1)
-
-
+                cross_proc=subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+            #plog (counter-1)
+            
             if False:
                 #NB set this path to create test pickle for makejpeg routine.
                 pickle.dump(pickler, open('crosscorrelprocess.pickle','wb'))
 
-            pickle.dump(pickler, crosscorrelation_subprocess_array[counter-1].stdin)
+            pickle.dump(pickler, cross_proc.stdin)
+            cross_proc.stdin.close()            
+            cross_proc.stdout.close()
+            crosscorrelation_subprocess_array.append(cross_proc)            
 
         counter=counter+1
 
@@ -540,6 +573,8 @@ if substack:
 
         if time.time()-file_wait_timeout_timer > 599:
             sys.exit()
+
+        
 
         sub_stacker_array[:,:,counter] = np.load(waitfile)
         counter=counter+1
@@ -795,13 +830,10 @@ try:
 
 
         unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(np.int32), return_counts=True)
-
-
-        # int_array_flattened=hdu.data.astype(int).ravel()
-        # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-        # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
         m=counts.argmax()
         imageMode=unique[m]
+        del unique
+        del counts
         plog ("Calculated Mode: " + str(imageMode))
         plog ("Calculating Mode: " +str(time.time()-googtime))
 
@@ -1792,7 +1824,7 @@ try:
 
         #sys.exit()
 
-        subprocess.Popen(
+        fz_proc=subprocess.Popen(
             ['python','fz_archive_file.py',picklefilename],
             cwd=localcalibrationdirectory + 'smartstacks',
             stdin=subprocess.PIPE,
@@ -1800,6 +1832,7 @@ try:
             stderr=None,
             bufsize=-1
         )
+        fz_proc.stdin.close()
 
 
     # NOW THAT THE FILE HAS BEEN FZED AND SENT OFF TO THE PIPE,
@@ -2104,7 +2137,7 @@ try:
             picklefilename='testred'+str(time.time()).replace('.','')
             pickle.dump(picklepayload, open(localcalibrationdirectory + 'smartstacks/'+picklefilename,'wb'))
 
-            subprocess.Popen(
+            local_popen=subprocess.Popen(
                 ['python','local_reduce_file_subprocess.py',picklefilename],
                 cwd=localcalibrationdirectory + 'smartstacks',
                 stdin=subprocess.PIPE,
@@ -2112,6 +2145,7 @@ try:
                 stderr=None,
                 bufsize=-1
             )
+            local_popen.stdin.close()
 
 
 
@@ -2175,7 +2209,7 @@ try:
                 )
                 raw_path=raw_path+'/substacks/'
 
-            thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw', raw_path + raw_name00, np.array(absolutely_raw_frame, dtype=np.float32), hdu.header, frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','thisisdeprecated', dayobs, im_path_r, selfalt_path)),))
+            thread = threading.Thread(target=write_raw_file_out, args=(('raw', raw_path + raw_name00, np.array(absolutely_raw_frame, dtype=np.float32), hdu.header, frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','thisisdeprecated', dayobs, im_path_r, selfalt_path),))
             thread.daemon = False # These need to be daemons because this parent thread will end imminently
             thread.start()
 
@@ -2207,8 +2241,8 @@ try:
                     selfalt_path=selfalt_path + dayobs + "/raw/substacks/"
 
 
-                thread = threading.Thread(target=write_raw_file_out, args=(copy.deepcopy(('raw_alt_path', selfalt_path + dayobs + "/raw/" + raw_name00, absolutely_raw_frame, hdu.header, \
-                                                   frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path)),))
+                thread = threading.Thread(target=write_raw_file_out, args=(('raw_alt_path', selfalt_path + dayobs + "/raw/" + raw_name00, absolutely_raw_frame, hdu.header, \
+                                                   frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path),))
                 thread.daemon = False # These need to be daemons because this parent thread will end imminently
                 thread.start()
 

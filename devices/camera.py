@@ -5122,12 +5122,10 @@ class Camera:
                         g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
                     # Really need to thresh the image
-                    # int_array_flattened=outputimg.astype(int).ravel()
-                    # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-                    # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
                     unique,counts=np.unique(outputimg.ravel()[~np.isnan(outputimg.ravel())].astype(int), return_counts=True)
                     m=counts.argmax()
                     imageMode=unique[m]
+                    
                     histogramdata=np.column_stack([unique,counts]).astype(np.int32)
                     histogramdata[histogramdata[:,0] > -10000]
                     #Do some fiddle faddling to figure out the value that goes to zero less
@@ -5141,6 +5139,9 @@ class Camera:
                     countypixels=outputimg[ np.where(outputimg < zeroValue ) ]
                     plog ("Number of unnaturally negative pixels: " + str(len(countypixels)) )
                     plog ("Next seq:  ", next_seq)
+                    del unique
+                    del counts
+
 
                     # If there are too many unnaturally negative pixels, then reject the calibration
                     if len(countypixels) > 50000:  #Up from 100 for 100 megapix camera
@@ -5166,6 +5167,11 @@ class Camera:
                                 int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
                             m = counts.argmax()
                             imageMode = unique[m]
+                            del unique
+                            del counts
+                            del int_array_flattened
+                            del tempmodearray
+                            
                             debiaseddarkmode = round(imageMode / 10 / exposure_time, 4)
 
                             plog("Debiased 1s Dark Mode is " +
