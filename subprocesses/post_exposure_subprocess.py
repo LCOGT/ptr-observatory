@@ -412,7 +412,7 @@ if substack:
             #                                    frame_type, ra_at_time_of_exposure, dec_at_time_of_exposure,'no','deprecated', dayobs, im_path_r, selfalt_path)),))
             # thread.daemon = False # These need to be daemons because this parent thread will end imminently
             # thread.start()
-            
+
             payload = (
                 'raw_path',
                 raw_path + raw_name00,
@@ -429,11 +429,11 @@ if substack:
                 im_path_r,
                 selfalt_path
             )
-            
+
             thread = threading.Thread(
                 target=write_raw_file_out,
                 args=(payload,),
-                daemon=False            # These need to be daemons because this parent thread will end imminently       
+                daemon=False            # These need to be daemons because this parent thread will end imminently
             )
             thread.start()
 
@@ -484,8 +484,7 @@ if substack:
             unique,counts=np.unique(substackimage.ravel()[~np.isnan(substackimage.ravel())].astype(np.int32), return_counts=True)
             m=counts.argmax()
             imageMode=unique[m]
-            del unique
-            del counts
+
             plog ("Calculating Mode: " +str(time.time()-googtime))
 
             #Zerothreshing image
@@ -519,7 +518,8 @@ if substack:
                                                                                     breaker =0
 
             substackimage[substackimage < zeroValue] = np.nan
-
+            # del unique
+            # del counts
             # Deband the image
             #plog (bn.nanmax(substackimage))
             #substackimage = debanding(substackimage)
@@ -549,15 +549,15 @@ if substack:
             else:
                 cross_proc=subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
             #plog (counter-1)
-            
+
             if False:
                 #NB set this path to create test pickle for makejpeg routine.
                 pickle.dump(pickler, open('crosscorrelprocess.pickle','wb'))
 
             pickle.dump(pickler, cross_proc.stdin)
-            cross_proc.stdin.close()            
+            cross_proc.stdin.close()
             cross_proc.stdout.close()
-            crosscorrelation_subprocess_array.append(cross_proc)            
+            crosscorrelation_subprocess_array.append(cross_proc)
 
         counter=counter+1
 
@@ -574,7 +574,7 @@ if substack:
         if time.time()-file_wait_timeout_timer > 599:
             sys.exit()
 
-        
+
 
         sub_stacker_array[:,:,counter] = np.load(waitfile)
         counter=counter+1
@@ -832,8 +832,6 @@ try:
         unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(np.int32), return_counts=True)
         m=counts.argmax()
         imageMode=unique[m]
-        del unique
-        del counts
         plog ("Calculated Mode: " + str(imageMode))
         plog ("Calculating Mode: " +str(time.time()-googtime))
 
