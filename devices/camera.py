@@ -5549,10 +5549,35 @@ class Camera:
                         outputimg[outputimg < zeroValue] = np.nan
 
                         # Interpolate image nans
-                        kernel = Gaussian2DKernel(x_stddev=1)
+                        #kernel = Gaussian2DKernel(x_stddev=1)
 
-                        outputimg = interpolate_replace_nans(outputimg, kernel)
-                        print ("nans: " + str( time.time()-googtime))
+                        # outputimg = interpolate_replace_nans(outputimg, kernel)
+                        from scipy.ndimage import convolve
+                        def fill_nans_with_local_mean(data, footprint=None):
+                            """
+                            Replace NaNs by the mean of their neighboring pixels.
+                            - data: 2D numpy array with NaNs.
+                            - footprint: kernel array of 0/1 defining neighborhood (default 3×3).
+                            """
+                            mask = np.isnan(data)
+                            # zero-fill NaNs for convolution
+                            filled = np.nan_to_num(data, copy=True)
+                            if footprint is None:
+                                footprint = np.ones((3,3), dtype=int)
+
+                            # sum of neighbors (NaNs contributed as 0)
+                            neighbor_sum   = convolve(filled,   footprint, mode='mirror')
+                            # count of valid neighbors
+                            neighbor_count = convolve(~mask,    footprint, mode='mirror')
+
+                            # only replace where count>0
+                            replace_idxs = mask & (neighbor_count>0)
+                            data_out = data.copy()
+                            data_out[replace_idxs] = neighbor_sum[replace_idxs] / neighbor_count[replace_idxs]
+                            return data_out
+
+                        outputimg=fill_nans_with_local_mean(outputimg)
+                        plog ("nans: " + str( time.time()-googtime))
 
 
                         # # Remove remaining nans

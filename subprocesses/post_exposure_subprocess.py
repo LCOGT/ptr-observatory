@@ -632,7 +632,7 @@ try:
         elif pixscale < 0.6:
             selfnative_bin=2
     # else:
-    
+
 
     broadband_ss_biasdark_exp_time = cam_config['settings']['smart_stack_exposure_time']
     narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * cam_config['settings']['smart_stack_exposure_NB_multiplier']
@@ -897,7 +897,7 @@ try:
         #     )
 
 
-        
+
 
 
         # try:
@@ -950,10 +950,10 @@ try:
         #     stderr=subprocess.PIPE,
         #     text=False  # MUST be False for binary data
         # )
-        
+
         # On Windows you can detach the child completely if you like:
         #DETACHED_PROCESS = 0x00000008  # from the Win32 API
-        
+
         p = subprocess.Popen(
             ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
             stdin = subprocess.PIPE,             # so we can feed it our pickledata
@@ -961,11 +961,11 @@ try:
             stderr = subprocess.DEVNULL,         # drop its stderr
             #creationflags = DETACHED_PROCESS     # optional: child won’t keep your console open
         )
-        
+
         # send the pickle and close stdin so the child sees EOF
         p.stdin.write(pickledata)
         p.stdin.close()
-        
+
         # at this point `p` is running in the background,
         # and _your_ script continues immediately to the next line.
         print("Platesolve subprocess launched (PID {})".format(p.pid))
@@ -1002,7 +1002,7 @@ try:
         "Cosmic ray removal in EVA",
     )
 
-    
+
     hdu.header["DOSNP"] = (
         cam_settings['do_saltandpepper'],
         "Salt and Pepper removal in EVA",
@@ -1811,73 +1811,98 @@ try:
         hdufocus.writeto(cal_path + 'prenan.fits', overwrite=True, output_verify='silentfix')
 
 
-    # Need to get rid of nans
-    # Interpolate image nans
-    kernel = Gaussian2DKernel(x_stddev=1)
-    hdu.data = interpolate_replace_nans(hdu.data, kernel)
+    # # Need to get rid of nans
+    # # Interpolate image nans
+    # kernel = Gaussian2DKernel(x_stddev=1)
+    # hdu.data = interpolate_replace_nans(hdu.data, kernel)
 
-    # Fast next-door-neighbour in-fill algorithm to mop up any left over
-    x_size=hdu.data.shape[0]
-    y_size=hdu.data.shape[1]
+    # # Fast next-door-neighbour in-fill algorithm to mop up any left over
+    # x_size=hdu.data.shape[0]
+    # y_size=hdu.data.shape[1]
 
-    nan_coords=np.argwhere(np.isnan(hdu.data))
+    # nan_coords=np.argwhere(np.isnan(hdu.data))
 
-    # For each coordinate try and find a non-nan-neighbour and steal its value
-    for nancoord in nan_coords:
-        x_nancoord=nancoord[0]
-        y_nancoord=nancoord[1]
-        done=False
+    # # For each coordinate try and find a non-nan-neighbour and steal its value
+    # for nancoord in nan_coords:
+    #     x_nancoord=nancoord[0]
+    #     y_nancoord=nancoord[1]
+    #     done=False
 
-        # Because edge pixels can tend to form in big clumps
-        # Masking the array just with the mean at the edges
-        # makes this MUCH faster to no visible effect for humans.
-        # Also removes overscan
-        if x_nancoord < 100:
-            hdu.data[x_nancoord,y_nancoord]=imageMode
-            done=True
-        elif x_nancoord > (x_size-100):
-            hdu.data[x_nancoord,y_nancoord]=imageMode
+    #     # Because edge pixels can tend to form in big clumps
+    #     # Masking the array just with the mean at the edges
+    #     # makes this MUCH faster to no visible effect for humans.
+    #     # Also removes overscan
+    #     if x_nancoord < 100:
+    #         hdu.data[x_nancoord,y_nancoord]=imageMode
+    #         done=True
+    #     elif x_nancoord > (x_size-100):
+    #         hdu.data[x_nancoord,y_nancoord]=imageMode
 
-            done=True
-        elif y_nancoord < 100:
-            hdu.data[x_nancoord,y_nancoord]=imageMode
+    #         done=True
+    #     elif y_nancoord < 100:
+    #         hdu.data[x_nancoord,y_nancoord]=imageMode
 
-            done=True
-        elif y_nancoord > (y_size-100):
-            hdu.data[x_nancoord,y_nancoord]=imageMode
-            done=True
+    #         done=True
+    #     elif y_nancoord > (y_size-100):
+    #         hdu.data[x_nancoord,y_nancoord]=imageMode
+    #         done=True
 
-        # left
-        if not done:
-            if x_nancoord != 0:
-                value_here=hdu.data[x_nancoord-1,y_nancoord]
-                if not np.isnan(value_here):
-                    hdu.data[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # right
-        if not done:
-            if x_nancoord != (x_size-1):
-                value_here=hdu.data[x_nancoord+1,y_nancoord]
-                if not np.isnan(value_here):
-                    hdu.data[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # below
-        if not done:
-            if y_nancoord != 0:
-                value_here=hdu.data[x_nancoord,y_nancoord-1]
-                if not np.isnan(value_here):
-                    hdu.data[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # above
-        if not done:
-            if y_nancoord != (y_size-1):
-                value_here=hdu.data[x_nancoord,y_nancoord+1]
-                if not np.isnan(value_here):
-                    hdu.data[x_nancoord,y_nancoord]=value_here
-                    done=True
+    #     # left
+    #     if not done:
+    #         if x_nancoord != 0:
+    #             value_here=hdu.data[x_nancoord-1,y_nancoord]
+    #             if not np.isnan(value_here):
+    #                 hdu.data[x_nancoord,y_nancoord]=value_here
+    #                 done=True
+    #     # right
+    #     if not done:
+    #         if x_nancoord != (x_size-1):
+    #             value_here=hdu.data[x_nancoord+1,y_nancoord]
+    #             if not np.isnan(value_here):
+    #                 hdu.data[x_nancoord,y_nancoord]=value_here
+    #                 done=True
+    #     # below
+    #     if not done:
+    #         if y_nancoord != 0:
+    #             value_here=hdu.data[x_nancoord,y_nancoord-1]
+    #             if not np.isnan(value_here):
+    #                 hdu.data[x_nancoord,y_nancoord]=value_here
+    #                 done=True
+    #     # above
+    #     if not done:
+    #         if y_nancoord != (y_size-1):
+    #             value_here=hdu.data[x_nancoord,y_nancoord+1]
+    #             if not np.isnan(value_here):
+    #                 hdu.data[x_nancoord,y_nancoord]=value_here
+    #                 done=True
 
-    hdu.data[np.isnan(hdu.data)] = imageMode
-        #num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
+    # hdu.data[np.isnan(hdu.data)] = imageMode
+    #     #num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
+    from scipy.ndimage import convolve
+    def fill_nans_with_local_mean(data, footprint=None):
+        """
+        Replace NaNs by the mean of their neighboring pixels.
+        - data: 2D numpy array with NaNs.
+        - footprint: kernel array of 0/1 defining neighborhood (default 3×3).
+        """
+        mask = np.isnan(data)
+        # zero-fill NaNs for convolution
+        filled = np.nan_to_num(data, copy=True)
+        if footprint is None:
+            footprint = np.ones((3,3), dtype=int)
+
+        # sum of neighbors (NaNs contributed as 0)
+        neighbor_sum   = convolve(filled,   footprint, mode='mirror')
+        # count of valid neighbors
+        neighbor_count = convolve(~mask,    footprint, mode='mirror')
+
+        # only replace where count>0
+        replace_idxs = mask & (neighbor_count>0)
+        data_out = data.copy()
+        data_out[replace_idxs] = neighbor_sum[replace_idxs] / neighbor_count[replace_idxs]
+        return data_out
+
+    hdu.data=fill_nans_with_local_mean(hdu.data)
 
     plog ("Denan Image: " +str(time.time()-googtime))
 
