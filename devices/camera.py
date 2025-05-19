@@ -4477,7 +4477,8 @@ class Camera:
                         bufsize=-1
                     )
                 except OSError:
-                    pass
+                    plog("Problem in the jpeg pickle dump")
+                    plog(traceback.format_exc())
                 try:
                     pickle.dump(
                         [
