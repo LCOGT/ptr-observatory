@@ -4637,6 +4637,7 @@ class Camera:
                         expresult["error"] = True
                         expresult["stopped"] = True
                         g_dev["obs"].exposure_halted_indicator = False
+                        self.running_an_exposure_set = False
                         self.currently_in_smartstack_loop = False
                         return expresult
 
@@ -4644,6 +4645,7 @@ class Camera:
                         expresult["error"] = True
                         expresult["stopped"] = True
                         g_dev["obs"].exposure_halted_indicator = False
+                        self.running_an_exposure_set = False
                         plog("Exposure Halted Indicator On. Cancelling Exposure.")
                         return expresult
 
