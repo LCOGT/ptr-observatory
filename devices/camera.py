@@ -2889,6 +2889,9 @@ class Camera:
         # So even in the setup phase the "exposure" is "busy"
         self.running_an_exposure_set = True
 
+        # Make sure these are reset to standard values
+        g_dev['obs'].stop_all_activity = False
+        g_dev['obs'].exposure_halted_indicator = False
 
         # Parse inputs from required_params and optional_params
         #
@@ -5505,7 +5508,7 @@ class Camera:
                             bilinearfill[np.isnan(bilinearfill)] = 0
                             outputimg = outputimg+bilinearfill
                             del bilinearfill
-                            
+
                         # Really need a nice clean image to do this.
                         googtime=time.time()
                         unique,counts=np.unique(outputimg.ravel()[~np.isnan(outputimg.ravel())].astype(int), return_counts=True)
@@ -5544,7 +5547,7 @@ class Camera:
 
                         # Interpolate image nans
                         kernel = Gaussian2DKernel(x_stddev=1)
-                        
+
                         outputimg = interpolate_replace_nans(outputimg, kernel)
                         print ("nans: " + str( time.time()-googtime))
 
@@ -5769,7 +5772,7 @@ class Camera:
                                     mask = (~np.isnan(catalog['flux_radius'])) & (catalog['flux_radius'] != 0)# & (catalog['kron_radius'] > 0)
 
                                     catalog = catalog[mask]
-                                    
+
 
                                     print ("catalog1: " + str(time.time()-googtime))
                                     googtime=time.time()
@@ -5854,7 +5857,7 @@ class Camera:
 
                                         # threading.Thread(target=plot_sourcextractor_pp, args=(copy.deepcopy(outputimg),copy.deepcopy(catalog),)).start()
                                         #threadpp.start()
-                                        
+
                                         # We only want to consider sources with no nearby other sources
                                         # whether that is another star, part of a donut or diffraction spike
                                         from scipy.spatial import cKDTree
@@ -5863,30 +5866,30 @@ class Camera:
                                         x = catalog['pixel_centroid_x']
                                         y = catalog['pixel_centroid_y']
                                         positions = np.vstack((x, y)).T
-                                        
+
                                         # Build KDTree for fast nearest-neighbor search
                                         tree = cKDTree(positions)
-                                        
+
                                         # Query for all neighbors within 30 pixels (including self)
                                         neighbors = tree.query_ball_point(positions, r=30)
-                                        
+
                                         # Determine which sources are isolated (only self in the neighbor list)
                                         isolated_mask = np.array([len(n) == 1 for n in neighbors])
-                                        
+
                                         # Filter table
                                         catalog = catalog[isolated_mask]
-                                        
+
                                         # plotpickle=(outputimg, original_catalog, catalog, 9, 8.0, filepath, filename)
-                                        
-                                        
+
+
                                         filename = str(time.time())
-                                        
+
 
                                         plotpickle=pickle.dumps(
                                             (outputimg, original_catalog, catalog, 9, 3.0, g_dev['cam'].camera_path + g_dev["day"] + "/calib/", filename)
                                         )
-                                        
-                                        # platesolve_subprocess = 
+
+                                        # platesolve_subprocess =
                                         subprocess.run(
                                             ["python", "subprocesses/focusplots_subprocess.py"],
                                             input=plotpickle,
@@ -5897,13 +5900,13 @@ class Camera:
 
                                         print ("aftersource: " + str(time.time()-googtime))
 
-                                    
+
 
 
                                     # if len(catalog) > 0 :
-                                        
-                                        
-                                        
+
+
+
                                         googtime=time.time()
                                         catalog=calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0)
                                         print ("donuts: " + str(time.time()-googtime))
@@ -5922,10 +5925,10 @@ class Camera:
                                         print ("after")
                                         print ("Median donut distance = " + str(total_mean_donut_distance))
                                         print ("Median Flux Radius    = " + str(total_mean_flux_radius))
-                                        
+
                                         print ((np.asarray(catalog['total_donut_distance'])))
                                         print ((np.asarray(catalog['flux_radius'])))
-                                        
+
                                         # breakpoint()
 
                                         # if np.median(total_mean_donut_distance) > (np.median(total_mean_flux_radius) * 2) :
