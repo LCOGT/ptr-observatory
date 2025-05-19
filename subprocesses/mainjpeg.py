@@ -5,6 +5,7 @@ The subprocess for jpeg construction to be sent up to the UI
 import numpy as np
 from auto_stretch.stretch import Stretch
 from PIL import Image, ImageEnhance
+Image.MAX_IMAGE_PIXELS = None
 import sys
 import pickle
 from math import sqrt

@@ -18,6 +18,7 @@ from image_registration import cross_correlation_shifts  # chi2_shift,
 
 from auto_stretch.stretch import Stretch
 from PIL import Image, ImageEnhance
+Image.MAX_IMAGE_PIXELS = None
 import subprocess
 from math import sqrt
 import traceback

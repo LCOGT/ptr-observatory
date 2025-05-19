@@ -952,14 +952,14 @@ try:
         # )
         
         # On Windows you can detach the child completely if you like:
-        DETACHED_PROCESS = 0x00000008  # from the Win32 API
+        #DETACHED_PROCESS = 0x00000008  # from the Win32 API
         
         p = subprocess.Popen(
             ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
             stdin = subprocess.PIPE,             # so we can feed it our pickledata
             stdout = subprocess.DEVNULL,         # drop its stdout
             stderr = subprocess.DEVNULL,         # drop its stderr
-            creationflags = DETACHED_PROCESS     # optional: child won’t keep your console open
+            #creationflags = DETACHED_PROCESS     # optional: child won’t keep your console open
         )
         
         # send the pickle and close stdin so the child sees EOF
