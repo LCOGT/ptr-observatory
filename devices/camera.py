@@ -72,7 +72,7 @@ from skimage.measure import label, regionprops, regionprops_table
 from astroquery.vizier import Vizier
 #from astropy.coordinates import SkyCoord
 import astropy.units as u
-
+from scipy.ndimage import convolve
 # from astropy.io import fits
 # from astropy.coordinates import SkyCoord
 # import glob
@@ -5125,7 +5125,7 @@ class Camera:
                     unique,counts=np.unique(outputimg.ravel()[~np.isnan(outputimg.ravel())].astype(int), return_counts=True)
                     m=counts.argmax()
                     imageMode=unique[m]
-                    
+
                     histogramdata=np.column_stack([unique,counts]).astype(np.int32)
                     histogramdata[histogramdata[:,0] > -10000]
                     #Do some fiddle faddling to figure out the value that goes to zero less
@@ -5171,7 +5171,7 @@ class Camera:
                             del counts
                             del int_array_flattened
                             del tempmodearray
-                            
+
                             debiaseddarkmode = round(imageMode / 10 / exposure_time, 4)
 
                             plog("Debiased 1s Dark Mode is " +
@@ -5520,38 +5520,44 @@ class Camera:
 
                         # Really need a nice clean image to do this.
                         googtime=time.time()
-                        unique,counts=np.unique(outputimg.ravel()[~np.isnan(outputimg.ravel())].astype(int), return_counts=True)
-                        m=counts.argmax()
-                        imageMode=unique[m]
+                        # 1) pick your subsampling factor
+                        ny, nx = outputimg.shape
+                        total_px = ny * nx
+                        if total_px > 100_000_000:
+                            subs = 10
+                        elif total_px >  50_000_000:
+                            subs = 5
+                        else:
+                            subs = 2
 
-                        histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-                        histogramdata[histogramdata[:,0] > -10000]
-                        #Do some fiddle faddling to figure out the value that goes to zero less
-                        zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-                        breaker=1
-                        counter=0
-                        while (breaker != 0):
-                            counter=counter+1
-                            if not (imageMode-counter) in zeroValueArray[:,0]:
-                                if not (imageMode-counter-1) in zeroValueArray[:,0]:
-                                    if not (imageMode-counter-2) in zeroValueArray[:,0]:
-                                        if not (imageMode-counter-3) in zeroValueArray[:,0]:
-                                            if not (imageMode-counter-4) in zeroValueArray[:,0]:
-                                                if not (imageMode-counter-5) in zeroValueArray[:,0]:
-                                                    if not (imageMode-counter-6) in zeroValueArray[:,0]:
-                                                        if not (imageMode-counter-7) in zeroValueArray[:,0]:
-                                                            if not (imageMode-counter-8) in zeroValueArray[:,0]:
-                                                                if not (imageMode-counter-9) in zeroValueArray[:,0]:
-                                                                    if not (imageMode-counter-10) in zeroValueArray[:,0]:
-                                                                        if not (imageMode-counter-11) in zeroValueArray[:,0]:
-                                                                            if not (imageMode-counter-12) in zeroValueArray[:,0]:
-                                                                                if not (imageMode-counter-13) in zeroValueArray[:,0]:
-                                                                                    if not (imageMode-counter-14) in zeroValueArray[:,0]:
-                                                                                        if not (imageMode-counter-15) in zeroValueArray[:,0]:
-                                                                                            if not (imageMode-counter-16) in zeroValueArray[:,0]:
-                                                                                                zeroValue=(imageMode-counter)
-                                                                                                breaker =0
+                        # 2) grab the strided‐subsample
+                        sample = outputimg[::subs, ::subs]
 
+                        # 3) compute mode on the sample
+                        vals = sample.ravel()
+                        vals = vals[np.isfinite(vals)].astype(np.int32)
+                        unique, counts = np.unique(vals, return_counts=True)
+                        m = counts.argmax()
+                        imageMode = unique[m]
+                        plog(f"Calculating Mode (subs={subs}): {time.time()-googtime:.3f} s")
+
+                        # 4) now build the histogramdata (so we still have unique & counts)
+                        histogramdata = np.column_stack([unique, counts]).astype(np.int32)
+                        # optional filter your histogram (you had this line, though it doesn't assign)
+                        histogramdata = histogramdata[histogramdata[:,0] > -10000]
+
+                        # 5) find the highest “gap” below imageMode
+                        zeroValueArray = histogramdata[histogramdata[:,0] < imageMode, 0]
+                        zerocounter = 0
+                        while True:
+                            zerocounter += 1
+                            test = imageMode - zerocounter
+                            # look for a run of 17 empty bins below the mode
+                            if all(((test - offset) not in zeroValueArray) for offset in range(17)):
+                                zeroValue = test
+                                break
+
+                        # 6) apply your zero‐threshold
                         outputimg[outputimg < zeroValue] = np.nan
                         del unique
                         del counts
@@ -5560,7 +5566,7 @@ class Camera:
                         #kernel = Gaussian2DKernel(x_stddev=1)
 
                         # outputimg = interpolate_replace_nans(outputimg, kernel)
-                        from scipy.ndimage import convolve
+
                         def fill_nans_with_local_mean(data, footprint=None):
                             """
                             Replace NaNs by the mean of their neighboring pixels.

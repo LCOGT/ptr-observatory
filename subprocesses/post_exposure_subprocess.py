@@ -27,7 +27,7 @@ import traceback
 #from image_registration import cross_correlation_shifts
 #from astropy.stats import sigma_clip
 from joblib import Parallel, delayed
-
+from scipy.ndimage import convolve
 #from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
 
 # Add the parent directory to the Python path
@@ -478,46 +478,46 @@ if substack:
 
             # Really need to thresh the image
             googtime=time.time()
-            # int_array_flattened=substackimage.astype(int).ravel()
-            # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-            # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-            unique,counts=np.unique(substackimage.ravel()[~np.isnan(substackimage.ravel())].astype(np.int32), return_counts=True)
-            m=counts.argmax()
-            imageMode=unique[m]
+            # # int_array_flattened=substackimage.astype(int).ravel()
+            # # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
+            # # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+            # unique,counts=np.unique(substackimage.ravel()[~np.isnan(substackimage.ravel())].astype(np.int32), return_counts=True)
+            # m=counts.argmax()
+            # imageMode=unique[m]
 
-            plog ("Calculating Mode: " +str(time.time()-googtime))
+            # plog ("Calculating Mode: " +str(time.time()-googtime))
 
-            #Zerothreshing image
-            #googtime=time.time()
-            histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-            histogramdata[histogramdata[:,0] > -10000]
-            #Do some fiddle faddling to figure out the value that goes to zero less
-            zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-            breaker=1
-            zerocounter=0
-            while (breaker != 0):
-                zerocounter=zerocounter+1
-                if not (imageMode-zerocounter) in zeroValueArray[:,0]:
-                    if not (imageMode-zerocounter-1) in zeroValueArray[:,0]:
-                        if not (imageMode-zerocounter-2) in zeroValueArray[:,0]:
-                            if not (imageMode-zerocounter-3) in zeroValueArray[:,0]:
-                                if not (imageMode-zerocounter-4) in zeroValueArray[:,0]:
-                                    if not (imageMode-zerocounter-5) in zeroValueArray[:,0]:
-                                        if not (imageMode-zerocounter-6) in zeroValueArray[:,0]:
-                                            if not (imageMode-zerocounter-7) in zeroValueArray[:,0]:
-                                                if not (imageMode-zerocounter-8) in zeroValueArray[:,0]:
-                                                    if not (imageMode-zerocounter-9) in zeroValueArray[:,0]:
-                                                        if not (imageMode-zerocounter-10) in zeroValueArray[:,0]:
-                                                            if not (imageMode-zerocounter-11) in zeroValueArray[:,0]:
-                                                                if not (imageMode-zerocounter-12) in zeroValueArray[:,0]:
-                                                                    if not (imageMode-zerocounter-13) in zeroValueArray[:,0]:
-                                                                        if not (imageMode-zerocounter-14) in zeroValueArray[:,0]:
-                                                                            if not (imageMode-zerocounter-15) in zeroValueArray[:,0]:
-                                                                                if not (imageMode-zerocounter-16) in zeroValueArray[:,0]:
-                                                                                    zeroValue=(imageMode-zerocounter)
-                                                                                    breaker =0
+            # #Zerothreshing image
+            # #googtime=time.time()
+            # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+            # histogramdata[histogramdata[:,0] > -10000]
+            # #Do some fiddle faddling to figure out the value that goes to zero less
+            # zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+            # breaker=1
+            # zerocounter=0
+            # while (breaker != 0):
+            #     zerocounter=zerocounter+1
+            #     if not (imageMode-zerocounter) in zeroValueArray[:,0]:
+            #         if not (imageMode-zerocounter-1) in zeroValueArray[:,0]:
+            #             if not (imageMode-zerocounter-2) in zeroValueArray[:,0]:
+            #                 if not (imageMode-zerocounter-3) in zeroValueArray[:,0]:
+            #                     if not (imageMode-zerocounter-4) in zeroValueArray[:,0]:
+            #                         if not (imageMode-zerocounter-5) in zeroValueArray[:,0]:
+            #                             if not (imageMode-zerocounter-6) in zeroValueArray[:,0]:
+            #                                 if not (imageMode-zerocounter-7) in zeroValueArray[:,0]:
+            #                                     if not (imageMode-zerocounter-8) in zeroValueArray[:,0]:
+            #                                         if not (imageMode-zerocounter-9) in zeroValueArray[:,0]:
+            #                                             if not (imageMode-zerocounter-10) in zeroValueArray[:,0]:
+            #                                                 if not (imageMode-zerocounter-11) in zeroValueArray[:,0]:
+            #                                                     if not (imageMode-zerocounter-12) in zeroValueArray[:,0]:
+            #                                                         if not (imageMode-zerocounter-13) in zeroValueArray[:,0]:
+            #                                                             if not (imageMode-zerocounter-14) in zeroValueArray[:,0]:
+            #                                                                 if not (imageMode-zerocounter-15) in zeroValueArray[:,0]:
+            #                                                                     if not (imageMode-zerocounter-16) in zeroValueArray[:,0]:
+            #                                                                         zeroValue=(imageMode-zerocounter)
+            #                                                                         breaker =0
 
-            substackimage[substackimage < zeroValue] = np.nan
+            # substackimage[substackimage < zeroValue] = np.nan
             # del unique
             # del counts
             # Deband the image
@@ -526,6 +526,46 @@ if substack:
             #plog (bn.nanmax(substackimage))
 
             #breakpoint()
+
+            # 1) pick your subsampling factor
+            ny, nx = substackimage.shape
+            total_px = ny * nx
+            if total_px > 100_000_000:
+                subs = 10
+            elif total_px >  50_000_000:
+                subs = 5
+            else:
+                subs = 2
+
+            # 2) grab the strided‐subsample
+            sample = substackimage[::subs, ::subs]
+
+            # 3) compute mode on the sample
+            vals = sample.ravel()
+            vals = vals[np.isfinite(vals)].astype(np.int32)
+            unique, counts = np.unique(vals, return_counts=True)
+            m = counts.argmax()
+            imageMode = unique[m]
+            plog(f"Calculating Mode (subs={subs}): {time.time()-googtime:.3f} s")
+
+            # 4) now build the histogramdata (so we still have unique & counts)
+            histogramdata = np.column_stack([unique, counts]).astype(np.int32)
+            # optional filter your histogram (you had this line, though it doesn't assign)
+            histogramdata = histogramdata[histogramdata[:,0] > -10000]
+
+            # 5) find the highest “gap” below imageMode
+            zeroValueArray = histogramdata[histogramdata[:,0] < imageMode, 0]
+            zerocounter = 0
+            while True:
+                zerocounter += 1
+                test = imageMode - zerocounter
+                # look for a run of 17 empty bins below the mode
+                if all(((test - offset) not in zeroValueArray) for offset in range(17)):
+                    zeroValue = test
+                    break
+
+            # 6) apply your zero‐threshold
+            substackimage[substackimage < zeroValue] = np.nan
 
             #sub_stacker_array[:,:,0] = copy.deepcopy(substackimage)
             sub_stacker_array[:,:,0] = substackimage.copy()
@@ -891,17 +931,17 @@ try:
         # RAest=input_psolve_info[6]
         # DECest=input_psolve_info[7]
 
-        plog ("HERE IS THE FULL PLATESOLVE PICKLE")
-        plog (hdu.data)
-        plog (pixscale)
-        plog (is_osc)
+        # plog ("HERE IS THE FULL PLATESOLVE PICKLE")
+        # plog (hdu.data)
+        # plog (pixscale)
+        # plog (is_osc)
         wcsfilepath=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq))
-        plog (wcsfilepath)
+        # plog (wcsfilepath)
         wcsfilebase=selfconfig["obs_id"]+ "-" + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter) + "-" + dayobs+ "-"+ next_seq+ "-" + 'EX'+ "00.fits"
-        plog (wcsfilebase)
-        plog (corrected_ra_for_header * 15 )
-        plog (corrected_dec_for_header)
-        plog (next_seq)
+        # plog (wcsfilebase)
+        # plog (corrected_ra_for_header * 15 )
+        # plog (corrected_dec_for_header)
+        # plog (next_seq)
 
         # CHECK TEMP DIR ACTUALLY EXISTS
         if not os.path.exists(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs):
@@ -1913,7 +1953,8 @@ try:
 
     # hdu.data[np.isnan(hdu.data)] = imageMode
     #     #num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
-    from scipy.ndimage import convolve
+    googtime=time.time()
+
     def fill_nans_with_local_mean(data, footprint=None):
         """
         Replace NaNs by the mean of their neighboring pixels.
