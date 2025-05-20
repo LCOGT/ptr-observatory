@@ -6775,7 +6775,7 @@ class Sequencer:
         
         now = ephem.Date(ephem.now())        
         observing_ends = self.obs.events['Observing Ends']        
-        observing_begins = self.obs.events['Observing Begins']        
+        observing_begins = self.obs.events['End Eve Sky Flats']        
         # Reject exposures that start before nautical dusk or end after nautical dawn
         if now < observing_begins or now > observing_ends :
             plog("Too bright to consider platesolving!")
