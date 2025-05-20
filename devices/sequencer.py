@@ -6772,6 +6772,16 @@ class Sequencer:
             g_dev["obs"].send_to_user("Too bright, or early, to auto-center the image.")
 
             return
+        
+        now = ephem.Date(ephem.now())        
+        observing_ends = self.obs.events['Observing Ends']        
+        observing_begins = self.obs.events['Observing Begins']        
+        # Reject exposures that start before nautical dusk or end after nautical dawn
+        if now < observing_begins or now > observing_ends :
+            plog("Too bright to consider platesolving!")
+            plog("Hence too bright to do a centering exposure.")
+            g_dev["obs"].send_to_user("Too bright, or early, to auto-center the image.")
+            return
 
         # Don't try forever if focussing
         if self.focussing:
