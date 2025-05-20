@@ -604,6 +604,9 @@ site_config = {
             # "driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  Found in Kepler ASCOM section
             "dual_wheel": True,
 
+            "fli_wheel_zero_id": 'CL0190117',
+            "fli_wheel_one_id": 'CL0170117',
+
             #how long to wait for the filter to settle after a filter change(seconds)
             "filter_settle_time": 0, #20240104 Upped from 1 to 5 per MF recommandatin. WER
 

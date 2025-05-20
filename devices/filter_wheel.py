@@ -20,7 +20,7 @@ import copy
 import traceback
 from global_yard import g_dev
 from ptr_utility import plog
-
+import support_info.FLIsdk.fli_dual_wheel
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -105,11 +105,16 @@ class FilterWheel:
                 self.custom = False
                 self.dummy=False
                 self.filter.Connected = True
-                
+
             elif driver == "FLI.dual":
-                
-                breakpoint()
-                
+
+                #breakpoint()
+                # Import dual wheel instruction set
+
+                self.fli_wheelids=support_info.FLIsdk.fli_dual_wheel.initialize_wheels()
+                print ("Initialised FLI wheels: " + str(self.fli_wheelids))
+
+
                 print ("FLI_dual")
                 self.ascom = False
                 self.maxim = False
@@ -118,7 +123,7 @@ class FilterWheel:
                 self.dual_fli=True
                 self.custom = False
                 self.dummy=False
-                
+
             elif driver == "LCO.dual":  #This is the LCO designed dual Filter wheel on ARO1
                 # home the wheel and get responses, which indicates it is connected.
                 # set current_0 and _1 to [0, 0] position to default of w/L filter.
@@ -312,7 +317,7 @@ class FilterWheel:
     # Note this is a thread!
     def filterwheel_update_thread(self):
 
-        if not self.driver == "LCO.dual" and not self.dummy:
+        if not self.driver == "LCO.dual" and not not self.driver == "LCO.dual" and not self.dummy:
             win32com.client.pythoncom.CoInitialize()
 
             self.filterwheel_update_wincom = win32com.client.Dispatch(self.driver)
@@ -346,7 +351,19 @@ class FilterWheel:
                         self.filter_change_requested=False
                         self.filter_changing=True
 
-                        if self.dual_filter and self.custom:
+
+                        if self.dual_fli:
+
+                            filter_dict={}
+                            filter_dict[self.config["fli_wheel_zero_id"]]=self.filter_selections[0]
+                            filter_dict[self.config["fli_wheel_one_id"]]=self.filter_selections[1]
+
+                            print ("changing filters to " +str(filter_dict))
+                            support_info.FLIsdk.fli_dual_wheel.set_positions(filter_dict)
+                            print ("filters changed")
+                            #breakpoint()
+
+                        elif self.dual_filter and self.custom:
                             r0 = self.r0
                             r1 = self.r1
                             r0["filterwheel"]["position"] = self.filter_selections[0]
