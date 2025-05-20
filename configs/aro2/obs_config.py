@@ -600,12 +600,12 @@ site_config = {
             "alias": "Dual filter wheel",
             "desc":  'FLI Centerline Custom Dual 50mm sq.',
             # 'ASCOM.FLI.FilterWheel',   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #"Maxim.CCDCamera",  #
-            "driver": "Maxim.CCDCamera",
+            "driver": "FLI.dual",
             # "driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  Found in Kepler ASCOM section
             "dual_wheel": True,
 
             #how long to wait for the filter to settle after a filter change(seconds)
-            "filter_settle_time": 5, #20240104 Upped from 1 to 5 per MF recommandatin. WER
+            "filter_settle_time": 0, #20240104 Upped from 1 to 5 per MF recommandatin. WER
 
             # This ignores the automatically estimated filter gains and starts with the values from the config file
             'override_automatic_filter_throughputs': False,

@@ -89,7 +89,8 @@ class FilterWheel:
                 self.maxim = False
                 self.theskyx = False
                 self.ascom = False
-                self.dual = False
+                self.dual_lco = False
+                self.dual_fli=False
                 self.custom = False
                 self.dummy=True
             elif driver == "ASCOM.EFW2.FilterWheel":
@@ -99,10 +100,25 @@ class FilterWheel:
                 self.ascom = True
                 self.maxim = False
                 self.theskyx = False
-                self.dual = False
+                self.dual_lco = False
+                self.dual_fli=False
                 self.custom = False
                 self.dummy=False
                 self.filter.Connected = True
+                
+            elif driver == "FLI.dual":
+                
+                breakpoint()
+                
+                print ("FLI_dual")
+                self.ascom = False
+                self.maxim = False
+                self.theskyx = False
+                self.dual_lco = False
+                self.dual_fli=True
+                self.custom = False
+                self.dummy=False
+                
             elif driver == "LCO.dual":  #This is the LCO designed dual Filter wheel on ARO1
                 # home the wheel and get responses, which indicates it is connected.
                 # set current_0 and _1 to [0, 0] position to default of w/L filter.
@@ -124,7 +140,8 @@ class FilterWheel:
                 self.maxim = False
                 self.theskyx = False
                 self.ascom = False
-                self.dual = True
+                self.dual_lco = True
+                self.dual_fli=False
                 self.custom = True
 
             elif isinstance(driver, list) and self.dual_filter:
@@ -136,7 +153,7 @@ class FilterWheel:
 
                 self.filter_front.Position = 0
                 self.filter_back.Position = 0
-                self.dual = True
+                self.dual_lco = False
                 self.custom = False
 
                 default_filter_number = self._get_default_filter_number()
@@ -152,8 +169,9 @@ class FilterWheel:
                 plog(self.current_filter_name, self.filter_offset)
             elif driver == "ASCOM.FLI.FilterWheel" and self.dual_filter:
                 self.maxim = False
-                self.dual = True
-                breakpoint()  #We should not get here. WER 20250512
+                self.dual_lco = False
+                self.dual_fli=False
+                #breakpoint()  #We should not get here. WER 20250512
                 fw0 = win32com.client.Dispatch(driver)  # Closest to Camera
                 fw1 = win32com.client.Dispatch(driver)  # Closest to Telescope
                 plog(fw0, fw1)
@@ -192,7 +210,6 @@ class FilterWheel:
                     self.filter_back.Position,
                 )
 
-                self.dual = True
                 self.custom = False
 
                 # The code below should move the filter wheel to the default filter
@@ -233,7 +250,8 @@ class FilterWheel:
                 )
                 self.maxim = True
                 self.ascom = False
-                self.dual = True
+                self.dual_lco = False
+                self.dual_fli=False
                 self.custom = False
 
 
@@ -250,7 +268,8 @@ class FilterWheel:
             # This controls the filter wheel through TheSkyX
             elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
                 self.maxim = False
-                self.dual = False
+                self.dual_lco = False
+                self.dual_fli=False
                 self.custom = False
                 self.theskyx = True
                 win32com.client.pythoncom.CoInitialize()
@@ -268,7 +287,8 @@ class FilterWheel:
                 # an ASCOM.filter then we set this device up normally. Eg., SAF is an
                 # example of this version of the setup.
                 self.maxim = False
-                self.dual = False
+                self.dual_lco = False
+                self.dual_fli=False
                 self.custom = False
                 win32com.client.pythoncom.CoInitialize()
                 self.filter_front = win32com.client.Dispatch(driver)
@@ -326,7 +346,7 @@ class FilterWheel:
                         self.filter_change_requested=False
                         self.filter_changing=True
 
-                        if self.dual and self.custom:
+                        if self.dual_filter and self.custom:
                             r0 = self.r0
                             r1 = self.r1
                             r0["filterwheel"]["position"] = self.filter_selections[0]
@@ -359,7 +379,7 @@ class FilterWheel:
                                 else:
                                     time.sleep(0.5)
 
-                        elif self.dual and not self.maxim:
+                        elif self.dual_filter and not self.maxim:
                             try:
                                 while self.filter_front.Position == -1:
                                     time.sleep(0.1)
@@ -376,17 +396,17 @@ class FilterWheel:
                                 pass
                             self.filter_offset = float(self.filter_data[self.current_filter_number][2])
 
-                        elif self.maxim and self.dual:
+                        elif self.maxim and self.dual_filter:
                             try:
-                                time.sleep(2)   #WER experiment
+                                #time.sleep(2)   #WER experiment
                                 self.filterwheel_update_wincom.Filter = self.filter_selections[0]
                                 #time.sleep(2)   #WER experiment
 
-                                if self.dual_filter:
-                                    time.sleep(2)   #WER experiment
-                                    self.filterwheel_update_wincom.GuiderFilter = self.filter_selections[1]
+                                # if self.dual_filter:
                                     #time.sleep(2)   #WER experiment
-                                plog("Filter Wheel delay Experiment Lines 381, 386   WER 20250512:  ", self.filter_selections[0],"  ", self.filter_selections[1])
+                                self.filterwheel_update_wincom.GuiderFilter = self.filter_selections[1]
+                                    #time.sleep(2)   #WER experiment
+                                #plog("Filter Wheel delay Experiment Lines 381, 386   WER 20250512:  ", self.filter_selections[0],"  ", self.filter_selections[1])
 
                             except:
                                 plog(traceback.format_exc())
