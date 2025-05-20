@@ -2808,6 +2808,13 @@ class Camera:
             else:
                 manually_requested_calibration = False
 
+            reported=False
+            while g_dev['seq'].currently_running_centering:
+                if not reported:
+                    plog ("waiting for centering to finish")
+                    reported=True
+                time.sleep(0.1)
+
             g_dev['obs'].report_to_nightlog("Individual Exposure Commanded: " + str(command))
 
             self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'],

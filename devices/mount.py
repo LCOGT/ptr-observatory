@@ -1802,6 +1802,14 @@ class Mount:
 
         if action == "go":
             
+            # If there is a manual mount move command then
+            # centering becomes meaningless.
+            if g_dev['seq'].currently_running_centering:
+                g_dev['seq'].cancel_out_of_centering=True
+                
+                
+            
+
             g_dev['obs'].report_to_nightlog("Individual Slew Commanded: " + str(command))
             
             object_name = opt['object']
