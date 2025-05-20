@@ -872,8 +872,8 @@ try:
         # unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(np.int32), return_counts=True)
         # m=counts.argmax()
         # imageMode=unique[m]
-        plog ("Calculated Mode: " + str(imageMode))
-        plog ("Calculating Mode: " +str(time.time()-googtime))
+        # plog ("Calculated Mode: " + str(imageMode))
+        # plog ("Calculating Mode: " +str(time.time()-googtime))
 
 
         # # Zerothreshing image

@@ -92,7 +92,7 @@ site_config = {
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 10,
     'lowest_requestable_altitude': 10,  # Degrees. For normal pointing requests don't allow requests to go this low.
-    'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+    'lowest_acceptable_altitude' : 0.0, # Below this altitude, it will automatically try to home and park the scope to recover.
     'degrees_to_avoid_zenith_area_for_calibrations': 5, 
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
@@ -171,7 +171,7 @@ site_config = {
     
     'bias_dark interval':  120.,   #minutes
     'eve_sky_flat_sunset_offset': -30.,  # 40 before Minutes  neg means before, + after.
-    #'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
+
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 15 ,
     'clock_and_auto_focus_offset': -10,
@@ -201,7 +201,7 @@ site_config = {
     'time_to_wait_after_roof_opens_to_take_flats': 30,   #sec Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': False,
+    'auto_morn_bias_dark': True,
     
     # FOCUS OPTIONS
     'periodic_focus_time': 2, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -220,11 +220,11 @@ site_config = {
    # Also leads to fully platesolved reduced images on the local site computer
    # Usually set this to True
    # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
-   'fully_platesolve_images_at_site_rather_than_pipe' : False,  #TEMP for mrc2 for bringup WER 20250408
+   'fully_platesolve_images_at_site_rather_than_pipe' :True,  #TEMP for mrc2 for bringup WER 20250408
 
 
 
-   "platesolve_timeout": 60, # Default should be about 45 seconds, but slower computers will take longer   
+   "platesolve_timeout": 45, # Default should be about 45 seconds, but slower computers will take longer   
 
     'defaults': {
         'mount': 'mount1',
@@ -406,7 +406,7 @@ site_config = {
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'collecting_area':  154891,
+            'collecting_area':  154891,    #This is the correct area 20250514 WER
             'obscuration':  47,
             'aperture': 610,
             'f-ratio':  6.8,   #This and focal_length can be refined after a solve.
@@ -496,7 +496,7 @@ site_config = {
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 3.0, # highest value to consider as being in "good focus". Used to select last good focus value
 
-            'reference':  6750,    #Nominal at 20C Primary temperature, in microns not steps.            
+            'reference':  6300,    #Nominal at 20C Primary temperature, in microns not steps.            
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20240210',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  False,
