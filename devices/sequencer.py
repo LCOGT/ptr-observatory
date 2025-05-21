@@ -6764,6 +6764,10 @@ class Sequencer:
         a longer project block.
         """
         
+        # If the roof isn't open, then don't bother platesolving!
+        if not g_dev['obs'].open_and_enabled_to_observe:
+            return
+        
         self.currently_running_centering=True
         
         # Set the cancel flag off at the start of each centering routine
@@ -6799,7 +6803,9 @@ class Sequencer:
             g_dev["obs"].send_to_user("Cancelling out of centering.")
             self.currently_running_centering=False
             return
-            
+        
+        
+        
 
         # Don't try forever if focussing
         if self.focussing:
