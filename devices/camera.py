@@ -5842,13 +5842,14 @@ class Camera:
                                 
                                 # 1. mask hot pixels / cosmics
                                 from astroscrappy import detect_cosmics
-                                cr_mask, clean_data = detect_cosmics(outputimg, sigclip=5.0, sigfrac=0.3, objlim=5)
+                                if (self.pixscale < 1.0 and not self.settings['is_osc']) or (self.pixscale < 0.6 and self.settings['is_osc']): 
+                                    cr_mask, outputimg = detect_cosmics(outputimg, sigclip=5.0, sigfrac=0.3, objlim=5)
                                 # # 2. subtract background
                                 # from scipy.ndimage import uniform_filter
                                 # bkg = uniform_filter(clean_data, size=256)
                                 # # 3. smooth
                                 from scipy.ndimage import gaussian_filter
-                                smoothed = gaussian_filter(clean_data, sigma=1)# - bkg, sigma=1)
+                                smoothed = gaussian_filter(outputimg, sigma=1)# - bkg, sigma=1)
                                 hdufocus.data = smoothed.astype(np.float32)
                                 
                                 
