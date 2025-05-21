@@ -6093,7 +6093,7 @@ class Camera:
                                     fwhm_values=[]
 
                                     print(traceback.format_exc())
-                                    breakpoint()
+                                    #breakpoint()
 
                                 plog("No. of detections:  ", len(fwhm_values))
 
