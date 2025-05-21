@@ -1619,7 +1619,7 @@ class Camera:
                 ratio = 40/result[idx,0]
                 new_estimated_exposure_time= ratio * closest_group
 
-                g_dev['cam'].focus_exposure=int(max(min(new_estimated_exposure_time,60),10))
+                g_dev['cam'].focus_exposure=int(max(min(new_estimated_exposure_time,60),25))
 
                 print ("Updated Focus Exposure time: " + str(self.focus_exposure))
 
@@ -5843,12 +5843,12 @@ class Camera:
                                 # 1. mask hot pixels / cosmics
                                 from astroscrappy import detect_cosmics
                                 cr_mask, clean_data = detect_cosmics(outputimg, sigclip=5.0, sigfrac=0.3, objlim=5)
-                                # 2. subtract background
-                                from scipy.ndimage import uniform_filter
-                                bkg = uniform_filter(clean_data, size=256)
-                                # 3. smooth
+                                # # 2. subtract background
+                                # from scipy.ndimage import uniform_filter
+                                # bkg = uniform_filter(clean_data, size=256)
+                                # # 3. smooth
                                 from scipy.ndimage import gaussian_filter
-                                smoothed = gaussian_filter(clean_data - bkg, sigma=1)
+                                smoothed = gaussian_filter(clean_data, sigma=1)# - bkg, sigma=1)
                                 hdufocus.data = smoothed.astype(np.float32)
                                 
                                 
@@ -5897,7 +5897,41 @@ class Camera:
                                 # hdu_var.header['BUNIT'] = 'e-2'       # units: electrons^2
                                 # hdu_var.writeto('variance.fits', overwrite=True)
                                 googtime=time.time()
-                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 5 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm MOFFAT --tile-size 10000 --tile-memory-limit 16384"')
+                                #os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 5 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm MOFFAT --tile-size 10000 --tile-memory-limit 16384"')
+                                # build the inner command as one long string
+                                command = (
+                                    f"/home/obs/miniconda3/bin/sourcextractor++"
+                                    f" --detection-image {tempdir_in_wsl}{tempfitsname}"
+                                    f" --detection-image-gain {segain}"
+                                    f" --detection-threshold 5"
+                                    f" --thread-count {2*multiprocessing.cpu_count()}"
+                                    f" --output-catalog-filename {tempdir_in_wsl}{tempfitsname.replace('.fits','cat.fits')}"
+                                    f" --output-catalog-format FITS"
+                                    f" --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters"
+                                    f" --flux-fraction 0.5"
+                                    f" --detection-minimum-area {math.floor(minarea)}"
+                                    f" --grouping-algorithm MOFFAT"
+                                    f" --tile-size 10000"
+                                    f" --tile-memory-limit 16384"
+                                )
+                                
+                                # now call wsl bash -ic "<command>"
+                                cmd = ["wsl", "bash", "-ic", command]
+                                
+                                try:
+                                    result = subprocess.run(
+                                        cmd,
+                                        capture_output=True,  # if you want stdout/stderr in result.stdout, result.stderr
+                                        text=True,            # decode bytes to str
+                                        timeout=300,          # kill if >300 s
+                                        check=True            # raise if exit-code ≠ 0
+                                    )
+                                    print(result.stdout)
+                                except subprocess.TimeoutExpired:
+                                    print("✖ sourcextractor++ timed out")
+                                except subprocess.CalledProcessError as e:
+                                    print(f"⚠️ exited with code {e.returncode}")
+                                
                                 print ("s++: " + str(time.time()-googtime))
                                 try:
                                     googtime=time.time()
