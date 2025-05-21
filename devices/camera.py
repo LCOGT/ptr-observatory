@@ -34,6 +34,7 @@ import threading
 import sep
 import math
 from astropy.stats import sigma_clip
+from scipy.spatial import cKDTree
 import pickle
 import win32com.client
 import bottleneck as bn
@@ -242,6 +243,29 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 #     plt.savefig(str(time.time())+'aftersourceplots.png', dpi=300, bbox_inches='tight')
 #     plt.close()
 
+def fill_nans_with_local_mean(data, footprint=None):
+    """
+    Replace NaNs by the mean of their neighboring pixels.
+    - data: 2D numpy array with NaNs.
+    - footprint: kernel array of 0/1 defining neighborhood (default 3×3).
+    """
+    mask = np.isnan(data)
+    # zero-fill NaNs for convolution
+    filled = np.nan_to_num(data, copy=True)
+    if footprint is None:
+        footprint = np.ones((3,3), dtype=int)
+
+    # sum of neighbors (NaNs contributed as 0)
+    neighbor_sum   = convolve(filled,   footprint, mode='mirror')
+    # count of valid neighbors
+    neighbor_count = convolve(~mask,    footprint, mode='mirror')
+
+    # only replace where count>0
+    replace_idxs = mask & (neighbor_count>0)
+    data_out = data.copy()
+    data_out[replace_idxs] = neighbor_sum[replace_idxs] / neighbor_count[replace_idxs]
+    return data_out
+
 def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
     x_cent = catalog['pixel_centroid_x'] - 1  # FITS to NumPy
     y_cent = catalog['pixel_centroid_y'] - 1
@@ -256,28 +280,84 @@ def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
         size = (2 * r_search + 1, 2 * r_search + 1)
 
         try:
-            # Cutout centered on centroid
-            cutout = Cutout2D(outputimg, position=(x0, y0), size=size, mode='partial', fill_value=np.nan)
-
-            # Find brightest pixel in the cutout
-            if np.all(np.isnan(cutout.data)):
-                # No valid data; skip or set distance to NaN
+            # round and cast to int
+            # size = int(np.round(size))
+            # Unpack, round, repack:
+            # if isinstance(size, (tuple, list, np.ndarray)):
+            #     ny, nx = size
+            #     ny = int(np.round(ny))
+            #     nx = int(np.round(nx))
+            #     size = (ny, nx)
+            # else:
+            #     size = int(np.round(size))
+            # x0i, y0i = int(np.round(x0)), int(np.round(y0))
+            
+            # ny, nx = outputimg.shape
+            # half = size // 2
+            
+            # # figure out how many pixels we can actually grab
+            # xmin = max( 0, x0i - half )
+            # xmax = min( nx, x0i + half + (size % 2) )
+            # ymin = max( 0, y0i - half )
+            # ymax = min( ny, y0i + half + (size % 2) )
+            
+            # real_ny, real_nx = ymax - ymin, xmax - xmin
+            
+            # # if either dimension is ≤ 0, skip this frame
+            # if real_ny <= 0 or real_nx <= 0:
+            # 1) Round & cast size to int or (int, int)
+            if hasattr(size, "__iter__") and len(size) == 2:
+                size = tuple(int(np.round(s)) for s in size)
+            else:
+                size = int(np.round(size))
+            
+            # 2) Compute half-sizes for Y and X
+            if isinstance(size, tuple):
+                half_y, half_x = size[0] // 2, size[1] // 2
+            else:
+                half_y = half_x = size // 2
+            
+            # 3) Round & cast your center too
+            y0i, x0i = int(np.round(y0)), int(np.round(x0))
+            
+            # 4) Clamp to image boundaries
+            ny, nx = outputimg.shape
+            ymin = max(0, y0i - half_y)
+            ymax = min(ny, y0i + half_y + (size[0]%2 if isinstance(size, tuple) else size%2))
+            xmin = max(0, x0i - half_x)
+            xmax = min(nx, x0i + half_x + (size[1]%2 if isinstance(size, tuple) else size%2))
+            
+            # 5) If it collapsed, bail out
+            if (ymax - ymin) <= 0 or (xmax - xmin) <= 0:
+                # e.g. log it and return NaN or zero distance
+                # Ensure placeholders are appended
                 x_dists.append(np.nan)
                 y_dists.append(np.nan)
                 total_dists.append(np.nan)
-                continue
-
-            local_max_pos = np.unravel_index(np.nanargmax(cutout.data), cutout.data.shape)
-            y_peak_local, x_peak_local = local_max_pos
-
-            # Calculate offset relative to cutout center
-            dx = x_peak_local - r_search
-            dy = y_peak_local - r_search
-            dist = np.hypot(dx, dy)
-
-            x_dists.append(abs(dx))
-            y_dists.append(abs(dy))
-            total_dists.append(dist)
+            else:
+                # Cutout centered on centroid
+                real_size = (ymax - ymin, xmax - xmin)
+                cutout = Cutout2D(outputimg, position=(x0, y0), size=real_size, mode='partial', fill_value=np.nan)
+    
+                # Find brightest pixel in the cutout
+                if np.all(np.isnan(cutout.data)):
+                    # No valid data; skip or set distance to NaN
+                    x_dists.append(np.nan)
+                    y_dists.append(np.nan)
+                    total_dists.append(np.nan)
+                    continue
+    
+                local_max_pos = np.unravel_index(np.nanargmax(cutout.data), cutout.data.shape)
+                y_peak_local, x_peak_local = local_max_pos
+    
+                # Calculate offset relative to cutout center
+                dx = x_peak_local - r_search
+                dy = y_peak_local - r_search
+                dist = np.hypot(dx, dy)
+    
+                x_dists.append(abs(dx))
+                y_dists.append(abs(dy))
+                total_dists.append(dist)
         except:
             plog ("there is an occasional cutout area but to find....")
             plog(traceback.format_exc())
@@ -5591,31 +5671,6 @@ class Camera:
 
                         # outputimg = interpolate_replace_nans(outputimg, kernel)
 
-                        def fill_nans_with_local_mean(data, footprint=None):
-                            """
-                            Replace NaNs by the mean of their neighboring pixels.
-                            - data: 2D numpy array with NaNs.
-                            - footprint: kernel array of 0/1 defining neighborhood (default 3×3).
-                            """
-                            mask = np.isnan(data)
-                            # zero-fill NaNs for convolution
-                            filled = np.nan_to_num(data, copy=True)
-                            if footprint is None:
-                                footprint = np.ones((3,3), dtype=int)
-
-                            # sum of neighbors (NaNs contributed as 0)
-                            neighbor_sum   = convolve(filled,   footprint, mode='mirror')
-                            # count of valid neighbors
-                            neighbor_count = convolve(~mask,    footprint, mode='mirror')
-
-                            # only replace where count>0
-                            replace_idxs = mask & (neighbor_count>0)
-                            data_out = data.copy()
-                            data_out[replace_idxs] = neighbor_sum[replace_idxs] / neighbor_count[replace_idxs]
-                            return data_out
-
-                        outputimg=fill_nans_with_local_mean(outputimg)
-                        plog ("nans: " + str( time.time()-googtime))
 
 
                         # # Remove remaining nans
@@ -5784,7 +5839,23 @@ class Camera:
                                 # We don't need accurate photometry, so integer is fine.
                                 hdufocus = fits.PrimaryHDU()
                                 hdufocus.data = outputimg.astype(np.float32)
-
+                                
+                                # 1. mask hot pixels / cosmics
+                                from astroscrappy import detect_cosmics
+                                cr_mask, clean_data = detect_cosmics(outputimg, sigclip=5.0, sigfrac=0.3, objlim=5)
+                                # 2. subtract background
+                                from scipy.ndimage import uniform_filter
+                                bkg = uniform_filter(clean_data, size=256)
+                                # 3. smooth
+                                from scipy.ndimage import gaussian_filter
+                                smoothed = gaussian_filter(clean_data - bkg, sigma=1)
+                                hdufocus.data = smoothed.astype(np.float32)
+                                
+                                
+                        
+    
+                                outputimg=fill_nans_with_local_mean(outputimg)
+                                plog ("nans: " + str( time.time()-googtime))
 
                                 # from scipy.ndimage import uniform_filter
 
@@ -5826,7 +5897,7 @@ class Camera:
                                 # hdu_var.header['BUNIT'] = 'e-2'       # units: electrons^2
                                 # hdu_var.writeto('variance.fits', overwrite=True)
                                 googtime=time.time()
-                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm none --tile-size 10000 --tile-memory-limit 16384"')
+                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 5 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm MOFFAT --tile-size 10000 --tile-memory-limit 16384"')
                                 print ("s++: " + str(time.time()-googtime))
                                 try:
                                     googtime=time.time()
@@ -5869,8 +5940,8 @@ class Camera:
                                     #     mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
                                     #     catalog = catalog[mask]
                                     # else:
-                                    # mask = (catalog['area']) > minarea
-                                    # catalog =catalog[mask]
+                                    mask = (catalog['area']) > minarea
+                                    catalog =catalog[mask]
 
 
 
@@ -5926,7 +5997,7 @@ class Camera:
 
                                         # We only want to consider sources with no nearby other sources
                                         # whether that is another star, part of a donut or diffraction spike
-                                        from scipy.spatial import cKDTree
+                                        
 
                                         # Extract positions
                                         x = catalog['pixel_centroid_x']
@@ -5977,14 +6048,22 @@ class Camera:
                                         catalog=calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0)
                                         print ("donuts: " + str(time.time()-googtime))
                                         print ("before")
-                                        print ("Median donut distance = " + str(np.median(catalog['total_donut_distance'])))
+                                        print ("Median donut distance = " + str(np.nanmedian(catalog['total_donut_distance'])))
                                         print ("Median Flux Radius    = " + str(np.nanmedian(np.asarray(catalog['flux_radius']))))
                                         # print (np.nanstd(np.asarray(catalog['flux_radius'])))
                                         print ((np.asarray(catalog['total_donut_distance'])))
                                         print ((np.asarray(catalog['flux_radius'])))
                                         #breakpoint()
+                                        data = np.asarray(catalog['total_donut_distance'])
+                                        good = data[np.isfinite(data)]
+                                        # now clip on only the “good” values
+                                        total_mean_donut_distance = sigma_clip(good,
+                                                            sigma_lower=2, sigma_upper=4,
+                                                            maxiters=5)                                        
+                                        # if you want the clipped mean:
+                                        # total_mean_donut_distance = clipped.mean()
 
-                                        total_mean_donut_distance=sigma_clip(np.asarray(catalog['total_donut_distance']),sigma_lower=2,sigma_upper=4, maxiters=5)
+                                        # total_mean_donut_distance=sigma_clip(np.asarray(catalog['total_donut_distance']),sigma_lower=2,sigma_upper=4, maxiters=5)
                                         total_mean_donut_distance=total_mean_donut_distance.data[~total_mean_donut_distance.mask]
                                         total_mean_flux_radius=sigma_clip(np.asarray(catalog['flux_radius']),sigma_lower=2,sigma_upper=4, maxiters=5)
                                         total_mean_flux_radius=total_mean_flux_radius.data[~total_mean_flux_radius.mask]
