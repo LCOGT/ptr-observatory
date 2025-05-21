@@ -40,6 +40,29 @@ plog = create_color_plog('postexp', log_color)
 
 plog('Starting post_exposure_subprocess.py')
 
+def fill_nans_with_local_mean(data, footprint=None):
+    """
+    Replace NaNs by the mean of their neighboring pixels.
+    - data: 2D numpy array with NaNs.
+    - footprint: kernel array of 0/1 defining neighborhood (default 3×3).
+    """
+    mask = np.isnan(data)
+    # zero-fill NaNs for convolution
+    filled = np.nan_to_num(data, copy=True)
+    if footprint is None:
+        footprint = np.ones((3,3), dtype=int)
+
+    # sum of neighbors (NaNs contributed as 0)
+    neighbor_sum   = convolve(filled,   footprint, mode='mirror')
+    # count of valid neighbors
+    neighbor_count = convolve(~mask,    footprint, mode='mirror')
+
+    # only replace where count>0
+    replace_idxs = mask & (neighbor_count>0)
+    data_out = data.copy()
+    data_out[replace_idxs] = neighbor_sum[replace_idxs] / neighbor_count[replace_idxs]
+    return data_out
+
 def sigma_clip_mad(data, sigma=2.5, maxiters=10):
     """
     Perform sigma clipping using MAD as a robust standard deviation estimate.
@@ -437,25 +460,16 @@ if substack:
             )
             thread.start()
 
-        #plog (substackimage.shape)
-        #notsubstackimage=np.load(substackfilename)
-        #plog (notsubstackimage.shape)
         try:
             if exp_of_substacks == 10:
-                #plog ("Dedarking 0")
-                #loadbias=np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy')
-                #plog (loadbias.shape)
-                #substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy'))# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
                 substackimage=substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy')# - g_dev['cam'].darkFiles['tensec_exposure_biasdark'])
             else:
-                #substackimage=copy.deepcopy(substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy'))
                 substackimage=substackimage - np.load(localcalibrationdirectory + 'archive/' + cam_alias + '/calibmasters/' + tempfrontcalib + 'thirtysecBIASDARK_master_bin1.npy')
         except:
             plog(traceback.format_exc())
             plog ("Couldn't biasdark substack")
             pass
         try:
-            #substackimage = copy.deepcopy(np.divide(substackimage, np.load(localcalibrationdirectory  + 'archive/' + cam_alias + '/calibmasters/' + 'masterFlat_' + this_exposure_filter + "_bin" + str(1) +'.npy')))
             substackimage = np.divide(substackimage, np.load(localcalibrationdirectory  + 'archive/' + cam_alias + '/calibmasters/' + 'masterFlat_' + this_exposure_filter + "_bin" + str(1) +'.npy'))
         except:
             plog ("couldn't flat field substack")
@@ -477,55 +491,7 @@ if substack:
 
 
             # Really need to thresh the image
-            googtime=time.time()
-            # # int_array_flattened=substackimage.astype(int).ravel()
-            # # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-            # # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-            # unique,counts=np.unique(substackimage.ravel()[~np.isnan(substackimage.ravel())].astype(np.int32), return_counts=True)
-            # m=counts.argmax()
-            # imageMode=unique[m]
-
-            # plog ("Calculating Mode: " +str(time.time()-googtime))
-
-            # #Zerothreshing image
-            # #googtime=time.time()
-            # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-            # histogramdata[histogramdata[:,0] > -10000]
-            # #Do some fiddle faddling to figure out the value that goes to zero less
-            # zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-            # breaker=1
-            # zerocounter=0
-            # while (breaker != 0):
-            #     zerocounter=zerocounter+1
-            #     if not (imageMode-zerocounter) in zeroValueArray[:,0]:
-            #         if not (imageMode-zerocounter-1) in zeroValueArray[:,0]:
-            #             if not (imageMode-zerocounter-2) in zeroValueArray[:,0]:
-            #                 if not (imageMode-zerocounter-3) in zeroValueArray[:,0]:
-            #                     if not (imageMode-zerocounter-4) in zeroValueArray[:,0]:
-            #                         if not (imageMode-zerocounter-5) in zeroValueArray[:,0]:
-            #                             if not (imageMode-zerocounter-6) in zeroValueArray[:,0]:
-            #                                 if not (imageMode-zerocounter-7) in zeroValueArray[:,0]:
-            #                                     if not (imageMode-zerocounter-8) in zeroValueArray[:,0]:
-            #                                         if not (imageMode-zerocounter-9) in zeroValueArray[:,0]:
-            #                                             if not (imageMode-zerocounter-10) in zeroValueArray[:,0]:
-            #                                                 if not (imageMode-zerocounter-11) in zeroValueArray[:,0]:
-            #                                                     if not (imageMode-zerocounter-12) in zeroValueArray[:,0]:
-            #                                                         if not (imageMode-zerocounter-13) in zeroValueArray[:,0]:
-            #                                                             if not (imageMode-zerocounter-14) in zeroValueArray[:,0]:
-            #                                                                 if not (imageMode-zerocounter-15) in zeroValueArray[:,0]:
-            #                                                                     if not (imageMode-zerocounter-16) in zeroValueArray[:,0]:
-            #                                                                         zeroValue=(imageMode-zerocounter)
-            #                                                                         breaker =0
-
-            # substackimage[substackimage < zeroValue] = np.nan
-            # del unique
-            # del counts
-            # Deband the image
-            #plog (bn.nanmax(substackimage))
-            #substackimage = debanding(substackimage)
-            #plog (bn.nanmax(substackimage))
-
-            #breakpoint()
+            googtime=time.time()            
 
             # 1) pick your subsampling factor
             ny, nx = substackimage.shape
@@ -567,7 +533,6 @@ if substack:
             # 6) apply your zero‐threshold
             substackimage[substackimage < zeroValue] = np.nan
 
-            #sub_stacker_array[:,:,0] = copy.deepcopy(substackimage)
             sub_stacker_array[:,:,0] = substackimage.copy()
 
         else:
@@ -584,12 +549,10 @@ if substack:
             crosscorrel_filename_waiter.append(temporary_substack_directory + output_filename)
 
             if normal_operation:
-                # crosscorrelation_subprocess_array.append(subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0))
                 cross_proc=subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
             else:
                 cross_proc=subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            #plog (counter-1)
-
+            
             if False:
                 #NB set this path to create test pickle for makejpeg routine.
                 pickle.dump(pickler, open('crosscorrelprocess.pickle','wb'))
@@ -729,9 +692,6 @@ try:
             try:
                 if smartstackid == 'no':
 
-
-
-
                     # Variable to sort out an intermediate dark when between two scalable darks.
                     fraction_through_range=0
 
@@ -867,46 +827,6 @@ try:
     # This is just for single images.
     if not substack:
         googtime=time.time()
-
-
-        # unique,counts=np.unique(hdu.data.ravel()[~np.isnan(hdu.data.ravel())].astype(np.int32), return_counts=True)
-        # m=counts.argmax()
-        # imageMode=unique[m]
-        # plog ("Calculated Mode: " + str(imageMode))
-        # plog ("Calculating Mode: " +str(time.time()-googtime))
-
-
-        # # Zerothreshing image
-        # googtime=time.time()
-        # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-        # histogramdata[histogramdata[:,0] > -10000]
-        # #Do some fiddle faddling to figure out the value that goes to zero less
-        # zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-        # breaker=1
-        # counter=0
-        # while (breaker != 0):
-        #     counter=counter+1
-        #     if not (imageMode-counter) in zeroValueArray[:,0]:
-        #         if not (imageMode-counter-1) in zeroValueArray[:,0]:
-        #             if not (imageMode-counter-2) in zeroValueArray[:,0]:
-        #                 if not (imageMode-counter-3) in zeroValueArray[:,0]:
-        #                     if not (imageMode-counter-4) in zeroValueArray[:,0]:
-        #                         if not (imageMode-counter-5) in zeroValueArray[:,0]:
-        #                             if not (imageMode-counter-6) in zeroValueArray[:,0]:
-        #                                 if not (imageMode-counter-7) in zeroValueArray[:,0]:
-        #                                     if not (imageMode-counter-8) in zeroValueArray[:,0]:
-        #                                         if not (imageMode-counter-9) in zeroValueArray[:,0]:
-        #                                             if not (imageMode-counter-10) in zeroValueArray[:,0]:
-        #                                                 if not (imageMode-counter-11) in zeroValueArray[:,0]:
-        #                                                     if not (imageMode-counter-12) in zeroValueArray[:,0]:
-        #                                                         if not (imageMode-counter-13) in zeroValueArray[:,0]:
-        #                                                             if not (imageMode-counter-14) in zeroValueArray[:,0]:
-        #                                                                 if not (imageMode-counter-15) in zeroValueArray[:,0]:
-        #                                                                     if not (imageMode-counter-16) in zeroValueArray[:,0]:
-        #                                                                         zeroValue=(imageMode-counter)
-        #                                                                         breaker =0
-
-        # hdu.data[hdu.data < zeroValue] = np.nan
         
         # 1) pick your subsampling factor
         ny, nx = hdu.data.shape
@@ -959,30 +879,11 @@ try:
     #################### HERE IS WHERE FULLY REDUCED PLATESOLVE IS SENT OFF
     ##### THIS IS CURRENTLY IN CONSTRUCTION, MOST SITES THIS IS NOT ENABLED.
 
-    if not pixscale == None and selfconfig['fully_platesolve_images_at_site_rather_than_pipe']: # or np.isnan(pixscale):
+    if not pixscale == None and selfconfig['fully_platesolve_images_at_site_rather_than_pipe']: 
 
 
-
-        # hdufocusdata=input_psolve_info[0]
-        # pixscale=input_psolve_info[2]
-        # is_osc=input_psolve_info[3]
-        # filepath=input_psolve_info[4]
-        # filebase=input_psolve_info[5]
-        # RAest=input_psolve_info[6]
-        # DECest=input_psolve_info[7]
-
-        # plog ("HERE IS THE FULL PLATESOLVE PICKLE")
-        # plog (hdu.data)
-        # plog (pixscale)
-        # plog (is_osc)
         wcsfilepath=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq))
-        # plog (wcsfilepath)
         wcsfilebase=selfconfig["obs_id"]+ "-" + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter) + "-" + dayobs+ "-"+ next_seq+ "-" + 'EX'+ "00.fits"
-        # plog (wcsfilebase)
-        # plog (corrected_ra_for_header * 15 )
-        # plog (corrected_dec_for_header)
-        # plog (next_seq)
-
         # CHECK TEMP DIR ACTUALLY EXISTS
         if not os.path.exists(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs):
             os.makedirs(localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs, mode=0o777)
@@ -993,56 +894,6 @@ try:
         if not os.path.exists(wcsfilepath):
             os.makedirs(wcsfilepath, mode=0o777)
 
-
-        # # yet another pickle debugger.
-        # if True:
-        #     pickle.dump(
-        #         [
-        #             np.asarray(hdu.data,dtype=np.float32),
-        #             pixscale,
-        #             is_osc,
-        #             wcsfilepath,
-        #             wcsfilebase,
-        #             corrected_ra_for_header * 15,
-        #             corrected_dec_for_header,
-        #             next_seq
-        #         ],
-        #         open('subprocesses/testsingleimageplatesolvepickle','wb')
-        #     )
-
-
-
-
-
-        # try:
-        #     platesolve_subprocess = subprocess.Popen(
-        #         ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
-        #         stdin=subprocess.PIPE,
-        #         stdout=subprocess.PIPE,
-        #         bufsize=0,
-        #     )
-        # except OSError:
-        #     plog(traceback.format_exc())
-        #     pass
-
-        # try:
-        #     pickle.dump(
-        #         [
-        #             np.asarray(hdu.data,dtype=np.float32),
-        #             pixscale,
-        #             is_osc,
-        #             wcsfilepath,
-        #             wcsfilebase,
-        #             corrected_ra_for_header * 15,
-        #             corrected_dec_for_header,
-        #             next_seq
-
-        #         ],
-        #         platesolve_subprocess.stdin,
-        #     )
-        # except:
-        #     plog("Problem in the platesolve pickle dump")
-        #     plog(traceback.format_exc())
 
         pickledata=pickle.dumps(
             [
@@ -1056,18 +907,6 @@ try:
                 next_seq
             ]
         )
-
-        # platesolve_subprocess = subprocess.run(
-        #     ["python", "subprocesses/Platesolver_SingleImageFullReduction.py"],
-        #     input=pickledata,
-        #     stdout=subprocess.PIPE,
-        #     stderr=subprocess.PIPE,
-        #     text=False  # MUST be False for binary data
-        # )
-
-        # On Windows you can detach the child completely if you like:
-        #DETACHED_PROCESS = 0x00000008  # from the Win32 API
-
 
         # Here is where we trigger off the single image platesolve.
         # Realistically we only need it for longer exposures and
@@ -1319,10 +1158,6 @@ try:
             exposure_time,
             "[s] Requested Total Exposure Time",
         )  # This is the exposure in seconds specified by the user
-
-
-
-
 
 
         if not smartstackid == 'no':
@@ -1935,97 +1770,9 @@ try:
         hdufocus.writeto(cal_path + 'prenan.fits', overwrite=True, output_verify='silentfix')
 
 
-    # # Need to get rid of nans
-    # # Interpolate image nans
-    # kernel = Gaussian2DKernel(x_stddev=1)
-    # hdu.data = interpolate_replace_nans(hdu.data, kernel)
-
-    # # Fast next-door-neighbour in-fill algorithm to mop up any left over
-    # x_size=hdu.data.shape[0]
-    # y_size=hdu.data.shape[1]
-
-    # nan_coords=np.argwhere(np.isnan(hdu.data))
-
-    # # For each coordinate try and find a non-nan-neighbour and steal its value
-    # for nancoord in nan_coords:
-    #     x_nancoord=nancoord[0]
-    #     y_nancoord=nancoord[1]
-    #     done=False
-
-    #     # Because edge pixels can tend to form in big clumps
-    #     # Masking the array just with the mean at the edges
-    #     # makes this MUCH faster to no visible effect for humans.
-    #     # Also removes overscan
-    #     if x_nancoord < 100:
-    #         hdu.data[x_nancoord,y_nancoord]=imageMode
-    #         done=True
-    #     elif x_nancoord > (x_size-100):
-    #         hdu.data[x_nancoord,y_nancoord]=imageMode
-
-    #         done=True
-    #     elif y_nancoord < 100:
-    #         hdu.data[x_nancoord,y_nancoord]=imageMode
-
-    #         done=True
-    #     elif y_nancoord > (y_size-100):
-    #         hdu.data[x_nancoord,y_nancoord]=imageMode
-    #         done=True
-
-    #     # left
-    #     if not done:
-    #         if x_nancoord != 0:
-    #             value_here=hdu.data[x_nancoord-1,y_nancoord]
-    #             if not np.isnan(value_here):
-    #                 hdu.data[x_nancoord,y_nancoord]=value_here
-    #                 done=True
-    #     # right
-    #     if not done:
-    #         if x_nancoord != (x_size-1):
-    #             value_here=hdu.data[x_nancoord+1,y_nancoord]
-    #             if not np.isnan(value_here):
-    #                 hdu.data[x_nancoord,y_nancoord]=value_here
-    #                 done=True
-    #     # below
-    #     if not done:
-    #         if y_nancoord != 0:
-    #             value_here=hdu.data[x_nancoord,y_nancoord-1]
-    #             if not np.isnan(value_here):
-    #                 hdu.data[x_nancoord,y_nancoord]=value_here
-    #                 done=True
-    #     # above
-    #     if not done:
-    #         if y_nancoord != (y_size-1):
-    #             value_here=hdu.data[x_nancoord,y_nancoord+1]
-    #             if not np.isnan(value_here):
-    #                 hdu.data[x_nancoord,y_nancoord]=value_here
-    #                 done=True
-
-    # hdu.data[np.isnan(hdu.data)] = imageMode
-    #     #num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
     googtime=time.time()
 
-    def fill_nans_with_local_mean(data, footprint=None):
-        """
-        Replace NaNs by the mean of their neighboring pixels.
-        - data: 2D numpy array with NaNs.
-        - footprint: kernel array of 0/1 defining neighborhood (default 3×3).
-        """
-        mask = np.isnan(data)
-        # zero-fill NaNs for convolution
-        filled = np.nan_to_num(data, copy=True)
-        if footprint is None:
-            footprint = np.ones((3,3), dtype=int)
 
-        # sum of neighbors (NaNs contributed as 0)
-        neighbor_sum   = convolve(filled,   footprint, mode='mirror')
-        # count of valid neighbors
-        neighbor_count = convolve(~mask,    footprint, mode='mirror')
-
-        # only replace where count>0
-        replace_idxs = mask & (neighbor_count>0)
-        data_out = data.copy()
-        data_out[replace_idxs] = neighbor_sum[replace_idxs] / neighbor_count[replace_idxs]
-        return data_out
 
     hdu.data=fill_nans_with_local_mean(hdu.data)
 
@@ -2064,15 +1811,10 @@ try:
 
         # bin to native binning
         if selfnative_bin != 1 and (not pixscale == None) and not hdu.header['PIXSCALE'] == 'Unknown':
-
-
-
-
             reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
             reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
             reduced_hdusmallheader['XBINING']=selfnative_bin
             reduced_hdusmallheader['YBINING']=selfnative_bin
-            #breakpoint()
             reduced_hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
             reduced_pixscale=float(hdu.header['PIXSCALE'])
             reduced_hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
@@ -2136,9 +1878,7 @@ try:
         cleanhdu.header=hdusmallheader
         cleanhdu.writeto(image_filename.replace('.npy','.head'))
 
-
-        #g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin, exposure_time))
-        #np.save(hdusmalldata, septhread_filename)
+        
         try:
             os.remove(septhread_filename+ '.temp')
         except:
@@ -2181,8 +1921,6 @@ try:
             "focus",
             "pointing"
         ]) and smartstackid != 'no' and not a_dark_exposure :
-            #g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
-            #np.save(hdusmalldata, smartstackthread_filename)
             pickle.dump((image_filename,imageMode), open(smartstackthread_filename+ '.temp', 'wb'))
 
 
@@ -2235,13 +1973,9 @@ try:
             )
             local_popen.stdin.close()
 
-
-
-
         # Send data off to process jpeg if not a smartstack
         if smartstackid == 'no':
-            #g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
-            # np.save(hdusmalldata, mainjpegthread_filename)
+
             try:
                 os.remove(mainjpegthread_filename + '.temp')
             except:
@@ -2256,7 +1990,6 @@ try:
 
 
         if platesolvethread_filename !='no':
-            # np.save(hdusmalldata, platesolvethread_filename)
             try:
                 os.remove(platesolvethread_filename+ '.temp')
             except:
@@ -2269,20 +2002,9 @@ try:
                 pass
             os.rename(platesolvethread_filename + '.temp', platesolvethread_filename)
 
-           #g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet, False, ''))
-                    # If it is the last of a set of smartstacks, we actually want to
-                    # wait for the platesolve and nudge before starting the next smartstack.
-
-
-
-
-
-
-
         # Similarly to the above. This saves the RAW file to disk
         # it works 99.9999% of the time.
         if selfconfig['save_raw_to_disk']:
-
 
             hdu.header["SITERED"] = (False, 'Has this file been reduced at site')
 
