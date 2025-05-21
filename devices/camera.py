@@ -34,6 +34,7 @@ import threading
 import sep
 import math
 from astropy.stats import sigma_clip
+from scipy.spatial import cKDTree
 import pickle
 import win32com.client
 import bottleneck as bn
@@ -72,7 +73,7 @@ from skimage.measure import label, regionprops, regionprops_table
 from astroquery.vizier import Vizier
 #from astropy.coordinates import SkyCoord
 import astropy.units as u
-
+from scipy.ndimage import convolve
 # from astropy.io import fits
 # from astropy.coordinates import SkyCoord
 # import glob
@@ -242,6 +243,29 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 #     plt.savefig(str(time.time())+'aftersourceplots.png', dpi=300, bbox_inches='tight')
 #     plt.close()
 
+def fill_nans_with_local_mean(data, footprint=None):
+    """
+    Replace NaNs by the mean of their neighboring pixels.
+    - data: 2D numpy array with NaNs.
+    - footprint: kernel array of 0/1 defining neighborhood (default 3×3).
+    """
+    mask = np.isnan(data)
+    # zero-fill NaNs for convolution
+    filled = np.nan_to_num(data, copy=True)
+    if footprint is None:
+        footprint = np.ones((3,3), dtype=int)
+
+    # sum of neighbors (NaNs contributed as 0)
+    neighbor_sum   = convolve(filled,   footprint, mode='mirror')
+    # count of valid neighbors
+    neighbor_count = convolve(~mask,    footprint, mode='mirror')
+
+    # only replace where count>0
+    replace_idxs = mask & (neighbor_count>0)
+    data_out = data.copy()
+    data_out[replace_idxs] = neighbor_sum[replace_idxs] / neighbor_count[replace_idxs]
+    return data_out
+
 def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
     x_cent = catalog['pixel_centroid_x'] - 1  # FITS to NumPy
     y_cent = catalog['pixel_centroid_y'] - 1
@@ -256,28 +280,84 @@ def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
         size = (2 * r_search + 1, 2 * r_search + 1)
 
         try:
-            # Cutout centered on centroid
-            cutout = Cutout2D(outputimg, position=(x0, y0), size=size, mode='partial', fill_value=np.nan)
-
-            # Find brightest pixel in the cutout
-            if np.all(np.isnan(cutout.data)):
-                # No valid data; skip or set distance to NaN
+            # round and cast to int
+            # size = int(np.round(size))
+            # Unpack, round, repack:
+            # if isinstance(size, (tuple, list, np.ndarray)):
+            #     ny, nx = size
+            #     ny = int(np.round(ny))
+            #     nx = int(np.round(nx))
+            #     size = (ny, nx)
+            # else:
+            #     size = int(np.round(size))
+            # x0i, y0i = int(np.round(x0)), int(np.round(y0))
+            
+            # ny, nx = outputimg.shape
+            # half = size // 2
+            
+            # # figure out how many pixels we can actually grab
+            # xmin = max( 0, x0i - half )
+            # xmax = min( nx, x0i + half + (size % 2) )
+            # ymin = max( 0, y0i - half )
+            # ymax = min( ny, y0i + half + (size % 2) )
+            
+            # real_ny, real_nx = ymax - ymin, xmax - xmin
+            
+            # # if either dimension is ≤ 0, skip this frame
+            # if real_ny <= 0 or real_nx <= 0:
+            # 1) Round & cast size to int or (int, int)
+            if hasattr(size, "__iter__") and len(size) == 2:
+                size = tuple(int(np.round(s)) for s in size)
+            else:
+                size = int(np.round(size))
+            
+            # 2) Compute half-sizes for Y and X
+            if isinstance(size, tuple):
+                half_y, half_x = size[0] // 2, size[1] // 2
+            else:
+                half_y = half_x = size // 2
+            
+            # 3) Round & cast your center too
+            y0i, x0i = int(np.round(y0)), int(np.round(x0))
+            
+            # 4) Clamp to image boundaries
+            ny, nx = outputimg.shape
+            ymin = max(0, y0i - half_y)
+            ymax = min(ny, y0i + half_y + (size[0]%2 if isinstance(size, tuple) else size%2))
+            xmin = max(0, x0i - half_x)
+            xmax = min(nx, x0i + half_x + (size[1]%2 if isinstance(size, tuple) else size%2))
+            
+            # 5) If it collapsed, bail out
+            if (ymax - ymin) <= 0 or (xmax - xmin) <= 0:
+                # e.g. log it and return NaN or zero distance
+                # Ensure placeholders are appended
                 x_dists.append(np.nan)
                 y_dists.append(np.nan)
                 total_dists.append(np.nan)
-                continue
-
-            local_max_pos = np.unravel_index(np.nanargmax(cutout.data), cutout.data.shape)
-            y_peak_local, x_peak_local = local_max_pos
-
-            # Calculate offset relative to cutout center
-            dx = x_peak_local - r_search
-            dy = y_peak_local - r_search
-            dist = np.hypot(dx, dy)
-
-            x_dists.append(abs(dx))
-            y_dists.append(abs(dy))
-            total_dists.append(dist)
+            else:
+                # Cutout centered on centroid
+                real_size = (ymax - ymin, xmax - xmin)
+                cutout = Cutout2D(outputimg, position=(x0, y0), size=real_size, mode='partial', fill_value=np.nan)
+    
+                # Find brightest pixel in the cutout
+                if np.all(np.isnan(cutout.data)):
+                    # No valid data; skip or set distance to NaN
+                    x_dists.append(np.nan)
+                    y_dists.append(np.nan)
+                    total_dists.append(np.nan)
+                    continue
+    
+                local_max_pos = np.unravel_index(np.nanargmax(cutout.data), cutout.data.shape)
+                y_peak_local, x_peak_local = local_max_pos
+    
+                # Calculate offset relative to cutout center
+                dx = x_peak_local - r_search
+                dy = y_peak_local - r_search
+                dist = np.hypot(dx, dy)
+    
+                x_dists.append(abs(dx))
+                y_dists.append(abs(dy))
+                total_dists.append(dist)
         except:
             plog ("there is an occasional cutout area but to find....")
             plog(traceback.format_exc())
@@ -1539,7 +1619,7 @@ class Camera:
                 ratio = 40/result[idx,0]
                 new_estimated_exposure_time= ratio * closest_group
 
-                g_dev['cam'].focus_exposure=int(max(min(new_estimated_exposure_time,60),10))
+                g_dev['cam'].focus_exposure=int(max(min(new_estimated_exposure_time,60),25))
 
                 print ("Updated Focus Exposure time: " + str(self.focus_exposure))
 
@@ -2807,6 +2887,13 @@ class Camera:
                 manually_requested_calibration = True
             else:
                 manually_requested_calibration = False
+
+            reported=False
+            while g_dev['seq'].currently_running_centering:
+                if not reported:
+                    plog ("waiting for centering to finish")
+                    reported=True
+                time.sleep(0.1)
 
             g_dev['obs'].report_to_nightlog("Individual Exposure Commanded: " + str(command))
 
@@ -5015,6 +5102,20 @@ class Camera:
                         dec_corr=g_dev["mnt"].dec_corr
 
 
+                    # Is exposure in nightime?
+                    now = ephem.Date(ephem.now())
+                    observing_ends = self.obs.events['Observing Ends']
+                    observing_begins = self.obs.events['Observing Begins']
+
+
+                    
+                    if  now < observing_begins or  now > observing_ends:
+                        exposure_in_nighttime=False
+                    else:
+                        exposure_in_nighttime=True
+                        
+
+
                     payload=copy.deepcopy(
                         (
                             outputimg,
@@ -5077,7 +5178,8 @@ class Camera:
                             mainjpegthread_filename,
                             platesolvethread_filename,
                             count,
-                            unique_batch_code
+                            unique_batch_code,
+                            exposure_in_nighttime
                             )
                         )
 
@@ -5122,12 +5224,10 @@ class Camera:
                         g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
                     # Really need to thresh the image
-                    # int_array_flattened=outputimg.astype(int).ravel()
-                    # int_array_flattened=int_array_flattened[int_array_flattened > -10000]
-                    # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
                     unique,counts=np.unique(outputimg.ravel()[~np.isnan(outputimg.ravel())].astype(int), return_counts=True)
                     m=counts.argmax()
                     imageMode=unique[m]
+
                     histogramdata=np.column_stack([unique,counts]).astype(np.int32)
                     histogramdata[histogramdata[:,0] > -10000]
                     #Do some fiddle faddling to figure out the value that goes to zero less
@@ -5141,6 +5241,9 @@ class Camera:
                     countypixels=outputimg[ np.where(outputimg < zeroValue ) ]
                     plog ("Number of unnaturally negative pixels: " + str(len(countypixels)) )
                     plog ("Next seq:  ", next_seq)
+                    del unique
+                    del counts
+
 
                     # If there are too many unnaturally negative pixels, then reject the calibration
                     if len(countypixels) > 50000:  #Up from 100 for 100 megapix camera
@@ -5166,6 +5269,11 @@ class Camera:
                                 int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
                             m = counts.argmax()
                             imageMode = unique[m]
+                            del unique
+                            del counts
+                            del int_array_flattened
+                            del tempmodearray
+
                             debiaseddarkmode = round(imageMode / 10 / exposure_time, 4)
 
                             plog("Debiased 1s Dark Mode is " +
@@ -5488,96 +5596,81 @@ class Camera:
                                 outputimg = outputimg[crop_x:-crop_x, crop_y:-crop_y]
 
                         if self.is_osc:
+                            
+                            outputimg=block_reduce(outputimg,2)
 
-                            # Rapidly interpolate so that it is all one channel
-                            # Wipe out red channel
-                            outputimg[::2, ::2] = np.nan
-                            # Wipe out blue channel
-                            outputimg[1::2, 1::2] = np.nan
+                            # # Rapidly interpolate so that it is all one channel
+                            # # Wipe out red channel
+                            # outputimg[::2, ::2] = np.nan
+                            # # Wipe out blue channel
+                            # outputimg[1::2, 1::2] = np.nan
 
-                            # To fill the checker board, roll the array in all four directions and take the average
-                            # Which is essentially the bilinear fill without excessive math or not using numpy
-                            # It moves true values onto nans and vice versa, so makes an array of true values
-                            # where the original has nans and we use that as the fill
-                            bilinearfill = np.roll(outputimg, 1, axis=0)
-                            bilinearfill = np.add(
-                                bilinearfill, np.roll(outputimg, -1, axis=0))
-                            bilinearfill = np.add(
-                                bilinearfill, np.roll(outputimg, 1, axis=1))
-                            bilinearfill = np.add(
-                                bilinearfill, np.roll(outputimg, -1, axis=1))
-                            bilinearfill = np.divide(bilinearfill, 4)
-                            outputimg[np.isnan(outputimg)] = 0
-                            bilinearfill[np.isnan(bilinearfill)] = 0
-                            outputimg = outputimg+bilinearfill
-                            del bilinearfill
+                            # # To fill the checker board, roll the array in all four directions and take the average
+                            # # Which is essentially the bilinear fill without excessive math or not using numpy
+                            # # It moves true values onto nans and vice versa, so makes an array of true values
+                            # # where the original has nans and we use that as the fill
+                            # bilinearfill = np.roll(outputimg, 1, axis=0)
+                            # bilinearfill = np.add(
+                            #     bilinearfill, np.roll(outputimg, -1, axis=0))
+                            # bilinearfill = np.add(
+                            #     bilinearfill, np.roll(outputimg, 1, axis=1))
+                            # bilinearfill = np.add(
+                            #     bilinearfill, np.roll(outputimg, -1, axis=1))
+                            # bilinearfill = np.divide(bilinearfill, 4)
+                            # outputimg[np.isnan(outputimg)] = 0
+                            # bilinearfill[np.isnan(bilinearfill)] = 0
+                            # outputimg = outputimg+bilinearfill
+                            # del bilinearfill
 
                         # Really need a nice clean image to do this.
                         googtime=time.time()
-                        unique,counts=np.unique(outputimg.ravel()[~np.isnan(outputimg.ravel())].astype(int), return_counts=True)
-                        m=counts.argmax()
-                        imageMode=unique[m]
+                        # 1) pick your subsampling factor
+                        ny, nx = outputimg.shape
+                        total_px = ny * nx
+                        if total_px > 100_000_000:
+                            subs = 10
+                        elif total_px >  50_000_000:
+                            subs = 5
+                        else:
+                            subs = 2
 
-                        histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-                        histogramdata[histogramdata[:,0] > -10000]
-                        #Do some fiddle faddling to figure out the value that goes to zero less
-                        zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-                        breaker=1
-                        counter=0
-                        while (breaker != 0):
-                            counter=counter+1
-                            if not (imageMode-counter) in zeroValueArray[:,0]:
-                                if not (imageMode-counter-1) in zeroValueArray[:,0]:
-                                    if not (imageMode-counter-2) in zeroValueArray[:,0]:
-                                        if not (imageMode-counter-3) in zeroValueArray[:,0]:
-                                            if not (imageMode-counter-4) in zeroValueArray[:,0]:
-                                                if not (imageMode-counter-5) in zeroValueArray[:,0]:
-                                                    if not (imageMode-counter-6) in zeroValueArray[:,0]:
-                                                        if not (imageMode-counter-7) in zeroValueArray[:,0]:
-                                                            if not (imageMode-counter-8) in zeroValueArray[:,0]:
-                                                                if not (imageMode-counter-9) in zeroValueArray[:,0]:
-                                                                    if not (imageMode-counter-10) in zeroValueArray[:,0]:
-                                                                        if not (imageMode-counter-11) in zeroValueArray[:,0]:
-                                                                            if not (imageMode-counter-12) in zeroValueArray[:,0]:
-                                                                                if not (imageMode-counter-13) in zeroValueArray[:,0]:
-                                                                                    if not (imageMode-counter-14) in zeroValueArray[:,0]:
-                                                                                        if not (imageMode-counter-15) in zeroValueArray[:,0]:
-                                                                                            if not (imageMode-counter-16) in zeroValueArray[:,0]:
-                                                                                                zeroValue=(imageMode-counter)
-                                                                                                breaker =0
+                        # 2) grab the strided‐subsample
+                        sample = outputimg[::subs, ::subs]
 
+                        # 3) compute mode on the sample
+                        vals = sample.ravel()
+                        vals = vals[np.isfinite(vals)].astype(np.int32)
+                        unique, counts = np.unique(vals, return_counts=True)
+                        m = counts.argmax()
+                        imageMode = unique[m]
+                        plog(f"Calculating Mode (subs={subs}): {time.time()-googtime:.3f} s")
+
+                        # 4) now build the histogramdata (so we still have unique & counts)
+                        histogramdata = np.column_stack([unique, counts]).astype(np.int32)
+                        # optional filter your histogram (you had this line, though it doesn't assign)
+                        histogramdata = histogramdata[histogramdata[:,0] > -10000]
+
+                        # 5) find the highest “gap” below imageMode
+                        zeroValueArray = histogramdata[histogramdata[:,0] < imageMode, 0]
+                        zerocounter = 0
+                        while True:
+                            zerocounter += 1
+                            test = imageMode - zerocounter
+                            # look for a run of 17 empty bins below the mode
+                            if all(((test - offset) not in zeroValueArray) for offset in range(17)):
+                                zeroValue = test
+                                break
+
+                        # 6) apply your zero‐threshold
                         outputimg[outputimg < zeroValue] = np.nan
+                        del unique
+                        del counts
 
                         # Interpolate image nans
                         #kernel = Gaussian2DKernel(x_stddev=1)
 
                         # outputimg = interpolate_replace_nans(outputimg, kernel)
-                        from scipy.ndimage import convolve
-                        def fill_nans_with_local_mean(data, footprint=None):
-                            """
-                            Replace NaNs by the mean of their neighboring pixels.
-                            - data: 2D numpy array with NaNs.
-                            - footprint: kernel array of 0/1 defining neighborhood (default 3×3).
-                            """
-                            mask = np.isnan(data)
-                            # zero-fill NaNs for convolution
-                            filled = np.nan_to_num(data, copy=True)
-                            if footprint is None:
-                                footprint = np.ones((3,3), dtype=int)
 
-                            # sum of neighbors (NaNs contributed as 0)
-                            neighbor_sum   = convolve(filled,   footprint, mode='mirror')
-                            # count of valid neighbors
-                            neighbor_count = convolve(~mask,    footprint, mode='mirror')
-
-                            # only replace where count>0
-                            replace_idxs = mask & (neighbor_count>0)
-                            data_out = data.copy()
-                            data_out[replace_idxs] = neighbor_sum[replace_idxs] / neighbor_count[replace_idxs]
-                            return data_out
-
-                        outputimg=fill_nans_with_local_mean(outputimg)
-                        plog ("nans: " + str( time.time()-googtime))
 
 
                         # # Remove remaining nans
@@ -5746,7 +5839,24 @@ class Camera:
                                 # We don't need accurate photometry, so integer is fine.
                                 hdufocus = fits.PrimaryHDU()
                                 hdufocus.data = outputimg.astype(np.float32)
-
+                                
+                                # 1. mask hot pixels / cosmics
+                                from astroscrappy import detect_cosmics
+                                if (self.pixscale < 1.0 and not self.settings['is_osc']) or (self.pixscale < 0.6 and self.settings['is_osc']): 
+                                    cr_mask, outputimg = detect_cosmics(outputimg, sigclip=5.0, sigfrac=0.3, objlim=5)
+                                # # 2. subtract background
+                                # from scipy.ndimage import uniform_filter
+                                # bkg = uniform_filter(clean_data, size=256)
+                                # # 3. smooth
+                                from scipy.ndimage import gaussian_filter
+                                smoothed = gaussian_filter(outputimg, sigma=1)# - bkg, sigma=1)
+                                hdufocus.data = smoothed.astype(np.float32)
+                                
+                                
+                        
+    
+                                outputimg=fill_nans_with_local_mean(outputimg)
+                                plog ("nans: " + str( time.time()-googtime))
 
                                 # from scipy.ndimage import uniform_filter
 
@@ -5788,7 +5898,41 @@ class Camera:
                                 # hdu_var.header['BUNIT'] = 'e-2'       # units: electrons^2
                                 # hdu_var.writeto('variance.fits', overwrite=True)
                                 googtime=time.time()
-                                os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 3 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm none --tile-size 10000 --tile-memory-limit 16384"')
+                                #os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 5 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm MOFFAT --tile-size 10000 --tile-memory-limit 16384"')
+                                # build the inner command as one long string
+                                command = (
+                                    f"/home/obs/miniconda3/bin/sourcextractor++"
+                                    f" --detection-image {tempdir_in_wsl}{tempfitsname}"
+                                    f" --detection-image-gain {segain}"
+                                    f" --detection-threshold 5"
+                                    f" --thread-count {2*multiprocessing.cpu_count()}"
+                                    f" --output-catalog-filename {tempdir_in_wsl}{tempfitsname.replace('.fits','cat.fits')}"
+                                    f" --output-catalog-format FITS"
+                                    f" --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters"
+                                    f" --flux-fraction 0.5"
+                                    f" --detection-minimum-area {math.floor(minarea)}"
+                                    f" --grouping-algorithm MOFFAT"
+                                    f" --tile-size 10000"
+                                    f" --tile-memory-limit 16384"
+                                )
+                                
+                                # now call wsl bash -ic "<command>"
+                                cmd = ["wsl", "bash", "-ic", command]
+                                
+                                try:
+                                    result = subprocess.run(
+                                        cmd,
+                                        capture_output=True,  # if you want stdout/stderr in result.stdout, result.stderr
+                                        text=True,            # decode bytes to str
+                                        timeout=300,          # kill if >300 s
+                                        check=True            # raise if exit-code ≠ 0
+                                    )
+                                    print(result.stdout)
+                                except subprocess.TimeoutExpired:
+                                    print("✖ sourcextractor++ timed out")
+                                except subprocess.CalledProcessError as e:
+                                    print(f"⚠️ exited with code {e.returncode}")
+                                
                                 print ("s++: " + str(time.time()-googtime))
                                 try:
                                     googtime=time.time()
@@ -5831,8 +5975,8 @@ class Camera:
                                     #     mask = (catalog['flux_radius']) > (1.5 * self.pixscale)
                                     #     catalog = catalog[mask]
                                     # else:
-                                    # mask = (catalog['area']) > minarea
-                                    # catalog =catalog[mask]
+                                    mask = (catalog['area']) > minarea
+                                    catalog =catalog[mask]
 
 
 
@@ -5888,7 +6032,7 @@ class Camera:
 
                                         # We only want to consider sources with no nearby other sources
                                         # whether that is another star, part of a donut or diffraction spike
-                                        from scipy.spatial import cKDTree
+                                        
 
                                         # Extract positions
                                         x = catalog['pixel_centroid_x']
@@ -5939,14 +6083,22 @@ class Camera:
                                         catalog=calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0)
                                         print ("donuts: " + str(time.time()-googtime))
                                         print ("before")
-                                        print ("Median donut distance = " + str(np.median(catalog['total_donut_distance'])))
+                                        print ("Median donut distance = " + str(np.nanmedian(catalog['total_donut_distance'])))
                                         print ("Median Flux Radius    = " + str(np.nanmedian(np.asarray(catalog['flux_radius']))))
                                         # print (np.nanstd(np.asarray(catalog['flux_radius'])))
                                         print ((np.asarray(catalog['total_donut_distance'])))
                                         print ((np.asarray(catalog['flux_radius'])))
                                         #breakpoint()
+                                        data = np.asarray(catalog['total_donut_distance'])
+                                        good = data[np.isfinite(data)]
+                                        # now clip on only the “good” values
+                                        total_mean_donut_distance = sigma_clip(good,
+                                                            sigma_lower=2, sigma_upper=4,
+                                                            maxiters=5)                                        
+                                        # if you want the clipped mean:
+                                        # total_mean_donut_distance = clipped.mean()
 
-                                        total_mean_donut_distance=sigma_clip(np.asarray(catalog['total_donut_distance']),sigma_lower=2,sigma_upper=4, maxiters=5)
+                                        # total_mean_donut_distance=sigma_clip(np.asarray(catalog['total_donut_distance']),sigma_lower=2,sigma_upper=4, maxiters=5)
                                         total_mean_donut_distance=total_mean_donut_distance.data[~total_mean_donut_distance.mask]
                                         total_mean_flux_radius=sigma_clip(np.asarray(catalog['flux_radius']),sigma_lower=2,sigma_upper=4, maxiters=5)
                                         total_mean_flux_radius=total_mean_flux_radius.data[~total_mean_flux_radius.mask]
@@ -5976,7 +6128,7 @@ class Camera:
                                     fwhm_values=[]
 
                                     print(traceback.format_exc())
-                                    breakpoint()
+                                    #breakpoint()
 
                                 plog("No. of detections:  ", len(fwhm_values))
 

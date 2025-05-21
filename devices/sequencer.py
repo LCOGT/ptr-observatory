@@ -190,7 +190,8 @@ class Sequencer:
         # A command so that some scripts can prevent all other scripts  and exposures from occuring.
         # quite important
         self.total_sequencer_control = False
-
+        self.currently_running_centering=False
+        self.cancel_out_of_centering=False
         # Centering RA and Dec for a project
         self.block_ra=False
         self.block_dec=False
@@ -6762,16 +6763,49 @@ class Sequencer:
         but the most important is centering the requested RA and Dec just prior to starting
         a longer project block.
         """
+        
+        # If the roof isn't open, then don't bother platesolving!
+        if not g_dev['obs'].open_and_enabled_to_observe:
+            return
+        
+        self.currently_running_centering=True
+        
+        # Set the cancel flag off at the start of each centering routine
+        self.cancel_out_of_centering=False
+        
         if g_dev['obs'].auto_centering_off:  #Auto centering off means OFF!
             plog('auto_centering is off.')
+            self.currently_running_centering=False
             return
 
         if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
             plog("Too bright to consider platesolving!")
             plog("Hence too bright to do a centering exposure.")
             g_dev["obs"].send_to_user("Too bright, or early, to auto-center the image.")
-
+            self.currently_running_centering=False
             return
+        
+        now = ephem.Date(ephem.now())        
+        observing_ends = self.obs.events['Observing Ends']        
+        observing_begins = self.obs.events['End Eve Sky Flats']        
+        # Reject exposures that start before nautical dusk or end after nautical dawn
+        if now < observing_begins or now > observing_ends :
+            plog("Too bright to consider platesolving!")
+            plog("Hence too bright to do a centering exposure.")
+            g_dev["obs"].send_to_user("Too bright, or early, to auto-center the image.")
+            self.currently_running_centering=False
+            return
+
+
+        if self.cancel_out_of_centering:
+            self.cancel_out_of_centering=False
+            plog("Cancelling out of centering.")
+            g_dev["obs"].send_to_user("Cancelling out of centering.")
+            self.currently_running_centering=False
+            return
+        
+        
+        
 
         # Don't try forever if focussing
         if self.focussing:
@@ -6807,9 +6841,17 @@ class Sequencer:
                     temptimer=time.time()
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                    self.currently_running_centering=False
                     return
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                    self.currently_running_centering=False
+                    return
+                if self.cancel_out_of_centering:
+                    self.cancel_out_of_centering=False
+                    plog("Cancelling out of centering.")
+                    g_dev["obs"].send_to_user("Cancelling out of centering.")
+                    self.currently_running_centering=False
                     return
                 pass
 
@@ -6822,23 +6864,35 @@ class Sequencer:
 
         if result == 'blockend':
             plog ("End of Block, exiting Centering.")
+            self.currently_running_centering=False
             return
 
         if result == 'calendarend':
             plog ("Calendar Item containing block removed from calendar")
             plog ("Site bailing out of Centering")
+            self.currently_running_centering=False
             return
 
         if result == 'roofshut':
             plog ("Roof Shut, Site bailing out of Centering")
+            self.currently_running_centering=False
             return
 
         if result == 'outsideofnighttime':
             plog ("Outside of Night Time. Site bailing out of Centering")
+            self.currently_running_centering=False
             return
 
         if g_dev["obs"].stop_all_activity:
             plog('stop_all_activity, so cancelling out of Centering')
+            self.currently_running_centering=False
+            return
+        
+        if self.cancel_out_of_centering:
+            self.cancel_out_of_centering=False
+            plog("Cancelling out of centering.")
+            g_dev["obs"].send_to_user("Cancelling out of centering.")
+            self.currently_running_centering=False
             return
 
         # Wait for platesolve
@@ -6855,12 +6909,21 @@ class Sequencer:
                     temptimer=time.time()
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                    self.currently_running_centering=False
                     return
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                    self.currently_running_centering=False
                     return
                 if g_dev["obs"].stop_all_activity:
                     plog('stop_all_activity cancelling out of centering')
+                    self.currently_running_centering=False
+                    return
+                if self.cancel_out_of_centering:
+                    self.cancel_out_of_centering=False
+                    plog("Cancelling out of centering.")
+                    g_dev["obs"].send_to_user("Cancelling out of centering.")
+                    self.currently_running_centering=False
                     return
                 pass
 
@@ -6872,6 +6935,7 @@ class Sequencer:
             g_dev["obs"].send_to_user("Slew & Center complete.")
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
+            self.currently_running_centering=False
             return result
         elif successful_platesolve:
             g_dev['obs'].check_platesolve_and_nudge()
@@ -6882,6 +6946,7 @@ class Sequencer:
                 time.sleep(1)
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
+            self.currently_running_centering=False
             return result
 
         if (try_hard or try_forever) and not successful_platesolve:
@@ -6900,23 +6965,35 @@ class Sequencer:
 
             if result == 'blockend':
                 plog ("End of Block, exiting Centering.")
+                self.currently_running_centering=False
                 return
 
             if result == 'calendarend':
                 plog ("Calendar Item containing block removed from calendar")
                 plog ("Site bailing out of Centering")
+                self.currently_running_centering=False
                 return
 
             if result == 'roofshut':
                 plog ("Roof Shut, Site bailing out of Centering")
+                self.currently_running_centering=False
                 return
 
             if result == 'outsideofnighttime':
                 plog ("Outside of Night Time. Site bailing out of Centering")
+                self.currently_running_centering=False
                 return
 
             if g_dev["obs"].stop_all_activity:
                 plog('stop_all_activity cancelling out of centering')
+                self.currently_running_centering=False
+                return
+            
+            if self.cancel_out_of_centering:
+                self.cancel_out_of_centering=False
+                plog("Cancelling out of centering.")
+                g_dev["obs"].send_to_user("Cancelling out of centering.")
+                self.currently_running_centering=False
                 return
 
             reported=0
@@ -6932,14 +7009,24 @@ class Sequencer:
                         temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                        self.currently_running_centering=False
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                        self.currently_running_centering=False
                         return
                     if g_dev["obs"].stop_all_activity:
                         plog('stop_all_activity cancelling out of centering')
+                        self.currently_running_centering=False
+                        return
+                    if self.cancel_out_of_centering:
+                        self.cancel_out_of_centering=False
+                        plog("Cancelling out of centering.")
+                        g_dev["obs"].send_to_user("Cancelling out of centering.")
+                        self.currently_running_centering=False
                         return
                     pass
+                    
 
             if not (g_dev['obs'].last_platesolved_ra != np.nan and str(g_dev['obs'].last_platesolved_ra) != 'nan'):
 
@@ -6952,23 +7039,34 @@ class Sequencer:
 
                 if result == 'blockend':
                     plog ("End of Block, exiting Centering.")
+                    self.currently_running_centering=False
                     return
 
                 if result == 'calendarend':
                     plog ("Calendar Item containing block removed from calendar")
                     plog ("Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if result == 'roofshut':
                     plog ("Roof Shut, Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if result == 'outsideofnighttime':
                     plog ("Outside of Night Time. Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if g_dev["obs"].stop_all_activity:
                     plog('stop_all_activity cancelling out of centering')
+                    self.currently_running_centering=False
+                    return
+                if self.cancel_out_of_centering:
+                    self.cancel_out_of_centering=False
+                    plog("Cancelling out of centering.")
+                    g_dev["obs"].send_to_user("Cancelling out of centering.")
+                    self.currently_running_centering=False
                     return
 
                 reported=0
@@ -6982,12 +7080,21 @@ class Sequencer:
                             reported=1
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                            self.currently_running_centering=False
                             return
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                            self.currently_running_centering=False
                             return
                         if g_dev["obs"].stop_all_activity:
                             plog('stop_all_activity cancelling out of centering')
+                            self.currently_running_centering=False
+                            return
+                        if self.cancel_out_of_centering:
+                            self.cancel_out_of_centering=False
+                            plog("Cancelling out of centering.")
+                            g_dev["obs"].send_to_user("Cancelling out of centering.")
+                            self.currently_running_centering=False
                             return
                         pass
 
@@ -7002,43 +7109,66 @@ class Sequencer:
 
                 if result == 'blockend':
                     plog ("End of Block, exiting Centering.")
+                    self.currently_running_centering=False
                     return
 
                 if result == 'calendarend':
                     plog ("Calendar Item containing block removed from calendar")
                     plog ("Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if result == 'roofshut':
                     plog ("Roof Shut, Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if not g_dev['obs'].assume_roof_open and not g_dev['obs'].scope_in_manual_mode and 'Closed' in g_dev['obs'].enc_status['shutter_status']:
                     plog ("Roof Shut, Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if result == 'outsideofnighttime':
                     plog ("Outside of Night Time. Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if not g_dev['obs'].scope_in_manual_mode and g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()):
                     plog ("Outside of Night Time. Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if g_dev["obs"].stop_all_activity:
                     plog('stop_all_activity cancelling out of centering')
+                    self.currently_running_centering=False
+                    return
+                
+                if self.cancel_out_of_centering:
+                    self.cancel_out_of_centering=False
+                    plog("Cancelling out of centering.")
+                    g_dev["obs"].send_to_user("Cancelling out of centering.")
+                    self.currently_running_centering=False
                     return
 
                 wait_a_minute=time.time()
                 while (time.time() - wait_a_minute < 60):
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                        self.currently_running_centering=False
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                        self.currently_running_centering=False
                         return
                     if g_dev["obs"].stop_all_activity:
                         plog('stop_all_activity cancelling out of centering')
+                        self.currently_running_centering=False
+                        return
+                    if self.cancel_out_of_centering:
+                        self.cancel_out_of_centering=False
+                        plog("Cancelling out of centering.")
+                        g_dev["obs"].send_to_user("Cancelling out of centering.")
+                        self.currently_running_centering=False
                         return
                     time.sleep(1)
 
@@ -7069,15 +7199,18 @@ class Sequencer:
                     blockended = now_date_timeZ  >= self.blockend
                     if blockended:
                         plog ("End of Block, exiting Centering.")
+                        self.currently_running_centering=False
                         return
 
                 if result == 'blockend':
                     plog ("End of Block, exiting Centering.")
+                    self.currently_running_centering=False
                     return
 
                 if result == 'calendarend':
                     plog ("Calendar Item containing block removed from calendar")
                     plog ("Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if calendar_event_id is not None and not self.schedule_manager.calendar_event_is_active(calendar_event_id):
@@ -7085,31 +7218,45 @@ class Sequencer:
                     plog("Calendar Block Ended. Stopping project run.")
                     self.blockend = None
                     self.total_sequencer_control = False
+                    self.currently_running_centering=False
                     return
 
                 if self.check_for_external_block_ending_signals():
                     self.blockend = None
                     self.total_sequencer_control = False
+                    self.currently_running_centering=False
                     return
 
                 if result == 'roofshut':
                     plog ("Roof Shut, Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if not g_dev['obs'].assume_roof_open and not g_dev['obs'].scope_in_manual_mode and 'Closed' in g_dev['obs'].enc_status['shutter_status']:
                     plog ("Roof Shut, Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if result == 'outsideofnighttime':
                     plog ("Outside of Night Time. Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if not g_dev['obs'].scope_in_manual_mode and g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()):
                     plog ("Outside of Night Time. Site bailing out of Centering")
+                    self.currently_running_centering=False
                     return
 
                 if g_dev["obs"].stop_all_activity:
                     plog('stop_all_activity cancelling out of centering')
+                    self.currently_running_centering=False
+                    return
+                
+                if self.cancel_out_of_centering:
+                    self.cancel_out_of_centering=False
+                    plog("Cancelling out of centering.")
+                    g_dev["obs"].send_to_user("Cancelling out of centering.")
+                    self.currently_running_centering=False
                     return
 
                 while True:
@@ -7123,12 +7270,21 @@ class Sequencer:
                             temptimer=time.time()
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                            self.currently_running_centering=False
                             return
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                            self.currently_running_centering=False
                             return
                         if g_dev["obs"].stop_all_activity:
                             plog('stop_all_activity cancelling out of centering')
+                            self.currently_running_centering=False
+                            return
+                        if self.cancel_out_of_centering:
+                            self.cancel_out_of_centering=False
+                            plog("Cancelling out of centering.")
+                            g_dev["obs"].send_to_user("Cancelling out of centering.")
+                            self.currently_running_centering=False
                             return
                         pass
 
@@ -7137,6 +7293,7 @@ class Sequencer:
             g_dev["obs"].send_to_user("Pointing adequate on first slew. Slew & Center complete.")
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
+            self.currently_running_centering=False
             return result
         else:
             g_dev['obs'].check_platesolve_and_nudge()
@@ -7148,16 +7305,26 @@ class Sequencer:
         if no_confirmation == True:
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
+            self.currently_running_centering=False
             return result
         else:
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                self.currently_running_centering=False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                self.currently_running_centering=False
                 return
             if g_dev["obs"].stop_all_activity:
                 plog('stop_all_activity cancelling out of centering')
+                self.currently_running_centering=False
+                return
+            if self.cancel_out_of_centering:
+                self.cancel_out_of_centering=False
+                plog("Cancelling out of centering.")
+                g_dev["obs"].send_to_user("Cancelling out of centering.")
+                self.currently_running_centering=False
                 return
 
             g_dev["obs"].send_to_user(
@@ -7172,37 +7339,52 @@ class Sequencer:
 
             if result == 'blockend':
                 plog ("End of Block, exiting Centering.")
+                self.currently_running_centering=False
                 return
 
             if result == 'calendarend':
                 plog ("Calendar Item containing block removed from calendar")
                 plog ("Site bailing out of Centering")
+                self.currently_running_centering=False
                 return
 
             if result == 'roofshut':
                 plog ("Roof Shut, Site bailing out of Centering")
+                self.currently_running_centering=False
                 return
 
             if result == 'outsideofnighttime':
                 plog ("Outside of Night Time. Site bailing out of Centering")
+                self.currently_running_centering=False
                 return
 
             if g_dev["obs"].stop_all_activity:
                 plog('stop_all_activity cancelling out of centering')
+                self.currently_running_centering=False
                 return
 
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                self.currently_running_centering=False
                 return
 
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                self.currently_running_centering=False
+                return
+            
+            if self.cancel_out_of_centering:
+                self.cancel_out_of_centering=False
+                plog("Cancelling out of centering.")
+                g_dev["obs"].send_to_user("Cancelling out of centering.")
+                self.currently_running_centering=False
                 return
 
             g_dev["obs"].send_to_user("Pointing confirmation exposure complete. Slew & Center complete.")
             g_dev['obs'].check_platesolve_and_nudge()
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
+            self.currently_running_centering=False
             return result
 
 

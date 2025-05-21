@@ -122,7 +122,9 @@ if time.time()-file_wait_timeout_timer > 599:
 
 hdufocusdata=np.load(image_filename)
 
-hduheader=fits.open(image_filename.replace('.npy','.head'))[0].header
+#hduheader=fits.open(image_filename.replace('.npy','.head'))[0].header
+with fits.open(image_filename.replace('.npy','.head')) as hdul:
+    hduheader = hdul[0].header
 
 # If there is no known pixelscale yet use a standard value just to get rough photometry
 if pixscale == None:
