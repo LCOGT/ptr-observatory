@@ -2082,5 +2082,3 @@ except:
     plog(traceback.format_exc())
 
 plog ("FINISHED! in " + str(time.time()-a_timer))
-
-#breakpoint()

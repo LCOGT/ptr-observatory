@@ -5516,29 +5516,31 @@ class Camera:
                                 outputimg = outputimg[crop_x:-crop_x, crop_y:-crop_y]
 
                         if self.is_osc:
+                            
+                            outputimg=block_reduce(outputimg,2)
 
-                            # Rapidly interpolate so that it is all one channel
-                            # Wipe out red channel
-                            outputimg[::2, ::2] = np.nan
-                            # Wipe out blue channel
-                            outputimg[1::2, 1::2] = np.nan
+                            # # Rapidly interpolate so that it is all one channel
+                            # # Wipe out red channel
+                            # outputimg[::2, ::2] = np.nan
+                            # # Wipe out blue channel
+                            # outputimg[1::2, 1::2] = np.nan
 
-                            # To fill the checker board, roll the array in all four directions and take the average
-                            # Which is essentially the bilinear fill without excessive math or not using numpy
-                            # It moves true values onto nans and vice versa, so makes an array of true values
-                            # where the original has nans and we use that as the fill
-                            bilinearfill = np.roll(outputimg, 1, axis=0)
-                            bilinearfill = np.add(
-                                bilinearfill, np.roll(outputimg, -1, axis=0))
-                            bilinearfill = np.add(
-                                bilinearfill, np.roll(outputimg, 1, axis=1))
-                            bilinearfill = np.add(
-                                bilinearfill, np.roll(outputimg, -1, axis=1))
-                            bilinearfill = np.divide(bilinearfill, 4)
-                            outputimg[np.isnan(outputimg)] = 0
-                            bilinearfill[np.isnan(bilinearfill)] = 0
-                            outputimg = outputimg+bilinearfill
-                            del bilinearfill
+                            # # To fill the checker board, roll the array in all four directions and take the average
+                            # # Which is essentially the bilinear fill without excessive math or not using numpy
+                            # # It moves true values onto nans and vice versa, so makes an array of true values
+                            # # where the original has nans and we use that as the fill
+                            # bilinearfill = np.roll(outputimg, 1, axis=0)
+                            # bilinearfill = np.add(
+                            #     bilinearfill, np.roll(outputimg, -1, axis=0))
+                            # bilinearfill = np.add(
+                            #     bilinearfill, np.roll(outputimg, 1, axis=1))
+                            # bilinearfill = np.add(
+                            #     bilinearfill, np.roll(outputimg, -1, axis=1))
+                            # bilinearfill = np.divide(bilinearfill, 4)
+                            # outputimg[np.isnan(outputimg)] = 0
+                            # bilinearfill[np.isnan(bilinearfill)] = 0
+                            # outputimg = outputimg+bilinearfill
+                            # del bilinearfill
 
                         # Really need a nice clean image to do this.
                         googtime=time.time()
