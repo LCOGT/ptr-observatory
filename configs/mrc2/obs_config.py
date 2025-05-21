@@ -128,12 +128,14 @@ site_config = {
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path':  'yes',
     'local_calibration_path': 'C:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
-    'archive_age' : 4, # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age' : 2, # Number of days to keep files in the local archive before deletion. Negative means never delete
    
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
     # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
     'save_raw_to_disk': True,
+    'save_substack_components_raws': False, # this setting saves the component 10s/30s completely raw files out as well during a substack
+    
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': True,
     'keep_focus_images_on_disk': True,  # To save space, the focus files may not be saved.   
@@ -185,7 +187,7 @@ site_config = {
         
     
     # Exposure times for standard system exposures
-    'focus_exposure_time': 45,  # Exposure time in seconds for exposure image
+    'focus_exposure_time': 30,  # Exposure time in seconds for exposure image
     'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
@@ -494,7 +496,7 @@ site_config = {
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 3.0, # highest value to consider as being in "good focus". Used to select last good focus value
 
-            'reference':  4600,    #Nominal at 20C Primary temperature, in microns not steps.            
+            'reference':  6750,    #Nominal at 20C Primary temperature, in microns not steps.            
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20240210',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  False,

@@ -583,7 +583,7 @@ else:
 
 # These broad image statistics also take a few seconds on a QHY600 image
 # But are not needed for a focus image.
-if not frame_type == 'focus':
+if not frame_type == 'focus' and False: # The False is here because we don't actually use this yet, but it is working
     googtime=time.time()
     hduheader["IMGMIN"] = ( np.min(hdufocusdata), "Minimum Value of Image Array" )
     hduheader["IMGMAX"] = ( np.max(hdufocusdata), "Maximum Value of Image Array" )
@@ -595,7 +595,7 @@ if not frame_type == 'focus':
 
 # We don't need to calculate the histogram
 # If we aren't keeping the image.
-if frame_type=='expose':
+if frame_type=='expose' and False: # The False is here because we don't actually use this yet, but it is working
 
     googtime=time.time()
     # Collect unique values and counts
@@ -677,7 +677,7 @@ try:
     plog ("Writing out Photometry: " + str(time.time()-googtime))
 except:
     pass
-if do_sep and (not frame_type=='focus'):
+if do_sep and (not frame_type=='focus') and False: # The False is here because we don't actually use this yet, but it is working
 
     # Constructing the slices and dices
     try:
@@ -768,7 +768,7 @@ if do_sep and (not frame_type=='focus'):
         pass
 
 
-if not frame_type == 'focus':
+if not frame_type == 'focus' and False: # The False is here because we don't actually use this yet, but it is working
     googtime=time.time()
     with open(im_path + 'image_' + text_name.replace('.txt', '.json'), 'w') as f:
         json.dump(imageinspection_json_snippets, f)

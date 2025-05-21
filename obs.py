@@ -970,6 +970,14 @@ class Observatory:
         # Make sure the list is sorted in the order the jobs were issued
         # Note: the ulid for a job is a unique lexicographically-sortable id.
         if len(unread_commands) > 0:
+
+            # As the stop_all_activity script flushes the commands
+            # Any new commands imply there has been a new command since
+            # the last press of the stop button, so we reset these values here
+            self.stop_all_activity = False
+            self.exposure_halted_indicator = False
+
+
             try:
                 unread_commands.sort(key=lambda x: x["timestamp_ms"])
                 # Process each job one at a time
@@ -1545,10 +1553,9 @@ class Observatory:
                     self.devices["sequencer"].stop_script_called = False
                     self.devices["sequencer"].stop_script_called_time = time.time()
 
-                if self.exposure_halted_indicator == True:
-                    if self.exposure_halted_indicator_timer - time.time() > 12:
-                        self.exposure_halted_indicator = False
-                        self.exposure_halted_indicator_timer = time.time()
+                if self.exposure_halted_indicator and (time.time() - self.exposure_halted_indicator_timer) > 12:
+                    self.exposure_halted_indicator = False
+                    self.exposure_halted_indicator_timer = time.time()
 
                 if self.stop_all_activity and (
                     (time.time() - self.stop_all_activity_timer) > 35

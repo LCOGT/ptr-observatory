@@ -443,12 +443,12 @@ class Events:
 #         # self.observing_begins=self.astroDark - self.config['astro_dark_buffer']/1440
 #         # self.observing_ends=self.astroEnd + self.config['astro_dark_buffer']/1440
 
-#         self.observing_begins=self.astroDark - 35/1440
-#         self.observing_ends=self.astroEnd + 35/1440
+        self.observing_begins=self.astroDark - 35/1440
+        self.observing_ends=self.astroEnd + 35/1440
 
 
-        self.observing_begins=self.astroDark - self.config['astro_dark_buffer']/1440
-        self.observing_ends=self.astroEnd + self.config['astro_dark_buffer']/1440
+        # self.observing_begins=self.astroDark - self.config['astro_dark_buffer']/1440
+        # self.observing_ends=self.astroEnd + self.config['astro_dark_buffer']/1440
 
 
         self.evnt = [#('Eve Bias Dark      ', ephem.Date(self.cool_down_open - self.config['bias_dark interval']/1440)),
@@ -462,6 +462,7 @@ class Events:
                      ('Civil Dusk         ', ephem.Date(self.civilDusk)),
                      #('End Eve Sky Flats  ', ephem.Date(self.civilDusk + self.config['end_eve_sky_flats_offset']/1440)),
                      # MTF HARDCODING THIS on 31 Mar 25. There is no reason this shouldn't just end at clock and autofocus
+
                      ('End Eve Sky Flats  ', ephem.Date(self.observing_begins - 17/1440)),
 
                      #('Clock & Auto Focus ', ephem.Date(self.observing_begins - self.config['clock_and_auto_focus_offset']/1440)),

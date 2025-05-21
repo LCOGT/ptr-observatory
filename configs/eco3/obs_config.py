@@ -151,7 +151,7 @@ site_config = {
 
 
     # Exposure times for standard system exposures
-    'focus_exposure_time': 8,  # Exposure time in seconds for exposure image
+    'focus_exposure_time': 60,  # Exposure time in seconds for exposure image
     'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
@@ -402,9 +402,9 @@ site_config = {
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 8.0, # highest value to consider as being in "good focus". Used to select last good focus value
-            'reference': 1750,    #  20210313  Nominal at 10C Primary temperature
+            'reference': 3600,    #  20210313  Nominal at 10C Primary temperature
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
-            'maximum': 3500,   #12672 actually
+            'maximum': 10000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
             'throw' : 50,

@@ -18,6 +18,7 @@ from image_registration import cross_correlation_shifts  # chi2_shift,
 
 from auto_stretch.stretch import Stretch
 from PIL import Image, ImageEnhance
+Image.MAX_IMAGE_PIXELS = None
 import subprocess
 from math import sqrt
 import traceback
@@ -214,86 +215,86 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
 
     # For OSC, we need to smartstack individual frames.
     if not is_osc:   #This is the monochrome camera processing path.
-        if True:
+        
 
-            sstack_process_timer = time.time()
+        sstack_process_timer = time.time()
 
-            # IF SMARSTACK NPY FILE EXISTS ADD next image to the stack, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
-            reprojection_failed = False
+        # IF SMARSTACK NPY FILE EXISTS ADD next image to the stack, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
+        reprojection_failed = False
 
 
-            if not os.path.exists(
-                obsid_path + "smartstacks/" + smartStackFilename
-            ):
-                if True:
+        if not os.path.exists(
+            obsid_path + "smartstacks/" + smartStackFilename
+        ):
+            if True:
 
-                    plog ("Storing single original image")
+                plog ("Storing single original image")
 
-                    # Store original image
-                    np.save(
-                        obsid_path
-                        + "smartstacks/"
-                        + smartStackFilename,
-                        imgdata)
-                    # As soon as there is a reference image, delete the busy token
-                    try:
-                        os.remove(jpeg_path + smartstackid + '.busy')
-                    except:
-                        plog ("COULDNT DELETE BUSY TOKEN! ALERT!")
-
-                else:
-                    reprojection_failed = True
-                storedsStack = imgdata
-            else:
-                # Collect stored SmartStack
-                storedsStack = np.load(
-                    obsid_path + "smartstacks/" + smartStackFilename
-                )
-
-                # Grab the two arrays
-                de_nanned_reference_frame=copy.deepcopy(storedsStack)
-                tempnan=copy.deepcopy(imgdata)
-
-                googtime=time.time()
-                edge_crop=100
-                xoff, yoff = cross_correlation_shifts(block_reduce(de_nanned_reference_frame[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean), block_reduce(tempnan[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean),zeromean=False)
-                plog (time.time()-googtime)
-                plog ("3x")
-                plog (str(-yoff*3) + " " + str(-xoff*3))
-                plog (str(round(-yoff*3)) + " " + str(round(-xoff*3)))
-                imageshift=[round(-yoff*3),round(-xoff*3)]
-
-                if abs(imageshift[0]) > 0:
-                    imageshiftabs=int(abs(imageshift[0]))
-                    if imageshift[0] > 0:
-                        imageshiftsign = 1
-                    else:
-                        imageshiftsign = -1
-                    imgdata=np.roll(imgdata, imageshiftabs*imageshiftsign, axis=0)
-
-                if abs(imageshift[1]) > 0:
-                    imageshiftabs=int(abs(imageshift[1]))
-                    if imageshift[1] > 0:
-                        imageshiftsign = 1
-                    else:
-                        imageshiftsign = -1
-                    imgdata=np.roll(imgdata, imageshiftabs*imageshiftsign, axis=1)
-
-                storedsStack += imgdata  # + storedsStack   A WER experiment!
-
-                # Save new stack to disk
+                # Store original image
                 np.save(
                     obsid_path
                     + "smartstacks/"
                     + smartStackFilename,
-                    storedsStack,
-                )
-
+                    imgdata)
                 # As soon as there is a reference image, delete the busy token
                 try:
                     os.remove(jpeg_path + smartstackid + '.busy')
                 except:
-                    plog("COULDNT DELETE BUSY TOKEN! ALERT!")
+                    plog ("COULDNT DELETE BUSY TOKEN! ALERT!")
+
+            else:
+                reprojection_failed = True
+            storedsStack = imgdata
+        else:
+            # Collect stored SmartStack
+            storedsStack = np.load(
+                obsid_path + "smartstacks/" + smartStackFilename
+            )
+
+            # Grab the two arrays
+            de_nanned_reference_frame=copy.deepcopy(storedsStack)
+            tempnan=copy.deepcopy(imgdata)
+
+            googtime=time.time()
+            edge_crop=100
+            xoff, yoff = cross_correlation_shifts(block_reduce(de_nanned_reference_frame[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean), block_reduce(tempnan[edge_crop:-edge_crop,edge_crop:-edge_crop],3, func=np.nanmean),zeromean=False)
+            plog (time.time()-googtime)
+            plog ("3x")
+            plog (str(-yoff*3) + " " + str(-xoff*3))
+            plog (str(round(-yoff*3)) + " " + str(round(-xoff*3)))
+            imageshift=[round(-yoff*3),round(-xoff*3)]
+
+            if abs(imageshift[0]) > 0:
+                imageshiftabs=int(abs(imageshift[0]))
+                if imageshift[0] > 0:
+                    imageshiftsign = 1
+                else:
+                    imageshiftsign = -1
+                imgdata=np.roll(imgdata, imageshiftabs*imageshiftsign, axis=0)
+
+            if abs(imageshift[1]) > 0:
+                imageshiftabs=int(abs(imageshift[1]))
+                if imageshift[1] > 0:
+                    imageshiftsign = 1
+                else:
+                    imageshiftsign = -1
+                imgdata=np.roll(imgdata, imageshiftabs*imageshiftsign, axis=1)
+
+            storedsStack += imgdata  # + storedsStack   A WER experiment!
+
+            # Save new stack to disk
+            np.save(
+                obsid_path
+                + "smartstacks/"
+                + smartStackFilename,
+                storedsStack,
+            )
+
+            # As soon as there is a reference image, delete the busy token
+            try:
+                os.remove(jpeg_path + smartstackid + '.busy')
+            except:
+                plog("COULDNT DELETE BUSY TOKEN! ALERT!")
 
         if reprojection_failed == True:  # If we couldn't make a stack send a jpeg of the original image.
             storedsStack = imgdata
@@ -779,6 +780,8 @@ if not os.path.exists(jpeg_path + smartstackid + '.busy'):
                     final_image = final_image.resize((int(900 * iy / ix), 900))
                 else:
                     final_image = final_image.resize((900, int(900 * iy / ix)))
+                
+                
 
             final_image.save(
                 jpeg_path + jpeg_name.replace('.jpg', 'temp.jpg')
