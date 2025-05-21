@@ -317,7 +317,7 @@ class FilterWheel:
     # Note this is a thread!
     def filterwheel_update_thread(self):
 
-        if not self.driver == "LCO.dual" and not self.driver == "LCO.dual" and not self.dummy:
+        if not self.driver == "FLI.dual" and not self.driver == "LCO.dual" and not self.dummy:
             win32com.client.pythoncom.CoInitialize()
 
             self.filterwheel_update_wincom = win32com.client.Dispatch(self.driver)
