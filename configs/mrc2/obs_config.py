@@ -902,7 +902,7 @@ site_config = {
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
                 'max_daytime_exposure': 2,
                 # For certain shutters, short exposures aren't good for flats.  Largely applies to ccds though.
-                'min_flat_exposure': 0.001, # WER 20240111 changed from 0.4   #just for now for CCD camera testing            
+                'min_flat_exposure': 0.00001, # WER 20240111 changed from 0.4   #just for now for CCD camera testing            
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
                
