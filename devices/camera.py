@@ -5843,7 +5843,13 @@ class Camera:
                                 # 1. mask hot pixels / cosmics
                                 from astroscrappy import detect_cosmics
                                 if (self.pixscale < 1.0 and not self.settings['is_osc']) or (self.pixscale < 0.6 and self.settings['is_osc']): 
-                                    cr_mask, outputimg = detect_cosmics(outputimg, sigclip=5.0, sigfrac=0.3, objlim=5)
+                                    cr_mask, _ = detect_cosmics(outputimg, sigclip=5.0, sigfrac=0.3, objlim=5)
+                                    
+                                outputimg[cr_mask] = np.nan
+                                
+                                outputimg=fill_nans_with_local_mean(outputimg)
+                                plog ("nans: " + str( time.time()-googtime))
+                                
                                 # # 2. subtract background
                                 # from scipy.ndimage import uniform_filter
                                 # bkg = uniform_filter(clean_data, size=256)
@@ -5855,8 +5861,7 @@ class Camera:
                                 
                         
     
-                                outputimg=fill_nans_with_local_mean(outputimg)
-                                plog ("nans: " + str( time.time()-googtime))
+                                
 
                                 # from scipy.ndimage import uniform_filter
 
