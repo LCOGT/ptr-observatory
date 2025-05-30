@@ -148,15 +148,17 @@ site_config = {
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
-    # 'temporary_local_pipe_archive_to_hold_files_while_copying' : 'D:/tempfolderforpipeline',
+    # These are options to minimise diskspace for calibrations
+    'produce_fits_file_for_final_calibrations': True,
+    'save_archive_versions_of_final_calibrations' : False,
     # 'temporary_local_alt_archive_to_hold_files_while_copying' : 'D:/tempfolderforaltpath',
-    'client_hostname':  'mrc-0m30',  # This is also the long-name  Client is confusing!
-    'archive_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
-    'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
+    'client_hostname':  'aro2-0m45',  # This is also the long-name  Client is confusing!
+    'archive_path':  'F:/ptr/',  # Generic place for client host to stash misc stuff
+    'local_calibration_path': 'F:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
-    'plog_path':  'D:/ptr/aro2/',  # place where night logs can be found.
+    'plog_path':  'F:/ptr/aro2/',  # place where night logs can be found.
     'save_to_alt_path': 'no',
-    'archive_age': 2,  # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age': 3,  # Number of days to keep files in the local archive before deletion. Negative means never delete
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
@@ -166,11 +168,9 @@ site_config = {
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': True,
     'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.
-    # These are options to minimise diskspace for calibrations
-    'produce_fits_file_for_final_calibrations': True,
-    'save_archive_versions_of_final_calibrations' : False,
+
     # A certain type of naming that sorts filenames by numberid first
-    'save_reduced_file_numberid_first' : False,
+    'save_reduced_file_numberid_first' : True,
     # Number of files to send up to the ptrarchive simultaneously.
     'number_of_simultaneous_ptrarchive_streams' : 4,
     # Number of files to send over to the pipearchive simultaneously.
