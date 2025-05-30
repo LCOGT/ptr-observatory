@@ -291,18 +291,18 @@ def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
             # else:
             #     size = int(np.round(size))
             # x0i, y0i = int(np.round(x0)), int(np.round(y0))
-            
+
             # ny, nx = outputimg.shape
             # half = size // 2
-            
+
             # # figure out how many pixels we can actually grab
             # xmin = max( 0, x0i - half )
             # xmax = min( nx, x0i + half + (size % 2) )
             # ymin = max( 0, y0i - half )
             # ymax = min( ny, y0i + half + (size % 2) )
-            
+
             # real_ny, real_nx = ymax - ymin, xmax - xmin
-            
+
             # # if either dimension is ≤ 0, skip this frame
             # if real_ny <= 0 or real_nx <= 0:
             # 1) Round & cast size to int or (int, int)
@@ -310,23 +310,23 @@ def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
                 size = tuple(int(np.round(s)) for s in size)
             else:
                 size = int(np.round(size))
-            
+
             # 2) Compute half-sizes for Y and X
             if isinstance(size, tuple):
                 half_y, half_x = size[0] // 2, size[1] // 2
             else:
                 half_y = half_x = size // 2
-            
+
             # 3) Round & cast your center too
             y0i, x0i = int(np.round(y0)), int(np.round(x0))
-            
+
             # 4) Clamp to image boundaries
             ny, nx = outputimg.shape
             ymin = max(0, y0i - half_y)
             ymax = min(ny, y0i + half_y + (size[0]%2 if isinstance(size, tuple) else size%2))
             xmin = max(0, x0i - half_x)
             xmax = min(nx, x0i + half_x + (size[1]%2 if isinstance(size, tuple) else size%2))
-            
+
             # 5) If it collapsed, bail out
             if (ymax - ymin) <= 0 or (xmax - xmin) <= 0:
                 # e.g. log it and return NaN or zero distance
@@ -338,7 +338,7 @@ def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
                 # Cutout centered on centroid
                 real_size = (ymax - ymin, xmax - xmin)
                 cutout = Cutout2D(outputimg, position=(x0, y0), size=real_size, mode='partial', fill_value=np.nan)
-    
+
                 # Find brightest pixel in the cutout
                 if np.all(np.isnan(cutout.data)):
                     # No valid data; skip or set distance to NaN
@@ -346,15 +346,15 @@ def calculate_donut_distance(outputimg, catalog, search_radius_factor=3.0):
                     y_dists.append(np.nan)
                     total_dists.append(np.nan)
                     continue
-    
+
                 local_max_pos = np.unravel_index(np.nanargmax(cutout.data), cutout.data.shape)
                 y_peak_local, x_peak_local = local_max_pos
-    
+
                 # Calculate offset relative to cutout center
                 dx = x_peak_local - r_search
                 dy = y_peak_local - r_search
                 dist = np.hypot(dx, dy)
-    
+
                 x_dists.append(abs(dx))
                 y_dists.append(abs(dy))
                 total_dists.append(dist)
@@ -682,7 +682,6 @@ dgs = "°"
 
 # This class is for QHY camera control
 
-#breakpoint()
 class Qcam:
     LOG_LINE_NUM = 0
     # Python constants
@@ -888,7 +887,6 @@ def reset_sequence(pCamera):
         return seq
     except:
         plog(traceback.format_exc())
-        #breakpoint()
         plog("Nothing on the cam shelf in reset_sequence")
         return None
 
@@ -1033,8 +1031,6 @@ class Camera:
                 plog(descriptor['log_message'])
 
 
-        #breakpoint()
-
         try:
 
             tempbpmframe = np.load(self.local_calibration_path + "archive/" +
@@ -1109,7 +1105,6 @@ class Camera:
             else:
                 plog("ERROR:  ASCOM camera is not connected:  ",
                      self._connect(True))
-            #breakpoint()
 
             self.imagesize_x = self.camera.CameraXSize
             self.imagesize_y = self.camera.CameraYSize
@@ -1376,7 +1371,6 @@ class Camera:
             # Quick shot to get camera size
             # Get image dimensions from ROI
             roi_format = zwocamera.get_roi_format()
-            #breakpoint()
 
             self.imagesize_x = roi_format[0]
             self.imagesize_y = roi_format[1]
@@ -2242,7 +2236,6 @@ class Camera:
                         add_star_with_psf(synthetic_image, int(starstat[0]), int( starstat[1]),  int(pow(10,-0.4 * (starstat[2] -23))), psf)
                     except:
                         plog(traceback.format_exc())
-                        #breakpoint()
 
 
         return synthetic_image
@@ -2838,7 +2831,6 @@ class Camera:
                 plog("hint:  ", opt['hint'])
                 hint = opt['hint'].split(";")
                 for item in hint:
-                    #breakpoint() #2025
                     term, chg = item.split("=")
                     term = term.strip(' ')
                     if term in ['refr', 'modl', 'rate', 'drft']:
@@ -3312,7 +3304,6 @@ class Camera:
                 if not g_dev['obs'].mountless_operation:
                     if not g_dev['mnt'].rapid_park_indicator:
                         if g_dev['mnt'].pier_flip_detected==True and not g_dev['obs'].auto_centering_off:
-                            #breakpoint()
                             plog ("PIERFLIP DETECTED, RECENTERING.")
                             g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                             g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
@@ -3819,7 +3810,6 @@ class Camera:
             if not g_dev['mnt'].rapid_park_indicator:
                 if g_dev['mnt'].pier_flip_detected == True  and not g_dev['obs'].auto_centering_off:
                     plog ("!!!!!!!!!!!PIERFLIP DETECTED, RECENTERING!!!!!!!!!!!!!!!!!")
-                    #breakpoint()
                     g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                     g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
                     g_dev['obs'].pointing_correction_request_time = time.time()
@@ -4022,7 +4012,6 @@ class Camera:
         if fw_device == None:
             fw_device = self.obs.devices['main_fw']
 
-        #breakpoint()
         try:
             this_exposure_filter = fw_device.current_filter_name
         except:
@@ -4278,7 +4267,6 @@ class Camera:
                     self.flatFiles[this_exposure_filter + "_bin" + str(1)])
             except:
                 plog("couldn't find flat for this filter")
-                #breakpoint()
                 intermediate_tempflat = None
         ## For traditional exposures, spin up all the subprocesses ready to collect and process the files once they arrive
         if (not frame_type[-4:] == "flat" and
@@ -4460,7 +4448,6 @@ class Camera:
             # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
             if False:
                 pickle.dump([septhread_filename, self.pixscale, self.camera_known_readnoise, avg_foc, focus_image, im_path, text_name, 'hduheader', cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,self.native_bin,do_sep,exposure_time], open('subprocesses/testSEPpickle','wb'))
-            #breakpoint()
 
             try:
                 sep_subprocess = subprocess.Popen(
@@ -4680,7 +4667,6 @@ class Camera:
                             firstframesmartstack = False
                         platesolvethread_filename=self.local_calibration_path + "smartstacks/platesolve" + str(time.time()).replace('.','') + '.pickle'
 
-                        #breakpoint()
 
                         g_dev['obs'].to_platesolve(
                             (
@@ -5059,8 +5045,6 @@ class Camera:
                                 hdufocus.writeto(cal_path + 'rawdump.fits', overwrite=True, output_verify='silentfix')
 
 
-                               #breakpoint()
-
                         except Exception as e:
 
                             if self.theskyx:
@@ -5083,8 +5067,8 @@ class Camera:
                             time.sleep(3)
                             retrycounter = retrycounter + 1
 
-                #breakpoint()
-################################################# CUTOFF FOR THE POSTPROCESSING QUEUE
+
+                ################################################# CUTOFF FOR THE POSTPROCESSING QUEUE
 
 ################################ START OFF THE MAIN POST_PROCESSING SUBTHREAD
 
@@ -5108,12 +5092,12 @@ class Camera:
                     observing_begins = self.obs.events['Observing Begins']
 
 
-                    
+
                     if  now < observing_begins or  now > observing_ends:
                         exposure_in_nighttime=False
                     else:
                         exposure_in_nighttime=True
-                        
+
 
 
                     payload=copy.deepcopy(
@@ -5413,7 +5397,7 @@ class Camera:
                 # in-line flash reduction
                 if (frame_type == 'pointing' or focus_image == True) and not substack:
                     # Make sure any dither or return nudge has finished before platesolution
-                    #breakpoint()
+
                     try:
                         # If not a smartstack use a scaled masterdark
                         if smartstackid == 'no':
@@ -5443,7 +5427,6 @@ class Camera:
                         outputimg = np.divide(outputimg, intermediate_tempflat)
                     except Exception as e:
                         plog("flatting light frame failed", e)
-                        #breakpoint()
 
                     try:
                         outputimg[self.bpmFiles[str(1)]] = np.nan
@@ -5596,7 +5579,7 @@ class Camera:
                                 outputimg = outputimg[crop_x:-crop_x, crop_y:-crop_y]
 
                         if self.is_osc:
-                            
+
                             outputimg=block_reduce(outputimg,2)
 
                             # # Rapidly interpolate so that it is all one channel
@@ -5839,17 +5822,21 @@ class Camera:
                                 # We don't need accurate photometry, so integer is fine.
                                 hdufocus = fits.PrimaryHDU()
                                 hdufocus.data = outputimg.astype(np.float32)
-                                
+
+
+
                                 # 1. mask hot pixels / cosmics
                                 from astroscrappy import detect_cosmics
-                                if (self.pixscale < 1.0 and not self.settings['is_osc']) or (self.pixscale < 0.6 and self.settings['is_osc']): 
+                                if (self.pixscale < 1.0 and not self.settings['is_osc']) or (self.pixscale < 0.6 and self.settings['is_osc']):
                                     cr_mask, _ = detect_cosmics(outputimg, sigclip=5.0, sigfrac=0.3, objlim=5)
-                                    
+
                                 outputimg[cr_mask] = np.nan
-                                
+
+                                breakpoint()
+
                                 outputimg=fill_nans_with_local_mean(outputimg)
                                 plog ("nans: " + str( time.time()-googtime))
-                                
+
                                 # # 2. subtract background
                                 # from scipy.ndimage import uniform_filter
                                 # bkg = uniform_filter(clean_data, size=256)
@@ -5857,11 +5844,11 @@ class Camera:
                                 from scipy.ndimage import gaussian_filter
                                 smoothed = gaussian_filter(outputimg, sigma=1)# - bkg, sigma=1)
                                 hdufocus.data = smoothed.astype(np.float32)
-                                
-                                
-                        
-    
-                                
+
+
+
+
+
 
                                 # from scipy.ndimage import uniform_filter
 
@@ -5920,10 +5907,10 @@ class Camera:
                                     f" --tile-size 10000"
                                     f" --tile-memory-limit 16384"
                                 )
-                                
+
                                 # now call wsl bash -ic "<command>"
                                 cmd = ["wsl", "bash", "-ic", command]
-                                
+
                                 try:
                                     result = subprocess.run(
                                         cmd,
@@ -5937,7 +5924,7 @@ class Camera:
                                     print("✖ sourcextractor++ timed out")
                                 except subprocess.CalledProcessError as e:
                                     print(f"⚠️ exited with code {e.returncode}")
-                                
+
                                 print ("s++: " + str(time.time()-googtime))
                                 try:
                                     googtime=time.time()
@@ -6037,7 +6024,7 @@ class Camera:
 
                                         # We only want to consider sources with no nearby other sources
                                         # whether that is another star, part of a donut or diffraction spike
-                                        
+
 
                                         # Extract positions
                                         x = catalog['pixel_centroid_x']
@@ -6099,7 +6086,7 @@ class Camera:
                                         # now clip on only the “good” values
                                         total_mean_donut_distance = sigma_clip(good,
                                                             sigma_lower=2, sigma_upper=4,
-                                                            maxiters=5)                                        
+                                                            maxiters=5)
                                         # if you want the clipped mean:
                                         # total_mean_donut_distance = clipped.mean()
 

@@ -51,7 +51,7 @@ import os
 
 # We only use Observatory in type hints, so use a forward reference to prevent circular imports
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: 
+if TYPE_CHECKING:
     from obs import Observatory
 
 # Unused except for WMD
@@ -76,10 +76,10 @@ class Focuser:
         self.camera_name = site_config['device_roles']['main_cam']
 
         self.config = site_config["focuser"][name]
-        
+
         self.relative_focuser = site_config["focuser"][name]['relative_focuser']
         self.driver = driver
-        
+
         # Configure the role, if it exists
         # Current design allows for only one role per device
         # We can add more roles by changing self.role to a list and adjusting any references
@@ -88,7 +88,7 @@ class Focuser:
             if device == name:
                 self.role = role
                 break
-        
+
         # Set the dummy flag which toggles simulator mode
         self.dummy = (driver == 'dummy')
 
@@ -125,7 +125,7 @@ class Focuser:
         # Just to need to wait a little bit for PWI3 to boot up, otherwise it sends temperatures that are absolute zero (-273)
         if driver == 'ASCOM.PWI3.Focuser':
             time.sleep(4)
-        
+
         if not self.dummy and not self.relative_focuser:
             if not self.theskyx:
                 self.current_focus_position=self.focuser.Position * self.steps_to_micron
@@ -134,7 +134,7 @@ class Focuser:
                     self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
                 except:
                     self.current_focus_position=self.focuser.focPosition * self.steps_to_micron
-                
+
         else:
             self.current_focus_position=2000
 
@@ -191,7 +191,7 @@ class Focuser:
         self.focus_commissioned=False
 
         self.focuser_is_moving=False
-        
+
         if not self.dummy:
             if self.theskyx:
                 self.current_focus_temperature=self.focuser.focTemperature
@@ -203,7 +203,7 @@ class Focuser:
         self.previous_focus_temperature = copy.deepcopy(self.current_focus_temperature)
         if not self.relative_focuser:
             self.set_initial_best_guess_for_focus()
-        
+
         try:
             self.last_filter_offset = g_dev["fil"].filter_offset
         except:
@@ -211,54 +211,92 @@ class Focuser:
             self.last_filter_offset= 0
 
         self.focuser_settle_time=self.config['focuser_movement_settle_time']
-        
+
 
         # Load up the throw list unless we don't have one.
         if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name) + '.dat'):
             plog ("loading throw from throw shelf")
-            self.throw_shelf = shelve.open(
-                g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name))
-            try:
-                self.throw_list = self.throw_shelf['throw_list']
-                self.throw = np.nanmedian(self.throw_list)
-                plog('current throw: ' + str(self.throw))
-            except:
-                self.throw_list=None
-                self.throw = None
+            # throw_shelf = shelve.open(
+            #     g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name))
+            # try:
+            #     self.throw_list = throw_shelf['throw_list']
+            #     self.throw = np.nanmedian(self.throw_list)
+            #     plog('current throw: ' + str(self.throw))
+            # except:
+            #     self.throw_list=None
+            #     self.throw = None
+            shelf_path = os.path.join(
+                g_dev['obs'].obsid_path,
+                'ptr_night_shelf',
+                f"throw{self.name}{g_dev['obs'].name}"
+            )
+
+            with shelve.open(shelf_path) as throw_shelf:
+                try:
+                    self.throw_list = throw_shelf['throw_list']
+                    self.throw = np.nanmedian(self.throw_list)
+                    plog(f"current throw: {self.throw}")
+                except KeyError:
+                    # no 'throw_list' key in shelf
+                    self.throw_list = None
+                    self.throw = None
         else:
             plog ("loading throw from config")
             self.throw = int(site_config["focuser"][name]["throw"])
             self.throw_list=[self.throw]
-        
+
         plog ("used throw: " + str(self.throw))
-        
-        
+
+
         self.minimum_allowed_focus=self.config['minimum']
         self.maximum_allowed_focus=self.config['maximum']
 
 
     def report_optimal_throw(self,curve_step_length):
-        
-        self.throw_shelf = shelve.open(
-            g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name))
-        
-        self.throw_list.append(
-            float(abs(curve_step_length))
+
+        # throw_shelf = shelve.open(
+        #     g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name))
+
+        # throw_list = throw_shelf['throw_list']
+        # throw_list.append(
+        #     float(abs(curve_step_length))
+        # )
+
+        # #update the throw itself
+        # self.throw = np.nanmedian(throw_list)
+
+        # too_long = True
+        # while too_long:
+        #     if len(throw_list) > 100:
+        #         throw_list.pop(0)
+        #     else:
+        #         too_long = False
+        # throw_shelf[
+        #     "throw_list"
+        # ] = throw_list
+        # throw_shelf.close()
+        shelf_path = os.path.join(
+            g_dev['obs'].obsid_path,
+            'ptr_night_shelf',
+            f"throw{self.name}{g_dev['obs'].name}"
         )
-        
-        #update the throw itself
-        self.throw = np.nanmedian(self.throw_list)
-        
-        too_long = True
-        while too_long:
-            if len(self.throw_list) > 100:
-                self.throw_list.pop(0)
-            else:
-                too_long = False
-        self.throw_shelf[
-            "throw_list"
-        ] = self.throw_list
-        self.throw_shelf.close()
+
+        with shelve.open(shelf_path) as throw_shelf:
+            # Load existing list or start fresh
+            throw_list = throw_shelf.get('throw_list', [])
+
+            # Append the new throw measurement
+            throw_list.append(float(abs(curve_step_length)))
+
+            # Update the running median
+            self.throw = np.nanmedian(throw_list)
+
+            # Trim to the most recent 100 entries
+            if len(throw_list) > 100:
+                throw_list = throw_list[-100:]
+
+            # Write the trimmed list back to the shelf
+            throw_shelf['throw_list'] = throw_list
 
     # Note this is a thread!
     def focuser_update_thread(self):
@@ -296,25 +334,25 @@ class Focuser:
                     print ("Exposure focuser wait failed. ")
 
                 self.focuser_is_moving=True
-                
-                
+
+
                 self.minimum_allowed_focus=self.config['minimum']
                 self.maximum_allowed_focus=self.config['maximum']
-                
+
                 #breakpoint()
-                
+
                 requestedPosition=int(self.guarded_move_to_focus)
                 if requestedPosition < self.minimum_allowed_focus* self.micron_to_steps or requestedPosition > self.maximum_allowed_focus * self.micron_to_steps :
                     plog ("Requested focuser position outside limits set in config!")
                     plog (requestedPosition)
                 else:
-                
+
 
                     try:
                         if not self.dummy:
-                        
+
                             if self.theskyx:
-                                
+
                                 #requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
                                 requestedPosition=int(self.guarded_move_to_focus)
                                 try:
@@ -323,7 +361,7 @@ class Focuser:
                                 except:
                                     difference_in_position=self.focuser_update_wincom.focPosition - requestedPosition
                                     absdifference_in_position=abs(self.focuser_update_wincom.focPosition - requestedPosition)
-                                    
+
                                 #breakpoint()
                                 print (difference_in_position)
                                 print (absdifference_in_position)
@@ -336,37 +374,37 @@ class Focuser:
                                 # except:
                                 #     #print ("failed")
                                 #     print (self.focuser_update_wincom.focPosition)
-         
+
                                 time.sleep(self.config['focuser_movement_settle_time'])
                                 try:
                                     self.current_focus_position=int(self.focuser_update_wincom.focPosition())# * self.steps_to_micron)
                                 except:
                                     self.current_focus_position=int(self.focuser_update_wincom.focPosition)# * self.steps_to_micron)
-                                
+
                             else:
                                 if not self.relative_focuser:
                                     self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))
                                     time.sleep(0.1)
                                     movement_report=0
-             
+
                                     while self.focuser_update_wincom.IsMoving:
                                         if movement_report==0:
                                             plog("Focuser is moving.....")
                                             movement_report=1
                                         self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
-             
+
                                         time.sleep(0.3)
-             
+
                                     time.sleep(self.config['focuser_movement_settle_time'])
-             
+
                                     self.current_focus_position=int(self.focuser_update_wincom.Position) * self.steps_to_micron
                                 else:
                                     plog ("at a focus move point here")
-                                    
+
                         else:
                             # Currently just a fummy focuser report
                             self.current_focus_position=2000
-    
+
                     except:
                         plog("AF Guarded move failed.")
                         plog (traceback.format_exc())
@@ -384,8 +422,8 @@ class Focuser:
 
             elif self.focuser_update_timer < time.time() - self.focuser_update_period:
 
-                
-                if not self.dummy: 
+
+                if not self.dummy:
                     try:
                         if self.theskyx:
                             self.current_focus_temperature=self.focuser_update_wincom.focTemperature
@@ -401,13 +439,13 @@ class Focuser:
                     if not self.relative_focuser:
                         if not self.theskyx:
                             self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
-        
+
                         else:
                             try:
                                 self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
                             except:
                                 self.current_focus_position=int(self.focuser_update_wincom.focPosition * self.steps_to_micron)
-                            
+
                 else:
                     # NOTHING DOING FOR DUMMY FOCUSSING AT THIS STAGE
                     pass
@@ -572,22 +610,22 @@ class Focuser:
             # except:
             #     plog (traceback.format_exc())
             #     breakpoint()
-                
+
             plog("Number of previous focusses: " + str(number_of_previous_focusses))
-            
+
             #breakpoint()
 
             if last_successful_focus_time != None:
 
                 self.time_of_last_focus=parser.parse(last_successful_focus_time)
-                
+
                 # if throw empty or exposure empty or list shorter than x, commissioned is yet not true.
                 if number_of_previous_focusses < 10:
                     self.focus_commissioned=False
                 # print(number_of_previous_focusses)
-                
+
                 # breakpoint()
-                
+
             else:
                 self.focus_commissioned=False
 
@@ -688,33 +726,33 @@ class Focuser:
 
         if not self.relative_focuser :
             try:
-                
+
                 adjust = 0.0
-    
-    
+
+
                 # adjust for temperature if we have the correct information.
                 if abs(temp_delta) > 0.1 and self.current_focus_temperature is not None and self.focus_temp_slope is not None and self.focus_temp_intercept is not None:
                     adjust = round(temp_delta * float(self.focus_temp_slope), 1)
-    
+
                 # adjust for filter offset
                 # it is try/excepted because some telescopes don't have filters
                 try:
                     adjust -= (g_dev["fil"].filter_offset)
                 except:
                     pass
-    
+
                 if force_change:
                     self.get_position_actual()
-    
+
                 current_focus_micron=self.current_focus_position#*self.steps_to_micron
-    
+
                 if abs((self.last_known_focus + adjust) - current_focus_micron) > 50:
-    
+
                     self.focuser_is_moving=True
                     plog ("Adjusting focus to: " + str(self.last_known_focus + adjust))
-    
+
                     self.guarded_move((self.last_known_focus + adjust)*self.micron_to_steps)
-    
+
             except:
                 plog("Focus-adjust: no changes made.")
                 plog (traceback.format_exc())
@@ -759,8 +797,8 @@ class Focuser:
         difference_in_position=int(position_string) * self.micron_to_steps
 
         self.guarded_move(self.current_focus_position + difference_in_position)
-        
-        
+
+
         self.last_known_focus = req["position"]
 
 
@@ -786,70 +824,111 @@ class Focuser:
         plog("focuser cmd: auto")
 
     def set_focal_ref(self, ref):
-        cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
-        cam_shelf["focus_ref"] = ref
-        cam_shelf.close()
+        # cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
+        # cam_shelf["focus_ref"] = ref
+        # cam_shelf.close()
+        shelf_path = os.path.join(
+            self.obsid_path,
+            "ptr_night_shelf",
+            f"focuslog_{self.camera_name}{g_dev['obs'].name}"
+        )
+
+        with shelve.open(shelf_path) as cam_shelf:
+            cam_shelf["focus_ref"] = ref
         return
 
-    def set_focal_ref_reset_log(self, ref):
-        try:
-            cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
-        except:
-            plog ("Focus log file corrupt, creating new ones")
-            import os
-            os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dat")
-            os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".bak")
-            os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dir")
-            cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
+    # def set_focal_ref_reset_log(self, ref):
+    #     try:
+    #         cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
+    #     except:
+    #         plog ("Focus log file corrupt, creating new ones")
+    #         import os
+    #         os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dat")
+    #         os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".bak")
+    #         os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dir")
+    #         cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
 
-        cam_shelf["focus_ref"] = ref
-        cam_shelf["af_log"] = []
-        cam_shelf.close()
-        return
+    #     cam_shelf["focus_ref"] = ref
+    #     cam_shelf["af_log"] = []
+    #     cam_shelf.close()
+    #     return
 
     def af_log(self, ref, fwhm, solved):
         """Logs autofocus data to the night shelf."""
 
-        # Note once focus comp is in place this data
-        # needs to be combined with great care.
-        cam_shelf = shelve.open(
-            self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name), writeback=True
-        )
+
         try:
             f_temp=self.current_focus_temperature
-
         except:
 
             f_temp = None
 
-        if not f_temp == None and (-30 < f_temp < 40):
-            if "af_log" in cam_shelf:
-                cam_shelf["af_log"].append(
-                    (f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.utcnow().isoformat())
-                )
-            else : # create af log if it doesn't exist
-                cam_shelf["af_log"]=[(f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.utcnow().isoformat())]
-        else:
-            f_temp=15.0
-            plog ("getting f_temp failed, using 15 degrees C")
-            plog (traceback.format_exc())
+        # Note once focus comp is in place this data
+        # needs to be combined with great care.
+        # cam_shelf = shelve.open(
+        #     self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name), writeback=True
+        # )
 
-        cam_shelf.close()
+        # if not f_temp == None and (-30 < f_temp < 40):
+        #     if "af_log" in cam_shelf:
+        #         cam_shelf["af_log"].append(
+        #             (f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.utcnow().isoformat())
+        #         )
+        #     else : # create af log if it doesn't exist
+        #         cam_shelf["af_log"]=[(f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.utcnow().isoformat())]
+        # else:
+        #     f_temp=15.0
+        #     plog ("getting f_temp failed, using 15 degrees C")
+        #     plog (traceback.format_exc())
+
+        # cam_shelf.close()
+
+
+        shelf_path = os.path.join(
+            self.obsid_path,
+            "ptr_night_shelf",
+            f"focuslog_{self.camera_name}{g_dev['obs'].name}"
+        )
+
+        with shelve.open(shelf_path, writeback=True) as cam_shelf:
+            # Check temperature validity
+            if f_temp is not None and -30 < f_temp < 40:
+                entry = (
+                    f_temp,
+                    ref,
+                    round(fwhm, 2),
+                    round(solved, 2),
+                    datetime.datetime.utcnow().isoformat()
+                )
+                # Append or create
+                if "af_log" in cam_shelf:
+                    cam_shelf["af_log"].append(entry)
+                else:
+                    cam_shelf["af_log"] = [entry]
+                # immediately flush the updated cache to disk
+                cam_shelf.sync()
+            else:
+                f_temp = 15.0
+                plog("getting f_temp failed, using 15 °C")
+                plog(traceback.format_exc())
+
         return
 
     def get_af_log(self):
         """Retrieves the autofocus log."""
 
         try:
-            cam_shelf = shelve.open(
-                self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name), writeback=True
-            )
 
             max_arcsecond=self.config['maximum_good_focus_in_arcsecond']
+            previous_focus=[]
+
+            with shelve.open(
+                self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name), writeback=True
+            ) as cam_shelf:
+                temp_focus_log=cam_shelf["af_log"]
 
             # Load last focuses and order from most recent to oldest
-            previous_focus=[]
-            for item in cam_shelf["af_log"]:
+            for item in temp_focus_log:
                 previous_focus.append(item)
 
             # Print focus log and sort in order of date
@@ -877,7 +956,7 @@ class Focuser:
             for item in previous_focus:
                 if item[2] < max_arcsecond and item[2] != 0 and item[1] !=False and -10 < item[0] < 40 :
                     plog ("Best previous focus is at: " +str(item))
-                    return item[1], item[4], focus_temp_slope, focus_temp_intercept
+                    return item[1], item[4], focus_temp_slope, focus_temp_intercept, len(previous_focus)
 
             try:
                 print (len(previous_focus))
@@ -890,10 +969,21 @@ class Focuser:
             plog("There is no focus log on the night shelf.")
 
     def get_focal_ref(self):
-        cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
-        focus_ref = cam_shelf["focus_ref"]
-        # NB Should we also return and use the ref temp?
-        cam_shelf.close()
+        # cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
+        # focus_ref = cam_shelf["focus_ref"]
+        # # NB Should we also return and use the ref temp?
+        # cam_shelf.close()
+        # return focus_ref
+
+        shelf_path = os.path.join(
+            self.obsid_path,
+            "ptr_night_shelf",
+            f"focuslog_{self.camera_name}{g_dev['obs'].name}"
+        )
+
+        with shelve.open(shelf_path, writeback=False) as cam_shelf:
+            focus_ref = cam_shelf["focus_ref"]
+
         return focus_ref
 
 
