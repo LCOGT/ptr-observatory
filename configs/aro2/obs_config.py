@@ -68,8 +68,8 @@ site_config = {
     'lowest_requestable_altitude': 20,
     # Below this altitude, it will automatically try to home and park the scope to recover.
     'lowest_acceptable_altitude': 0,
-    'degrees_to_avoid_zenith_area_for_calibrations': 0,
-    'degrees_to_avoid_zenith_area_in_general': 3,
+    'degrees_to_avoid_zenith_area_for_calibrations': 0,   #NB ARO2 is az-alt! WER
+    'degrees_to_avoid_zenith_area_in_general': 5,   #NB ARO2 is az-alt! WER
     'maximum_hour_angle_requestable': 9,  #This limit makes little sense
     # NB NB WER ARO Obs has a chiller
     'temperature_at_which_obs_too_hot_for_camera_cooling': 30,
@@ -158,7 +158,7 @@ site_config = {
     'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'F:/ptr/aro2/',  # place where night logs can be found.
     'save_to_alt_path': 'no',
-    'archive_age': 3,  # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age': 7,  # Number of days to keep files in the local archive before deletion. Negative means never delete
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
