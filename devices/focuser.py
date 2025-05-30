@@ -216,15 +216,30 @@ class Focuser:
         # Load up the throw list unless we don't have one.
         if os.path.exists(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name) + '.dat'):
             plog ("loading throw from throw shelf")
-            self.throw_shelf = shelve.open(
-                g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name))
-            try:
-                self.throw_list = self.throw_shelf['throw_list']
-                self.throw = np.nanmedian(self.throw_list)
-                plog('current throw: ' + str(self.throw))
-            except:
-                self.throw_list=None
-                self.throw = None
+            # throw_shelf = shelve.open(
+            #     g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name))
+            # try:
+            #     self.throw_list = throw_shelf['throw_list']
+            #     self.throw = np.nanmedian(self.throw_list)
+            #     plog('current throw: ' + str(self.throw))
+            # except:
+            #     self.throw_list=None
+            #     self.throw = None
+            shelf_path = os.path.join(
+                g_dev['obs'].obsid_path,
+                'ptr_night_shelf',
+                f"throw{self.name}{g_dev['obs'].name}"
+            )
+            
+            with shelve.open(shelf_path) as throw_shelf:
+                try:
+                    self.throw_list = throw_shelf['throw_list']
+                    self.throw = np.nanmedian(self.throw_list)
+                    plog(f"current throw: {self.throw}")
+                except KeyError:
+                    # no 'throw_list' key in shelf
+                    self.throw_list = None
+                    self.throw = None
         else:
             plog ("loading throw from config")
             self.throw = int(site_config["focuser"][name]["throw"])
@@ -239,26 +254,49 @@ class Focuser:
 
     def report_optimal_throw(self,curve_step_length):
         
-        self.throw_shelf = shelve.open(
-            g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name))
+        # throw_shelf = shelve.open(
+        #     g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'throw' + self.name + str(g_dev['obs'].name))
         
-        self.throw_list.append(
-            float(abs(curve_step_length))
+        # throw_list = throw_shelf['throw_list']
+        # throw_list.append(
+        #     float(abs(curve_step_length))
+        # )
+        
+        # #update the throw itself
+        # self.throw = np.nanmedian(throw_list)
+        
+        # too_long = True
+        # while too_long:
+        #     if len(throw_list) > 100:
+        #         throw_list.pop(0)
+        #     else:
+        #         too_long = False
+        # throw_shelf[
+        #     "throw_list"
+        # ] = throw_list
+        # throw_shelf.close()
+        shelf_path = os.path.join(
+            g_dev['obs'].obsid_path,
+            'ptr_night_shelf',
+            f"throw{self.name}{g_dev['obs'].name}"
         )
         
-        #update the throw itself
-        self.throw = np.nanmedian(self.throw_list)
+        with shelve.open(shelf_path) as throw_shelf:
+            # Load existing list or start fresh
+            throw_list = throw_shelf.get('throw_list', [])
         
-        too_long = True
-        while too_long:
-            if len(self.throw_list) > 100:
-                self.throw_list.pop(0)
-            else:
-                too_long = False
-        self.throw_shelf[
-            "throw_list"
-        ] = self.throw_list
-        self.throw_shelf.close()
+            # Append the new throw measurement
+            throw_list.append(float(abs(curve_step_length)))
+        
+            # Update the running median
+            self.throw = np.nanmedian(throw_list)
+        
+            # Trim to the most recent 100 entries
+            if len(throw_list) > 100:
+                throw_list = throw_list[-100:]
+        
+            # Write the trimmed list back to the shelf
+            throw_shelf['throw_list'] = throw_list
 
     # Note this is a thread!
     def focuser_update_thread(self):
@@ -786,70 +824,111 @@ class Focuser:
         plog("focuser cmd: auto")
 
     def set_focal_ref(self, ref):
-        cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
-        cam_shelf["focus_ref"] = ref
-        cam_shelf.close()
+        # cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
+        # cam_shelf["focus_ref"] = ref
+        # cam_shelf.close()
+        shelf_path = os.path.join(
+            self.obsid_path,
+            "ptr_night_shelf",
+            f"focuslog_{self.camera_name}{g_dev['obs'].name}"
+        )
+        
+        with shelve.open(shelf_path) as cam_shelf:
+            cam_shelf["focus_ref"] = ref
         return
 
-    def set_focal_ref_reset_log(self, ref):
-        try:
-            cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
-        except:
-            plog ("Focus log file corrupt, creating new ones")
-            import os
-            os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dat")
-            os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".bak")
-            os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dir")
-            cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
+    # def set_focal_ref_reset_log(self, ref):
+    #     try:
+    #         cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
+    #     except:
+    #         plog ("Focus log file corrupt, creating new ones")
+    #         import os
+    #         os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dat")
+    #         os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".bak")
+    #         os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dir")
+    #         cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
 
-        cam_shelf["focus_ref"] = ref
-        cam_shelf["af_log"] = []
-        cam_shelf.close()
-        return
+    #     cam_shelf["focus_ref"] = ref
+    #     cam_shelf["af_log"] = []
+    #     cam_shelf.close()
+    #     return
 
     def af_log(self, ref, fwhm, solved):
         """Logs autofocus data to the night shelf."""
 
-        # Note once focus comp is in place this data
-        # needs to be combined with great care.
-        cam_shelf = shelve.open(
-            self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name), writeback=True
-        )
+        
         try:
             f_temp=self.current_focus_temperature
-
         except:
 
             f_temp = None
+            
+        # Note once focus comp is in place this data
+        # needs to be combined with great care.
+        # cam_shelf = shelve.open(
+        #     self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name), writeback=True
+        # )
 
-        if not f_temp == None and (-30 < f_temp < 40):
-            if "af_log" in cam_shelf:
-                cam_shelf["af_log"].append(
-                    (f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.utcnow().isoformat())
+        # if not f_temp == None and (-30 < f_temp < 40):
+        #     if "af_log" in cam_shelf:
+        #         cam_shelf["af_log"].append(
+        #             (f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.utcnow().isoformat())
+        #         )
+        #     else : # create af log if it doesn't exist
+        #         cam_shelf["af_log"]=[(f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.utcnow().isoformat())]
+        # else:
+        #     f_temp=15.0
+        #     plog ("getting f_temp failed, using 15 degrees C")
+        #     plog (traceback.format_exc())
+
+        # cam_shelf.close()
+        
+        
+        shelf_path = os.path.join(
+            self.obsid_path,
+            "ptr_night_shelf",
+            f"focuslog_{self.camera_name}{g_dev['obs'].name}"
+        )
+        
+        with shelve.open(shelf_path, writeback=True) as cam_shelf:
+            # Check temperature validity
+            if f_temp is not None and -30 < f_temp < 40:
+                entry = (
+                    f_temp,
+                    ref,
+                    round(fwhm, 2),
+                    round(solved, 2),
+                    datetime.datetime.utcnow().isoformat()
                 )
-            else : # create af log if it doesn't exist
-                cam_shelf["af_log"]=[(f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.utcnow().isoformat())]
-        else:
-            f_temp=15.0
-            plog ("getting f_temp failed, using 15 degrees C")
-            plog (traceback.format_exc())
-
-        cam_shelf.close()
+                # Append or create
+                if "af_log" in cam_shelf:
+                    cam_shelf["af_log"].append(entry)
+                else:
+                    cam_shelf["af_log"] = [entry]
+                # immediately flush the updated cache to disk
+                cam_shelf.sync()
+            else:
+                f_temp = 15.0
+                plog("getting f_temp failed, using 15 °C")
+                plog(traceback.format_exc())
+        
         return
 
     def get_af_log(self):
         """Retrieves the autofocus log."""
 
         try:
-            cam_shelf = shelve.open(
-                self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name), writeback=True
-            )
-
+            
             max_arcsecond=self.config['maximum_good_focus_in_arcsecond']
-
-            # Load last focuses and order from most recent to oldest
             previous_focus=[]
-            for item in cam_shelf["af_log"]:
+            
+            with shelve.open(
+                self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name), writeback=True
+            ) as cam_shelf:
+                temp_focus_log=cam_shelf["af_log"]
+                
+            # Load last focuses and order from most recent to oldest
+            for item in temp_focus_log:
                 previous_focus.append(item)
 
             # Print focus log and sort in order of date
@@ -890,10 +969,21 @@ class Focuser:
             plog("There is no focus log on the night shelf.")
 
     def get_focal_ref(self):
-        cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
-        focus_ref = cam_shelf["focus_ref"]
-        # NB Should we also return and use the ref temp?
-        cam_shelf.close()
+        # cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
+        # focus_ref = cam_shelf["focus_ref"]
+        # # NB Should we also return and use the ref temp?
+        # cam_shelf.close()
+        # return focus_ref
+    
+        shelf_path = os.path.join(
+            self.obsid_path,
+            "ptr_night_shelf",
+            f"focuslog_{self.camera_name}{g_dev['obs'].name}"
+        )
+        
+        with shelve.open(shelf_path, writeback=False) as cam_shelf:
+            focus_ref = cam_shelf["focus_ref"]
+        
         return focus_ref
 
 
