@@ -234,7 +234,7 @@ class Focuser:
             with shelve.open(shelf_path) as throw_shelf:
                 try:
                     self.throw_list = throw_shelf['throw_list']
-                    self.throw = np.nanmedian(self.throw_list)
+                    self.throw = min(np.nanmedian(self.throw_list),1000)
                     plog(f"current throw: {self.throw}")
                 except KeyError:
                     # no 'throw_list' key in shelf
@@ -289,7 +289,7 @@ class Focuser:
             throw_list.append(float(abs(curve_step_length)))
 
             # Update the running median
-            self.throw = np.nanmedian(throw_list)
+            self.throw = min(np.nanmedian(throw_list),1000)
 
             # Trim to the most recent 100 entries
             if len(throw_list) > 100:
