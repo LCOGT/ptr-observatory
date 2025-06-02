@@ -20,6 +20,7 @@ import matplotlib.style as mplstyle
 import matplotlib as mpl
 import subprocess
 import warnings
+from scipy.ndimage import gaussian_filter
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
 from astropy.table import Table
@@ -28,6 +29,7 @@ from astropy.modeling import models, fitting
 from astropy.nddata import Cutout2D
 from astropy import units as u
 #from astropy.coordinates import SkyCoord
+from astroscrappy import detect_cosmics
 from photutils.detection import DAOStarFinder
 from astropy.stats import mad_std
 import threading
@@ -1164,14 +1166,10 @@ class Camera:
 
             # plog("TRYING TO cycle the QHY camera power via Ultimate Powerbox V2, if it exists.")
 
-
-
-
-
             try:
                 self.power_box_driver = self.config["switch_driver"]
                 pb = win32com.client.Dispatch(self.power_box_driver)
-                #breakpoint()
+                #breakpoint()  #NB NB make sure only one PowerBox process is running or the next line Throws an exception.
                 pb.connected = True
                 n_switches = pb.MaxSwitch
                 #To inspect, try:
@@ -5433,6 +5431,24 @@ class Camera:
                     except Exception as e:
                         plog("applying bad pixel mask to light frame failed: ", e)
 
+                    # # Thresh the image
+                    # # Really need to thresh the image
+                    # unique,counts=np.unique(outputimg.ravel()[~np.isnan(outputimg.ravel())].astype(int), return_counts=True)
+                    # m=counts.argmax()
+                    # imageMode=unique[m]
+
+                    # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                    # histogramdata[histogramdata[:,0] > -10000]
+                    # #Do some fiddle faddling to figure out the value that goes to zero less
+                    # zeroValueArray = histogramdata[histogramdata[:, 0] < imageMode]
+                    # zerocounter = 0
+                    # while True:
+                    #     zerocounter += 1
+                    #     if all((imageMode - zerocounter - offset) not in zeroValueArray[:, 0] for offset in range(17)):
+                    #         zeroValue = imageMode - zerocounter
+                    #         break
+                    # outputimg[outputimg < zeroValue] = np.nan
+
 
                 if frame_type=='pointing' and focus_image == False:
 
@@ -5821,27 +5837,31 @@ class Camera:
                                 # Save an image to the disk to use with source-extractor++
                                 # We don't need accurate photometry, so integer is fine.
                                 hdufocus = fits.PrimaryHDU()
-                                hdufocus.data = outputimg.astype(np.float32)
 
 
+                                outputimg = outputimg[50:-50, 50:-50]
+                                outputimg=fill_nans_with_local_mean(outputimg)
 
                                 # 1. mask hot pixels / cosmics
-                                from astroscrappy import detect_cosmics
-                                if (self.pixscale < 1.0 and not self.settings['is_osc']) or (self.pixscale < 0.6 and self.settings['is_osc']):
-                                    cr_mask, _ = detect_cosmics(outputimg, sigclip=5.0, sigfrac=0.3, objlim=5)
 
-                                outputimg[cr_mask] = np.nan
+                                # if (self.pixscale < 1.0 and not self.settings['is_osc']) or (self.pixscale < 0.6 and self.settings['is_osc']):
+                                #     cr_mask, _ = detect_cosmics(outputimg, sigclip=5.0, sigfrac=0.3, objlim=5)
 
-                                breakpoint()
+                                # outputimg[cr_mask] = np.nan
 
-                                outputimg=fill_nans_with_local_mean(outputimg)
+
+
+
                                 plog ("nans: " + str( time.time()-googtime))
 
                                 # # 2. subtract background
                                 # from scipy.ndimage import uniform_filter
                                 # bkg = uniform_filter(clean_data, size=256)
                                 # # 3. smooth
-                                from scipy.ndimage import gaussian_filter
+
+
+                                #breakpoint()
+
                                 smoothed = gaussian_filter(outputimg, sigma=1)# - bkg, sigma=1)
                                 hdufocus.data = smoothed.astype(np.float32)
 
@@ -5865,6 +5885,7 @@ class Camera:
 
                                 hdufocus.header["NAXIS1"] = outputimg.shape[0]
                                 hdufocus.header["NAXIS2"] = outputimg.shape[1]
+                                #hdufocus.data = outputimg.astype(np.float32)
                                 hdufocus.writeto(tempdir + tempfitsname, overwrite=True, output_verify='silentfix')
 
                                 if self.camera_known_gain < 1000:
