@@ -524,7 +524,7 @@ site_config = {
             # Use previous best focus information to correct focuser for temperature change
             'correct_focus_for_temperature' : True,
             # highest value to consider as being in "good focus". Used to select last good focus value
-            'maximum_good_focus_in_arcsecond': 3,
+            'maximum_good_focus_in_arcsecond': 8,
 
             # When the focusser has no previous best focus values
             # start from this reference position
@@ -538,7 +538,7 @@ site_config = {
             'maximum': 12700,
             'step_size': 1.0,   #  This is misnamed!
             'backlash':  300,
-            'throw': 200,
+            'throw': 100,
             'focus_tolerance':  130,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  #  Steps per micron
