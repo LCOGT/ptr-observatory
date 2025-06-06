@@ -82,13 +82,21 @@ site_config = {
     'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': True,
-    'push_file_list_to_pipe_queue': True, # This being true means the above needs to be true also.
+    'ingest_raws_directly_to_archive': False,
+    'push_file_list_to_pipe_queue': False, # This being true means the above needs to be true also.
 
     # LINKS TO PIPE FOLDER
-    'save_raws_to_pipe_folder_for_nightly_processing': False,
+    'save_images_to_pipe_for_processing': True,
+    'pipe_save_method': 'ftp', # Can also be 'ftp' for that transfer but also 'local' pipe for a local LAN pipe server
+    
+    'ftp_ingestion_folder': 'C:/ftp_ingestion/',
+    
+    
+    
+    
+    
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
-    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
+    #'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # Setup of folders on local and network drives.
     'client_hostname':  'LCC1',
     'archive_path':  'C:/ptr/',
