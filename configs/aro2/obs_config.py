@@ -672,7 +672,7 @@ site_config = {
                 #                 ['S2',      [8, 0],   's2'],  # 17
                 #                 ['dk',      [8, 5],   'dk']], # 18 #Note Dark is a 2-filter combination
 
-                'focus_filter': 'ip',
+                'focus_filter': 'w',
                 'pointing_filter': 'ip',  #Added but not plumbed yet WER 20250514
                 'dark_filter':  'dk',
 

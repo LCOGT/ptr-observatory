@@ -5838,9 +5838,88 @@ class Camera:
                                 # We don't need accurate photometry, so integer is fine.
                                 hdufocus = fits.PrimaryHDU()
 
-
                                 outputimg = outputimg[50:-50, 50:-50]
-                                outputimg=fill_nans_with_local_mean(outputimg)
+
+                                def mask_hot_pixels_fast(img, sigma_thresh=8, sample_step=100, edge_mode='reflect'):
+                                    """
+                                    Quickly mark single‐pixel hot‐noise as NaN in a large (100 Mpx) 2D image.
+
+                                    Strategy:
+                                    1. Take a coarse subsample of img (every `sample_step`th pixel) to estimate
+                                       median and σ.  (This is ≈(100 M / sample_step) elements—very fast.)
+                                    2. Threshold the *entire* img array once: find coords where img > median + sigma_thresh·σ.
+                                       (Vectorized, ~100 M comparisons in C.)
+                                    3. For each threshold “candidate”, check its 3×3 neighborhood in Python and
+                                       confirm it’s strictly larger than all 8 neighbors.  If so, set to NaN.
+
+                                    Parameters
+                                    ----------
+                                    img : 2D np.ndarray, float or int
+                                        Your raw image array.
+                                    sigma_thresh : float
+                                        How many sigma above the (estimated) background a pixel must be
+                                        to qualify as a “hot” candidate.  Default ≈8σ picks only extreme outliers.
+                                    sample_step : int
+                                        Stride to subsample the image for background estimation.  E.g. 100 → use
+                                        ~1% of all pixels (for 100 Mpx, that’s ~1 M samples).  Higher step → cheaper
+                                        but cruder stats.
+                                    edge_mode : str
+                                        How to treat edges when checking neighbors.  (Passed to np.pad; e.g. 'mirror', 'constant'.)
+
+                                    Returns
+                                    -------
+                                    out : 2D np.ndarray (same dtype as img, but with hot pixels replaced by np.nan)
+                                    """
+                                    # 1) Subsample every sample_step–th pixel to estimate median & σ
+                                    #    We flatten and then take a 1D strided view—or just slice every sample_step in the raveled array.
+                                    flat = img.ravel()
+                                    sampled = flat[::sample_step]  # roughly (100 M / sample_step) points
+
+                                    #   If img is integer‐typed, cast sampled to float so median/std aren’t truncated:
+                                    sampled = sampled.astype(float, copy=False)
+
+                                    median_est = np.median(sampled)
+                                    sigma_est = np.std(sampled)
+
+                                    thresh = median_est + sigma_thresh * sigma_est
+
+                                    # 2) Vectorized threshold on the full image → boolean mask of candidates
+                                    #    (This is ~100 M comparisons in optimized C, takes ~0.2–0.5 s on a modern CPU/GHz)
+                                    candidates = np.argwhere(img > thresh)
+                                    #   candidates.shape[0] = # of pixels > thresh.  Often ≪ 1% of total, maybe a few thousand.
+
+                                    # 3) Now check each candidate’s 3×3 neighborhood “isolation”:
+                                    #    Pad the image so we never index out of bounds at edges.
+                                    padded = np.pad(img, pad_width=1, mode=edge_mode)
+
+                                    out = img.astype(float, copy=True)  # make a float copy (so we can write nan)
+                                    H, W = img.shape
+
+                                    for (r, c) in candidates:
+                                        pr, pc = r+1, c+1  # shift for padded
+                                        center_val = padded[pr, pc]
+
+                                        # Extract the 3×3 block around (pr, pc) in the padded array:
+                                        #   neighbors = padded[pr-1:pr+2, pc-1:pc+2], but skip the center itself
+                                        block = padded[pr-1:pr+2, pc-1:pc+2]
+                                        # Check if center_val is strictly greater than all eight neighbors:
+                                        #   Equivalent to: center_val > block.max() except block[1,1] is itself.
+                                        #   We can zero out the center for the max‐check:
+                                        block_center = block[1,1]
+                                        block[1,1] = -np.inf  # temporarily make center “ignored”
+                                        if center_val > block.max():
+                                            # It is truly isolated (all 8 neighbors are smaller):
+                                            out[r, c] = np.nan
+                                        # restore center (not strictly necessary since we won’t reuse block)
+                                        block[1,1] = block_center
+
+                                    return out
+
+
+                                # (2) Mask hotspots quickly:
+                                outputimg= mask_hot_pixels_fast(outputimg, sigma_thresh=9, sample_step=100)
+
+                                #outputimg=fill_nans_with_local_mean(outputimg)
 
                                 # 1. mask hot pixels / cosmics
 
@@ -5862,8 +5941,8 @@ class Camera:
 
                                 #breakpoint()
 
-                                smoothed = gaussian_filter(outputimg, sigma=1)# - bkg, sigma=1)
-                                hdufocus.data = smoothed.astype(np.float32)
+                                # smoothed = gaussian_filter(outputimg, sigma=1)# - bkg, sigma=1)
+                                # hdufocus.data = smoothed.astype(np.float32)
 
 
 
@@ -5885,7 +5964,7 @@ class Camera:
 
                                 hdufocus.header["NAXIS1"] = outputimg.shape[0]
                                 hdufocus.header["NAXIS2"] = outputimg.shape[1]
-                                #hdufocus.data = outputimg.astype(np.float32)
+                                hdufocus.data = outputimg.astype(np.float32)
                                 hdufocus.writeto(tempdir + tempfitsname, overwrite=True, output_verify='silentfix')
 
                                 if self.camera_known_gain < 1000:
@@ -5913,6 +5992,22 @@ class Camera:
                                 googtime=time.time()
                                 #os.system('wsl bash -ic  "/home/obs/miniconda3/bin/sourcextractor++  --detection-image ' + str(tempdir_in_wsl+ tempfitsname) + ' --detection-image-gain ' + str(segain) +'  --detection-threshold 5 --thread-count ' + str(2*multiprocessing.cpu_count()) + ' --output-catalog-filename ' + str(tempdir_in_wsl+ tempfitsname.replace('.fits','cat.fits')) + ' --output-catalog-format FITS --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters --flux-fraction 0.5 --detection-minimum-area '+ str(math.floor(minarea)) + ' --grouping-algorithm MOFFAT --tile-size 10000 --tile-memory-limit 16384"')
                                 # build the inner command as one long string
+                                # command = (
+                                #     f"/home/obs/miniconda3/bin/sourcextractor++"
+                                #     f" --detection-image {tempdir_in_wsl}{tempfitsname}"
+                                #     f" --detection-image-gain {segain}"
+                                #     f" --detection-threshold 5"
+                                #     f" --thread-count {2*multiprocessing.cpu_count()}"
+                                #     f" --output-catalog-filename {tempdir_in_wsl}{tempfitsname.replace('.fits','cat.fits')}"
+                                #     f" --output-catalog-format FITS"
+                                #     f" --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters"
+                                #     f" --flux-fraction 0.5"
+                                #     f" --detection-minimum-area {math.floor(minarea)}"
+                                #     f" --grouping-algorithm MOFFAT"
+                                #     f" --tile-size 10000"
+                                #     f" --tile-memory-limit 16384"
+                                # )
+
                                 command = (
                                     f"/home/obs/miniconda3/bin/sourcextractor++"
                                     f" --detection-image {tempdir_in_wsl}{tempfitsname}"
@@ -5923,11 +6018,13 @@ class Camera:
                                     f" --output-catalog-format FITS"
                                     f" --output-properties PixelCentroid,FluxRadius,AutoPhotometry,PeakValue,KronRadius,ShapeParameters"
                                     f" --flux-fraction 0.5"
-                                    f" --detection-minimum-area {math.floor(minarea)}"
+                                    f" --detection-minimum-area {math.ceil(minarea)}"
                                     f" --grouping-algorithm MOFFAT"
                                     f" --tile-size 10000"
                                     f" --tile-memory-limit 16384"
                                 )
+
+                                #breakpoint()
 
                                 # now call wsl bash -ic "<command>"
                                 cmd = ["wsl", "bash", "-ic", command]

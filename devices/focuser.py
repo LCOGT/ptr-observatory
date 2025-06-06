@@ -769,9 +769,12 @@ class Focuser:
 
 
         focuser_was_moving=False
+        reported=False
         while self.focuser_is_moving:
             focuser_was_moving=True
-            plog ("guarded_move focuser wait")
+            if not reported:
+                plog ("guarded_move focuser moving")
+                reported=True
             time.sleep(0.2)
 
         if focuser_was_moving:
