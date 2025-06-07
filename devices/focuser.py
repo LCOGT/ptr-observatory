@@ -234,7 +234,7 @@ class Focuser:
             with shelve.open(shelf_path) as throw_shelf:
                 try:
                     self.throw_list = throw_shelf['throw_list']
-                    self.throw = min(np.nanmedian(self.throw_list),1000)
+                    self.throw = min(np.nanmedian(self.throw_list),400)
                     plog(f"current throw: {self.throw}")
                 except KeyError:
                     # no 'throw_list' key in shelf
@@ -602,7 +602,7 @@ class Focuser:
 
     def set_initial_best_guess_for_focus(self):
 
-        self.focus_commissioned=True
+        self.focus_commissioned=False
 
         try:
             # try:
@@ -620,8 +620,8 @@ class Focuser:
                 self.time_of_last_focus=parser.parse(last_successful_focus_time)
 
                 # if throw empty or exposure empty or list shorter than x, commissioned is yet not true.
-                if number_of_previous_focusses < 10:
-                    self.focus_commissioned=False
+                if number_of_previous_focusses > 10:
+                    self.focus_commissioned=True
                 # print(number_of_previous_focusses)
 
                 # breakpoint()
@@ -769,9 +769,12 @@ class Focuser:
 
 
         focuser_was_moving=False
+        reported=False
         while self.focuser_is_moving:
             focuser_was_moving=True
-            plog ("guarded_move focuser wait")
+            if not reported:
+                plog ("guarded_move focuser moving")
+                reported=True
             time.sleep(0.2)
 
         if focuser_was_moving:
@@ -837,21 +840,21 @@ class Focuser:
             cam_shelf["focus_ref"] = ref
         return
 
-    # def set_focal_ref_reset_log(self, ref):
-    #     try:
-    #         cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
-    #     except:
-    #         plog ("Focus log file corrupt, creating new ones")
-    #         import os
-    #         os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dat")
-    #         os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".bak")
-    #         os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dir")
-    #         cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
+    def set_focal_ref_reset_log(self, ref):
+        try:
+            cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
+        except:
+            plog ("Focus log file corrupt, creating new ones")
+            import os
+            os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dat")
+            os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".bak")
+            os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dir")
+            cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
 
-    #     cam_shelf["focus_ref"] = ref
-    #     cam_shelf["af_log"] = []
-    #     cam_shelf.close()
-    #     return
+        cam_shelf["focus_ref"] = ref
+        cam_shelf["af_log"] = []
+        cam_shelf.close()
+        return
 
     def af_log(self, ref, fwhm, solved):
         """Logs autofocus data to the night shelf."""
