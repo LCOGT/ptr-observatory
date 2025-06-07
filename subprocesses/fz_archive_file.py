@@ -83,6 +83,8 @@ if selfconfig["save_images_to_pipe_for_processing"]:
     try:
         if selfconfig['pipe_save_method'] == 'ftp':           
             pipefolder = selfconfig['ftp_ingestion_folder']
+        elif selfconfig['pipe_save_method'] == 'http':           
+            pipefolder = selfconfig['http_ingestion_folder']
         else:
             pipefolder = selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])
             if not os.path.exists(selfconfig['pipe_archive_folder_path']+'/'+ str(temphduheader['INSTRUME'])):

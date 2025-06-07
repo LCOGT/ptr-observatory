@@ -3937,6 +3937,8 @@ class Camera:
                 try:
                     if self.site_config['pipe_save_method'] == 'ftp':
                         pipetokenfolder = self.site_config['ftp_ingestion_folder']
+                    elif self.site_config['pipe_save_method'] == 'http':
+                        pipetokenfolder = self.site_config['http_ingestion_folder']
                     else:
                         pipetokenfolder = self.site_config['pipe_archive_folder_path'] + '/tokens'
                     if not os.path.exists(pipetokenfolder):
@@ -3967,6 +3969,8 @@ class Camera:
                                 
                                 if self.site_config['pipe_save_method'] == 'ftp':
                                     g_dev['obs'].add_to_ftpqueue(pipetokenfolder, str(token_name)+str(suffix))
+                                if self.site_config['pipe_save_method'] == 'http':
+                                    g_dev['obs'].add_to_httpqueue(pipetokenfolder, str(token_name)+str(suffix))
                                                                 
                             except:
                                 plog(traceback.format_exc())
@@ -3987,6 +3991,8 @@ class Camera:
                             os.replace(temp_path, real_path)
                             if self.site_config['pipe_save_method'] == 'ftp':
                                 g_dev['obs'].add_to_ftpqueue(pipetokenfolder, token_name)
+                            elif self.site_config['pipe_save_method'] == 'http':
+                                g_dev['obs'].add_to_httpqueue(pipetokenfolder, token_name)
                         except:
                             plog(traceback.format_exc())
                 except:

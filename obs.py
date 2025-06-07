@@ -72,115 +72,24 @@ retries = Retry(total=3, backoff_factor=0.1,
                 status_forcelist=[500, 502, 503, 504])
 reqs.mount("http://", HTTPAdapter(max_retries=retries))
 
-# def ftp_upload_files(server, port, username, password, remote_dir, local_dir, filenames):
-#     """
-#     Connects to the FTP server, changes to remote_dir, uploads each file in `filenames`
-#     (which are relative to local_dir), then closes the connection.
-#     """
-#     ftp = ftplib.FTP()
-#     try:
-#         # 1) Connect and log in
-#         ftp.connect(server, port, timeout=30)       # e.g. timeout=30 seconds
-#         ftp.login(username, password)
-
-#         # 2) Switch to the target directory
-#         ftp.cwd(remote_dir)
-
-#         # 3) Upload each file
-#         for fname in filenames:
-#             local_path = os.path.join(local_dir, fname)
-#             if not os.path.isfile(local_path):
-#                 print(f"  [!] Skipping {local_path}: not found on disk.")
-#                 continue
-
-#             with open(local_path, "rb") as f:
-#                 # 'STOR fname' will store the file with the same name on the remote side
-#                 ftp.storbinary(f"STOR {fname}", f)
-#                 print(f"  Uploaded: {fname}")
-
-
-#     except:
-        
-#             plog(traceback.format_exc())
-#             breakpoint()
-
-#     # except ftplib.all_errors as e:
-#     #     print(f"[ERROR] FTP upload failed: {e}")
-#     finally:
-#         # 4) Always quit (closing the connection)
-#         try:
-#             ftp.quit()
-#         except Exception:
-#             ftp.close()
-
-
-# def ftp_upload_files(
-#     server: str,
-#     port: int,
-#     username: str,
-#     password: str,
-#     remote_dir: str,
-#     local_dir: str,
-#     filenames: list[str],
-#     use_tls: bool = False
-# ):
-#     """
-#     Connects to the FTP server, changes to remote_dir, uploads each file in `filenames`
-#     (which are relative to local_dir), then closes the connection.
-    
-#     If use_tls is True, will use FTP_TLS instead of plain FTP.
-#     """
-#     # Choose FTP or FTP_TLS based on whether vsftpd is set up for TLS
-#     if use_tls:
-#         ftp = ftplib.FTP_TLS()
-#     else:
-#         ftp = ftplib.FTP()
-    
-#     try:
-#         # 1) Enable debug output (very helpful for diagnosing protocol failures)
-#         ftp.set_debuglevel(2)
-        
-#         # 2) Connect and log in
-#         ftp.connect(server, port, timeout=30)
-#         ftp.login(username, password)
-        
-#         # 3) If using FTP_TLS, switch to secure data channel
-#         if use_tls:
-#             ftp.prot_p()   # “Protection Level: Private” for data
-        
-#         # 4) Make sure you’re in the correct transfer mode (passive/active)
-#         # By default ftplib is passive, but explicitly set it:
-#         ftp.set_pasv(True)
-#         # If passive keeps hanging, try ftp.set_pasv(False) instead.
-        
-#         # 5) Switch to the target directory
-#         ftp.cwd(remote_dir)
-        
-#         # 6) Upload each file
-#         for fname in filenames:
-#             local_path = os.path.join(local_dir, fname)
-#             if not os.path.isfile(local_path):
-#                 print(f"  [!] Skipping {local_path}: not found on disk.")
-#                 continue
-
-#             with open(local_path, "rb") as f:
-#                 # 'STOR <fname>' stores the file under the same name
-#                 ftp.storbinary(f"STOR {fname}", f)
-#                 print(f"  Uploaded: {fname}")
-
-#     except ftplib.all_errors as e:
-#         print("[ERROR] FTP upload failed:")
-#         traceback.print_exc()
-#         breakpoint()
-#     finally:
-#         # 7) Always quit (closing the connection)
-#         try:
-#             ftp.quit()
-#         except Exception:
-#             ftp.close()
-
 import ftputil
-import os
+
+
+
+
+def http_upload(server, filedirectory,filename):
+    
+    url = "http://110.143.205.252/archive_upload"
+    files = {"file": open(filedirectory +'/'+filename,"rb")}
+    data  = {"target_dir": "fromsite"}
+    
+    try:
+        resp = reqs.post(url, files=files, data=data)
+        print(resp.status_code, resp.json())
+    except:
+        plog(traceback.format_exc())
+        breakpoint()
+    
 
 def ftp_upload_with_ftputil(
     server: str,
@@ -765,6 +674,24 @@ class Observatory:
             )
             self.ftp_queue_thread.daemon = True
             self.ftp_queue_thread.start()
+        
+        if self.config['save_images_to_pipe_for_processing'] and self.config['pipe_save_method'] == 'http':
+            
+            with open('httpsecrets.json', "r") as f:
+                cfg = json.load(f)
+            
+            self.fitserver    = cfg["SERVER"]
+            # self.ftpport       = cfg["PORT"]
+            # self.ftpusername   = cfg["USERNAME"]
+            # self.ftppassword   = cfg["PASSWORD"]
+            # self.ftpremotedir = cfg["REMOTE_DIR"]
+            
+            self.http_queue = queue.Queue(maxsize=0)
+            self.http_queue_thread = threading.Thread(
+                target=self.http_process, args=()
+            )
+            self.http_queue_thread.daemon = True
+            self.http_queue_thread.start()
             
             
 
@@ -3191,28 +3118,6 @@ class Observatory:
             else:
                 time.sleep(0.25)
 
-    # def ftp_process(self):
-    #     """This is a thread where files are ingested by ftp to a pipe server
-    #     """
-
-    #     while True:
-    #         if not self.ftp_queue.empty():
-    #             while not self.ftp_queue.empty():
-    #                 try:
-    #                     (filedirectory, filename, timestamp) = self.ftp_queue.get(block=False)
-
-
-                        
-    #                     ftp_upload_files(self.fitserver ,self.ftpport, self.ftpusername, self.ftppassword , self.ftpremotedir, filedirectory, filename)
-
-    #                 except:
-    #                     plog("Night Log did not write, usually not fatal.")
-    #                     plog(traceback.format_exc())
-
-    #                 self.ftp_queue.task_done()
-    #         else:
-    #             time.sleep(0.25)
-
     def ftp_process(self):
         """This is a thread where files are ingested by ftp to a pipe server."""
         while True:
@@ -3282,6 +3187,79 @@ class Observatory:
     
                     # Mark this item as done
                     self.ftp_queue.task_done()
+            else:
+                # If queue was empty (and after scanning), sleep briefly
+                time.sleep(0.25)
+                
+    def http_process(self):
+        """This is a thread where files are ingested by http to a pipe server."""
+        while True:
+            # ─── 1) Scan ingestion folder for new `.fits.fz` files ───
+            try:
+                ingestion_folder = self.config['http_ingestion_folder']
+                entries = os.listdir(ingestion_folder)
+            except Exception as e:
+                plog(f"Could not list '{ingestion_folder}': {e}")
+                entries = []
+    
+            # Grab a snapshot of everything already in the queue
+            # (since queue.Queue() doesn't have a direct 'contains' method,
+            #  we peek at its internal deque via .queue)
+            try:
+                queued_items = list(self.http_queue.queue)
+            except Exception:
+                queued_items = []
+    
+            for fname in entries:
+                if not fname.endswith('.fits.fz'):
+                    continue
+    
+                full_path = os.path.join(ingestion_folder, fname)
+    
+                # Check if (ingestion_folder, fname) is already queued
+                already_queued = any(
+                    (item[0] == ingestion_folder and item[1] == fname)
+                    for item in queued_items
+                    if isinstance(item, tuple) and len(item) >= 2
+                )
+                if not already_queued:
+                    try:
+                        # Use file‐modification time as the “timestamp”
+                        ts = os.path.getmtime(full_path)
+                    except Exception:
+                        ts = time.time()
+    
+                    # Enqueue a tuple: (filedirectory, filename, timestamp)
+                    self.http_queue.put((ingestion_folder, fname, ts))
+                    plog(f"Enqueued new HTTP file: {fname}")
+    
+            # ─── 2) Once scanning is done, process whatever is in http_queue ───
+            if not self.http_queue.empty():
+                # As long as there are items, keep pulling them off
+                while True:
+                    try:
+                        (filedirectory, filename, timestamp) = self.http_queue.get(block=False)
+                    except Empty:
+                        # No more items right now; break back to top of outer loop
+                        break
+    
+                    try:
+                        print ("TRYING HTTP")
+                        http_upload(
+                            self.fitserver,
+                            # self.ftpport,
+                            # self.ftpusername,
+                            # self.ftppassword,
+                            # self.ftpremotedir,
+                            filedirectory,
+                            filename
+                        )
+                    except Exception:
+                        plog("Night Log did not write, usually not fatal.")
+                        plog(traceback.format_exc())
+    
+                    # Mark this item as done
+                    self.http_queue.task_done()
             else:
                 # If queue was empty (and after scanning), sleep briefly
                 time.sleep(0.25)
@@ -4573,6 +4551,9 @@ class Observatory:
         
     def add_to_ftpqueue(self, filedirectory, filename):
         self.ftp_queue.put((filedirectory, filename, time.time()), block=False)
+    
+    def add_to_httpqueue(self, filedirectory, filename):
+        self.http_queue.put((filedirectory, filename, time.time()), block=False)
 
     def check_platesolve_and_nudge(self, no_confirmation=True):
         """

@@ -87,9 +87,10 @@ site_config = {
 
     # LINKS TO PIPE FOLDER
     'save_images_to_pipe_for_processing': True,
-    'pipe_save_method': 'ftp', # Can also be 'ftp' for that transfer but also 'local' pipe for a local LAN pipe server
+    'pipe_save_method': 'http', # Can also be 'ftp' or 'http'  for that transfer but also 'local' pipe for a local LAN pipe server
     
     'ftp_ingestion_folder': 'C:/ftp_ingestion/',
+    'http_ingestion_folder': 'C:/http_ingestion/',
     
     
     
