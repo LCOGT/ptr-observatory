@@ -935,7 +935,7 @@ try:
     # While we wait for the platesolving to happen we do all the other stuff
     # And we will pick up the solution towards the end.
 
-    hdu.header["ORIGIN"] = ("COMMUNITY", 'Organization responsible for the data'))
+    hdu.header["ORIGIN"] = ("COMMUNITY", 'Organization responsible for the data')
 
     # assign the keyword values and comment of the keyword as a tuple to write both to header.
     hdu.header["BUNIT"] = ("adu", "Unit of array values")
