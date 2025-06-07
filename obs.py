@@ -72,40 +72,170 @@ retries = Retry(total=3, backoff_factor=0.1,
                 status_forcelist=[500, 502, 503, 504])
 reqs.mount("http://", HTTPAdapter(max_retries=retries))
 
-def ftp_upload_files(server, port, username, password, remote_dir, local_dir, filenames):
+# def ftp_upload_files(server, port, username, password, remote_dir, local_dir, filenames):
+#     """
+#     Connects to the FTP server, changes to remote_dir, uploads each file in `filenames`
+#     (which are relative to local_dir), then closes the connection.
+#     """
+#     ftp = ftplib.FTP()
+#     try:
+#         # 1) Connect and log in
+#         ftp.connect(server, port, timeout=30)       # e.g. timeout=30 seconds
+#         ftp.login(username, password)
+
+#         # 2) Switch to the target directory
+#         ftp.cwd(remote_dir)
+
+#         # 3) Upload each file
+#         for fname in filenames:
+#             local_path = os.path.join(local_dir, fname)
+#             if not os.path.isfile(local_path):
+#                 print(f"  [!] Skipping {local_path}: not found on disk.")
+#                 continue
+
+#             with open(local_path, "rb") as f:
+#                 # 'STOR fname' will store the file with the same name on the remote side
+#                 ftp.storbinary(f"STOR {fname}", f)
+#                 print(f"  Uploaded: {fname}")
+
+
+#     except:
+        
+#             plog(traceback.format_exc())
+#             breakpoint()
+
+#     # except ftplib.all_errors as e:
+#     #     print(f"[ERROR] FTP upload failed: {e}")
+#     finally:
+#         # 4) Always quit (closing the connection)
+#         try:
+#             ftp.quit()
+#         except Exception:
+#             ftp.close()
+
+
+# def ftp_upload_files(
+#     server: str,
+#     port: int,
+#     username: str,
+#     password: str,
+#     remote_dir: str,
+#     local_dir: str,
+#     filenames: list[str],
+#     use_tls: bool = False
+# ):
+#     """
+#     Connects to the FTP server, changes to remote_dir, uploads each file in `filenames`
+#     (which are relative to local_dir), then closes the connection.
+    
+#     If use_tls is True, will use FTP_TLS instead of plain FTP.
+#     """
+#     # Choose FTP or FTP_TLS based on whether vsftpd is set up for TLS
+#     if use_tls:
+#         ftp = ftplib.FTP_TLS()
+#     else:
+#         ftp = ftplib.FTP()
+    
+#     try:
+#         # 1) Enable debug output (very helpful for diagnosing protocol failures)
+#         ftp.set_debuglevel(2)
+        
+#         # 2) Connect and log in
+#         ftp.connect(server, port, timeout=30)
+#         ftp.login(username, password)
+        
+#         # 3) If using FTP_TLS, switch to secure data channel
+#         if use_tls:
+#             ftp.prot_p()   # “Protection Level: Private” for data
+        
+#         # 4) Make sure you’re in the correct transfer mode (passive/active)
+#         # By default ftplib is passive, but explicitly set it:
+#         ftp.set_pasv(True)
+#         # If passive keeps hanging, try ftp.set_pasv(False) instead.
+        
+#         # 5) Switch to the target directory
+#         ftp.cwd(remote_dir)
+        
+#         # 6) Upload each file
+#         for fname in filenames:
+#             local_path = os.path.join(local_dir, fname)
+#             if not os.path.isfile(local_path):
+#                 print(f"  [!] Skipping {local_path}: not found on disk.")
+#                 continue
+
+#             with open(local_path, "rb") as f:
+#                 # 'STOR <fname>' stores the file under the same name
+#                 ftp.storbinary(f"STOR {fname}", f)
+#                 print(f"  Uploaded: {fname}")
+
+#     except ftplib.all_errors as e:
+#         print("[ERROR] FTP upload failed:")
+#         traceback.print_exc()
+#         breakpoint()
+#     finally:
+#         # 7) Always quit (closing the connection)
+#         try:
+#             ftp.quit()
+#         except Exception:
+#             ftp.close()
+
+import ftputil
+import os
+
+def ftp_upload_with_ftputil(
+    server: str,
+    port: int,
+    username: str,
+    password: str,
+    remote_dir: str,
+    local_dir: str,
+    filenames: list[str],
+    use_passive: bool = True,
+    timeout: int = 30
+):
     """
-    Connects to the FTP server, changes to remote_dir, uploads each file in `filenames`
-    (which are relative to local_dir), then closes the connection.
+    Uses ftputil to connect and upload a list of files.
     """
-    ftp = ftplib.FTP()
+    # ftputil’s FTPHost automatically handles connect/login under the hood.
+
     try:
-        # 1) Connect and log in
-        ftp.connect(server, port, timeout=30)       # e.g. timeout=30 seconds
-        ftp.login(username, password)
+        host = ftputil.FTPHost(
+            host=server,
+            user=username,
+            passwd=password,
+            port=port,
+            timeout=timeout,
+        )
+        # Toggle passive mode if needed (default is True)
+        host.session.set_pasv(use_passive)
 
-        # 2) Switch to the target directory
-        ftp.cwd(remote_dir)
+    except:
+        plog(traceback.format_exc())
+        breakpoint()
 
-        # 3) Upload each file
+    try:
+        # Ensure the remote directory exists (mkdirs=True will create nested dirs)
+        host.makedirs(remote_dir, exist_ok=True)
+
         for fname in filenames:
             local_path = os.path.join(local_dir, fname)
             if not os.path.isfile(local_path):
-                print(f"  [!] Skipping {local_path}: not found on disk.")
+                print(f"[!] Skipping {local_path} (not found).")
                 continue
 
-            with open(local_path, "rb") as f:
-                # 'STOR fname' will store the file with the same name on the remote side
-                ftp.storbinary(f"STOR {fname}", f)
-                print(f"  Uploaded: {fname}")
+            remote_path = host.path.join(remote_dir, fname)
+            print(f"Uploading {local_path} → {remote_path}…", end=" ")
+            # upload_if_newer only sends if local is newer or remote missing;
+            # you can also use host.upload(local_path, remote_path) to force.
+            host.upload_if_newer(local_path, remote_path)
+            print("done.")
 
-    except ftplib.all_errors as e:
-        print(f"[ERROR] FTP upload failed: {e}")
+    
+
+    except Exception as e:
+        print("[ERROR] ftputil upload failed:", e)
     finally:
-        # 4) Always quit (closing the connection)
-        try:
-            ftp.quit()
-        except Exception:
-            ftp.close()
+        host.close()
 
 def test_connect(host="http://google.com"):
     # This just tests the net connection
@@ -3088,7 +3218,7 @@ class Observatory:
         while True:
             # ─── 1) Scan ingestion folder for new `.fits.fz` files ───
             try:
-                ingestion_folder = self.site_config['ftp_ingestion_folder']
+                ingestion_folder = self.config['ftp_ingestion_folder']
                 entries = os.listdir(ingestion_folder)
             except Exception as e:
                 plog(f"Could not list '{ingestion_folder}': {e}")
@@ -3136,7 +3266,8 @@ class Observatory:
                         break
     
                     try:
-                        ftp_upload_files(
+                        print ("TRYING FTP")
+                        ftp_upload_with_ftputil(
                             self.fitserver,
                             self.ftpport,
                             self.ftpusername,

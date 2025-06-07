@@ -289,7 +289,7 @@ class Sequencer:
 
     def copy_failed_pipe_files_thread(self):
 
-        if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+        if self.config['save_images_to_pipe_for_processing']:
             try:
                 failsafe_directory=self.config['archive_path'] + 'failsafe'
                 if not os.path.exists(failsafe_directory):
@@ -326,11 +326,16 @@ class Sequencer:
                         shutil.move(tempfile, pipefolder)
                     except:
                         plog(traceback.format_exc())
+                        
+                if self.config['pipe_save_method'] == 'ftp':
+                    pipetokenfolder = self.config['ftp_ingestion_folder']
+                else:
+                    pipetokenfolder = self.config['pipe_archive_folder_path'] + '/tokens'
 
-                pipetokenfolder = self.config['pipe_archive_folder_path'] + '/tokens'
-                if not os.path.exists(self.config['pipe_archive_folder_path'] + '/tokens'):
+                # pipetokenfolder = self.config['pipe_archive_folder_path'] + '/tokens'
+                if not os.path.exists(pipetokenfolder):
                     os.umask(0)
-                    os.makedirs(self.config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
+                    os.makedirs(pipetokenfolder, mode=0o777)
 
 
                 # Copy over the token files

@@ -255,7 +255,7 @@ else:  # Is an OSC
             np.array(newhdured, dtype=np.float32), temphduheader
         )
 
-        if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
+        if selfconfig['save_images_to_pipe_for_processing']:
             
             try:
             
@@ -298,7 +298,7 @@ else:  # Is an OSC
             np.array(GTRonly, dtype=np.float32), temphduheader
         )
 
-        if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
+        if selfconfig['save_images_to_pipe_for_processing']:
             try:
                 hdufz.writeto(pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True)
                 os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
@@ -335,7 +335,7 @@ else:  # Is an OSC
             np.array(GBLonly, dtype=np.float32), temphduheader
         )
 
-        if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
+        if selfconfig['save_images_to_pipe_for_processing']:
             try:
                 hdufz.writeto(
                     pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
@@ -376,7 +376,7 @@ else:  # Is an OSC
             np.array(newhdublue, dtype=np.float32), temphduheader
         )
 
-        if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
+        if selfconfig['save_images_to_pipe_for_processing']:
 
             hdufz.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'), overwrite=True
@@ -412,7 +412,7 @@ else:  # Is an OSC
             np.array(clearV, dtype=np.float32), temphduheader
         )
 
-        if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
+        if selfconfig['save_images_to_pipe_for_processing']:
             try:
                 hdufz.writeto(
                     pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'), overwrite=True
