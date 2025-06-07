@@ -2737,47 +2737,48 @@ class Camera:
             tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
             return tempsend
 
-    def create_simple_autosave(
-        self,
-        exp_time=0,
-        img_type=0,
-        speed=0,
-        suffix="",
-        repeat=1,
-        readout_mode="Normal",
-        filter_name="W",
-        enabled=1,
-        column=1,
-    ):
-        # Creates a valid Maxium Autosave file.
-        exp_time = round(abs(float(exp_time)), 3)
-        if img_type > 3:
-            img_type = 0
-        repeat = abs(int(repeat))
-        if repeat < 1:
-            repeat = 1
-        binning = abs(int(1))
-        if filter_name == "":
-            filter_name = "w"
-        proto_file = open(self.camera_path + "seq/ptr_proto.seq")
-        proto = proto_file.readlines()
-        proto_file.close()
+    #
+    # def create_simple_autosave(
+    #     self,
+    #     exp_time=0,
+    #     img_type=0,
+    #     speed=0,
+    #     suffix="",
+    #     repeat=1,
+    #     readout_mode="Normal",
+    #     filter_name="W",
+    #     enabled=1,
+    #     column=1,
+    # ):
+    #     # Creates a valid Maxium Autosave file.
+    #     exp_time = round(abs(float(exp_time)), 3)
+    #     if img_type > 3:
+    #         img_type = 0
+    #     repeat = abs(int(repeat))
+    #     if repeat < 1:
+    #         repeat = 1
+    #     binning = abs(int(1))
+    #     if filter_name == "":
+    #         filter_name = "w"
+    #     proto_file = open(self.camera_path + "seq/ptr_proto.seq")
+    #     proto = proto_file.readlines()
+    #     proto_file.close()
 
-        if column == 1:
-            proto[51] = proto[51][:9] + str(img_type) + proto[51][10:]
-            proto[50] = proto[50][:9] + str(exp_time) + proto[50][12:]
-            proto[48] = proto[48][:12] + str(suffix) + proto[48][12:]
-            proto[47] = proto[47][:10] + str(speed) + proto[47][11:]
-            proto[31] = proto[31][:11] + str(repeat) + proto[31][12:]
-            proto[29] = proto[29][:17] + readout_mode + proto[29][23:]
-            proto[13] = proto[13][:12] + filter_name + proto[13][13:]
-            proto[10] = proto[10][:12] + str(enabled) + proto[10][13:]
-            proto[1] = proto[1][:12] + str(binning) + proto[1][13:]
-        seq_file = open(self.camera_path + "seq/ptr_mrc.seq", "w")
+    #     if column == 1:
+    #         proto[51] = proto[51][:9] + str(img_type) + proto[51][10:]
+    #         proto[50] = proto[50][:9] + str(exp_time) + proto[50][12:]
+    #         proto[48] = proto[48][:12] + str(suffix) + proto[48][12:]
+    #         proto[47] = proto[47][:10] + str(speed) + proto[47][11:]
+    #         proto[31] = proto[31][:11] + str(repeat) + proto[31][12:]
+    #         proto[29] = proto[29][:17] + readout_mode + proto[29][23:]
+    #         proto[13] = proto[13][:12] + filter_name + proto[13][13:]
+    #         proto[10] = proto[10][:12] + str(enabled) + proto[10][13:]
+    #         proto[1] = proto[1][:12] + str(binning) + proto[1][13:]
+    #     seq_file = open(self.camera_path + "seq/ptr_mrc.seq", "w")
 
-        for item in range(len(proto)):
-            seq_file.write(proto[item])
-        seq_file.close()
+    #     for item in range(len(proto)):
+    #         seq_file.write(proto[item])
+    #     seq_file.close()
 
     def get_status(self):
         status = {}
@@ -5848,8 +5849,6 @@ class Camera:
                                 #     cr_mask, _ = detect_cosmics(outputimg, sigclip=5.0, sigfrac=0.3, objlim=5)
 
                                 # outputimg[cr_mask] = np.nan
-
-
 
 
                                 plog ("nans: " + str( time.time()-googtime))

@@ -1398,21 +1398,23 @@ class Observatory:
                         #plog(r_date, r_time)
                         d_string = r_date + 'T' +r_time
                         d_time = datetime.datetime.fromisoformat(d_string)+datetime.timedelta(minutes=7.5)
-                        distance = 10.001
+                        distance = 25.001
+
+                        
                         if datetime.datetime.now() < d_time:   #  Here validate if not stale before doing next line.
                             for lin in light_rec.readlines():
                                 if 'distance' in lin:
                                     s_range = float(lin.split()[-2])
-                                    if s_range < distance:
+                                    if s_range < distance:  #if more than 1 storm, find the closest one <= 20km
                                         distance = s_range
                         else:
                             #plog("Lightning report is stale.")
                             pass
-                    if distance <=  10.0:
-                        plog("Lightning distance is:   ", distance, ' km away.')
+                    if distance <=  25.0:
+                        plog(" **************************** WARNING, Lightning distance is:   ", distance, ' km away. TOO CLOSE')
                     else:
                         pass
-                        #plog('Lighting is > 10 km away,')
+                        #plog(' ****************************Lightning is > 25 km (15 miles) away.  Safe.  ')
                 except:
                     plog.err('Lightning distance test did not work')
 
