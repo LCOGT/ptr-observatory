@@ -79,16 +79,34 @@ import ftputil
 
 def http_upload(server, filedirectory,filename):
     
-    url = "http://110.143.205.252/archive_upload"
-    files = {"file": open(filedirectory +'/'+filename,"rb")}
+    files = {"file": open(str(filedirectory +'/'+filename).replace('//','/'),"rb")}
     data  = {"target_dir": "fromsite"}
     
+    print (files)
+    
+    #breakpoint()
+    
+    
+    
     try:
-        resp = reqs.post(url, files=files, data=data)
-        print(resp.status_code, resp.json())
+        resp = reqs.post(server, files=files, data=data)
+        print("HTTP", resp.status_code)
+        ct = resp.headers.get("Content-Type", "")
+        
+        if resp.ok and "application/json" in ct:
+            # only parse JSON if it really is JSON
+            print(resp.json())
+        else:
+            # fallback to raw text so you can see the error
+            print(resp.text)
+        return True
     except:
         plog(traceback.format_exc())
         breakpoint()
+        
+    return False
+    
+    
     
 
 def ftp_upload_with_ftputil(
@@ -3245,7 +3263,7 @@ class Observatory:
     
                     try:
                         print ("TRYING HTTP")
-                        http_upload(
+                        success=http_upload(
                             self.fitserver,
                             # self.ftpport,
                             # self.ftpusername,
@@ -3254,6 +3272,13 @@ class Observatory:
                             filedirectory,
                             filename
                         )
+                        
+                        if success:
+                            try:
+                                os.remove(filedirectory + '/' + filename)
+                            except:
+                                plog ("couldn't remove " + filedirectory + '/' + filename)
+                        
                     except Exception:
                         plog("Night Log did not write, usually not fatal.")
                         plog(traceback.format_exc())

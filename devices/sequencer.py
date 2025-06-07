@@ -329,6 +329,8 @@ class Sequencer:
                         
                 if self.config['pipe_save_method'] == 'ftp':
                     pipetokenfolder = self.config['ftp_ingestion_folder']
+                elif self.config['pipe_save_method'] == 'http':
+                    pipetokenfolder = self.config['http_ingestion_folder']
                 else:
                     pipetokenfolder = self.config['pipe_archive_folder_path'] + '/tokens'
 
