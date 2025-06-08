@@ -2451,7 +2451,7 @@ class Camera:
 
                 # If it is the last file in the substack, throw it out to the slow process queue to save
                 # So that the camera can get started up again quicker.
-                if subexposure == (N_of_substacks -1 ):
+                if subexposure == (N_of_substacks - 1):
                     #tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
                     if not (self.overscan_down == 0 and self.overscan_up == 0 and self.overscan_left == 0 and self.overscan_right==0):
                         image=image[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
@@ -2750,7 +2750,7 @@ class Camera:
             qhycam.so.SetQHYCCDParam(
                 qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
             qhycam.so.ExpQHYCCDSingleFrame(
-                qhycam.camera_params[qhycam_id]['handle'])
+                qhycam.camera_params[qhycam_id]['handle'])  #This is the place for an exposure!
         else:
 
 
@@ -2772,7 +2772,7 @@ class Camera:
             for i in range(N_of_substacks):
                 self.substacker_filenames.append(
                     self.local_calibration_path + "smartstacks/" + base_tempfile + str(i) + ".npy")
-
+            #This thread executes a substacks
             thread = threading.Thread(target=self.qhy_substacker_thread, args=(
                 exp_of_substacks, N_of_substacks, exp_of_substacks, copy.deepcopy(self.substacker_filenames),))
             thread.daemon = True
@@ -2811,48 +2811,50 @@ class Camera:
             tempsend= np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
             tempsend=tempsend[ self.overscan_left: self.imagesize_x-self.overscan_right, self.overscan_up: self.imagesize_y- self.overscan_down  ]
             return tempsend
-
-    def create_simple_autosave(
-        self,
-        exp_time=0,
-        img_type=0,
-        speed=0,
-        suffix="",
-        repeat=1,
-        readout_mode="Normal",
-        filter_name="W",
-        enabled=1,
-        column=1,
-    ):
-        # Creates a valid Maxium Autosave file.
-        exp_time = round(abs(float(exp_time)), 3)
-        if img_type > 3:
-            img_type = 0
-        repeat = abs(int(repeat))
-        if repeat < 1:
-            repeat = 1
-        binning = abs(int(1))
-        if filter_name == "":
-            filter_name = "w"
-        proto_file = open(self.camera_path + "seq/ptr_proto.seq")
-        proto = proto_file.readlines()
-        proto_file.close()
-
-        if column == 1:
-            proto[51] = proto[51][:9] + str(img_type) + proto[51][10:]
-            proto[50] = proto[50][:9] + str(exp_time) + proto[50][12:]
-            proto[48] = proto[48][:12] + str(suffix) + proto[48][12:]
-            proto[47] = proto[47][:10] + str(speed) + proto[47][11:]
-            proto[31] = proto[31][:11] + str(repeat) + proto[31][12:]
-            proto[29] = proto[29][:17] + readout_mode + proto[29][23:]
-            proto[13] = proto[13][:12] + filter_name + proto[13][13:]
-            proto[10] = proto[10][:12] + str(enabled) + proto[10][13:]
-            proto[1] = proto[1][:12] + str(binning) + proto[1][13:]
-        seq_file = open(self.camera_path + "seq/ptr_mrc.seq", "w")
-
-        for item in range(len(proto)):
-            seq_file.write(proto[item])
-        seq_file.close()
+# =============================================================================
+    # def create_simple_autosave(
+    #     self,
+    #     exp_time=0,
+    #     img_type=0,
+    #     speed=0,
+    #     suffix="",
+    #     repeat=1,
+    #     readout_mode="Normal",
+    #     filter_name="W",
+    #     enabled=1,
+    #     column=1,
+    # ):
+# 
+#         # Creates a valid Maxium Autosave file.   THIS IS OBSOLETE CODE
+#         exp_time = round(abs(float(exp_time)), 3)
+#         if img_type > 3:
+#             img_type = 0
+#         repeat = abs(int(repeat))
+#         if repeat < 1:
+#             repeat = 1
+#         binning = abs(int(1))
+#         if filter_name == "":
+#             filter_name = "w"
+#         proto_file = open(self.camera_path + "seq/ptr_proto.seq")
+#         proto = proto_file.readlines()
+#         proto_file.close()
+# 
+#         if column == 1:
+#             proto[51] = proto[51][:9] + str(img_type) + proto[51][10:]
+#             proto[50] = proto[50][:9] + str(exp_time) + proto[50][12:]
+#             proto[48] = proto[48][:12] + str(suffix) + proto[48][12:]
+#             proto[47] = proto[47][:10] + str(speed) + proto[47][11:]
+#             proto[31] = proto[31][:11] + str(repeat) + proto[31][12:]
+#             proto[29] = proto[29][:17] + readout_mode + proto[29][23:]
+#             proto[13] = proto[13][:12] + filter_name + proto[13][13:]
+#             proto[10] = proto[10][:12] + str(enabled) + proto[10][13:]
+#             proto[1] = proto[1][:12] + str(binning) + proto[1][13:]
+#         seq_file = open(self.camera_path + "seq/ptr_mrc.seq", "w")
+# 
+#         for item in range(len(proto)):
+#             seq_file.write(proto[item])
+#         seq_file.close()
+# =============================================================================
 
     def get_status(self):
         status = {}
@@ -2899,7 +2901,7 @@ class Camera:
             self.last_user_name = self.user_name
         if action == "expose":  # and not self.running_an_exposure_set:
 
-            "First we parse the hint"
+            "First we parse the hint"   #******I think this may be obsolete WER 20250607
             if 'hint' in opt and len(opt['hint']) > 0:
                 plog("hint:  ", opt['hint'])
                 hint = opt['hint'].split(";")
@@ -2931,7 +2933,7 @@ class Camera:
                     "Cannot expose, camera is currently busy, waiting for exposures to clear")
                 dont_wait_forever = time.time()
                 while True:
-                    if (time.time()-dont_wait_forever) > 5:
+                    if (time.time()-dont_wait_forever) > 5:   #Why this 5 second timeout? What is this routine for?
                         plog("Exposure too busy for too long, returning")
                         return
                     if self.running_an_exposure_set:
@@ -3052,7 +3054,7 @@ class Camera:
         # doesn't mean it's never used.
         exposure_time = float(required_params.get("time", 1.0))
         imtype = required_params.get("image_type", "light")
-        smartstack = required_params.get('smartstack', True)
+        smartstack = required_params.get('smartstack', True)   #Consider making this an attribute as in smartstacker   WER
         self.substacker = required_params.get('substack', True)
 
         count = int(optional_params.get("count", 1))
@@ -3074,7 +3076,7 @@ class Camera:
 
         # Third check, check it isn't daytime and institute maximum exposure time
         # Unless it is a command from the sequencer flat_scripts or a requested calibration frame
-        skip_daytime_check = False
+        skip_daytime_check = True      #WERexplore
         skip_calibration_check = False
 
         if imtype.lower() in ['fortymicrosecond_exposure_dark', 'fourhundredmicrosecond_exposure_dark','pointzerozerofourfive_exposure_dark', 'onepointfivepercent_exposure_dark', 'fivepercent_exposure_dark', 'tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark', 'threequartersec_exposure_dark', 'onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark', 'threepointfivesec_exposure_dark', 'fivesec_exposure_dark',  'sevenpointfivesec_exposure_dark', 'tensec_exposure_dark', 'fifteensec_exposure_dark', 'twentysec_exposure_dark', 'thirtysec_exposure_dark', 'broadband_ss_biasdark', 'narrowband_ss_biasdark']:
@@ -3119,7 +3121,7 @@ class Camera:
             if g_dev['seq'].morn_sky_flat_latch or g_dev['seq'].eve_sky_flat_latch:
 
                 g_dev['obs'].send_to_user(
-                    "Refusing exposure request as the observatory is currently undertaking flats.")
+                    "Refusing exposure request as the observatory is currently taking flats.")
                 plog(
                     "Refusing exposure request as the observatory is currently taking flats.")
                 self.running_an_exposure_set = False
@@ -3245,8 +3247,8 @@ class Camera:
         this_exposure_filter = copy.deepcopy( self.current_filter)
         # plog ("THIS EXPOSURE FILTER: " + str(this_exposure_filter))
 
-        # Always check rotator just before exposure  The Rot jitters wehn parked so
-        # this give rot moving report during bia darks
+        # Always check rotator just before exposure  The Rot jitters when parked so
+        # this gives rot_moving report during bias darks
         rot_report = 0
         if g_dev['rot'] != None:
             if not g_dev['mnt'].rapid_park_indicator and not g_dev['obs'].rotator_has_been_checked_since_last_slew:
@@ -3317,7 +3319,7 @@ class Camera:
             SmartStackID = 'no'
             smartstackinfo = 'no' # Just initialising this variable
             if not null_filterwheel:
-                if this_exposure_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
+                if this_exposure_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'z', 'hb', 'hbc', 'hd', 'hg', 'zp', 'zs']:
                     # For narrowband and low throughput filters, increase base exposure time.
                     ssExp = ssExp * ssNBmult
             else:
@@ -3337,7 +3339,7 @@ class Camera:
                 exposure_time = ssExp
                 SmartStackID = (
                     datetime.datetime.now().strftime("%d%m%y%H%M%S"))
-                if this_exposure_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'zp', 'zs']:
+                if this_exposure_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u', 'su', 'sv', 'sb', 'z', 'hb', 'hbc', 'hd', 'hg', 'zp', 'zs']:
                     smartstackinfo = 'narrowband'
                 else:
                     smartstackinfo = 'broadband'
@@ -3605,7 +3607,7 @@ class Camera:
                                 # g_dev['mnt'].wait_for_slew(wait_after_slew=False)
                                 if g_dev['mnt'].pier_flip_detected == True:
                                     plog(
-                                        "Detected a pier flip just before exposure! Line 3105 in Camera.")
+                                        "Detected a pier flip just before exposure! Line 3608 in Camera.")
                                     g_dev["obs"].send_to_user(
                                         "Pier Flip detected, recentering.")
                                     g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
@@ -3675,7 +3677,7 @@ class Camera:
                                 else:
                                     plog("Could not engage substacking as the appropriate biasdark")
 
-                            # Adjust pointing exposure time relative to known focus
+                            # Adjust pointing exposure time relative to previously known focus
                             if not g_dev['seq'].focussing and not g_dev['obs'].scope_in_manual_mode and frame_type == 'pointing':
                                 try:
                                     last_fwhm = g_dev['obs'].fwhmresult["FWHM"]
@@ -3734,8 +3736,11 @@ class Camera:
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
                             self.shutter_open = True
+# =============================================================================
+#                             #THIS STARTS THE EXPOSURE
+# =============================================================================
                             self._expose(
-                                exposure_time, bias_dark_or_light_type_frame)
+                                exposure_time, bias_dark_or_light_type_frame)  #THIS STARTS THE EXPOSURE
                             self.end_of_last_exposure_time = time.time()
 
 
@@ -3813,7 +3818,7 @@ class Camera:
                             g_dev["mnt"].get_rapid_exposure_status(
                                 self.pre_mnt
                             )
-
+                        
                         expresult = self.finish_exposure(
                             exposure_time,
                             frame_type,
@@ -3821,11 +3826,11 @@ class Camera:
                             gather_status,
                             do_sep,
                             no_AWS,
-                            None,
-                            None,
-                            quick=quick,
-                            low=ldr_handle_time,
-                            high=ldr_handle_high_time,
+                            #None,   #Can we elimate these two ? WERexplore
+                            #None,
+                            #quick=quick,
+                            #low=ldr_handle_time,  #Can we elimate these two ? WERexplore
+                            #high=ldr_handle_high_time,
                             optional_params=optional_params,
                             solve_it=solve_it,
                             smartstackid=SmartStackID,
@@ -3854,7 +3859,7 @@ class Camera:
                             unique_batch_code=unique_batch_code,
                             count=count
                         )
-
+                        #breakpoint()   WERexplore
                         self.retry_camera = 0
                         if not frame_type[-4:] == "flat" and not frame_type.lower() in ["bias", "dark"] and not a_dark_exposure and not frame_type.lower() == 'focus' and not frame_type == 'pointing':
                             try:
@@ -4046,11 +4051,11 @@ class Camera:
         gather_status=True,
         do_sep=False,
         no_AWS=False,
-        start_x=None,
-        start_y=None,
-        quick=False,
-        low=0,
-        high=0,
+        #start_x=None,
+        #start_y=None,
+        #quick=False,
+        #low=0,
+        #high=0,
         optional_params=None,
         solve_it=False,
         smartstackid='no',
@@ -4081,7 +4086,7 @@ class Camera:
 
         obs_id = self.site_config['obs_id']
 
-
+        #breakpoint()
         if fw_device == None:
             fw_device = self.obs.devices['main_fw']
 
@@ -5986,7 +5991,7 @@ class Camera:
                                         print ((np.asarray(catalog['total_donut_distance'])))
                                         print ((np.asarray(catalog['flux_radius'])))
 
-                                        # breakpoint()
+                                        #breakpoint()
 
                                         # if np.median(total_mean_donut_distance) > (np.median(total_mean_flux_radius) * 2) :
                                         #     fwhm_values=total_mean_donut_distance
