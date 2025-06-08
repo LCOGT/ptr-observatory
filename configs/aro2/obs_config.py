@@ -234,8 +234,8 @@ site_config = {
     'enclosure_check_period': 3,    # How many minutes between enclosure checks
 
     # Turn on and off various automated calibrations at different times.
-    'auto_eve_bias_dark': True,
-    'auto_eve_sky_flat': True,
+    'auto_eve_bias_dark': False,    #411 Camera will not cool in afternoons
+    'auto_eve_sky_flat': False,
 
      'time_to_wait_after_roof_opens_to_take_flats': 3,   #Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
