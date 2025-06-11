@@ -166,8 +166,8 @@ class Sequencer:
             )
 
         # Add a fake lco observation to the calendar, used for testing
-        # self.schedule_manager.inject_fake_lco_observation(lat=self.obs.wema_config['latitude'], lng=self.obs.wema_config['longitude'])
-        # plog(self.schedule_manager.schedule)
+        self.schedule_manager.inject_fake_lco_observation(lat=self.obs.wema_config['latitude'], lng=self.obs.wema_config['longitude'])
+        plog(self.schedule_manager.schedule)
 
 
         # Various on/off switches that block multiple actions occuring at a single time.
