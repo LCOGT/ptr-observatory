@@ -1696,19 +1696,19 @@ class Sequencer:
                 exposure['substack'] = do_sub_stack
                 exposure['smartstack'] = do_smart_stack
                 left_to_do += int(exposure['count'])
-                
+
             if g_dev["obs"].stop_all_activity:
                 plog('stop_all_activity cancelling out of exposure loop in seq:blk execute')
                 self.blockend = None
                 self.total_sequencer_control=False
                 g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                 return block_specification
-            
+
             plog("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
 
             g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
-            
+
             # Sometimes there isn't a zoom in the exposure
             # If there isn't, just go with full zoom
             try:
@@ -5397,7 +5397,7 @@ class Sequencer:
             # if g_dev['cam'].pixscale == None:
             #     plog ("skipping centering exposure as we don't even have a pixelscale yet")
             # else:
-                
+
             # We always platesolve first.... platesolving gives us the pixelscale if we don't have it
             # which makes initial focus much easier
             self.centering_exposure(no_confirmation=True, try_hard=True)
@@ -5504,7 +5504,7 @@ class Sequencer:
             plog(traceback.format_exc())
 
         blobvsgauss_shelf.close()
-        
+
         hit_focus_limit_upper=False
         hit_focus_limit_lower=False
 
@@ -5562,7 +5562,7 @@ class Sequencer:
 
             #  If more than 15 attempts, fail and bail out.
             # But don't bail out if the scope isn't commissioned yet, keep on finding.
-            
+
             if position_counter > 15 and g_dev['foc'].focus_commissioned:
                 g_dev['foc'].set_initial_best_guess_for_focus()
                 if not dont_return_scope:
@@ -5718,7 +5718,7 @@ class Sequencer:
                         if new_focus_position_to_attempt < g_dev['foc'].minimum_allowed_focus:
                             hit_focus_limit_lower=True
                             new_focus_position_to_attempt=g_dev['foc'].minimum_allowed_focus
-                            
+
 
                     elif not hit_focus_limit_upper:
                         new_focus_position_to_attempt=max(spots_tried) + int(position_counter/2) * throw
@@ -5895,7 +5895,7 @@ class Sequencer:
                                 print (0.5*float(len(minimumfind)-1))
                                 #if (minimum_index == 0 or minimum_index == 1) and not hit_focus_limit_lower:# and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
                                 if minimum_index <= (0.5*float(len(minimumfind)-1)) and not hit_focus_limit_lower:# and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
-                                 
+
                                     plog ("Minimum too close to the sampling edge, getting another dot")
                                     extra_steps_to_the_left=extra_steps_to_the_left+1
                                     new_focus_position_to_attempt=focus_spots[0][0] - throw
@@ -5973,21 +5973,21 @@ class Sequencer:
 
                                     # Calculate step length along the curve
                                     # curve_step_length = arc_length / (num_points - 1)
-                                    
+
                                     a, b, c = fit
-                                    
+
                                     # Find the vertex (minimum point)
                                     x_min = -b / (2 * a)
                                     y_min = f(x_min)
-                                    
+
                                     # Set the target y-value 1.75 above the minimum
                                     target_y = y_min + 1.75
-                                    
+
                                     # Solve for x where the parabola equals the target y
                                     coeffs = [a, b, c - target_y]
                                     roots = np.roots(coeffs)
                                     x_left, x_right = min(roots), max(roots)
-                                    
+
                                     # Compute step size between 5 evenly spaced points
                                     curve_step_length = (x_right - x_left) / (num_points-1)
                                     #x_values = np.linspace(x_left, x_right, 5)
@@ -6094,14 +6094,14 @@ class Sequencer:
                                         req = {'time': focus_exposure_time,  'alias':  str(g_dev['cam'].name), 'image_type': 'focus_confirmation'}   #  NB Should pick up filter and constats from config
                                         opt = { 'count': 1, 'filter': filter_choice}
                                         result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
-    
-    
+
+
                                         print (g_dev['obs'].fwhmresult)
                                         #breakpoint()
 
-                                    
+
                                         new_blob_vs_gaussian_factor = (g_dev['obs'].fwhmresult["FWHM"] / fitted_focus_fwhm) * stored_blob_to_gaussian_factor
-    
+
                                         plog ("Calculated Blob to Gaussian Factor: " +str(new_blob_vs_gaussian_factor))
 
                                     if not dont_log_focus:
@@ -6758,16 +6758,16 @@ class Sequencer:
         but the most important is centering the requested RA and Dec just prior to starting
         a longer project block.
         """
-        
+
         # If the roof isn't open, then don't bother platesolving!
         if not g_dev['obs'].open_and_enabled_to_observe:
             return
-        
+
         self.currently_running_centering=True
-        
+
         # Set the cancel flag off at the start of each centering routine
         self.cancel_out_of_centering=False
-        
+
         if g_dev['obs'].auto_centering_off:  #Auto centering off means OFF!
             plog('auto_centering is off.')
             self.currently_running_centering=False
@@ -6779,10 +6779,10 @@ class Sequencer:
             g_dev["obs"].send_to_user("Too bright, or early, to auto-center the image.")
             self.currently_running_centering=False
             return
-        
-        now = ephem.Date(ephem.now())        
-        observing_ends = self.obs.events['Observing Ends']        
-        observing_begins = self.obs.events['End Eve Sky Flats']        
+
+        now = ephem.Date(ephem.now())
+        observing_ends = self.obs.events['Observing Ends']
+        observing_begins = self.obs.events['End Eve Sky Flats']
         # Reject exposures that start before nautical dusk or end after nautical dawn
         if now < observing_begins or now > observing_ends :
             plog("Too bright to consider platesolving!")
@@ -6798,9 +6798,9 @@ class Sequencer:
             g_dev["obs"].send_to_user("Cancelling out of centering.")
             self.currently_running_centering=False
             return
-        
-        
-        
+
+
+
 
         # Don't try forever if focussing
         if self.focussing:
@@ -6882,7 +6882,7 @@ class Sequencer:
             plog('stop_all_activity, so cancelling out of Centering')
             self.currently_running_centering=False
             return
-        
+
         if self.cancel_out_of_centering:
             self.cancel_out_of_centering=False
             plog("Cancelling out of centering.")
@@ -6983,7 +6983,7 @@ class Sequencer:
                 plog('stop_all_activity cancelling out of centering')
                 self.currently_running_centering=False
                 return
-            
+
             if self.cancel_out_of_centering:
                 self.cancel_out_of_centering=False
                 plog("Cancelling out of centering.")
@@ -7021,7 +7021,7 @@ class Sequencer:
                         self.currently_running_centering=False
                         return
                     pass
-                    
+
 
             if not (g_dev['obs'].last_platesolved_ra != np.nan and str(g_dev['obs'].last_platesolved_ra) != 'nan'):
 
@@ -7137,7 +7137,7 @@ class Sequencer:
                     plog('stop_all_activity cancelling out of centering')
                     self.currently_running_centering=False
                     return
-                
+
                 if self.cancel_out_of_centering:
                     self.cancel_out_of_centering=False
                     plog("Cancelling out of centering.")
@@ -7246,7 +7246,7 @@ class Sequencer:
                     plog('stop_all_activity cancelling out of centering')
                     self.currently_running_centering=False
                     return
-                
+
                 if self.cancel_out_of_centering:
                     self.cancel_out_of_centering=False
                     plog("Cancelling out of centering.")
@@ -7367,7 +7367,7 @@ class Sequencer:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                 self.currently_running_centering=False
                 return
-            
+
             if self.cancel_out_of_centering:
                 self.cancel_out_of_centering=False
                 plog("Cancelling out of centering.")
