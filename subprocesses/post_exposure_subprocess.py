@@ -374,7 +374,6 @@ mainjpegthread_filename = inputs["thread_files"]["mainjpegthread_filename"]
 platesolvethread_filename = inputs["thread_files"]["platesolvethread_filename"]
 
 # Other
-unique_batch_code = inputs["other"]["unique_batch_code"]
 exposure_in_nighttime = inputs["other"]["exposure_in_nighttime"]
 
 # LCO header info

@@ -4032,7 +4032,6 @@ class Camera:
         exposure_time,
         frame_type,
         counter,
-        seq,
         optional_params=None,
         solve_it=False,
         smartstackid='no',
@@ -4061,37 +4060,16 @@ class Camera:
     ):
         plog(f"Exposure Started: {exposure_time}s {frame_type}")
 
-        # Uncomment the below as a way of forcing ALL camera images
-        # to upload to the LCO archive. Only use for testing!
-        # upload_metadata = {
-        #     'image_metadata': {
-        #         'size': 'large',
-        #         'INSTRUME': 'main_camera',
-        #         'SITEID': 'mrc',
-        #         'TELID': '0m31',
-        #         'PROPID': 'PTR_integration_test_proposal',
-        #         'BLKUID': 1746729556,
-        #         'REQNUM': 2147483646,
-        #         'OBSTYPE': 'EXPOSE',
-        #         'frame_basename': 'tbo2-ec003zwo_expose_lum-20250508-00000039-EX00'
-        #     },
-        #     'is_lco_observation': True
-        # }
-
-
         # Set the observation dates
         # Format for DATE-OBS needs to be YYYY-MM-DDTHH:mm:ss.sss
-        try:
-            if substack:
-                upload_metadata['image_metadata']['DATE-OBS'] = datetime.fromtimestamp(self.substack_start_time, tz=timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', '')
-                upload_metadata['image_metadata']['DAY-OBS']  = datetime.fromtimestamp(self.substack_start_time, tz=timezone.utc).strftime("%Y%m%d")
-            else:
-                upload_metadata['image_metadata']['DATE-OBS'] = datetime.fromtimestamp(self.start_time_of_observation, tz=timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', '')
-                upload_metadata['image_metadata']['DAY-OBS']  = datetime.fromtimestamp(self.start_time_of_observation, tz=timezone.utc).strftime("%Y%m%d")
-        except KeyError:
-            pass # assume upload metadata was not included
-        except Exception as e:
-            plog.err('Problem setting DATE-OBS and DAY-OBS in finish_exposure upload_metadata')
+        if not 'image_metadata' in upload_metadata:
+            upload_metadata['image_metadata'] = {}
+        if substack:
+            upload_metadata['image_metadata']['DATE-OBS'] = datetime.fromtimestamp(self.substack_start_time, tz=timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', '')
+            upload_metadata['image_metadata']['DAY-OBS']  = datetime.fromtimestamp(self.substack_start_time, tz=timezone.utc).strftime("%Y%m%d")
+        else:
+            upload_metadata['image_metadata']['DATE-OBS'] = datetime.fromtimestamp(self.start_time_of_observation, tz=timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', '')
+            upload_metadata['image_metadata']['DAY-OBS']  = datetime.fromtimestamp(self.start_time_of_observation, tz=timezone.utc).strftime("%Y%m%d")
 
         # Simulate timing of exposure for dummy camera
         if self.dummy:
@@ -4678,7 +4656,7 @@ class Camera:
                     g_dev['obs'].images_since_last_solve > self.site_config["solve_nth_image"] or
 
                     # Too much time passed since last solve
-                    (datetime.utcnow() - g_dev['obs'].last_solve_time) >
+                    (datetime.now(tz=timezone.utc) - g_dev['obs'].last_solve_time) >
                         timedelta(minutes=self.site_config["solve_timer"])
                 ))
             )
@@ -4918,7 +4896,7 @@ class Camera:
                             # Then get ready for the next set of exposures by changing the filter and adjusting the focus
                             # Hopefully this occurs while the slew occurs
                             # If there is a block guard, there is a running block
-                            if g_dev['seq'].block_guard and seq == count and not g_dev['seq'].focussing and not frame_type == 'pointing' and not frame_type == 'skyflat':
+                            if g_dev['seq'].block_guard and not g_dev['seq'].focussing and not frame_type == 'pointing' and not frame_type == 'skyflat':
                                 # If this is the end of a smartstack set or it is a single shot then check the filter and change
                                 if Nsmartstack == 1 or (Nsmartstack == sskcounter+1):
                                     plog("Next filter in project: " +
@@ -5226,8 +5204,7 @@ class Camera:
                             "platesolvethread_filename": platesolvethread_filename
                         },
                         "other": {
-                            "unique_batch_code",
-                            "exposure_in_nighttime"
+                            "exposure_in_nighttime": exposure_in_nighttime
                         },
                         "lco_header_data": upload_metadata.get('image_metadata')
                     }
