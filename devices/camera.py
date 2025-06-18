@@ -3968,9 +3968,9 @@ class Camera:
                                 os.replace(temp_path, real_path)
                                 
                                 if self.site_config['pipe_save_method'] == 'ftp':
-                                    g_dev['obs'].add_to_ftpqueue(pipetokenfolder, str(token_name)+str(suffix)+'.json')
+                                    g_dev['obs'].add_to_ftpqueue(pipetokenfolder, str(token_name)+str(suffix)+'.json', 'fromsite')
                                 if self.site_config['pipe_save_method'] == 'http':
-                                    g_dev['obs'].add_to_httpqueue(pipetokenfolder, str(token_name)+str(suffix)+'.json')
+                                    g_dev['obs'].add_to_httpqueue(pipetokenfolder, str(token_name)+str(suffix)+'.json', 'fromsite')
                                                                 
                             except:
                                 plog(traceback.format_exc())
@@ -3990,9 +3990,9 @@ class Camera:
                             # 2. Atomically replace (or create) the real file
                             os.replace(temp_path, real_path)
                             if self.site_config['pipe_save_method'] == 'ftp':
-                                g_dev['obs'].add_to_ftpqueue(pipetokenfolder, token_name+'.json')
+                                g_dev['obs'].add_to_ftpqueue(pipetokenfolder, token_name+'.json', 'fromsite')
                             elif self.site_config['pipe_save_method'] == 'http':
-                                g_dev['obs'].add_to_httpqueue(pipetokenfolder, token_name+'.json')
+                                g_dev['obs'].add_to_httpqueue(pipetokenfolder, token_name+'.json', 'fromsite')
                         except:
                             plog(traceback.format_exc())
                 except:

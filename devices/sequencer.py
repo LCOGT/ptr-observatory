@@ -2857,7 +2857,7 @@ class Sequencer:
                     if g_dev['obs'].config['save_images_to_pipe_for_processing']:
                         if g_dev['obs'].config['pipe_save_method'] == 'local':
                             g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterDark)))
-
+                        
                 except Exception as e:
                     plog(traceback.format_exc())
                     plog ("Could not save dark frame: ",e)
@@ -4133,6 +4133,44 @@ class Sequencer:
         #g_dev["obs"].send_to_user("All calibration frames completed.")
 
         g_dev['obs'].report_to_nightlog("Finished regenerating calibrations")
+        
+        if self.config['pipe_save_method'] == 'http':
+            # Now we just wait a significant amount of time to make sure all the threads have stopped saving files
+            time.sleep(600)
+            # Then we send up the variance and the badpixelmap to the pipe to make files
+            
+            calib_folder = os.path.join(
+                g_dev['obs'].calib_masters_folder,
+                'tempfrontcalib'
+            )
+        
+            try:
+                entries = os.listdir(calib_folder)
+            except Exception as e:
+                plog(f"Could not list calibration folder '{calib_folder}': {e}")
+                return
+        
+            for fname in entries:
+                # only want .npy files
+                if not fname.lower().endswith('.npy'):
+                    continue
+        
+                # name must contain one of the keywords
+                if 'variance' not in fname and 'badpixelmask' not in fname:
+                    continue
+        
+                full_path = os.path.join(calib_folder, fname)
+        
+                # get a timestamp (file‐modification time)
+                try:
+                    ts = os.path.getmtime(full_path)
+                except OSError:
+                    ts = time.time()
+        
+                # enqueue: (folder, filename, upload_type, timestamp)
+                self.http_queue.put((calib_folder, fname, 'calibrations', ts))
+                plog(f"Enqueued calibration file: {fname}")
+        
         return
 
 

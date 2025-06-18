@@ -77,7 +77,7 @@ import ftputil
 
 
 
-def http_upload(server, filedirectory,filename):
+def http_upload(server, filedirectory, filename):
     
     files = {"file": open(str(filedirectory +'/'+filename).replace('//','/'),"rb")}
     data  = {"target_dir": "fromsite"}
@@ -3229,7 +3229,7 @@ class Observatory:
                 queued_items = []
     
             for fname in entries:
-                if not fname.endswith('.fits.fz'):
+                if not fname.endswith('.json', '.npy', '.fits.fz', '.fits'):
                     continue
     
                 full_path = os.path.join(ingestion_folder, fname)
@@ -3248,7 +3248,7 @@ class Observatory:
                         ts = time.time()
     
                     # Enqueue a tuple: (filedirectory, filename, timestamp)
-                    self.http_queue.put((ingestion_folder, fname, ts))
+                    self.http_queue.put((ingestion_folder, fname, ts, 'from_site'))
                     plog(f"Enqueued new HTTP file: {fname}")
     
             # ─── 2) Once scanning is done, process whatever is in http_queue ───
@@ -3256,7 +3256,7 @@ class Observatory:
                 # As long as there are items, keep pulling them off
                 while True:
                     try:
-                        (filedirectory, filename, timestamp) = self.http_queue.get(block=False)
+                        (filedirectory, filename, upload_type, timestamp) = self.http_queue.get(block=False)
                     except Empty:
                         # No more items right now; break back to top of outer loop
                         break
@@ -3270,7 +3270,8 @@ class Observatory:
                             # self.ftppassword,
                             # self.ftpremotedir,
                             filedirectory,
-                            filename
+                            filename,
+                            upload_type
                         )
                         
                         if success:
@@ -4577,8 +4578,8 @@ class Observatory:
     def add_to_ftpqueue(self, filedirectory, filename):
         self.ftp_queue.put((filedirectory, filename, time.time()), block=False)
     
-    def add_to_httpqueue(self, filedirectory, filename):
-        self.http_queue.put((filedirectory, filename, time.time()), block=False)
+    def add_to_httpqueue(self, filedirectory, filename, upload_type):
+        self.http_queue.put((filedirectory, filename, upload_type, time.time()), block=False)
 
     def check_platesolve_and_nudge(self, no_confirmation=True):
         """
