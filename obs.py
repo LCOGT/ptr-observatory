@@ -2126,8 +2126,8 @@ class Observatory:
                                 plog.err("self.enc_status not reporting correctly")
 
                 if not self.mountless_operation:
-                    # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
-                    if self.altitude_checks_on and not self.devices["mount"].currently_slewing:
+                    # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground and it isn't just parked.
+                    if self.altitude_checks_on and not self.devices["mount"].currently_slewing and not self.devices["mount"].rapid_park_indicator:
                         try:
                             mount_altitude = float(
                                 self.devices["mount"].previous_status["altitude"]
