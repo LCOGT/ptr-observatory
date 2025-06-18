@@ -77,10 +77,10 @@ import ftputil
 
 
 
-def http_upload(server, filedirectory, filename):
+def http_upload(server, filedirectory, filename, upload_type):
     
     files = {"file": open(str(filedirectory +'/'+filename).replace('//','/'),"rb")}
-    data  = {"target_dir": "fromsite"}
+    data  = {"target_dir": upload_type}
     
     print (files)
     
@@ -3229,7 +3229,7 @@ class Observatory:
                 queued_items = []
     
             for fname in entries:
-                if not fname.endswith('.json', '.npy', '.fits.fz', '.fits'):
+                if not fname.endswith(('.json', '.npy', '.fits.fz', '.fits')):
                     continue
     
                 full_path = os.path.join(ingestion_folder, fname)
