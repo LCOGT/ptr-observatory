@@ -3046,6 +3046,8 @@ class Sequencer:
                 except:
                     plog("pipefolder failure")
                     plog(traceback.format_exc())
+            else:
+                pipefolder=''
         else:
             pipefolder=''
 
