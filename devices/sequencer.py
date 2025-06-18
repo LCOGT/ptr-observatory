@@ -4140,8 +4140,7 @@ class Sequencer:
             # Then we send up the variance and the badpixelmap to the pipe to make files
             
             calib_folder = os.path.join(
-                g_dev['obs'].calib_masters_folder,
-                'tempfrontcalib'
+                g_dev['obs'].calib_masters_folder
             )
         
             try:
@@ -4168,7 +4167,7 @@ class Sequencer:
                     ts = time.time()
         
                 # enqueue: (folder, filename, upload_type, timestamp)
-                self.http_queue.put((calib_folder, fname, 'calibrations', ts))
+                g_dev['obs'].http_queue.put((calib_folder, fname, 'calibrations', ts))
                 plog(f"Enqueued calibration file: {fname}")
         
         return
