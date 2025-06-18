@@ -2854,8 +2854,9 @@ class Sequencer:
                     if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:
                         g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterDark)))
+                    if g_dev['obs'].config['save_images_to_pipe_for_processing']:
+                        if g_dev['obs'].config['pipe_save_method'] == 'local':
+                            g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterDark)))
 
                 except Exception as e:
                     plog(traceback.format_exc())
@@ -2993,8 +2994,9 @@ class Sequencer:
                         g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits', copy.deepcopy(masterDark.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + filename_start+'_master_bin1.fits' ))
 
 
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterDark.astype(np.uint16))))
+                    if g_dev['obs'].config['save_images_to_pipe_for_processing']:
+                        if g_dev['obs'].config['pipe_save_method'] == 'local':
+                            g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterDark.astype(np.uint16))))
 
                 except Exception as e:
                     plog(traceback.format_exc())
@@ -3031,17 +3033,19 @@ class Sequencer:
         #g_dev["obs"].send_to_user("Currently regenerating local masters.")
         g_dev['obs'].report_to_nightlog("Started regenerating calibrations")
 
-        if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-            try:
-                pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
-                if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path']+'/calibrations'):
-                    os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] + '/calibrations')
-
-                if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias):
-                    os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias)
-            except:
-                plog("pipefolder failure")
-                plog(traceback.format_exc())
+        if g_dev['obs'].config['save_images_to_pipe_for_processing']:
+            if g_dev['obs'].config['pipe_save_method'] == 'local':
+            
+                try:
+                    pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
+                    if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path']+'/calibrations'):
+                        os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] + '/calibrations')
+    
+                    if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias):
+                        os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias)
+                except:
+                    plog("pipefolder failure")
+                    plog(traceback.format_exc())
         else:
             pipefolder=''
 
@@ -3208,8 +3212,9 @@ class Sequencer:
                     if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:
                         g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias.astype(np.uint16)), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits' ))
 
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy',copy.deepcopy(masterBias.astype(np.uint16))))
+                    if g_dev['obs'].config['save_images_to_pipe_for_processing']:
+                        if g_dev['obs'].config['pipe_save_method'] == 'local':
+                            g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy',copy.deepcopy(masterBias.astype(np.uint16))))
                 except Exception as e:
                     plog ("Could not save bias frame: ",e)
 
@@ -3299,8 +3304,9 @@ class Sequencer:
                     if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:
                         g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'readnoise_variance_adu.fits', copy.deepcopy(variance_frame.astype('float32')), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'readnoise_variance_adu.fits' ))
 
-                    if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'readnoise_variance_adu.npy', copy.deepcopy(variance_frame.astype('float32'))))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                    if g_dev['obs'].config['save_images_to_pipe_for_processing']:
+                        if g_dev['obs'].config['pipe_save_method'] == 'local':
+                            g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'readnoise_variance_adu.npy', copy.deepcopy(variance_frame.astype('float32'))))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                 except Exception as e:
                     plog ("Could not save variance frame: ",e)
@@ -3853,8 +3859,9 @@ class Sequencer:
                                 if g_dev['obs'].config['save_archive_versions_of_final_calibrations']:
                                     g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), calibhduheader, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
 
-                                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                                if g_dev['obs'].config['save_images_to_pipe_for_processing']:
+                                    if g_dev['obs'].config['pipe_save_method'] == 'local':
+                                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                             except Exception as e:
                                 plog ("Could not save flat frame: ",e)
@@ -3987,8 +3994,9 @@ class Sequencer:
             #filepathaws=g_dev['obs'].calib_masters_folder
             #filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
             #g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-            if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', copy.deepcopy( bad_pixel_mapper_array)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+            if g_dev['obs'].config['save_images_to_pipe_for_processing']:
+                if g_dev['obs'].config['pipe_save_method'] == 'local':
+                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', copy.deepcopy( bad_pixel_mapper_array)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
             try:
                 g_dev['cam'].bpmFiles = {}
                 g_dev['cam'].bpmFiles.update({'1': bad_pixel_mapper_array})
