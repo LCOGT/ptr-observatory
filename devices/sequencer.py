@@ -4149,8 +4149,9 @@ class Sequencer:
                 if not fname.lower().endswith('.npy'):
                     continue
         
-                # name must contain one of the keywords
-                if 'variance' not in fname and 'badpixelmask' not in fname:
+                # name must contain one of the keywords AND start with tempfrontcalib
+                if ( 'variance' not in fname and 'badpixelmask' not in fname ) \
+                   or not fname.startswith(tempfrontcalib):
                     continue
         
                 full_path = os.path.join(calib_folder, fname)

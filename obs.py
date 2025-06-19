@@ -3356,7 +3356,7 @@ class Observatory:
                             upload_type
                         )
                         
-                        if success:
+                        if success and not upload_type == 'calibrations':
                             try:
                                 os.remove(filedirectory + '/' + filename)
                             except:
