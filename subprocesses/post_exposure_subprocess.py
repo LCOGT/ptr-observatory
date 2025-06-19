@@ -15,7 +15,7 @@ import shelve
 from astropy.io import fits
 import numpy as np
 import bottleneck as bn
-import datetime
+from datetime import datetime, timezone, timedelta
 from astropy.time import Time
 import copy
 import threading
@@ -250,40 +250,24 @@ def write_raw_file_out(packet):
     (raw, raw_name, hdudata, hduheader, frame_type, current_icrs_ra, current_icrs_dec, altpath, altfolder, dayobs, camera_path, altpath) = packet
 
     # Make sure normal paths exist
-    os.makedirs(
-        camera_path + dayobs, exist_ok=True
-    )
-    os.makedirs(
-        camera_path + dayobs + "/raw/", exist_ok=True
-    )
-    os.makedirs(
-        camera_path + dayobs + "/reduced/", exist_ok=True
-    )
-    os.makedirs(
-        camera_path + dayobs + "/calib/", exist_ok=True)
+    os.makedirs(camera_path + dayobs, exist_ok=True)
+    os.makedirs(camera_path + dayobs + "/raw/", exist_ok=True)
+    os.makedirs(camera_path + dayobs + "/reduced/", exist_ok=True)
+    os.makedirs(camera_path + dayobs + "/calib/", exist_ok=True)
 
     # Make  sure the alt paths exist
     if raw == 'raw_alt_path':
-        os.makedirs(
-            altpath + dayobs, exist_ok=True
-        )
-        os.makedirs(
-            altpath + dayobs + "/raw/", exist_ok=True
-        )
-        os.makedirs(
-            altpath + dayobs + "/reduced/", exist_ok=True
-        )
-        os.makedirs(
-            altpath + dayobs + "/calib/", exist_ok=True)
+        os.makedirs(altpath + dayobs, exist_ok=True)
+        os.makedirs(altpath + dayobs + "/raw/", exist_ok=True)
+        os.makedirs(altpath + dayobs + "/reduced/", exist_ok=True)
+        os.makedirs(altpath + dayobs + "/calib/", exist_ok=True)
 
     hdu = fits.PrimaryHDU()
     hdu.data = hdudata
     hdu.header = hduheader
 
     hdu.header["DATE"] = (
-        datetime.date.strftime(
-            datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
-        ),
+        datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"),
         "Date FITS file was written",
     )
 
@@ -295,35 +279,113 @@ def write_raw_file_out(packet):
         pass
     del hdu
 
+def timestamp_to_LCO_datestring(t):
+    """ Takes a Unix timestamp and converts to YYYY-mm-ddThh-mm-ss.sss in UTC """
+    return datetime.fromtimestamp(t, tz=timezone.utc).isoformat(timespec='milliseconds').split('+')[0]
+
+
 # set this to True to set this subprocess to normal everyday mode
 ## set it to False if you are running straight from the pickle.
 normal_operation=True
 
-try:
-    payload=pickle.load(sys.stdin.buffer)
+# Set this to True to run the test pickle instead of the normal operation.
+use_test_input = False
 
-except:
-    try:
-        payload=pickle.load(open('testpostprocess.pickle','rb'))
-        plog ("ignoring exception")
-    except:
-        plog ("post_exposure couldn't get its' payload")
-        sys.exit()
-#expresult={}
-#A long tuple unpack of the payload
-(img, pier_side, is_osc, frame_type, reject_flat_by_known_gain, avg_mnt, avg_foc, avg_rot, \
- setpoint, tempccdtemp, ccd_humidity, ccd_pressure, darkslide_state, exposure_time, \
- this_exposure_filter, exposure_filter_offset, opt, observer_user_name, \
- azimuth_of_observation, altitude_of_observation, airmass_of_observation, pixscale, \
- smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, \
- dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, \
- ha_corr, dec_corr, focus_position, selfconfig, camera_device_name, camera_known_gain, \
- camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path, \
- solve_it, next_seq, zoom_factor, useastrometrynet, substack, expected_endpoint_of_substack_exposure, \
- substack_start_time,readout_estimate,readout_time, sub_stacker_midpoints,corrected_ra_for_header, \
- corrected_dec_for_header, substacker_filenames, dayobs, exposure_filter_offset,null_filterwheel, \
- wema_config, smartstackthread_filename, septhread_filename, mainjpegthread_filename,\
- platesolvethread_filename, number_of_exposures_requested, unique_batch_code,exposure_in_nighttime) = payload
+if use_test_input:
+    inputs = pickle.load(open('testpostprocess.pickle','rb'))
+else:
+    inputs = pickle.load(sys.stdin.buffer)
+
+ # Image data
+img = inputs["image_data"]["outputimg"]
+substacker_filenames = inputs["image_data"]["substacker_filenames"]
+sub_stacker_midpoints = inputs["image_data"]["sub_stacker_midpoints"]
+unique_batch_code = inputs["image_data"]["unique_batch_code"]
+
+# Camera settings
+is_osc = inputs["camera_settings"]["is_osc"]
+pixscale = inputs["camera_settings"]["pixscale"]
+camera_device_name = inputs["camera_settings"]["camera_device_name"]
+camera_known_gain = inputs["camera_settings"]["camera_known_gain"]
+camera_known_readnoise = inputs["camera_settings"]["camera_known_readnoise"]
+selfcamera_path = inputs["camera_settings"]["camera_path"]
+setpoint = inputs["camera_settings"]["setpoint"]
+tempccdtemp = inputs["camera_settings"]["tempccdtemp"]
+ccd_humidity = inputs["camera_settings"]["ccd_humidity"]
+ccd_pressure = inputs["camera_settings"]["ccd_pressure"]
+darkslide_state = inputs["camera_settings"]["darkslide_state"]
+readout_time = inputs["camera_settings"]["readout_time"]
+readout_estimate = inputs["camera_settings"]["readout_estimate"]
+
+# Exposure details
+exposure_time = inputs["exposure_details"]["exposure_time"]
+frame_type = inputs["exposure_details"]["frame_type"]
+this_exposure_filter = inputs["exposure_details"]["this_exposure_filter"]
+exposure_filter_offset = inputs["exposure_details"]["exposure_filter_offset"]
+null_filterwheel = inputs["exposure_details"]["null_filterwheel"]
+start_time_of_observation = inputs["exposure_details"]["start_time_of_observation"]
+number_of_exposures_requested = inputs["exposure_details"]["number_of_exposures_requested"]
+manually_requested_calibration = inputs["exposure_details"]["manually_requested_calibration"]
+next_seq = inputs["exposure_details"]["next_seq"]
+
+# Instrument info
+pier_side = inputs["instrument_info"]["pier_side"]
+avg_mnt = inputs["instrument_info"]["avg_mnt"]
+avg_foc = inputs["instrument_info"]["avg_foc"]
+avg_rot = inputs["instrument_info"]["avg_rot"]
+focus_position = inputs["instrument_info"]["focus_position"]
+azimuth_of_observation = inputs["instrument_info"]["azimuth_of_observation"]
+altitude_of_observation = inputs["instrument_info"]["altitude_of_observation"]
+airmass_of_observation = inputs["instrument_info"]["airmass_of_observation"]
+ra_at_time_of_exposure = inputs["instrument_info"]["ra_at_time_of_exposure"]
+dec_at_time_of_exposure = inputs["instrument_info"]["dec_at_time_of_exposure"]
+corrected_ra_for_header = inputs["instrument_info"]["corrected_ra_for_header"]
+corrected_dec_for_header = inputs["instrument_info"]["corrected_dec_for_header"]
+ha_corr = inputs["instrument_info"]["ha_corr"]
+dec_corr = inputs["instrument_info"]["dec_corr"]
+
+# Target info
+object_name = inputs["target_info"]["object_name"]
+object_specf = inputs["target_info"]["object_specf"]
+
+# Observer info
+observer_user_name = inputs["observer_info"]["observer_user_name"]
+observer_user_id = inputs["observer_info"]["observer_user_id"]
+opt = inputs["observer_info"]["optional_params"]
+
+# Stack info
+smartstackid = inputs["stack_info"]["smartstackid"]
+sskcounter = inputs["stack_info"]["sskcounter"]
+Nsmartstack = inputs["stack_info"]["Nsmartstack"]
+zoom_factor = inputs["stack_info"]["zoom_factor"]
+substack = inputs["stack_info"]["substack"]
+expected_endpoint_of_substack_exposure = inputs["stack_info"]["expected_endpoint_of_substack_exposure"]
+substack_start_time = inputs["stack_info"]["substack_start_time"]
+
+# Config settings
+selfconfig = inputs["config_settings"]["site_config"]
+wema_config = inputs["config_settings"]["wema_config"]
+dayobs = inputs["config_settings"]["day_directory"]
+
+# Thread files
+smartstackthread_filename = inputs["thread_files"]["smartstackthread_filename"]
+photometry_thread_filename = inputs["thread_files"]["photometry_thread_filename"]
+mainjpegthread_filename = inputs["thread_files"]["mainjpegthread_filename"]
+platesolvethread_filename = inputs["thread_files"]["platesolvethread_filename"]
+
+# Other
+exposure_in_nighttime = inputs["other"]["exposure_in_nighttime"]
+
+# LCO header info
+# For images taken via LCO scheduler, this should contain header values for
+# DATE-OBS, DAY-OBS, INSTRUME, SITEID, TELID, PROPID, BLKUID, REQNUM, OBSTYPE
+# These are used to populate the header of the FITS file, with the PTR versions used as fallbacks
+lco_header_data = inputs["lco_header_data"] or dict()
+plog(f"lco_header_data: {lco_header_data}")
+
+# These fallbacks must be ints to pass upload validation
+BLKUID_PLACEHOLDER = 1
+REQNUM_PLACEHOLDER = 1
 
 pane = opt.get('pane')
 
@@ -491,7 +553,7 @@ if substack:
 
 
             # Really need to thresh the image
-            googtime=time.time()            
+            googtime=time.time()
 
             # 1) pick your subsampling factor
             ny, nx = substackimage.shape
@@ -552,7 +614,7 @@ if substack:
                 cross_proc=subprocess.Popen(['python','subprocesses/crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
             else:
                 cross_proc=subprocess.Popen(['python','crosscorrelation_subprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-            
+
             if False:
                 #NB set this path to create test pickle for makejpeg routine.
                 pickle.dump(pickler, open('crosscorrelprocess.pickle','wb'))
@@ -827,7 +889,7 @@ try:
     # This is just for single images.
     if not substack:
         googtime=time.time()
-        
+
         # 1) pick your subsampling factor
         ny, nx = hdu.data.shape
         total_px = ny * nx
@@ -879,7 +941,7 @@ try:
     #################### HERE IS WHERE FULLY REDUCED PLATESOLVE IS SENT OFF
     ##### THIS IS CURRENTLY IN CONSTRUCTION, MOST SITES THIS IS NOT ENABLED.
 
-    if not pixscale == None and selfconfig['fully_platesolve_images_at_site_rather_than_pipe']: 
+    if not pixscale == None and selfconfig['fully_platesolve_images_at_site_rather_than_pipe']:
 
 
         wcsfilepath=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq))
@@ -925,12 +987,12 @@ try:
                 stderr = subprocess.DEVNULL,         # drop its stderr
                 #creationflags = DETACHED_PROCESS     # optional: child won’t keep your console open
             )
-    
+
             # send the pickle and close stdin so the child sees EOF
             p.stdin.write(pickledata)
             p.stdin.close()
 
-        
+
 
     # While we wait for the platesolving to happen we do all the other stuff
     # And we will pick up the solution towards the end.
@@ -990,17 +1052,24 @@ try:
         selfconfig["obs_id"].replace("-", "").replace("_", "")
     )
     hdu.header["SITEID"] = (
-        selfconfig["wema_name"].replace("-", "").replace("_", "")
+        lco_header_data.get('SITEID', selfconfig["wema_name"].replace("-", "").replace("_", "")),
+        'The WEMA ID. Required for LCO archive'
     )
-    hdu.header["TELID"] =selfconfig["obs_id"].replace("-", "").replace("_", "")
+    hdu.header["TELID"] = lco_header_data.get('TELID', selfconfig["obs_id"].replace("-", "").replace("_", ""))
     hdu.header["TELESCOP"] = selfconfig["obs_id"].replace("-", "").replace("_", "")
     hdu.header["PTRTEL"] = selfconfig["obs_id"].replace("-", "").replace("_", "")
-    hdu.header["PROPID"] = "ptr-" + selfconfig["obs_id"] + "-001-0001"
-    hdu.header["BLKUID"] = (
-        "1234567890",
-        "Just a placeholder right now. WER",
+    hdu.header["PROPID"] = (
+        lco_header_data.get('PROPID', 'na'),
+        'LCO Proposal ID'
     )
-    hdu.header["INSTRUME"] = (cam_config["name"], "Name of camera")
+    hdu.header["BLKUID"] = (
+        int(lco_header_data.get('BLKUID', BLKUID_PLACEHOLDER)),
+        'LCO scheduled block ID'
+    )
+    hdu.header["INSTRUME"] = (
+        lco_header_data.get('INSTRUME', cam_config["name"]),
+        "Name of instrument according to LCO configdb; fallback is PTR cam name"
+    )
     hdu.header["CAMNAME"] = (cam_config["desc"], "Instrument used")
     hdu.header["DETECTOR"] = (
         cam_config["detector"],
@@ -1074,8 +1143,8 @@ try:
     hdu.header["READOUTE"]= (readout_estimate, "Readout time estimated from this exposure")
     hdu.header["READOUTU"] = (readout_time, "Readout time used for this exposure")
     hdu.header["OBSTYPE"] = (
-        frame_type.upper(),
-        "Observation type",
+        lco_header_data.get('OBSTYPE', frame_type.upper()),
+        "Configuration type",
     )  # This report is fixed and it should vary...NEEDS FIXING!
     if frame_type.upper() == "SKY FLAT":
        frame_type =="skyflat"
@@ -1088,10 +1157,8 @@ try:
         dayobs,
         "Date at start of observing night"
     )
-    yesterday = datetime.datetime.now() - datetime.timedelta(1)
-    hdu.header["L1PUBDAT"] = datetime.datetime.strftime(
-        yesterday, "%Y-%m-%dT%H:%M:%S.%fZ"
-    )  # IF THIS DOESN"T WORK, subtract the extra datetime ...
+    yesterday = datetime.now(tz=timezone.utc) - timedelta(1)
+    hdu.header["L1PUBDAT"] = datetime.strftime(yesterday, "%Y-%m-%dT%H:%M:%S.%fZ")  # IF THIS DOESN"T WORK, subtract the extra datetime ...
 
     # There is a significant difference between substack timing and "normal" exposure timing
     # Also it has impacts on the actual "exposure time" as well.... the exposure time is "longer" but has LESS effective exposure time
@@ -1102,15 +1169,14 @@ try:
         substack_midexposure=np.mean(np.array(sub_stacker_midpoints))
 
         hdu.header["DATE"] = (
-            datetime.datetime.isoformat(
-                datetime.datetime.utcfromtimestamp(substack_start_time)
-            ),
+            timestamp_to_LCO_datestring(substack_start_time),
             "Start date and time of observation"
         )
 
         hdu.header["DATE-OBS"] = (
-            datetime.datetime.isoformat(
-                datetime.datetime.utcfromtimestamp(substack_start_time)
+            lco_header_data.get(
+                'DATE-OBS',
+                timestamp_to_LCO_datestring(substack_start_time)
             ),
             "Start date and time of observation"
         )
@@ -1178,15 +1244,14 @@ try:
     else:
 
         hdu.header["DATE"] = (
-            datetime.datetime.isoformat(
-                datetime.datetime.utcfromtimestamp(start_time_of_observation)
-            ),
+            timestamp_to_LCO_datestring(start_time_of_observation),
             "Start date and time of observation"
         )
 
         hdu.header["DATE-OBS"] = (
-            datetime.datetime.isoformat(
-                datetime.datetime.utcfromtimestamp(start_time_of_observation)
+            lco_header_data.get(
+                'DATE-OBS',
+                timestamp_to_LCO_datestring(start_time_of_observation)
             ),
             "Start date and time of observation"
         )
@@ -1483,7 +1548,10 @@ try:
 
     hdu.header["DRZPIXSC"] = (cam_settings['drizzle_value_for_later_stacking'], 'Target drizzle scale')
 
-    hdu.header["REQNUM"] = ("00000001", "Request number")
+    hdu.header["REQNUM"] = (
+        int(lco_header_data.get('REQNUM', REQNUM_PLACEHOLDER)),
+        'LCO Observation Request number'
+    )
     hdu.header["ISMASTER"] = (False, "Is master image")
 
 
@@ -1733,11 +1801,25 @@ try:
         ]) and not a_dark_exposure:
 
         if selfconfig['fully_platesolve_images_at_site_rather_than_pipe']:
-            wcsfilename=localcalibrationdirectory+ "archive/" + cam_alias + '/' + dayobs +'/wcs/'+ str(int(next_seq)) +'/' + selfconfig["obs_id"]+ "-" + cam_alias + '_' + str(frame_type) + '_' + str(this_exposure_filter) + "-" + dayobs+ "-"+ next_seq+ "-" + 'EX'+ "00.fits"
+            wcsfilename = f"{localcalibrationdirectory}archive/{cam_alias}/{dayobs}/wcs/{int(next_seq)}/{selfconfig['obs_id']}-{cam_alias}_{frame_type}_{this_exposure_filter}-{dayobs}-{next_seq}-EX00.fits"
         else:
             wcsfilename='none'
 
-        picklepayload=(copy.deepcopy(hdu.header),copy.deepcopy(selfconfig),cam_alias, ('fz_and_send', (raw_path + raw_name00 + ".fz").replace('.fz.fz','.fz'), copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure, wcsfilename))
+        picklepayload = (
+            copy.deepcopy(hdu.header),
+            copy.deepcopy(selfconfig),
+            cam_alias,
+            (
+                'fz_and_send',
+                (raw_path + raw_name00 + ".fz").replace('.fz.fz', '.fz'),
+                copy.deepcopy(hdu.data),
+                copy.deepcopy(hdu.header),
+                frame_type,
+                ra_at_time_of_exposure,
+                dec_at_time_of_exposure,
+                wcsfilename
+            )
+        )
 
         #plog (bn.nanmin(hdu.data))
 
@@ -1878,18 +1960,18 @@ try:
         cleanhdu.header=hdusmallheader
         cleanhdu.writeto(image_filename.replace('.npy','.head'))
 
-        
-        try:
-            os.remove(septhread_filename+ '.temp')
-        except:
-            pass
-        pickle.dump((image_filename,imageMode, unique, counts), open(septhread_filename+ '.temp', 'wb'))
 
         try:
-            os.remove(septhread_filename)
+            os.remove(photometry_thread_filename+ '.temp')
         except:
             pass
-        os.rename(septhread_filename + '.temp', septhread_filename)
+        pickle.dump((image_filename,imageMode, unique, counts), open(photometry_thread_filename+ '.temp', 'wb'))
+
+        try:
+            os.remove(photometry_thread_filename)
+        except:
+            pass
+        os.rename(photometry_thread_filename + '.temp', photometry_thread_filename)
 
 
         if smartstackid != 'no':

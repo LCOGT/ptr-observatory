@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-sep_process.py  sep_process.py  sep_process.py  sep_process.py  sep_process.py
+photometry_process.py   photometry_process.py   photometry_process.py
 
 Created on Sun Apr 23 04:37:30 2023
 
@@ -45,10 +45,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ptr_utility import create_color_plog
 
 log_color = (255, 130, 200) # pink
-plog = create_color_plog('platesolve', log_color)
+plog = create_color_plog('photometry', log_color)
 
 
-plog("Starting sep_process.py")
+plog("Starting photometry_process.py")
 
 
 def gaussian(x, amplitude, mean, stddev):
@@ -67,57 +67,54 @@ def radial_profile(data, center):
     radialprofile = tbin / nr
     return radialprofile
 
-#try:
-input_sep_info=pickle.load(sys.stdin.buffer)
-# except:
-#     plog("No input to the SEP Process.")
-#     breakpoint()
-#     plog ("Post breakpoint print statement.")
+use_test_inputs = False
+if use_test_inputs:
+    plog("Using test inputs for the photometry process")
+    inputs = pickle.load(open('test_photometry_subprocess_pickle','rb'))
+else:
+    inputs = pickle.load(sys.stdin.buffer)
 
-#input_sep_info=pickle.load(open('testSEPpickle','rb'))
 
-#plog ("HERE IS THE INCOMING. ")
-#plog (input_sep_info)
+# Extract values from the structured dictionary
+# File info
+photometry_thread_filename = inputs["file_info"]["photometry_thread_filename"]
+im_path = inputs["file_info"]["im_path"]
+text_name = inputs["file_info"]["text_name"]
+cal_path = inputs["file_info"]["cal_path"]
+cal_name = inputs["file_info"]["cal_name"]
 
-septhread_filename=input_sep_info[0]
-pixscale=input_sep_info[1]
-readnoise=input_sep_info[2]
-avg_foc=input_sep_info[3]
-focus_image=input_sep_info[4]
-im_path=input_sep_info[5]
-text_name=input_sep_info[6]
-hduheader=input_sep_info[7]
-cal_path=input_sep_info[8]
-cal_name=input_sep_info[9]
-frame_type=input_sep_info[10]
-focus_position=input_sep_info[11]
-gdevevents=input_sep_info[12]
-ephemnow=input_sep_info[13]
-focus_crop_width = input_sep_info[14]
-focus_crop_height = input_sep_info[15]
-is_osc= input_sep_info[16]
-interpolate_for_focus= input_sep_info[17]
-interpolate_for_sep= input_sep_info[20]
-focus_jpeg_size= input_sep_info[23]
-saturate= input_sep_info[24]
-minimum_realistic_seeing=input_sep_info[25]
-do_sep=input_sep_info[27]
-exposure_time=input_sep_info[28]
+# Camera settings
+pixscale = inputs["camera_settings"]["pixscale"]
+readnoise = inputs["camera_settings"]["readnoise"]
+native_bin = inputs["camera_settings"]["native_bin"]
+saturate = inputs["camera_settings"]["saturate"]
+
+# Processing options
+is_osc = inputs["processing_options"]["is_osc"]
+frame_type = inputs["processing_options"]["frame_type"]
+minimum_realistic_seeing = inputs["processing_options"]["minimum_realistic_seeing"]
+
+# Metadata
+hduheader = inputs["metadata"]["hduheader"]
+gdevevents = inputs["metadata"]["events"]
+ephemnow = inputs["metadata"]["ephem_now"]
+exposure_time = inputs["metadata"]["exposure_time"]
+
 
 ############ WAITER FOR
 # the filename token to arrive to start processing
-plog (septhread_filename)
+plog (photometry_thread_filename)
 
 file_wait_timeout_timer=time.time()
 
-while (not os.path.exists(septhread_filename)) and (time.time()-file_wait_timeout_timer < 600):
+while (not os.path.exists(photometry_thread_filename)) and (time.time()-file_wait_timeout_timer < 600):
     time.sleep(0.2)
 
 if time.time()-file_wait_timeout_timer > 599:
     sys.exit()
 
 
-(image_filename,imageMode, unique, counts)=pickle.load(open(septhread_filename,'rb'))
+(image_filename,imageMode, unique, counts)=pickle.load(open(photometry_thread_filename,'rb'))
 
 
 hdufocusdata=np.load(image_filename)
@@ -168,7 +165,7 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
 if float(readnoise) < 0.1:
     readnoise = 0.1
 
-if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
+if float(hduheader["EXPTIME"]) < 1.0:
     rfp = np.nan
     rfr = np.nan
     rfs = np.nan
@@ -645,7 +642,7 @@ except:
     hduheader["NSTARS"] = ( -99, 'Number of star-like sources in image')
 
 
-if input_sep_info[1] == None:
+if pixscale == None:
     hduheader['PIXSCALE']='Unknown'
 else:
     hduheader['PIXSCALE']=float(pixscale)
@@ -679,8 +676,8 @@ try:
     plog ("Writing out Photometry: " + str(time.time()-googtime))
 except:
     pass
-if do_sep and (not frame_type=='focus') and False: # The False is here because we don't actually use this yet, but it is working
 
+if not frame_type=='focus':
     # Constructing the slices and dices
     try:
         googtime=time.time()
@@ -790,65 +787,3 @@ if not frame_type == 'focus' and False: # The False is here because we don't act
     with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
         json.dump(starinspection_json_snippets, f)
     plog ("Writing out star inspection: " + str(time.time()-googtime))
-
-
-
-# If it is a focus image then it will get sent in a different manner to the UI for a jpeg
-# In this case, the image needs to be the 0.2 degree field that the focus field is made up of
-
-if frame_type == 'focus':
-    hdusmalldata = np.array(hdufocusdata)
-    fx, fy = hdusmalldata.shape
-    aspect_ratio= fx/fy
-
-    focus_jpeg_size=0.2/(pixscale/3600)
-
-    if focus_jpeg_size < fx:
-        crop_width = (fx - focus_jpeg_size) / 2
-    else:
-        crop_width =2
-
-    if focus_jpeg_size < fy:
-        crop_height = (fy - (focus_jpeg_size / aspect_ratio) ) / 2
-    else:
-        crop_height = 2
-
-    # Make sure it is an even number for OSCs
-    if (crop_width % 2) != 0:
-        crop_width = crop_width+1
-    if (crop_height % 2) != 0:
-        crop_height = crop_height+1
-
-    crop_width = int(crop_width)
-    crop_height = int(crop_height)
-
-    if crop_width > 0 or crop_height > 0:
-        hdusmalldata = hdusmalldata[crop_width:-crop_width, crop_height:-crop_height]
-
-    hdusmalldata = hdusmalldata - np.min(hdusmalldata)
-
-    stretched_data_float = Stretch().stretch(hdusmalldata+1000)
-    stretched_256 = 255 * stretched_data_float
-    hot = np.where(stretched_256 > 255)
-    cold = np.where(stretched_256 < 0)
-    stretched_256[hot] = 255
-    stretched_256[cold] = 0
-    stretched_data_uint8 = stretched_256.astype("uint8")
-    hot = np.where(stretched_data_uint8 > 255)
-    cold = np.where(stretched_data_uint8 < 0)
-    stretched_data_uint8[hot] = 255
-    stretched_data_uint8[cold] = 0
-
-    iy, ix = stretched_data_uint8.shape
-    final_image = Image.fromarray(stretched_data_uint8)
-    draw = ImageDraw.Draw(final_image)
-
-    draw.text((0, 0), str(focus_position), (255))
-    try:
-        final_image.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-    except:
-        pass
-
-    del hdusmalldata
-    del stretched_data_float
-    del final_image

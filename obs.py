@@ -59,7 +59,7 @@ from devices.rotator import Rotator
 #from devices.screen import Screen
 from devices.sequencer import Sequencer
 from ptr_events import Events
-
+from siteproxy import SiteProxy
 from ptr_utility import plog
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
@@ -265,6 +265,8 @@ class Observatory:
         self.config = ptr_config
         self.wema_name = self.config["wema_name"]
         self.wema_config = self.get_wema_config() # fetch the wema config from AWS
+
+        self.siteproxy = SiteProxy()
 
         # Used to tell whether the obs is currently rebooting theskyx
         self.rebooting_theskyx = False
@@ -597,6 +599,13 @@ class Observatory:
             plog("Engaging mountless operations. Telescope set in manual mode")
             self.mountless_operation = True
             self.scope_in_manual_mode = True
+
+        self.lco_archive_queue = queue.Queue(maxsize=0)
+        self.lco_archive_queue_thread = threading.Thread(
+            target=self.lco_upload_queue_worker, args=()
+        )
+        self.lco_archive_queue_thread.daemon = True
+        self.lco_archive_queue_thread.start()
 
         self.ptrarchive_queue = queue.PriorityQueue(maxsize=0)
         self.ptrarchive_queue_thread = threading.Thread(
@@ -1526,21 +1535,23 @@ class Observatory:
                         #plog(r_date, r_time)
                         d_string = r_date + 'T' +r_time
                         d_time = datetime.datetime.fromisoformat(d_string)+datetime.timedelta(minutes=7.5)
-                        distance = 10.001
+                        distance = 25.001
+
+                        
                         if datetime.datetime.now() < d_time:   #  Here validate if not stale before doing next line.
                             for lin in light_rec.readlines():
                                 if 'distance' in lin:
                                     s_range = float(lin.split()[-2])
-                                    if s_range < distance:
+                                    if s_range < distance:  #if more than 1 storm, find the closest one <= 20km
                                         distance = s_range
                         else:
                             #plog("Lightning report is stale.")
                             pass
-                    if distance <=  10.0:
-                        plog("Lightning distance is:   ", distance, ' km away.')
+                    if distance <=  25.0:
+                        plog(" **************************** WARNING, Lightning distance is:   ", distance, ' km away. TOO CLOSE')
                     else:
                         pass
-                        #plog('Lighting is > 10 km away,')
+                        #plog(' ****************************Lightning is > 25 km (15 miles) away.  Safe.  ')
                 except:
                     plog.err('Lightning distance test did not work')
 
@@ -2806,12 +2817,9 @@ class Observatory:
                             headerdict = {}
                             for entry in tempheader.keys():
                                 headerdict[entry] = tempheader[entry]
-                            #20250112  Deleting below.   WER
-                            #plog("obs line 2563, header;  ", headerdict)   #NB try to debug missing value
-                            # 'frame_basename,size,DATE-OBS,DAY-OBS,INSTRUME,SITEID,TELID')  20250112 WER
-                            upload_file_and_ingest_to_archive(
-                                fileobj, file_metadata=headerdict
-                            )
+
+                            # this is the actual upload
+                            upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)
 
                             # Only remove file if successfully uploaded
                             if ("calibmasters" not in filepath) or (
@@ -2830,10 +2838,9 @@ class Observatory:
                             )
                             broken = 1
 
-                        except ocs_ingester.exceptions.DoNotRetryError:
+                        except ocs_ingester.exceptions.DoNotRetryError as e:
                             plog.err("Couldn't upload to PTR archive: " + str(filepath))
-                            plog.err(traceback.format_exc())
-                            #breakpoint()
+                            plog.err(e)
                             broken = 1
                         except Exception as e:
                             if "urllib3.exceptions.ConnectTimeoutError" in str(
@@ -2862,9 +2869,7 @@ class Observatory:
                                 # And give it a little sleep
                                 return str(filepath.split("/")[-1]) + " timed out."
 
-                            elif "credential_provider" in str(
-                                e
-                            ) or "endpoint_resolver" in str(e):
+                            elif "credential_provider" in str(e) or "endpoint_resolver" in str(e):
                                 plog.err("Credential provider error for the ptrarchive, bunging a file back in the queue.")
                                 time.sleep(10)
                                 self.ptrarchive_queue.put(
@@ -2978,6 +2983,83 @@ class Observatory:
                     time.sleep(0.2)
             else:
                 time.sleep(0.5)
+
+
+    def lco_upload_queue_worker(self):
+        """Read from the LCO upload queue and send files to the LCO archive.
+
+        Continuously monitors the queue and processes upload requests.
+        Files that don't exist yet or are empty are re-queued for later processing.
+        """
+        while True:
+            try:
+                # Block with timeout instead of empty check + sleep
+                to_upload = self.lco_archive_queue.get(block=True, timeout=5)
+            except queue.Empty:
+                continue
+
+            try:
+                # Parse payload
+                try:
+                    filepath = to_upload['filepath']
+                    metadata = to_upload['metadata']
+                    is_thumbnail = to_upload['is_thumbnail']
+                except KeyError as e:
+                    plog.err(f"Missing required field in upload item: {e}, item: {to_upload}")
+                    continue
+
+                # Check if file is ready
+                file_exists = os.path.exists(filepath)
+                file_has_data = False
+
+                if file_exists:
+                    try:
+                        file_has_data = os.stat(filepath).st_size > 0
+                    except OSError as e:
+                        plog.err(f"Error checking file size for {filepath}: {e}")
+
+                # Re-queue if file not ready
+                if not (file_exists and file_has_data):
+                    self.lco_archive_queue.put(to_upload)
+                    time.sleep(3)
+                    continue
+
+                # Upload file
+                try:
+
+                    plog('Uploading file to LCO archive: ', filepath)
+                    # Use this to inspect the metadata of the image being sent
+                    # if not is_thumbnail:
+                    #     with fits.open(filepath) as hdul:
+                    #         hdul.info()
+                    #         if 'COMPRESSED_IMAGE' in hdul:
+                    #             header = hdul['COMPRESSED_IMAGE'].header
+                    #         else:
+                    #             header = hdul[0].header
+                    #         plog('printing fits header')
+                    #         print(header)
+                    # else:
+                    #     plog('printing jpg metadata', metadata)
+
+
+                    response = self.siteproxy.upload_data(filepath, is_thumbnail, metadata)
+                    if response.status_code == 201:
+                        plog(f"Successfully uploaded {filepath}")
+                    else:
+                        plog.err(f"Upload failed for {filepath} with status {response.status_code}: {response.text}")
+                        self.lco_archive_queue.put(to_upload)  # Re-queue on failed upload
+
+                except IOError as e:
+                    plog.err(f"IO error reading file {filepath}: {e}")
+                    self.lco_archive_queue.put(to_upload)  # Re-queue on IO errors
+                except Exception as e:
+                    plog.err(f"Error uploading {filepath} to LCO archive: {e}")
+                    self.lco_archive_queue.put(to_upload)  # Re-queue on general errors
+
+            except Exception as e:
+                plog.err(f"Unexpected error processing queue item: {e}")
+                # Consider whether to re-queue here depending on the error
+
 
     # Note this is a thread!
     def send_to_ptrarchive(self):
@@ -4848,6 +4930,26 @@ class Observatory:
 
         return aws_weather_status
 
+    def enqueue_for_lco_archive(self, filepath: str, metadata: dict=None, is_thumbnail: bool=False):
+        """ Add an entry to the queue (self.lco_archive_queue) that feeds the LCO archive thread.
+        Entries are added before the file is created. The queue is monitored by the
+        lco_archive_to_aws method which is run as a separate thread. It checks for existence of
+        the files in the queue, and once they exist, it uploads them and removes
+        the corresponding entry from the queue.
+
+        Args:
+            filepath:                string path to the directory where the file to upload is located
+            metadata:               header metadata
+            is_thumbnail:           True to upload to the ingest_thumbnail endpoint; False to upload to the ingest endpoint
+        """
+        payload = {
+            "filepath": filepath,
+            "metadata": metadata,
+            "is_thumbnail": is_thumbnail,
+            "time_submitted": time.time()
+        }
+        self.lco_archive_queue.put(payload, block=False)
+
     def enqueue_for_PTRarchive(self, priority, im_path, name):
         image = (im_path, name, time.time())
         self.ptrarchive_queue.put((priority, image), block=False)
@@ -4919,7 +5021,6 @@ class Observatory:
 
     def request_scan_requests(self):
         self.scan_request_queue.put("normal", block=False)
-
 
     def flush_command_queue(self):
         # So this command reads the commands waiting and just ... ignores them

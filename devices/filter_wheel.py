@@ -494,7 +494,7 @@ class FilterWheel:
             Integer index of the filter in self.filter_data if found,
             -1 if the filter is not found
         """
-        default_name = self.settings.get("default_filter", None)
+        default_name = str(self.settings.get("default_filter", None)).lower()
         if default_name == None:
             plog("WARNING: Default filter not set. Using fallback of filter 0.")
             return 0
@@ -601,7 +601,7 @@ class FilterWheel:
         """Sets the filter position by filter name."""
 
         self.filter_changing = True
-        using_substitute_filter = False
+        #using_substitute_filter = False
 
         try:
             filter_name = str(req["filter"]).lower()
@@ -610,7 +610,7 @@ class FilterWheel:
 
         if filter_name =='focus':
             try:
-                filter_name=self.config['settings']['focus_filter']
+                filter_name=str(self.config['settings']['focus_filter']).lower()
             except:
                 plog ("tried to set focus filter but it isn't set in the config so trying for a substitute.")
 
@@ -674,7 +674,7 @@ class FilterWheel:
 
     def home_command(self, opt: dict):
         """Sets the filter to the home position."""
-        self.set_name_command({"filter": self.settings['default_filter']}, {})
+        self.set_name_command({"filter": str(self.settings['default_filter']).lower()}, {})
 
 
     def get_starting_throughput_value(self, requested_filter: str):

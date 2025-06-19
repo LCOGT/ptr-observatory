@@ -4,7 +4,6 @@ from dateutil import parser
 import time
 import json
 import requests
-import os
 import threading
 from devices.sequencer_helpers import is_valid_utc_iso
 from ptr_utility import plog
@@ -15,6 +14,7 @@ class NightlyScheduleManager:
                  site: str,
                  schedule_start: int,
                  schedule_end: int,
+                 site_proxy, # SiteProxy object, passed from the observatory class
                  ptr_update_interval: int=60,  # Default to 60 seconds
                  lco_update_interval: int=30,   # Default to 30 seconds
                  include_lco_scheduler: bool=True,
@@ -28,6 +28,7 @@ class NightlyScheduleManager:
         - site (str): the ptr site (e.g. mrc1). Used for fetching PTR calendar events.
         - schedule_start (int): unix timestamp; get events that start after this time
         - schedule_end   (int): unix timestamp; get events that end before this time
+        - site_proxy (SiteProxy): the site proxy class, used for communication with the site proxy
         - ptr_update_interval (int): How often to update PTR schedule in seconds
         - lco_update_interval (int): How often to update LCO schedule in seconds
         - include_lco_scheduler (bool): if this is false, we won't show errors for missing LCO scheduler info
@@ -36,16 +37,9 @@ class NightlyScheduleManager:
         - configdb_enclosure (str): name of the enclosure in configdb, used like above
         """
 
-        self.site_proxy_offline = not include_lco_scheduler # Set site proxy offline if we're not including the lco scheduler
+        self.site_proxy = site_proxy
+        self.site_proxy_offline = not include_lco_scheduler or site_proxy.site_proxy_offline # Set site proxy offline if we're not including the lco scheduler
         if include_lco_scheduler:
-            if 'SITE_PROXY_BASE_URL' not in os.environ:
-                plog.err('the environment variable SITE_PROXY_BASE_URL is missing and scheduler observations won\'t work.')
-                plog('Please add this to the .env file and restart the observatory.')
-                self.site_proxy_offline = True
-            if 'SITE_PROXY_TOKEN' not in os.environ:
-                plog.err('ERROR: the environment variable SITE_PROXY_TOKEN is missing, which means we can\'t communicate with the site proxy')
-                plog('Please add this to the .env file and restart the observatory.')
-                self.site_proxy_offline = True
             if configdb_telescope == None:
                 plog.err('the configdb_telescope is not set. This is required to fetch the schedule from the site proxy.')
                 plog('Observations from the scheduler will not be fetched.')
@@ -53,9 +47,6 @@ class NightlyScheduleManager:
             if configdb_enclosure == None:
                 plog.warn('the configdb_enclosure is not set. This is useful for better filtering of site proxy scheudles.')
                 plog.warn('It should be an easy value to add to the site config')
-        self.site_proxy_base_url = os.getenv('SITE_PROXY_BASE_URL')
-        self.site_proxy = requests.Session()
-        self.site_proxy.headers.update({'Authorization': os.getenv('SITE_PROXY_TOKEN')})
         self.configdb_telescope = configdb_telescope
         self.configdb_enclosure = configdb_enclosure
 
@@ -109,30 +100,6 @@ class NightlyScheduleManager:
             return None
 
 
-    def _get_lco_last_scheduled(self):
-        """
-        Get the time the latest schedule was created by the LCO scheduler
-        This is useful to know if we need to update the schedule or not.
-        """
-        if self.site_proxy_offline:
-            return
-        url = self.site_proxy_base_url + '/observation-portal/api/last_scheduled/'
-        try:
-            response = self.site_proxy.get(url)
-            # Check if the response is successful and not empty
-            if response.status_code == 200 and response.text.strip():
-                return response.json().get('last_scheduled')
-            else:
-                plog(f"Warning: LCO scheduler API returned unexpected response. Status: {response.status_code}, Content: {response.text}")
-                return None
-        except json.JSONDecodeError:
-            plog(f"Warning: Could not decode JSON from LCO scheduler API. Response content: {response.text}")
-            return None
-        except requests.exceptions.RequestException as e:
-            plog(f"Warning: Error connecting to LCO scheduler API: {str(e)}")
-            return None
-
-
     def update_lco_schedule(self, start_time=None, end_time=None):
         """
         Get the latest schedule for this site from the site proxy.
@@ -146,7 +113,7 @@ class NightlyScheduleManager:
             return
 
         # First check if there's anything new since last time we checked
-        last_lco_schedule_time = self._get_lco_last_scheduled()
+        last_lco_schedule_time = self.site_proxy.get_lco_last_scheduled()
         if self._time_of_last_lco_schedule and self._time_of_last_lco_schedule == last_lco_schedule_time:
             return
 
@@ -158,18 +125,7 @@ class NightlyScheduleManager:
         if end_time is None or not is_valid_utc_iso(end_time):
             end_time = datetime.fromtimestamp(self.schedule_end).isoformat().split(".")[0]
 
-        url = self.site_proxy_base_url + '/observation-portal/api/schedule/'
-        params = {
-            'start': start_time,
-            'end': end_time,
-            'telescope': self.configdb_telescope,
-            'enclosure': self.configdb_enclosure
-        }
-        try:
-            events = self.site_proxy.get(url, params=params).json().get('results', [])
-        except:
-            plog(f"Failed to update the LCO schedule. Request url was {url} and url params were {params}.")
-            events = []
+        events = self.site_proxy.get_lco_schedule(start_time, end_time, self.configdb_telescope, self.configdb_enclosure)
 
         with self._lock:
             self._lco_events = [
@@ -441,8 +397,6 @@ class NightlyScheduleManager:
                 self.update_lco_schedule()
             except Exception as e:
                 plog(f"Error in LCO schedule update thread: {str(e)}")
-                
-                #plog(traceback.format_exc())
 
             # Sleep until next update interval or until stopped
             self._stop_threads.wait(self.lco_update_interval)
@@ -515,8 +469,10 @@ class NightlyScheduleManager:
         if request is None:
             request = self.generate_fake_request(lat, lng)
 
-        # Create a unique ID for this fake observation
-        fake_id = f"fake_lco_{int(time.time())}"
+        # Set the ID for the fake observation
+        # We use the largest number allowed for an observation ID in the archive
+        # as a simple way of avoiding collisions with a real observation ID
+        fake_id = 2147483646
 
         # Create the fake event with the structure expected by the scheduler
         fake_event = {
@@ -692,7 +648,7 @@ class NightlyScheduleManager:
                     "instrument_configs": [
                         {
                             "exposure_count": 5,
-                            "exposure_time": 10.0,
+                            "exposure_time": 60.0,
                             "extra_params": {
                                 "rotator_angle": 0,
                             },

@@ -22,6 +22,7 @@ support_info/Installers/.wget-hsts
 subprocesses/testplatesolvepickle
 subprocesses/testsmartstackpickle
 subprocesses/testSEPpickle
+subprocesses/test_photometry_subprocess_pickle
 subprocesses/testpostprocess.pickle
 subprocesses/crosscorrelprocess.pickle
 subprocesses/Platesolveprocess - Copy (3).py

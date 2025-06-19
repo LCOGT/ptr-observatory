@@ -147,36 +147,34 @@ site_config = {
 
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': False,  # This it the OCS-archive, archive-photonranch.org
+    'save_calib_and_misc_files': True,
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
-    # WER changed Z to X 20231113 @1:16 UTC
     'pipe_archive_folder_path': 'X:/localptrarchive/',
-# These are options to minimise diskspace for calibrations
+    # These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
     'save_archive_versions_of_final_calibrations' : False,
-
     # 'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
-    # LINKS FOR OBS FOLDERS
     'client_hostname': "ARO-0m30",     # Generic place for this host to stash.
     'archive_path': 'F:/ptr/',
+    'local_calibration_path': 'F:/ptr/',
     'alt_path': 'D:/alt/',
-    # 'temporary_local_alt_archive_to_hold_files_while_copying' : 'F:/tempfolderforaltpath',
-
+    'plog_path':  'F:/ptr/aro1/',  # place where night logs can be found.  May not be used on aro1 wer 20250322
     'save_to_alt_path': 'no',
     # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
-    'local_calibration_path': 'F:/ptr/',
+    
     # Number of days to keep files in the local archive before deletion. Negative means never delete
-    'archive_age': 4.0,
+    'archive_age': 3,
 
 
-    'plog_path':  'F:/ptr/aro1/',  # place where night logs can be found.  May not be used on aro1 wer 20250322
+    
 
 
-    'redis_available':  True,
-    'redis_ip': "10.0.0.174:6379",
+    'redis_available':  False,
+    #'redis_ip': "10.0.0.174:6379",
 
     # Scratch drive folder
-    'scratch_drive_folder': 'D:/obstemp/',
+    #'scratch_drive_folder': 'D:/obstemp/',
 
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
@@ -208,7 +206,7 @@ site_config = {
     # Usually set this to True
     # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
     'fully_platesolve_images_at_site_rather_than_pipe' : True,
-
+    'platesolve_timeout': 60,
 
     # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
     # So this is False for Bisques and true for everyone else.
@@ -572,9 +570,9 @@ site_config = {
             'maximum_good_focus_in_arcsecond': 10.0,
             'focuser_movement_settle_time': 3,
             # F4.9 setup
-            'reference':  5221.2,    #  20241204
-            'ref_temp':   7.5,       #  Average for the fit ~ 27.5 degrees wide +20 to -75
-            'temp_coeff': -24.974,   #  R^2 = 0.769
+            'reference':  4875,    #  20241204
+            'ref_temp':   9.3,       #  Average for the fit ~ 27.5 degrees wide +20 to -75
+            'temp_coeff': -25.0,   #  WER plugged 20250522 R^2 = 0.769
 
             'relative_focuser': False,
 
@@ -893,13 +891,6 @@ site_config = {
                 'rotate90_jpeg': False,
                 'rotate180_jpeg':False,
                 'rotate270_jpeg': False,
-
-                # This is purely to crop the preview jpeg for the UI
-                'crop_preview': False,
-                'crop_preview_ybottom': 2,  # 2 needed if Bayer array
-                'crop_preview_ytop': 2,
-                'crop_preview_xleft': 2,
-                'crop_preview_xright': 2,
 
                 # # For large fields of view, crop the images down to solve faster.
                 # # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
