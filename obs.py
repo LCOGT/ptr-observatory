@@ -1002,18 +1002,42 @@ class Observatory:
 
         print("--- Finished Initializing Devices ---\n")
 
+    # def get_wema_config(self):
+    #     """ Fetch the WEMA config from AWS """
+    #     wema_config = None
+    #     url = self.api_http_base + f"{self.wema_name}/config/"
+    #     try:
+    #         response = requests.get(url, timeout=20)
+    #         wema_config = response.json()['configuration']
+    #         wema_last_recorded_day_dir = wema_config['events'].get('day_directory', '<missing>')
+    #         plog(f"Retrieved wema config, lastest version is from day_directory {wema_last_recorded_day_dir}")
+    #     except Exception as e:
+    #         plog(traceback.format_exc())
+    #         breakpoint()
+    #         plog.warn("WARNING: failed to get wema config!", e)
+    #     return wema_config
+
     def get_wema_config(self):
         """ Fetch the WEMA config from AWS """
         wema_config = None
         url = self.api_http_base + f"{self.wema_name}/config/"
         try:
             response = requests.get(url, timeout=20)
-            wema_config = response.json()['configuration']
-            wema_last_recorded_day_dir = wema_config['events'].get('day_directory', '<missing>')
-            plog(f"Retrieved wema config, lastest version is from day_directory {wema_last_recorded_day_dir}")
+            data = response.json()
+            # if the top‐level JSON has a 'wema_name' key, use the whole dict,
+            # otherwise pull out the 'configuration' sub-dict
+            if 'wema_name' in data:
+                wema_config = data
+            else:
+                wema_config = data.get('configuration', {})
+            wema_last_recorded_day_dir = wema_config.get('events', {}).get('day_directory', '<missing>')
+            plog(f"Retrieved wema config, latest version is from day_directory {wema_last_recorded_day_dir}")
         except Exception as e:
+            plog(traceback.format_exc())
+            breakpoint()
             plog.warn("WARNING: failed to get wema config!", e)
         return wema_config
+
 
 
     def update_config(self):
@@ -3174,7 +3198,7 @@ class Observatory:
                 while not self.sendtouser_queue.empty():
                     (p_log, p_level) = self.sendtouser_queue.get(block=False)
                     #url_log = "https://logs.photonranch.org/logs/newlog"
-                    url_log = self.logs_http_base + "/newlog"
+                    url_log = self.logs_http_base + "newlog"
                     body = json.dumps(
                         {
                             "site": self.config["obs_id"],
@@ -4794,48 +4818,89 @@ class Observatory:
         #uri_status = f"https://status.photonranch.org/status/{self.wema_name}/enclosure/"
         uri_status = self.status_http_base + f"{self.wema_name}/enclosure/"
         try:
-            aws_enclosure_status = reqs.get(uri_status, timeout=20)
-            aws_enclosure_status = aws_enclosure_status.json()
+            # aws_enclosure_status = reqs.get(uri_status, timeout=20)
+            # aws_enclosure_status = aws_enclosure_status.json()
+            # aws_enclosure_status["site"] = self.name
+
+            # for enclosurekey in aws_enclosure_status["status"]["enclosure"][
+            #     "enclosure1"
+            # ].keys():
+            #     aws_enclosure_status["status"]["enclosure"]["enclosure1"][
+            #         enclosurekey
+            #     ] = aws_enclosure_status["status"]["enclosure"]["enclosure1"][
+            #         enclosurekey
+            #     ][
+            #         "val"
+            #     ]
+
+            # if self.assume_roof_open:
+            #     aws_enclosure_status["status"]["enclosure"]["enclosure1"][
+            #         "shutter_status"
+            #     ] = "Sim. Open"
+            #     aws_enclosure_status["status"]["enclosure"]["enclosure1"][
+            #         "enclosure_mode"
+            #     ] = "Simulated"
+
+            # try:
+            #     # To stop status's filling up the queue under poor connection conditions
+            #     # There is a size limit to the queue
+            #     if self.send_status_queue.qsize() < 7:
+            #         self.send_status_queue.put(
+            #             (self.name, "enclosure",
+            #              aws_enclosure_status["status"], self.status_http_base),
+            #             block=False,
+            #         )
+
+            # except Exception as e:
+            #     plog.err("aws enclosure send failed ", e)
+
+            # aws_enclosure_status = aws_enclosure_status["status"]["enclosure"][
+            #     "enclosure1"
+            # ]
+            
+            aws_resp = reqs.get(uri_status, timeout=20)
+            aws_enclosure_status = aws_resp.json()
             aws_enclosure_status["site"] = self.name
-
-            for enclosurekey in aws_enclosure_status["status"]["enclosure"][
-                "enclosure1"
-            ].keys():
-                aws_enclosure_status["status"]["enclosure"]["enclosure1"][
-                    enclosurekey
-                ] = aws_enclosure_status["status"]["enclosure"]["enclosure1"][
-                    enclosurekey
-                ][
-                    "val"
-                ]
-
+            
+            # drill into enclosure1
+            enc1 = aws_enclosure_status \
+                .get("status", {}) \
+                .get("enclosure", {}) \
+                .get("enclosure1", {})
+            
+            # only replace v with v["val"] when v is a dict that has "val"
+            for key, v in list(enc1.items()):
+                if isinstance(v, dict) and "val" in v:
+                    enc1[key] = v["val"]
+                # else: leave enc1[key] alone (it's already a primitive)
+            
+            # apply your simulated‐open override
             if self.assume_roof_open:
-                aws_enclosure_status["status"]["enclosure"]["enclosure1"][
-                    "shutter_status"
-                ] = "Sim. Open"
-                aws_enclosure_status["status"]["enclosure"]["enclosure1"][
-                    "enclosure_mode"
-                ] = "Simulated"
-
+                enc1["shutter_status"] = "Sim. Open"
+                enc1["enclosure_mode"]  = "Simulated"
+            
+            # now push only the cleaned status dict onto your queue
             try:
-                # To stop status's filling up the queue under poor connection conditions
-                # There is a size limit to the queue
                 if self.send_status_queue.qsize() < 7:
                     self.send_status_queue.put(
-                        (self.name, "enclosure",
-                         aws_enclosure_status["status"], self.status_http_base),
+                        (self.name, "enclosure", aws_enclosure_status["status"], self.status_http_base),
                         block=False,
                     )
-
             except Exception as e:
                 plog.err("aws enclosure send failed ", e)
+            
+            # finally reassign so downstream code sees just the enclosure1 dict
+            aws_enclosure_status = enc1
 
-            aws_enclosure_status = aws_enclosure_status["status"]["enclosure"][
-                "enclosure1"
-            ]
+
 
         except Exception as e:
             plog.err("Failed to get aws enclosure status. Usually not fatal:  ", e)
+            
+            plog.err(traceback.format_exc())
+            plog.err("Failed rebooting, needs to be debugged")
+            breakpoint()
+            
 
         try:
             if self.devices["sequencer"].last_roof_status == "Closed" and aws_enclosure_status[
@@ -4898,31 +4963,54 @@ class Observatory:
             ] = None
 
         try:
-            if (
-                aws_weather_status["status"]["observing_conditions"][
-                    "observing_conditions1"
-                ]
-                == None
-            ):
-                aws_weather_status["status"]["observing_conditions"][
-                    "observing_conditions1"
-                ] = {"wx_ok": "Unknown"}
+            # if (
+            #     aws_weather_status["status"]["observing_conditions"][
+            #         "observing_conditions1"
+            #     ]
+            #     == None
+            # ):
+            #     aws_weather_status["status"]["observing_conditions"][
+            #         "observing_conditions1"
+            #     ] = {"wx_ok": "Unknown"}
+            # else:
+            #     for weatherkey in aws_weather_status["status"]["observing_conditions"][
+            #         "observing_conditions1"
+            #     ].keys():
+            #         aws_weather_status["status"]["observing_conditions"][
+            #             "observing_conditions1"
+            #         ][weatherkey] = aws_weather_status["status"][
+            #             "observing_conditions"
+            #         ][
+            #             "observing_conditions1"
+            #         ][
+            #             weatherkey
+            #         ][
+            #             "val"
+            #         ]
+            
+            obs = aws_weather_status["status"]["observing_conditions"]["observing_conditions1"]
+            
+            #print (obs)
+
+            # If it ever comes back None, give it a placeholder
+            if obs is None:
+                aws_weather_status["status"]["observing_conditions"]["observing_conditions1"] = {"wx_ok": "Unknown"}
             else:
-                for weatherkey in aws_weather_status["status"]["observing_conditions"][
-                    "observing_conditions1"
-                ].keys():
-                    aws_weather_status["status"]["observing_conditions"][
-                        "observing_conditions1"
-                    ][weatherkey] = aws_weather_status["status"][
-                        "observing_conditions"
-                    ][
-                        "observing_conditions1"
-                    ][
-                        weatherkey
-                    ][
-                        "val"
-                    ]
+                # Only extract .val if it's really there
+                for key, val in list(obs.items()):
+                    if isinstance(val, dict) and "val" in val:
+                        obs[key] = val["val"]
+                    # else: keep val untouched
+            #print (aws_weather_status)
+            # return aws_weather_status
+            
+            
         except:
+            
+            plog.err(traceback.format_exc())
+            plog.err("Failed rebooting, needs to be debugged")
+            breakpoint()
+            
             plog.warn("bit of a glitch in weather status")
             aws_weather_status = {}
             aws_weather_status["status"] = {}
