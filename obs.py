@@ -210,15 +210,15 @@ def findProcessIdByName(processName):
     return listOfProcessObjects
 
 
-def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
+def authenticated_request(method: str, uri: str, payload: dict, base_url: str) -> str:
     # Populate the request parameters. Include data only if it was sent.
     #base_url = "https://api.photonranch.org/api"
     #base_url = self.api_http_base
-    base_url=payload['api_http_base']
+    #base_url=api_http_base
     request_kwargs = {
         "method": method,
         "timeout": 10,
-        "url": f"{base_url}/{uri}",
+        "url": f"{base_url}{uri}",
     }
     if payload is not None:
         request_kwargs["data"] = json.dumps(payload)
@@ -1030,7 +1030,7 @@ class Observatory:
         retryapi = True
         while retryapi:
             try:
-                response = authenticated_request("PUT", uri, self.config)
+                response = authenticated_request("PUT", uri, self.config, self.api_http_base)
                 retryapi = False
             except:
                 plog(traceback.format_exc())
@@ -2784,7 +2784,7 @@ class Observatory:
                     if filepath.split(".")[-1] == "token":
                         files = {"file": (filepath, fileobj)}
                         aws_resp = authenticated_request(
-                            "POST", "/upload/", {"object_name": filename}
+                            "POST", "/upload/", {"object_name": filename},self.api_http_base
                         )
                         retry = 0
                         while retry < 10:
@@ -4444,7 +4444,8 @@ class Observatory:
                                 request_body["s3_directory"] = "info-images"
                                 request_body["info_channel"] = info_image_channel
 
-                            aws_resp = authenticated_request("POST", "/upload/", request_body) # this gets the presigned s3 upload url
+                            aws_resp = authenticated_request("POST", "/upload/", request_body, self.api_http_base) # this gets the presigned s3 upload url
+
                             with open(filepath, "rb") as fileobj:
                                 files = {"file": (filepath, fileobj)}
                                 try:
@@ -4455,6 +4456,7 @@ class Observatory:
                                         timeout=10,
                                     )
                                 except Exception as e:
+                                    plog.err((traceback.format_exc()))
                                     if (
                                         "timeout" in str(e).lower()
                                         or "SSLWantWriteError"
@@ -4521,7 +4523,7 @@ class Observatory:
                     # Full path to file on disk
                     filepath = pri_image[1][0] + filename
                     aws_resp = authenticated_request(
-                        "POST", "/upload/", {"object_name": filename}
+                        "POST", "/upload/", {"object_name": filename}, self.api_http_base
                     )
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
@@ -4604,7 +4606,7 @@ class Observatory:
                             # To the extent it has a size
                             if os.stat(filepath).st_size > 0:
                                 aws_resp = authenticated_request(
-                                    "POST", "/upload/", {"object_name": filename}
+                                    "POST", "/upload/", {"object_name": filename}, self.api_http_base
                                 )
                                 with open(filepath, "rb") as fileobj:
                                     files = {"file": (filepath, fileobj)}
