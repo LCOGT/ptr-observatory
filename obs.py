@@ -72,7 +72,7 @@ retries = Retry(total=3, backoff_factor=0.1,
                 status_forcelist=[500, 502, 503, 504])
 reqs.mount("http://", HTTPAdapter(max_retries=retries))
 
-import ftputil
+#import ftputil
 
 
 
@@ -109,60 +109,60 @@ def http_upload(server, filedirectory, filename, upload_type):
     
     
 
-def ftp_upload_with_ftputil(
-    server: str,
-    port: int,
-    username: str,
-    password: str,
-    remote_dir: str,
-    local_dir: str,
-    filenames: list[str],
-    use_passive: bool = True,
-    timeout: int = 30
-):
-    """
-    Uses ftputil to connect and upload a list of files.
-    """
-    # ftputil’s FTPHost automatically handles connect/login under the hood.
+# def ftp_upload_with_ftputil(
+#     server: str,
+#     port: int,
+#     username: str,
+#     password: str,
+#     remote_dir: str,
+#     local_dir: str,
+#     filenames: list[str],
+#     use_passive: bool = True,
+#     timeout: int = 30
+# ):
+#     """
+#     Uses ftputil to connect and upload a list of files.
+#     """
+#     # ftputil’s FTPHost automatically handles connect/login under the hood.
 
-    try:
-        host = ftputil.FTPHost(
-            host=server,
-            user=username,
-            passwd=password,
-            port=port,
-            timeout=timeout,
-        )
-        # Toggle passive mode if needed (default is True)
-        host.session.set_pasv(use_passive)
+#     try:
+#         host = ftputil.FTPHost(
+#             host=server,
+#             user=username,
+#             passwd=password,
+#             port=port,
+#             timeout=timeout,
+#         )
+#         # Toggle passive mode if needed (default is True)
+#         host.session.set_pasv(use_passive)
 
-    except:
-        plog(traceback.format_exc())
-        breakpoint()
+#     except:
+#         plog(traceback.format_exc())
+#         breakpoint()
 
-    try:
-        # Ensure the remote directory exists (mkdirs=True will create nested dirs)
-        host.makedirs(remote_dir, exist_ok=True)
+#     try:
+#         # Ensure the remote directory exists (mkdirs=True will create nested dirs)
+#         host.makedirs(remote_dir, exist_ok=True)
 
-        for fname in filenames:
-            local_path = os.path.join(local_dir, fname)
-            if not os.path.isfile(local_path):
-                print(f"[!] Skipping {local_path} (not found).")
-                continue
+#         for fname in filenames:
+#             local_path = os.path.join(local_dir, fname)
+#             if not os.path.isfile(local_path):
+#                 print(f"[!] Skipping {local_path} (not found).")
+#                 continue
 
-            remote_path = host.path.join(remote_dir, fname)
-            print(f"Uploading {local_path} → {remote_path}…", end=" ")
-            # upload_if_newer only sends if local is newer or remote missing;
-            # you can also use host.upload(local_path, remote_path) to force.
-            host.upload_if_newer(local_path, remote_path)
-            print("done.")
+#             remote_path = host.path.join(remote_dir, fname)
+#             print(f"Uploading {local_path} → {remote_path}…", end=" ")
+#             # upload_if_newer only sends if local is newer or remote missing;
+#             # you can also use host.upload(local_path, remote_path) to force.
+#             host.upload_if_newer(local_path, remote_path)
+#             print("done.")
 
     
 
-    except Exception as e:
-        print("[ERROR] ftputil upload failed:", e)
-    finally:
-        host.close()
+#     except Exception as e:
+#         print("[ERROR] ftputil upload failed:", e)
+#     finally:
+#         host.close()
 
 def test_connect(host="http://google.com"):
     # This just tests the net connection
@@ -212,7 +212,8 @@ def findProcessIdByName(processName):
 
 def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
     # Populate the request parameters. Include data only if it was sent.
-    base_url = "https://api.photonranch.org/api"
+    #base_url = "https://api.photonranch.org/api"
+    base_url = self.api_http_base
     request_kwargs = {
         "method": method,
         "timeout": 10,
@@ -228,7 +229,7 @@ def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
 def send_status(obsy, column, status_to_send):
     """Sends an update to the status endpoint."""
 
-    uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
+    uri_status = self. status_http_base + f"{obsy}/status/"
     payload = {"statusType": str(column), "status": status_to_send}
     # if column == 'weather':
     #     print("Did not send spurious weathr report.")
@@ -263,6 +264,13 @@ class Observatory:
         g_dev["name"] = name
 
         self.config = ptr_config
+        
+        
+        self.api_http_base=self.config['api_http_base']
+        self.jobs_http_base=self.config['jobs_http_base']
+        self.status_http_base=self.config['status_http_base']
+        self.logs_http_base=self.config['logs_http_base']
+        
         self.wema_name = self.config["wema_name"]
         self.wema_config = self.get_wema_config() # fetch the wema config from AWS
 
@@ -747,7 +755,8 @@ class Observatory:
         try:
             reqs.request(
                 "POST",
-                "https://jobs.photonranch.org/jobs/getnewjobs",
+                #"https://jobs.photonranch.org/jobs/getnewjobs",
+                self.jobs_http_base +'getnewjobs',
                 data=json.dumps({"site": self.name}),
                 timeout=30,
             ).json()
@@ -995,7 +1004,7 @@ class Observatory:
     def get_wema_config(self):
         """ Fetch the WEMA config from AWS """
         wema_config = None
-        url = f"https://api.photonranch.org/api/{self.wema_name}/config/"
+        url = self.api_http_base + f"{self.wema_name}/config/"
         try:
             response = requests.get(url, timeout=20)
             wema_config = response.json()['configuration']
@@ -1091,7 +1100,8 @@ class Observatory:
         """
 
         self.scan_request_timer = time.time()
-        url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
+        #url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
+        url_job = self.jobs_http_base + "/getnewjobs"
         body = {"site": self.name}
         cmd = {}
         # Get a list of new jobs to complete (this request
@@ -1944,7 +1954,7 @@ class Observatory:
                                     and not self.devices["sequencer"].bias_dark_latch
                                 ):
                                     self.cancel_all_activity()
-                                if not self.devices["mount"].rapid_park_indicator:
+                                if not self.devices["mount"].r d_park_indicator:
                                     self.devices["mount"].park_command()
 
                                 self.currently_updating_FULL = False
@@ -3160,7 +3170,8 @@ class Observatory:
             if not self.sendtouser_queue.empty():
                 while not self.sendtouser_queue.empty():
                     (p_log, p_level) = self.sendtouser_queue.get(block=False)
-                    url_log = "https://logs.photonranch.org/logs/newlog"
+                    #url_log = "https://logs.photonranch.org/logs/newlog"
+                    url_log = self.logs_http_base + "/newlog"
                     body = json.dumps(
                         {
                             "site": self.config["obs_id"],
@@ -4392,7 +4403,8 @@ class Observatory:
                             pipe_request["payload"] = payload
                             pipe_request["sender"] = self.name
 
-                            uri_status = "https://api.photonranch.org/api/pipe/enqueue"
+                            #uri_status = "https://api.photonranch.org/api/pipe/enqueue"
+                            uri_status = self.api_http_base + "pipe/enqueue"
                             try:
 
                                 response = requests.post(uri_status,json=pipe_request, timeout=20)# allow_redirects=False, headers=close_headers)
@@ -4774,7 +4786,8 @@ class Observatory:
         """
         Requests the current enclosure status from the related WEMA.
         """
-        uri_status = f"https://status.photonranch.org/status/{self.wema_name}/enclosure/"
+        #uri_status = f"https://status.photonranch.org/status/{self.wema_name}/enclosure/"
+        uri_status = self.status_http_base + f"{self.wema_name}/enclosure/"
         try:
             aws_enclosure_status = reqs.get(uri_status, timeout=20)
             aws_enclosure_status = aws_enclosure_status.json()
@@ -4863,7 +4876,7 @@ class Observatory:
         Requests the current enclosure status from the related WEMA.
         """
 
-        uri_status = f"https://status.photonranch.org/status/{self.wema_name}/weather/"
+        uri_status = self.status_http_base + f"{self.wema_name}/weather/"
 
         try:
             aws_weather_status = reqs.get(uri_status, timeout=20)
@@ -5031,7 +5044,8 @@ class Observatory:
         # jobs don't send the scope go wildly.
         reqs.request(
             "POST",
-            "https://jobs.photonranch.org/jobs/getnewjobs",
+            #"https://jobs.photonranch.org/jobs/getnewjobs",
+            self.jobs_http_base + 'getnewjobs',
             data=json.dumps({"site": self.name}),
             timeout=30,
         ).json()

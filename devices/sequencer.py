@@ -102,7 +102,8 @@ def ra_fix_h(ra):
 def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
 
     # Populate the request parameters. Include data only if it was sent.
-    base_url="https://api.photonranch.org/api"
+    #base_url="https://api.photonranch.org/api"
+    base_url=g_dev['obs'].api_http_base
     request_kwargs = {
         "method": method,
         "timeout" : 10,
