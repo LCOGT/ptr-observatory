@@ -39,6 +39,11 @@ site_config = {
     # The unique identifier for this obs
     'obs_id': 'aro2',
 
+
+    'api_http_base' : 'https://api.photonranch.org/api/',
+    'jobs_http_base' : 'https://jobs.photonranch.org/jobs/',
+    'logs_http_base' : 'https://logs.photonranch.org/logs/',
+    'status_http_base' : 'https://status.photonranch.org/status/',
     # Name, local and owner stuff
     'name': "Apache Ridge Observatory  PW 0m45 f6.8  52'X39'",
     'airport_code': 'SAF',

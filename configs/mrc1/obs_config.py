@@ -39,6 +39,11 @@ site_config = {
     # The unique identifier for this obs
     'obs_id': 'mrc1',
 
+
+    'api_http_base' : 'https://api.photonranch.org/api/',
+    'jobs_http_base' : 'https://jobs.photonranch.org/jobs/',
+    'logs_http_base' : 'https://logs.photonranch.org/logs/',
+    'status_http_base' : 'https://status.photonranch.org/status/',
     # Name, local and owner stuff
     'name': 'Mountain Ranch Camp Observatory 0m30 F3.8',
     'airport_code': 'SBA',
