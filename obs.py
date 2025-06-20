@@ -3286,15 +3286,15 @@ class Observatory:
     
                     try:
                         print ("TRYING FTP")
-                        ftp_upload_with_ftputil(
-                            self.fitserver,
-                            self.ftpport,
-                            self.ftpusername,
-                            self.ftppassword,
-                            self.ftpremotedir,
-                            filedirectory,
-                            filename
-                        )
+                        # ftp_upload_with_ftputil(
+                        #     self.fitserver,
+                        #     self.ftpport,
+                        #     self.ftpusername,
+                        #     self.ftppassword,
+                        #     self.ftpremotedir,
+                        #     filedirectory,
+                        #     filename
+                        # )
                     except Exception:
                         plog("Night Log did not write, usually not fatal.")
                         plog(traceback.format_exc())
