@@ -213,7 +213,8 @@ def findProcessIdByName(processName):
 def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
     # Populate the request parameters. Include data only if it was sent.
     #base_url = "https://api.photonranch.org/api"
-    base_url = self.api_http_base
+    #base_url = self.api_http_base
+    base_url=payload['api_http_base']
     request_kwargs = {
         "method": method,
         "timeout": 10,
@@ -226,10 +227,10 @@ def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
     return response.json()
 
 
-def send_status(obsy, column, status_to_send):
+def send_status(obsy, column, status_to_send, status_http_base):
     """Sends an update to the status endpoint."""
 
-    uri_status = self. status_http_base + f"{obsy}/status/"
+    uri_status = status_http_base + f"{obsy}/status/"
     payload = {"statusType": str(column), "status": status_to_send}
     # if column == 'weather':
     #     print("Did not send spurious weathr report.")
@@ -1032,6 +1033,8 @@ class Observatory:
                 response = authenticated_request("PUT", uri, self.config)
                 retryapi = False
             except:
+                plog(traceback.format_exc())
+                breakpoint()
                 plog.warn("connection glitch in update config. Waiting 5 seconds.")
                 time.sleep(5)
         if "message" in response:
@@ -1523,7 +1526,7 @@ class Observatory:
                 lane = "device"
                 if self.send_status_queue.qsize() < 7:
                     self.send_status_queue.put(
-                        (obsy, lane, status), block=False)
+                        (obsy, lane, status, self.status_http_base), block=False)
 
         """
         Here we update lightning system.
@@ -1866,7 +1869,7 @@ class Observatory:
                     status["obs_settings"]["timedottime_of_last_upload"] = time.time()
                     lane = "obs_settings"
                     try:
-                        send_status(self.name, lane, status)
+                        send_status(self.name, lane, status, self.status_http_base)
                     except:
                         plog.warn("could not send obs_settings status")
                         plog.warn(traceback.format_exc())
@@ -1954,7 +1957,7 @@ class Observatory:
                                     and not self.devices["sequencer"].bias_dark_latch
                                 ):
                                     self.cancel_all_activity()
-                                if not self.devices["mount"].r d_park_indicator:
+                                if not self.devices["mount"].rapid_park_indicator:
                                     self.devices["mount"].park_command()
 
                                 self.currently_updating_FULL = False
@@ -3118,7 +3121,7 @@ class Observatory:
 
                 #print(received_status[0], received_status[1], received_status[2])
                 send_status(
-                    received_status[0], received_status[1], received_status[2])
+                    received_status[0], received_status[1], received_status[2], received_status[3])
                 self.send_status_queue.task_done()
                 upload_time = time.time() - pre_upload
                 self.status_interval = 2 * upload_time
@@ -4818,7 +4821,7 @@ class Observatory:
                 if self.send_status_queue.qsize() < 7:
                     self.send_status_queue.put(
                         (self.name, "enclosure",
-                         aws_enclosure_status["status"]),
+                         aws_enclosure_status["status"], self.status_http_base),
                         block=False,
                     )
 
@@ -4931,7 +4934,7 @@ class Observatory:
             # There is a size limit to the queue
             if self.send_status_queue.qsize() < 7:
                 self.send_status_queue.put(
-                    (self.name, "weather", aws_weather_status["status"]), block=False
+                    (self.name, "weather", aws_weather_status["status"], self.status_http_base), block=False
                 )
 
         except Exception as e:
