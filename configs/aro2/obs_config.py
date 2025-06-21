@@ -155,7 +155,7 @@ site_config = {
     'client_hostname':  'aro2-0m45',  # This is also the long-name  Client is confusing!
     'archive_path':  'F:/ptr/',  # Generic place for client host to stash misc stuff
     'local_calibration_path': 'F:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
-    'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
+    'alt_path':  'F:/ptr/alt/',  # Generic place for this host to stash misc stuff
     'plog_path':  'F:/ptr/aro2/',  # place where night logs can be found.
     'save_to_alt_path': 'no',
     'archive_age': 7,  # Number of days to keep files in the local archive before deletion. Negative means never delete
@@ -884,17 +884,19 @@ site_config = {
                 # There is a cold bit and a hot bit and an inbetween bit.
                 # from the 15th of the month to the 15 of the month
                 #
-                # ( setpoint, day_warm_difference, day_warm troe our false)
-                'set_temp_setpoint_by_season' : False,
-                'temp_setpoint_nov_to_feb' : ( 2, 6, True),
-                'temp_setpoint_feb_to_may' : ( 2, 8, True),
-                'temp_setpoint_may_to_aug' : ( 2, 8, True),
-                'temp_setpoint_aug_to_nov' : ( 2, 8, True),
+                # ( setpoint, day_warm_difference, day_warm true or false)
+                'set_temp_setpoint_by_season' : True,
+                'temp_setpoint_nov_to_feb' : ( 2, 8, True),
+                'temp_setpoint_feb_to_may' : ( 2, 10, True),
+                'temp_setpoint_may_to_aug' : ( 2, 15, True),
+                'temp_setpoint_aug_to_nov' : ( 2, 10, True),
 
 
-                'day_warm': False,
-                'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
-                'protect_camera_from_overheating' : False,
+                'day_warm': False,  #Set True if not using the seasonal settings.
+                'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
+                'protect_camera_from_overheating' : False,   #Need to investigate this. WER
+                #The above line is non-functional.  I think the intent is if the PWM is pegged > say 95% for say 5 minutes then
+                #we may want to boost the setpoint even more.  So this is more about TEC protection. WER 20250619
 
 
                 # These are the physical values for the camera

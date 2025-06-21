@@ -1573,6 +1573,8 @@ class Camera:
         except:
             self.temp_tolerance = 1.5
             plog("temp tolerance isn't set in obs config, using 1.5 degrees")
+
+        #NOte this is set but never then referenced.   Also what does this really mean?
         self.protect_camera_from_overheating = float(self.settings['protect_camera_from_overheating'])
 
         plog("Cooler setpoint is now:  ", self.setpoint)
@@ -2824,7 +2826,7 @@ class Camera:
     #     enabled=1,
     #     column=1,
     # ):
-# 
+#
 #         # Creates a valid Maxium Autosave file.   THIS IS OBSOLETE CODE
 #         exp_time = round(abs(float(exp_time)), 3)
 #         if img_type > 3:
@@ -2838,7 +2840,7 @@ class Camera:
 #         proto_file = open(self.camera_path + "seq/ptr_proto.seq")
 #         proto = proto_file.readlines()
 #         proto_file.close()
-# 
+#
 #         if column == 1:
 #             proto[51] = proto[51][:9] + str(img_type) + proto[51][10:]
 #             proto[50] = proto[50][:9] + str(exp_time) + proto[50][12:]
@@ -2850,7 +2852,7 @@ class Camera:
 #             proto[10] = proto[10][:12] + str(enabled) + proto[10][13:]
 #             proto[1] = proto[1][:12] + str(binning) + proto[1][13:]
 #         seq_file = open(self.camera_path + "seq/ptr_mrc.seq", "w")
-# 
+#
 #         for item in range(len(proto)):
 #             seq_file.write(proto[item])
 #         seq_file.close()
@@ -3818,7 +3820,7 @@ class Camera:
                             g_dev["mnt"].get_rapid_exposure_status(
                                 self.pre_mnt
                             )
-                        
+
                         expresult = self.finish_exposure(
                             exposure_time,
                             frame_type,
