@@ -317,7 +317,7 @@ site_config = {
             'name': 'Main OTA',
             'telescop': 'eco1',
             'ptrtel': 'CDK17',
-            'desc':  'CDK17',
+            'desc':  'Simulated Telescope',
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
             'collecting_area': 100000,
             'obscuration':  23.7,   #  %
@@ -453,11 +453,6 @@ site_config = {
                         ['lum',    [0,  0],    'PhLum'],    #1.
                         ['dk',    [1,  1],      'Dark'],    #2.
                         ['SA',    [2, 2 ],      'SA'],    #2.
-                        # ['BB',    [3, 3],      'BB'],    #3.
-                        # ['BV',    [4,  4],     'BV'],    #4.
-                        # ['ha',    [5,5],     'Ha'],
-                        # ['BI',    [6,6],    'BI'],    #5.
-                        # ['BU',    [7,7],    'UP']],
                         ['BU',    [7,7],    'UP'],
                         ['BB',    [3, 3],      'BB'],    #3.
                         ['BV',    [4,  4],     'BV'],    #4.
@@ -575,13 +570,6 @@ site_config = {
 
 
                 'osc_bayer' : 'RGGB',
-                'crop_preview': False,
-                'crop_preview_ybottom': 1,
-                'crop_preview_ytop': 1,
-                'crop_preview_xleft': 1,
-                'crop_preview_xright': 1,
-
-
 
                 # This is the yearly range of temperatures.
                 # Based on New Mexico and Melbourne's variation... sorta similar.

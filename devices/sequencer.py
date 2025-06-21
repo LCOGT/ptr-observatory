@@ -159,6 +159,7 @@ class Sequencer:
                 self.config['obs_id'],
                 schedule_start,
                 schedule_end,
+                self.obs.siteproxy,
                 include_lco_scheduler=include_lco_scheduler,
                 configdb_telescope=configdb_telescope,
                 configdb_enclosure=configdb_enclosure,
@@ -556,8 +557,7 @@ class Sequencer:
         req = {'time': time, 'script': 'True', 'image_type': image_type}
         opt = {'count': count, 'filter': 'dk'}
 
-        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False,
-                                    do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', skip_open_check=True, skip_daytime_check=True)
         g_dev['obs'].request_scan_requests()
 
         if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or (
@@ -681,7 +681,7 @@ class Sequencer:
 
         self.night_focus_ready=False
         self.clock_focus_latch = False
-        
+
         g_dev['obs'].report_to_nightlog("Focus and Resync routine ended.")
 
 
@@ -1113,8 +1113,7 @@ class Sequencer:
                                             opt = { 'count': 1,  \
                                                    'filter': 'dk'}
                                             self.nightime_bias_counter = self.nightime_bias_counter + 1
-                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', skip_open_check=True,skip_daytime_check=True)
                                             # these exposures shouldn't reset these timers
                                             g_dev['obs'].time_of_last_exposure = time.time() - 840
                                             g_dev['obs'].time_of_last_slew = time.time() - 840
@@ -1541,8 +1540,6 @@ class Sequencer:
                                     optional_params,
                                     user_name=user_name,
                                     user_id=user_id,
-                                    user_roles=user_roles,
-                                    no_AWS=False,
                                     solve_it=False,
                                     calendar_event_id=calendar_event_id
                                 ) #, zoom_factor=zoom_factor)
@@ -1592,7 +1589,7 @@ class Sequencer:
             or g_dev['events']['Civil Dawn'] < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")
-            return block_specification     
+            return block_specification
 
         self.block_guard = True
         self.total_sequencer_control=True
@@ -1603,7 +1600,7 @@ class Sequencer:
         calendar_event_id=block_specification['event_id']
 
         block = copy.deepcopy(block_specification)
-        
+
         g_dev['obs'].report_to_nightlog("Executing Calendar Block: " + str(block))
 
         # this variable is what we check to see if the calendar
@@ -1699,19 +1696,19 @@ class Sequencer:
                 exposure['substack'] = do_sub_stack
                 exposure['smartstack'] = do_smart_stack
                 left_to_do += int(exposure['count'])
-                
+
             if g_dev["obs"].stop_all_activity:
                 plog('stop_all_activity cancelling out of exposure loop in seq:blk execute')
                 self.blockend = None
                 self.total_sequencer_control=False
                 g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                 return block_specification
-            
+
             plog("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
 
             g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
-            
+
             # Sometimes there isn't a zoom in the exposure
             # If there isn't, just go with full zoom
             try:
@@ -2057,7 +2054,7 @@ class Sequencer:
                                     self.total_sequencer_control=False
                                     g_dev['obs'].report_to_nightlog("Ending Calendar Block: " + str(block))
                                     return block_specification
-                            result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id) #, zoom_factor=zoom_factor)
+                            result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, solve_it=False, calendar_event_id=calendar_event_id) #, zoom_factor=zoom_factor)
 
                             try:
                                 if result == 'blockend':
@@ -2189,8 +2186,7 @@ class Sequencer:
             g_dev['mnt'].park_command({}, {})
 
         # Trigger exposure
-        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system',
-                                    no_AWS=False, do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', skip_open_check=True, skip_daytime_check=True)
 
         # Handle cancellation or timeout
         if self.stop_script_called:
@@ -2213,8 +2209,7 @@ class Sequencer:
         if not g_dev['obs'].mountless_operation:
             g_dev['mnt'].park_command({}, {})
 
-        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system',
-                                    no_AWS=False, do_sep=False, quick=False, skip_open_check=True, skip_daytime_check=True)
+        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', skip_open_check=True, skip_daytime_check=True)
 
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -2243,7 +2238,7 @@ class Sequencer:
         # Set a timer. It is possible to ask for bias darks and it takes until the end of time. So we should put a limit on it for manually
         # requested collection. Auto-collection is limited by the events schedule.
         bias_darks_started=time.time()
-        
+
         g_dev['obs'].report_to_nightlog("Starting Bias Darks")
 
         while ephem.now() < ending :   #Do not overrun the window end
@@ -2559,7 +2554,7 @@ class Sequencer:
     def nightly_reset_script(self):
         # UNDERTAKING END OF NIGHT ROUTINES
         # Never hurts to make sure the telescope is parked for the night
-        
+
         g_dev['obs'].report_to_nightlog("Nightly Reset")
         self.park_and_close()
 
@@ -2721,7 +2716,7 @@ class Sequencer:
 
             plog ("But didn't get here")
         return
-    
+
         g_dev['obs'].report_to_nightlog("Completed Nightly Reset")
 
 
@@ -4292,7 +4287,7 @@ class Sequencer:
             else:
                 plog ("Moon is in the sky but far enough way to take flats.")
 
-        
+
         g_dev['obs'].report_to_nightlog("Starting Sky Flats")
 
         g_dev['foc'].set_initial_best_guess_for_focus()
@@ -4755,7 +4750,7 @@ class Sequencer:
                                 else:
                                     self.next_filter_in_flat_run = pop_list[1]
 
-                                fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
+                                fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', skip_daytime_check=True)
                                 number_of_exposures_so_far=number_of_exposures_so_far+1
 
                                 try:
@@ -5080,7 +5075,7 @@ class Sequencer:
         self.total_sequencer_control=True
 
         self.measuring_focus_offsets=True
-        
+
         g_dev['obs'].report_to_nightlog("Focus offset estimator script triggerred.")
         plog ("Determining offsets between filters")
         plog ("First doing a normal run on the 'focus' filter first")
@@ -5277,23 +5272,23 @@ class Sequencer:
             focus_start = begin_at  #In this case we start at a place close to a 3 point minimum.
         else:
             focus_start=g_dev['foc'].current_focus_position
-        
+
         # Check that the focus_start position is a reasonable way
         # way away from the edges of the focus limits
         if focus_start < (g_dev['foc'].minimum_allowed_focus + 3 * throw):
             focus_start=g_dev['foc'].minimum_allowed_focus + 3 * throw
         elif focus_start > (g_dev['foc'].maximum_allowed_focus - 3 * throw):
             focus_start=g_dev['foc'].minimum_allowed_focus - 3 * throw
-        
+
         foc_pos0 = focus_start
-        
-        
+
+
 # =============================================================================
 # =============================================================================
 # =============================================================================
         plog("Saved  *mounting* ra, dec, focus:  ", start_ra, start_dec, focus_start)
-        
-        
+
+
         g_dev['obs'].report_to_nightlog("Autofocus process started.")
 
         if not skip_pointing:
@@ -5402,7 +5397,7 @@ class Sequencer:
             # if g_dev['cam'].pixscale == None:
             #     plog ("skipping centering exposure as we don't even have a pixelscale yet")
             # else:
-                
+
             # We always platesolve first.... platesolving gives us the pixelscale if we don't have it
             # which makes initial focus much easier
             self.centering_exposure(no_confirmation=True, try_hard=True)
@@ -5509,7 +5504,7 @@ class Sequencer:
             plog(traceback.format_exc())
 
         blobvsgauss_shelf.close()
-        
+
         hit_focus_limit_upper=False
         hit_focus_limit_lower=False
 
@@ -5567,7 +5562,7 @@ class Sequencer:
 
             #  If more than 15 attempts, fail and bail out.
             # But don't bail out if the scope isn't commissioned yet, keep on finding.
-            
+
             if position_counter > 15 and g_dev['foc'].focus_commissioned:
                 g_dev['foc'].set_initial_best_guess_for_focus()
                 if not dont_return_scope:
@@ -5645,7 +5640,7 @@ class Sequencer:
                     time.sleep(1)
 
                 # Take the shot
-                result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
 
 
                 if result == 'roofshut':
@@ -5723,7 +5718,7 @@ class Sequencer:
                         if new_focus_position_to_attempt < g_dev['foc'].minimum_allowed_focus:
                             hit_focus_limit_lower=True
                             new_focus_position_to_attempt=g_dev['foc'].minimum_allowed_focus
-                            
+
 
                     elif not hit_focus_limit_upper:
                         new_focus_position_to_attempt=max(spots_tried) + int(position_counter/2) * throw
@@ -5801,7 +5796,7 @@ class Sequencer:
                             g_dev['obs'].report_to_nightlog("Autofocus process ended.")
 
                             return
-                       
+
 
                         # First check if the minimum is too close to the edge
                         # As long as you haven't hit the limits
@@ -5900,7 +5895,7 @@ class Sequencer:
                                 print (0.5*float(len(minimumfind)-1))
                                 #if (minimum_index == 0 or minimum_index == 1) and not hit_focus_limit_lower:# and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
                                 if minimum_index <= (0.5*float(len(minimumfind)-1)) and not hit_focus_limit_lower:# and not (focus_spots[0][0] - throw < g_dev['foc'].minimum_allowed_focus):
-                                 
+
                                     plog ("Minimum too close to the sampling edge, getting another dot")
                                     extra_steps_to_the_left=extra_steps_to_the_left+1
                                     new_focus_position_to_attempt=focus_spots[0][0] - throw
@@ -5978,21 +5973,21 @@ class Sequencer:
 
                                     # Calculate step length along the curve
                                     # curve_step_length = arc_length / (num_points - 1)
-                                    
+
                                     a, b, c = fit
-                                    
+
                                     # Find the vertex (minimum point)
                                     x_min = -b / (2 * a)
                                     y_min = f(x_min)
-                                    
+
                                     # Set the target y-value 1.75 above the minimum
                                     target_y = y_min + 1.75
-                                    
+
                                     # Solve for x where the parabola equals the target y
                                     coeffs = [a, b, c - target_y]
                                     roots = np.roots(coeffs)
                                     x_left, x_right = min(roots), max(roots)
-                                    
+
                                     # Compute step size between 5 evenly spaced points
                                     curve_step_length = (x_right - x_left) / (num_points-1)
                                     #x_values = np.linspace(x_left, x_right, 5)
@@ -6099,14 +6094,14 @@ class Sequencer:
                                         req = {'time': focus_exposure_time,  'alias':  str(g_dev['cam'].name), 'image_type': 'focus_confirmation'}   #  NB Should pick up filter and constats from config
                                         opt = { 'count': 1, 'filter': filter_choice}
                                         result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
-    
-    
+
+
                                         print (g_dev['obs'].fwhmresult)
                                         #breakpoint()
 
-                                    
+
                                         new_blob_vs_gaussian_factor = (g_dev['obs'].fwhmresult["FWHM"] / fitted_focus_fwhm) * stored_blob_to_gaussian_factor
-    
+
                                         plog ("Calculated Blob to Gaussian Factor: " +str(new_blob_vs_gaussian_factor))
 
                                     if not dont_log_focus:
@@ -6114,16 +6109,16 @@ class Sequencer:
 
 
                                     # Store estimated conversion factor between half-light approach and actual measured gaussian FWHM
-                                    
+
                                     if not np.isnan(new_blob_vs_gaussian_factor):
-                                    
+
                                         blobvsgauss_shelf = shelve.open(
                                             g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'blobvsgauss' + g_dev['cam'].alias + str(g_dev['obs'].name))
                                         try:
-    
+
                                             try:
                                                 blobvsgauss_list = blobvsgauss_shelf['blobvsgauss_list']
-    
+
                                             except:
                                                 blobvsgauss_list = []
                                             blobvsgauss_list.append(
@@ -6136,13 +6131,13 @@ class Sequencer:
                                                 else:
                                                     too_long = False
                                             blobvsgauss_shelf['blobvsgauss_list'] = blobvsgauss_list
-    
+
                                             #self.pixscale = bn.nanmedian(pixelscale_list)
                                             #plog('1x1 pixel scale: ' + str(self.pixscale))
                                         except:
                                             plog ("blob issue")
                                             plog(traceback.format_exc())
-    
+
                                         blobvsgauss_shelf.close()
 
                                     #breakpoint()
@@ -6170,7 +6165,7 @@ class Sequencer:
                                         plog ("Now we are in focus but we don't have a pixelscale, attempting a platesolve to get that value")
                                         g_dev["obs"].send_to_user("Now we are in focus but we don't have a pixelscale, attempting a platesolve to get that value")
                                         self.centering_exposure(no_confirmation=True, try_hard=True)
-                                    
+
                                     g_dev['obs'].report_to_nightlog("Autofocus process successful: Position: " + str(fitted_focus_position) + ' FWHM: ' + str(fitted_focus_fwhm))
                                     return fitted_focus_position,fitted_focus_fwhm
 
@@ -6240,7 +6235,7 @@ class Sequencer:
             return
 
         g_dev['obs'].report_to_nightlog("Started Equatorial Pointing Run.")
-        
+
 
         previous_mount_reference_model_off = copy.deepcopy(g_dev['obs'].mount_reference_model_off)
         g_dev['obs'].mount_reference_model_off = True
@@ -6483,9 +6478,9 @@ class Sequencer:
 
         self.total_sequencer_control = False
         g_dev['obs'].stop_processing_command_requests = False
-        
+
         g_dev['obs'].report_to_nightlog("Ended Equatorial Pointing Run.")
-        
+
         return
 
 
@@ -6763,16 +6758,16 @@ class Sequencer:
         but the most important is centering the requested RA and Dec just prior to starting
         a longer project block.
         """
-        
+
         # If the roof isn't open, then don't bother platesolving!
         if not g_dev['obs'].open_and_enabled_to_observe:
             return
-        
+
         self.currently_running_centering=True
-        
+
         # Set the cancel flag off at the start of each centering routine
         self.cancel_out_of_centering=False
-        
+
         if g_dev['obs'].auto_centering_off:  #Auto centering off means OFF!
             plog('auto_centering is off.')
             self.currently_running_centering=False
@@ -6784,10 +6779,10 @@ class Sequencer:
             g_dev["obs"].send_to_user("Too bright, or early, to auto-center the image.")
             self.currently_running_centering=False
             return
-        
-        now = ephem.Date(ephem.now())        
-        observing_ends = self.obs.events['Observing Ends']        
-        observing_begins = self.obs.events['End Eve Sky Flats']        
+
+        now = ephem.Date(ephem.now())
+        observing_ends = self.obs.events['Observing Ends']
+        observing_begins = self.obs.events['End Eve Sky Flats']
         # Reject exposures that start before nautical dusk or end after nautical dawn
         if now < observing_begins or now > observing_ends :
             plog("Too bright to consider platesolving!")
@@ -6803,9 +6798,9 @@ class Sequencer:
             g_dev["obs"].send_to_user("Cancelling out of centering.")
             self.currently_running_centering=False
             return
-        
-        
-        
+
+
+
 
         # Don't try forever if focussing
         if self.focussing:
@@ -6860,7 +6855,7 @@ class Sequencer:
             p_level="INFO",
         )
         # Take a pointing shot to reposition
-        result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=False)
+        result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', solve_it=True, useastrometrynet=False)
 
         if result == 'blockend':
             plog ("End of Block, exiting Centering.")
@@ -6887,7 +6882,7 @@ class Sequencer:
             plog('stop_all_activity, so cancelling out of Centering')
             self.currently_running_centering=False
             return
-        
+
         if self.cancel_out_of_centering:
             self.cancel_out_of_centering=False
             plog("Cancelling out of centering.")
@@ -6961,7 +6956,7 @@ class Sequencer:
                 req = {'time': float(self.config['pointing_exposure_time']) * 2,  'alias':  str(g_dev['cam'].name), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'pointing'}
 
-            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
+            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', solve_it=True, useastrometrynet=True)
 
             if result == 'blockend':
                 plog ("End of Block, exiting Centering.")
@@ -6988,7 +6983,7 @@ class Sequencer:
                 plog('stop_all_activity cancelling out of centering')
                 self.currently_running_centering=False
                 return
-            
+
             if self.cancel_out_of_centering:
                 self.cancel_out_of_centering=False
                 plog("Cancelling out of centering.")
@@ -7026,7 +7021,7 @@ class Sequencer:
                         self.currently_running_centering=False
                         return
                     pass
-                    
+
 
             if not (g_dev['obs'].last_platesolved_ra != np.nan and str(g_dev['obs'].last_platesolved_ra) != 'nan'):
 
@@ -7035,7 +7030,7 @@ class Sequencer:
                 req = {'time': float(self.config['pointing_exposure_time']) * 2.5,  'alias':  str(g_dev['cam'].name), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'Lum'}
 
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
+                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', solve_it=True, useastrometrynet=True)
 
                 if result == 'blockend':
                     plog ("End of Block, exiting Centering.")
@@ -7142,7 +7137,7 @@ class Sequencer:
                     plog('stop_all_activity cancelling out of centering')
                     self.currently_running_centering=False
                     return
-                
+
                 if self.cancel_out_of_centering:
                     self.cancel_out_of_centering=False
                     plog("Cancelling out of centering.")
@@ -7190,7 +7185,7 @@ class Sequencer:
 
                 req = {'time': float(self.config['pointing_exposure_time']) * 3,  'alias':  str(g_dev['cam'].name), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'pointing'}
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
+                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', solve_it=True, useastrometrynet=True)
 
                 # test for blockend
                 if self.blockend != None:
@@ -7251,7 +7246,7 @@ class Sequencer:
                     plog('stop_all_activity cancelling out of centering')
                     self.currently_running_centering=False
                     return
-                
+
                 if self.cancel_out_of_centering:
                     self.cancel_out_of_centering=False
                     plog("Cancelling out of centering.")
@@ -7335,7 +7330,7 @@ class Sequencer:
             # Taking a confirming shot.
             req = {'time': self.config['pointing_exposure_time'],  'alias':  str(g_dev['cam'].name), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'count': 1, 'filter': 'pointing'}
-            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', solve_it=True)
 
             if result == 'blockend':
                 plog ("End of Block, exiting Centering.")
@@ -7372,7 +7367,7 @@ class Sequencer:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                 self.currently_running_centering=False
                 return
-            
+
             if self.cancel_out_of_centering:
                 self.cancel_out_of_centering=False
                 plog("Cancelling out of centering.")
