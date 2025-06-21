@@ -220,7 +220,7 @@ site_config = {
         'rotator': 'rotator',
         'selector': None,
         'filter_wheel': 'RGGB',
-        'camera': 'camera_1_1',
+        'camera': 'lcy1qhy268c',
         'sequencer': 'sequencer1'
         },
 
@@ -237,7 +237,7 @@ site_config = {
         'main_fw': None,
 
         # Cameras
-        'main_cam': 'camera_1_1',
+        'main_cam': 'lcy1qhy268c',
         'guide_cam': None,
         'widefield_cam': None,
         'allsky_cam': None,
@@ -358,12 +358,12 @@ site_config = {
             'rotator_name':  'rotator',
             'has_instrument_selector': False,   #This is a default for a single instrument system
             'selector_positions': 1,            #Note starts with 1
-            'instrument names':  ['camera_1_1'],
+            'instrument names':  ['lcy1qhy268c'],
             'instrument aliases':  ['ASI071MCPro'],
             'configuration': {
                  "position1": ["darkslide1", "RGGB", "camera_1_1"]
                  },
-            'camera_name':  'camera_1_1',
+            'camera_name':  'lcy1qhy268c',
             #'filter_wheel_name':  'RGGB',
             'filter_wheel_name':  None,
             'has_fans':  False,
@@ -457,7 +457,7 @@ site_config = {
             'shutdown_script':  None,
             'ports': 1,
             'instruments':  ['Main_camera'], #, 'eShel_spect', 'planet_camera', 'UVEX_spect'],
-            'cameras':  ['camera_1_1'], # , 'camera_1_2', None, 'camera_1_4'],
+            'cameras':  ['lcy1qhy268c'], # , 'camera_1_2', None, 'camera_1_4'],
             'guiders':  [None], # , 'guider_1_2', None, 'guide_1_4'],
             'default': 0
             },
@@ -497,7 +497,7 @@ site_config = {
 
 
     'camera': {
-        'camera_1_1': {
+        'lcy1qhy268c': {
             'parent': 'Main OTA',
             'name': 'lcy1qhy268c',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 268C Pro',

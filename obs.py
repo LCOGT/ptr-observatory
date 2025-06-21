@@ -99,6 +99,7 @@ def http_upload(server, filedirectory, filename, upload_type):
         else:
             # fallback to raw text so you can see the error
             print(resp.text)
+            breakpoint()
         return True
     except:
         plog(traceback.format_exc())
@@ -1075,9 +1076,13 @@ class Observatory:
         elif "ResponseMetadata" in response:
             if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                 plog("Config uploaded successfully.")
+            
+        elif "status" in response:
+            if response['status'] == 'updated':
+                plog("Config uploaded successfully.")
             else:
-                plog("Response to obsid config upload unclear. Here is the response")
-                plog(response)
+                plog ("eHHH?")
+                plog (response)
         else:
             plog("Response to obsid config upload unclear. Here is the response")
             plog(response)
@@ -1141,9 +1146,13 @@ class Observatory:
             plog.warn("problem gathering scan requests. Likely just a connection glitch.")
             unread_commands = []
 
+
         # Make sure the list is sorted in the order the jobs were issued
         # Note: the ulid for a job is a unique lexicographically-sortable id.
         if len(unread_commands) > 0:
+            print (url_job)
+            print (body)
+            print (unread_commands)
 
             # As the stop_all_activity script flushes the commands
             # Any new commands imply there has been a new command since
@@ -3368,7 +3377,7 @@ class Observatory:
                         ts = time.time()
     
                     # Enqueue a tuple: (filedirectory, filename, timestamp)
-                    self.http_queue.put((ingestion_folder, fname, ts, 'from_site'))
+                    self.http_queue.put((ingestion_folder, fname, 'fromsite', ts ))
                     plog(f"Enqueued new HTTP file: {fname}")
     
             # ─── 2) Once scanning is done, process whatever is in http_queue ───
@@ -3382,6 +3391,7 @@ class Observatory:
                         break
     
                     try:
+                        print (upload_type)
                         print ("TRYING HTTP")
                         success=http_upload(
                             self.fitserver,
@@ -4473,12 +4483,22 @@ class Observatory:
                             with open(filepath, "rb") as fileobj:
                                 files = {"file": (filepath, fileobj)}
                                 try:
-                                    reqs.post(
-                                        aws_resp["url"],
-                                        data=aws_resp["fields"],
-                                        files=files,
-                                        timeout=10,
-                                    )
+                                    
+                                    #breakpoint()
+                                    try:
+                                        reqs.post(
+                                            aws_resp["url"],
+                                            data=aws_resp["fields"],
+                                            files=files,
+                                            timeout=10,
+                                        )
+                                    except:
+                                        reqs.post(
+                                            aws_resp["url"],
+                                            #data=aws_resp["fields"],
+                                            files=files,
+                                            timeout=10,
+                                        )
                                 except Exception as e:
                                     plog.err((traceback.format_exc()))
                                     if (
