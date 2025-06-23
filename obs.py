@@ -4917,9 +4917,9 @@ class Observatory:
         except Exception as e:
             plog.err("Failed to get aws enclosure status. Usually not fatal:  ", e)
             
-            plog.err(traceback.format_exc())
-            plog.err("Failed rebooting, needs to be debugged")
-            breakpoint()
+            # plog.err(traceback.format_exc())
+            # plog.err("Failed rebooting, needs to be debugged")
+            # breakpoint()
             
 
         try:

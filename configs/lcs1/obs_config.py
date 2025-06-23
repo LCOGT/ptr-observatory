@@ -268,7 +268,7 @@ site_config = {
 
 
     'mount': {
-        'lcy10inch': {
+        'lcs1_pier': {
             'parent': 'enclosure1',
             'tel_id': '10inch',
             'name': 'lcy10inch',
