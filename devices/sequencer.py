@@ -6093,7 +6093,7 @@ class Sequencer:
                                     if not g_dev['cam'].pixscale == None:
                                         req = {'time': focus_exposure_time,  'alias':  str(g_dev['cam'].name), 'image_type': 'focus_confirmation'}   #  NB Should pick up filter and constats from config
                                         opt = { 'count': 1, 'filter': filter_choice}
-                                        result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+                                        result=g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor') ## , script = 'auto_focus_script_0')  #  This is where we start.
 
 
                                         print (g_dev['obs'].fwhmresult)
