@@ -3937,8 +3937,9 @@ class Camera:
                     if self.is_osc:
                         suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
 
-                        temp_file_holder=[]
+                        
                         for suffix in suffixes:
+                            temp_file_holder=[]
                             for tempfilename in real_time_files:
                                 temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
                             try:
