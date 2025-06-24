@@ -70,6 +70,11 @@ site_config = {
     'obs_id': 'aro1',
 
 
+    'api_http_base' : 'https://api.photonranch.org/api/',
+    'jobs_http_base' : 'https://jobs.photonranch.org/jobs/',
+    'logs_http_base' : 'https://logs.photonranch.org/logs/',
+    'status_http_base' : 'https://status.photonranch.org/status/',
+
     # Name, local and owner stuff
     'name': 'Apache Ridge Observatory 0m3 f4.9/9',
 

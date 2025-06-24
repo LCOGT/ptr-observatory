@@ -3909,7 +3909,7 @@ class Camera:
         token_name=token_name + str(self.next_seq)
 
 
-        if self.site_config['save_raws_to_pipe_folder_for_nightly_processing']:
+        if self.site_config['save_images_to_pipe_for_processing']:
             if len(real_time_files) > 0:
 
                 # This is the failsafe directory.... if it can't be written to the PIPE folder
@@ -3922,29 +3922,67 @@ class Camera:
                 if not os.path.exists(failsafe_directory+ '/tokens'):
                     os.umask(0)
                     os.makedirs(failsafe_directory+ '/tokens')
-
+                    
                 try:
-                    pipetokenfolder = self.site_config['pipe_archive_folder_path'] + '/tokens'
-                    if not os.path.exists(self.site_config['pipe_archive_folder_path'] + '/tokens'):
+                    if self.site_config['pipe_save_method'] == 'ftp':
+                        pipetokenfolder = self.site_config['ftp_ingestion_folder']
+                    elif self.site_config['pipe_save_method'] == 'http':
+                        pipetokenfolder = self.site_config['http_ingestion_folder']
+                    else:
+                        pipetokenfolder = self.site_config['pipe_archive_folder_path'] + '/tokens'
+                    if not os.path.exists(pipetokenfolder):
                         os.umask(0)
                         os.makedirs(self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
 
                     if self.is_osc:
                         suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
 
-                        temp_file_holder=[]
+                        
                         for suffix in suffixes:
+                            temp_file_holder=[]
                             for tempfilename in real_time_files:
                                 temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
                             try:
-                                with open(f"{pipetokenfolder}/{token_name}{suffix}", 'w') as f:
+                                # with open(f"{pipetokenfolder}/{token_name}{suffix}", 'w') as f:
+                                #     json.dump(temp_file_holder, f, indent=2)
+                                real_path = f"{pipetokenfolder}/{token_name}{suffix}.json"
+                                temp_path = real_path + ".tmp"
+                                
+                                # 1. Write to “.tmp”
+                                with open(temp_path, "w") as f:
                                     json.dump(temp_file_holder, f, indent=2)
+                                    f.flush()
+                                    os.fsync(f.fileno())
+                                
+                                # 2. Rename to the real filename
+                                os.replace(temp_path, real_path)
+                                
+                                if self.site_config['pipe_save_method'] == 'ftp':
+                                    g_dev['obs'].add_to_ftpqueue(pipetokenfolder, str(token_name)+str(suffix)+'.json', 'fromsite')
+                                if self.site_config['pipe_save_method'] == 'http':
+                                    g_dev['obs'].add_to_httpqueue(pipetokenfolder, str(token_name)+str(suffix)+'.json', 'fromsite')
+                                                                
                             except:
                                 plog(traceback.format_exc())
                     else:
                         try:
-                            with open(pipetokenfolder + "/" + token_name, 'w') as f:
+                            # with open(pipetokenfolder + "/" + token_name, 'w') as f:
+                            #     json.dump(real_time_files, f, indent=2)
+                            real_path = os.path.join(pipetokenfolder, token_name +'.json')
+                            temp_path = real_path + ".tmp"
+                            
+                            # 1. Write into the “.tmp” file
+                            with open(temp_path, "w") as f:
                                 json.dump(real_time_files, f, indent=2)
+                                f.flush()
+                                os.fsync(f.fileno())
+                            
+                            # 2. Atomically replace (or create) the real file
+                            os.replace(temp_path, real_path)
+                            if self.site_config['pipe_save_method'] == 'ftp':
+                                g_dev['obs'].add_to_ftpqueue(pipetokenfolder, token_name+'.json', 'fromsite')
+                            elif self.site_config['pipe_save_method'] == 'http':
+                                g_dev['obs'].add_to_httpqueue(pipetokenfolder, token_name+'.json', 'fromsite')
                         except:
                             plog(traceback.format_exc())
                 except:

@@ -69,6 +69,11 @@ site_config = {
     'obs_id': 'mrc2',
 
 
+    'api_http_base' : 'https://api.photonranch.org/api/',
+    'jobs_http_base' : 'https://jobs.photonranch.org/jobs/',
+    'logs_http_base' : 'https://logs.photonranch.org/logs/',
+    'status_http_base' : 'https://status.photonranch.org/status/',
+
     # Name, local and owner stuff
     'name': 'Mountain Ranch Camp Observatory  0m61 f6.8',
     'location': 'Santa Barbara, California,  USA',
