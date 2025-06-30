@@ -601,7 +601,7 @@ class FilterWheel:
         """Sets the filter position by filter name."""
 
         self.filter_changing = True
-        #using_substitute_filter = False
+        #using_substitute_filter = False  This variable is never used
 
         try:
             filter_name = str(req["filter"]).lower()

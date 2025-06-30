@@ -5990,7 +5990,7 @@ class Camera:
                                         print ((np.asarray(catalog['total_donut_distance'])))
                                         print ((np.asarray(catalog['flux_radius'])))
 
-                                        #breakpoint()
+                                        # breakpoint()
 
                                         # if np.median(total_mean_donut_distance) > (np.median(total_mean_flux_radius) * 2) :
                                         #     fwhm_values=total_mean_donut_distance
