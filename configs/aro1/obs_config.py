@@ -203,6 +203,12 @@ site_config = {
 
 
     'push_file_list_to_pipe_queue': False,
+    # LINKS TO PIPE FOLDER
+    'save_images_to_pipe_for_processing': True,
+    'pipe_save_method': 'local', # Can also be 'ftp' or 'http'  for that transfer but also 'local' pipe for a local LAN pipe server
+    
+    'ftp_ingestion_folder': 'C:/ftp_ingestion/',
+    'http_ingestion_folder': 'C:/http_ingestion/',
 
     # The site can fully platesolve each image before it is sent off to s3 or a PIPE
     # If there are spare enough cycles at the site, this saves time for the PIPE

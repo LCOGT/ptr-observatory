@@ -130,11 +130,19 @@ site_config = {
 
 
     'push_file_list_to_pipe_queue': False,
+    
+    # LINKS TO PIPE FOLDER
+    'save_images_to_pipe_for_processing': True,
+    'pipe_save_method': 'local', # Can also be 'ftp' or 'http'  for that transfer but also 'local' pipe for a local LAN pipe server
+    
+    'ftp_ingestion_folder': 'C:/ftp_ingestion/',
+    'http_ingestion_folder': 'C:/http_ingestion/',
+    
 
-    # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
-    # So this is False for Bisques and true for everyone else.
-    'run_main_update_in_a_thread': True,
-    'run_status_update_in_a_thread' : True,
+    # # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
+    # # So this is False for Bisques and true for everyone else.
+    # 'run_main_update_in_a_thread': True,
+    # 'run_status_update_in_a_thread' : True,
 
 
     # Minimum realistic seeing at the site.
