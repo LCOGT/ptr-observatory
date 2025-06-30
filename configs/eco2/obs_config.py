@@ -26,10 +26,15 @@ site_config = {
 
 
 
-    'api_http_base' : 'https://api.photonranch.org/api/',
-    'jobs_http_base' : 'https://jobs.photonranch.org/jobs/',
-    'logs_http_base' : 'https://logs.photonranch.org/logs/',
-    'status_http_base' : 'https://status.photonranch.org/status/',
+    # 'api_http_base' : 'https://api.photonranch.org/api/',
+    # 'jobs_http_base' : 'https://jobs.photonranch.org/jobs/',
+    # 'logs_http_base' : 'https://logs.photonranch.org/logs/',
+    # 'status_http_base' : 'https://status.photonranch.org/status/',
+    
+    'api_http_base' : 'https://hub.nextastro.org/',
+    'jobs_http_base' : 'https://hub.nextastro.org/jobs',
+    'logs_http_base' : 'https://hub.nextastro.org/logs/',
+    'status_http_base' : 'https://hub.nextastro.org/status/',
 
     # Name, local and owner stuff
     'name': 'Eltham College Observatory, 0m28',
