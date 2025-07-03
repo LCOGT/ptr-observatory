@@ -15,11 +15,13 @@ class NightlyScheduleManager:
                  schedule_start: int,
                  schedule_end: int,
                  site_proxy, # SiteProxy object, passed from the observatory class
-                 ptr_update_interval: int=60,  # Default to 60 seconds
+                 ptr_update_interval: int=15,  # Default to 60 seconds
                  lco_update_interval: int=30,   # Default to 30 seconds
                  include_lco_scheduler: bool=True,
                  configdb_telescope: str=None,
                  configdb_enclosure: str=None,
+                 calendar_update_url: str=None,
+                 url_proj: str=None
                 ):
         """ A class that manages the schedule for the night. This class is responsible for getting the schedule from the
         site proxy and the PTR calendar and keeping track of the events that are happening.
@@ -62,6 +64,9 @@ class NightlyScheduleManager:
         self._ptr_events = []
         self._lco_events = []
         self._time_of_last_lco_schedule = None
+        
+        self.calendar_update_url = calendar_update_url
+        self.url_proj = url_proj
 
         self._completed_ids = []
 
@@ -149,7 +154,7 @@ class NightlyScheduleManager:
         - end_time (str): get events ending before this time. string formatted as YYYY-mm-ddTHH:MM:SSZ
         """
 
-        calendar_update_url = "https://calendar.photonranch.org/calendar/siteevents"
+        #calendar_update_url = "https://calendar.photonranch.org/calendar/siteevents"
 
         if start_time is None or not is_valid_utc_iso(start_time):
             start_time = datetime.fromtimestamp(self.schedule_start).isoformat().split(".")[0] + "Z"
@@ -170,10 +175,11 @@ class NightlyScheduleManager:
         })
 
         try:
-            events = requests.post(calendar_update_url, body, timeout=20).json()
+            events = requests.post(self.calendar_update_url, body, timeout=20).json()
         except:
-            plog(f"ERROR: Failed to update the calendar. This is not normal. Request url was {calendar_update_url} and body was {body}.")
+            plog(f"ERROR: Failed to update the calendar. This is not normal. Request url was {self.calendar_update_url} and body was {body}.")
             events = []
+        print (events)
 
         with self._lock:
             self._ptr_events = [
@@ -196,12 +202,19 @@ class NightlyScheduleManager:
         if 'project_id' not in event or event['project_id'] in null_project_ids:
             return None
 
-        url_proj = "https://projects.photonranch.org/projects/get-project"
-        request_body = json.dumps({
-            "project_name": event['project_id'].split('#')[0],
-            "created_at": event['project_id'].split('#')[1],
-        })
-        response = requests.post(url_proj, request_body, timeout=10)
+        #url_proj = "https://projects.photonranch.org/projects/get-project"
+        
+        #breakpoint()
+        try:
+            request_body = json.dumps({
+                "project_name": event['project_id'].split('#')[0],
+                "created_at": event['project_id'].split('#')[1],
+            })
+        except:
+            
+            request_body = json.dumps({"project_name": event['project_id']})
+        
+        response = requests.post(self.url_proj, request_body, timeout=10)
 
         if response.status_code == 200:
             project = response.json()

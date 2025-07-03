@@ -4493,12 +4493,16 @@ class Observatory:
                                             timeout=10,
                                         )
                                     except:
-                                        reqs.post(
-                                            aws_resp["url"],
-                                            #data=aws_resp["fields"],
-                                            files=files,
-                                            timeout=10,
-                                        )
+                                        try:
+                                            reqs.post(
+                                                aws_resp["url"],
+                                                #data=aws_resp["fields"],
+                                                files=files,
+                                                timeout=10,
+                                            )
+                                        except:
+                                            plog.err((traceback.format_exc()))
+                                            breakpoint()
                                 except Exception as e:
                                     plog.err((traceback.format_exc()))
                                     if (

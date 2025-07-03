@@ -156,6 +156,7 @@ class Sequencer:
         include_lco_scheduler = 'SITE_PROXY_TOKEN' in os.environ
         configdb_telescope = self.config.get('configdb_telescope')
         configdb_enclosure = self.config.get('configdb_enclosure')
+        #breakpoint()
         self.schedule_manager = NightlyScheduleManager(
                 self.config['obs_id'],
                 schedule_start,
@@ -164,6 +165,8 @@ class Sequencer:
                 include_lco_scheduler=include_lco_scheduler,
                 configdb_telescope=configdb_telescope,
                 configdb_enclosure=configdb_enclosure,
+                calendar_update_url=self.config['calendar_update_url'],
+                url_proj=self.config['url_proj']
             )
 
         # Add a fake lco observation to the calendar, used for testing
@@ -883,6 +886,8 @@ class Sequencer:
                 try:
                     # Get the observation to run now (or None)
                     current_observation = self.schedule_manager.get_observation_to_run()
+                    
+                    print (current_observation)
 
                     # Nothing to observe
                     if current_observation is None:
