@@ -1167,10 +1167,12 @@ class Sequencer:
 
                                             # Collect frames
                                             for frame in frames_to_collect:
-                                                exposure_time, image_type, count_multiplier = frame[:3]
-                                                check_exposure = frame[3] if len(frame) > 3 else False
-                                                if not self.collect_midnight_frame(exposure_time, image_type, count_multiplier, stride, min_exposure, check_exposure):
-                                                    break
+                                                print (frame[0])
+                                                if frame[0] >= min_exposure:
+                                                    exposure_time, image_type, count_multiplier = frame[:3]
+                                                    check_exposure = frame[3] if len(frame) > 3 else False
+                                                    if not self.collect_midnight_frame(exposure_time, image_type, count_multiplier, stride, min_exposure, check_exposure):
+                                                        break
 
                                                 # chekcheckc that the roof hasn't opened while this is happening!
                                                 if g_dev['obs'].open_and_enabled_to_observe:
@@ -2277,7 +2279,7 @@ class Sequencer:
             broadband_ss_biasdark_exp_time = g_dev['cam'].settings['smart_stack_exposure_time']
             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * g_dev['cam'].settings['smart_stack_exposure_NB_multiplier']
             # There is no point getting biasdark exposures below the min_flat_exposure time aside from the scaled dark values.
-            # min_exposure = min(float(g_dev['cam'].settings['min_flat_exposure']),float(g_dev['cam'].settings['min_exposure']))
+            min_exposure = min(float(g_dev['cam'].settings['min_flat_exposure']),float(g_dev['cam'].settings['min_exposure']))
 
 
 
@@ -2470,9 +2472,9 @@ class Sequencer:
 
                 # Iterate over exposure settings
                 for exposure_time, image_type, count_multiplier in exposures:
-                    #if exposure_time >= min_exposure:
-                    if not self.collect_dark_frame(exposure_time, image_type, count_multiplier, stride, min_to_do, dark_exp_time, cycle_time, ending):
-                        break
+                    if exposure_time >= min_exposure:
+                        if not self.collect_dark_frame(exposure_time, image_type, count_multiplier, stride, min_to_do, dark_exp_time, cycle_time, ending):
+                            break
 
                 # Collect additional frames
                 if not self.collect_bias_frame(stride, stride, min_to_do, dark_exp_time, cycle_time, ending):
