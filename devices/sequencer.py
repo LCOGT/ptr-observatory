@@ -887,7 +887,11 @@ class Sequencer:
                     # Get the observation to run now (or None)
                     current_observation = self.schedule_manager.get_observation_to_run()
                     
+                    
+                    
                     print (current_observation)
+
+                    
 
                     # Nothing to observe
                     if current_observation is None:
@@ -1328,7 +1332,7 @@ class Sequencer:
                 except Exception as e:
                     plog ("Could not execute project due to poorly formatted or corrupt project")
                     plog (e)
-                    g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
+                    #g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
                     self.blockend = None
                     continue
 
@@ -1642,6 +1646,8 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
                 self.blockend = None
                 continue
+            
+            #breakpoint()
 
             # Store this ra as the "block" ra for centering purposes
             self.block_ra=copy.deepcopy(dest_ra)
@@ -1706,6 +1712,7 @@ class Sequencer:
             #Compute how many to do.
             left_to_do = 0
             ended = False
+            #breakpoint()
 
             for exposure in block['project']['exposures']:
                 exposure['substack'] = do_sub_stack

@@ -44,7 +44,7 @@ site_config = {
     'logs_http_base' : 'https://hub.nextastro.org/logs/',
     'status_http_base' : 'https://hub.nextastro.org/status/',
     'calendar_update_url' : 'https://hub.nextastro.org/calendar/siteevents',
-    'url_proj': "https://hub.nextastro.org/get-project",
+    'url_proj': "https://hub.nextastro.org/projects/get-project",
 
     # Name, local and owner stuff
     'name': 'Eltham College Observatory, 0m4f6.8',

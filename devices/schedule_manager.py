@@ -222,6 +222,7 @@ class NightlyScheduleManager:
 
         else:
             plog('Failed to retrieve project details for event: ', event)
+            print (response)
             return None
 
     def update_now(self, override_warning=False):
@@ -374,6 +375,10 @@ class NightlyScheduleManager:
                 # a project associated with it
                 else:
                     project = self.get_ptr_project_details(event)
+                    
+                    # print ("GOOGLGOE")
+                    # breakpoint()
+                    
                     if project:
                         return {
                             **event,

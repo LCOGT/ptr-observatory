@@ -1022,21 +1022,53 @@ class Observatory:
         """ Fetch the WEMA config from AWS """
         wema_config = None
         url = self.api_http_base + f"{self.wema_name}/config/"
-        try:
-            response = requests.get(url, timeout=20)
-            data = response.json()
-            # if the top‐level JSON has a 'wema_name' key, use the whole dict,
-            # otherwise pull out the 'configuration' sub-dict
-            if 'wema_name' in data:
-                wema_config = data
-            else:
-                wema_config = data.get('configuration', {})
-            wema_last_recorded_day_dir = wema_config.get('events', {}).get('day_directory', '<missing>')
-            plog(f"Retrieved wema config, latest version is from day_directory {wema_last_recorded_day_dir}")
-        except Exception as e:
-            plog(traceback.format_exc())
-            breakpoint()
-            plog.warn("WARNING: failed to get wema config!", e)
+        # try:
+        #     response = requests.get(url, timeout=20)
+        #     data = response.json()
+        #     # if the top‐level JSON has a 'wema_name' key, use the whole dict,
+        #     # otherwise pull out the 'configuration' sub-dict
+        #     if 'wema_name' in data:
+        #         wema_config = data
+        #     else:
+        #         wema_config = data.get('configuration', {})
+        #     wema_last_recorded_day_dir = wema_config.get('events', {}).get('day_directory', '<missing>')
+        #     plog(f"Retrieved wema config, latest version is from day_directory {wema_last_recorded_day_dir}")
+        # except Exception as e:
+        #     plog(traceback.format_exc())
+        #     breakpoint()
+        #     plog.warn("WARNING: failed to get wema config!", e)
+        
+        
+        """
+        Continuously fetch the WEMA configuration every 30 seconds.
+        On success, logs the retrieved day_directory; on failure, logs the traceback.
+        """
+        while True:
+            try:
+                response = requests.get(url, timeout=20)
+                response.raise_for_status()
+                data = response.json()
+    
+                # if the top-level JSON has a 'wema_name' key, use the whole dict,
+                # otherwise pull out the 'configuration' sub-dict
+                if 'wema_name' in data:
+                    wema_config = data
+                else:
+                    wema_config = data.get('configuration', {})
+    
+                wema_last_recorded_day_dir = wema_config.get('events', {}) \
+                                                   .get('day_directory', '<missing>')
+                plog(f"Retrieved wema config, latest version is from day_directory {wema_last_recorded_day_dir}")
+                break
+            except Exception as e:
+                plog(traceback.format_exc())
+                # If you want to drop into the debugger on failure:
+                # breakpoint()
+                plog.warn("WARNING: failed to get wema config!", e)
+    
+            # wait 30 seconds before next attempt (whether success or failure)
+            time.sleep(30)
+        
         return wema_config
 
 
@@ -1059,7 +1091,6 @@ class Observatory:
                 retryapi = False
             except:
                 plog(traceback.format_exc())
-                breakpoint()
                 plog.warn("connection glitch in update config. Waiting 5 seconds.")
                 time.sleep(5)
         if "message" in response:
