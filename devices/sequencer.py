@@ -1697,7 +1697,12 @@ class Sequencer:
                 self.auto_focus_script(req2, {}, throw = g_dev['foc'].throw)
                 g_dev["foc"].focus_needed = False
 
-            pa = float(block_specification['project']['project_constraints']['position_angle'])
+            try:
+                pa = float(block_specification['project']
+                                         ['project_constraints']
+                                         ['position_angle'])
+            except (KeyError, TypeError, ValueError):
+                pa = 0.0
             if abs(pa) > 0.01:
                 try:
                     g_dev['rot'].rotator.MoveAbsolute(pa)   #Skip rotator move if nominally 0
@@ -1855,7 +1860,11 @@ class Sequencer:
                     except:
                         repeat_count = 1
                     #  We should add a frame repeat count
-                    imtype = exposure['imtype']
+                    try:
+                        imtype = exposure['imtype']
+                    except:
+                        imtype = 'light'
+
 
                     # MUCH safer to calculate these from first principles
                     # Than rely on an owner getting this right!
@@ -1884,7 +1893,12 @@ class Sequencer:
                     except:
                         pass
 
-                    zoom_factor = exposure['zoom'].lower()
+                    try:
+                        zoom_factor = exposure['zoom'].lower()
+                    except:
+                        exposure['zoom'] = 'full'
+                        zoom_factor = 'full'
+                    
                     if exposure['zoom'].lower() in ["full", 'Full'] or 'X' in exposure['zoom'] \
                         or  '%' in exposure['zoom'] or ( exposure['zoom'].lower() == 'small sq.') \
                         or (exposure['zoom'].lower() == 'small sq'):

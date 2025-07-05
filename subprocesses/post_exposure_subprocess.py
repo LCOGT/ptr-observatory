@@ -1564,11 +1564,13 @@ try:
     hdu.header["PEDESTAL"] = (0.0, "This value has been added to the data")
     hdu.header["ERRORVAL"] = 0
 
-    hdu.header["USERNAME"] = observer_user_name
+    #hdu.header["USERNAME"] = observer_user_name
     hdu.header["USERID"] = (
         str(observer_user_id).replace("-", "").replace("|", "").replace('@','at')
     )
-
+    hdu.header["USERNAME"] = (
+        str(observer_user_id).replace("-", "").replace("|", "").replace('@','at')
+    )
 
     im_type = "EX"
     f_ext = ""

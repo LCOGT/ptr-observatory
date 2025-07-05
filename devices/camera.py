@@ -5250,7 +5250,7 @@ class Camera:
                             outputimg = self._getImageArray()  # .astype(np.float32)
                             imageCollected = 1
 
-                            if True:
+                            if False:
                                height, width = outputimg.shape
                                patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
                                plog(">>>>  20% central image patch, std:  ", bn.nanmedian(patch), round(bn.nanstd(patch), 2), str(width)+'x'+str(height) )

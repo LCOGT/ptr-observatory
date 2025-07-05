@@ -179,7 +179,7 @@ class NightlyScheduleManager:
         except:
             plog(f"ERROR: Failed to update the calendar. This is not normal. Request url was {self.calendar_update_url} and body was {body}.")
             events = []
-        print (events)
+        #print (events)
 
         with self._lock:
             self._ptr_events = [
