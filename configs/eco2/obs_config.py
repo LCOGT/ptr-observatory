@@ -26,6 +26,16 @@ site_config = {
 
 
 
+    # 'api_http_base' : 'https://api.photonranch.org/api/',
+    # 'jobs_http_base' : 'https://jobs.photonranch.org/jobs/',
+    # 'logs_http_base' : 'https://logs.photonranch.org/logs/',
+    # 'status_http_base' : 'https://status.photonranch.org/status/',
+    
+    'api_http_base' : 'https://hub.nextastro.org/',
+    'jobs_http_base' : 'https://hub.nextastro.org/jobs',
+    'logs_http_base' : 'https://hub.nextastro.org/logs/',
+    'status_http_base' : 'https://hub.nextastro.org/status/',
+
     # Name, local and owner stuff
     'name': 'Eltham College Observatory, 0m28',
     'airport_code':  'MEL: Melbourne Airport',
@@ -123,11 +133,18 @@ site_config = {
 
 
     'push_file_list_to_pipe_queue': False,
+    
+    # LINKS TO PIPE FOLDER
+    'save_images_to_pipe_for_processing': True,
+    'pipe_save_method': 'local', # Can also be 'ftp' or 'http'  for that transfer but also 'local' pipe for a local LAN pipe server
+    
+    'ftp_ingestion_folder': 'C:/ftp_ingestion/',
+    'http_ingestion_folder': 'C:/http_ingestion/',
 
-    # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
-    # So this is False for Bisques and true for everyone else.
-    'run_main_update_in_a_thread': False,
-    'run_status_update_in_a_thread' : True,
+    # # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
+    # # So this is False for Bisques and true for everyone else.
+    # 'run_main_update_in_a_thread': False,
+    # 'run_status_update_in_a_thread' : True,
 
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things

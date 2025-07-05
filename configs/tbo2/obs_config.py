@@ -166,6 +166,12 @@ site_config = {
     'fully_platesolve_images_at_site_rather_than_pipe' : True,
 
     'push_file_list_to_pipe_queue': False,
+    # LINKS TO PIPE FOLDER
+    'save_images_to_pipe_for_processing': True,
+    'pipe_save_method': 'local', # Can also be 'ftp' or 'http'  for that transfer but also 'local' pipe for a local LAN pipe server
+    
+    'ftp_ingestion_folder': 'C:/ftp_ingestion/',
+    'http_ingestion_folder': 'C:/http_ingestion/',
 
 
 

@@ -12,7 +12,7 @@ It also organises the various queues that process, send, slice and dice data.
 from dotenv import load_dotenv
 load_dotenv(".env")
 import ocs_ingester.exceptions
-
+import ftplib
 from ocs_ingester.ingester import upload_file_and_ingest_to_archive
 
 from requests.adapters import HTTPAdapter, Retry
@@ -34,7 +34,7 @@ import glob
 import subprocess
 import pickle
 import argparse
-
+from queue import Empty
 from astropy.io import fits
 from astropy.utils.data import check_download_cache
 from astropy.coordinates import get_sun, SkyCoord, AltAz
@@ -72,7 +72,98 @@ retries = Retry(total=3, backoff_factor=0.1,
                 status_forcelist=[500, 502, 503, 504])
 reqs.mount("http://", HTTPAdapter(max_retries=retries))
 
+#import ftputil
 
+
+
+
+def http_upload(server, filedirectory, filename, upload_type):
+    
+    files = {"file": open(str(filedirectory +'/'+filename).replace('//','/'),"rb")}
+    data  = {"target_dir": upload_type}
+    
+    print (files)
+    
+    #breakpoint()
+    
+    
+    
+    try:
+        resp = reqs.post(server, files=files, data=data)
+        print("HTTP", resp.status_code)
+        ct = resp.headers.get("Content-Type", "")
+        
+        if resp.ok and "application/json" in ct:
+            # only parse JSON if it really is JSON
+            print(resp.json())
+        else:
+            # fallback to raw text so you can see the error
+            print(resp.text)
+            breakpoint()
+        return True
+    except:
+        plog(traceback.format_exc())
+        breakpoint()
+        
+    return False
+    
+    
+    
+
+# def ftp_upload_with_ftputil(
+#     server: str,
+#     port: int,
+#     username: str,
+#     password: str,
+#     remote_dir: str,
+#     local_dir: str,
+#     filenames: list[str],
+#     use_passive: bool = True,
+#     timeout: int = 30
+# ):
+#     """
+#     Uses ftputil to connect and upload a list of files.
+#     """
+#     # ftputil’s FTPHost automatically handles connect/login under the hood.
+
+#     try:
+#         host = ftputil.FTPHost(
+#             host=server,
+#             user=username,
+#             passwd=password,
+#             port=port,
+#             timeout=timeout,
+#         )
+#         # Toggle passive mode if needed (default is True)
+#         host.session.set_pasv(use_passive)
+
+#     except:
+#         plog(traceback.format_exc())
+#         breakpoint()
+
+#     try:
+#         # Ensure the remote directory exists (mkdirs=True will create nested dirs)
+#         host.makedirs(remote_dir, exist_ok=True)
+
+#         for fname in filenames:
+#             local_path = os.path.join(local_dir, fname)
+#             if not os.path.isfile(local_path):
+#                 print(f"[!] Skipping {local_path} (not found).")
+#                 continue
+
+#             remote_path = host.path.join(remote_dir, fname)
+#             print(f"Uploading {local_path} → {remote_path}…", end=" ")
+#             # upload_if_newer only sends if local is newer or remote missing;
+#             # you can also use host.upload(local_path, remote_path) to force.
+#             host.upload_if_newer(local_path, remote_path)
+#             print("done.")
+
+    
+
+#     except Exception as e:
+#         print("[ERROR] ftputil upload failed:", e)
+#     finally:
+#         host.close()
 
 def test_connect(host="http://google.com"):
     # This just tests the net connection
@@ -120,13 +211,15 @@ def findProcessIdByName(processName):
     return listOfProcessObjects
 
 
-def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
+def authenticated_request(method: str, uri: str, payload: dict, base_url: str) -> str:
     # Populate the request parameters. Include data only if it was sent.
-    base_url = "https://api.photonranch.org/api"
+    #base_url = "https://api.photonranch.org/api"
+    #base_url = self.api_http_base
+    #base_url=api_http_base
     request_kwargs = {
         "method": method,
         "timeout": 10,
-        "url": f"{base_url}/{uri}",
+        "url": f"{base_url}{uri}",
     }
     if payload is not None:
         request_kwargs["data"] = json.dumps(payload)
@@ -135,10 +228,10 @@ def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
     return response.json()
 
 
-def send_status(obsy, column, status_to_send):
+def send_status(obsy, column, status_to_send, status_http_base):
     """Sends an update to the status endpoint."""
 
-    uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
+    uri_status = status_http_base + f"{obsy}/status/"
     payload = {"statusType": str(column), "status": status_to_send}
     # if column == 'weather':
     #     print("Did not send spurious weathr report.")
@@ -173,6 +266,13 @@ class Observatory:
         g_dev["name"] = name
 
         self.config = ptr_config
+        
+        
+        self.api_http_base=self.config['api_http_base']
+        self.jobs_http_base=self.config['jobs_http_base']
+        self.status_http_base=self.config['status_http_base']
+        self.logs_http_base=self.config['logs_http_base']
+        
         self.wema_name = self.config["wema_name"]
         self.wema_config = self.get_wema_config() # fetch the wema config from AWS
 
@@ -594,6 +694,44 @@ class Observatory:
         self.reporttonightlog_queue_thread.start()
 
 
+        if self.config['save_images_to_pipe_for_processing'] and self.config['pipe_save_method'] == 'ftp':
+            
+            with open('ftpsecrets.json', "r") as f:
+                cfg = json.load(f)
+            
+            self.fitserver    = cfg["SERVER"]
+            self.ftpport       = cfg["PORT"]
+            self.ftpusername   = cfg["USERNAME"]
+            self.ftppassword   = cfg["PASSWORD"]
+            self.ftpremotedir = cfg["REMOTE_DIR"]
+            
+            self.ftp_queue = queue.Queue(maxsize=0)
+            self.ftp_queue_thread = threading.Thread(
+                target=self.ftp_process, args=()
+            )
+            self.ftp_queue_thread.daemon = True
+            self.ftp_queue_thread.start()
+        
+        if self.config['save_images_to_pipe_for_processing'] and self.config['pipe_save_method'] == 'http':
+            
+            with open('httpsecrets.json', "r") as f:
+                cfg = json.load(f)
+            
+            self.fitserver    = cfg["SERVER"]
+            # self.ftpport       = cfg["PORT"]
+            # self.ftpusername   = cfg["USERNAME"]
+            # self.ftppassword   = cfg["PASSWORD"]
+            # self.ftpremotedir = cfg["REMOTE_DIR"]
+            
+            self.http_queue = queue.Queue(maxsize=0)
+            self.http_queue_thread = threading.Thread(
+                target=self.http_process, args=()
+            )
+            self.http_queue_thread.daemon = True
+            self.http_queue_thread.start()
+            
+            
+
 
 
         self.queue_reporting_period = 60
@@ -619,7 +757,8 @@ class Observatory:
         try:
             reqs.request(
                 "POST",
-                "https://jobs.photonranch.org/jobs/getnewjobs",
+                #"https://jobs.photonranch.org/jobs/getnewjobs",
+                self.jobs_http_base +'getnewjobs',
                 data=json.dumps({"site": self.name}),
                 timeout=30,
             ).json()
@@ -864,18 +1003,74 @@ class Observatory:
 
         print("--- Finished Initializing Devices ---\n")
 
+    # def get_wema_config(self):
+    #     """ Fetch the WEMA config from AWS """
+    #     wema_config = None
+    #     url = self.api_http_base + f"{self.wema_name}/config/"
+    #     try:
+    #         response = requests.get(url, timeout=20)
+    #         wema_config = response.json()['configuration']
+    #         wema_last_recorded_day_dir = wema_config['events'].get('day_directory', '<missing>')
+    #         plog(f"Retrieved wema config, lastest version is from day_directory {wema_last_recorded_day_dir}")
+    #     except Exception as e:
+    #         plog(traceback.format_exc())
+    #         breakpoint()
+    #         plog.warn("WARNING: failed to get wema config!", e)
+    #     return wema_config
+
     def get_wema_config(self):
         """ Fetch the WEMA config from AWS """
         wema_config = None
-        url = f"https://api.photonranch.org/api/{self.wema_name}/config/"
-        try:
-            response = requests.get(url, timeout=20)
-            wema_config = response.json()['configuration']
-            wema_last_recorded_day_dir = wema_config['events'].get('day_directory', '<missing>')
-            plog(f"Retrieved wema config, lastest version is from day_directory {wema_last_recorded_day_dir}")
-        except Exception as e:
-            plog.warn("WARNING: failed to get wema config!", e)
+        url = self.api_http_base + f"{self.wema_name}/config/"
+        # try:
+        #     response = requests.get(url, timeout=20)
+        #     data = response.json()
+        #     # if the top‐level JSON has a 'wema_name' key, use the whole dict,
+        #     # otherwise pull out the 'configuration' sub-dict
+        #     if 'wema_name' in data:
+        #         wema_config = data
+        #     else:
+        #         wema_config = data.get('configuration', {})
+        #     wema_last_recorded_day_dir = wema_config.get('events', {}).get('day_directory', '<missing>')
+        #     plog(f"Retrieved wema config, latest version is from day_directory {wema_last_recorded_day_dir}")
+        # except Exception as e:
+        #     plog(traceback.format_exc())
+        #     breakpoint()
+        #     plog.warn("WARNING: failed to get wema config!", e)
+        
+        
+        """
+        Continuously fetch the WEMA configuration every 30 seconds.
+        On success, logs the retrieved day_directory; on failure, logs the traceback.
+        """
+        while True:
+            try:
+                response = requests.get(url, timeout=20)
+                response.raise_for_status()
+                data = response.json()
+    
+                # if the top-level JSON has a 'wema_name' key, use the whole dict,
+                # otherwise pull out the 'configuration' sub-dict
+                if 'wema_name' in data:
+                    wema_config = data
+                else:
+                    wema_config = data.get('configuration', {})
+    
+                wema_last_recorded_day_dir = wema_config.get('events', {}) \
+                                                   .get('day_directory', '<missing>')
+                plog(f"Retrieved wema config, latest version is from day_directory {wema_last_recorded_day_dir}")
+                break
+            except Exception as e:
+                plog(traceback.format_exc())
+                # If you want to drop into the debugger on failure:
+                # breakpoint()
+                plog.warn("WARNING: failed to get wema config!", e)
+    
+            # wait 30 seconds before next attempt (whether success or failure)
+            time.sleep(30)
+        
         return wema_config
+
 
 
     def update_config(self):
@@ -892,9 +1087,10 @@ class Observatory:
         retryapi = True
         while retryapi:
             try:
-                response = authenticated_request("PUT", uri, self.config)
+                response = authenticated_request("PUT", uri, self.config, self.api_http_base)
                 retryapi = False
             except:
+                plog(traceback.format_exc())
                 plog.warn("connection glitch in update config. Waiting 5 seconds.")
                 time.sleep(5)
         if "message" in response:
@@ -911,9 +1107,13 @@ class Observatory:
         elif "ResponseMetadata" in response:
             if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                 plog("Config uploaded successfully.")
+            
+        elif "status" in response:
+            if response['status'] == 'updated':
+                plog("Config uploaded successfully.")
             else:
-                plog("Response to obsid config upload unclear. Here is the response")
-                plog(response)
+                plog ("eHHH?")
+                plog (response)
         else:
             plog("Response to obsid config upload unclear. Here is the response")
             plog(response)
@@ -963,7 +1163,8 @@ class Observatory:
         """
 
         self.scan_request_timer = time.time()
-        url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
+        #url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
+        url_job = self.jobs_http_base + "/getnewjobs"
         body = {"site": self.name}
         cmd = {}
         # Get a list of new jobs to complete (this request
@@ -976,9 +1177,13 @@ class Observatory:
             plog.warn("problem gathering scan requests. Likely just a connection glitch.")
             unread_commands = []
 
+
         # Make sure the list is sorted in the order the jobs were issued
         # Note: the ulid for a job is a unique lexicographically-sortable id.
         if len(unread_commands) > 0:
+            print (url_job)
+            print (body)
+            print (unread_commands)
 
             # As the stop_all_activity script flushes the commands
             # Any new commands imply there has been a new command since
@@ -1385,7 +1590,7 @@ class Observatory:
                 lane = "device"
                 if self.send_status_queue.qsize() < 7:
                     self.send_status_queue.put(
-                        (obsy, lane, status), block=False)
+                        (obsy, lane, status, self.status_http_base), block=False)
 
         """
         Here we update lightning system.
@@ -1728,7 +1933,7 @@ class Observatory:
                     status["obs_settings"]["timedottime_of_last_upload"] = time.time()
                     lane = "obs_settings"
                     try:
-                        send_status(self.name, lane, status)
+                        send_status(self.name, lane, status, self.status_http_base)
                     except:
                         plog.warn("could not send obs_settings status")
                         plog.warn(traceback.format_exc())
@@ -2009,8 +2214,8 @@ class Observatory:
                                 plog.err("self.enc_status not reporting correctly")
 
                 if not self.mountless_operation:
-                    # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
-                    if self.altitude_checks_on and not self.devices["mount"].currently_slewing:
+                    # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground and it isn't just parked.
+                    if self.altitude_checks_on and not self.devices["mount"].currently_slewing and not self.devices["mount"].rapid_park_indicator:
                         try:
                             mount_altitude = float(
                                 self.devices["mount"].previous_status["altitude"]
@@ -2643,7 +2848,7 @@ class Observatory:
                     if filepath.split(".")[-1] == "token":
                         files = {"file": (filepath, fileobj)}
                         aws_resp = authenticated_request(
-                            "POST", "/upload/", {"object_name": filename}
+                            "POST", "/upload/", {"object_name": filename},self.api_http_base
                         )
                         retry = 0
                         while retry < 10:
@@ -2980,7 +3185,7 @@ class Observatory:
 
                 #print(received_status[0], received_status[1], received_status[2])
                 send_status(
-                    received_status[0], received_status[1], received_status[2])
+                    received_status[0], received_status[1], received_status[2], received_status[3])
                 self.send_status_queue.task_done()
                 upload_time = time.time() - pre_upload
                 self.status_interval = 2 * upload_time
@@ -3032,7 +3237,8 @@ class Observatory:
             if not self.sendtouser_queue.empty():
                 while not self.sendtouser_queue.empty():
                     (p_log, p_level) = self.sendtouser_queue.get(block=False)
-                    url_log = "https://logs.photonranch.org/logs/newlog"
+                    #url_log = "https://logs.photonranch.org/logs/newlog"
+                    url_log = self.logs_http_base + "newlog"
                     body = json.dumps(
                         {
                             "site": self.config["obs_id"],
@@ -3090,7 +3296,160 @@ class Observatory:
             else:
                 time.sleep(0.25)
 
-
+    def ftp_process(self):
+        """This is a thread where files are ingested by ftp to a pipe server."""
+        while True:
+            # ─── 1) Scan ingestion folder for new `.fits.fz` files ───
+            try:
+                ingestion_folder = self.config['ftp_ingestion_folder']
+                entries = os.listdir(ingestion_folder)
+            except Exception as e:
+                plog(f"Could not list '{ingestion_folder}': {e}")
+                entries = []
+    
+            # Grab a snapshot of everything already in the queue
+            # (since queue.Queue() doesn't have a direct 'contains' method,
+            #  we peek at its internal deque via .queue)
+            try:
+                queued_items = list(self.ftp_queue.queue)
+            except Exception:
+                queued_items = []
+    
+            for fname in entries:
+                if not fname.endswith('.fits.fz'):
+                    continue
+    
+                full_path = os.path.join(ingestion_folder, fname)
+    
+                # Check if (ingestion_folder, fname) is already queued
+                already_queued = any(
+                    (item[0] == ingestion_folder and item[1] == fname)
+                    for item in queued_items
+                    if isinstance(item, tuple) and len(item) >= 2
+                )
+                if not already_queued:
+                    try:
+                        # Use file‐modification time as the “timestamp”
+                        ts = os.path.getmtime(full_path)
+                    except Exception:
+                        ts = time.time()
+    
+                    # Enqueue a tuple: (filedirectory, filename, timestamp)
+                    self.ftp_queue.put((ingestion_folder, fname, ts))
+                    plog(f"Enqueued new FTP file: {fname}")
+    
+            # ─── 2) Once scanning is done, process whatever is in ftp_queue ───
+            if not self.ftp_queue.empty():
+                # As long as there are items, keep pulling them off
+                while True:
+                    try:
+                        (filedirectory, filename, timestamp) = self.ftp_queue.get(block=False)
+                    except Empty:
+                        # No more items right now; break back to top of outer loop
+                        break
+    
+                    try:
+                        print ("TRYING FTP")
+                        # ftp_upload_with_ftputil(
+                        #     self.fitserver,
+                        #     self.ftpport,
+                        #     self.ftpusername,
+                        #     self.ftppassword,
+                        #     self.ftpremotedir,
+                        #     filedirectory,
+                        #     filename
+                        # )
+                    except Exception:
+                        plog("Night Log did not write, usually not fatal.")
+                        plog(traceback.format_exc())
+    
+                    # Mark this item as done
+                    self.ftp_queue.task_done()
+            else:
+                # If queue was empty (and after scanning), sleep briefly
+                time.sleep(0.25)
+                
+    def http_process(self):
+        """This is a thread where files are ingested by http to a pipe server."""
+        while True:
+            # ─── 1) Scan ingestion folder for new `.fits.fz` files ───
+            try:
+                ingestion_folder = self.config['http_ingestion_folder']
+                entries = os.listdir(ingestion_folder)
+            except Exception as e:
+                plog(f"Could not list '{ingestion_folder}': {e}")
+                entries = []
+    
+            # Grab a snapshot of everything already in the queue
+            # (since queue.Queue() doesn't have a direct 'contains' method,
+            #  we peek at its internal deque via .queue)
+            try:
+                queued_items = list(self.http_queue.queue)
+            except Exception:
+                queued_items = []
+    
+            for fname in entries:
+                if not fname.endswith(('.json', '.npy', '.fits.fz', '.fits')):
+                    continue
+    
+                full_path = os.path.join(ingestion_folder, fname)
+    
+                # Check if (ingestion_folder, fname) is already queued
+                already_queued = any(
+                    (item[0] == ingestion_folder and item[1] == fname)
+                    for item in queued_items
+                    if isinstance(item, tuple) and len(item) >= 2
+                )
+                if not already_queued:
+                    try:
+                        # Use file‐modification time as the “timestamp”
+                        ts = os.path.getmtime(full_path)
+                    except Exception:
+                        ts = time.time()
+    
+                    # Enqueue a tuple: (filedirectory, filename, timestamp)
+                    self.http_queue.put((ingestion_folder, fname, 'fromsite', ts ))
+                    plog(f"Enqueued new HTTP file: {fname}")
+    
+            # ─── 2) Once scanning is done, process whatever is in http_queue ───
+            if not self.http_queue.empty():
+                # As long as there are items, keep pulling them off
+                while True:
+                    try:
+                        (filedirectory, filename, upload_type, timestamp) = self.http_queue.get(block=False)
+                    except Empty:
+                        # No more items right now; break back to top of outer loop
+                        break
+    
+                    try:
+                        print (upload_type)
+                        print ("TRYING HTTP")
+                        success=http_upload(
+                            self.fitserver,
+                            # self.ftpport,
+                            # self.ftpusername,
+                            # self.ftppassword,
+                            # self.ftpremotedir,
+                            filedirectory,
+                            filename,
+                            upload_type
+                        )
+                        
+                        if success and not upload_type == 'calibrations':
+                            try:
+                                os.remove(filedirectory + '/' + filename)
+                            except:
+                                plog ("couldn't remove " + filedirectory + '/' + filename)
+                        
+                    except Exception:
+                        plog("Night Log did not write, usually not fatal.")
+                        plog(traceback.format_exc())
+    
+                    # Mark this item as done
+                    self.http_queue.task_done()
+            else:
+                # If queue was empty (and after scanning), sleep briefly
+                time.sleep(0.25)
 
 
     def platesolve_process(self):
@@ -4112,7 +4471,8 @@ class Observatory:
                             pipe_request["payload"] = payload
                             pipe_request["sender"] = self.name
 
-                            uri_status = "https://api.photonranch.org/api/pipe/enqueue"
+                            #uri_status = "https://api.photonranch.org/api/pipe/enqueue"
+                            uri_status = self.api_http_base + "pipe/enqueue"
                             try:
 
                                 response = requests.post(uri_status,json=pipe_request, timeout=20)# allow_redirects=False, headers=close_headers)
@@ -4149,17 +4509,33 @@ class Observatory:
                                 request_body["s3_directory"] = "info-images"
                                 request_body["info_channel"] = info_image_channel
 
-                            aws_resp = authenticated_request("POST", "/upload/", request_body) # this gets the presigned s3 upload url
+                            aws_resp = authenticated_request("POST", "/upload/", request_body, self.api_http_base) # this gets the presigned s3 upload url
+
                             with open(filepath, "rb") as fileobj:
                                 files = {"file": (filepath, fileobj)}
                                 try:
-                                    reqs.post(
-                                        aws_resp["url"],
-                                        data=aws_resp["fields"],
-                                        files=files,
-                                        timeout=10,
-                                    )
+                                    
+                                    #breakpoint()
+                                    try:
+                                        reqs.post(
+                                            aws_resp["url"],
+                                            data=aws_resp["fields"],
+                                            files=files,
+                                            timeout=10,
+                                        )
+                                    except:
+                                        try:
+                                            reqs.post(
+                                                aws_resp["url"],
+                                                #data=aws_resp["fields"],
+                                                files=files,
+                                                timeout=10,
+                                            )
+                                        except:
+                                            plog.err((traceback.format_exc()))
+                                            breakpoint()
                                 except Exception as e:
+                                    plog.err((traceback.format_exc()))
                                     if (
                                         "timeout" in str(e).lower()
                                         or "SSLWantWriteError"
@@ -4226,7 +4602,7 @@ class Observatory:
                     # Full path to file on disk
                     filepath = pri_image[1][0] + filename
                     aws_resp = authenticated_request(
-                        "POST", "/upload/", {"object_name": filename}
+                        "POST", "/upload/", {"object_name": filename}, self.api_http_base
                     )
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
@@ -4309,7 +4685,7 @@ class Observatory:
                             # To the extent it has a size
                             if os.stat(filepath).st_size > 0:
                                 aws_resp = authenticated_request(
-                                    "POST", "/upload/", {"object_name": filename}
+                                    "POST", "/upload/", {"object_name": filename}, self.api_http_base
                                 )
                                 with open(filepath, "rb") as fileobj:
                                     files = {"file": (filepath, fileobj)}
@@ -4375,9 +4751,13 @@ class Observatory:
         self.sendtouser_queue.put((p_log, p_level), block=False)
 
     def report_to_nightlog(self, log):
-        # This is now a queue--- it was actually slowing
-        # everything down each time this was called!
         self.reporttonightlog_queue.put((log, time.time()), block=False)
+        
+    def add_to_ftpqueue(self, filedirectory, filename):
+        self.ftp_queue.put((filedirectory, filename, time.time()), block=False)
+    
+    def add_to_httpqueue(self, filedirectory, filename, upload_type):
+        self.http_queue.put((filedirectory, filename, upload_type, time.time()), block=False)
 
     def check_platesolve_and_nudge(self, no_confirmation=True):
         """
@@ -4490,50 +4870,92 @@ class Observatory:
         """
         Requests the current enclosure status from the related WEMA.
         """
-        uri_status = f"https://status.photonranch.org/status/{self.wema_name}/enclosure/"
+        #uri_status = f"https://status.photonranch.org/status/{self.wema_name}/enclosure/"
+        uri_status = self.status_http_base + f"{self.wema_name}/enclosure/"
         try:
-            aws_enclosure_status = reqs.get(uri_status, timeout=20)
-            aws_enclosure_status = aws_enclosure_status.json()
+            # aws_enclosure_status = reqs.get(uri_status, timeout=20)
+            # aws_enclosure_status = aws_enclosure_status.json()
+            # aws_enclosure_status["site"] = self.name
+
+            # for enclosurekey in aws_enclosure_status["status"]["enclosure"][
+            #     "enclosure1"
+            # ].keys():
+            #     aws_enclosure_status["status"]["enclosure"]["enclosure1"][
+            #         enclosurekey
+            #     ] = aws_enclosure_status["status"]["enclosure"]["enclosure1"][
+            #         enclosurekey
+            #     ][
+            #         "val"
+            #     ]
+
+            # if self.assume_roof_open:
+            #     aws_enclosure_status["status"]["enclosure"]["enclosure1"][
+            #         "shutter_status"
+            #     ] = "Sim. Open"
+            #     aws_enclosure_status["status"]["enclosure"]["enclosure1"][
+            #         "enclosure_mode"
+            #     ] = "Simulated"
+
+            # try:
+            #     # To stop status's filling up the queue under poor connection conditions
+            #     # There is a size limit to the queue
+            #     if self.send_status_queue.qsize() < 7:
+            #         self.send_status_queue.put(
+            #             (self.name, "enclosure",
+            #              aws_enclosure_status["status"], self.status_http_base),
+            #             block=False,
+            #         )
+
+            # except Exception as e:
+            #     plog.err("aws enclosure send failed ", e)
+
+            # aws_enclosure_status = aws_enclosure_status["status"]["enclosure"][
+            #     "enclosure1"
+            # ]
+            
+            aws_resp = reqs.get(uri_status, timeout=20)
+            aws_enclosure_status = aws_resp.json()
             aws_enclosure_status["site"] = self.name
-
-            for enclosurekey in aws_enclosure_status["status"]["enclosure"][
-                "enclosure1"
-            ].keys():
-                aws_enclosure_status["status"]["enclosure"]["enclosure1"][
-                    enclosurekey
-                ] = aws_enclosure_status["status"]["enclosure"]["enclosure1"][
-                    enclosurekey
-                ][
-                    "val"
-                ]
-
+            
+            # drill into enclosure1
+            enc1 = aws_enclosure_status \
+                .get("status", {}) \
+                .get("enclosure", {}) \
+                .get("enclosure1", {})
+            
+            # only replace v with v["val"] when v is a dict that has "val"
+            for key, v in list(enc1.items()):
+                if isinstance(v, dict) and "val" in v:
+                    enc1[key] = v["val"]
+                # else: leave enc1[key] alone (it's already a primitive)
+            
+            # apply your simulated‐open override
             if self.assume_roof_open:
-                aws_enclosure_status["status"]["enclosure"]["enclosure1"][
-                    "shutter_status"
-                ] = "Sim. Open"
-                aws_enclosure_status["status"]["enclosure"]["enclosure1"][
-                    "enclosure_mode"
-                ] = "Simulated"
-
+                enc1["shutter_status"] = "Sim. Open"
+                enc1["enclosure_mode"]  = "Simulated"
+            
+            # now push only the cleaned status dict onto your queue
             try:
-                # To stop status's filling up the queue under poor connection conditions
-                # There is a size limit to the queue
                 if self.send_status_queue.qsize() < 7:
                     self.send_status_queue.put(
-                        (self.name, "enclosure",
-                         aws_enclosure_status["status"]),
+                        (self.name, "enclosure", aws_enclosure_status["status"], self.status_http_base),
                         block=False,
                     )
-
             except Exception as e:
                 plog.err("aws enclosure send failed ", e)
+            
+            # finally reassign so downstream code sees just the enclosure1 dict
+            aws_enclosure_status = enc1
 
-            aws_enclosure_status = aws_enclosure_status["status"]["enclosure"][
-                "enclosure1"
-            ]
+
 
         except Exception as e:
             plog.err("Failed to get aws enclosure status. Usually not fatal:  ", e)
+            
+            # plog.err(traceback.format_exc())
+            # plog.err("Failed rebooting, needs to be debugged")
+            # breakpoint()
+            
 
         try:
             if self.devices["sequencer"].last_roof_status == "Closed" and aws_enclosure_status[
@@ -4579,7 +5001,7 @@ class Observatory:
         Requests the current enclosure status from the related WEMA.
         """
 
-        uri_status = f"https://status.photonranch.org/status/{self.wema_name}/weather/"
+        uri_status = self.status_http_base + f"{self.wema_name}/weather/"
 
         try:
             aws_weather_status = reqs.get(uri_status, timeout=20)
@@ -4596,31 +5018,54 @@ class Observatory:
             ] = None
 
         try:
-            if (
-                aws_weather_status["status"]["observing_conditions"][
-                    "observing_conditions1"
-                ]
-                == None
-            ):
-                aws_weather_status["status"]["observing_conditions"][
-                    "observing_conditions1"
-                ] = {"wx_ok": "Unknown"}
+            # if (
+            #     aws_weather_status["status"]["observing_conditions"][
+            #         "observing_conditions1"
+            #     ]
+            #     == None
+            # ):
+            #     aws_weather_status["status"]["observing_conditions"][
+            #         "observing_conditions1"
+            #     ] = {"wx_ok": "Unknown"}
+            # else:
+            #     for weatherkey in aws_weather_status["status"]["observing_conditions"][
+            #         "observing_conditions1"
+            #     ].keys():
+            #         aws_weather_status["status"]["observing_conditions"][
+            #             "observing_conditions1"
+            #         ][weatherkey] = aws_weather_status["status"][
+            #             "observing_conditions"
+            #         ][
+            #             "observing_conditions1"
+            #         ][
+            #             weatherkey
+            #         ][
+            #             "val"
+            #         ]
+            
+            obs = aws_weather_status["status"]["observing_conditions"]["observing_conditions1"]
+            
+            #print (obs)
+
+            # If it ever comes back None, give it a placeholder
+            if obs is None:
+                aws_weather_status["status"]["observing_conditions"]["observing_conditions1"] = {"wx_ok": "Unknown"}
             else:
-                for weatherkey in aws_weather_status["status"]["observing_conditions"][
-                    "observing_conditions1"
-                ].keys():
-                    aws_weather_status["status"]["observing_conditions"][
-                        "observing_conditions1"
-                    ][weatherkey] = aws_weather_status["status"][
-                        "observing_conditions"
-                    ][
-                        "observing_conditions1"
-                    ][
-                        weatherkey
-                    ][
-                        "val"
-                    ]
+                # Only extract .val if it's really there
+                for key, val in list(obs.items()):
+                    if isinstance(val, dict) and "val" in val:
+                        obs[key] = val["val"]
+                    # else: keep val untouched
+            #print (aws_weather_status)
+            # return aws_weather_status
+            
+            
         except:
+            
+            plog.err(traceback.format_exc())
+            plog.err("Failed rebooting, needs to be debugged")
+            breakpoint()
+            
             plog.warn("bit of a glitch in weather status")
             aws_weather_status = {}
             aws_weather_status["status"] = {}
@@ -4634,7 +5079,7 @@ class Observatory:
             # There is a size limit to the queue
             if self.send_status_queue.qsize() < 7:
                 self.send_status_queue.put(
-                    (self.name, "weather", aws_weather_status["status"]), block=False
+                    (self.name, "weather", aws_weather_status["status"], self.status_http_base), block=False
                 )
 
         except Exception as e:
@@ -4747,7 +5192,8 @@ class Observatory:
         # jobs don't send the scope go wildly.
         reqs.request(
             "POST",
-            "https://jobs.photonranch.org/jobs/getnewjobs",
+            #"https://jobs.photonranch.org/jobs/getnewjobs",
+            self.jobs_http_base + 'getnewjobs',
             data=json.dumps({"site": self.name}),
             timeout=30,
         ).json()
