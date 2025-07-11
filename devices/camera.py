@@ -1015,6 +1015,7 @@ class Camera:
             g_dev["cam"] = self
 
         self.obs = observatory # use this to access the parent observatory object
+
         self.site_config = site_config
         self.config = site_config['camera'][name] # sometimes it's useful to access just this camera's config
         self.settings = self.config['settings']
