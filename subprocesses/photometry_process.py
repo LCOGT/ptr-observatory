@@ -617,8 +617,10 @@ if frame_type=='expose' and False: # The False is here because we don't actually
 
 try:
     hduheader["SEPSKY"] = sepsky
+    hduheader["SKYLEVEL"] = sepsky
 except:
     hduheader["SEPSKY"] = -9999
+    hduheader["SKYLEVEL"] = -9999
 try:
     hduheader["FWHM"] = (str(rfp), 'FWHM in pixels')
     hduheader["FWHMpix"] = (str(rfp), 'FWHM in pixels')

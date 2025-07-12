@@ -69,6 +69,11 @@ site_config = {
     'obs_id': 'mrc2',
 
 
+    'api_http_base' : 'https://api.photonranch.org/api/',
+    'jobs_http_base' : 'https://jobs.photonranch.org/jobs/',
+    'logs_http_base' : 'https://logs.photonranch.org/logs/',
+    'status_http_base' : 'https://status.photonranch.org/status/',
+
     # Name, local and owner stuff
     'name': 'Mountain Ranch Camp Observatory  0m61 f6.8',
     'location': 'Santa Barbara, California,  USA',
@@ -213,6 +218,12 @@ site_config = {
     'solve_timer': 0.05,  # Only solve every X minutes
     'threshold_mount_update': 45,  # only update mount when X arcseconds away
     'push_file_list_to_pipe_queue': False,
+    # LINKS TO PIPE FOLDER
+    'save_images_to_pipe_for_processing': True,
+    'pipe_save_method': 'local', # Can also be 'ftp' or 'http'  for that transfer but also 'local' pipe for a local LAN pipe server
+    
+    'ftp_ingestion_folder': 'C:/ftp_ingestion/',
+    'http_ingestion_folder': 'C:/http_ingestion/',
 
    # The site can fully platesolve each image before it is sent off to s3 or a PIPE
    # If there are spare enough cycles at the site, this saves time for the PIPE

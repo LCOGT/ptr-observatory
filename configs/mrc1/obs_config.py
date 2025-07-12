@@ -39,6 +39,11 @@ site_config = {
     # The unique identifier for this obs
     'obs_id': 'mrc1',
 
+
+    'api_http_base' : 'https://api.photonranch.org/api/',
+    'jobs_http_base' : 'https://jobs.photonranch.org/jobs/',
+    'logs_http_base' : 'https://logs.photonranch.org/logs/',
+    'status_http_base' : 'https://status.photonranch.org/status/',
     # Name, local and owner stuff
     'name': 'Mountain Ranch Camp Observatory 0m30 F3.8',
     'airport_code': 'SBA',
@@ -175,6 +180,12 @@ site_config = {
 
 
     'push_file_list_to_pipe_queue': False,
+    # LINKS TO PIPE FOLDER
+    'save_images_to_pipe_for_processing': True,
+    'pipe_save_method': 'local', # Can also be 'ftp' or 'http'  for that transfer but also 'local' pipe for a local LAN pipe server
+    
+    'ftp_ingestion_folder': 'C:/ftp_ingestion/',
+    'http_ingestion_folder': 'C:/http_ingestion/',
 
     # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
     # So this is False for Bisques and true for everyone else.

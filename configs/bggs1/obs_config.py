@@ -58,25 +58,22 @@ Hubble V1  00:41:27.30 +41:10:10.4
 import json
 
 
-obs_id = 'aro1'
+obs_id = 'bggs1'
 
 site_config = {
     # Instance type specifies whether this is an obs or a wema
     'instance_type': 'obs',
-    'instance_is_private': False,
     # If this is not a wema, this specifies the wema that this obs is connected to
-    'wema_name': 'aro',
+    'wema_name': 'bggs',
     # The unique identifier for this obs
-    'obs_id': 'aro1',
+    'obs_id': 'bggs1',
 
-
-    'api_http_base' : 'https://api.photonranch.org/api/',
-    'jobs_http_base' : 'https://jobs.photonranch.org/jobs/',
-    'logs_http_base' : 'https://logs.photonranch.org/logs/',
-    'status_http_base' : 'https://status.photonranch.org/status/',
 
     # Name, local and owner stuff
     'name': 'Apache Ridge Observatory 0m3 f4.9/9',
+
+
+    'site_is_public' : False,
 
     'location': 'Santa Fe, New Mexico,  USA',
     # This is meant to be an optional informatinal website associated with the observatory.
@@ -152,45 +149,46 @@ site_config = {
 
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': False,  # This it the OCS-archive, archive-photonranch.org
-    'save_calib_and_misc_files': True,
     # LINKS TO PIPE FOLDER
-    'save_raws_to_pipe_folder_for_nightly_processing': True,
+    'save_raws_to_pipe_folder_for_nightly_processing': False,
+    # WER changed Z to X 20231113 @1:16 UTC
     'pipe_archive_folder_path': 'X:/localptrarchive/',
-    # These are options to minimise diskspace for calibrations
+# These are options to minimise diskspace for calibrations
     'produce_fits_file_for_final_calibrations': True,
     'save_archive_versions_of_final_calibrations' : False,
+
     # 'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
+    # LINKS FOR OBS FOLDERS
     'client_hostname': "ARO-0m30",     # Generic place for this host to stash.
-    'archive_path': 'F:/ptr/',
-    'local_calibration_path': 'F:/ptr/',
-    'alt_path': 'D:/alt/',
-    'plog_path':  'F:/ptr/aro1/',  # place where night logs can be found.  May not be used on aro1 wer 20250322
+    'archive_path': 'C:/ptr/',
+    'alt_path': 'C:/alt/',
+    # 'temporary_local_alt_archive_to_hold_files_while_copying' : 'F:/tempfolderforaltpath',
+
     'save_to_alt_path': 'no',
     # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
-    
+    'local_calibration_path': 'C:/ptr/',
     # Number of days to keep files in the local archive before deletion. Negative means never delete
-    'archive_age': 3,
+    'archive_age': 2.0,
 
 
-    
+    'plog_path':  'C:/ptr/bggs1/',  # place where night logs can be found.  May not be used on aro1 wer 20250322
 
 
-    'redis_available':  False,
+    #'redis_available':  True,
     #'redis_ip': "10.0.0.174:6379",
 
     # Scratch drive folder
-    #'scratch_drive_folder': 'D:/obstemp/',
+    'scratch_drive_folder': 'D:/obstemp/',
 
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
     # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
-    'save_raw_to_disk': True,
-    'save_substack_components_raws': True, # this setting saves the component 10s/30s completely raw files out as well during a substack
+    'save_raw_to_disk': False,
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
-    'keep_reduced_on_disk': True,
+    'keep_reduced_on_disk': False,
     # To save space, the focus file can not be saved.
-    'keep_focus_images_on_disk': True,
+    'keep_focus_images_on_disk': False,
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first': True,
     # Number of files to send up to the ptrarchive simultaneously.
@@ -203,12 +201,6 @@ site_config = {
 
 
     'push_file_list_to_pipe_queue': False,
-    # LINKS TO PIPE FOLDER
-    'save_images_to_pipe_for_processing': True,
-    'pipe_save_method': 'local', # Can also be 'ftp' or 'http'  for that transfer but also 'local' pipe for a local LAN pipe server
-    
-    'ftp_ingestion_folder': 'C:/ftp_ingestion/',
-    'http_ingestion_folder': 'C:/http_ingestion/',
 
     # The site can fully platesolve each image before it is sent off to s3 or a PIPE
     # If there are spare enough cycles at the site, this saves time for the PIPE
@@ -217,7 +209,7 @@ site_config = {
     # Usually set this to True
     # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
     'fully_platesolve_images_at_site_rather_than_pipe' : True,
-    'platesolve_timeout': 60,
+
 
     # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
     # So this is False for Bisques and true for everyone else.
@@ -228,7 +220,7 @@ site_config = {
     # This allows culling of unphysical results in photometry and other things
     # Particularly useful for focus
     'minimum_realistic_seeing': 1.5,
-    'has_lightning_detector':  True,
+    'has_lightning_detector':  False,
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
@@ -254,14 +246,14 @@ site_config = {
     'enclosure_check_period': 3,    # How many minutes between enclosure checks
 
     # Turn on and off various automated calibrations at different times.
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': True,
     # Units??  Just imposing a minimum in case of a restart.
     'time_to_wait_after_roof_opens_to_take_flats': 3,
     # WER 20240303 Afternoon, changed from True
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat':  True,
-    'auto_morn_bias_dark':  True,
+    'auto_morn_bias_dark':  False,
 
     # FOCUS OPTIONS
     # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -300,7 +292,7 @@ site_config = {
         'main_fw': 'LCO FW50_001d',
 
         # Cameras
-        'main_cam': 'sq003ms',
+        'main_cam': 'bggsfli01',
         'guide_cam': None,
         'widefield_cam': None,
         'allsky_cam': None,
@@ -573,17 +565,17 @@ site_config = {
             'parent': 'telescope1',
             'name': 'focuser',
             'desc':  'Optec Gemini',
-            'driver': 'ASCOM.OptecGemini.Focuser',
+            'driver': 'ASCOM.PWI3.Focuser',
                     'com_port': 'COM13',  # AP 'COM5'  No Temp Probe on SRO AO Honders
             'start_at_config_reference': False,
             'correct_focus_for_temperature': True,
             # highest value to consider as being in "good focus". Used to select last good focus value
-            'maximum_good_focus_in_arcsecond': 10.0,
+            'maximum_good_focus_in_arcsecond': 5.0,
             'focuser_movement_settle_time': 3,
             # F4.9 setup
-            'reference':  4875,    #  20241204
-            'ref_temp':   9.3,       #  Average for the fit ~ 27.5 degrees wide +20 to -75
-            'temp_coeff': -25.0,   #  WER plugged 20250522 R^2 = 0.769
+            'reference':  37000.2,    #  20241204
+            'ref_temp':   7.5,       #  Average for the fit ~ 27.5 degrees wide +20 to -75
+            'temp_coeff': -24.974,   #  R^2 = 0.769
 
             'relative_focuser': False,
 
@@ -601,7 +593,7 @@ site_config = {
             'throw': 90., #20240925 reduced from: #140,  # Start with 10X focus tolerance.
             'focus_tolerance':  130,    #Microns  ??? used Golf Focus Caclulator
             'unit': 'micron',
-            'unit_conversion': 9.09090909091,
+            'unit_conversion': 1.0,
             'has_dial_indicator': False
 
 
@@ -643,7 +635,7 @@ site_config = {
             # This ignores the automatically estimated filter gains and starts with the values from the config file
             'override_automatic_filter_throughputs': False,
 
-            "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
+            "driver": "Maxim.CCDCamera",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
             'filter_reference': 'PL',
@@ -746,16 +738,16 @@ site_config = {
     },
 
     'camera': {
-        'sq003ms': {
+        'bggsfli01': {
             'parent': 'telescope1',
             # Important because this points to a server file structure by that name.
-            'name': 'sq003ms',
+            'name': 'bggsfli01',
             'desc':  'QHY 600Pro',
             'overscan_trim': 'QHY600',
             'service_date': '20240604',
             # 'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
-            'driver':  "QHYCCD_Direct_Control",
+            'driver':   "Maxim.CCDCamera",
 
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
@@ -903,6 +895,13 @@ site_config = {
                 'rotate180_jpeg':False,
                 'rotate270_jpeg': False,
 
+                # This is purely to crop the preview jpeg for the UI
+                'crop_preview': False,
+                'crop_preview_ybottom': 2,  # 2 needed if Bayer array
+                'crop_preview_ytop': 2,
+                'crop_preview_xleft': 2,
+                'crop_preview_xright': 2,
+
                 # # For large fields of view, crop the images down to solve faster.
                 # # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
                 # # Probably also similar for platesolving.
@@ -926,7 +925,7 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -2,  # 20240914 up from 3C, new camera installed 20240604
+                'temp_setpoint': -17,  # 20240914 up from 3C, new camera installed 20240604
                 'temp_setpoint_tolerance': 2,
                 'has_chiller': True,
                 # "temp_setpoint_tolarance": 1.5,
@@ -943,10 +942,10 @@ site_config = {
                 #
                 # ( setpoint, day_warm_difference, day_warm troe our false)
                 'set_temp_setpoint_by_season' : True,
-                'temp_setpoint_nov_to_feb' : ( -2, 0, True),
-                'temp_setpoint_feb_to_may' : ( -2, 0, True),
-                'temp_setpoint_may_to_aug' : ( -2, 0, True),
-                'temp_setpoint_aug_to_nov' : ( -2, 0, True),
+                'temp_setpoint_nov_to_feb' : ( -10, 8, True),
+                'temp_setpoint_feb_to_may' : ( -15, 10, True),
+                'temp_setpoint_may_to_aug' : ( -20, 12, True),
+                'temp_setpoint_aug_to_nov' : ( --15,10, True),
                 #Prsumably this is setpoint by season if it is False:
                 'day_warm': False,  # This is converted to a 0 or 1 depending on the Boolean value
                 'day_warm_degrees': 4,  # Assuming the Chiller is working.
@@ -956,7 +955,7 @@ site_config = {
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
                 # 'onebyone_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
-                'onebyone_pix_scale': 0.5283,  # This is the 1x1 binning pixelscale
+                #'onebyone_pix_scale': 0.5283,  # This is the 1x1 binning pixelscale
                 # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'native_bin': 1,
                 'x_pixel':  3.76,  # pixel size in microns
@@ -976,14 +975,14 @@ site_config = {
 
 
                 # This is the absolute minimum and maximum exposure for the camera
-                'min_exposure': 0.0000001,
+                'min_exposure': 0.01,
                 'max_exposure': 180.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 0.0000001,
+                'min_flat_exposure': 2.0,
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
-                'max_flat_exposure': 20.0,
+                'max_flat_exposure': 40.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
-                'max_daytime_exposure': 1.0,
+                'max_daytime_exposure': 0.2,
 
 
                 # One of the best cloud detections is to estimate the gain of the camera from the image
@@ -1009,7 +1008,7 @@ site_config = {
                 # 30s is a good default.
                 'smart_stack_exposure_time': 30,
                 'smart_stack_exposure_NB_multiplier':  3,  # Michael's setting
-                'substack': True,
+                'substack': False,
 
                 # As simple as it states, how many calibration frames to collect and how many to store.
                 'number_of_bias_to_collect': 31,
@@ -1029,10 +1028,10 @@ site_config = {
                 'do_debanding' : False,
 
                 # Does this camera have a darkslide, if so, what are the settings?
-                'has_darkslide':  True,
+                'has_darkslide':  False,
                 'darkslide_type': 'bistable',
                 'darkslide_can_report':  False,
-                'darkslide_com':  'COM10',
+                'darkslide_com':  'COM17',
                 'shutter_type': "Electronic",
 
 

@@ -1457,7 +1457,7 @@ class Camera:
             # plog("Control is via Maxim camera interface, not ASCOM.")
             # plog("Please note telescope is NOT connected to Maxim.")
 
-        elif driver == 'maxim':
+        elif driver == 'maxim' or driver =="Maxim.CCDCamera":
             # NB NB NB Considerputting this up higher.
             plog("Maxim camera is initializing.")
             self._connected = self._maxim_connected
@@ -1478,7 +1478,7 @@ class Camera:
             self.ascom = False
             self.theskyx = False
             self.qhydirect = False
-            plog("Maxim is connected:  ", self._connect(True))
+            #plog("Maxim is connected:  ", self._connect(True))
             self.app = win32com.client.Dispatch("Maxim.Application")
             plog(self.camera)
             self.camera.SetFullFrame()
@@ -1585,7 +1585,7 @@ class Camera:
         pwm = None
         if self.settings["cooler_on"]:  # NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
             self._set_cooler_on()
-        if self.theskyx:
+        if self.theskyx or self.ascom or self.maxim:
             temp, humid, pressure, pwm = self.camera.Temperature, 999.9, 999.9, 0.0
         else:
             temp, humid, pressure , pwm = self._temperature()
@@ -1595,10 +1595,10 @@ class Camera:
         else:
             plog("Camera humidity and pressure is not reported.")
 
-        if self.maxim == True:
-            plog("TEC  % load:  ", self._maxim_cooler_power())
-        else:
-            pass
+        # if self.maxim == True:
+        #     plog("TEC  % load:  ", self._maxim_cooler_power())
+        # else:
+        #     pass
             #plog("TEC% load is  not reported.")
         if pwm is not None:
             plog("TEC  % load:  ", pwm)
@@ -1927,6 +1927,40 @@ class Camera:
                 target=self.camera_update_thread)
             self.camera_update_thread.daemon = True
             self.camera_update_thread.start()
+        
+        
+        if self.maxim:
+            self.maxim_connect_to_camera = False
+            self.maxim_request_start_exposure = False
+            self.maxim_retrieve_last_image = False
+            self.maxim_set_cooler_on = True
+            self.maxim_cooleron = True
+            self.maxim_set_setpoint_trigger = True
+            self.maxim_set_setpoint_value = self.setpoint
+            self.maxim_abort_exposure_trigger=False
+            self.maxim_temperature = self.camera.Temperature, 999.9, 999.9, 0
+            self.camera_update_period = 5
+            self.camera_update_timer = time.time() - 2 * self.camera_update_period
+            self.camera_updates = 0
+            self.camera_update_thread = threading.Thread(
+                target=self.camera_update_thread)
+            self.camera_update_thread.daemon = True
+            self.camera_update_thread.start()
+        
+        if self.ascom :
+            self.ascom_set_cooler_on = True
+            self.ascom_cooleron = True
+            self.ascom_set_setpoint_trigger = True
+            self.ascom_set_setpoint_value = self.setpoint
+            self.ascom_temperature = self.camera.Temperature, 999.9, 999.9, 0
+            self.camera_update_period = 5
+            self.camera_update_timer = time.time() - 2 * self.camera_update_period
+            self.camera_updates = 0
+            self.camera_update_thread = threading.Thread(
+                target=self.camera_update_thread)
+            self.camera_update_thread.daemon = True
+            self.camera_update_thread.start()
+        
 
     def __repr__(self):
         return f"<Camera {self.name} (Role: {self.role})>"
@@ -1966,7 +2000,10 @@ class Camera:
 
         self.camera_update_wincom = win32com.client.Dispatch(self.driver)
 
-        self.camera_update_wincom.Connect()
+        if self.theskyx:
+            self.camera_update_wincom.Connect()
+        elif self.maxim:
+            self.camera_update_wincom.LinkEnabled=True
 
         # This stopping mechanism allows for threads to close cleanly.
         while True:
@@ -1974,39 +2011,144 @@ class Camera:
             # update every so often, but update rapidly if slewing.
             if (self.camera_update_timer < time.time() - self.camera_update_period) and not self.updates_paused:
 
-                if self.camera_update_reboot:
-                    win32com.client.pythoncom.CoInitialize()
-                    self.camera_update_wincom = win32com.client.Dispatch(
-                        self.driver)
+                
+                if self.theskyx:
 
-                    self.camera_update_wincom.Connect()
+                    if self.camera_update_reboot:
+                        win32com.client.pythoncom.CoInitialize()
+                        self.camera_update_wincom = win32com.client.Dispatch(
+                            self.driver)
+    
+                        self.camera_update_wincom.Connect()
+    
+                        self.updates_paused = False
+                        self.camera_update_reboot = False
+                    
+                    try:
+                        self.theskyx_temperature = self.camera_update_wincom.Temperature, 999.9, 999.9, 0
+    
+                        self.theskyx_cooleron = self.camera_update_wincom.RegulateTemperature
+    
+                        if self.theskyx_set_cooler_on == True:
+    
+                            self.camera_update_wincom.RegulateTemperature = 1
+                            self.theskyx_set_cooler_on = False
+    
+                        if self.theskyx_set_setpoint_trigger == True:
+                            self.camera_update_wincom.TemperatureSetpoint = float(
+                                self.theskyx_set_setpoint_value)
+                            self.camera_update_wincom.RegulateTemperature = 1
+                            self.current_setpoint = self.theskyx_set_setpoint_value
+                            self.theskyx_set_setpoint_trigger = False
+    
+                        if self.theskyx_abort_exposure_trigger == True:
+                            self.camera_update_wincom.Abort()
+                            self.theskyx_abort_exposure_trigger = False
+                    except:
+                        plog("non-permanent glitch out in the camera thread.")
+                        plog(traceback.format_exc())
+                        #breakpoint()
+                
+                elif self.maxim: # basically ascom
+                    if self.camera_update_reboot:
+                        win32com.client.pythoncom.CoInitialize()
+                        self.camera_update_wincom = win32com.client.Dispatch(
+                            self.driver)
+    
+                        self.camera_update_wincom.LinkEnabled=True
+    
+                        self.updates_paused = False
+                        self.camera_update_reboot = False
+                    
+                    try:
+                        self.maxim_temperature = self.camera_update_wincom.Temperature, 999.9, 999.9, 0
+    
+                        self.maxim_cooleron = self.camera_update_wincom.CoolerOn
+    
+                        if self.maxim_set_cooler_on == True:
+    
+                            self.camera_update_wincom.CoolerOn = True
+                            self.maxim_set_cooler_on = False
+    
+                        if self.maxim_set_setpoint_trigger == True:
+                            self.camera_update_wincom.TemperatureSetpoint = float(
+                                self.maxim_set_setpoint_value)
+                            self.camera_update_wincom.CoolerOn = True
+                            self.current_setpoint = self.maxim_set_setpoint_value
+                            self.maxim_set_setpoint_trigger = False
+    
+                        if self.maxim_abort_exposure_trigger == True:
+                            self.camera_update_wincom.AbortExposure
+                            self.maxim_abort_exposure_trigger = False
+                        
+                        ####################################
+                        
+                        self.maxim_is_connected=self.camera_update_wincom.LinkEnabled
+                        
+                        if self.maxim_connect_to_camera:
+                            self.camera_update_wincom.LinkEnabled=True
+                            self.maxim_connect_to_camera=False
+                        
+                        self.maxim_cooler_power=self.camera_update_wincom.CoolerPower
+                        self.maxim_heatsinktemperature=self.camera_update_wincom.Temperature
+                        
+                        if self.maxim_request_start_exposure:
+                            self.camera_update_wincom.Expose(self.maxim_requested_exposure_time, self.maxim_requested_lightframe)
+                            self.maxim_request_start_exposure=False
+                            
+                        self.maxim_image_is_available=self.camera_update_wincom.ImageReady
+                        
+                        if self.maxim_retrieve_last_image:
+                            timeouttimer=time.time()
+                            while not self.maxim_image_is_available and time.time() -timeouttimer <30:
+                                time.sleep(0.1)
+                                self.maxim_image_is_available=self.camera_update_wincom.ImageReady
+                            self.maxim_last_image_array= self.camera_update_wincom.ImageArray
+                            self.maxim_retrieve_last_image=False
+                            
+                            
+                            
+                        
+                    except:
+                        plog("non-permanent glitch out in the camera thread.")
+                        plog(traceback.format_exc())
+                        breakpoint()
 
-                    self.updates_paused = False
-                    self.camera_update_reboot = False
-
-                try:
-                    self.theskyx_temperature = self.camera_update_wincom.Temperature, 999.9, 999.9, 0
-
-                    self.theskyx_cooleron = self.camera_update_wincom.RegulateTemperature
-
-                    if self.theskyx_set_cooler_on == True:
-
-                        self.camera_update_wincom.RegulateTemperature = 1
-                        self.theskyx_set_cooler_on = False
-
-                    if self.theskyx_set_setpoint_trigger == True:
-                        self.camera_update_wincom.TemperatureSetpoint = float(
-                            self.theskyx_set_setpoint_value)
-                        self.camera_update_wincom.RegulateTemperature = 1
-                        self.current_setpoint = self.theskyx_set_setpoint_value
-                        self.theskyx_set_setpoint_trigger = False
-
-                    if self.theskyx_abort_exposure_trigger == True:
-                        self.camera_update_wincom.Abort()
-                        self.theskyx_abort_exposure_trigger = False
-                except:
-                    plog("non-permanent glitch out in the camera thread.")
-                    plog(traceback.format_exc())
+                
+                else: # basically ascom
+                    if self.camera_update_reboot:
+                        win32com.client.pythoncom.CoInitialize()
+                        self.camera_update_wincom = win32com.client.Dispatch(
+                            self.driver)
+    
+                        self.camera_update_wincom.Connect()
+    
+                        self.updates_paused = False
+                        self.camera_update_reboot = False
+                    
+                    try:
+                        self.ascom_temperature = self.camera_update_wincom.Temperature, 999.9, 999.9, 0
+    
+                        self.ascom_cooleron = self.camera_update_wincom.RegulateTemperature
+    
+                        if self.ascom_set_cooler_on == True:
+    
+                            self.camera_update_wincom.RegulateTemperature = 1
+                            self.ascom_set_cooler_on = False
+    
+                        if self.ascom_set_setpoint_trigger == True:
+                            self.camera_update_wincom.TemperatureSetpoint = float(
+                                self.ascom_set_setpoint_value)
+                            self.camera_update_wincom.RegulateTemperature = 1
+                            self.current_setpoint = self.ascom_set_setpoint_value
+                            self.ascom_set_setpoint_trigger = False
+    
+                        if self.ascom_abort_exposure_trigger == True:
+                            self.camera_update_wincom.Abort()
+                            self.ascom_abort_exposure_trigger = False
+                    except:
+                        plog("non-permanent glitch out in the camera thread.")
+                        plog(traceback.format_exc())
 
                 time.sleep(max(1, self.camera_update_period))
             else:
@@ -2489,57 +2631,71 @@ class Camera:
                 return np.asarray([])
 
     def _maxim_connected(self):
-        return self.camera.LinkEnabled
+        #return self.camera.LinkEnabled
+        return self.maxim_is_connected
 
     def _maxim_connect(self, p_connect):
-        self.camera.LinkEnabled = p_connect
-        return self.camera.LinkEnabled
+        # self.camera.LinkEnabled = p_connect
+        # return self.camera.LinkEnabled
+        self.maxim_connect_to_camera=True
+        while not self.maxim_is_connected:
+            time.sleep(0.1)
 
     def _maxim_temperature(self):
-        return self.camera.Temperature, 999.9, 999.9,0
+        return self.maxim_temperature#, 999.9, 999.9,0
 
     def _maxim_cooler_power(self):
-        return self.camera.CoolerPower
+        return self.maxim_cooler_power
 
     def _maxim_heatsink_temp(self):
-        return self.camera.HeatSinkTemperature
+        return self.maxim_heatsinktemperature
 
     def _maxim_cooler_on(self):
-        return (
-            self.camera.CoolerOn
-        )
+        
+        return self.maxim_cooleron
 
     def _maxim_set_cooler_on(self):
-        self.camera.CoolerOn = True
-        return (
-            self.camera.CoolerOn
-        )
+        self.maxim_set_cooler_on=True
+        return True
 
     def _maxim_set_setpoint(self, p_temp):
-        self.camera.TemperatureSetpoint = float(p_temp)
-        self.current_setpoint = p_temp
-        return self.camera.TemperatureSetpoint
+        
+        self.maxim_set_setpoint_trigger=True
+        self.maxim_set_setpoint_value = float(p_temp)
+        self.current_setpoint = float(p_temp)
+        return float(p_temp)
+        
+        
+        # self.camera.TemperatureSetpoint = float(p_temp)
+        # self.current_setpoint = p_temp
+        # return self.camera.TemperatureSetpoint
 
     def _maxim_setpoint(self):
-        return self.camera.TemperatureSetpoint
+        return self.current_setpoint
 
     def _maxim_expose(self, exposure_time, bias_dark_or_light_type_frame):
         if bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark':
-            imtypeb = 0
+            imtypeb = False
         else:
-            imtypeb = 1
-        self.camera.Expose(exposure_time, imtypeb)
+            imtypeb = True
+        
+        self.maxim_requested_exposure_time=exposure_time
+        self.maxim_requested_lightframe=imtypeb
+        self.maxim_request_start_exposure=True
 
     def _maxim_stop_expose(self):
-        self.camera.AbortExposure()
+        self.maxim_abort_exposure_trigger=True
         self.expresult = {}
         self.expresult["stopped"] = True
 
     def _maxim_imageavailable(self):
-        return self.camera.ImageReady
+        return self.maxim_image_is_available
 
     def _maxim_getImageArray(self):
-        return np.asarray(self.camera.ImageArray)
+        self.maxim_retrieve_last_image=True
+        while self.maxim_retrieve_last_image:
+            time.sleep(0.05)
+        return np.asarray(self.maxim_last_image_array)
 
     def _ascom_connected(self):
         return self.camera.Connected
@@ -3910,7 +4066,7 @@ class Camera:
         token_name=token_name + str(self.next_seq)
 
 
-        if self.site_config['save_raws_to_pipe_folder_for_nightly_processing']:
+        if self.site_config['save_images_to_pipe_for_processing']:
             if len(real_time_files) > 0:
 
                 # This is the failsafe directory.... if it can't be written to the PIPE folder
@@ -3923,29 +4079,67 @@ class Camera:
                 if not os.path.exists(failsafe_directory+ '/tokens'):
                     os.umask(0)
                     os.makedirs(failsafe_directory+ '/tokens')
-
+                    
                 try:
-                    pipetokenfolder = self.site_config['pipe_archive_folder_path'] + '/tokens'
-                    if not os.path.exists(self.site_config['pipe_archive_folder_path'] + '/tokens'):
+                    if self.site_config['pipe_save_method'] == 'ftp':
+                        pipetokenfolder = self.site_config['ftp_ingestion_folder']
+                    elif self.site_config['pipe_save_method'] == 'http':
+                        pipetokenfolder = self.site_config['http_ingestion_folder']
+                    else:
+                        pipetokenfolder = self.site_config['pipe_archive_folder_path'] + '/tokens'
+                    if not os.path.exists(pipetokenfolder):
                         os.umask(0)
                         os.makedirs(self.site_config['pipe_archive_folder_path'] + '/tokens', mode=0o777)
 
                     if self.is_osc:
                         suffixes = ['B1', 'R1', 'G1', 'G2', 'CV']
 
-                        temp_file_holder=[]
+                        
                         for suffix in suffixes:
+                            temp_file_holder=[]
                             for tempfilename in real_time_files:
                                 temp_file_holder.append(tempfilename.replace('-EX00.', f'{suffix}-EX00.'))
                             try:
-                                with open(f"{pipetokenfolder}/{token_name}{suffix}", 'w') as f:
+                                # with open(f"{pipetokenfolder}/{token_name}{suffix}", 'w') as f:
+                                #     json.dump(temp_file_holder, f, indent=2)
+                                real_path = f"{pipetokenfolder}/{token_name}{suffix}.json"
+                                temp_path = real_path + ".tmp"
+                                
+                                # 1. Write to “.tmp”
+                                with open(temp_path, "w") as f:
                                     json.dump(temp_file_holder, f, indent=2)
+                                    f.flush()
+                                    os.fsync(f.fileno())
+                                
+                                # 2. Rename to the real filename
+                                os.replace(temp_path, real_path)
+                                
+                                if self.site_config['pipe_save_method'] == 'ftp':
+                                    g_dev['obs'].add_to_ftpqueue(pipetokenfolder, str(token_name)+str(suffix)+'.json', 'fromsite')
+                                if self.site_config['pipe_save_method'] == 'http':
+                                    g_dev['obs'].add_to_httpqueue(pipetokenfolder, str(token_name)+str(suffix)+'.json', 'fromsite')
+                                                                
                             except:
                                 plog(traceback.format_exc())
                     else:
                         try:
-                            with open(pipetokenfolder + "/" + token_name, 'w') as f:
+                            # with open(pipetokenfolder + "/" + token_name, 'w') as f:
+                            #     json.dump(real_time_files, f, indent=2)
+                            real_path = os.path.join(pipetokenfolder, token_name +'.json')
+                            temp_path = real_path + ".tmp"
+                            
+                            # 1. Write into the “.tmp” file
+                            with open(temp_path, "w") as f:
                                 json.dump(real_time_files, f, indent=2)
+                                f.flush()
+                                os.fsync(f.fileno())
+                            
+                            # 2. Atomically replace (or create) the real file
+                            os.replace(temp_path, real_path)
+                            if self.site_config['pipe_save_method'] == 'ftp':
+                                g_dev['obs'].add_to_ftpqueue(pipetokenfolder, token_name+'.json', 'fromsite')
+                            elif self.site_config['pipe_save_method'] == 'http':
+                                g_dev['obs'].add_to_httpqueue(pipetokenfolder, token_name+'.json', 'fromsite')
                         except:
                             plog(traceback.format_exc())
                 except:
@@ -5057,7 +5251,7 @@ class Camera:
                             outputimg = self._getImageArray()  # .astype(np.float32)
                             imageCollected = 1
 
-                            if True:
+                            if False:
                                height, width = outputimg.shape
                                patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
                                plog(">>>>  20% central image patch, std:  ", bn.nanmedian(patch), round(bn.nanstd(patch), 2), str(width)+'x'+str(height) )
@@ -5073,6 +5267,11 @@ class Camera:
 
 
                         except Exception as e:
+                            
+                            if self.maxim:
+                                plog(e)
+                                plog(traceback.format_exc())
+                                breakpoint()
 
                             if self.theskyx:
                                 if 'No such file or directory' in str(e):
