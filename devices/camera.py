@@ -5255,7 +5255,7 @@ class Camera:
                     thread.start()
 
 
-################################################# HERE IS WHERE IN-LINE STUFF HAPPENS.
+################################################# HERE IS WHERE IN-LINE STUFF (Bias, dark, flat, focus ,pointing) HAPPENS.
 
 
                 # BIAS & DARK, flat, focus and pointing VETTING AND DISTRIBUTION AREA.

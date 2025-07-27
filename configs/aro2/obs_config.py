@@ -237,7 +237,7 @@ site_config = {
     'auto_eve_bias_dark': False,    #411 Camera will not cool in afternoons
     'auto_eve_sky_flat': False,
 
-     'time_to_wait_after_roof_opens_to_take_flats': 3,   #Just imposing a minimum in case of a restart.
+    'time_to_wait_after_roof_opens_to_take_flats': 3,   #Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark':  True,
@@ -709,6 +709,14 @@ site_config = {
     # there can be overlap of camera names.  LCO convention is letter of cam manuf, letter of chip manuf, then 00, 01, 02, ...
     # However this code will treat the camera name/alias as a string of arbitrary length:  "saf_Neyle's favorite_camera" is
     # perfectly valid as an alias.
+    # '''
+    # From Sony 426 spec sheet:
+    #     Optical black: 44 pixels each right and left,
+    #     38 pixels each, top to bottom,
+    #     So PICTURE FRAME TRIM is required.
+
+
+    # '''
 
 
     'camera': {
@@ -718,6 +726,10 @@ site_config = {
             'desc':  'QHY 461 BSI Mono',
 
             'overscan_trim' : 'QHY461',
+            'trim_top': 38,
+            'trim_bottom':  38,
+            'trim left': 44,
+            'trim_right': 44,
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
