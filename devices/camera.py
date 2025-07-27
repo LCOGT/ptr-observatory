@@ -5044,7 +5044,7 @@ class Camera:
                 # HERE WE EITHER GET THE IMAGE ARRAY OR REPORT THE SUBSTACKER ARRAY
 
                 if substack:
-                    outputimg='substacker'
+                    outputimg = 'substacker'
                 else:
                     imageCollected = 0
                     retrycounter = 0
@@ -5056,6 +5056,15 @@ class Camera:
                         try:
                             outputimg = self._getImageArray()  # .astype(np.float32)
                             imageCollected = 1
+                            """
+                            NB This appears to be the only place we readfrom a camera.  If so,
+                            this is a good spot to put a overscan (bias adjust) correction.  Or
+                            at a minimum, use that to correct the bias level offset in the patch
+                            so the patch can be reported at a scale that makes sense and in terms
+                            of electrons.
+                            
+                            
+                            """
 
                             if True:
                                height, width = outputimg.shape
@@ -5097,7 +5106,7 @@ class Camera:
 
                 ################################################# CUTOFF FOR THE POSTPROCESSING QUEUE
 
-################################ START OFF THE MAIN POST_PROCESSING SUBTHREAD
+################################ START OF THE MAIN POST_PROCESSING SUBTHREAD
 
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
                     if substack:
