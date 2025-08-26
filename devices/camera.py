@@ -5040,11 +5040,15 @@ class Camera:
                     expected_endpoint_of_substack_exposure = None
                     substack_start_time = None
                     sub_stacker_midpoints = None
-
-                # HERE WE EITHER GET THE IMAGE ARRAY OR REPORT THE SUBSTACKER ARRAY
-
+# =============================================================================================================
+# ================================================================================================================================
+# # =============================================================================================================
+# #                 # HERE WE EITHER GET THE IMAGE ARRAY OR REPORT THE SUBSTACKER ARRAY
+# # =============================================================================================================
+# ================================================================================================================================================================
+# =============================================================================================================================================
                 if substack:
-                    outputimg='substacker'
+                    outputimg = 'substacker'
                 else:
                     imageCollected = 0
                     retrycounter = 0
@@ -5056,6 +5060,15 @@ class Camera:
                         try:
                             outputimg = self._getImageArray()  # .astype(np.float32)
                             imageCollected = 1
+                            """
+                            NB This appears to be the only place where we read from a camera.  If so,
+                            this is a good spot to put a overscan (bias adjust) correction.  Or
+                            at a minimum, use that to correct the bias level offset in the patch
+                            so the patch can be reported at a scale that makes sense and in terms
+                            of electrons.
+                            
+                            
+                            """
 
                             if True:
                                height, width = outputimg.shape
@@ -5097,7 +5110,7 @@ class Camera:
 
                 ################################################# CUTOFF FOR THE POSTPROCESSING QUEUE
 
-################################ START OFF THE MAIN POST_PROCESSING SUBTHREAD
+################################ START OF THE MAIN POST_PROCESSING SUBTHREAD
 
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
                     if substack:
@@ -5230,7 +5243,7 @@ class Camera:
                 # So this is done in the main thread. Whereas normal exposures get done in the subprocess.
                 if (frame_type in ["bias", "dark"] or a_dark_exposure or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ",
-                         round(bn.nanmedian(outputimg), 2), round(bn.nanstd(outputimg), 3))
+                         round(bn.nanmedian(outputimg), 2), "STD:  ", round(bn.nanstd(outputimg), 3))
 
                     # Check that the temperature is ok before accepting
                     current_camera_temperature, cur_humidity, cur_pressure, cur_pwm = (

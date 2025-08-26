@@ -180,6 +180,7 @@ class Observatory:
 
         # Used to tell whether the obs is currently rebooting theskyx
         self.rebooting_theskyx = False
+        self.lightning_near = False
 
         # Creation of directory structures if they do not exist already
         self.obsid_path = str(
@@ -1420,9 +1421,12 @@ class Observatory:
                             #plog("Lightning report is stale.")
                             pass
                     if distance <=  25.0:
+                        self.lighting_near = True
+                        g_dev['lightning'] = True
                         plog(" **************************** WARNING, Lightning distance is:   ", distance, ' km away. TOO CLOSE')
                     else:
-                        pass
+                        self.lighting_near = False
+                        g_dev['lightning'] = True
                         #plog(' ****************************Lightning is > 25 km (15 miles) away.  Safe.  ')
                 except:
                     plog.err('Lightning distance test did not work')

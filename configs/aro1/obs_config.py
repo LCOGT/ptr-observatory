@@ -56,9 +56,13 @@ Hubble V1  00:41:27.30 +41:10:10.4
 #                  2         3         4         5         6         7         8         9         0         1         2
 #23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 import json
+import socket
+import redis
 
 
 obs_id = 'aro1'
+hostname = socket.gethostname()
+host_ip = socket.gethostbyname(hostname)
 
 site_config = {
     # Instance type specifies whether this is an obs or a wema
@@ -72,10 +76,9 @@ site_config = {
 
     # Name, local and owner stuff
     'name': 'Apache Ridge Observatory 0m3 f4.9/9',
-
     'location': 'Santa Fe, New Mexico,  USA',
-    # This is meant to be an optional informatinal website associated with the observatory.
     'telescope_description': 'CV 0m30 f4.9',
+    # This is meant to be an optional informatinal website associated with the observatory. 
     'observatory_url': 'https://starz-r-us.sky/clearskies2',
     'observatory_logo': None,   #
     'mpc_code':  'ZZ23',  # This is made up for now.
@@ -105,7 +108,7 @@ site_config = {
     'lowest_acceptable_altitude': -10,
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     'degrees_to_avoid_zenith_area_in_general': 0,
-    'maximum_hour_angle_requestable': 9,
+    'maximum_hour_angle_requestable': 9,  #This is meant to limit GEM's, should be in Mount section.
     # NB NB WER ARO Obs has a chiller
     'temperature_at_which_obs_too_hot_for_camera_cooling': 32,
 
@@ -114,7 +117,9 @@ site_config = {
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
 
-    # # Engineering start
+# =============================================================================
+#     # Engineering Mode*
+# =============================================================================
 
     # 'scope_in_manual_mode': True,
     # 'scope_in_engineering_mode': True,
@@ -126,10 +131,12 @@ site_config = {
     # 'simulate_open_roof': True,
     # 'auto_centering_off': True,
     # 'self_guide_on': False,
-    # 'always_do_a_centering_exposure_regardless_of_nearby_reference':  False,   #this is a qustionable setting
+    # 'always_do_a_centering_exposure_regardless_of_nearby_reference':  False,
     # 'owner_only_commands':True,
 
-    # #SAFESTART
+# =============================================================================
+#     # Observing Mode:
+# =============================================================================
 
     'scope_in_manual_mode': False,
     'scope_in_engineering_mode': False,
@@ -137,7 +144,7 @@ site_config = {
     'sun_checks_on': True,
     'moon_checks_on': True,
     'altitude_checks_on': True,
-    'daytime_exposure_time_safety_on': True,   #Perhaps condition by roof open/closed?
+    'daytime_exposure_time_safety_on': True, #Perhaps condition by roof open/closed?
     'simulate_open_roof': False,
     'auto_centering_off': False,
     'self_guide_on': True,
@@ -146,7 +153,7 @@ site_config = {
 
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': False,  # This it the OCS-archive, archive-photonranch.org
+    'ingest_raws_directly_to_archive': False,  # This is the OCS-archive, archive-photonranch.org
     'save_calib_and_misc_files': True,
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
@@ -165,11 +172,35 @@ site_config = {
     
     # Number of days to keep files in the local archive before deletion. Negative means never delete
     'archive_age': 3,
+    
+    '''
+    Site artchitecture assumes a WEMA computer with a reasonable large network 
+    disk attached, or a small NAS unit. That disk is available as a site share.
+    
+    A site may or may not have a pipeline machine.  That function may be 
+    performed by the site computers after completion of normal nightly 
+    operations.  
+    
+    The current re-write of the PTR code is going to assume there is an 
+    instance of Redis available for intra-site communication.  Presumably, 
+    inter-site communication with the future PTR hub will be managed by 
+    Rabbit MQ and will bypass AWS.
+    
+    A looming change is to add local BANZAI compatible processing of images,
+    at least those images that end up in an external archive.  Flash processing
+    may use local non-BZ reduced calibration masters.
+    
+    
+    '''
 
 
     
 
-
+    '''
+    Until aro-wema battery is fixed, redis is going to run on aro1-0m35.
+    '''
+    'hostname': hostname,
+    'host_ip': host_ip,
     'redis_available':  False,
     #'redis_ip': "10.0.0.174:6379",
 

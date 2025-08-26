@@ -22,15 +22,18 @@ from astropy.io import fits
 eva = 'X://EVAreducedfiles//*'
 
 def main_routine(first_run=False):
-    big_list = glob.glob(eva)[:-2]
+    
+    big_list = glob.glob(eva)[:-3]
+    
     big_list.reverse()
-    big_list = big_list[3:]
+    #big_list = big_list[40:]
     print(big_list)
+
     moved = []
     count = 0
     for directory in big_list:
         # print("Globbing:  "+ directory)
-        if count == 3: 
+        if count == 1: 
             break
 
         stack_list = glob.glob(directory + '//fits//SmStack-*.fits')
@@ -47,10 +50,10 @@ def main_routine(first_run=False):
             hdu1.close()
             
             
-            shutil.copy(image_filename, target + "//" + ptr_name[:-3])
-            print("Moved:  ", target + "//" + ptr_name[:-3])
+            shutil.copy(image_filename, target + "//" + ptr_name)
+            print("Copied:  ", target + "//" + ptr_name)
             moved.append(image_filename)
-            count += 1
+        count += 1
     print ("DONE")
         
             
