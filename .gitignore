@@ -32,3 +32,5 @@ output.txt
 aftersourceplots.png
 beforesourceplots.png
 brightstarplots.png
+ftpsecrets.json
+httpsecrets.json

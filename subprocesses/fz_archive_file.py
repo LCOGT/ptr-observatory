@@ -46,7 +46,7 @@ wcsfilename=slow_process[7]
 
 
 #### FZ Compression can't handle NAN so we need to use a sentinal value
-#### In our case, we use -512.3456789. This is low enough that it is highly
+#### In our case, we use -251.2345733642578. This is low enough that it is highly
 #### unlikely that a pixel would have this real value  in the history of the universe
 #### But not so low it is impossible to use fits browsers
 actual_data=np.array(slow_process[2],dtype=np.float32)
@@ -75,19 +75,24 @@ failsafe_directory=selfconfig['archive_path'] + 'failsafe'
 # BUT it actually compresses to the same size either way
 temphduheader["BZERO"] = 0  # Make sure there is no integer scaling left over
 temphduheader["BSCALE"] = 1  # Make sure there is no integer scaling left over
-if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
+if selfconfig["save_images_to_pipe_for_processing"]:
     
     if not os.path.exists(failsafe_directory):
         os.umask(0)
         os.makedirs(failsafe_directory)
     try:
-        pipefolder = selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])
-        if not os.path.exists(selfconfig['pipe_archive_folder_path']+'/'+ str(temphduheader['INSTRUME'])):
-            os.umask(0)
-            os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']))
-        if not os.path.exists(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])):
-            os.umask(0)
-            os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS']))
+        if selfconfig['pipe_save_method'] == 'ftp':           
+            pipefolder = selfconfig['ftp_ingestion_folder']
+        elif selfconfig['pipe_save_method'] == 'http':           
+            pipefolder = selfconfig['http_ingestion_folder']
+        else:
+            pipefolder = selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])
+            if not os.path.exists(selfconfig['pipe_archive_folder_path']+'/'+ str(temphduheader['INSTRUME'])):
+                os.umask(0)
+                os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']))
+            if not os.path.exists(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS'])):
+                os.umask(0)
+                os.makedirs(selfconfig['pipe_archive_folder_path'] +'/'+ str(temphduheader['INSTRUME']) +'/'+ str(temphduheader['DAY-OBS']))
     except:
         print ("looks like an error making the pipe archive folder path")
     
@@ -183,7 +188,7 @@ if not camera_config["settings"]["is_osc"]:
     )
     del actual_data
 
-    if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
+    if selfconfig["save_images_to_pipe_for_processing"]:
         try:
             hdufz.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.tempfits.fz'), overwrite=True
@@ -252,7 +257,7 @@ else:  # Is an OSC
             np.array(newhdured, dtype=np.float32), temphduheader
         )
 
-        if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
+        if selfconfig['save_images_to_pipe_for_processing']:
             
             try:
             
@@ -295,7 +300,7 @@ else:  # Is an OSC
             np.array(GTRonly, dtype=np.float32), temphduheader
         )
 
-        if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
+        if selfconfig['save_images_to_pipe_for_processing']:
             try:
                 hdufz.writeto(pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True)
                 os.rename(pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'),pipefolder + '/' + str(temphduheader['ORIGNAME']))
@@ -332,7 +337,7 @@ else:  # Is an OSC
             np.array(GBLonly, dtype=np.float32), temphduheader
         )
 
-        if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
+        if selfconfig['save_images_to_pipe_for_processing']:
             try:
                 hdufz.writeto(
                     pipefolder + '/' + str(temphduheader['ORIGNAME'].replace('.fits','.tempfits')), overwrite=True
@@ -373,7 +378,7 @@ else:  # Is an OSC
             np.array(newhdublue, dtype=np.float32), temphduheader
         )
 
-        if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
+        if selfconfig['save_images_to_pipe_for_processing']:
 
             hdufz.writeto(
                 pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'), overwrite=True
@@ -409,7 +414,7 @@ else:  # Is an OSC
             np.array(clearV, dtype=np.float32), temphduheader
         )
 
-        if selfconfig['save_raws_to_pipe_folder_for_nightly_processing']:
+        if selfconfig['save_images_to_pipe_for_processing']:
             try:
                 hdufz.writeto(
                     pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits','.tempfits'), overwrite=True

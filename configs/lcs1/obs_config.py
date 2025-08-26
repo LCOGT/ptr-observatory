@@ -32,6 +32,22 @@ site_config = {
     'obs_id': 'lcs1',
 
 
+    # 'api_http_base' : 'https://api.photonranch.org/api/',
+    # 'jobs_http_base' : 'https://jobs.photonranch.org/jobs/',
+    # 'logs_http_base' : 'https://logs.photonranch.org/logs/',
+    # 'status_http_base' : 'https://status.photonranch.org/status/',
+
+    # 'api_http_base' : 'https://hub.nextastro.org/api/',
+    # 'jobs_http_base' : 'https://hub.nextastro.org/jobs/',
+    # 'logs_http_base' : 'https://hub.nextastro.org/logs/',
+    # 'status_http_base' : 'https://hub.nextastro.org/status/',
+    
+    'api_http_base' : 'https://hub.nextastro.org/',
+    'jobs_http_base' : 'https://hub.nextastro.org/jobs',
+    'logs_http_base' : 'https://hub.nextastro.org/logs/',
+    'status_http_base' : 'https://hub.nextastro.org/status/',
+
+
     # Name, local and owner stuff
     'name': 'Luther College Observatory, 10" Newtonian',
     'airport_code':  'MEL: Melbourne Airport',
@@ -57,7 +73,7 @@ site_config = {
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 45,
     'lowest_requestable_altitude': 15,  # Degrees. For normal pointing requests don't allow requests to go this low.
-    'lowest_acceptable_altitude' : -15.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+    'lowest_acceptable_altitude' : -20.0, # Below this altitude, it will automatically try to home and park the scope to recover.
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
@@ -82,13 +98,22 @@ site_config = {
     'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': True,
-    'push_file_list_to_pipe_queue': True, # This being true means the above needs to be true also.
+    'ingest_raws_directly_to_archive': False,
+    'push_file_list_to_pipe_queue': False, # This being true means the above needs to be true also.
 
     # LINKS TO PIPE FOLDER
-    'save_raws_to_pipe_folder_for_nightly_processing': False,
+    'save_images_to_pipe_for_processing': True,
+    'pipe_save_method': 'http', # Can also be 'ftp' or 'http'  for that transfer but also 'local' pipe for a local LAN pipe server
+    
+    'ftp_ingestion_folder': 'C:/ftp_ingestion/',
+    'http_ingestion_folder': 'C:/http_ingestion/',
+    
+    
+    
+    
+    
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
-    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
+    #'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # Setup of folders on local and network drives.
     'client_hostname':  'LCC1',
     'archive_path':  'C:/ptr/',
@@ -195,7 +220,7 @@ site_config = {
         'rotator': 'rotator',
         'selector': None,
         'filter_wheel': 'RGGB',
-        'camera': 'camera_1_1',
+        'camera': 'lcy1qhy268c',
         'sequencer': 'sequencer1'
         },
 
@@ -212,7 +237,7 @@ site_config = {
         'main_fw': None,
 
         # Cameras
-        'main_cam': 'camera_1_1',
+        'main_cam': 'lcy1qhy268c',
         'guide_cam': None,
         'widefield_cam': None,
         'allsky_cam': None,
@@ -243,7 +268,7 @@ site_config = {
 
 
     'mount': {
-        'lcy10inch': {
+        'lcs1_pier': {
             'parent': 'enclosure1',
             'tel_id': '10inch',
             'name': 'lcy10inch',
@@ -333,12 +358,12 @@ site_config = {
             'rotator_name':  'rotator',
             'has_instrument_selector': False,   #This is a default for a single instrument system
             'selector_positions': 1,            #Note starts with 1
-            'instrument names':  ['camera_1_1'],
+            'instrument names':  ['lcy1qhy268c'],
             'instrument aliases':  ['ASI071MCPro'],
             'configuration': {
                  "position1": ["darkslide1", "RGGB", "camera_1_1"]
                  },
-            'camera_name':  'camera_1_1',
+            'camera_name':  'lcy1qhy268c',
             #'filter_wheel_name':  'RGGB',
             'filter_wheel_name':  None,
             'has_fans':  False,
@@ -432,7 +457,7 @@ site_config = {
             'shutdown_script':  None,
             'ports': 1,
             'instruments':  ['Main_camera'], #, 'eShel_spect', 'planet_camera', 'UVEX_spect'],
-            'cameras':  ['camera_1_1'], # , 'camera_1_2', None, 'camera_1_4'],
+            'cameras':  ['lcy1qhy268c'], # , 'camera_1_2', None, 'camera_1_4'],
             'guiders':  [None], # , 'guider_1_2', None, 'guide_1_4'],
             'default': 0
             },
@@ -472,7 +497,7 @@ site_config = {
 
 
     'camera': {
-        'camera_1_1': {
+        'lcy1qhy268c': {
             'parent': 'Main OTA',
             'name': 'lcy1qhy268c',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 268C Pro',
