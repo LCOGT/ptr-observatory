@@ -4735,7 +4735,7 @@ class Observatory:
         elif not self.devices["mount"].return_slewing():
             not_slewing = True
 
-        if not_slewing:  # Don't glog the update pipes while slewing.
+        if not_slewing:  # Don't clog the update pipes while slewing.
             if not self.currently_updating_status and not mount_only:
                 self.update_status_queue.put("normal", block=False)
             elif not self.currently_updating_status and mount_only:
