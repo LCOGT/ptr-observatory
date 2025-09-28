@@ -20,6 +20,7 @@ class Darkslide(object):
 
     def openDarkslide(self):
         try:
+            
             self._com = serial.Serial(self.com_port, timeout=0.3)
             self._com.write(b'@')
             self.slideStatus = 'Open'
@@ -33,6 +34,7 @@ class Darkslide(object):
 
     def closeDarkslide(self):
         try:
+            
             self._com = serial.Serial(self.com_port, timeout=0.3)   #Com 12 for saf, needs fixing.
             self._com.write(b'A')
             self.slideStatus = 'Closed'

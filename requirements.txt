@@ -26,7 +26,6 @@ pyserial
 xmltodict
 image_registration
 joblib
-git+https://github.com/python-zwoasi/python-zwoasi
 bottleneck
 psutil
 pywin32

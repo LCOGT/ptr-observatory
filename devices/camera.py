@@ -30,7 +30,7 @@ from astropy.nddata import Cutout2D
 from astropy import units as u
 #from astropy.coordinates import SkyCoord
 # from astroscrappy import detect_cosmics
-from photutils.detection import DAOStarFinder
+from photutils.detection import DAOStarFinder  #20250810 Module not found!!!WER
 from astropy.stats import mad_std
 import threading
 import sep
@@ -1753,8 +1753,7 @@ class Camera:
                 self.camera.BinX = 1
                 self.camera.BinY = 1
             except:
-                plog("Problem setting up 1x1 binning at startup.")
-
+                plog("Problem setting up 1x1 binning at startup.")       
         self.has_darkslide = False
         self.darkslide_state = "N.A."
         if self.settings["has_darkslide"]:
@@ -3043,6 +3042,7 @@ class Camera:
         # And it is likely because it takes a non-zero time to get to Phase II
         # So even in the setup phase the "exposure" is "busy"
         self.running_an_exposure_set = True
+        
 
         # Make sure these are reset to standard values
         g_dev['obs'].stop_all_activity = False
@@ -5058,6 +5058,7 @@ class Camera:
                             plog("Retried 8 times and didn't get an image, giving up.")
                             return expresult
                         try:
+                            
                             outputimg = self._getImageArray()  # .astype(np.float32)
                             imageCollected = 1
                             """
@@ -5071,18 +5072,20 @@ class Camera:
                             """
 
                             if True:
-                               height, width = outputimg.shape
-                               patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
-                               plog(">>>>  20% central image patch, std:  ", bn.nanmedian(patch), round(bn.nanstd(patch), 2), str(width)+'x'+str(height) )
-
-                            if False:
+                                height, width = outputimg.shape
+                                patch = outputimg[int(0.4*height):int(0.6*height), int(0.4*width):int(0.6*width)]
+                                plog(">>>>  20% central image patch, std:  ", bn.nanmedian(patch), round(bn.nanstd(patch), 2), str(width)+'x'+str(height) )
+                                
+                            g_dev['temp_eng_mode'] = True
+                            if g_dev['temp_eng_mode']:
+                                next_seq = next_sequence(self.alias)
                                 # If this is set to true, then it will output a sample of the image.
                                 hdufocus = fits.PrimaryHDU()
                                 hdufocus.data = outputimg
                                 # hdufocus.header = hdu.header
                                 # hdufocus.header["NAXIS1"] = hdu.data.shape[0]
                                 # hdufocus.header["NAXIS2"] = hdu.data.shape[1]
-                                hdufocus.writeto(cal_path + 'rawdump.fits', overwrite=True, output_verify='silentfix')
+                                hdufocus.writeto(cal_path + 'rawdump' + next_seq +'.fits', overwrite=True, output_verify='silentfix')
 
 
                         except Exception as e:

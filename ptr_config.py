@@ -11,11 +11,14 @@ import pathlib
 import sys
 import socket
 import glob
+#from pprint import pprint
 
 # This routine here removes all mention of previous configs from the path...
 # for safety and local computer got clogged with all manner of configs in the path
 
 path_removals = []
+#pprint(("The initial sys.path:  ", sys.path))
+
 for q in range(len(sys.path)):
     if "ptr-observatory" in sys.path[q] and "configs" in sys.path[q]:
         #print("Removing old config path: " + str(sys.path[q]))
@@ -28,11 +31,14 @@ pathdone = 0
 
 # First try to get the hostname from a file in the directory above (..) ptr-observatory
 cwd = str(pathlib.Path().resolve())
+
 hwd = cwd.replace("ptr-observatory", "")
 hostname_file = glob.glob(hwd + "hostname*")
+#print("hostname_file:   ", hostname_file)
 
 try:
     site_name = hostname_file[0].replace('.txt','').split("hostname")[1]
+    #print("site_name:   ", site_name)
     sys.path.append(os.path.join(pathlib.Path().resolve(), "configs", site_name))
     pathdone = 1
 except OSError:
@@ -40,7 +46,7 @@ except OSError:
         "Could not find a hostname* file in the directory above ptr-observatory \
         (e.g. hostnamesro).\n Trying another method..."
     )
-
+#pprint(("New sys.path:  ", sys.path))
 if pathdone == 0:
     print("Attempting hostname approach to config file...")
     host_site = socket.gethostname()[:3].lower()

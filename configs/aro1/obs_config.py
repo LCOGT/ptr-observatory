@@ -103,9 +103,9 @@ site_config = {
     'closest_distance_to_the_moon': 5,
     'minimum_distance_from_the_moon_when_taking_flats': 30,
     # Degrees. For normal pointing requests don't allow requests to go this low.
-    'lowest_requestable_altitude': 15,
+    'lowest_requestable_altitude': 15,  #A horizon file should override this.
     # Below this altitude, it will automatically try to home and park the scope to recover.
-    'lowest_acceptable_altitude': -10,
+    'lowest_acceptable_altitude': -0.1,
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     'degrees_to_avoid_zenith_area_in_general': 0,
     'maximum_hour_angle_requestable': 9,  #This is meant to limit GEM's, should be in Mount section.
@@ -117,28 +117,12 @@ site_config = {
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
 
-# =============================================================================
-#     # Engineering Mode*
-# =============================================================================
-
-    # 'scope_in_manual_mode': True,
-    # 'scope_in_engineering_mode': True,
-    # 'mount_reference_model_off': True,
-    # 'sun_checks_on': False,
-    # 'moon_checks_on': False,
-    # 'altitude_checks_on': False,
-    # 'daytime_exposure_time_safety_on': False,
-    # 'simulate_open_roof': True,
-    # 'auto_centering_off': True,
-    # 'self_guide_on': False,
-    # 'always_do_a_centering_exposure_regardless_of_nearby_reference':  False,
-    # 'owner_only_commands':True,
 
 # =============================================================================
 #     # Observing Mode:
 # =============================================================================
 
-    'scope_in_manual_mode': False,
+    'scope_in_manual_mode': False,    #Alternate state is Automatic Mode
     'scope_in_engineering_mode': False,
     'mount_reference_model_off': False,
     'sun_checks_on': True,
@@ -150,7 +134,28 @@ site_config = {
     'self_guide_on': True,
     'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
     'owner_only_commands': False,
+    
+# =============================================================================
+#     # Engineering Mode*  Just Un-comment below 
+# =============================================================================
 
+    # 'scope_in_manual_mode': True,    #Alternate state is Automatic Mode
+    # 'scope_in_engineering_mode': True,   #Auto management of darkslide is inhibited.
+    # 'mount_reference_model_off': True,
+    # 'sun_checks_on': False,
+    # 'moon_checks_on': False,
+    # 'altitude_checks_on': False,
+    # 'daytime_exposure_time_safety_on': False,
+    # 'simulate_open_roof': True,
+    # 'auto_centering_off': True,
+    # 'self_guide_on': False,
+    # 'always_do_a_centering_exposure_regardless_of_nearby_reference':  False,
+    # 'owner_only_commands':True,
+    
+
+# =============================================================================
+#     # END of the Mode area!!!:
+# =============================================================================
 
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': False,  # This is the OCS-archive, archive-photonranch.org
@@ -235,7 +240,7 @@ site_config = {
     # to concentrate on more resource heavy reductions.
     # Also leads to fully platesolved reduced images on the local site computer
     # Usually set this to True
-    # if the scope has a decent NUC.... CURRENTLY LEAVE AS IS UNTIL MTF HAS FINISHED TESTING THIS.
+
     'fully_platesolve_images_at_site_rather_than_pipe' : True,
     'platesolve_timeout': 60,
 
@@ -253,7 +258,6 @@ site_config = {
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
     'bias_dark interval':  120.,  # minutes
-    # Was 55 WER 20240313 Before Sunset Minutes  neg means before, + after.
     'eve_sky_flat_sunset_offset': -30.,
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 15.,
@@ -277,7 +281,7 @@ site_config = {
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     # Units??  Just imposing a minimum in case of a restart.
-    'time_to_wait_after_roof_opens_to_take_flats': 3,
+    'time_to_wait_after_roof_opens_to_take_flats': 2,
     # WER 20240303 Afternoon, changed from True
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat':  True,
@@ -946,8 +950,8 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -2,  # 20240914 up from 3C, new camera installed 20240604
-                'temp_setpoint_tolerance': 2,
+                'temp_setpoint': 2,  # 20240914 up from 3C, new camera installed 20240604
+                'temp_setpoint_tolerance': 1,
                 'has_chiller': True,
                 # "temp_setpoint_tolarance": 1.5,
                 'chiller_com_port': 'COM1',
@@ -963,13 +967,13 @@ site_config = {
                 #
                 # ( setpoint, day_warm_difference, day_warm troe our false)
                 'set_temp_setpoint_by_season' : True,
-                'temp_setpoint_nov_to_feb' : ( -2, 0, True),
-                'temp_setpoint_feb_to_may' : ( -2, 0, True),
-                'temp_setpoint_may_to_aug' : ( -2, 0, True),
-                'temp_setpoint_aug_to_nov' : ( -2, 0, True),
+                'temp_setpoint_nov_to_feb' : ( 2, 0, True),
+                'temp_setpoint_feb_to_may' : ( 2, 0, True),
+                'temp_setpoint_may_to_aug' : ( 2, 0, True),
+                'temp_setpoint_aug_to_nov' : ( 2, 0, True),
                 #Prsumably this is setpoint by season if it is False:
                 'day_warm': False,  # This is converted to a 0 or 1 depending on the Boolean value
-                'day_warm_degrees': 4,  # Assuming the Chiller is working.
+                'day_warm_degrees': 0,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating': False,
 
                 # These are the physical values for the camera

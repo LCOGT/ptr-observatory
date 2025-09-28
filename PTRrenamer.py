@@ -19,41 +19,52 @@ from astropy.io import fits
 # =============================================================================
 
 
-eva = 'X://EVAreducedfiles//*'
+eva = 'F://ptr//aro1//archive//sq003ms//*//reduced//*.fits'
 
 def main_routine(first_run=False):
     
     big_list = glob.glob(eva)[:-3]
     
-    big_list.reverse()
+    #big_list.reverse()
     #big_list = big_list[40:]
     print(big_list)
+    for image_filename in big_list:
+        with fits.open(image_filename) as hdu1:
+            
+            hdr = hdu1[0].header
+            pane = str(hdr['Pane'])
+            if len(pane) < 2:
+                pane = "-P0"+str(pane)+'.fts'
+            else:
+                pane = "-P"+str(pane)+'.fts'
+            new_filename = image_filename[:-5] + pane
+            shutil.copy(image_filename, new_filename)
+    breakpoint()
 
-    moved = []
-    count = 0
-    for directory in big_list:
-        # print("Globbing:  "+ directory)
-        if count == 1: 
-            break
+    # for directory in big_list:
+    #     # print("Globbing:  "+ directory)
+    #     if count == 1: 
+    #         break
 
-        stack_list = glob.glob(directory + '//fits//SmStack-*.fits')
-        print(stack_list)
+    #     stack_list = glob.glob(directory + '//fits//SmStack-*.fits')
+    #     print(stack_list)
 
-        target = 'X://PTRnames//'+ directory.split('\\')[1]
-        os.makedirs(target ,  exist_ok=True)
-        for image_filename in stack_list:
-            with fits.open(image_filename) as hdu1:
+    #     target = 'X://PTRnames//'+ directory.split('\\')[1]
+    #     os.makedirs(target ,  exist_ok=True)
+    #     for image_filename in big_list:
+    #         with fits.open(image_filename) as hdu1:
                 
-                hdr = hdu1[0].header
-                origin_name = hdr['ORIGNAME'].split('_expose_')
-                ptr_name = origin_name[0]+ '-' + hdr['OBJECT'] + '-' + origin_name[1]
-            hdu1.close()
+    #             hdr = hdu1[0].header
+    #             breakpoint()
+    #             origin_name = hdr['ORIGNAME'].split('_expose_')
+    #             ptr_name = origin_name[0]+ '-' + hdr['OBJECT'] + '-' + origin_name[1]
+    #         hdu1.close()
             
             
-            shutil.copy(image_filename, target + "//" + ptr_name)
-            print("Copied:  ", target + "//" + ptr_name)
-            moved.append(image_filename)
-        count += 1
+    #         shutil.copy(image_filename, target + "//" + ptr_name)
+    #         print("Copied:  ", target + "//" + ptr_name)
+    #         moved.append(image_filename)
+    #     count += 1
     print ("DONE")
         
             

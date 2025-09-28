@@ -11,9 +11,9 @@ It also organises the various queues that process, send, slice and dice data.
 
 from dotenv import load_dotenv
 load_dotenv(".env")
-import ocs_ingester.exceptions
+#import ocs_ingester.exceptions
 
-from ocs_ingester.ingester import upload_file_and_ingest_to_archive
+# from ocs_ingester.ingester import upload_file_and_ingest_to_archive
 
 from requests.adapters import HTTPAdapter, Retry
 
@@ -182,6 +182,8 @@ class Observatory:
         self.rebooting_theskyx = False
         self.lightning_near = False
 
+        self.engineering_mode = self.config['scope_in_engineering_mode']
+        g_dev['eng_mode'] = self.engineering_mode
         # Creation of directory structures if they do not exist already
         self.obsid_path = str(
             ptr_config["archive_path"] + "/" + self.name + "/"
@@ -344,6 +346,7 @@ class Observatory:
         # scratch on Windows, so on bootup of obs.py, the system closes them down
         # Reconnecting the devices reboots the softwares later on.
         processes = [
+            "OptecGemini server",
             "Gemini Software.exe",
             "OptecGHCommander.exe",
             "AltAzDSConfig.exe",
@@ -1352,7 +1355,6 @@ class Observatory:
                     if result is not None:
                         status[dev_type][device_name] = result
                 #breakpoint()
-
             status["timestamp"] = round((time.time()) / 2.0, 3)
             status["send_heartbeat"] = False
 
@@ -2694,8 +2696,8 @@ class Observatory:
                             for entry in tempheader.keys():
                                 headerdict[entry] = tempheader[entry]
 
-                            # this is the actual upload
-                            upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)
+                            # # this is the actual upload
+                            # upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)
 
                             # Only remove file if successfully uploaded
                             if ("calibmasters" not in filepath) or (
@@ -2707,17 +2709,17 @@ class Observatory:
                                     self.laterdelete_queue.put(
                                         filepath, block=False)
 
-                        except ocs_ingester.exceptions.NonFatalDoNotRetryError:
-                            plog(
-                                "Apprently this file already exists in the archive: "
-                                + str(filepath)
-                            )
-                            broken = 1
+                        # except ocs_ingester.exceptions.NonFatalDoNotRetryError:
+                        #     plog(
+                        #         "Apprently this file already exists in the archive: "
+                        #         + str(filepath)
+                        #     )
+                        #     broken = 1
 
-                        except ocs_ingester.exceptions.DoNotRetryError as e:
-                            plog.err("Couldn't upload to PTR archive: " + str(filepath))
-                            plog.err(e)
-                            broken = 1
+                        # except ocs_ingester.exceptions.DoNotRetryError as e:
+                        #     plog.err("Couldn't upload to PTR archive: " + str(filepath))
+                        #     plog.err(e)
+                        #     broken = 1
                         except Exception as e:
                             if "urllib3.exceptions.ConnectTimeoutError" in str(
                                 traceback.format_exc()
@@ -3081,8 +3083,8 @@ class Observatory:
 
                         full_log_path = self.nightlylog_path + nightlogfilename
 
-                        readable = datetime.datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')
-
+                        readable = datetime.datetime.fromtimestamp(timestamp, datetime.UTC).strftime('%Y-%m-%d %H:%M:%S UTC')
+                        
                         with open(full_log_path, "a") as f:
                             f.write(readable + ',' + str(timestamp) + ',' +log +'\n')
 

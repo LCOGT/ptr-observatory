@@ -419,7 +419,7 @@ class Sequencer:
         fig.canvas.draw()
         temp_canvas = fig.canvas
         plt.close()
-        pil_image=Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_rgb())
+        pil_image=Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_argb())
 
         current_focus_jpg.paste(pil_image)
         current_focus_jpg.save(jpeg_name.replace('.jpg','temp.jpg'))
@@ -2251,8 +2251,8 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
 
-            # If we've been collecting bias darks for TWO HOURS, bail out... someone has asked for too many!
-            if time.time() - bias_darks_started > 7200:
+            # If we've been collecting bias darks for TWO.5 HOURS, bail out... someone has asked for too many!
+            if time.time() - bias_darks_started > 9000:
                 self.bias_dark_latch = False
                 break
 
