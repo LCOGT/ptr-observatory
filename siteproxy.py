@@ -15,6 +15,7 @@ class SiteProxy:
 
     def __init__(self):
         self.site_proxy_offline = False
+        #breakpoint()
         if 'SITE_PROXY_BASE_URL' not in os.environ:
             plog.warn('the environment variable SITE_PROXY_BASE_URL is missing and scheduler observations won\'t work.')
             plog('Please add this to the .env file and restart the observatory.')

@@ -94,19 +94,43 @@ site_config = {
     'lowest_requestable_altitude': 10,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'lowest_acceptable_altitude' : 0.0, # Below this altitude, it will automatically try to home and park the scope to recover.
     'degrees_to_avoid_zenith_area_for_calibrations': 5,
-    'degrees_to_avoid_zenith_area_in_general' : 0,
+    'degrees_to_avoid_zenith_area_in_general' : 3,
     'maximum_hour_angle_requestable' : 12,
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 28,   #10C higher than chiller water
 
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that
     # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': False,    #20231222 This makes things easier for heavy debugging
-    'mount_reference_model_off': False,
-    'sun_checks_on': True,
-    'moon_checks_on': True,
-    'altitude_checks_on': True,
+
+    # # Engineering start
+
+    'scope_in_manual_mode': True,
+    'scope_in_engineering_mode': True,
+    'mount_reference_model_off': True,
+    'sun_checks_on': False,
+    'moon_checks_on': False,
+    'altitude_checks_on': False,
     'daytime_exposure_time_safety_on': False,
+    'simulate_open_roof': True,
+    'auto_centering_off': True,
+    'self_guide_on': False,
+    'always_do_a_centering_exposure_regardless_of_nearby_reference':  False,   #this is a qustionable setting
+    'owner_only_commands':True,
+
+    # #SAFESTART
+
+    # 'scope_in_manual_mode': False,
+    # 'scope_in_engineering_mode': False,
+    # 'mount_reference_model_off': False,
+    # 'sun_checks_on': True,
+    # 'moon_checks_on': True,
+    # 'altitude_checks_on': True,
+    # 'daytime_exposure_time_safety_on': True,   #Perhaps condition by roof open/closed?
+    # 'simulate_open_roof': False,
+    # 'auto_centering_off': False,
+    # 'self_guide_on': True,
+    # 'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
+    # 'owner_only_commands': False,
 
     # Depending on the pointing capacity of the scope OR the field of view OR both
     # The pointing may never be quite good enough to center the object without
