@@ -71,25 +71,9 @@ if TYPE_CHECKING:
 from skimage.filters import threshold_local
 from skimage.morphology import remove_small_objects
 from skimage.measure import label, regionprops, regionprops_table
-
 from astroquery.vizier import Vizier
-#from astropy.coordinates import SkyCoord
 import astropy.units as u
 from scipy.ndimage import convolve
-# from astropy.io import fits
-# from astropy.coordinates import SkyCoord
-# import glob
-# import numpy as np
-# import bottleneck as bn
-# import win32com.client
-# import pickle
-# from astropy.stats import sigma_clip
-# import math
-# import sep
-# import threading
-# from astropy.utils.exceptions import AstropyUserWarning
-# import warnings
-# import subprocess
 
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 mplstyle.use('fast')
@@ -2377,9 +2361,9 @@ class Camera:
                 self.current_filter='none'
 
             # Boost Narrowband and low throughput
-            if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n"]:
+            if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n", "su", "sv", "sb", "sy", "hb", "hbc"]:
                 exp_of_substacks = 30
-                N_of_substacks = int((exposure_time / exp_of_substacks))
+                N_of_substacks = int((exposure_time / exp_of_substacks))  #NB Consider ceil and full g of sposure time reqested
             else:
                 exp_of_substacks = 10
                 N_of_substacks = int(exposure_time / exp_of_substacks)
@@ -2761,7 +2745,7 @@ class Camera:
 
             # Boost Narrowband and low throughput broadband
             if not self.current_filter == None:
-                if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n"]:
+                if self.current_filter.lower() in ["u", "ju", "bu", "up", "z", "zs", "zp", "ha", "h", "o3", "o", "s2", "s", "cr", "c", "n2", "n", "su", "sv", "sb", "sy", "hb", "hbc"]:
                     exp_of_substacks = 30
                     N_of_substacks = int((exposure_time / exp_of_substacks))
                 else:
