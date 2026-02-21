@@ -70,10 +70,10 @@ site_config = {
 
 
     # Name, local and owner stuff
-    'name': 'Mountain Ranch Camp Observatory  0m130 f5',
+    'name': 'Mountain Ranch Camp Observatory  0m61 f6.8',
     'location': 'Santa Barbara, California,  USA',
     'airport_code': 'SBA',
-    'telescope_description':  '0m130 F5 Planewave CDK',
+    'telescope_description':  '0m61 f6.8 Planewave CDK',
     'observatory_url': 'https://starz-r-us.sky/clearskies',
     'mpc_code':  'ZZ23',    #This is made up for now.
     'description':  '''
@@ -89,7 +89,7 @@ site_config = {
     # Default safety settings
     'safety_check_period': 45,  # MF's original setting.
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
-    'closest_distance_to_the_moon': 5,  # Degrees. For normal pointing requests don't go this close to the moon.
+    'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 10,
     'lowest_requestable_altitude': 10,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'lowest_acceptable_altitude' : 0.0, # Below this altitude, it will automatically try to home and park the scope to recover.
@@ -136,7 +136,7 @@ site_config = {
     # The pointing may never be quite good enough to center the object without
     # a centering exposure. On initial commissioning, it should be set to always autocenter
     # until you are convinced the natural pointing with empirical corrections is "good enough"
-    #'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
+    'always_do_a_centering_exposure_regardless_of_nearby_reference': True,
 
     # Setup of folders on local and network drives.
     'ingest_raws_directly_to_archive': True,
@@ -215,17 +215,17 @@ site_config = {
     'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
-    'observing_check_period': 3,    # How many minutes between weather checks
-    'enclosure_check_period': 3,    # How many minutes between enclosure checks
+    'observing_check_period': 1,    # How many minutes between weather checks
+    'enclosure_check_period': 1,    # How many minutes between enclosure checks
 
     # Turn on and off various automated calibrations at different times.
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': False, # DO NOT MAKE TRUE!!!
     'auto_eve_sky_flat':True,
 
     'time_to_wait_after_roof_opens_to_take_flats': 30,   #sec Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': True,
+    'auto_morn_bias_dark': False, # DO NOT MAKE TRUE!!!
 
     # FOCUS OPTIONS
     'periodic_focus_time': 2, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -430,22 +430,22 @@ site_config = {
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'collecting_area':  13273,    #This is the correct area 20250514 WER
-            'obscuration':  0.0,
-            'aperture': 130,
-            'f-ratio':  5.0,   #This and focal_length can be refined after a solve.
-            'focal_length': 650,
+            'collecting_area':  154891,    #This is the correct area 20250514 WER
+            'obscuration':  47,
+            'aperture': 610,
+            'f-ratio':  6.8,   #This and focal_length can be refined after a solve.
+            'focal_length': 3962,
             'has_dew_heater':  True,
             #'screen_name': 'screen2',   #The enclosure has two screens in the WMD case, one for each mount.
             # NB NB All the below need some checking
-            'tel_has_unihedron': True,
+            'tel_has_unihedron': False,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
             'rotator_name':  'rotator1',
             'has_instrument_selector': False,   #This is a default for a single instrument system
             'selector_positions': 1,            #Note starts with 1
             'instrument names':  ['camera_1_1'],
-            'instrument aliases':  ['QHY410Color'],
+            'instrument aliases':  ['QHY600Mono'],
             'configuration': {
                  "position1": ["darkslide1", "filter_wheel1", "filter_wheel2", "camera1"]
                  },
@@ -478,8 +478,8 @@ site_config = {
             'parent': 'telescope1',
             'name': 'rotator',
             'desc':  'Opetc Gemini',
-            'driver': 'ASCOM.OptecGemini.Rotator',
-			'com_port':  'COM7',   #was 9 for 0m600
+            'driver': 'ASCOM.AltAzDS.Rotator',
+			'com_port':  'COM9',
             'startup_script':  'None',
             'recover_script':  'None',
             'shutdown_script':  'None',
@@ -513,16 +513,16 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
-            'com_port': 'COM7',
+            'com_port': None,
 
             'focuser_movement_settle_time': 0,
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 5.0, # highest value to consider as being in "good focus". Used to select last good focus value
 
-            'reference':  6350,    #Nominal at 20C Primary temperature, in microns not steps.
+            'reference':  6300,    #Nominal at 20C Primary temperature, in microns not steps.
             'z_compression': 0.0, #  microns per degree of zenith distance
-            'z_coef_date':  '20260220',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
+            'z_coef_date':  '20240210',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  False,
             'relative_focuser': False,   #MFITZ added this for ECO
             'minimum': 0,    #NB this needs clarifying, we are mixing steps and microns.
@@ -694,10 +694,10 @@ site_config = {
             'parent': 'telescope1',
 
             'name': 'SQ007',# 'OF01', #'KF04',      #Important because this points to a server file structure by that name.
-            'desc':  'QHY 410 Color',  #'FLI On-semi 50100',
+            'desc':  'QHY 600 Pro Mono',  #'FLI On-semi 50100',
 
             'overscan_trim' : 'QHY600',
-            'service_date': '20260220',  #'20231222'
+            'service_date': '20240210',  #'20231222'
             #'driver':  'ASCOM.QHYCCD.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
             'driver':  'QHYCCD_Direct_Control',   #'ASCOM.FLI.Kepler.Camera',  #"QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'switch_driver':  'ASCOM.Device1.Switch',
